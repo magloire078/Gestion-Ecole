@@ -49,3 +49,11 @@ export const mockStudentPerformanceData: Record<string, string> = {
   'Physique-Chimie': 'Très bon semestre avec des résultats remarquables en travaux pratiques. La moyenne générale est de 16/20. La section sur la thermodynamique a été particulièrement bien réussie par les élèves.',
   'Histoire-Géographie': 'Les élèves montrent un grand intérêt pour la matière. Les dissertations sont de bonne qualité, mais les connaissances sur les dates clés pourraient être améliorées. La moyenne de la classe est stable à 13/20.'
 };
+
+export const mockPerformanceData = [
+    { subject: 'Maths', 'Ce Semestre': 82, 'Semestre Précédent': 75 },
+    { subject: 'Français', 'Ce Semestre': 91, 'Semestre Précédent': 88 },
+    { subject: 'Physique', 'Ce Semestre': 78, 'Semestre Précédent': 81 },
+    { subject: 'Histoire', 'Ce Semestre': 85, 'Semestre Précédent': 80 },
+    { subject: 'Anglais', 'Ce Semestre': 95, 'Semestre Précédent': 92 },
+];

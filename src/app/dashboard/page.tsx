@@ -2,6 +2,7 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookUser, BookOpen } from 'lucide-react';
 import { mockStudentData, mockTeacherData, mockClassData, mockLibraryData } from '@/lib/data';
+import { PerformanceChart } from '@/components/performance-chart';
 
 export default function DashboardPage() {
   const stats = [
@@ -34,17 +35,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-          <Card className="col-span-1 lg:col-span-4">
-              <CardHeader>
-                  <CardTitle>Aperçu des performances</CardTitle>
-                  <CardDescription>Graphique montrant les performances des élèves ce semestre.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                  <div className="h-[300px] w-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-md">
-                      <img src="https://picsum.photos/600/300?grayscale" alt="Chart Placeholder" data-ai-hint="chart analytics" className="rounded-md object-cover" />
-                  </div>
-              </CardContent>
-          </Card>
+          <PerformanceChart />
           <Card className="col-span-1 lg:col-span-3">
               <CardHeader>
                   <CardTitle>Activité récente</CardTitle>
