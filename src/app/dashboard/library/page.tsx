@@ -9,10 +9,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { mockLibraryData } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { PlusCircle, MoreHorizontal, BookOpen, User, Hash } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -43,6 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Book } from "@/lib/data";
+import Image from 'next/image';
 
 export default function LibraryPage() {
   const [books, setBooks] = useState<Book[]>(mockLibraryData);
@@ -203,47 +204,56 @@ export default function LibraryPage() {
             </DialogContent>
           </Dialog>
         </div>
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Titre</TableHead>
-                  <TableHead>Auteur</TableHead>
-                  <TableHead className="text-right">Quantité</TableHead>
-                  <TableHead className="w-[50px] text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {books.map((book) => (
-                  <TableRow key={book.id}>
-                    <TableCell className="font-medium">{book.title}</TableCell>
-                    <TableCell>{book.author}</TableCell>
-                    <TableCell className="text-right">{book.quantity}</TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenEditDialog(book)}>Modifier</DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleOpenDeleteDialog(book)}
-                          >
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {books.map((book) => (
+             <Card key={book.id} className="flex flex-col">
+              <CardHeader className="p-0">
+                  <div className="relative h-40 w-full">
+                     <Image 
+                        src={`https://picsum.photos/seed/${book.id}/400/200`} 
+                        alt={`Couverture du livre ${book.title}`} 
+                        layout="fill"
+                        objectFit="cover"
+                        className="rounded-t-lg"
+                        data-ai-hint="book cover"
+                     />
+                  </div>
+                 <div className="p-4">
+                    <div className="flex items-center justify-between">
+                         <CardTitle className="text-xl leading-tight font-bold">{book.title}</CardTitle>
+                         <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="shrink-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenEditDialog(book)}>Modifier</DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => handleOpenDeleteDialog(book)}
+                              >
+                                Supprimer
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                    </div>
+                     <CardDescription className="flex items-center gap-2 text-sm mt-1">
+                        <User className="h-4 w-4" />
+                        {book.author}
+                    </CardDescription>
+                 </div>
+              </CardHeader>
+              <CardContent className="flex-1 pb-4 px-4">
+                  <div className="flex items-center text-sm text-muted-foreground">
+                      <Hash className="mr-2 h-4 w-4 flex-shrink-0" />
+                      <span>Quantité disponible: <strong>{book.quantity}</strong></span>
+                  </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       {/* Edit Dialog */}
