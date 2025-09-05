@@ -48,6 +48,9 @@ export const mockClassData: Class[] = [
   { id: 'C4', name: 'Seconde L', studentCount: 22, mainTeacherId: 'T4', building: 'Bâtiment C', cycle: 'Lycée' },
   { id: 'C5', name: 'Troisième', studentCount: 31, mainTeacherId: 'T5', building: 'Bâtiment C', cycle: 'Collège' },
   { id: 'C6', name: 'Quatrième', studentCount: 29, mainTeacherId: 'T6', building: 'Bâtiment C', cycle: 'Collège' },
+  { id: 'C7', name: 'CM2', studentCount: 28, mainTeacherId: 'T8', building: 'Bâtiment D', cycle: 'Primaire' },
+  { id: 'C8', name: 'CE1', studentCount: 26, mainTeacherId: 'T9', building: 'Bâtiment D', cycle: 'Primaire' },
+  { id: 'C9', name: 'Grande Section', studentCount: 24, mainTeacherId: 'T10', building: 'Bâtiment E', cycle: 'Maternelle' },
 ];
 
 // Teachers now have subjects, but are not tied to a single class.
@@ -60,6 +63,9 @@ export const mockTeacherData: Teacher[] = [
   { id: 'T5', name: 'Anne-Marie Dupont', subject: 'Anglais', email: 'am.dupont@ecole.com', class: 'Troisième' },
   { id: 'T6', name: 'Pierre Simon', subject: 'Philosophie', email: 'p.simon@ecole.com' },
   { id: 'T7', name: 'Isabelle Lefevre', subject: 'SVT', email: 'i.lefevre@ecole.com' },
+  { id: 'T8', name: 'Nathalie Robert', subject: 'Polyvalent', email: 'n.robert@ecole.com', class: 'CM2' },
+  { id: 'T9', name: 'David Moreau', subject: 'Polyvalent', email: 'd.moreau@ecole.com', class: 'CE1' },
+  { id: 'T10', name: 'Émilie Girard', subject: 'Polyvalent', email: 'e.girard@ecole.com', class: 'Grande Section' },
 ];
 
 export const mockTimetableData: TimetableEntry[] = [

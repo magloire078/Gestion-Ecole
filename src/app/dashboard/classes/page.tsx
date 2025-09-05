@@ -44,7 +44,7 @@ import type { Teacher, Class } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const cycles = ['Lycée', 'Collège'];
+const cycles = ['Lycée', 'Collège', 'Primaire', 'Maternelle'];
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState(mockClassData);
