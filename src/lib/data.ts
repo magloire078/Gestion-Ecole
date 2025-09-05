@@ -40,6 +40,12 @@ export type Book = {
   quantity: number;
 };
 
+export type Grade = {
+  studentId: string;
+  subject: string;
+  score: number;
+};
+
 
 export const mockClassData: Class[] = [
   { id: 'C1', name: 'Terminale A', studentCount: 25, mainTeacherId: 'T1', building: 'Bâtiment A', cycle: 'Lycée' },
@@ -91,6 +97,7 @@ export const mockStudentData: Student[] = [
   { id: 'S003', name: 'Charlie Roux', class: 'Terminale B', feedback: 'Mme. Martin est une excellente prof de français, ses cours sont passionnants.', tuitionStatus: 'Payé', amountDue: 0 },
   { id: 'S004', name: 'David Lefebvre', class: 'Première S', feedback: 'Les expériences en chimie sont le meilleur moment de la semaine.', tuitionStatus: 'Partiel', amountDue: 50000 },
   { id: 'S005', name: 'Eve Moreau', class: 'Seconde L', feedback: 'Le cours d\'histoire est très intéressant, surtout la période contemporaine.', tuitionStatus: 'Payé', amountDue: 0 },
+  { id: 'S006', name: 'Félix Guichard', class: 'CM2', feedback: 'J\'aime beaucoup lire les livres de la bibliothèque.', tuitionStatus: 'Payé', amountDue: 0 },
 ];
 
 export const mockLibraryData: Book[] = [
@@ -122,3 +129,36 @@ export const mockPerformanceData = [
     { subject: 'Histoire', 'Ce Semestre': 85, 'Semestre Précédent': 80 },
     { subject: 'Anglais', 'Ce Semestre': 95, 'Semestre Précédent': 92 },
 ];
+
+export const mockGradeData: Grade[] = [
+    // Alice Durand - S001 - Terminale A
+    { studentId: 'S001', subject: 'Mathématiques', score: 15 },
+    { studentId: 'S001', subject: 'Français', score: 14 },
+    { studentId: 'S001', subject: 'Philosophie', score: 16 },
+    { studentId: 'S001', subject: 'Anglais', score: 17 },
+    { studentId: 'S001', subject: 'Histoire-Géographie', score: 13 },
+    // Bob Lemoine - S002 - Terminale A
+    { studentId: 'S002', subject: 'Mathématiques', score: 11 },
+    { studentId: 'S002', subject: 'Français', score: 9 },
+    { studentId: 'S002', subject: 'Philosophie', score: 12 },
+    { studentId: 'S002', subject: 'Anglais', score: 13 },
+    { studentId: 'S002', subject: 'Histoire-Géographie', score: 10 },
+    // Charlie Roux - S003 - Terminale B
+    { studentId: 'S003', subject: 'Mathématiques', score: 18 },
+    { studentId: 'S003', subject: 'Français', score: 17 },
+    { studentId: 'S003', subject: 'Philosophie', score: 15 },
+    { studentId: 'S003', subject: 'Anglais', score: 16 },
+    // David Lefebvre - S004 - Première S
+    { studentId: 'S004', subject: 'Physique-Chimie', score: 17 },
+    { studentId: 'S004', subject: 'SVT', score: 15 },
+    { studentId: 'S004', subject: 'Mathématiques', score: 16 },
+    // Eve Moreau - S005 - Seconde L
+    { studentId: 'S005', subject: 'Histoire-Géographie', score: 16 },
+    { studentId: 'S005', subject: 'Français', score: 15 },
+    // Félix Guichard - S006 - CM2
+    { studentId: 'S006', subject: 'Français', score: 18 },
+    { studentId: 'S006', subject: 'Mathématiques', score: 16 },
+    { studentId: 'S006', subject: 'Histoire', score: 17 },
+];
+
+export const allSubjects = [...new Set(mockGradeData.map(g => g.subject))];

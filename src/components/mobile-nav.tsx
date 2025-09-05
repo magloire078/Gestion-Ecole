@@ -1,7 +1,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 
@@ -10,6 +10,7 @@ const menuItems = [
   { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
   { href: '/dashboard/teachers', label: 'Enseignants', icon: Users },
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
+  { href: '/dashboard/reports', label: 'Bulletins', icon: NotebookText },
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
   { href: '/dashboard/library', label: 'Bibliothèque', icon: BookOpen },
   { href: '/dashboard/fees', label: 'Scolarité', icon: Wallet },
