@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { mockStudentData, mockClassData } from "@/lib/data";
 import { PlusCircle, Bot, Smile, Meh, Frown, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { summarizeStudentFeedback } from "@/ai/flows/summarize-student-feedback";
 import { analyzeStudentSentiment } from "@/ai/flows/analyze-student-sentiment";
 import { useToast } from "@/hooks/use-toast";
@@ -62,6 +62,11 @@ export default function StudentsPage() {
   const [newStudentAmountDue, setNewStudentAmountDue] = useState('');
   const [newStudentTuitionStatus, setNewStudentTuitionStatus] = useState<'Payé' | 'En retard' | 'Partiel'>('Payé');
 
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleAnalyzeSentiments = async () => {
     setIsAnalyzing(true);
@@ -282,7 +287,7 @@ export default function StudentsPage() {
                             <TuitionStatusBadge status={student.tuitionStatus} />
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                            {student.amountDue > 0 ? `${student.amountDue.toLocaleString()} CFA` : '-'}
+                            {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString()} CFA` : `${student.amountDue} CFA`) : '-'}
                         </TableCell>
                         <TableCell className="text-center">
                           <SentimentIcon sentiment={sentiments[student.id]} />
