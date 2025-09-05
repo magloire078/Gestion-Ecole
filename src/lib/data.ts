@@ -47,6 +47,13 @@ export type Grade = {
   score: number;
 };
 
+export type Fee = {
+  id: string;
+  grade: string;
+  amount: string;
+  details: string;
+};
+
 
 export const mockClassData: Class[] = [
   { id: 'C1', name: 'Terminale A', studentCount: 25, mainTeacherId: 'T1', building: 'Bâtiment A', cycle: 'Lycée' },
@@ -109,7 +116,7 @@ export const mockLibraryData: Book[] = [
   { id: 'L5', title: 'Fables', author: 'Jean de La Fontaine', quantity: 8 },
 ];
 
-export const mockFeeData = [
+export const mockFeeData: Fee[] = [
   { id: 'F1', grade: 'Maternelle', amount: '98 000 CFA / mois', details: 'Paiement avant le 5 de chaque mois. Inclus la cantine.' },
   { id: 'F2', grade: 'Primaire', amount: '131 000 CFA / mois', details: 'Paiement avant le 5 de chaque mois. Fournitures scolaires non incluses.' },
   { id: 'F3', grade: 'Collège', amount: '164 000 CFA / mois', details: 'Paiement trimestriel possible. Inclus l\'accès à la bibliothèque.' },
