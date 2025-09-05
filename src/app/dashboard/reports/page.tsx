@@ -48,7 +48,7 @@ export default function ReportsPage() {
   const [isManageGradesDialogOpen, setIsManageGradesDialogOpen] = useState(false);
   const [isGenerateCommentDialogOpen, setIsGenerateCommentDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [currentGrades, setCurrentGrades] = useState<Partial<Grade[]>>([]);
+  const [currentGrades, setCurrentGrades] = useState<Partial<Record<string, number>>>({});
   const [generatedComment, setGeneratedComment] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -75,39 +75,38 @@ export default function ReportsPage() {
   const openManageGradesDialog = (student: Student) => {
     setSelectedStudent(student);
     const studentGrades = grades.filter(g => g.studentId === student.id);
-    setCurrentGrades(studentGrades);
+    const gradesRecord: Partial<Record<string, number>> = {};
+    studentGrades.forEach(g => {
+        gradesRecord[g.subject] = g.score;
+    });
+    setCurrentGrades(gradesRecord);
     setIsManageGradesDialogOpen(true);
   };
 
   const handleGradeChange = (subject: string, score: string) => {
-    if (!selectedStudent) return;
-
-    const newScore = parseInt(score, 10);
-    const existingGradeIndex = currentGrades.findIndex(g => g?.subject === subject);
-
-    let updatedGrades = [...currentGrades];
-
-    if (existingGradeIndex > -1) {
-      if (!isNaN(newScore)) {
-        updatedGrades[existingGradeIndex] = { studentId: selectedStudent.id, subject, score: newScore };
-      } else {
-        // Remove grade if input is empty/invalid
-        updatedGrades.splice(existingGradeIndex, 1);
-      }
-    } else if (!isNaN(newScore)) {
-      // Add new grade
-      updatedGrades.push({ studentId: selectedStudent.id, subject, score: newScore });
+    const newScore = parseFloat(score);
+    if (!isNaN(newScore) && newScore >= 0 && newScore <= 20) {
+        setCurrentGrades(prev => ({...prev, [subject]: newScore}));
+    } else {
+        const newGrades = {...currentGrades};
+        delete newGrades[subject];
+        setCurrentGrades(newGrades);
     }
-    
-    setCurrentGrades(updatedGrades);
   };
 
   const saveGrades = () => {
     if (!selectedStudent) return;
     
-    // Filter out old grades for the student and add the new ones
     const otherStudentsGrades = grades.filter(g => g.studentId !== selectedStudent.id);
-    setGrades([...otherStudentsGrades, ...currentGrades.filter(g => g && g.score !== undefined) as Grade[]]);
+    
+    const newStudentGrades: Grade[] = Object.entries(currentGrades).map(([subject, score], index) => ({
+        id: `G${selectedStudent.id}${subject}${index}`, // Create a more unique ID
+        studentId: selectedStudent.id,
+        subject,
+        score: score!,
+    }));
+
+    setGrades([...otherStudentsGrades, ...newStudentGrades]);
     
     toast({
       title: 'Notes enregistrées',
@@ -181,7 +180,7 @@ export default function ReportsPage() {
           </div>
         </div>
 
-        {selectedClassId && (
+        {selectedClassId ? (
           <Card>
             <CardHeader>
               <CardTitle>
@@ -220,8 +219,8 @@ export default function ReportsPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={3} className="text-center text-muted-foreground">
-                        Aucun élève dans cette classe.
+                      <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
+                        Sélectionnez une classe pour voir les élèves.
                       </TableCell>
                     </TableRow>
                   )}
@@ -229,6 +228,10 @@ export default function ReportsPage() {
               </Table>
             </CardContent>
           </Card>
+        ) : (
+            <Card className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">Veuillez sélectionner une classe pour commencer.</p>
+            </Card>
         )}
       </div>
 
@@ -243,7 +246,7 @@ export default function ReportsPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
             {allSubjects.map(subject => {
-              const grade = currentGrades.find(g => g?.subject === subject);
+              const grade = currentGrades[subject];
               return (
                 <div key={subject} className="grid grid-cols-3 items-center gap-4">
                   <Label htmlFor={`grade-${subject}`} className="text-left col-span-1">
@@ -254,7 +257,8 @@ export default function ReportsPage() {
                     type="number"
                     min="0"
                     max="20"
-                    defaultValue={grade?.score}
+                    step="0.5"
+                    defaultValue={grade}
                     onChange={e => handleGradeChange(subject, e.target.value)}
                     className="col-span-2"
                     placeholder="Note /20"

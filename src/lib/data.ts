@@ -162,6 +162,19 @@ export const mockGradeData: Grade[] = [
     { id: 'G22', studentId: 'S006', subject: 'Histoire', score: 17 },
 ];
 
-export const allSubjects = [...new Set(mockGradeData.map(g => g.subject))];
-
+export const allSubjects = [
+    "Mathématiques",
+    "Français",
+    "Philosophie",
+    "Anglais",
+    "Histoire-Géographie",
+    "Physique-Chimie",
+    "SVT",
+    "Histoire",
+    "Géographie",
+    "Arts Plastiques",
+    "Musique",
+    "EPS"
+];
     
+
