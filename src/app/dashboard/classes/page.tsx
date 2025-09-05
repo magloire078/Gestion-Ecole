@@ -329,7 +329,7 @@ export default function ClassesPage() {
               <Label htmlFor="edit-cycle" className="text-right">
                 Cycle
               </Label>
-               <Select onValuechange={setNewCycle} value={newCycle}>
+               <Select onValueChange={setNewCycle} value={newCycle}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Sélectionner un cycle" />
                 </SelectTrigger>
@@ -387,3 +387,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
