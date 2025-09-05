@@ -126,7 +126,7 @@ export default function ClassesPage() {
           {classes.map((cls) => {
             const { mainTeacher } = getClassWithMainTeacher(cls.id);
             return (
-              <Card key={cls.id} className="flex flex-col">
+              <Card key={cls.id} id={cls.id} className="flex flex-col">
                 <CardHeader>
                   <CardTitle>{cls.name}</CardTitle>
                   <CardDescription>ID de la classe: {cls.id}</CardDescription>

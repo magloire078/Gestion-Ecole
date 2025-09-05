@@ -13,6 +13,13 @@ export type TimetableEntry = {
   subject: string;
 };
 
+export type Student = {
+  id: string;
+  name: string;
+  class: string;
+  feedback: string;
+};
+
 export const mockClassData = [
   { id: 'C1', name: 'Terminale A', teacher: 'M. Dubois', studentCount: 25, mainTeacherId: 'T1' },
   { id: 'C2', name: 'Terminale B', teacher: 'Mme. Martin', studentCount: 28, mainTeacherId: 'T2' },
@@ -21,7 +28,7 @@ export const mockClassData = [
 ];
 
 // Teachers now have subjects, but are not tied to a single class.
-// The 'class' property can be removed or re-interpreted as 'main class supervised'.
+// The 'class' property can be re-interpreted as 'main class supervised'.
 export const mockTeacherData: Teacher[] = [
   { id: 'T1', name: 'Laurent Dubois', subject: 'Mathématiques', email: 'l.dubois@ecole.com', class: 'Terminale A' },
   { id: 'T2', name: 'Sophie Martin', subject: 'Français', email: 's.martin@ecole.com', class: 'Terminale B' },
@@ -47,7 +54,7 @@ export const mockTimetableData: TimetableEntry[] = [
     { id: 'TT12', classId: 'C4', teacherId: 'T2', subject: 'Français' },
 ];
 
-export const mockStudentData = [
+export const mockStudentData: Student[] = [
   { id: 'S001', name: 'Alice Durand', class: 'Terminale A', feedback: 'Le cours de mathématiques est difficile mais M. Dubois explique très bien.' },
   { id: 'S002', name: 'Bob Lemoine', class: 'Terminale A', feedback: 'J\'aimerais plus d\'exercices pratiques en mathématiques pour mieux me préparer.' },
   { id: 'S003', name: 'Charlie Roux', class: 'Terminale B', feedback: 'Mme. Martin est une excellente prof de français, ses cours sont passionnants.' },
