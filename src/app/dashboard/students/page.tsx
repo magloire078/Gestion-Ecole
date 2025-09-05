@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -36,6 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Student } from "@/lib/data";
+import { Badge } from "@/components/ui/badge";
 
 type Summary = {
     summary: string;
@@ -57,6 +59,8 @@ export default function StudentsPage() {
   const [newStudentName, setNewStudentName] = useState('');
   const [newStudentClassId, setNewStudentClassId] = useState('');
   const [newStudentFeedback, setNewStudentFeedback] = useState('');
+  const [newStudentAmountDue, setNewStudentAmountDue] = useState('');
+  const [newStudentTuitionStatus, setNewStudentTuitionStatus] = useState<'Payé' | 'En retard' | 'Partiel'>('Payé');
 
 
   const handleAnalyzeSentiments = async () => {
@@ -126,6 +130,8 @@ export default function StudentsPage() {
       name: newStudentName,
       class: mockClassData.find(c => c.id === newStudentClassId)?.name || 'N/A',
       feedback: newStudentFeedback,
+      amountDue: parseFloat(newStudentAmountDue) || 0,
+      tuitionStatus: newStudentTuitionStatus,
     };
 
     setStudents([...students, newStudent]);
@@ -138,6 +144,8 @@ export default function StudentsPage() {
     setNewStudentName('');
     setNewStudentClassId('');
     setNewStudentFeedback('');
+    setNewStudentAmountDue('');
+    setNewStudentTuitionStatus('Payé');
     setIsAddStudentDialogOpen(false);
   };
 
@@ -152,6 +160,19 @@ export default function StudentsPage() {
         return <Frown className="h-5 w-5 text-red-500" />;
       default:
         return <span className="text-muted-foreground">-</span>;
+    }
+  };
+  
+  const TuitionStatusBadge = ({ status }: { status: 'Payé' | 'En retard' | 'Partiel' }) => {
+    switch (status) {
+      case 'Payé':
+        return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">Payé</Badge>;
+      case 'En retard':
+        return <Badge variant="destructive">En retard</Badge>;
+      case 'Partiel':
+        return <Badge variant="secondary" className="bg-amber-100 text-amber-800">Partiel</Badge>;
+      default:
+        return null;
     }
   };
 
@@ -175,7 +196,7 @@ export default function StudentsPage() {
                   <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un élève
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Ajouter un nouvel élève</DialogTitle>
                   <DialogDescription>
@@ -204,8 +225,29 @@ export default function StudentsPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="student-feedback" className="text-right">
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="student-amount" className="text-right">
+                      Solde (CFA)
+                    </Label>
+                    <Input id="student-amount" type="number" value={newStudentAmountDue} onChange={(e) => setNewStudentAmountDue(e.target.value)} className="col-span-3" placeholder="Ex: 50000" />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="student-tuition-status" className="text-right">
+                      Statut
+                    </Label>
+                    <Select onValueChange={(value) => setNewStudentTuitionStatus(value as any)} value={newStudentTuitionStatus}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Statut du paiement" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          <SelectItem value="Payé">Payé</SelectItem>
+                          <SelectItem value="En retard">En retard</SelectItem>
+                          <SelectItem value="Partiel">Partiel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="student-feedback" className="text-right pt-2">
                       Feedback
                     </Label>
                     <Textarea id="student-feedback" value={newStudentFeedback} onChange={(e) => setNewStudentFeedback(e.target.value)} className="col-span-3" placeholder="Feedback initial (optionnel)"/>
@@ -226,7 +268,8 @@ export default function StudentsPage() {
                     <TableRow>
                       <TableHead>Nom</TableHead>
                       <TableHead>Classe</TableHead>
-                      <TableHead className="hidden md:table-cell">Feedback Récent</TableHead>
+                      <TableHead className="text-center">Statut Paiement</TableHead>
+                      <TableHead className="text-right">Solde Scolarité</TableHead>
                       <TableHead className="text-center">Sentiment</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -235,7 +278,12 @@ export default function StudentsPage() {
                       <TableRow key={student.id}>
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell>{student.class}</TableCell>
-                        <TableCell className="text-muted-foreground italic hidden md:table-cell">{student.feedback ? `"${student.feedback}"` : 'N/A'}</TableCell>
+                         <TableCell className="text-center">
+                            <TuitionStatusBadge status={student.tuitionStatus} />
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                            {student.amountDue > 0 ? `${student.amountDue.toLocaleString()} CFA` : '-'}
+                        </TableCell>
                         <TableCell className="text-center">
                           <SentimentIcon sentiment={sentiments[student.id]} />
                         </TableCell>
