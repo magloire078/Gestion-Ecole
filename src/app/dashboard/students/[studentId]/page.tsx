@@ -5,25 +5,11 @@ import { notFound, useParams } from 'next/navigation';
 import { mockStudentData, mockGradeData, mockClassData, mockTeacherData } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User, BookUser, Building, Wallet, MessageSquare } from 'lucide-react';
 import { useMemo } from 'react';
+import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 
-type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
-
-const TuitionStatusBadge = ({ status }: { status: TuitionStatus }) => {
-  switch (status) {
-    case 'Soldé':
-      return <Badge variant="secondary" className="text-base bg-emerald-100 text-emerald-800">Soldé</Badge>;
-    case 'En retard':
-      return <Badge variant="destructive" className="text-base">En retard</Badge>;
-    case 'Partiel':
-      return <Badge variant="secondary" className="text-base bg-amber-100 text-amber-800">Partiel</Badge>;
-    default:
-      return null;
-  }
-};
 
 export default function StudentProfilePage() {
   const params = useParams();

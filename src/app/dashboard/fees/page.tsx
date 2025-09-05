@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { mockStudentData, mockClassData } from "@/lib/data";
 import type { Student } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
@@ -28,21 +27,10 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Pencil } from "lucide-react";
+import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
-const TuitionStatusBadge = ({ status }: { status: TuitionStatus }) => {
-  switch (status) {
-    case 'Soldé':
-      return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">Soldé</Badge>;
-    case 'En retard':
-      return <Badge variant="destructive">En retard</Badge>;
-    case 'Partiel':
-      return <Badge variant="secondary" className="bg-amber-100 text-amber-800">Partiel</Badge>;
-    default:
-      return null;
-  }
-};
 
 export default function FeesPage() {
   const [students, setStudents] = useState<Student[]>(mockStudentData);
