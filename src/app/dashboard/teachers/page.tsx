@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from "@/ai/flows/generate-teacher-recommendations";
 import { useToast } from "@/hooks/use-toast";
 import type { Teacher } from "@/lib/data";
@@ -48,8 +48,10 @@ export default function TeachersPage() {
   const [teachers, setTeachers] = useState<Teacher[]>(mockTeacherData);
   const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false);
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [recommendation, setRecommendation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -58,6 +60,14 @@ export default function TeachersPage() {
   const [newTeacherSubject, setNewTeacherSubject] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
   const [teacherSkills, setTeacherSkills] = useState('');
+  
+  useEffect(() => {
+    if (editingTeacher) {
+      setNewTeacherName(editingTeacher.name);
+      setNewTeacherSubject(editingTeacher.subject);
+      setNewTeacherEmail(editingTeacher.email);
+    }
+  }, [editingTeacher]);
 
 
   const handleOpenRecommendDialog = (teacher: Teacher) => {
@@ -70,6 +80,11 @@ export default function TeachersPage() {
   const handleOpenDeleteDialog = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setIsDeleteDialogOpen(true);
+  };
+  
+  const handleOpenEditDialog = (teacher: Teacher) => {
+    setEditingTeacher(teacher);
+    setIsEditDialogOpen(true);
   };
 
   const handleGenerateRecommendation = async () => {
@@ -138,6 +153,31 @@ export default function TeachersPage() {
     setIsAddTeacherDialogOpen(false);
   };
   
+  const handleEditTeacher = () => {
+    if (!editingTeacher || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Tous les champs sont requis.",
+      });
+      return;
+    }
+
+    setTeachers(teachers.map(t => 
+      t.id === editingTeacher.id 
+        ? { ...t, name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail } 
+        : t
+    ));
+
+    toast({
+      title: "Enseignant modifié",
+      description: `Les informations de ${newTeacherName} ont été mises à jour.`,
+    });
+    
+    setIsEditDialogOpen(false);
+    setEditingTeacher(null);
+  };
+  
   const handleDeleteTeacher = () => {
     if (!selectedTeacher) return;
     
@@ -161,7 +201,14 @@ export default function TeachersPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Liste des Enseignants</h1>
               <p className="text-muted-foreground">Gérez les enseignants de votre école.</p>
           </div>
-          <Dialog open={isAddTeacherDialogOpen} onOpenChange={setIsAddTeacherDialogOpen}>
+          <Dialog open={isAddTeacherDialogOpen} onOpenChange={(isOpen) => {
+            setIsAddTeacherDialogOpen(isOpen);
+            if (!isOpen) {
+              setNewTeacherName('');
+              setNewTeacherSubject('');
+              setNewTeacherEmail('');
+            }
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un enseignant
@@ -176,22 +223,22 @@ export default function TeachersPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="teacher-name" className="text-right">
+                  <Label htmlFor="add-teacher-name" className="text-right">
                     Nom
                   </Label>
-                  <Input id="teacher-name" value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)} className="col-span-3" placeholder="Ex: Marie Curie" />
+                  <Input id="add-teacher-name" value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)} className="col-span-3" placeholder="Ex: Marie Curie" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="teacher-subject" className="text-right">
+                  <Label htmlFor="add-teacher-subject" className="text-right">
                     Matière
                   </Label>
-                   <Input id="teacher-subject" value={newTeacherSubject} onChange={(e) => setNewTeacherSubject(e.target.value)} className="col-span-3" placeholder="Ex: Physique"/>
+                   <Input id="add-teacher-subject" value={newTeacherSubject} onChange={(e) => setNewTeacherSubject(e.target.value)} className="col-span-3" placeholder="Ex: Physique"/>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="teacher-email" className="text-right">
+                  <Label htmlFor="add-teacher-email" className="text-right">
                     Email
                   </Label>
-                  <Input id="teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
+                  <Input id="add-teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
                 </div>
               </div>
               <DialogFooter>
@@ -228,7 +275,7 @@ export default function TeachersPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Modifier</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenEditDialog(teacher)}>Modifier</DropdownMenuItem>
                              <DropdownMenuItem onClick={() => handleOpenRecommendDialog(teacher)}>
                               <FileText className="mr-2 h-4 w-4" />
                               <span>Recommandation</span>
@@ -282,6 +329,46 @@ export default function TeachersPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsRecommendDialogOpen(false)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+       <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
+          setIsEditDialogOpen(isOpen);
+          if (!isOpen) {
+            setEditingTeacher(null);
+          }
+        }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Modifier l'enseignant</DialogTitle>
+            <DialogDescription>
+              Mettez à jour les informations de <strong>{editingTeacher?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-teacher-name" className="text-right">
+                Nom
+              </Label>
+              <Input id="edit-teacher-name" value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-teacher-subject" className="text-right">
+                Matière
+              </Label>
+              <Input id="edit-teacher-subject" value={newTeacherSubject} onChange={(e) => setNewTeacherSubject(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-teacher-email" className="text-right">
+                Email
+              </Label>
+              <Input id="edit-teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleEditTeacher}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
