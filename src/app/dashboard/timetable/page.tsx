@@ -175,7 +175,10 @@ export default function TimetablePage() {
             <h1 className="text-lg font-semibold md:text-2xl">Emploi du Temps</h1>
             <p className="text-muted-foreground">Consultez et gérez les attributions des enseignants par classe et par matière.</p>
           </div>
-           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+           <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
+               if(!isOpen) resetForm();
+               setIsAddDialogOpen(isOpen);
+           }}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une entrée
