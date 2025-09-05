@@ -37,10 +37,10 @@ export const mockLibraryData = [
 ];
 
 export const mockFeeData = [
-  { id: 'F1', grade: 'Maternelle', amount: '150€ / mois', details: 'Paiement avant le 5 de chaque mois. Inclus la cantine.' },
-  { id: 'F2', grade: 'Primaire', amount: '200€ / mois', details: 'Paiement avant le 5 de chaque mois. Fournitures scolaires non incluses.' },
-  { id: 'F3', grade: 'Collège', amount: '250€ / mois', details: 'Paiement trimestriel possible. Inclus l\'accès à la bibliothèque.' },
-  { id: 'F4', grade: 'Lycée', amount: '300€ / mois', details: 'Paiement trimestriel possible. Frais d\'examen en sus.' },
+  { id: 'F1', grade: 'Maternelle', amount: '98 000 CFA / mois', details: 'Paiement avant le 5 de chaque mois. Inclus la cantine.' },
+  { id: 'F2', grade: 'Primaire', amount: '131 000 CFA / mois', details: 'Paiement avant le 5 de chaque mois. Fournitures scolaires non incluses.' },
+  { id: 'F3', grade: 'Collège', amount: '164 000 CFA / mois', details: 'Paiement trimestriel possible. Inclus l\'accès à la bibliothèque.' },
+  { id: 'F4', grade: 'Lycée', amount: '197 000 CFA / mois', details: 'Paiement trimestriel possible. Frais d\'examen en sus.' },
 ];
 
 export const mockStudentPerformanceData: Record<string, string> = {

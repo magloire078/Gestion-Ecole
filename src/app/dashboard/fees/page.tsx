@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { mockFeeData } from "@/lib/data";
-import { Euro } from "lucide-react";
 
 export default function FeesPage() {
   return (
@@ -14,7 +13,7 @@ export default function FeesPage() {
           <Card key={fee.id}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-lg font-medium">{fee.grade}</CardTitle>
-              <Euro className="h-5 w-5 text-muted-foreground" />
+              <span className="text-muted-foreground font-bold">CFA</span>
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-primary">{fee.amount}</div>
