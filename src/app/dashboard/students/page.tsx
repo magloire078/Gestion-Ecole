@@ -54,6 +54,8 @@ import {
 } from "@/components/ui/select";
 import type { Student } from "@/lib/data";
 import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+
 
 type Summary = {
     summary: string;
@@ -375,7 +377,11 @@ export default function StudentsPage() {
                     <TableBody>
                       {students.map((student) => (
                         <TableRow key={student.id}>
-                          <TableCell className="font-medium">{student.name}</TableCell>
+                          <TableCell className="font-medium">
+                            <Link href={`/dashboard/students/${student.id}`} className="hover:underline text-primary">
+                                {student.name}
+                            </Link>
+                          </TableCell>
                           <TableCell>{student.class}</TableCell>
                           <TableCell className="text-center">
                               <TuitionStatusBadge status={student.tuitionStatus} />

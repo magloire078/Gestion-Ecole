@@ -41,6 +41,7 @@ export type Book = {
 };
 
 export type Grade = {
+  id: string;
   studentId: string;
   subject: string;
   score: number;
@@ -132,33 +133,33 @@ export const mockPerformanceData = [
 
 export const mockGradeData: Grade[] = [
     // Alice Durand - S001 - Terminale A
-    { studentId: 'S001', subject: 'Mathématiques', score: 15 },
-    { studentId: 'S001', subject: 'Français', score: 14 },
-    { studentId: 'S001', subject: 'Philosophie', score: 16 },
-    { studentId: 'S001', subject: 'Anglais', score: 17 },
-    { studentId: 'S001', subject: 'Histoire-Géographie', score: 13 },
+    { id: 'G01', studentId: 'S001', subject: 'Mathématiques', score: 15 },
+    { id: 'G02', studentId: 'S001', subject: 'Français', score: 14 },
+    { id: 'G03', studentId: 'S001', subject: 'Philosophie', score: 16 },
+    { id: 'G04', studentId: 'S001', subject: 'Anglais', score: 17 },
+    { id: 'G05', studentId: 'S001', subject: 'Histoire-Géographie', score: 13 },
     // Bob Lemoine - S002 - Terminale A
-    { studentId: 'S002', subject: 'Mathématiques', score: 11 },
-    { studentId: 'S002', subject: 'Français', score: 9 },
-    { studentId: 'S002', subject: 'Philosophie', score: 12 },
-    { studentId: 'S002', subject: 'Anglais', score: 13 },
-    { studentId: 'S002', subject: 'Histoire-Géographie', score: 10 },
+    { id: 'G06', studentId: 'S002', subject: 'Mathématiques', score: 11 },
+    { id: 'G07', studentId: 'S002', subject: 'Français', score: 9 },
+    { id: 'G08', studentId: 'S002', subject: 'Philosophie', score: 12 },
+    { id: 'G09', studentId: 'S002', subject: 'Anglais', score: 13 },
+    { id: 'G10', studentId: 'S002', subject: 'Histoire-Géographie', score: 10 },
     // Charlie Roux - S003 - Terminale B
-    { studentId: 'S003', subject: 'Mathématiques', score: 18 },
-    { studentId: 'S003', subject: 'Français', score: 17 },
-    { studentId: 'S003', subject: 'Philosophie', score: 15 },
-    { studentId: 'S003', subject: 'Anglais', score: 16 },
+    { id: 'G11', studentId: 'S003', subject: 'Mathématiques', score: 18 },
+    { id: 'G12', studentId: 'S003', subject: 'Français', score: 17 },
+    { id: 'G13', studentId: 'S003', subject: 'Philosophie', score: 15 },
+    { id: 'G14', studentId: 'S003', subject: 'Anglais', score: 16 },
     // David Lefebvre - S004 - Première S
-    { studentId: 'S004', subject: 'Physique-Chimie', score: 17 },
-    { studentId: 'S004', subject: 'SVT', score: 15 },
-    { studentId: 'S004', subject: 'Mathématiques', score: 16 },
+    { id: 'G15', studentId: 'S004', subject: 'Physique-Chimie', score: 17 },
+    { id: 'G16', studentId: 'S004', subject: 'SVT', score: 15 },
+    { id: 'G17', studentId: 'S004', subject: 'Mathématiques', score: 16 },
     // Eve Moreau - S005 - Seconde L
-    { studentId: 'S005', subject: 'Histoire-Géographie', score: 16 },
-    { studentId: 'S005', subject: 'Français', score: 15 },
+    { id: 'G18', studentId: 'S005', subject: 'Histoire-Géographie', score: 16 },
+    { id: 'G19', studentId: 'S005', subject: 'Français', score: 15 },
     // Félix Guichard - S006 - CM2
-    { studentId: 'S006', subject: 'Français', score: 18 },
-    { studentId: 'S006', subject: 'Mathématiques', score: 16 },
-    { studentId: 'S006', subject: 'Histoire', score: 17 },
+    { id: 'G20', studentId: 'S006', subject: 'Français', score: 18 },
+    { id: 'G21', studentId: 'S006', subject: 'Mathématiques', score: 16 },
+    { id: 'G22', studentId: 'S006', subject: 'Histoire', score: 17 },
 ];
 
 export const allSubjects = [...new Set(mockGradeData.map(g => g.subject))];
