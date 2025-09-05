@@ -13,9 +13,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { mockStudentData } from "@/lib/data";
-import { PlusCircle, Bot } from "lucide-react";
-import { useState } from "react";
+import { PlusCircle, Bot, Smile, Meh, Frown } from "lucide-react";
+import { useState, useEffect } from "react";
 import { summarizeStudentFeedback } from "@/ai/flows/summarize-student-feedback";
+import { analyzeStudentSentiment } from "@/ai/flows/analyze-student-sentiment";
 import { useToast } from "@/hooks/use-toast";
 
 type Summary = {
@@ -23,11 +24,33 @@ type Summary = {
     keyImprovementAreas: string;
 };
 
+type Sentiment = 'Positif' | 'Neutre' | 'Négatif';
+
 export default function StudentsPage() {
   const [feedbackText, setFeedbackText] = useState('');
   const [summary, setSummary] = useState<Summary | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [sentiments, setSentiments] = useState<Record<string, Sentiment | null>>({});
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchSentiments = async () => {
+      const newSentiments: Record<string, Sentiment | null> = {};
+      for (const student of mockStudentData) {
+        try {
+          const result = await analyzeStudentSentiment({ feedbackText: student.feedback });
+          newSentiments[student.id] = result.sentiment as Sentiment;
+        } catch (error) {
+          console.error(`Failed to analyze sentiment for student ${student.id}:`, error);
+          newSentiments[student.id] = null;
+        }
+      }
+      setSentiments(newSentiments);
+    };
+
+    fetchSentiments();
+  }, []);
+
 
   const handleSummarize = async () => {
     if (!feedbackText.trim()) return;
@@ -52,6 +75,19 @@ export default function StudentsPage() {
     }
   };
 
+  const SentimentIcon = ({ sentiment }: { sentiment: Sentiment | null }) => {
+    switch (sentiment) {
+      case 'Positif':
+        return <Smile className="h-5 w-5 text-emerald-500" />;
+      case 'Neutre':
+        return <Meh className="h-5 w-5 text-amber-500" />;
+      case 'Négatif':
+        return <Frown className="h-5 w-5 text-red-500" />;
+      default:
+        return null;
+    }
+  };
+
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
@@ -73,6 +109,7 @@ export default function StudentsPage() {
                       <TableHead>Nom</TableHead>
                       <TableHead>Classe</TableHead>
                       <TableHead className="hidden md:table-cell">Feedback Récent</TableHead>
+                      <TableHead className="text-center">Sentiment</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -81,6 +118,9 @@ export default function StudentsPage() {
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell>{student.class}</TableCell>
                         <TableCell className="text-muted-foreground italic hidden md:table-cell">"{student.feedback}"</TableCell>
+                        <TableCell className="text-center">
+                          <SentimentIcon sentiment={sentiments[student.id]} />
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
