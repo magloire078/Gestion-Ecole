@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -52,6 +53,7 @@ export default function TeachersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
   const [recommendation, setRecommendation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -69,6 +71,11 @@ export default function TeachersPage() {
     }
   }, [editingTeacher]);
 
+  const resetAddForm = () => {
+    setNewTeacherName('');
+    setNewTeacherSubject('');
+    setNewTeacherEmail('');
+  };
 
   const handleOpenRecommendDialog = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
@@ -78,7 +85,7 @@ export default function TeachersPage() {
   };
   
   const handleOpenDeleteDialog = (teacher: Teacher) => {
-    setSelectedTeacher(teacher);
+    setTeacherToDelete(teacher);
     setIsDeleteDialogOpen(true);
   };
   
@@ -147,9 +154,7 @@ export default function TeachersPage() {
       description: `${newTeacherName} a été ajouté(e) avec succès.`,
     });
 
-    setNewTeacherName('');
-    setNewTeacherSubject('');
-    setNewTeacherEmail('');
+    resetAddForm();
     setIsAddTeacherDialogOpen(false);
   };
   
@@ -179,17 +184,17 @@ export default function TeachersPage() {
   };
   
   const handleDeleteTeacher = () => {
-    if (!selectedTeacher) return;
+    if (!teacherToDelete) return;
     
-    setTeachers(teachers.filter(t => t.id !== selectedTeacher.id));
+    setTeachers(teachers.filter(t => t.id !== teacherToDelete.id));
 
     toast({
       title: "Enseignant supprimé",
-      description: `${selectedTeacher.name} a été retiré(e) de la liste.`,
+      description: `${teacherToDelete.name} a été retiré(e) de la liste.`,
     });
 
     setIsDeleteDialogOpen(false);
-    setSelectedTeacher(null);
+    setTeacherToDelete(null);
   };
 
 
@@ -204,9 +209,7 @@ export default function TeachersPage() {
           <Dialog open={isAddTeacherDialogOpen} onOpenChange={(isOpen) => {
             setIsAddTeacherDialogOpen(isOpen);
             if (!isOpen) {
-              setNewTeacherName('');
-              setNewTeacherSubject('');
-              setNewTeacherEmail('');
+              resetAddForm();
             }
           }}>
             <DialogTrigger asChild>
@@ -378,7 +381,7 @@ export default function TeachersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. L'enseignant <strong>{selectedTeacher?.name}</strong> sera définitivement supprimé.
+              Cette action est irréversible. L'enseignant <strong>{teacherToDelete?.name}</strong> sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -390,3 +393,5 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    

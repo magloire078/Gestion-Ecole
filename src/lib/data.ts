@@ -163,3 +163,5 @@ export const mockGradeData: Grade[] = [
 ];
 
 export const allSubjects = [...new Set(mockGradeData.map(g => g.subject))];
+
+    
