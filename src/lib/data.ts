@@ -30,6 +30,7 @@ export type Class = {
   studentCount: number;
   mainTeacherId: string;
   building: string;
+  cycle: string;
 };
 
 export type Book = {
@@ -41,10 +42,12 @@ export type Book = {
 
 
 export const mockClassData: Class[] = [
-  { id: 'C1', name: 'Terminale A', studentCount: 25, mainTeacherId: 'T1', building: 'Bâtiment A' },
-  { id: 'C2', name: 'Terminale B', studentCount: 28, mainTeacherId: 'T2', building: 'Bâtiment A' },
-  { id: 'C3', name: 'Première S', studentCount: 30, mainTeacherId: 'T3', building: 'Bâtiment B' },
-  { id: 'C4', name: 'Seconde L', studentCount: 22, mainTeacherId: 'T4', building: 'Bâtiment C' },
+  { id: 'C1', name: 'Terminale A', studentCount: 25, mainTeacherId: 'T1', building: 'Bâtiment A', cycle: 'Lycée' },
+  { id: 'C2', name: 'Terminale B', studentCount: 28, mainTeacherId: 'T2', building: 'Bâtiment A', cycle: 'Lycée' },
+  { id: 'C3', name: 'Première S', studentCount: 30, mainTeacherId: 'T3', building: 'Bâtiment B', cycle: 'Lycée' },
+  { id: 'C4', name: 'Seconde L', studentCount: 22, mainTeacherId: 'T4', building: 'Bâtiment C', cycle: 'Lycée' },
+  { id: 'C5', name: 'Troisième', studentCount: 31, mainTeacherId: 'T5', building: 'Bâtiment C', cycle: 'Collège' },
+  { id: 'C6', name: 'Quatrième', studentCount: 29, mainTeacherId: 'T6', building: 'Bâtiment C', cycle: 'Collège' },
 ];
 
 // Teachers now have subjects, but are not tied to a single class.
@@ -54,7 +57,7 @@ export const mockTeacherData: Teacher[] = [
   { id: 'T2', name: 'Sophie Martin', subject: 'Français', email: 's.martin@ecole.com', class: 'Terminale B' },
   { id: 'T3', name: 'Paul Bernard', subject: 'Physique-Chimie', email: 'p.bernard@ecole.com', class: 'Première S' },
   { id: 'T4', name: 'Hélène Petit', subject: 'Histoire-Géographie', email: 'h.petit@ecole.com', class: 'Seconde L' },
-  { id: 'T5', name: 'Anne-Marie Dupont', subject: 'Anglais', email: 'am.dupont@ecole.com' },
+  { id: 'T5', name: 'Anne-Marie Dupont', subject: 'Anglais', email: 'am.dupont@ecole.com', class: 'Troisième' },
   { id: 'T6', name: 'Pierre Simon', subject: 'Philosophie', email: 'p.simon@ecole.com' },
   { id: 'T7', name: 'Isabelle Lefevre', subject: 'SVT', email: 'i.lefevre@ecole.com' },
 ];
@@ -72,6 +75,8 @@ export const mockTimetableData: TimetableEntry[] = [
     { id: 'TT10', classId: 'C3', teacherId: 'T1', subject: 'Mathématiques' },
     { id: 'TT11', classId: 'C4', teacherId: 'T4', subject: 'Histoire-Géographie' },
     { id: 'TT12', classId: 'C4', teacherId: 'T2', subject: 'Français' },
+    { id: 'TT13', classId: 'C5', teacherId: 'T5', subject: 'Anglais' },
+    { id: 'TT14', classId: 'C6', teacherId: 'T2', subject: 'Français' },
 ];
 
 export const mockStudentData: Student[] = [

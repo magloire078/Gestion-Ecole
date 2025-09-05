@@ -42,7 +42,9 @@ import {
 } from "@/components/ui/select";
 import type { Teacher, Class } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const cycles = ['Lycée', 'Collège'];
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState(mockClassData);
@@ -54,6 +56,7 @@ export default function ClassesPage() {
   const [newTeacherId, setNewTeacherId] = useState("");
   const [newStudentCount, setNewStudentCount] = useState("");
   const [newBuilding, setNewBuilding] = useState("");
+  const [newCycle, setNewCycle] = useState("");
 
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
@@ -65,8 +68,16 @@ export default function ClassesPage() {
     return mockTeacherData.find(t => t.id === teacherId);
   };
 
+  const resetAddDialog = () => {
+    setNewClassName("");
+    setNewTeacherId("");
+    setNewStudentCount("");
+    setNewBuilding("");
+    setNewCycle("");
+  }
+
   const handleAddClass = () => {
-    if (!newClassName || !newTeacherId || !newStudentCount || !newBuilding) {
+    if (!newClassName || !newTeacherId || !newStudentCount || !newBuilding || !newCycle) {
         toast({
             variant: "destructive",
             title: "Erreur",
@@ -81,6 +92,7 @@ export default function ClassesPage() {
         mainTeacherId: newTeacherId,
         studentCount: parseInt(newStudentCount, 10),
         building: newBuilding,
+        cycle: newCycle,
     };
 
     setClasses([...classes, newClass]);
@@ -89,10 +101,7 @@ export default function ClassesPage() {
         description: `La classe ${newClassName} a été créée avec succès.`,
     });
 
-    setNewClassName("");
-    setNewTeacherId("");
-    setNewStudentCount("");
-    setNewBuilding("");
+    resetAddDialog();
     setIsAddDialogOpen(false);
   };
   
@@ -102,11 +111,12 @@ export default function ClassesPage() {
     setNewTeacherId(cls.mainTeacherId);
     setNewStudentCount(String(cls.studentCount));
     setNewBuilding(cls.building);
+    setNewCycle(cls.cycle);
     setIsEditDialogOpen(true);
   };
 
   const handleEditClass = () => {
-    if (!editingClass || !newClassName || !newTeacherId || !newStudentCount || !newBuilding) {
+    if (!editingClass || !newClassName || !newTeacherId || !newStudentCount || !newBuilding || !newCycle) {
        toast({
             variant: "destructive",
             title: "Erreur",
@@ -121,6 +131,7 @@ export default function ClassesPage() {
       mainTeacherId: newTeacherId,
       studentCount: parseInt(newStudentCount, 10),
       building: newBuilding,
+      cycle: newCycle,
     } : c));
 
     toast({
@@ -158,9 +169,12 @@ export default function ClassesPage() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-lg font-semibold md:text-2xl">Gestion des Classes</h1>
-            <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école.</p>
+            <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
+            if(!isOpen) resetAddDialog();
+            setIsAddDialogOpen(isOpen);
+          }}>
             <DialogTrigger asChild>
                <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une classe
@@ -185,6 +199,21 @@ export default function ClassesPage() {
                     Bâtiment
                   </Label>
                   <Input id="building" value={newBuilding} onChange={(e) => setNewBuilding(e.target.value)} className="col-span-3" placeholder="Ex: Bâtiment A" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="cycle" className="text-right">
+                    Cycle
+                  </Label>
+                   <Select onValueChange={setNewCycle} value={newCycle}>
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Sélectionner un cycle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {cycles.map((cycle) => (
+                        <SelectItem key={cycle} value={cycle}>{cycle}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="teacher" className="text-right">
@@ -216,51 +245,62 @@ export default function ClassesPage() {
           </Dialog>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {classes.map((cls) => {
-            const mainTeacher = getMainTeacher(cls.mainTeacherId);
-            return (
-              <Card key={cls.id} id={cls.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>{cls.name}</CardTitle>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenEditDialog(cls)}>Modifier</DropdownMenuItem>
-                        <DropdownMenuItem 
-                          className="text-destructive"
-                          onClick={() => handleOpenDeleteDialog(cls)}
-                        >
-                          Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <CardDescription>ID de la classe: {cls.id}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 flex-1">
-                   <div className="flex items-center text-sm text-muted-foreground">
-                    <Building className="mr-2 h-4 w-4 flex-shrink-0" />
-                    <span>Bâtiment: {cls.building}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <User className="mr-2 h-4 w-4 flex-shrink-0" />
-                    <span>Prof. principal: {mainTeacher?.name || 'Non assigné'}</span>
-                  </div>
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Users className="mr-2 h-4 w-4 flex-shrink-0" />
-                    <span>{cls.studentCount} élèves</span>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <Tabs defaultValue={cycles[0]} className="space-y-4">
+            <TabsList>
+                {cycles.map((cycle) => (
+                    <TabsTrigger key={cycle} value={cycle}>{cycle}</TabsTrigger>
+                ))}
+            </TabsList>
+            {cycles.map((cycle) => (
+                <TabsContent key={cycle} value={cycle}>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {classes.filter(c => c.cycle === cycle).map((cls) => {
+                            const mainTeacher = getMainTeacher(cls.mainTeacherId);
+                            return (
+                            <Card key={cls.id} id={cls.id} className="flex flex-col">
+                                <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle>{cls.name}</CardTitle>
+                                    <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleOpenEditDialog(cls)}>Modifier</DropdownMenuItem>
+                                        <DropdownMenuItem 
+                                        className="text-destructive"
+                                        onClick={() => handleOpenDeleteDialog(cls)}
+                                        >
+                                        Supprimer
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                                <CardDescription>ID de la classe: {cls.id}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3 flex-1">
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                    <Building className="mr-2 h-4 w-4 flex-shrink-0" />
+                                    <span>Bâtiment: {cls.building}</span>
+                                </div>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                    <User className="mr-2 h-4 w-4 flex-shrink-0" />
+                                    <span>Prof. principal: {mainTeacher?.name || 'Non assigné'}</span>
+                                </div>
+                                <div className="flex items-center text-sm text-muted-foreground">
+                                    <Users className="mr-2 h-4 w-4 flex-shrink-0" />
+                                    <span>{cls.studentCount} élèves</span>
+                                </div>
+                                </CardContent>
+                            </Card>
+                            );
+                        })}
+                    </div>
+                 </TabsContent>
+            ))}
+        </Tabs>
       </div>
       
       {/* Edit Dialog */}
@@ -284,6 +324,21 @@ export default function ClassesPage() {
                 Bâtiment
               </Label>
               <Input id="edit-building" value={newBuilding} onChange={(e) => setNewBuilding(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-cycle" className="text-right">
+                Cycle
+              </Label>
+               <Select onValueChange={setNewCycle} value={newCycle}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Sélectionner un cycle" />
+                </SelectTrigger>
+                <SelectContent>
+                  {cycles.map((cycle) => (
+                    <SelectItem key={cycle} value={cycle}>{cycle}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-teacher" className="text-right">
