@@ -6,14 +6,32 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+
+const SCHOOL_NAME_KEY = 'schoolName';
+const DIRECTOR_NAME_KEY = 'directorName';
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const [schoolName, setSchoolName] = useState("GèreEcole");
   const [directorName, setDirectorName] = useState("Jean Dupont");
 
+  useEffect(() => {
+    const savedSchoolName = localStorage.getItem(SCHOOL_NAME_KEY);
+    const savedDirectorName = localStorage.getItem(DIRECTOR_NAME_KEY);
+
+    if (savedSchoolName) {
+      setSchoolName(savedSchoolName);
+    }
+    if (savedDirectorName) {
+      setDirectorName(savedDirectorName);
+    }
+  }, []);
+
   const handleSaveChanges = () => {
+    localStorage.setItem(SCHOOL_NAME_KEY, schoolName);
+    localStorage.setItem(DIRECTOR_NAME_KEY, directorName);
+
     toast({
       title: "Paramètres enregistrés",
       description: "Les informations de l'école ont été mises à jour.",
@@ -65,7 +83,7 @@ export default function SettingsPage() {
         <CardContent>
             <div className="space-y-2">
                 <Label>Nom</Label>
-                <Input value="Jean Dupont" disabled />
+                <Input value={directorName} disabled />
             </div>
             <div className="space-y-2 mt-4">
                 <Label>Email</Label>
