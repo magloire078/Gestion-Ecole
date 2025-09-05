@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Hash, Wallet, MessageSquare, BadgeCent } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare } from 'lucide-react';
 import { useMemo } from 'react';
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
