@@ -46,10 +46,13 @@ export default function TeachersPage() {
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherSubject, setNewTeacherSubject] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
+  const [teacherSkills, setTeacherSkills] = useState('');
+
 
   const handleOpenRecommendDialog = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setRecommendation('');
+    setTeacherSkills('');
     setIsRecommendDialogOpen(true);
   };
 
@@ -60,13 +63,15 @@ export default function TeachersPage() {
     setRecommendation('');
 
     try {
+      const skillsArray = teacherSkills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
+      
       const input: GenerateTeacherRecommendationsInput = {
         teacherName: selectedTeacher.name,
         className: selectedTeacher.class || 'N/A', // Use optional class property
         studentPerformanceData: mockStudentPerformanceData[selectedTeacher.subject] || "Aucune donnée de performance disponible.",
         directorName: 'Jean Dupont', // Mock director name
         schoolName: 'GèreEcole',     // Mock school name
-        teacherSkills: ['Excellente communication', 'Pédagogie adaptée', 'Gestion de classe efficace'], // Mock skills
+        teacherSkills: skillsArray.length > 0 ? skillsArray : ['Excellente communication', 'Pédagogie adaptée', 'Gestion de classe efficace'],
       };
 
       const result = await generateTeacherRecommendations(input);
@@ -219,6 +224,15 @@ export default function TeachersPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="grid gap-2">
+                <Label htmlFor="teacher-skills">Compétences clés (séparées par des virgules)</Label>
+                <Input 
+                    id="teacher-skills"
+                    placeholder="Ex: Excellente communication, Pédagogie adaptée, ..."
+                    value={teacherSkills}
+                    onChange={(e) => setTeacherSkills(e.target.value)}
+                />
+            </div>
              <Button onClick={handleGenerateRecommendation} disabled={isLoading} className="w-full bg-accent hover:bg-accent/90">
               <Bot className="mr-2 h-4 w-4" />
               {isLoading ? 'Génération en cours...' : 'Générer la lettre avec l\'IA'}
