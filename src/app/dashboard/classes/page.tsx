@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Teacher } from "@/lib/data";
+import type { Teacher, Class } from "@/lib/data";
 
 
 export default function ClassesPage() {
@@ -35,11 +35,9 @@ export default function ClassesPage() {
   const [newStudentCount, setNewStudentCount] = useState("");
   const [newBuilding, setNewBuilding] = useState("");
 
-  const getClassWithMainTeacher = (classId: string, teacherId?: string) => {
-    const classInfo = classes.find(c => c.id === classId);
-    if (!classInfo && !teacherId) return { classInfo: null, mainTeacher: null };
-    const mainTeacher = mockTeacherData.find(t => t.id === (classInfo?.mainTeacherId || teacherId));
-    return { classInfo, mainTeacher };
+  const getMainTeacher = (teacherId?: string) => {
+    if (!teacherId) return null;
+    return mockTeacherData.find(t => t.id === teacherId);
   };
 
   const handleAddClass = () => {
@@ -48,12 +46,11 @@ export default function ClassesPage() {
         return;
     }
 
-    const newClass = {
+    const newClass: Class = {
         id: `C${classes.length + 1}`,
         name: newClassName,
         mainTeacherId: newTeacherId,
         studentCount: parseInt(newStudentCount, 10),
-        teacher: mockTeacherData.find(t => t.id === newTeacherId)?.name || 'N/A', //This is legacy
         building: newBuilding,
     };
 
@@ -134,7 +131,7 @@ export default function ClassesPage() {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {classes.map((cls) => {
-            const { mainTeacher } = getClassWithMainTeacher(cls.id);
+            const mainTeacher = getMainTeacher(cls.mainTeacherId);
             return (
               <Card key={cls.id} id={cls.id} className="flex flex-col">
                 <CardHeader>
