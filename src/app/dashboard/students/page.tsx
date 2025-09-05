@@ -112,7 +112,7 @@ export default function StudentsPage() {
     for (const student of students) {
       if (student.feedback && !sentiments[student.id]) { // Avoid re-analyzing
           try {
-            await new Promise(resolve => setTimeout(resolve, 500)); // Add a small delay between requests
+            await new Promise(resolve => setTimeout(resolve, 200)); // Add a small delay between requests
             const result = await analyzeStudentSentiment({ feedbackText: student.feedback });
             newSentiments[student.id] = result.sentiment as Sentiment;
           } catch (error) {
