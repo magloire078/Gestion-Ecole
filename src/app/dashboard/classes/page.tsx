@@ -1,9 +1,10 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { mockClassData, mockTeacherData } from "@/lib/data";
-import { PlusCircle, Users, User } from "lucide-react";
+import { PlusCircle, Users, User, Building } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -32,6 +33,7 @@ export default function ClassesPage() {
   const [newClassName, setNewClassName] = useState("");
   const [newTeacherId, setNewTeacherId] = useState("");
   const [newStudentCount, setNewStudentCount] = useState("");
+  const [newBuilding, setNewBuilding] = useState("");
 
   const getClassWithMainTeacher = (classId: string, teacherId?: string) => {
     const classInfo = classes.find(c => c.id === classId);
@@ -41,7 +43,7 @@ export default function ClassesPage() {
   };
 
   const handleAddClass = () => {
-    if (!newClassName || !newTeacherId || !newStudentCount) {
+    if (!newClassName || !newTeacherId || !newStudentCount || !newBuilding) {
         // Here you might want to show a toast or an error message.
         return;
     }
@@ -52,6 +54,7 @@ export default function ClassesPage() {
         mainTeacherId: newTeacherId,
         studentCount: parseInt(newStudentCount, 10),
         teacher: mockTeacherData.find(t => t.id === newTeacherId)?.name || 'N/A', //This is legacy
+        building: newBuilding,
     };
 
     setClasses([...classes, newClass]);
@@ -60,6 +63,7 @@ export default function ClassesPage() {
     setNewClassName("");
     setNewTeacherId("");
     setNewStudentCount("");
+    setNewBuilding("");
     setIsDialogOpen(false);
   };
 
@@ -91,6 +95,12 @@ export default function ClassesPage() {
                     Nom
                   </Label>
                   <Input id="name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} className="col-span-3" placeholder="Ex: Sixième A" />
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="building" className="text-right">
+                    Bâtiment
+                  </Label>
+                  <Input id="building" value={newBuilding} onChange={(e) => setNewBuilding(e.target.value)} className="col-span-3" placeholder="Ex: Bâtiment A" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="teacher" className="text-right">
@@ -132,6 +142,10 @@ export default function ClassesPage() {
                   <CardDescription>ID de la classe: {cls.id}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 flex-1">
+                   <div className="flex items-center text-sm text-muted-foreground">
+                    <Building className="mr-2 h-4 w-4 flex-shrink-0" />
+                    <span>Bâtiment: {cls.building}</span>
+                  </div>
                   <div className="flex items-center text-sm text-muted-foreground">
                     <User className="mr-2 h-4 w-4 flex-shrink-0" />
                     <span>Prof. principal: {mainTeacher?.name || 'Non assigné'}</span>

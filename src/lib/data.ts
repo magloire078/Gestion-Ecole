@@ -1,3 +1,4 @@
+
 export type Teacher = {
   id: string;
   name: string;
@@ -26,13 +27,14 @@ export type Class = {
   teacher: string;
   studentCount: number;
   mainTeacherId: string;
+  building: string;
 };
 
 export const mockClassData: Class[] = [
-  { id: 'C1', name: 'Terminale A', teacher: 'M. Dubois', studentCount: 25, mainTeacherId: 'T1' },
-  { id: 'C2', name: 'Terminale B', teacher: 'Mme. Martin', studentCount: 28, mainTeacherId: 'T2' },
-  { id: 'C3', name: 'Première S', teacher: 'M. Bernard', studentCount: 30, mainTeacherId: 'T3' },
-  { id: 'C4', name: 'Seconde L', teacher: 'Mme. Petit', studentCount: 22, mainTeacherId: 'T4' },
+  { id: 'C1', name: 'Terminale A', teacher: 'M. Dubois', studentCount: 25, mainTeacherId: 'T1', building: 'Bâtiment A' },
+  { id: 'C2', name: 'Terminale B', teacher: 'Mme. Martin', studentCount: 28, mainTeacherId: 'T2', building: 'Bâtiment A' },
+  { id: 'C3', name: 'Première S', teacher: 'M. Bernard', studentCount: 30, mainTeacherId: 'T3', building: 'Bâtiment B' },
+  { id: 'C4', name: 'Seconde L', teacher: 'Mme. Petit', studentCount: 22, mainTeacherId: 'T4', building: 'Bâtiment C' },
 ];
 
 // Teachers now have subjects, but are not tied to a single class.
