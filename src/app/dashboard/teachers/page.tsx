@@ -27,6 +27,16 @@ import {
   DialogFooter,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { useState } from "react";
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from "@/ai/flows/generate-teacher-recommendations";
 import { useToast } from "@/hooks/use-toast";
@@ -38,6 +48,7 @@ export default function TeachersPage() {
   const [teachers, setTeachers] = useState<Teacher[]>(mockTeacherData);
   const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false);
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [recommendation, setRecommendation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,6 +65,11 @@ export default function TeachersPage() {
     setRecommendation('');
     setTeacherSkills('');
     setIsRecommendDialogOpen(true);
+  };
+  
+  const handleOpenDeleteDialog = (teacher: Teacher) => {
+    setSelectedTeacher(teacher);
+    setIsDeleteDialogOpen(true);
   };
 
   const handleGenerateRecommendation = async () => {
@@ -120,6 +136,20 @@ export default function TeachersPage() {
     setNewTeacherSubject('');
     setNewTeacherEmail('');
     setIsAddTeacherDialogOpen(false);
+  };
+  
+  const handleDeleteTeacher = () => {
+    if (!selectedTeacher) return;
+    
+    setTeachers(teachers.filter(t => t.id !== selectedTeacher.id));
+
+    toast({
+      title: "Enseignant supprimé",
+      description: `${selectedTeacher.name} a été retiré(e) de la liste.`,
+    });
+
+    setIsDeleteDialogOpen(false);
+    setSelectedTeacher(null);
   };
 
 
@@ -203,7 +233,12 @@ export default function TeachersPage() {
                               <FileText className="mr-2 h-4 w-4" />
                               <span>Recommandation</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-destructive"
+                              onClick={() => handleOpenDeleteDialog(teacher)}
+                            >
+                                Supprimer
+                            </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -250,6 +285,21 @@ export default function TeachersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L'enseignant <strong>{selectedTeacher?.name}</strong> sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTeacher} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
