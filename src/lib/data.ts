@@ -20,7 +20,7 @@ export type Student = {
   name: string;
   class: string;
   feedback: string;
-  tuitionStatus: 'Payé' | 'En retard' | 'Partiel';
+  tuitionStatus: 'Soldé' | 'En retard' | 'Partiel';
   amountDue: number;
 };
 
@@ -93,12 +93,12 @@ export const mockTimetableData: TimetableEntry[] = [
 ];
 
 export const mockStudentData: Student[] = [
-  { id: 'S001', name: 'Alice Durand', class: 'Terminale A', feedback: 'Le cours de mathématiques est difficile mais M. Dubois explique très bien.', tuitionStatus: 'Payé', amountDue: 0 },
+  { id: 'S001', name: 'Alice Durand', class: 'Terminale A', feedback: 'Le cours de mathématiques est difficile mais M. Dubois explique très bien.', tuitionStatus: 'Soldé', amountDue: 0 },
   { id: 'S002', name: 'Bob Lemoine', class: 'Terminale A', feedback: 'J\'aimerais plus d\'exercices pratiques en mathématiques pour mieux me préparer.', tuitionStatus: 'En retard', amountDue: 197000 },
-  { id: 'S003', name: 'Charlie Roux', class: 'Terminale B', feedback: 'Mme. Martin est une excellente prof de français, ses cours sont passionnants.', tuitionStatus: 'Payé', amountDue: 0 },
+  { id: 'S003', name: 'Charlie Roux', class: 'Terminale B', feedback: 'Mme. Martin est une excellente prof de français, ses cours sont passionnants.', tuitionStatus: 'Soldé', amountDue: 0 },
   { id: 'S004', name: 'David Lefebvre', class: 'Première S', feedback: 'Les expériences en chimie sont le meilleur moment de la semaine.', tuitionStatus: 'Partiel', amountDue: 50000 },
-  { id: 'S005', name: 'Eve Moreau', class: 'Seconde L', feedback: 'Le cours d\'histoire est très intéressant, surtout la période contemporaine.', tuitionStatus: 'Payé', amountDue: 0 },
-  { id: 'S006', name: 'Félix Guichard', class: 'CM2', feedback: 'J\'aime beaucoup lire les livres de la bibliothèque.', tuitionStatus: 'Payé', amountDue: 0 },
+  { id: 'S005', name: 'Eve Moreau', class: 'Seconde L', feedback: 'Le cours d\'histoire est très intéressant, surtout la période contemporaine.', tuitionStatus: 'Soldé', amountDue: 0 },
+  { id: 'S006', name: 'Félix Guichard', class: 'CM2', feedback: 'J\'aime beaucoup lire les livres de la bibliothèque.', tuitionStatus: 'Soldé', amountDue: 0 },
 ];
 
 export const mockLibraryData: Book[] = [

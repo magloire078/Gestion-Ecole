@@ -62,7 +62,7 @@ type Summary = {
     keyImprovementAreas: string;
 };
 
-type TuitionStatus = 'Payé' | 'En retard' | 'Partiel';
+type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 type Sentiment = 'Positif' | 'Neutre' | 'Négatif';
 
 export default function StudentsPage() {
@@ -80,7 +80,7 @@ export default function StudentsPage() {
   const [newStudentClassId, setNewStudentClassId] = useState('');
   const [newStudentFeedback, setNewStudentFeedback] = useState('');
   const [newStudentAmountDue, setNewStudentAmountDue] = useState('');
-  const [newStudentTuitionStatus, setNewStudentTuitionStatus] = useState<TuitionStatus>('Payé');
+  const [newStudentTuitionStatus, setNewStudentTuitionStatus] = useState<TuitionStatus>('Soldé');
   
   // Edit Student State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -163,7 +163,7 @@ export default function StudentsPage() {
     setNewStudentClassId('');
     setNewStudentFeedback('');
     setNewStudentAmountDue('');
-    setNewStudentTuitionStatus('Payé');
+    setNewStudentTuitionStatus('Soldé');
   };
 
   const handleAddStudent = async () => {
@@ -261,8 +261,8 @@ export default function StudentsPage() {
   
   const TuitionStatusBadge = ({ status }: { status: TuitionStatus }) => {
     switch (status) {
-      case 'Payé':
-        return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">Payé</Badge>;
+      case 'Soldé':
+        return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">Soldé</Badge>;
       case 'En retard':
         return <Badge variant="destructive">En retard</Badge>;
       case 'Partiel':
@@ -340,7 +340,7 @@ export default function StudentsPage() {
                           <SelectValue placeholder="Statut du paiement" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="Payé">Payé</SelectItem>
+                            <SelectItem value="Soldé">Soldé</SelectItem>
                             <SelectItem value="En retard">En retard</SelectItem>
                             <SelectItem value="Partiel">Partiel</SelectItem>
                         </SelectContent>
@@ -507,7 +507,7 @@ export default function StudentsPage() {
                   <SelectValue placeholder="Statut du paiement" />
                 </SelectTrigger>
                 <SelectContent>
-                    <SelectItem value="Payé">Payé</SelectItem>
+                    <SelectItem value="Soldé">Soldé</SelectItem>
                     <SelectItem value="En retard">En retard</SelectItem>
                     <SelectItem value="Partiel">Partiel</SelectItem>
                 </SelectContent>

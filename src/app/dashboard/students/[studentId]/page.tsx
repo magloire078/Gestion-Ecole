@@ -10,12 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { User, BookUser, Building, Hash, Wallet, MessageSquare, BadgeCent } from 'lucide-react';
 import { useMemo } from 'react';
 
-type TuitionStatus = 'Payé' | 'En retard' | 'Partiel';
+type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
 const TuitionStatusBadge = ({ status }: { status: TuitionStatus }) => {
   switch (status) {
-    case 'Payé':
-      return <Badge variant="secondary" className="text-base bg-emerald-100 text-emerald-800">Payé</Badge>;
+    case 'Soldé':
+      return <Badge variant="secondary" className="text-base bg-emerald-100 text-emerald-800">Soldé</Badge>;
     case 'En retard':
       return <Badge variant="destructive" className="text-base">En retard</Badge>;
     case 'Partiel':

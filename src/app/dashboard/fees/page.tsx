@@ -23,12 +23,12 @@ import type { Student } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 
-type TuitionStatus = 'Payé' | 'En retard' | 'Partiel';
+type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
 const TuitionStatusBadge = ({ status }: { status: TuitionStatus }) => {
   switch (status) {
-    case 'Payé':
-      return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">Payé</Badge>;
+    case 'Soldé':
+      return <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">Soldé</Badge>;
     case 'En retard':
       return <Badge variant="destructive">En retard</Badge>;
     case 'Partiel':
@@ -94,7 +94,7 @@ export default function FeesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="Payé">Payé</SelectItem>
+                  <SelectItem value="Soldé">Soldé</SelectItem>
                   <SelectItem value="En retard">En retard</SelectItem>
                   <SelectItem value="Partiel">Partiel</SelectItem>
                 </SelectContent>
