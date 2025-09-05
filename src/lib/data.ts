@@ -32,6 +32,14 @@ export type Class = {
   building: string;
 };
 
+export type Book = {
+  id: string;
+  title: string;
+  author: string;
+  quantity: number;
+};
+
+
 export const mockClassData: Class[] = [
   { id: 'C1', name: 'Terminale A', studentCount: 25, mainTeacherId: 'T1', building: 'Bâtiment A' },
   { id: 'C2', name: 'Terminale B', studentCount: 28, mainTeacherId: 'T2', building: 'Bâtiment A' },
@@ -74,7 +82,7 @@ export const mockStudentData: Student[] = [
   { id: 'S005', name: 'Eve Moreau', class: 'Seconde L', feedback: 'Le cours d\'histoire est très intéressant, surtout la période contemporaine.', tuitionStatus: 'Payé', amountDue: 0 },
 ];
 
-export const mockLibraryData = [
+export const mockLibraryData: Book[] = [
   { id: 'L1', title: 'Les Misérables', author: 'Victor Hugo', quantity: 5 },
   { id: 'L2', title: 'L\'Étranger', author: 'Albert Camus', quantity: 3 },
   { id: 'L3', title: 'Le Petit Prince', author: 'Antoine de Saint-Exupéry', quantity: 10 },
