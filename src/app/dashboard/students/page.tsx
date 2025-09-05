@@ -27,6 +27,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -380,7 +381,7 @@ export default function StudentsPage() {
                               <TuitionStatusBadge status={student.tuitionStatus} />
                           </TableCell>
                           <TableCell className="text-right font-mono">
-                              {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString()} CFA` : `${student.amountDue} CFA`) : '-'}
+                              {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString('fr-FR')} CFA` : `${student.amountDue} CFA`) : '-'}
                           </TableCell>
                           <TableCell className="text-center">
                             <SentimentIcon sentiment={sentiments[student.id]} />
@@ -538,5 +539,3 @@ export default function StudentsPage() {
     </>
   );
 }
-
-    
