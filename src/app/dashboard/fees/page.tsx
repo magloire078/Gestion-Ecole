@@ -187,10 +187,11 @@ export default function FeesPage() {
                 </TableRow>
               )}
                <TableRow className="font-bold bg-muted/50">
-                    <TableCell colSpan={4} className="text-right">Total dû (filtré)</TableCell>
+                    <TableCell colSpan={3} className="text-right">Total dû (filtré)</TableCell>
                     <TableCell className="text-right font-mono text-lg text-primary">
                         {isClient ? totalDue.toLocaleString('fr-FR') : totalDue} CFA
                     </TableCell>
+                    <TableCell></TableCell>
                 </TableRow>
             </TableBody>
           </Table>
