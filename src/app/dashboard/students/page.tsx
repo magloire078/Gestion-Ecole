@@ -14,8 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { mockStudentData, mockClassData } from "@/lib/data";
-import { PlusCircle, Bot, Smile, Meh, Frown } from "lucide-react";
-import { useState, useEffect } from "react";
+import { PlusCircle, Bot, Smile, Meh, Frown, Sparkles } from "lucide-react";
+import { useState } from "react";
 import { summarizeStudentFeedback } from "@/ai/flows/summarize-student-feedback";
 import { analyzeStudentSentiment } from "@/ai/flows/analyze-student-sentiment";
 import { useToast } from "@/hooks/use-toast";
@@ -48,7 +48,8 @@ export default function StudentsPage() {
   const [students, setStudents] = useState<Student[]>(mockStudentData);
   const [feedbackText, setFeedbackText] = useState('');
   const [summary, setSummary] = useState<Summary | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [sentiments, setSentiments] = useState<Record<string, Sentiment | null>>({});
   const { toast } = useToast();
 
@@ -58,32 +59,38 @@ export default function StudentsPage() {
   const [newStudentFeedback, setNewStudentFeedback] = useState('');
 
 
-  useEffect(() => {
-    const fetchSentiments = async () => {
-      const newSentiments: Record<string, Sentiment | null> = {};
-      for (const student of students) {
-        if (student.feedback) {
-            try {
+  const handleAnalyzeSentiments = async () => {
+    setIsAnalyzing(true);
+    const newSentiments: Record<string, Sentiment | null> = {};
+    for (const student of students) {
+      if (student.feedback && !sentiments[student.id]) { // Avoid re-analyzing
+          try {
+            await new Promise(resolve => setTimeout(resolve, 500)); // Add a small delay between requests
             const result = await analyzeStudentSentiment({ feedbackText: student.feedback });
             newSentiments[student.id] = result.sentiment as Sentiment;
-            } catch (error) {
+          } catch (error) {
             console.error(`Failed to analyze sentiment for student ${student.id}:`, error);
             newSentiments[student.id] = null;
-            }
-        } else {
-            newSentiments[student.id] = null;
-        }
+            toast({
+              variant: "destructive",
+              title: "Erreur d'analyse",
+              description: `Impossible d'analyser le sentiment pour ${student.name}.`,
+            });
+          }
       }
-      setSentiments(newSentiments);
-    };
-
-    fetchSentiments();
-  }, [students]);
+    }
+    setSentiments(prev => ({...prev, ...newSentiments}));
+    setIsAnalyzing(false);
+    toast({
+        title: "Analyse terminée",
+        description: "Les sentiments des feedbacks ont été analysés.",
+      });
+  };
 
 
   const handleSummarize = async () => {
     if (!feedbackText.trim()) return;
-    setIsLoading(true);
+    setIsSummarizing(true);
     setSummary(null);
     try {
       const result = await summarizeStudentFeedback({ feedbackText });
@@ -100,7 +107,7 @@ export default function StudentsPage() {
         description: "Impossible de générer le résumé.",
       });
     } finally {
-      setIsLoading(false);
+      setIsSummarizing(false);
     }
   };
 
@@ -144,7 +151,7 @@ export default function StudentsPage() {
       case 'Négatif':
         return <Frown className="h-5 w-5 text-red-500" />;
       default:
-        return null;
+        return <span className="text-muted-foreground">-</span>;
     }
   };
 
@@ -152,59 +159,65 @@ export default function StudentsPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center gap-4">
           <div>
             <h1 className="text-lg font-semibold md:text-2xl">Liste des Élèves</h1>
             <p className="text-muted-foreground">Consultez et gérez les élèves inscrits.</p>
           </div>
-          <Dialog open={isAddStudentDialogOpen} onOpenChange={setIsAddStudentDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un élève
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Ajouter un nouvel élève</DialogTitle>
-                <DialogDescription>
-                  Renseignez les informations du nouvel élève.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="student-name" className="text-right">
-                    Nom
-                  </Label>
-                  <Input id="student-name" value={newStudentName} onChange={(e) => setNewStudentName(e.target.value)} className="col-span-3" placeholder="Ex: Jean Dupont" />
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={handleAnalyzeSentiments} disabled={isAnalyzing}>
+              <Sparkles className="mr-2 h-4 w-4" />
+              {isAnalyzing ? "Analyse..." : "Analyser les sentiments"}
+            </Button>
+            <Dialog open={isAddStudentDialogOpen} onOpenChange={setIsAddStudentDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un élève
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Ajouter un nouvel élève</DialogTitle>
+                  <DialogDescription>
+                    Renseignez les informations du nouvel élève.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="student-name" className="text-right">
+                      Nom
+                    </Label>
+                    <Input id="student-name" value={newStudentName} onChange={(e) => setNewStudentName(e.target.value)} className="col-span-3" placeholder="Ex: Jean Dupont" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="student-class" className="text-right">
+                      Classe
+                    </Label>
+                    <Select onValueChange={setNewStudentClassId} value={newStudentClassId}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionner une classe" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockClassData.map((cls) => (
+                          <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="student-feedback" className="text-right">
+                      Feedback
+                    </Label>
+                    <Textarea id="student-feedback" value={newStudentFeedback} onChange={(e) => setNewStudentFeedback(e.target.value)} className="col-span-3" placeholder="Feedback initial (optionnel)"/>
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="student-class" className="text-right">
-                    Classe
-                  </Label>
-                   <Select onValueChange={setNewStudentClassId} value={newStudentClassId}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Sélectionner une classe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockClassData.map((cls) => (
-                        <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="student-feedback" className="text-right">
-                    Feedback
-                  </Label>
-                  <Textarea id="student-feedback" value={newStudentFeedback} onChange={(e) => setNewStudentFeedback(e.target.value)} className="col-span-3" placeholder="Feedback initial (optionnel)"/>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddStudentDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleAddStudent}>Ajouter l'élève</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsAddStudentDialogOpen(false)}>Annuler</Button>
+                  <Button onClick={handleAddStudent}>Ajouter l'élève</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <Card>
             <CardContent className="p-0">
@@ -253,9 +266,9 @@ export default function StudentsPage() {
                 rows={5}
               />
             </div>
-            <Button onClick={handleSummarize} disabled={isLoading || !feedbackText.trim()} className="w-full bg-accent hover:bg-accent/90">
+            <Button onClick={handleSummarize} disabled={isSummarizing || !feedbackText.trim()} className="w-full bg-accent hover:bg-accent/90">
               <Bot className="mr-2 h-4 w-4" />
-              {isLoading ? 'Analyse en cours...' : 'Générer le résumé'}
+              {isSummarizing ? 'Analyse en cours...' : 'Générer le résumé'}
             </Button>
             {summary && (
               <div className="space-y-4 rounded-lg border bg-muted p-4">
