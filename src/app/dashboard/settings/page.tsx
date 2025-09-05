@@ -10,27 +10,31 @@ import { useState, useEffect } from "react";
 
 const SCHOOL_NAME_KEY = 'schoolName';
 const DIRECTOR_NAME_KEY = 'directorName';
+const FOUNDER_NAME_KEY = 'founderName';
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const [schoolName, setSchoolName] = useState("GèreEcole");
   const [directorName, setDirectorName] = useState("Jean Dupont");
+  const [founderName, setFounderName] = useState("");
 
   useEffect(() => {
     const savedSchoolName = localStorage.getItem(SCHOOL_NAME_KEY);
     const savedDirectorName = localStorage.getItem(DIRECTOR_NAME_KEY);
+    const savedFounderName = localStorage.getItem(FOUNDER_NAME_KEY);
 
-    if (savedSchoolName) {
-      setSchoolName(savedSchoolName);
-    }
-    if (savedDirectorName) {
-      setDirectorName(savedDirectorName);
-    }
+    if (savedSchoolName) setSchoolName(savedSchoolName);
+    if (savedDirectorName) setDirectorName(savedDirectorName);
+    if (savedFounderName) setFounderName(savedFounderName);
   }, []);
 
   const handleSaveChanges = () => {
     localStorage.setItem(SCHOOL_NAME_KEY, schoolName);
     localStorage.setItem(DIRECTOR_NAME_KEY, directorName);
+    localStorage.setItem(FOUNDER_NAME_KEY, founderName);
+
+    // Dispatch a custom event to notify other components of the change
+    window.dispatchEvent(new CustomEvent('settings-updated'));
 
     toast({
       title: "Paramètres enregistrés",
@@ -68,6 +72,15 @@ export default function SettingsPage() {
               value={directorName}
               onChange={(e) => setDirectorName(e.target.value)}
               placeholder="Nom du directeur ou de la directrice" 
+            />
+          </div>
+           <div className="space-y-2">
+            <Label htmlFor="founder-name">Nom du fondateur (optionnel)</Label>
+            <Input 
+              id="founder-name" 
+              value={founderName}
+              onChange={(e) => setFounderName(e.target.value)}
+              placeholder="Nom du fondateur ou de la fondatrice" 
             />
           </div>
         </CardContent>

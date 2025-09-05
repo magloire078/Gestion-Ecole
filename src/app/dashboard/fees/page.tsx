@@ -22,6 +22,12 @@ import { mockStudentData, mockClassData } from "@/lib/data";
 import type { Student } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { Pencil } from "lucide-react";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
@@ -39,14 +45,27 @@ const TuitionStatusBadge = ({ status }: { status: TuitionStatus }) => {
 };
 
 export default function FeesPage() {
-  const [students] = useState<Student[]>(mockStudentData);
+  const [students, setStudents] = useState<Student[]>(mockStudentData);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isClient, setIsClient] = useState(false);
+  const [isManageFeeDialogOpen, setIsManageFeeDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [currentAmountDue, setCurrentAmountDue] = useState('');
+  const [currentTuitionStatus, setCurrentTuitionStatus] = useState<TuitionStatus>('Soldé');
+  const { toast } = useToast();
+  
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+  
+  useEffect(() => {
+    if (selectedStudent) {
+        setCurrentAmountDue(String(selectedStudent.amountDue));
+        setCurrentTuitionStatus(selectedStudent.tuitionStatus);
+    }
+  }, [selectedStudent]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -59,12 +78,36 @@ export default function FeesPage() {
   const totalDue = useMemo(() => {
     return filteredStudents.reduce((acc, student) => acc + student.amountDue, 0);
   }, [filteredStudents]);
+  
+  const handleOpenManageDialog = (student: Student) => {
+    setSelectedStudent(student);
+    setIsManageFeeDialogOpen(true);
+  };
+  
+  const handleSaveChanges = () => {
+    if (!selectedStudent) return;
+    
+    setStudents(students.map(s => 
+        s.id === selectedStudent.id 
+        ? { ...s, amountDue: parseFloat(currentAmountDue) || 0, tuitionStatus: currentTuitionStatus }
+        : s
+    ));
+    
+    toast({
+        title: "Scolarité mise à jour",
+        description: `Les informations de paiement pour ${selectedStudent.name} ont été enregistrées.`
+    });
+    
+    setIsManageFeeDialogOpen(false);
+    setSelectedStudent(null);
+  }
 
   return (
+    <>
     <div className="space-y-6">
       <div>
         <h1 className="text-lg font-semibold md:text-2xl">Suivi de la Scolarité</h1>
-        <p className="text-muted-foreground">Consultez le statut des paiements de scolarité pour tous les élèves.</p>
+        <p className="text-muted-foreground">Consultez et gérez le statut des paiements de scolarité pour tous les élèves.</p>
       </div>
 
       <Card>
@@ -110,6 +153,7 @@ export default function FeesPage() {
                 <TableHead>Classe</TableHead>
                 <TableHead className="text-center">Statut du paiement</TableHead>
                 <TableHead className="text-right">Solde dû</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -128,17 +172,22 @@ export default function FeesPage() {
                     <TableCell className="text-right font-mono">
                       {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString('fr-FR')} CFA` : `${student.amountDue} CFA`) : '-'}
                     </TableCell>
+                    <TableCell className="text-right">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
+                           <Pencil className="mr-2 h-3 w-3" /> Gérer
+                        </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
                     Aucun élève ne correspond aux filtres sélectionnés.
                   </TableCell>
                 </TableRow>
               )}
                <TableRow className="font-bold bg-muted/50">
-                    <TableCell colSpan={3} className="text-right">Total dû (filtré)</TableCell>
+                    <TableCell colSpan={4} className="text-right">Total dû (filtré)</TableCell>
                     <TableCell className="text-right font-mono text-lg text-primary">
                         {isClient ? totalDue.toLocaleString('fr-FR') : totalDue} CFA
                     </TableCell>
@@ -148,5 +197,51 @@ export default function FeesPage() {
         </CardContent>
       </Card>
     </div>
+    
+     <Dialog open={isManageFeeDialogOpen} onOpenChange={setIsManageFeeDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gérer la scolarité de {selectedStudent?.name}</DialogTitle>
+            <DialogDescription>
+              Mettez à jour le statut et le solde dû pour cet élève.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tuition-status" className="text-right">
+                Statut
+              </Label>
+              <Select onValueChange={(value) => setCurrentTuitionStatus(value as any)} value={currentTuitionStatus}>
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Statut du paiement" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Soldé">Soldé</SelectItem>
+                  <SelectItem value="En retard">En retard</SelectItem>
+                  <SelectItem value="Partiel">Partiel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="amount-due" className="text-right">
+                Solde dû (CFA)
+              </Label>
+              <Input
+                id="amount-due"
+                type="number"
+                value={currentAmountDue}
+                onChange={(e) => setCurrentAmountDue(e.target.value)}
+                className="col-span-3"
+                placeholder="Ex: 50000"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsManageFeeDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleSaveChanges}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
