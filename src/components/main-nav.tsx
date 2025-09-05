@@ -11,7 +11,7 @@ const menuItems = [
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
   { href: '/dashboard/reports', label: 'Bulletins', icon: NotebookText },
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
-  { href: ' /dashboard/library', label: 'Bibliothèque', icon: BookOpen },
+  { href: '/dashboard/library', label: 'Bibliothèque', icon: BookOpen },
   { href: '/dashboard/fees', label: 'Scolarité', icon: Wallet },
 ];
 
