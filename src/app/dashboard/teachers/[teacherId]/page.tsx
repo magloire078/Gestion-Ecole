@@ -6,12 +6,15 @@ import { mockTeacherData, mockStudentPerformanceData } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookUser, Mail, Book, Bot } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from '@/ai/flows/generate-teacher-recommendations';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+
+const SCHOOL_NAME_KEY = 'schoolName';
+const DIRECTOR_NAME_KEY = 'directorName';
 
 export default function TeacherProfilePage() {
   const params = useParams();
@@ -32,6 +35,10 @@ export default function TeacherProfilePage() {
     setIsLoading(true);
     setRecommendation('');
 
+    // Fetch school settings from localStorage
+    const schoolName = localStorage.getItem(SCHOOL_NAME_KEY) || 'GèreEcole';
+    const directorName = localStorage.getItem(DIRECTOR_NAME_KEY) || 'Jean Dupont';
+
     try {
       const skillsArray = teacherSkills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
       
@@ -39,8 +46,8 @@ export default function TeacherProfilePage() {
         teacherName: teacher.name,
         className: teacher.class || 'N/A',
         studentPerformanceData: mockStudentPerformanceData[teacher.subject] || "Aucune donnée de performance disponible.",
-        directorName: 'Jean Dupont', // Mock director name
-        schoolName: 'GèreEcole',     // Mock school name
+        directorName: directorName, 
+        schoolName: schoolName,
         teacherSkills: skillsArray.length > 0 ? skillsArray : ['Excellente communication', 'Pédagogie adaptée', 'Gestion de classe efficace'],
       };
 
@@ -135,4 +142,3 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
-

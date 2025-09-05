@@ -14,18 +14,16 @@ const FOUNDER_NAME_KEY = 'founderName';
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const [schoolName, setSchoolName] = useState("GèreEcole");
-  const [directorName, setDirectorName] = useState("Jean Dupont");
+  const [schoolName, setSchoolName] = useState("");
+  const [directorName, setDirectorName] = useState("");
   const [founderName, setFounderName] = useState("");
+  const [userEmail, setUserEmail] = useState("directeur@ecole.com");
 
   useEffect(() => {
-    const savedSchoolName = localStorage.getItem(SCHOOL_NAME_KEY);
-    const savedDirectorName = localStorage.getItem(DIRECTOR_NAME_KEY);
-    const savedFounderName = localStorage.getItem(FOUNDER_NAME_KEY);
-
-    if (savedSchoolName) setSchoolName(savedSchoolName);
-    if (savedDirectorName) setDirectorName(savedDirectorName);
-    if (savedFounderName) setFounderName(savedFounderName);
+    // We need to wait for the component to mount before accessing localStorage
+    setSchoolName(localStorage.getItem(SCHOOL_NAME_KEY) || "GèreEcole");
+    setDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || "Jean Dupont");
+    setFounderName(localStorage.getItem(FOUNDER_NAME_KEY) || "");
   }, []);
 
   const handleSaveChanges = () => {
@@ -100,7 +98,7 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-2 mt-4">
                 <Label>Email</Label>
-                <Input value="directeur@ecole.com" disabled />
+                <Input value={userEmail} disabled />
             </div>
         </CardContent>
       </Card>
