@@ -160,7 +160,10 @@ export default function LibraryPage() {
             <h1 className="text-lg font-semibold md:text-2xl">Inventaire de la Bibliothèque</h1>
             <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
+              if(!isOpen) resetForm();
+              setIsAddDialogOpen(isOpen)
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un livre
@@ -244,7 +247,10 @@ export default function LibraryPage() {
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
+          if(!isOpen) setEditingBook(null);
+          setIsEditDialogOpen(isOpen);
+      }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Modifier le livre</DialogTitle>
