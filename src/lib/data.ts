@@ -1,23 +1,50 @@
 export type Teacher = {
   id: string;
   name: string;
-  class: string;
+  class?: string; // class is now optional as a teacher can teach multiple classes
   subject: string;
   email: string;
 };
 
+export type TimetableEntry = {
+  id: string;
+  classId: string;
+  teacherId: string;
+  subject: string;
+};
+
 export const mockClassData = [
-  { id: 'C1', name: 'Terminale A', teacher: 'M. Dubois', studentCount: 25 },
-  { id: 'C2', name: 'Terminale B', teacher: 'Mme. Martin', studentCount: 28 },
-  { id: 'C3', name: 'Première S', teacher: 'M. Bernard', studentCount: 30 },
-  { id: 'C4', name: 'Seconde L', teacher: 'Mme. Petit', studentCount: 22 },
+  { id: 'C1', name: 'Terminale A', teacher: 'M. Dubois', studentCount: 25, mainTeacherId: 'T1' },
+  { id: 'C2', name: 'Terminale B', teacher: 'Mme. Martin', studentCount: 28, mainTeacherId: 'T2' },
+  { id: 'C3', name: 'Première S', teacher: 'M. Bernard', studentCount: 30, mainTeacherId: 'T3' },
+  { id: 'C4', name: 'Seconde L', teacher: 'Mme. Petit', studentCount: 22, mainTeacherId: 'T4' },
 ];
 
+// Teachers now have subjects, but are not tied to a single class.
+// The 'class' property can be removed or re-interpreted as 'main class supervised'.
 export const mockTeacherData: Teacher[] = [
-  { id: 'T1', name: 'Laurent Dubois', class: 'Terminale A', subject: 'Mathématiques', email: 'l.dubois@ecole.com' },
-  { id: 'T2', name: 'Sophie Martin', class: 'Terminale B', subject: 'Français', email: 's.martin@ecole.com' },
-  { id: 'T3', name: 'Paul Bernard', class: 'Première S', subject: 'Physique-Chimie', email: 'p.bernard@ecole.com' },
-  { id: 'T4', name: 'Hélène Petit', class: 'Seconde L', subject: 'Histoire-Géographie', email: 'h.petit@ecole.com' },
+  { id: 'T1', name: 'Laurent Dubois', subject: 'Mathématiques', email: 'l.dubois@ecole.com', class: 'Terminale A' },
+  { id: 'T2', name: 'Sophie Martin', subject: 'Français', email: 's.martin@ecole.com', class: 'Terminale B' },
+  { id: 'T3', name: 'Paul Bernard', subject: 'Physique-Chimie', email: 'p.bernard@ecole.com', class: 'Première S' },
+  { id: 'T4', name: 'Hélène Petit', subject: 'Histoire-Géographie', email: 'h.petit@ecole.com', class: 'Seconde L' },
+  { id: 'T5', name: 'Anne-Marie Dupont', subject: 'Anglais', email: 'am.dupont@ecole.com' },
+  { id: 'T6', name: 'Pierre Simon', subject: 'Philosophie', email: 'p.simon@ecole.com' },
+  { id: 'T7', name: 'Isabelle Lefevre', subject: 'SVT', email: 'i.lefevre@ecole.com' },
+];
+
+export const mockTimetableData: TimetableEntry[] = [
+    { id: 'TT1', classId: 'C1', teacherId: 'T1', subject: 'Mathématiques' },
+    { id: 'TT2', classId: 'C1', teacherId: 'T2', subject: 'Français' },
+    { id: 'TT3', classId: 'C1', teacherId: 'T6', subject: 'Philosophie' },
+    { id: 'TT4', classId: 'C1', teacherId: 'T5', subject: 'Anglais' },
+    { id: 'TT5', classId: 'C2', teacherId: 'T2', subject: 'Français' },
+    { id: 'TT6', classId: 'C2', teacherId: 'T1', subject: 'Mathématiques' },
+    { id: 'TT7', classId: 'C2', teacherId: 'T5', subject: 'Anglais' },
+    { id: 'TT8', classId: 'C3', teacherId: 'T3', subject: 'Physique-Chimie' },
+    { id: 'TT9', classId: 'C3', teacherId: 'T7', subject: 'SVT' },
+    { id: 'TT10', classId: 'C3', teacherId: 'T1', subject: 'Mathématiques' },
+    { id: 'TT11', classId: 'C4', teacherId: 'T4', subject: 'Histoire-Géographie' },
+    { id: 'TT12', classId: 'C4', teacherId: 'T2', subject: 'Français' },
 ];
 
 export const mockStudentData = [

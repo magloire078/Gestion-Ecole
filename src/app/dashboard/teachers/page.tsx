@@ -53,7 +53,7 @@ export default function TeachersPage() {
     try {
       const input: GenerateTeacherRecommendationsInput = {
         teacherName: selectedTeacher.name,
-        className: selectedTeacher.class,
+        className: selectedTeacher.class || 'N/A', // Use optional class property
         studentPerformanceData: mockStudentPerformanceData[selectedTeacher.subject] || "Aucune donnée de performance disponible.",
         directorName: 'Jean Dupont', // Mock director name
         schoolName: 'GèreEcole',     // Mock school name
@@ -97,7 +97,7 @@ export default function TeachersPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nom</TableHead>
-                    <TableHead className="hidden md:table-cell">Classe Assignée</TableHead>
+                    <TableHead className="hidden md:table-cell">Classe Principale</TableHead>
                     <TableHead className="hidden lg:table-cell">Matière</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -107,7 +107,7 @@ export default function TeachersPage() {
                   {mockTeacherData.map((teacher) => (
                     <TableRow key={teacher.id}>
                       <TableCell className="font-medium">{teacher.name}</TableCell>
-                      <TableCell className="hidden md:table-cell">{teacher.class}</TableCell>
+                      <TableCell className="hidden md:table-cell">{teacher.class || 'N/A'}</TableCell>
                       <TableCell className="hidden lg:table-cell">{teacher.subject}</TableCell>
                       <TableCell>{teacher.email}</TableCell>
                       <TableCell className="text-right">
@@ -140,7 +140,7 @@ export default function TeachersPage() {
           <DialogHeader>
             <DialogTitle>Générer une Lettre de Recommandation</DialogTitle>
             <DialogDescription>
-              Lettre pour <strong>{selectedTeacher?.name}</strong>, enseignant(e) de <strong>{selectedTeacher?.subject}</strong> en classe de <strong>{selectedTeacher?.class}</strong>.
+              Lettre pour <strong>{selectedTeacher?.name}</strong>, enseignant(e) de <strong>{selectedTeacher?.subject}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
