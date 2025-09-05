@@ -329,7 +329,7 @@ export default function ClassesPage() {
               <Label htmlFor="edit-cycle" className="text-right">
                 Cycle
               </Label>
-               <Select onValueChange={setNewCycle} value={newCycle}>
+               <Select onValuechange={setNewCycle} value={newCycle}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Sélectionner un cycle" />
                 </SelectTrigger>
