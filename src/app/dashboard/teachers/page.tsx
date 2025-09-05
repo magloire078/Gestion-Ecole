@@ -24,24 +24,33 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from "@/ai/flows/generate-teacher-recommendations";
 import { useToast } from "@/hooks/use-toast";
 import type { Teacher } from "@/lib/data";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function TeachersPage() {
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [teachers, setTeachers] = useState<Teacher[]>(mockTeacherData);
+  const [isRecommendDialogOpen, setIsRecommendDialogOpen] = useState(false);
+  const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
   const [recommendation, setRecommendation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleOpenDialog = (teacher: Teacher) => {
+  const [newTeacherName, setNewTeacherName] = useState('');
+  const [newTeacherSubject, setNewTeacherSubject] = useState('');
+  const [newTeacherEmail, setNewTeacherEmail] = useState('');
+
+  const handleOpenRecommendDialog = (teacher: Teacher) => {
     setSelectedTeacher(teacher);
     setRecommendation('');
-    setIsDialogOpen(true);
+    setIsRecommendDialogOpen(true);
   };
 
   const handleGenerateRecommendation = async () => {
@@ -77,6 +86,36 @@ export default function TeachersPage() {
       setIsLoading(false);
     }
   };
+  
+  const handleAddTeacher = () => {
+    if (!newTeacherName || !newTeacherSubject || !newTeacherEmail) {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Tous les champs sont requis.",
+      });
+      return;
+    }
+
+    const newTeacher: Teacher = {
+      id: `T${teachers.length + 1}`,
+      name: newTeacherName,
+      subject: newTeacherSubject,
+      email: newTeacherEmail,
+    };
+
+    setTeachers([...teachers, newTeacher]);
+
+    toast({
+      title: "Enseignant ajouté",
+      description: `${newTeacherName} a été ajouté(e) avec succès.`,
+    });
+
+    setNewTeacherName('');
+    setNewTeacherSubject('');
+    setNewTeacherEmail('');
+    setIsAddTeacherDialogOpen(false);
+  };
 
 
   return (
@@ -87,9 +126,45 @@ export default function TeachersPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Liste des Enseignants</h1>
               <p className="text-muted-foreground">Gérez les enseignants de votre école.</p>
           </div>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un enseignant
-          </Button>
+          <Dialog open={isAddTeacherDialogOpen} onOpenChange={setIsAddTeacherDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un enseignant
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Ajouter un nouvel enseignant</DialogTitle>
+                <DialogDescription>
+                  Renseignez les informations du nouvel enseignant.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="teacher-name" className="text-right">
+                    Nom
+                  </Label>
+                  <Input id="teacher-name" value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)} className="col-span-3" placeholder="Ex: Marie Curie" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="teacher-subject" className="text-right">
+                    Matière
+                  </Label>
+                   <Input id="teacher-subject" value={newTeacherSubject} onChange={(e) => setNewTeacherSubject(e.target.value)} className="col-span-3" placeholder="Ex: Physique"/>
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="teacher-email" className="text-right">
+                    Email
+                  </Label>
+                  <Input id="teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddTeacherDialogOpen(false)}>Annuler</Button>
+                <Button onClick={handleAddTeacher}>Ajouter</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
         <Card>
             <CardContent className="p-0">
@@ -104,7 +179,7 @@ export default function TeachersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockTeacherData.map((teacher) => (
+                  {teachers.map((teacher) => (
                     <TableRow key={teacher.id}>
                       <TableCell className="font-medium">{teacher.name}</TableCell>
                       <TableCell className="hidden md:table-cell">{teacher.class || 'N/A'}</TableCell>
@@ -119,7 +194,7 @@ export default function TeachersPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem>Modifier</DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => handleOpenDialog(teacher)}>
+                             <DropdownMenuItem onClick={() => handleOpenRecommendDialog(teacher)}>
                               <FileText className="mr-2 h-4 w-4" />
                               <span>Recommandation</span>
                             </DropdownMenuItem>
@@ -135,7 +210,7 @@ export default function TeachersPage() {
         </Card>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isRecommendDialogOpen} onOpenChange={setIsRecommendDialogOpen}>
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Générer une Lettre de Recommandation</DialogTitle>
@@ -157,7 +232,7 @@ export default function TeachersPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Fermer</Button>
+            <Button variant="outline" onClick={() => setIsRecommendDialogOpen(false)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

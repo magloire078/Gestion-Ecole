@@ -20,7 +20,15 @@ export type Student = {
   feedback: string;
 };
 
-export const mockClassData = [
+export type Class = {
+  id: string;
+  name: string;
+  teacher: string;
+  studentCount: number;
+  mainTeacherId: string;
+};
+
+export const mockClassData: Class[] = [
   { id: 'C1', name: 'Terminale A', teacher: 'M. Dubois', studentCount: 25, mainTeacherId: 'T1' },
   { id: 'C2', name: 'Terminale B', teacher: 'Mme. Martin', studentCount: 28, mainTeacherId: 'T2' },
   { id: 'C3', name: 'Première S', teacher: 'M. Bernard', studentCount: 30, mainTeacherId: 'T3' },
