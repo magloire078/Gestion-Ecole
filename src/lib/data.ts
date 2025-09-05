@@ -15,8 +15,18 @@ export type TimetableEntry = {
 
 export type Student = {
   id: string;
+  matricule: string;
   name: string;
   class: string;
+  dateOfBirth: string;
+  placeOfBirth: string;
+  previousSchool?: string;
+  parent1Name: string;
+  parent1Contact: string;
+  parent2Name?: string;
+  parent2Contact?: string;
+  guardianName?: string;
+  guardianContact?: string;
   feedback: string;
   tuitionStatus: 'Soldé' | 'En retard' | 'Partiel';
   amountDue: number;
@@ -98,12 +108,90 @@ export const mockTimetableData: TimetableEntry[] = [
 ];
 
 export const mockStudentData: Student[] = [
-  { id: 'S001', name: 'Alice Durand', class: 'Terminale A', feedback: 'Le cours de mathématiques est difficile mais M. Dubois explique très bien.', tuitionStatus: 'Soldé', amountDue: 0 },
-  { id: 'S002', name: 'Bob Lemoine', class: 'Terminale A', feedback: 'J\'aimerais plus d\'exercices pratiques en mathématiques pour mieux me préparer.', tuitionStatus: 'En retard', amountDue: 197000 },
-  { id: 'S003', name: 'Charlie Roux', class: 'Terminale B', feedback: 'Mme. Martin est une excellente prof de français, ses cours sont passionnants.', tuitionStatus: 'Soldé', amountDue: 0 },
-  { id: 'S004', name: 'David Lefebvre', class: 'Première S', feedback: 'Les expériences en chimie sont le meilleur moment de la semaine.', tuitionStatus: 'Partiel', amountDue: 50000 },
-  { id: 'S005', name: 'Eve Moreau', class: 'Seconde L', feedback: 'Le cours d\'histoire est très intéressant, surtout la période contemporaine.', tuitionStatus: 'Soldé', amountDue: 0 },
-  { id: 'S006', name: 'Félix Guichard', class: 'CM2', feedback: 'J\'aime beaucoup lire les livres de la bibliothèque.', tuitionStatus: 'Soldé', amountDue: 0 },
+  { 
+    id: 'S001', 
+    matricule: '2023-001A',
+    name: 'Alice Durand', 
+    class: 'Terminale A', 
+    dateOfBirth: '15/05/2006',
+    placeOfBirth: 'Dakar',
+    previousSchool: 'Lycée Français de Dakar',
+    parent1Name: 'Jean Durand',
+    parent1Contact: '+221 77 123 45 67',
+    feedback: 'Le cours de mathématiques est difficile mais M. Dubois explique très bien.', 
+    tuitionStatus: 'Soldé', 
+    amountDue: 0 
+  },
+  { 
+    id: 'S002', 
+    matricule: '2023-002A',
+    name: 'Bob Lemoine', 
+    class: 'Terminale A', 
+    dateOfBirth: '20/02/2006',
+    placeOfBirth: 'Thiès',
+    parent1Name: 'Marie Lemoine',
+    parent1Contact: '+221 77 234 56 78',
+    guardianName: 'Paul Lemoine',
+    guardianContact: '+221 77 345 67 89',
+    feedback: 'J\'aimerais plus d\'exercices pratiques en mathématiques pour mieux me préparer.', 
+    tuitionStatus: 'En retard', 
+    amountDue: 197000 
+  },
+  { 
+    id: 'S003', 
+    matricule: '2023-003B',
+    name: 'Charlie Roux', 
+    class: 'Terminale B', 
+    dateOfBirth: '10/11/2005',
+    placeOfBirth: 'Saint-Louis',
+    parent1Name: 'Lucas Roux',
+    parent1Contact: '+221 77 456 78 90',
+    parent2Name: 'Awa Roux',
+    parent2Contact: '+221 77 567 89 01',
+    feedback: 'Mme. Martin est une excellente prof de français, ses cours sont passionnants.', 
+    tuitionStatus: 'Soldé', 
+    amountDue: 0 
+  },
+  { 
+    id: 'S004', 
+    matricule: '2023-004S',
+    name: 'David Lefebvre', 
+    class: 'Première S', 
+    dateOfBirth: '30/07/2007',
+    placeOfBirth: 'Kaolack',
+    previousSchool: 'Collège Pie XII',
+    parent1Name: 'Fatou Lefebvre',
+    parent1Contact: '+221 77 678 90 12',
+    feedback: 'Les expériences en chimie sont le meilleur moment de la semaine.', 
+    tuitionStatus: 'Partiel', 
+    amountDue: 50000 
+  },
+  { 
+    id: 'S005', 
+    matricule: '2023-005L',
+    name: 'Eve Moreau', 
+    class: 'Seconde L', 
+    dateOfBirth: '05/09/2008',
+    placeOfBirth: 'Dakar',
+    parent1Name: 'Sophie Moreau',
+    parent1Contact: '+221 77 789 01 23',
+    feedback: 'Le cours d\'histoire est très intéressant, surtout la période contemporaine.', 
+    tuitionStatus: 'Soldé', 
+    amountDue: 0 
+  },
+  { 
+    id: 'S006', 
+    matricule: '2023-006P',
+    name: 'Félix Guichard', 
+    class: 'CM2', 
+    dateOfBirth: '12/12/2012',
+    placeOfBirth: 'Ziguinchor',
+    parent1Name: 'Ousmane Guichard',
+    parent1Contact: '+221 77 890 12 34',
+    feedback: 'J\'aime beaucoup lire les livres de la bibliothèque.', 
+    tuitionStatus: 'Soldé', 
+    amountDue: 0 
+  },
 ];
 
 export const mockLibraryData: Book[] = [

@@ -6,9 +6,10 @@ import { mockStudentData, mockGradeData, mockClassData, mockTeacherData } from '
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, MapPin, School, Users, Shield } from 'lucide-react';
 import { useMemo } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
+import { Separator } from '@/components/ui/separator';
 
 
 export default function StudentProfilePage() {
@@ -45,62 +46,74 @@ export default function StudentProfilePage() {
         <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-1 flex flex-col gap-6">
                  <Card>
-                    <CardHeader className="flex-row items-center gap-4">
+                    <CardHeader className="flex-row items-center gap-4 pb-4">
                         <Avatar className="h-16 w-16">
                             <AvatarImage src={`https://picsum.photos/seed/${student.id}/100/100`} alt={student.name} data-ai-hint="person face" />
                             <AvatarFallback>{student.name.substring(0, 2)}</AvatarFallback>
                         </Avatar>
                         <div>
                              <CardTitle className="text-2xl">{student.name}</CardTitle>
-                             <CardDescription>ID Élève: {student.id}</CardDescription>
+                             <CardDescription>Matricule: {student.matricule}</CardDescription>
                         </div>
                     </CardHeader>
-                    <CardContent className="space-y-3">
-                         <div className="flex items-center text-sm">
+                    <CardContent className="space-y-3 text-sm">
+                         <div className="flex items-center">
+                            <Cake className="mr-3 h-5 w-5 text-muted-foreground" />
+                            <span>Né(e) le <strong>{student.dateOfBirth}</strong> à <strong>{student.placeOfBirth}</strong></span>
+                        </div>
+                        <div className="flex items-center">
                             <BookUser className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Classe: <strong>{student.class}</strong></span>
                         </div>
-                        <div className="flex items-center text-sm">
+                        <div className="flex items-center">
                             <User className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Prof. Principal: <strong>{mainTeacher?.name || 'N/A'}</strong></span>
                         </div>
-                        <div className="flex items-center text-sm">
+                        <div className="flex items-center">
                             <Building className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Cycle: <strong>{studentClass?.cycle || 'N/A'}</strong></span>
                         </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Wallet className="h-5 w-5" />
-                            <span>Scolarité</span>
-                        </CardTitle>
-                    </CardHeader>
-                     <CardContent className="space-y-4">
-                        <div className="flex justify-between items-center text-lg">
-                           <span className="text-muted-foreground">Statut</span>
-                           <TuitionStatusBadge status={student.tuitionStatus} />
-                        </div>
-                         <div className="flex justify-between items-center text-lg">
-                           <span className="text-muted-foreground">Solde dû</span>
-                           <span className="font-bold text-primary">{student.amountDue.toLocaleString('fr-FR')} CFA</span>
+                        <div className="flex items-center">
+                            <School className="mr-3 h-5 w-5 text-muted-foreground" />
+                            <span>Ancien Etab.: <strong>{student.previousSchool || 'N/A'}</strong></span>
                         </div>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                           <MessageSquare className="h-5 w-5" />
-                            <span>Feedback</span>
+                           <Users className="h-5 w-5" />
+                            <span>Contacts des Parents</span>
                         </CardTitle>
                     </CardHeader>
-                     <CardContent>
-                        <p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucun feedback pour le moment."}"</p>
+                     <CardContent className="space-y-3 text-sm">
+                        <div className="font-medium">{student.parent1Name}</div>
+                        <a href={`tel:${student.parent1Contact}`} className="text-muted-foreground hover:text-primary">{student.parent1Contact}</a>
+                        {student.parent2Name && (
+                            <>
+                                <Separator className="my-3"/>
+                                <div className="font-medium">{student.parent2Name}</div>
+                                <a href={`tel:${student.parent2Contact}`} className="text-muted-foreground hover:text-primary">{student.parent2Contact}</a>
+                            </>
+                        )}
                     </CardContent>
                 </Card>
+                 {student.guardianName && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                            <Shield className="h-5 w-5" />
+                                <span>Contact du Tuteur</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                             <div className="font-medium">{student.guardianName}</div>
+                            <a href={`tel:${student.guardianContact}`} className="text-muted-foreground hover:text-primary">{student.guardianContact}</a>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 flex flex-col gap-6">
                  <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center">
@@ -137,6 +150,37 @@ export default function StudentProfilePage() {
                         </Table>
                     </CardContent>
                 </Card>
+                <div className="grid grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Wallet className="h-5 w-5" />
+                                <span>Scolarité</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex justify-between items-center text-lg">
+                            <span className="text-muted-foreground">Statut</span>
+                            <TuitionStatusBadge status={student.tuitionStatus} />
+                            </div>
+                            <div className="flex justify-between items-center text-lg">
+                            <span className="text-muted-foreground">Solde dû</span>
+                            <span className="font-bold text-primary">{student.amountDue.toLocaleString('fr-FR')} CFA</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                            <MessageSquare className="h-5 w-5" />
+                                <span>Feedback</span>
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucun feedback pour le moment."}"</p>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
         </div>
     </div>
