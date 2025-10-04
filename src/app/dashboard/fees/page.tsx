@@ -23,17 +23,34 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, GraduationCap, FileText } from "lucide-react";
+import { Pencil, GraduationCap, FileText, PlusCircle, MoreHorizontal } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Image from "next/image";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
-
 export default function FeesPage() {
+  // Student payment tracking state
   const [students, setStudents] = useState<Student[]>(mockStudentData);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -42,19 +59,40 @@ export default function FeesPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [currentAmountDue, setCurrentAmountDue] = useState('');
   const [currentTuitionStatus, setCurrentTuitionStatus] = useState<TuitionStatus>('Soldé');
+  
+  // Fee grid management state
+  const [fees, setFees] = useState<Fee[]>(mockFeeData);
+  const [isAddFeeGridDialogOpen, setIsAddFeeGridDialogOpen] = useState(false);
+  const [isEditFeeGridDialogOpen, setIsEditFeeGridDialogOpen] = useState(false);
+  const [isDeleteFeeGridDialogOpen, setIsDeleteFeeGridDialogOpen] = useState(false);
+  const [editingFee, setEditingFee] = useState<Fee | null>(null);
+  const [feeToDelete, setFeeToDelete] = useState<Fee | null>(null);
+  const [newFeeGrade, setNewFeeGrade] = useState('');
+  const [newFeeAmount, setNewFeeAmount] = useState('');
+  const [newFeeDetails, setNewFeeDetails] = useState('');
+
   const { toast } = useToast();
   
-
   useEffect(() => {
     setIsClient(true);
   }, []);
   
+  // Effect for student fee management dialog
   useEffect(() => {
     if (selectedStudent) {
         setCurrentAmountDue(String(selectedStudent.amountDue));
         setCurrentTuitionStatus(selectedStudent.tuitionStatus);
     }
   }, [selectedStudent]);
+  
+  // Effect for fee grid management dialog
+  useEffect(() => {
+    if (editingFee) {
+        setNewFeeGrade(editingFee.grade);
+        setNewFeeAmount(editingFee.amount);
+        setNewFeeDetails(editingFee.details);
+    }
+  }, [editingFee]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -68,6 +106,7 @@ export default function FeesPage() {
     return filteredStudents.reduce((acc, student) => acc + student.amountDue, 0);
   }, [filteredStudents]);
   
+  // Student payment functions
   const handleOpenManageDialog = (student: Student) => {
     setSelectedStudent(student);
     setIsManageFeeDialogOpen(true);
@@ -89,7 +128,61 @@ export default function FeesPage() {
     
     setIsManageFeeDialogOpen(false);
     setSelectedStudent(null);
-  }
+  };
+
+  // Fee grid functions
+  const resetFeeForm = () => {
+    setNewFeeGrade('');
+    setNewFeeAmount('');
+    setNewFeeDetails('');
+  };
+
+  const handleAddFeeGrid = () => {
+    if (!newFeeGrade || !newFeeAmount || !newFeeDetails) {
+        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
+        return;
+    }
+    const newFee: Fee = {
+        id: `F${fees.length + 1}`,
+        grade: newFeeGrade,
+        amount: newFeeAmount,
+        details: newFeeDetails,
+    };
+    setFees([...fees, newFee]);
+    toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${newFeeGrade} a été créée.` });
+    resetFeeForm();
+    setIsAddFeeGridDialogOpen(false);
+  };
+
+  const handleOpenEditFeeGridDialog = (fee: Fee) => {
+    setEditingFee(fee);
+    setIsEditFeeGridDialogOpen(true);
+  };
+
+  const handleEditFeeGrid = () => {
+    if (!editingFee || !newFeeGrade || !newFeeAmount || !newFeeDetails) {
+        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
+        return;
+    }
+    setFees(fees.map(f => f.id === editingFee.id ? { ...f, grade: newFeeGrade, amount: newFeeAmount, details: newFeeDetails } : f));
+    toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${newFeeGrade} a été mise à jour.` });
+    setIsEditFeeGridDialogOpen(false);
+    setEditingFee(null);
+    resetFeeForm();
+  };
+
+  const handleOpenDeleteFeeGridDialog = (fee: Fee) => {
+    setFeeToDelete(fee);
+    setIsDeleteFeeGridDialogOpen(true);
+  };
+
+  const handleDeleteFeeGrid = () => {
+    if (!feeToDelete) return;
+    setFees(fees.filter(f => f.id !== feeToDelete.id));
+    toast({ title: "Grille tarifaire supprimée", description: `La grille pour ${feeToDelete.grade} a été supprimée.` });
+    setIsDeleteFeeGridDialogOpen(false);
+    setFeeToDelete(null);
+  };
 
   return (
     <>
@@ -100,11 +193,42 @@ export default function FeesPage() {
       </div>
 
        <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Grille Tarifaire</h2>
+        <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Grille Tarifaire</h2>
+            <Dialog open={isAddFeeGridDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) resetFeeForm(); setIsAddFeeGridDialogOpen(isOpen); }}>
+                <DialogTrigger asChild>
+                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une grille</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Nouvelle grille tarifaire</DialogTitle>
+                        <DialogDescription>Entrez les détails de la nouvelle grille.</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="grade" className="text-right">Niveau</Label>
+                            <Input id="grade" value={newFeeGrade} onChange={(e) => setNewFeeGrade(e.target.value)} className="col-span-3" placeholder="Ex: Maternelle" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="amount" className="text-right">Montant</Label>
+                            <Input id="amount" value={newFeeAmount} onChange={(e) => setNewFeeAmount(e.target.value)} className="col-span-3" placeholder="Ex: 98 000 CFA / mois" />
+                        </div>
+                        <div className="grid grid-cols-4 items-start gap-4">
+                            <Label htmlFor="details" className="text-right pt-2">Détails</Label>
+                            <Textarea id="details" value={newFeeDetails} onChange={(e) => setNewFeeDetails(e.target.value)} className="col-span-3" placeholder="Détails supplémentaires..." />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsAddFeeGridDialogOpen(false)}>Annuler</Button>
+                        <Button onClick={handleAddFeeGrid}>Ajouter</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {mockFeeData.map((fee: Fee) => (
+            {fees.map((fee: Fee) => (
                 <Card key={fee.id} className="flex flex-col">
-                    <CardHeader className="p-0">
+                    <CardHeader className="p-0 relative">
                          <div className="relative h-40 w-full">
                             <Image 
                                 src={`https://picsum.photos/seed/${fee.id}/400/200`} 
@@ -115,6 +239,17 @@ export default function FeesPage() {
                                 data-ai-hint="school students"
                             />
                         </div>
+                         <div className="absolute top-2 right-2">
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenEditFeeGridDialog(fee)}>Modifier</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteFeeGridDialog(fee)}>Supprimer</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                         </div>
                     </CardHeader>
                      <CardContent className="p-4 flex-1 flex flex-col justify-between">
                         <div>
@@ -268,6 +403,52 @@ export default function FeesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Edit Fee Grid Dialog */}
+      <Dialog open={isEditFeeGridDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) { setEditingFee(null); resetFeeForm(); } setIsEditFeeGridDialogOpen(isOpen); }}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Modifier la grille tarifaire</DialogTitle>
+                <DialogDescription>Mettez à jour les détails de la grille.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="edit-grade" className="text-right">Niveau</Label>
+                    <Input id="edit-grade" value={newFeeGrade} onChange={(e) => setNewFeeGrade(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="edit-amount" className="text-right">Montant</Label>
+                    <Input id="edit-amount" value={newFeeAmount} onChange={(e) => setNewFeeAmount(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="edit-details" className="text-right pt-2">Détails</Label>
+                    <Textarea id="edit-details" value={newFeeDetails} onChange={(e) => setNewFeeDetails(e.target.value)} className="col-span-3" />
+                </div>
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditFeeGridDialogOpen(false)}>Annuler</Button>
+                <Button onClick={handleEditFeeGrid}>Enregistrer</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Fee Grid Confirmation Dialog */}
+       <AlertDialog open={isDeleteFeeGridDialogOpen} onOpenChange={setIsDeleteFeeGridDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. La grille tarifaire pour <strong>{feeToDelete?.grade}</strong> sera définitivement supprimée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteFeeGrid} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
+    
