@@ -10,9 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { mockTeacherData } from "@/lib/data";
-import { PlusCircle, MoreHorizontal } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Mail, BookUser, Book } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -44,6 +44,9 @@ import type { Teacher } from "@/lib/data";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
 
 export default function TeachersPage() {
   const [teachers, setTeachers] = useState<Teacher[]>(mockTeacherData);
@@ -57,12 +60,14 @@ export default function TeachersPage() {
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherSubject, setNewTeacherSubject] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
+  const [newTeacherClass, setNewTeacherClass] = useState('');
   
   useEffect(() => {
     if (editingTeacher) {
       setNewTeacherName(editingTeacher.name);
       setNewTeacherSubject(editingTeacher.subject);
       setNewTeacherEmail(editingTeacher.email);
+      setNewTeacherClass(editingTeacher.class || '');
     }
   }, [editingTeacher]);
 
@@ -70,6 +75,7 @@ export default function TeachersPage() {
     setNewTeacherName('');
     setNewTeacherSubject('');
     setNewTeacherEmail('');
+    setNewTeacherClass('');
   };
   
   const handleOpenDeleteDialog = (teacher: Teacher) => {
@@ -87,7 +93,7 @@ export default function TeachersPage() {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Tous les champs sont requis.",
+        description: "Le nom, la matière et l'email sont requis.",
       });
       return;
     }
@@ -97,6 +103,7 @@ export default function TeachersPage() {
       name: newTeacherName,
       subject: newTeacherSubject,
       email: newTeacherEmail,
+      class: newTeacherClass || undefined,
     };
 
     setTeachers([...teachers, newTeacher]);
@@ -115,14 +122,14 @@ export default function TeachersPage() {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Tous les champs sont requis.",
+        description: "Le nom, la matière et l'email sont requis.",
       });
       return;
     }
 
     setTeachers(teachers.map(t => 
       t.id === editingTeacher.id 
-        ? { ...t, name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail } 
+        ? { ...t, name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail, class: newTeacherClass || undefined } 
         : t
     ));
 
@@ -195,6 +202,12 @@ export default function TeachersPage() {
                   </Label>
                   <Input id="add-teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
                 </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-teacher-class" className="text-right">
+                    Classe princ.
+                  </Label>
+                  <Input id="add-teacher-class" value={newTeacherClass} onChange={(e) => setNewTeacherClass(e.target.value)} className="col-span-3" placeholder="Ex: Terminale A (optionnel)"/>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddTeacherDialogOpen(false)}>Annuler</Button>
@@ -203,53 +216,57 @@ export default function TeachersPage() {
             </DialogContent>
           </Dialog>
         </div>
-        <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead className="hidden md:table-cell">Classe Principale</TableHead>
-                    <TableHead className="hidden lg:table-cell">Matière</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {teachers.map((teacher) => (
-                    <TableRow key={teacher.id}>
-                      <TableCell className="font-medium">
-                        <Link href={`/dashboard/teachers/${teacher.id}`} className="hover:underline text-primary">
-                          {teacher.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{teacher.class || 'N/A'}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{teacher.subject}</TableCell>
-                      <TableCell>{teacher.email}</TableCell>
-                      <TableCell className="text-right">
-                         <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenEditDialog(teacher)}>Modifier</DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => handleOpenDeleteDialog(teacher)}
-                            >
-                                Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-        </Card>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {teachers.map((teacher) => {
+            const fallback = teacher.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+            return (
+              <Card key={teacher.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100`} alt={teacher.name} data-ai-hint="person face" />
+                            <AvatarFallback>{fallback}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <Link href={`/dashboard/teachers/${teacher.id}`} className="hover:underline">
+                                <CardTitle>{teacher.name}</CardTitle>
+                            </Link>
+                            <CardDescription>{teacher.subject}</CardDescription>
+                        </div>
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="shrink-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenEditDialog(teacher)}>Modifier</DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleOpenDeleteDialog(teacher)}
+                        >
+                            Supprimer
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
+                   <div className="flex items-center">
+                        <Mail className="mr-2 h-4 w-4" />
+                        <a href={`mailto:${teacher.email}`} className="truncate hover:underline">{teacher.email}</a>
+                   </div>
+                   <div className="flex items-center">
+                        <BookUser className="mr-2 h-4 w-4" />
+                        <span>Classe principale: <strong>{teacher.class || 'N/A'}</strong></span>
+                   </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
       
        <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
@@ -284,6 +301,12 @@ export default function TeachersPage() {
               </Label>
               <Input id="edit-teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-teacher-class" className="text-right">
+                Classe princ.
+              </Label>
+              <Input id="edit-teacher-class" value={newTeacherClass} onChange={(e) => setNewTeacherClass(e.target.value)} className="col-span-3" />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
@@ -309,3 +332,5 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    
