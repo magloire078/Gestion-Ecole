@@ -1,6 +1,27 @@
+
+'use client';
+
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
+
+const SCHOOL_NAME_KEY = 'schoolName';
 
 export function Logo() {
+  const [schoolName, setSchoolName] = useState("GèreEcole");
+
+  const updateSchoolName = () => {
+    const savedName = localStorage.getItem(SCHOOL_NAME_KEY);
+    setSchoolName(savedName || "GèreEcole");
+  };
+
+  useEffect(() => {
+    updateSchoolName();
+    window.addEventListener('settings-updated', updateSchoolName);
+    return () => {
+      window.removeEventListener('settings-updated', updateSchoolName);
+    };
+  }, []);
+
   return (
     <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
         <svg
@@ -19,7 +40,7 @@ export function Logo() {
             <path d="M8 16h8" />
             <path d="M12 2v2" />
         </svg>
-      <h1 className="text-lg font-bold font-headline">GèreEcole</h1>
+      <h1 className="text-lg font-bold font-headline">{schoolName}</h1>
     </Link>
   );
 }
