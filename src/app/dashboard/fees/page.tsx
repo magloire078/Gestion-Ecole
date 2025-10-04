@@ -49,6 +49,24 @@ import Image from "next/image";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
+const getImageHintForGrade = (grade: string): string => {
+    const lowerCaseGrade = grade.toLowerCase();
+    if (lowerCaseGrade.includes('maternelle')) {
+        return 'kindergarten children';
+    }
+    if (lowerCaseGrade.includes('primaire')) {
+        return 'primary school';
+    }
+    if (lowerCaseGrade.includes('collège')) {
+        return 'middle school';
+    }
+    if (lowerCaseGrade.includes('lycée')) {
+        return 'high school';
+    }
+    return 'school students';
+};
+
+
 export default function FeesPage() {
   // Student payment tracking state
   const [students, setStudents] = useState<Student[]>(mockStudentData);
@@ -236,7 +254,7 @@ export default function FeesPage() {
                                 layout="fill"
                                 objectFit="cover"
                                 className="rounded-t-lg"
-                                data-ai-hint="school students"
+                                data-ai-hint={getImageHintForGrade(fee.grade)}
                             />
                         </div>
                          <div className="absolute top-2 right-2">
