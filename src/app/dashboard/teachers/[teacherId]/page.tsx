@@ -5,8 +5,8 @@ import { notFound, useParams } from 'next/navigation';
 import { mockTeacherData, mockStudentPerformanceData } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { BookUser, Mail, Book, Bot } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { BookUser, Mail, Book, Bot, Phone } from 'lucide-react';
+import { useState } from 'react';
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from '@/ai/flows/generate-teacher-recommendations';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
@@ -103,6 +103,12 @@ export default function TeacherProfilePage() {
                             <Mail className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Email: <a href={`mailto:${teacher.email}`} className="text-primary hover:underline">{teacher.email}</a></span>
                         </div>
+                        {teacher.phone && (
+                        <div className="flex items-center text-sm">
+                            <Phone className="mr-3 h-5 w-5 text-muted-foreground" />
+                            <span>Tél: <a href={`tel:${teacher.phone}`} className="text-primary hover:underline">{teacher.phone}</a></span>
+                        </div>
+                        )}
                     </CardContent>
                 </Card>
             </div>

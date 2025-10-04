@@ -25,7 +25,6 @@ export type Student = {
   previousSchool?: string;
   parent1Name?: string;
   parent1Contact?: string;
-
   parent2Name?: string;
   parent2Contact?: string;
   guardianName?: string;

@@ -36,6 +36,9 @@ export default function StudentProfilePage() {
   if (!student) {
     notFound();
   }
+  
+  const fallback = student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+
 
   return (
     <div className="space-y-6">
@@ -49,7 +52,7 @@ export default function StudentProfilePage() {
                     <CardHeader className="flex-row items-center gap-4 pb-4">
                         <Avatar className="h-16 w-16">
                             <AvatarImage src={`https://picsum.photos/seed/${student.id}/100/100`} alt={student.name} data-ai-hint="person face" />
-                            <AvatarFallback>{student.name.substring(0, 2)}</AvatarFallback>
+                            <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div>
                              <CardTitle className="text-2xl">{student.name}</CardTitle>
