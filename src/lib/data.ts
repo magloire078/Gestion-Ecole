@@ -1,4 +1,5 @@
 
+
 export type Teacher = {
   id: string;
   name: string;
@@ -61,6 +62,15 @@ export type Fee = {
   grade: string;
   amount: string;
   details: string;
+};
+
+export type Transaction = {
+    id: string;
+    date: string;
+    description: string;
+    category: string;
+    type: 'Revenu' | 'Dépense';
+    amount: number;
 };
 
 
@@ -269,5 +279,15 @@ export const allSubjects = [
     "Arts Plastiques",
     "Musique",
     "EPS"
+];
+
+export const mockAccountingData: Transaction[] = [
+    { id: 'TR1', date: '2023-09-05', description: 'Frais de scolarité - Alice Durand', category: 'Scolarité', type: 'Revenu', amount: 197000 },
+    { id: 'TR2', date: '2023-09-05', description: 'Frais de scolarité - Charlie Roux', category: 'Scolarité', type: 'Revenu', amount: 197000 },
+    { id: 'TR3', date: '2023-09-10', description: 'Achat de fournitures de bureau', category: 'Fournitures', type: 'Dépense', amount: 75000 },
+    { id: 'TR4', date: '2023-09-15', description: 'Paiement partiel scolarité - David Lefebvre', category: 'Scolarité', type: 'Revenu', amount: 147000 },
+    { id: 'TR5', date: '2023-09-20', description: 'Facture d\'électricité - Septembre', category: 'Services Publics', type: 'Dépense', amount: 120000 },
+    { id: 'TR6', date: '2023-09-25', description: 'Salaires des enseignants', category: 'Salaires', type: 'Dépense', amount: 4500000 },
+    { id: 'TR7', date: '2023-09-28', description: 'Don de l\'amicale des parents', category: 'Dons', type: 'Revenu', amount: 250000 },
 ];
     
