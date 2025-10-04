@@ -85,6 +85,7 @@ export const mockClassData: Class[] = [
   { id: 'C7', name: 'CM2', studentCount: 28, mainTeacherId: 'T8', building: 'Bâtiment D', cycle: 'Primaire' },
   { id: 'C8', name: 'CE1', studentCount: 26, mainTeacherId: 'T9', building: 'Bâtiment D', cycle: 'Primaire' },
   { id: 'C9', name: 'Grande Section', studentCount: 24, mainTeacherId: 'T10', building: 'Bâtiment E', cycle: 'Maternelle' },
+  { id: 'C10', name: 'Ingénierie 1ère année', studentCount: 45, mainTeacherId: 'T7', building: 'Bâtiment F', cycle: 'Grandes Écoles' },
 ];
 
 // Teachers now have subjects, but are not tied to a single class.
@@ -291,4 +292,6 @@ export const mockAccountingData: Transaction[] = [
     { id: 'TR6', date: '2023-09-25', description: 'Salaires des enseignants', category: 'Salaires', type: 'Dépense', amount: 4500000 },
     { id: 'TR7', date: '2023-09-28', description: 'Don de l\'amicale des parents', category: 'Dons', type: 'Revenu', amount: 250000 },
 ];
+    
+
     

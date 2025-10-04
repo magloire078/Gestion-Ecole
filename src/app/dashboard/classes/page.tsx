@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { mockClassData, mockTeacherData } from "@/lib/data";
-import { PlusCircle, Users, User, Building, MoreHorizontal } from "lucide-react";
+import { PlusCircle, Users, User, Building, MoreHorizontal, X, Settings } from "lucide-react";
 import { useState } from "react";
 import {
   Dialog,
@@ -44,22 +44,29 @@ import type { Teacher, Class } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const cycles = ['Lycée', 'Collège', 'Primaire', 'Maternelle'];
 
 export default function ClassesPage() {
   const [classes, setClasses] = useState(mockClassData);
+  const [cycles, setCycles] = useState(['Grandes Écoles', 'Lycée', 'Collège', 'Primaire', 'Maternelle']);
+
+  // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
+  const [isManageCyclesDialogOpen, setIsManageCyclesDialogOpen] = useState(false);
+  
+  // Form states
   const [newClassName, setNewClassName] = useState("");
   const [newTeacherId, setNewTeacherId] = useState("");
   const [newStudentCount, setNewStudentCount] = useState("");
   const [newBuilding, setNewBuilding] = useState("");
   const [newCycle, setNewCycle] = useState("");
+  const [newCycleName, setNewCycleName] = useState("");
 
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
+  const [cycleToDelete, setCycleToDelete] = useState<string | null>(null);
+
 
   const { toast } = useToast();
 
@@ -161,88 +168,147 @@ export default function ClassesPage() {
     setIsDeleteDialogOpen(false);
     setClassToDelete(null);
   }
+  
+  const handleAddCycle = () => {
+    if (!newCycleName.trim()) {
+        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
+        return;
+    }
+    if (cycles.includes(newCycleName)) {
+        toast({ variant: "destructive", title: "Erreur", description: "Ce cycle existe déjà." });
+        return;
+    }
+    setCycles([newCycleName, ...cycles]);
+    setNewCycleName("");
+    toast({ title: "Cycle ajouté", description: `Le cycle "${newCycleName}" a été ajouté.` });
+  };
+  
+  const handleOpenDeleteCycleDialog = (cycle: string) => {
+      const classesInCycle = classes.filter(c => c.cycle === cycle).length;
+      if (classesInCycle > 0) {
+          toast({ variant: "destructive", title: "Action impossible", description: `Impossible de supprimer le cycle "${cycle}" car il contient ${classesInCycle} classe(s).` });
+          return;
+      }
+      setCycleToDelete(cycle);
+  };
 
+  const handleDeleteCycle = () => {
+      if (!cycleToDelete) return;
+      setCycles(cycles.filter(c => c !== cycleToDelete));
+      toast({ title: "Cycle supprimé", description: `Le cycle "${cycleToDelete}" a été supprimé.` });
+      setCycleToDelete(null);
+  }
 
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-lg font-semibold md:text-2xl">Gestion des Classes</h1>
             <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
-            if(!isOpen) resetAddDialog();
-            setIsAddDialogOpen(isOpen);
-          }}>
-            <DialogTrigger asChild>
-               <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une classe
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Ajouter une nouvelle classe</DialogTitle>
-                <DialogDescription>
-                  Renseignez les informations de la nouvelle classe.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Nom
-                  </Label>
-                  <Input id="name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} className="col-span-3" placeholder="Ex: Sixième A" />
+          <div className="flex gap-2">
+            <Dialog open={isManageCyclesDialogOpen} onOpenChange={setIsManageCyclesDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Gérer les niveaux</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Gérer les niveaux</DialogTitle>
+                        <DialogDescription>Ajoutez ou supprimez des niveaux d'enseignement.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4">
+                        <div className="flex gap-2">
+                            <Input value={newCycleName} onChange={(e) => setNewCycleName(e.target.value)} placeholder="Nom du nouveau niveau"/>
+                            <Button onClick={handleAddCycle}>Ajouter</Button>
+                        </div>
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
+                            <Label>Niveaux actuels</Label>
+                            {cycles.map(cycle => (
+                                <div key={cycle} className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
+                                    <span>{cycle}</span>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleOpenDeleteCycleDialog(cycle)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+            <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
+              if(!isOpen) resetAddDialog();
+              setIsAddDialogOpen(isOpen);
+            }}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une classe
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Ajouter une nouvelle classe</DialogTitle>
+                  <DialogDescription>
+                    Renseignez les informations de la nouvelle classe.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Nom
+                    </Label>
+                    <Input id="name" value={newClassName} onChange={(e) => setNewClassName(e.target.value)} className="col-span-3" placeholder="Ex: Sixième A" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="building" className="text-right">
+                      Bâtiment
+                    </Label>
+                    <Input id="building" value={newBuilding} onChange={(e) => setNewBuilding(e.target.value)} className="col-span-3" placeholder="Ex: Bâtiment A" />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="cycle" className="text-right">
+                      Cycle
+                    </Label>
+                    <Select onValueChange={setNewCycle} value={newCycle}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionner un cycle" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cycles.map((cycle) => (
+                          <SelectItem key={cycle} value={cycle}>{cycle}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="teacher" className="text-right">
+                      Prof. Principal
+                    </Label>
+                    <Select onValueChange={setNewTeacherId} value={newTeacherId}>
+                      <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionner un enseignant" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockTeacherData.map((teacher: Teacher) => (
+                          <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="students" className="text-right">
+                      Nb. Élèves
+                    </Label>
+                    <Input id="students" type="number" value={newStudentCount} onChange={(e) => setNewStudentCount(e.target.value)} className="col-span-3" placeholder="Ex: 25"/>
+                  </div>
                 </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="building" className="text-right">
-                    Bâtiment
-                  </Label>
-                  <Input id="building" value={newBuilding} onChange={(e) => setNewBuilding(e.target.value)} className="col-span-3" placeholder="Ex: Bâtiment A" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="cycle" className="text-right">
-                    Cycle
-                  </Label>
-                   <Select onValueChange={setNewCycle} value={newCycle}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Sélectionner un cycle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cycles.map((cycle) => (
-                        <SelectItem key={cycle} value={cycle}>{cycle}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="teacher" className="text-right">
-                    Prof. Principal
-                  </Label>
-                   <Select onValueChange={setNewTeacherId} value={newTeacherId}>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="Sélectionner un enseignant" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockTeacherData.map((teacher: Teacher) => (
-                        <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="students" className="text-right">
-                    Nb. Élèves
-                  </Label>
-                  <Input id="students" type="number" value={newStudentCount} onChange={(e) => setNewStudentCount(e.target.value)} className="col-span-3" placeholder="Ex: 25"/>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleAddClass}>Ajouter la classe</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
+                  <Button onClick={handleAddClass}>Ajouter la classe</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         <Tabs defaultValue={cycles[0]} className="space-y-4">
@@ -384,6 +450,24 @@ export default function ClassesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Cycle Confirmation Dialog */}
+       <AlertDialog open={!!cycleToDelete} onOpenChange={(isOpen) => !isOpen && setCycleToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le cycle <strong>{cycleToDelete}</strong> sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCycleToDelete(null)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCycle} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
+
+    
