@@ -17,14 +17,15 @@ export type TimetableEntry = {
 
 export type Student = {
   id: string;
-  matricule: string;
+  matricule?: string;
   name: string;
   class: string;
-  dateOfBirth: string;
-  placeOfBirth: string;
+  dateOfBirth?: string;
+  placeOfBirth?: string;
   previousSchool?: string;
-  parent1Name: string;
-  parent1Contact: string;
+  parent1Name?: string;
+  parent1Contact?: string;
+
   parent2Name?: string;
   parent2Contact?: string;
   guardianName?: string;
