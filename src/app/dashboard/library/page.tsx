@@ -220,11 +220,11 @@ export default function LibraryPage() {
                      />
                   </div>
                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                         <CardTitle className="text-xl leading-tight font-bold">{book.title}</CardTitle>
+                    <div className="flex items-start justify-between gap-2">
+                         <CardTitle className="text-lg leading-tight font-bold">{book.title}</CardTitle>
                          <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="shrink-0">
+                              <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -245,7 +245,7 @@ export default function LibraryPage() {
                     </CardDescription>
                  </div>
               </CardHeader>
-              <CardContent className="flex-1 pb-4 px-4">
+              <CardContent className="flex-1 pb-4 px-4 pt-0">
                   <div className="flex items-center text-sm text-muted-foreground">
                       <Hash className="mr-2 h-4 w-4 flex-shrink-0" />
                       <span>Quantité disponible: <strong>{book.quantity}</strong></span>
