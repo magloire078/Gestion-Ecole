@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { mockTeacherData } from "@/lib/data";
-import { PlusCircle, MoreHorizontal, Mail, BookUser, Book } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Mail, BookUser, Phone } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -60,6 +60,7 @@ export default function TeachersPage() {
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherSubject, setNewTeacherSubject] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
+  const [newTeacherPhone, setNewTeacherPhone] = useState('');
   const [newTeacherClass, setNewTeacherClass] = useState('');
   
   useEffect(() => {
@@ -67,6 +68,7 @@ export default function TeachersPage() {
       setNewTeacherName(editingTeacher.name);
       setNewTeacherSubject(editingTeacher.subject);
       setNewTeacherEmail(editingTeacher.email);
+      setNewTeacherPhone(editingTeacher.phone || '');
       setNewTeacherClass(editingTeacher.class || '');
     }
   }, [editingTeacher]);
@@ -75,6 +77,7 @@ export default function TeachersPage() {
     setNewTeacherName('');
     setNewTeacherSubject('');
     setNewTeacherEmail('');
+    setNewTeacherPhone('');
     setNewTeacherClass('');
   };
   
@@ -103,6 +106,7 @@ export default function TeachersPage() {
       name: newTeacherName,
       subject: newTeacherSubject,
       email: newTeacherEmail,
+      phone: newTeacherPhone || undefined,
       class: newTeacherClass || undefined,
     };
 
@@ -129,7 +133,7 @@ export default function TeachersPage() {
 
     setTeachers(teachers.map(t => 
       t.id === editingTeacher.id 
-        ? { ...t, name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail, class: newTeacherClass || undefined } 
+        ? { ...t, name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail, phone: newTeacherPhone || undefined, class: newTeacherClass || undefined } 
         : t
     ));
 
@@ -202,6 +206,12 @@ export default function TeachersPage() {
                   </Label>
                   <Input id="add-teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
                 </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="add-teacher-phone" className="text-right">
+                    Téléphone
+                  </Label>
+                  <Input id="add-teacher-phone" type="tel" value={newTeacherPhone} onChange={(e) => setNewTeacherPhone(e.target.value)} className="col-span-3" placeholder="Ex: +221 77... (optionnel)"/>
+                </div>
                  <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="add-teacher-class" className="text-right">
                     Classe princ.
@@ -258,6 +268,12 @@ export default function TeachersPage() {
                         <Mail className="mr-2 h-4 w-4" />
                         <a href={`mailto:${teacher.email}`} className="truncate hover:underline">{teacher.email}</a>
                    </div>
+                    {teacher.phone && (
+                        <div className="flex items-center">
+                            <Phone className="mr-2 h-4 w-4" />
+                            <a href={`tel:${teacher.phone}`} className="truncate hover:underline">{teacher.phone}</a>
+                        </div>
+                    )}
                    <div className="flex items-center">
                         <BookUser className="mr-2 h-4 w-4" />
                         <span>Classe principale: <strong>{teacher.class || 'N/A'}</strong></span>
@@ -302,6 +318,12 @@ export default function TeachersPage() {
               <Input id="edit-teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-teacher-phone" className="text-right">
+                Téléphone
+                </Label>
+                <Input id="edit-teacher-phone" type="tel" value={newTeacherPhone} onChange={(e) => setNewTeacherPhone(e.target.value)} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-teacher-class" className="text-right">
                 Classe princ.
               </Label>
@@ -332,5 +354,3 @@ export default function TeachersPage() {
     </>
   );
 }
-
-    

@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 
 const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
   { href: '/dashboard/teachers', label: 'Enseignants', icon: Users },
   { href: '/dashboard/students', label: 'Élèves', icon: Users },

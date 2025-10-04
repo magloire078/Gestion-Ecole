@@ -1,11 +1,11 @@
 
-
 export type Teacher = {
   id: string;
   name: string;
   class?: string; // class is now optional as a teacher can teach multiple classes
   subject: string;
   email: string;
+  phone?: string;
 };
 
 export type TimetableEntry = {
@@ -90,16 +90,16 @@ export const mockClassData: Class[] = [
 // Teachers now have subjects, but are not tied to a single class.
 // The 'class' property can be re-interpreted as 'main class supervised'.
 export const mockTeacherData: Teacher[] = [
-  { id: 'T1', name: 'Laurent Dubois', subject: 'Mathématiques', email: 'l.dubois@ecole.com', class: 'Terminale A' },
-  { id: 'T2', name: 'Sophie Martin', subject: 'Français', email: 's.martin@ecole.com', class: 'Terminale B' },
-  { id: 'T3', name: 'Paul Bernard', subject: 'Physique-Chimie', email: 'p.bernard@ecole.com', class: 'Première S' },
-  { id: 'T4', name: 'Hélène Petit', subject: 'Histoire-Géographie', email: 'h.petit@ecole.com', class: 'Seconde L' },
-  { id: 'T5', name: 'Anne-Marie Dupont', subject: 'Anglais', email: 'am.dupont@ecole.com', class: 'Troisième' },
-  { id: 'T6', name: 'Pierre Simon', subject: 'Philosophie', email: 'p.simon@ecole.com' },
-  { id: 'T7', name: 'Isabelle Lefevre', subject: 'SVT', email: 'i.lefevre@ecole.com' },
-  { id: 'T8', name: 'Nathalie Robert', subject: 'Polyvalent', email: 'n.robert@ecole.com', class: 'CM2' },
-  { id: 'T9', name: 'David Moreau', subject: 'Polyvalent', email: 'd.moreau@ecole.com', class: 'CE1' },
-  { id: 'T10', name: 'Émilie Girard', subject: 'Polyvalent', email: 'e.girard@ecole.com', class: 'Grande Section' },
+  { id: 'T1', name: 'Laurent Dubois', subject: 'Mathématiques', email: 'l.dubois@ecole.com', phone: '+221 77 123 45 67', class: 'Terminale A' },
+  { id: 'T2', name: 'Sophie Martin', subject: 'Français', email: 's.martin@ecole.com', phone: '+221 77 234 56 78', class: 'Terminale B' },
+  { id: 'T3', name: 'Paul Bernard', subject: 'Physique-Chimie', email: 'p.bernard@ecole.com', phone: '+221 77 345 67 89', class: 'Première S' },
+  { id: 'T4', name: 'Hélène Petit', subject: 'Histoire-Géographie', email: 'h.petit@ecole.com', phone: '+221 77 456 78 90', class: 'Seconde L' },
+  { id: 'T5', name: 'Anne-Marie Dupont', subject: 'Anglais', email: 'am.dupont@ecole.com', phone: '+221 77 567 89 01', class: 'Troisième' },
+  { id: 'T6', name: 'Pierre Simon', subject: 'Philosophie', email: 'p.simon@ecole.com', phone: '+221 77 678 90 12' },
+  { id: 'T7', name: 'Isabelle Lefevre', subject: 'SVT', email: 'i.lefevre@ecole.com', phone: '+221 77 789 01 23' },
+  { id: 'T8', name: 'Nathalie Robert', subject: 'Polyvalent', email: 'n.robert@ecole.com', phone: '+221 77 890 12 34', class: 'CM2' },
+  { id: 'T9', name: 'David Moreau', subject: 'Polyvalent', email: 'd.moreau@ecole.com', phone: '+221 77 111 22 33', class: 'CE1' },
+  { id: 'T10', name: 'Émilie Girard', subject: 'Polyvalent', email: 'e.girard@ecole.com', phone: '+221 77 222 33 44', class: 'Grande Section' },
 ];
 
 export const mockTimetableData: TimetableEntry[] = [

@@ -5,7 +5,7 @@ import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarC
 import { cn } from '@/lib/utils';
 
 const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
   { href: '/dashboard/teachers', label: 'Enseignants', icon: Users },
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
