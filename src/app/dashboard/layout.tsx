@@ -10,7 +10,7 @@ import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export default function DashboardLayout({
   children,
@@ -21,12 +21,16 @@ export default function DashboardLayout({
   const router = useRouter();
   
   useEffect(() => {
+    // Redirige uniquement côté client, une fois que le chargement est terminé
+    // et qu'on est sûr que l'utilisateur n'est pas là.
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
 
-  if (loading || !user) {
+  // Pendant que l'authentification est en cours de vérification,
+  // afficher un écran de chargement.
+  if (loading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
@@ -37,6 +41,14 @@ export default function DashboardLayout({
     );
   }
 
+  // Si on est ici après le chargement, mais qu'il n'y a pas d'utilisateur,
+  // on ne rend rien car useEffect va bientôt rediriger.
+  // Cela évite un flash de contenu vide.
+  if (!user) {
+    return null;
+  }
+
+  // Si l'utilisateur est bien là, on affiche le tableau de bord.
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-card sm:flex">
