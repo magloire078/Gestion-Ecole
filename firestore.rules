@@ -9,6 +9,8 @@ service cloud.firestore {
     }
 
     function getSchoolId() {
+      // Allow reading custom claims from the token.
+      // Make sure to set these custom claims when the user logs in.
       return request.auth.token.schoolId;
     }
 
@@ -18,11 +20,8 @@ service cloud.firestore {
     
     // School-specific data
     match /schools/{schoolId} {
-        // Allow reads/writes to any document within a school's subcollections
-        // only if the user belongs to that school.
-        match /{document=**} {
-            allow read, write: if isUserInSchool(schoolId);
-        }
+        // A user can only read/write data within their own school's document space.
+        allow read, write: if isUserInSchool(schoolId);
         
         // Specifically for user profiles within a school
         match /users/{userId} {
@@ -31,11 +30,23 @@ service cloud.firestore {
             // Any authenticated user from the school can see a list of users.
             allow list: if isUserInSchool(schoolId);
             // A user can create their own profile.
-            allow create: if isUserAuthenticated() && request.auth.uid == userId;
+            // Ensure the data being written has the user's uid.
+            allow create: if isUserAuthenticated() && request.auth.uid == userId && request.resource.data.uid == userId;
             // A user can update their own profile.
             allow update: if isUserAuthenticated() && request.auth.uid == userId;
             // Users cannot delete profiles.
             allow delete: if false;
+        }
+
+        // Rules for teachers, classes, and cycles
+        match /teachers/{teacherId} {
+            allow read, create, update, delete: if isUserInSchool(schoolId);
+        }
+        match /classes/{classId} {
+            allow read, create, update, delete: if isUserInSchool(schoolId);
+        }
+        match /cycles/{cycleId} {
+            allow read, create, update, delete: if isUserInSchool(schoolId);
         }
     }
   }

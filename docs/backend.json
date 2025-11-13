@@ -5,30 +5,49 @@
       "description": "A user of the application.",
       "type": "object",
       "properties": {
-        "uid": {
-          "type": "string",
-          "description": "The user's unique ID."
-        },
-        "email": {
-          "type": "string",
-          "format": "email",
-          "description": "The user's email address."
-        },
-        "displayName": {
-          "type": "string",
-          "description": "The user's display name."
-        },
-        "photoURL": {
-          "type": "string",
-          "format": "uri",
-          "description": "The URL of the user's profile photo."
-        },
-        "schoolId": {
-          "type": "string",
-          "description": "The ID of the school the user belongs to."
-        }
+        "uid": { "type": "string", "description": "The user's unique ID." },
+        "email": { "type": "string", "format": "email", "description": "The user's email address." },
+        "displayName": { "type": "string", "description": "The user's display name." },
+        "photoURL": { "type": "string", "format": "uri", "description": "The URL of the user's profile photo." },
+        "schoolId": { "type": "string", "description": "The ID of the school the user belongs to." }
       },
       "required": ["uid", "email", "schoolId"]
+    },
+    "teacher": {
+      "title": "Teacher",
+      "description": "A teacher in the school.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The teacher's full name." },
+        "subject": { "type": "string", "description": "The main subject the teacher teaches." },
+        "email": { "type": "string", "format": "email", "description": "The teacher's email address." },
+        "phone": { "type": "string", "description": "The teacher's phone number." },
+        "class": { "type": "string", "description": "The main class the teacher supervises." }
+      },
+      "required": ["name", "subject", "email"]
+    },
+    "class": {
+      "title": "Class",
+      "description": "A class in the school.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the class." },
+        "studentCount": { "type": "number", "description": "The number of students in the class." },
+        "mainTeacherId": { "type": "string", "description": "The ID of the main teacher for the class." },
+        "building": { "type": "string", "description": "The building where the class is located." },
+        "cycle": { "type": "string", "description": "The educational cycle (e.g., Lycée, Collège)." }
+      },
+      "required": ["name", "studentCount", "mainTeacherId", "building", "cycle"]
+    },
+    "cycle": {
+        "title": "Cycle",
+        "description": "An educational cycle (e.g., Lycée, Collège).",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "The name of the cycle." },
+            "order": { "type": "number", "description": "The display order of the cycle." }
+        },
+        "required": ["name", "order"]
     }
   },
   "auth": {
@@ -36,10 +55,20 @@
   },
   "firestore": {
     "/schools/{schoolId}/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/user"
-      },
+      "schema": { "$ref": "#/entities/user" },
       "description": "Stores user profiles, partitioned by school."
+    },
+    "/schools/{schoolId}/teachers/{teacherId}": {
+      "schema": { "$ref": "#/entities/teacher" },
+      "description": "Stores teacher profiles for a school."
+    },
+    "/schools/{schoolId}/classes/{classId}": {
+      "schema": { "$ref": "#/entities/class" },
+      "description": "Stores class information for a school."
+    },
+    "/schools/{schoolId}/cycles/{cycleId}": {
+        "schema": { "$ref": "#/entities/cycle" },
+        "description": "Stores the list of educational cycles for a school."
     }
   }
 }
