@@ -1,0 +1,42 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isUserAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getSchoolId() {
+      return request.auth.token.schoolId;
+    }
+
+    function isUserInSchool(schoolId) {
+      return isUserAuthenticated() && getSchoolId() == schoolId;
+    }
+    
+    // School-specific data
+    match /schools/{schoolId} {
+        // Allow reads/writes to any document within a school's subcollections
+        // only if the user belongs to that school.
+        match /{document=**} {
+            allow read, write: if isUserInSchool(schoolId);
+        }
+        
+        // Specifically for user profiles within a school
+        match /users/{userId} {
+            // A user can only read their own profile.
+            allow get: if isUserAuthenticated() && request.auth.uid == userId;
+            // Any authenticated user from the school can see a list of users.
+            allow list: if isUserInSchool(schoolId);
+            // A user can create their own profile.
+            allow create: if isUserAuthenticated() && request.auth.uid == userId;
+            // A user can update their own profile.
+            allow update: if isUserAuthenticated() && request.auth.uid == userId;
+            // Users cannot delete profiles.
+            allow delete: if false;
+        }
+    }
+  }
+}
