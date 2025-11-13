@@ -62,8 +62,10 @@ export default function LoginPage() {
   const auth = useAuth();
   const { user, loading } = useUser();
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
     if (!loading && user) {
       router.push('/dashboard');
     }
@@ -121,7 +123,7 @@ export default function LoginPage() {
     }
   };
 
-  if (loading || user) {
+  if (!isClient || loading || user) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
             <p>Chargement...</p>
