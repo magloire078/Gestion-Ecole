@@ -21,13 +21,14 @@ export default function DashboardLayout({
   const router = useRouter();
   
   useEffect(() => {
-    // Cette logique ne s'exécute que côté client.
+    // Cette logique ne s'exécute que côté client, après que le chargement soit terminé.
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
 
   // Affiche un état de chargement tant que l'authentification est en cours de vérification.
+  // Cet état est le même sur le serveur et le client au premier rendu.
   if (loading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
