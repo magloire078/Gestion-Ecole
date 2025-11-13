@@ -19,19 +19,14 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useUser();
   const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-
+  
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient && !loading && !user) {
+    if (!loading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router, isClient]);
+  }, [user, loading, router]);
 
-  if (!isClient || loading || !user) {
+  if (loading || !user) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
