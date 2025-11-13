@@ -28,7 +28,6 @@ export default function DashboardLayout({
   }, [user, loading, router]);
 
   // Affiche un état de chargement tant que l'authentification est en cours de vérification.
-  // C'est sûr car `loading` est `true` au premier rendu serveur et client.
   if (loading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
