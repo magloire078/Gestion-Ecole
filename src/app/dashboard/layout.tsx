@@ -10,7 +10,7 @@ import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function DashboardLayout({
   children,
@@ -19,14 +19,19 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useUser();
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (isClient && !loading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isClient]);
 
-  if (loading || !user) {
+  if (!isClient || loading || !user) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
