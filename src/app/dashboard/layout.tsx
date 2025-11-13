@@ -21,15 +21,14 @@ export default function DashboardLayout({
   const router = useRouter();
   
   useEffect(() => {
-    // Redirige uniquement côté client, une fois que le chargement est terminé
-    // et qu'on est sûr que l'utilisateur n'est pas là.
+    // Cette logique ne s'exécute que côté client.
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
 
-  // Pendant que l'authentification est en cours de vérification,
-  // afficher un écran de chargement.
+  // Affiche un état de chargement tant que l'authentification est en cours de vérification.
+  // C'est sûr car `loading` est `true` au premier rendu serveur et client.
   if (loading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
@@ -41,9 +40,8 @@ export default function DashboardLayout({
     );
   }
 
-  // Si on est ici après le chargement, mais qu'il n'y a pas d'utilisateur,
-  // on ne rend rien car useEffect va bientôt rediriger.
-  // Cela évite un flash de contenu vide.
+  // Si après le chargement, il n'y a pas d'utilisateur, ne rien rendre.
+  // L'useEffect ci-dessus s'occupera de la redirection.
   if (!user) {
     return null;
   }
