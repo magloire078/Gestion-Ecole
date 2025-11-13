@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import './globals.css';
 import { useState, useEffect } from "react";
+import { FirebaseClientProvider, getFirebase } from "@/firebase";
 
 const SCHOOL_NAME_KEY = 'schoolName';
 const DEFAULT_TITLE = 'GèreEcole';
@@ -12,9 +13,10 @@ const DEFAULT_TITLE = 'GèreEcole';
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.Node;
 }>) {
   const [title, setTitle] = useState(DEFAULT_TITLE);
+  const firebase = getFirebase();
   
   useEffect(() => {
     const updateTitle = () => {
@@ -34,6 +36,19 @@ export default function RootLayout({
 
   }, []);
 
+  if (!firebase) {
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          <title>{title}</title>
+        </head>
+        <body className="font-body antialiased">
+          {/* You can show a loading spinner here */}
+        </body>
+      </html>
+    )
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -43,15 +58,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-        >
-            {children}
-            <Toaster />
-        </ThemeProvider>
+        <FirebaseClientProvider value={{ firebaseApp: firebase.app, auth: firebase.auth, firestore: firebase.firestore }}>
+          <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+          >
+              {children}
+              <Toaster />
+          </ThemeProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
