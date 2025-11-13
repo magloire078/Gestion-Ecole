@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider,
@@ -63,11 +63,21 @@ export default function LoginPage() {
   const { user, loading } = useUser();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
+  if (loading || user) {
+      return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <div className="text-center">
+                <p className="text-lg font-semibold">Chargement...</p>
+                <p className="text-muted-foreground">Vérification de l'authentification.</p>
+            </div>
+        </div>
+      );
+  }
+  
+  if (user) {
+    router.push('/dashboard');
+    return null;
+  }
 
   const handleSignIn = async () => {
     setIsSigningIn(true);
@@ -120,17 +130,6 @@ export default function LoginPage() {
         setIsSigningIn(false);
     }
   };
-
-  if (loading || user) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <div className="text-center">
-                <p className="text-lg font-semibold">Chargement...</p>
-                <p className="text-muted-foreground">Redirection en cours.</p>
-            </div>
-        </div>
-      );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
