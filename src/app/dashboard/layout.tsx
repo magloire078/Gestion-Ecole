@@ -10,7 +10,7 @@ import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function DashboardLayout({
   children,

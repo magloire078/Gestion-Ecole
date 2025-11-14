@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider,
@@ -63,6 +63,13 @@ export default function LoginPage() {
   const { user, loading } = useUser();
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (!loading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, router]);
+
+
   if (loading || user) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
@@ -72,11 +79,6 @@ export default function LoginPage() {
             </div>
         </div>
       );
-  }
-  
-  if (user) {
-    router.push('/dashboard');
-    return null;
   }
 
   const handleSignIn = async () => {
