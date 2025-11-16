@@ -48,6 +48,9 @@ service cloud.firestore {
         match /cycles/{cycleId} {
             allow read, create, update, delete: if isUserInSchool(schoolId);
         }
+        match /fees/{feeId} {
+            allow read, create, update, delete: if isUserInSchool(schoolId);
+        }
     }
   }
 }

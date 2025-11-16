@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockStudentData, mockClassData, mockFeeData } from "@/lib/data";
+import { mockStudentData, mockClassData } from "@/lib/data";
 import type { Student, Fee } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -46,6 +46,11 @@ import { useToast } from "@/hooks/use-toast";
 import { Pencil, GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Image from "next/image";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
@@ -68,18 +73,24 @@ const getImageHintForGrade = (grade: string): string => {
 
 
 export default function FeesPage() {
-  // Student payment tracking state
+  const firestore = useFirestore();
+  const schoolId = 'test-school';
+
+  // --- Firestore Data Hooks ---
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/fees`) : null, [firestore, schoolId]);
+  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
+  const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+
+  // Student payment tracking state (still using mock data)
   const [students, setStudents] = useState<Student[]>(mockStudentData);
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-  const [isClient, setIsClient] = useState(false);
   const [isManageFeeDialogOpen, setIsManageFeeDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [currentAmountDue, setCurrentAmountDue] = useState('');
   const [currentTuitionStatus, setCurrentTuitionStatus] = useState<TuitionStatus>('Soldé');
   
   // Fee grid management state
-  const [fees, setFees] = useState<Fee[]>(mockFeeData);
   const [isAddFeeGridDialogOpen, setIsAddFeeGridDialogOpen] = useState(false);
   const [isEditFeeGridDialogOpen, setIsEditFeeGridDialogOpen] = useState(false);
   const [isDeleteFeeGridDialogOpen, setIsDeleteFeeGridDialogOpen] = useState(false);
@@ -91,6 +102,7 @@ export default function FeesPage() {
   const [newFeeDetails, setNewFeeDetails] = useState('');
 
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
   
   useEffect(() => {
     setIsClient(true);
@@ -126,7 +138,7 @@ export default function FeesPage() {
     return filteredStudents.reduce((acc, student) => acc + student.amountDue, 0);
   }, [filteredStudents]);
   
-  // Student payment functions
+  // Student payment functions (still using mock data logic)
   const handleOpenManageDialog = (student: Student) => {
     setSelectedStudent(student);
     setIsManageFeeDialogOpen(true);
@@ -150,7 +162,9 @@ export default function FeesPage() {
     setSelectedStudent(null);
   };
 
-  // Fee grid functions
+  // --- Firestore CRUD for Fee Grid ---
+  const getFeeDocRef = (feeId: string) => doc(firestore, `schools/${schoolId}/fees/${feeId}`);
+
   const resetFeeForm = () => {
     setNewFeeGrade('');
     setNewFeeAmount('');
@@ -163,17 +177,23 @@ export default function FeesPage() {
         toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
         return;
     }
-    const newFee: Fee = {
-        id: `F${fees.length + 1}`,
+    const newFeeData = {
         grade: newFeeGrade,
         amount: newFeeAmount,
         installments: newFeeInstallments,
         details: newFeeDetails,
     };
-    setFees([...fees, newFee]);
-    toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${newFeeGrade} a été créée.` });
-    resetFeeForm();
-    setIsAddFeeGridDialogOpen(false);
+
+    const feesCollectionRef = collection(firestore, `schools/${schoolId}/fees`);
+    addDoc(feesCollectionRef, newFeeData)
+      .then(() => {
+        toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${newFeeGrade} a été créée.` });
+        resetFeeForm();
+        setIsAddFeeGridDialogOpen(false);
+      }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: feesCollectionRef.path, operation: 'create', requestResourceData: newFeeData });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const handleOpenEditFeeGridDialog = (fee: Fee) => {
@@ -186,11 +206,25 @@ export default function FeesPage() {
         toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
         return;
     }
-    setFees(fees.map(f => f.id === editingFee.id ? { ...f, grade: newFeeGrade, amount: newFeeAmount, installments: newFeeInstallments, details: newFeeDetails } : f));
-    toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${newFeeGrade} a été mise à jour.` });
-    setIsEditFeeGridDialogOpen(false);
-    setEditingFee(null);
-    resetFeeForm();
+    
+    const feeDocRef = getFeeDocRef(editingFee.id);
+    const updatedData = { 
+        grade: newFeeGrade, 
+        amount: newFeeAmount, 
+        installments: newFeeInstallments, 
+        details: newFeeDetails 
+    };
+
+    setDoc(feeDocRef, updatedData, { merge: true })
+      .then(() => {
+        toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${newFeeGrade} a été mise à jour.` });
+        setIsEditFeeGridDialogOpen(false);
+        setEditingFee(null);
+        resetFeeForm();
+      }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: feeDocRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   const handleOpenDeleteFeeGridDialog = (fee: Fee) => {
@@ -200,10 +234,16 @@ export default function FeesPage() {
 
   const handleDeleteFeeGrid = () => {
     if (!feeToDelete) return;
-    setFees(fees.filter(f => f.id !== feeToDelete.id));
-    toast({ title: "Grille tarifaire supprimée", description: `La grille pour ${feeToDelete.grade} a été supprimée.` });
-    setIsDeleteFeeGridDialogOpen(false);
-    setFeeToDelete(null);
+    const feeDocRef = getFeeDocRef(feeToDelete.id);
+    deleteDoc(feeDocRef)
+      .then(() => {
+        toast({ title: "Grille tarifaire supprimée", description: `La grille pour ${feeToDelete.grade} a été supprimée.` });
+        setIsDeleteFeeGridDialogOpen(false);
+        setFeeToDelete(null);
+      }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: feeDocRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   return (
@@ -252,53 +292,57 @@ export default function FeesPage() {
             </Dialog>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {fees.map((fee: Fee) => (
-                <Card key={fee.id} className="flex flex-col">
-                    <CardHeader className="p-0 relative">
-                         <div className="relative h-40 w-full">
-                            <Image 
-                                src={`https://picsum.photos/seed/${fee.id}/400/200`} 
-                                alt={fee.grade}
-                                layout="fill"
-                                objectFit="cover"
-                                className="rounded-t-lg"
-                                data-ai-hint={getImageHintForGrade(fee.grade)}
-                            />
-                        </div>
-                         <div className="absolute top-2 right-2">
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full"><MoreHorizontal className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleOpenEditFeeGridDialog(fee)}>Modifier</DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteFeeGridDialog(fee)}>Supprimer</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                         </div>
-                    </CardHeader>
-                     <CardContent className="p-4 flex-1 flex flex-col justify-between">
-                        <div>
-                             <CardTitle className="flex items-center gap-2 text-xl">
-                                <GraduationCap className="h-5 w-5" />
-                                {fee.grade}
-                            </CardTitle>
-                            <div className="flex items-baseline gap-2 mt-2">
-                                <p className="text-3xl font-bold text-primary">{fee.amount}</p>
-                                <p className="text-sm text-muted-foreground">/ an</p>
+            {feesLoading ? (
+                [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
+            ) : (
+                fees.map((fee: Fee) => (
+                    <Card key={fee.id} className="flex flex-col">
+                        <CardHeader className="p-0 relative">
+                            <div className="relative h-40 w-full">
+                                <Image 
+                                    src={`https://picsum.photos/seed/${fee.id}/400/200`} 
+                                    alt={fee.grade}
+                                    layout="fill"
+                                    objectFit="cover"
+                                    className="rounded-t-lg"
+                                    data-ai-hint={getImageHintForGrade(fee.grade)}
+                                />
                             </div>
-                             <CardDescription className="flex items-center gap-2 mt-2 text-sm font-medium text-primary">
-                                <CalendarDays className="h-4 w-4" />
-                                <span>{fee.installments}</span>
-                            </CardDescription>
-                            <CardDescription className="flex items-start gap-2 mt-3 text-xs">
-                                <FileText className="h-4 w-4 mt-0.5 shrink-0" />
-                                <span>{fee.details}</span>
-                            </CardDescription>
-                        </div>
-                    </CardContent>
-                </Card>
-            ))}
+                            <div className="absolute top-2 right-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full"><MoreHorizontal className="h-4 w-4" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleOpenEditFeeGridDialog(fee)}>Modifier</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteFeeGridDialog(fee)}>Supprimer</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="p-4 flex-1 flex flex-col justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2 text-xl">
+                                    <GraduationCap className="h-5 w-5" />
+                                    {fee.grade}
+                                </CardTitle>
+                                <div className="flex items-baseline gap-2 mt-2">
+                                    <p className="text-3xl font-bold text-primary">{fee.amount}</p>
+                                    <p className="text-sm text-muted-foreground">/ an</p>
+                                </div>
+                                <CardDescription className="flex items-center gap-2 mt-2 text-sm font-medium text-primary">
+                                    <CalendarDays className="h-4 w-4" />
+                                    <span>{fee.installments}</span>
+                                </CardDescription>
+                                <CardDescription className="flex items-start gap-2 mt-3 text-xs">
+                                    <FileText className="h-4 w-4 mt-0.5 shrink-0" />
+                                    <span>{fee.details}</span>
+                                </CardDescription>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))
+            )}
         </div>
       </div>
 
