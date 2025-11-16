@@ -61,6 +61,7 @@ export type Fee = {
   id: string;
   grade: string;
   amount: string;
+  installments: string;
   details: string;
 };
 
@@ -215,10 +216,10 @@ export const mockLibraryData: Book[] = [
 ];
 
 export const mockFeeData: Fee[] = [
-  { id: 'F1', grade: 'Maternelle', amount: '98 000 CFA / mois', details: 'Paiement avant le 5 de chaque mois. Inclus la cantine.' },
-  { id: 'F2', grade: 'Primaire', amount: '131 000 CFA / mois', details: 'Paiement avant le 5 de chaque mois. Fournitures scolaires non incluses.' },
-  { id: 'F3', grade: 'Collège', amount: '164 000 CFA / mois', details: 'Paiement trimestriel possible. Inclus l\'accès à la bibliothèque.' },
-  { id: 'F4', grade: 'Lycée', amount: '197 000 CFA / mois', details: 'Paiement trimestriel possible. Frais d\'examen en sus.' },
+  { id: 'F1', grade: 'Maternelle', amount: '98 000 CFA', installments: '10 tranches mensuelles', details: 'Paiement avant le 5 de chaque mois. Inclus la cantine.' },
+  { id: 'F2', grade: 'Primaire', amount: '131 000 CFA', installments: '10 tranches mensuelles', details: 'Paiement avant le 5 de chaque mois. Fournitures scolaires non incluses.' },
+  { id: 'F3', grade: 'Collège', amount: '164 000 CFA', installments: '3 tranches trimestrielles', details: 'Paiement trimestriel possible. Inclus l\'accès à la bibliothèque.' },
+  { id: 'F4', grade: 'Lycée', amount: '197 000 CFA', installments: '3 tranches trimestrielles', details: 'Paiement trimestriel possible. Frais d\'examen en sus.' },
 ];
 
 export const mockStudentPerformanceData: Record<string, string> = {

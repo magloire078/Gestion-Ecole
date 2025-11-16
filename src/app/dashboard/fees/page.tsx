@@ -43,7 +43,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil, GraduationCap, FileText, PlusCircle, MoreHorizontal } from "lucide-react";
+import { Pencil, GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Image from "next/image";
 
@@ -87,6 +87,7 @@ export default function FeesPage() {
   const [feeToDelete, setFeeToDelete] = useState<Fee | null>(null);
   const [newFeeGrade, setNewFeeGrade] = useState('');
   const [newFeeAmount, setNewFeeAmount] = useState('');
+  const [newFeeInstallments, setNewFeeInstallments] = useState('');
   const [newFeeDetails, setNewFeeDetails] = useState('');
 
   const { toast } = useToast();
@@ -108,6 +109,7 @@ export default function FeesPage() {
     if (editingFee) {
         setNewFeeGrade(editingFee.grade);
         setNewFeeAmount(editingFee.amount);
+        setNewFeeInstallments(editingFee.installments);
         setNewFeeDetails(editingFee.details);
     }
   }, [editingFee]);
@@ -152,18 +154,20 @@ export default function FeesPage() {
   const resetFeeForm = () => {
     setNewFeeGrade('');
     setNewFeeAmount('');
+    setNewFeeInstallments('');
     setNewFeeDetails('');
   };
 
   const handleAddFeeGrid = () => {
-    if (!newFeeGrade || !newFeeAmount || !newFeeDetails) {
-        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
+    if (!newFeeGrade || !newFeeAmount || !newFeeInstallments) {
+        toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
         return;
     }
     const newFee: Fee = {
         id: `F${fees.length + 1}`,
         grade: newFeeGrade,
         amount: newFeeAmount,
+        installments: newFeeInstallments,
         details: newFeeDetails,
     };
     setFees([...fees, newFee]);
@@ -178,11 +182,11 @@ export default function FeesPage() {
   };
 
   const handleEditFeeGrid = () => {
-    if (!editingFee || !newFeeGrade || !newFeeAmount || !newFeeDetails) {
-        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
+    if (!editingFee || !newFeeGrade || !newFeeAmount || !newFeeInstallments) {
+        toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
         return;
     }
-    setFees(fees.map(f => f.id === editingFee.id ? { ...f, grade: newFeeGrade, amount: newFeeAmount, details: newFeeDetails } : f));
+    setFees(fees.map(f => f.id === editingFee.id ? { ...f, grade: newFeeGrade, amount: newFeeAmount, installments: newFeeInstallments, details: newFeeDetails } : f));
     toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${newFeeGrade} a été mise à jour.` });
     setIsEditFeeGridDialogOpen(false);
     setEditingFee(null);
@@ -229,11 +233,15 @@ export default function FeesPage() {
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="amount" className="text-right">Montant</Label>
-                            <Input id="amount" value={newFeeAmount} onChange={(e) => setNewFeeAmount(e.target.value)} className="col-span-3" placeholder="Ex: 98 000 CFA / mois" />
+                            <Input id="amount" value={newFeeAmount} onChange={(e) => setNewFeeAmount(e.target.value)} className="col-span-3" placeholder="Ex: 980 000 CFA" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="installments" className="text-right">Tranches</Label>
+                            <Input id="installments" value={newFeeInstallments} onChange={(e) => setNewFeeInstallments(e.target.value)} className="col-span-3" placeholder="Ex: 10 tranches mensuelles" />
                         </div>
                         <div className="grid grid-cols-4 items-start gap-4">
                             <Label htmlFor="details" className="text-right pt-2">Détails</Label>
-                            <Textarea id="details" value={newFeeDetails} onChange={(e) => setNewFeeDetails(e.target.value)} className="col-span-3" placeholder="Détails supplémentaires..." />
+                            <Textarea id="details" value={newFeeDetails} onChange={(e) => setNewFeeDetails(e.target.value)} className="col-span-3" placeholder="Détails supplémentaires... (optionnel)" />
                         </div>
                     </div>
                     <DialogFooter>
@@ -275,7 +283,14 @@ export default function FeesPage() {
                                 <GraduationCap className="h-5 w-5" />
                                 {fee.grade}
                             </CardTitle>
-                            <p className="text-3xl font-bold text-primary mt-2">{fee.amount}</p>
+                            <div className="flex items-baseline gap-2 mt-2">
+                                <p className="text-3xl font-bold text-primary">{fee.amount}</p>
+                                <p className="text-sm text-muted-foreground">/ an</p>
+                            </div>
+                             <CardDescription className="flex items-center gap-2 mt-2 text-sm font-medium text-primary">
+                                <CalendarDays className="h-4 w-4" />
+                                <span>{fee.installments}</span>
+                            </CardDescription>
                             <CardDescription className="flex items-start gap-2 mt-3 text-xs">
                                 <FileText className="h-4 w-4 mt-0.5 shrink-0" />
                                 <span>{fee.details}</span>
@@ -437,6 +452,10 @@ export default function FeesPage() {
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="edit-amount" className="text-right">Montant</Label>
                     <Input id="edit-amount" value={newFeeAmount} onChange={(e) => setNewFeeAmount(e.target.value)} className="col-span-3" />
+                </div>
+                 <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="edit-installments" className="text-right">Tranches</Label>
+                    <Input id="edit-installments" value={newFeeInstallments} onChange={(e) => setNewFeeInstallments(e.target.value)} className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
                     <Label htmlFor="edit-details" className="text-right pt-2">Détails</Label>

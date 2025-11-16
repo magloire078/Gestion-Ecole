@@ -48,6 +48,18 @@
             "order": { "type": "number", "description": "The display order of the cycle." }
         },
         "required": ["name", "order"]
+    },
+    "fee": {
+        "title": "Fee",
+        "description": "A tuition fee structure.",
+        "type": "object",
+        "properties": {
+            "grade": { "type": "string", "description": "The grade level for the fee." },
+            "amount": { "type": "string", "description": "The total amount of the fee." },
+            "details": { "type": "string", "description": "Additional details about the fee." },
+            "installments": { "type": "string", "description": "Payment installment options." }
+        },
+        "required": ["grade", "amount"]
     }
   },
   "auth": {
@@ -69,6 +81,10 @@
     "/schools/{schoolId}/cycles/{cycleId}": {
         "schema": { "$ref": "#/entities/cycle" },
         "description": "Stores the list of educational cycles for a school."
+    },
+    "/schools/{schoolId}/fees/{feeId}": {
+        "schema": { "$ref": "#/entities/fee" },
+        "description": "Stores the tuition fee structure for the school."
     }
   }
 }
