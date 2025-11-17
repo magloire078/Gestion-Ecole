@@ -136,7 +136,7 @@ export default function ClassesPage() {
   const getClassDocRef = (classId: string) => doc(firestore, `schools/${schoolId}/classes/${classId}`);
 
   // --- CRUD Operations ---
-  const handleAddClass = async () => {
+  const handleAddClass = () => {
     if (!schoolId || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
         toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
         return;
@@ -172,7 +172,7 @@ export default function ClassesPage() {
     setIsEditDialogOpen(true);
   };
 
-  const handleEditClass = async () => {
+  const handleEditClass = () => {
     if (!schoolId || !editingClass || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
       return;
@@ -203,7 +203,7 @@ export default function ClassesPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteClass = async () => {
+  const handleDeleteClass = () => {
     if (!schoolId || !classToDelete) return;
     
     const classDocRef = getClassDocRef(classToDelete.id);
@@ -494,3 +494,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
