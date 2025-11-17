@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockTeacherData } from "@/lib/data";
 import { PlusCircle, MoreHorizontal, Mail, BookUser, Phone } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -38,18 +37,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
-import type { Teacher } from "@/lib/data";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { Skeleton } from "@/components/ui/skeleton";
 
+// Define TypeScript interface based on backend.json
+interface Teacher {
+  id: string;
+  name: string;
+  subject: string;
+  email: string;
+  phone?: string;
+  class?: string;
+}
 
 export default function TeachersPage() {
-  const [teachers, setTeachers] = useState<Teacher[]>(mockTeacherData);
+  const firestore = useFirestore();
+  const schoolId = 'test-school'; // Hardcoded for now
+
+  // --- Firestore Data Hooks ---
+  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
+  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
+
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -81,6 +99,8 @@ export default function TeachersPage() {
     setNewTeacherClass('');
   };
   
+  const getTeacherDocRef = (teacherId: string) => doc(firestore, `schools/${schoolId}/teachers/${teacherId}`);
+
   const handleOpenDeleteDialog = (teacher: Teacher) => {
     setTeacherToDelete(teacher);
     setIsDeleteDialogOpen(true);
@@ -101,24 +121,27 @@ export default function TeachersPage() {
       return;
     }
 
-    const newTeacher: Teacher = {
-      id: `T${teachers.length + 1}`,
+    const newTeacherData = {
       name: newTeacherName,
       subject: newTeacherSubject,
       email: newTeacherEmail,
-      phone: newTeacherPhone || undefined,
-      class: newTeacherClass || undefined,
+      phone: newTeacherPhone || '',
+      class: newTeacherClass || '',
     };
-
-    setTeachers([...teachers, newTeacher]);
-
-    toast({
-      title: "Enseignant ajouté",
-      description: `${newTeacherName} a été ajouté(e) avec succès.`,
-    });
-
-    resetAddForm();
-    setIsAddTeacherDialogOpen(false);
+    
+    const teachersCollectionRef = collection(firestore, `schools/${schoolId}/teachers`);
+    addDoc(teachersCollectionRef, newTeacherData)
+      .then(() => {
+        toast({
+          title: "Enseignant ajouté",
+          description: `${newTeacherName} a été ajouté(e) avec succès.`,
+        });
+        resetAddForm();
+        setIsAddTeacherDialogOpen(false);
+      }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: teachersCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
   
   const handleEditTeacher = () => {
@@ -131,35 +154,46 @@ export default function TeachersPage() {
       return;
     }
 
-    setTeachers(teachers.map(t => 
-      t.id === editingTeacher.id 
-        ? { ...t, name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail, phone: newTeacherPhone || undefined, class: newTeacherClass || undefined } 
-        : t
-    ));
-
-    toast({
-      title: "Enseignant modifié",
-      description: `Les informations de ${newTeacherName} ont été mises à jour.`,
-    });
+    const teacherDocRef = getTeacherDocRef(editingTeacher.id);
+    const updatedData = {
+      name: newTeacherName,
+      subject: newTeacherSubject,
+      email: newTeacherEmail,
+      phone: newTeacherPhone || '',
+      class: newTeacherClass || '',
+    };
     
-    setIsEditDialogOpen(false);
-    setEditingTeacher(null);
+    setDoc(teacherDocRef, updatedData, { merge: true })
+      .then(() => {
+        toast({
+          title: "Enseignant modifié",
+          description: `Les informations de ${newTeacherName} ont été mises à jour.`,
+        });
+        setIsEditDialogOpen(false);
+        setEditingTeacher(null);
+      }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: teacherDocRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
   
   const handleDeleteTeacher = () => {
     if (!teacherToDelete) return;
     
-    setTeachers(teachers.filter(t => t.id !== teacherToDelete.id));
-
-    toast({
-      title: "Enseignant supprimé",
-      description: `${teacherToDelete.name} a été retiré(e) de la liste.`,
-    });
-
-    setIsDeleteDialogOpen(false);
-    setTeacherToDelete(null);
+    const teacherDocRef = getTeacherDocRef(teacherToDelete.id);
+    deleteDoc(teacherDocRef)
+      .then(() => {
+        toast({
+          title: "Enseignant supprimé",
+          description: `${teacherToDelete.name} a été retiré(e) de la liste.`,
+        });
+        setIsDeleteDialogOpen(false);
+        setTeacherToDelete(null);
+      }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: teacherDocRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
-
 
   return (
     <>
@@ -226,63 +260,70 @@ export default function TeachersPage() {
             </DialogContent>
           </Dialog>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {teachers.map((teacher) => {
-            const fallback = teacher.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-            return (
-              <Card key={teacher.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
-                            <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100`} alt={teacher.name} data-ai-hint="person face" />
-                            <AvatarFallback>{fallback}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <Link href={`/dashboard/teachers/${teacher.id}`} className="hover:underline">
-                                <CardTitle>{teacher.name}</CardTitle>
-                            </Link>
-                            <CardDescription>{teacher.subject}</CardDescription>
-                        </div>
+        
+        {teachersLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-44 w-full" />)}
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {teachers.map((teacher) => {
+              const fallback = teacher.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+              return (
+                <Card key={teacher.id} className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                              <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100`} alt={teacher.name} data-ai-hint="person face" />
+                              <AvatarFallback>{fallback}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                              <Link href={`/dashboard/teachers/${teacher.id}`} className="hover:underline">
+                                  <CardTitle>{teacher.name}</CardTitle>
+                              </Link>
+                              <CardDescription>{teacher.subject}</CardDescription>
+                          </div>
+                      </div>
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="shrink-0">
+                              <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleOpenEditDialog(teacher)}>Modifier</DropdownMenuItem>
+                          <DropdownMenuItem
+                              className="text-destructive"
+                              onClick={() => handleOpenDeleteDialog(teacher)}
+                          >
+                              Supprimer
+                          </DropdownMenuItem>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="shrink-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleOpenEditDialog(teacher)}>Modifier</DropdownMenuItem>
-                        <DropdownMenuItem
-                            className="text-destructive"
-                            onClick={() => handleOpenDeleteDialog(teacher)}
-                        >
-                            Supprimer
-                        </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
-                   <div className="flex items-center">
-                        <Mail className="mr-2 h-4 w-4" />
-                        <a href={`mailto:${teacher.email}`} className="truncate hover:underline">{teacher.email}</a>
-                   </div>
-                    {teacher.phone && (
-                        <div className="flex items-center">
-                            <Phone className="mr-2 h-4 w-4" />
-                            <a href={`tel:${teacher.phone}`} className="truncate hover:underline">{teacher.phone}</a>
-                        </div>
-                    )}
-                   <div className="flex items-center">
-                        <BookUser className="mr-2 h-4 w-4" />
-                        <span>Classe principale: <strong>{teacher.class || 'N/A'}</strong></span>
-                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
+                     <div className="flex items-center">
+                          <Mail className="mr-2 h-4 w-4" />
+                          <a href={`mailto:${teacher.email}`} className="truncate hover:underline">{teacher.email}</a>
+                     </div>
+                      {teacher.phone && (
+                          <div className="flex items-center">
+                              <Phone className="mr-2 h-4 w-4" />
+                              <a href={`tel:${teacher.phone}`} className="truncate hover:underline">{teacher.phone}</a>
+                          </div>
+                      )}
+                     <div className="flex items-center">
+                          <BookUser className="mr-2 h-4 w-4" />
+                          <span>Classe principale: <strong>{teacher.class || 'N/A'}</strong></span>
+                     </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
       
        <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
@@ -354,3 +395,5 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    
