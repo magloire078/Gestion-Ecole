@@ -20,9 +20,6 @@ service cloud.firestore {
     
     // School-specific data
     match /schools/{schoolId} {
-        // This rule is too broad and doesn't cascade as expected to subcollections
-        // for more complex scenarios. We will define rules on subcollections directly.
-        // allow read, write: if isUserInSchool(schoolId);
         
         // Specifically for user profiles within a school
         match /users/{userId} {
@@ -42,19 +39,19 @@ service cloud.firestore {
         // Rules for teachers, classes, cycles, fees and students
         // Users belonging to the school can perform all CRUD operations on these collections.
         match /teachers/{teacherId} {
-            allow read, create, update, delete: if isUserInSchool(schoolId);
+            allow read, write: if isUserInSchool(schoolId);
         }
         match /classes/{classId} {
-            allow read, create, update, delete: if isUserInSchool(schoolId);
+            allow read, write: if isUserInSchool(schoolId);
         }
         match /cycles/{cycleId} {
-            allow read, create, update, delete: if isUserInSchool(schoolId);
+            allow read, write: if isUserInSchool(schoolId);
         }
         match /fees/{feeId} {
-            allow read, create, update, delete: if isUserInSchool(schoolId);
+            allow read, write: if isUserInSchool(schoolId);
         }
         match /students/{studentId} {
-            allow read, create, update, delete: if isUserInSchool(schoolId);
+            allow read, write: if isUserInSchool(schoolId);
         }
     }
   }
