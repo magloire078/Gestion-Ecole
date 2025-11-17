@@ -7,9 +7,6 @@ import { useState, useEffect, ReactNode } from "react";
 import { FirebaseClientProvider, getFirebase } from "@/firebase";
 import { FirebaseContextValue } from "@/firebase/provider";
 
-const SCHOOL_NAME_KEY = 'schoolName';
-const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
-
 export function MainLayout({
   children,
 }: Readonly<{
@@ -22,19 +19,6 @@ export function MainLayout({
     // This effect runs only on the client, after the initial render.
     setIsClient(true);
     setFirebase(getFirebase());
-    
-    const updateTitle = () => {
-      const savedName = localStorage.getItem(SCHOOL_NAME_KEY);
-      document.title = savedName ? `${savedName} - Gestion Scolaire` : DEFAULT_TITLE;
-    };
-    
-    updateTitle(); // Initial call
-    window.addEventListener('settings-updated', updateTitle); // Listen for changes
-    
-    return () => {
-      window.removeEventListener('settings-updated', updateTitle);
-    };
-
   }, []);
   
   if (!isClient || !firebase) {

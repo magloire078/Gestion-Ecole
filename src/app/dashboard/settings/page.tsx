@@ -7,38 +7,83 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
-
-const SCHOOL_NAME_KEY = 'schoolName';
-const DIRECTOR_NAME_KEY = 'directorName';
-const FOUNDER_NAME_KEY = 'founderName';
+import { useSchoolData } from "@/hooks/use-school-data";
+import { useUser } from "@/firebase";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { user } = useUser();
+  const { schoolName: initialSchoolName, directorName: initialDirectorName, loading, updateSchoolData } = useSchoolData();
+
   const [schoolName, setSchoolName] = useState("");
   const [directorName, setDirectorName] = useState("");
-  const [founderName, setFounderName] = useState("");
-  const [userEmail, setUserEmail] = useState("directeur@ecole.com");
+  const [founderName, setFounderName] = useState(""); // This can remain local or be moved to Firestore if needed
+  const [isSaving, setIsSaving] = useState(false);
+
 
   useEffect(() => {
-    // We need to wait for the component to mount before accessing localStorage
-    setSchoolName(localStorage.getItem(SCHOOL_NAME_KEY) || "GèreEcole");
-    setDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || "Jean Dupont");
-    setFounderName(localStorage.getItem(FOUNDER_NAME_KEY) || "");
-  }, []);
+    if (!loading) {
+      setSchoolName(initialSchoolName || "");
+      setDirectorName(initialDirectorName || "");
+      // You might want to fetch founderName from Firestore as well if it's important
+    }
+  }, [initialSchoolName, initialDirectorName, loading]);
 
-  const handleSaveChanges = () => {
-    localStorage.setItem(SCHOOL_NAME_KEY, schoolName);
-    localStorage.setItem(DIRECTOR_NAME_KEY, directorName);
-    localStorage.setItem(FOUNDER_NAME_KEY, founderName);
-
-    // Dispatch a custom event to notify other components of the change
-    window.dispatchEvent(new CustomEvent('settings-updated'));
-
-    toast({
-      title: "Paramètres enregistrés",
-      description: "Les informations de l'école ont été mises à jour.",
-    });
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      await updateSchoolData({
+        name: schoolName,
+        directorName: directorName,
+        // founderName: founderName // Uncomment to save founderName to Firestore
+      });
+      toast({
+        title: "Paramètres enregistrés",
+        description: "Les informations de l'école ont été mises à jour.",
+      });
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'enregistrer les paramètres. Vérifiez vos permissions.",
+      });
+    } finally {
+        setIsSaving(false);
+    }
   };
+  
+  if (loading) {
+      return (
+          <div className="space-y-6">
+               <div>
+                <h1 className="text-lg font-semibold md:text-2xl">Paramètres</h1>
+                <p className="text-muted-foreground">
+                Gérez les paramètres de votre compte et de votre école.
+                </p>
+            </div>
+            <Card>
+                <CardHeader>
+                    <Skeleton className="h-6 w-24" />
+                    <Skeleton className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                     <div className="space-y-2">
+                        <Skeleton className="h-4 w-32" />
+                        <Skeleton className="h-10 w-full" />
+                    </div>
+                </CardContent>
+                 <CardFooter className="border-t px-6 py-4">
+                    <Skeleton className="h-10 w-48" />
+                </CardFooter>
+            </Card>
+          </div>
+      )
+  }
 
   return (
     <div className="space-y-6">
@@ -72,18 +117,11 @@ export default function SettingsPage() {
               placeholder="Nom du directeur ou de la directrice" 
             />
           </div>
-           <div className="space-y-2">
-            <Label htmlFor="founder-name">Nom du Fondateur (optionnel)</Label>
-            <Input 
-              id="founder-name" 
-              value={founderName}
-              onChange={(e) => setFounderName(e.target.value)}
-              placeholder="Nom du fondateur ou de la fondatrice" 
-            />
-          </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button onClick={handleSaveChanges}>Enregistrer les Modifications</Button>
+          <Button onClick={handleSaveChanges} disabled={isSaving}>
+              {isSaving ? "Enregistrement..." : "Enregistrer les Modifications"}
+          </Button>
         </CardFooter>
       </Card>
        <Card>
@@ -94,11 +132,11 @@ export default function SettingsPage() {
         <CardContent>
             <div className="space-y-2">
                 <Label>Nom</Label>
-                <Input value={directorName} disabled />
+                <Input value={user?.displayName || ''} disabled />
             </div>
             <div className="space-y-2 mt-4">
                 <Label>Email</Label>
-                <Input value={userEmail} disabled />
+                <Input value={user?.email || ''} disabled />
             </div>
         </CardContent>
       </Card>

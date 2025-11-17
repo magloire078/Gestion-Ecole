@@ -16,40 +16,23 @@ import {
   DropdownMenuSubContent,
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
-import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
-import { useAuth } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-
-const DIRECTOR_NAME_KEY = 'directorName';
+import { useSchoolData } from "@/hooks/use-school-data";
+import { Skeleton } from "./ui/skeleton";
 
 export function UserNav() {
-  const [directorName, setDirectorName] = useState("Jean Dupont");
   const { setTheme } = useTheme();
   const auth = useAuth();
+  const { user } = useUser();
   const router = useRouter();
   const { toast } = useToast();
+  const { directorName, loading: schoolDataLoading } = useSchoolData();
 
-  const updateDirectorName = () => {
-    const savedDirectorName = localStorage.getItem(DIRECTOR_NAME_KEY);
-    setDirectorName(savedDirectorName || "Jean Dupont");
-  };
-
-  useEffect(() => {
-    updateDirectorName();
-
-    // Listen for the custom event to update the name when settings change
-    window.addEventListener('settings-updated', updateDirectorName);
-
-    // Cleanup listener on component unmount
-    return () => {
-      window.removeEventListener('settings-updated', updateDirectorName);
-    };
-  }, []);
-  
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -57,7 +40,8 @@ export function UserNav() {
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté(e).",
       });
-      router.push('/login');
+      // Use window.location to ensure all state is cleared
+      window.location.href = '/login';
     } catch (error) {
       console.error("Erreur de déconnexion: ", error);
       toast({
@@ -68,14 +52,19 @@ export function UserNav() {
     }
   };
 
-  const fallback = directorName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() || 'JD';
+  if (schoolDataLoading) {
+    return <Skeleton className="h-9 w-9 rounded-full" />;
+  }
+  
+  const displayName = directorName || user?.displayName || '...';
+  const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src="https://picsum.photos/100/100" alt="Directeur" data-ai-hint="person face" />
+            <AvatarImage src={`https://picsum.photos/seed/${user?.uid}/100`} alt={displayName} data-ai-hint="person face" />
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
         </Button>
@@ -83,17 +72,15 @@ export function UserNav() {
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{directorName}</p>
+            <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              directeur@ecole.com
+              {user?.email}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem>Profil</DropdownMenuItem>
-          <DropdownMenuItem>Facturation</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Paramètres</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Profil & Paramètres</DropdownMenuItem>
            <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
