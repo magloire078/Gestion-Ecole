@@ -194,7 +194,7 @@ export default function ReportsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom de l'élève</TableHead>
+                    <TableHead>Nom de l'Élève</TableHead>
                     <TableHead className="text-center">Moyenne Générale</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -209,7 +209,7 @@ export default function ReportsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" className="mr-2" onClick={() => openManageGradesDialog(student)}>
-                             <FilePenLine className="mr-2 h-4 w-4" /> Gérer les notes
+                             <FilePenLine className="mr-2 h-4 w-4" /> Gérer les Notes
                           </Button>
                            <Button variant="outline" size="sm" className="bg-accent hover:bg-accent/90" onClick={() => openGenerateCommentDialog(student)}>
                              <Bot className="mr-2 h-4 w-4" /> Appréciation IA
@@ -278,7 +278,7 @@ export default function ReportsPage() {
       <Dialog open={isGenerateCommentDialogOpen} onOpenChange={setIsGenerateCommentDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Générer une appréciation pour {selectedStudent?.name}</DialogTitle>
+            <DialogTitle>Générer une Appréciation pour {selectedStudent?.name}</DialogTitle>
             <DialogDescription>
               Utilisez l'IA pour rédiger une appréciation générale basée sur les notes de l'élève.
             </DialogDescription>
@@ -290,7 +290,7 @@ export default function ReportsPage() {
             </Button>
             {generatedComment && (
                 <div className="space-y-2 rounded-lg border bg-muted p-4 max-h-[300px] overflow-y-auto">
-                    <h4 className="font-semibold text-primary">Appréciation générale</h4>
+                    <h4 className="font-semibold text-primary">Appréciation Générale</h4>
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">{generatedComment}</p>
                 </div>
             )}

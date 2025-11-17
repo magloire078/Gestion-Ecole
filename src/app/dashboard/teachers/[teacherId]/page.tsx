@@ -74,7 +74,7 @@ export default function TeacherProfilePage() {
   return (
     <div className="space-y-6">
        <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Fiche d'information de l'enseignant</h1>
+            <h1 className="text-lg font-semibold md:text-2xl">Fiche d'Information de l'Enseignant</h1>
             <p className="text-muted-foreground">Vue détaillée du profil et des informations de l'enseignant.</p>
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
@@ -122,7 +122,7 @@ export default function TeacherProfilePage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                        <div className="grid gap-2">
-                            <Label htmlFor="teacher-skills">Compétences clés (séparées par des virgules)</Label>
+                            <Label htmlFor="teacher-skills">Compétences Clés (séparées par des virgules)</Label>
                             <Input 
                                 id="teacher-skills"
                                 placeholder="Ex: Excellente communication, Pédagogie adaptée, ..."
@@ -132,12 +132,12 @@ export default function TeacherProfilePage() {
                         </div>
                          <Button onClick={handleGenerateRecommendation} disabled={isLoading} className="w-full bg-accent hover:bg-accent/90">
                           <Bot className="mr-2 h-4 w-4" />
-                          {isLoading ? 'Génération en cours...' : 'Générer la lettre avec l\'IA'}
+                          {isLoading ? 'Génération en cours...' : 'Générer la Lettre avec l\'IA'}
                         </Button>
 
                         {recommendation && (
                             <div className="space-y-4 rounded-lg border bg-muted p-4 max-h-[400px] overflow-y-auto">
-                                <h4 className="font-semibold text-primary">Brouillon de la lettre</h4>
+                                <h4 className="font-semibold text-primary">Brouillon de la Lettre</h4>
                                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{recommendation}</p>
                             </div>
                         )}

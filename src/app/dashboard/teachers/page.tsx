@@ -79,7 +79,7 @@ export default function TeachersPage() {
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherSubject, setNewTeacherSubject] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
-  const [newTeacherPhone, setNewTeacherPhone] = useState('');
+  const [newTeacherPhone, setNewTeacherPhone] useState('');
   const [newTeacherClass, setNewTeacherClass] = useState('');
   
   useEffect(() => {
@@ -214,12 +214,12 @@ export default function TeachersPage() {
           }}>
             <DialogTrigger asChild>
               <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un enseignant
+                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Enseignant
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Ajouter un nouvel enseignant</DialogTitle>
+                <DialogTitle>Ajouter un Nouvel Enseignant</DialogTitle>
                 <DialogDescription>
                   Renseignez les informations du nouvel enseignant.
                 </DialogDescription>
@@ -337,7 +337,7 @@ export default function TeachersPage() {
         }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Modifier l'enseignant</DialogTitle>
+            <DialogTitle>Modifier l'Enseignant</DialogTitle>
             <DialogDescription>
               Mettez à jour les informations de <strong>{editingTeacher?.name}</strong>.
             </DialogDescription>
@@ -398,5 +398,3 @@ export default function TeachersPage() {
     </>
   );
 }
-
-    

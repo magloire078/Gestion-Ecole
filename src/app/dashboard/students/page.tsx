@@ -255,10 +255,10 @@ export default function StudentsPage() {
             <div className="flex gap-2">
               <Button variant="outline" onClick={handleAnalyzeSentiments} disabled={isAnalyzing}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                {isAnalyzing ? "Analyse..." : "Analyser les sentiments"}
+                {isAnalyzing ? "Analyse..." : "Analyser les Sentiments"}
               </Button>
                <Button onClick={() => router.push('/dashboard/registration')}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un élève
+                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Élève
                 </Button>
             </div>
           </div>
@@ -357,7 +357,7 @@ export default function StudentsPage() {
               </div>
               <Button onClick={handleSummarize} disabled={isSummarizing || !feedbackText.trim()} className="w-full bg-accent hover:bg-accent/90">
                 <Bot className="mr-2 h-4 w-4" />
-                {isSummarizing ? 'Analyse en cours...' : 'Générer le résumé'}
+                {isSummarizing ? 'Analyse en cours...' : 'Générer le Résumé'}
               </Button>
               {summary && (
                 <div className="space-y-4 rounded-lg border bg-muted p-4">
@@ -366,7 +366,7 @@ export default function StudentsPage() {
                     <p className="text-sm text-muted-foreground">{summary.summary}</p>
                   </div>
                   <div className="pt-2">
-                    <h4 className="font-semibold text-primary">Axes d'amélioration</h4>
+                    <h4 className="font-semibold text-primary">Axes d'Amélioration</h4>
                     <p className="text-sm text-muted-foreground">{summary.keyImprovementAreas}</p>
                   </div>
                 </div>
@@ -383,7 +383,7 @@ export default function StudentsPage() {
       }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Modifier l'élève</DialogTitle>
+            <DialogTitle>Modifier l'Élève</DialogTitle>
             <DialogDescription>
                 Mettez à jour les informations de <strong>{editingStudent?.name}</strong>.
             </DialogDescription>
@@ -463,5 +463,3 @@ export default function StudentsPage() {
     </>
   );
 }
-
-    

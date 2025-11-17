@@ -55,7 +55,7 @@ export default function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="school-name">Nom de l'école</Label>
+            <Label htmlFor="school-name">Nom de l'École</Label>
             <Input 
               id="school-name" 
               value={schoolName}
@@ -64,7 +64,7 @@ export default function SettingsPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="director-name">Nom du directeur</Label>
+            <Label htmlFor="director-name">Nom du Directeur</Label>
             <Input 
               id="director-name" 
               value={directorName}
@@ -73,7 +73,7 @@ export default function SettingsPage() {
             />
           </div>
            <div className="space-y-2">
-            <Label htmlFor="founder-name">Nom du fondateur (optionnel)</Label>
+            <Label htmlFor="founder-name">Nom du Fondateur (optionnel)</Label>
             <Input 
               id="founder-name" 
               value={founderName}
@@ -83,7 +83,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button onClick={handleSaveChanges}>Enregistrer les modifications</Button>
+          <Button onClick={handleSaveChanges}>Enregistrer les Modifications</Button>
         </CardFooter>
       </Card>
        <Card>

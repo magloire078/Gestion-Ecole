@@ -292,11 +292,11 @@ export default function ClassesPage() {
           <div className="flex gap-2">
             <Dialog open={isManageCyclesDialogOpen} onOpenChange={setIsManageCyclesDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Gérer les niveaux</Button>
+                    <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Gérer les Niveaux</Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Gérer les niveaux</DialogTitle>
+                        <DialogTitle>Gérer les Niveaux</DialogTitle>
                         <DialogDescription>Ajoutez ou supprimez des niveaux d'enseignement.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
@@ -324,12 +324,12 @@ export default function ClassesPage() {
             }}>
               <DialogTrigger asChild>
                 <Button>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une classe
+                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Ajouter une nouvelle classe</DialogTitle>
+                  <DialogTitle>Ajouter une Nouvelle Classe</DialogTitle>
                   <DialogDescription>
                     Renseignez les informations de la nouvelle classe.
                   </DialogDescription>
@@ -426,7 +426,7 @@ export default function ClassesPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Modifier la classe</DialogTitle>
+            <DialogTitle>Modifier la Classe</DialogTitle>
             <DialogDescription>Mettez à jour les informations de la classe <strong>{editingClass?.name}</strong>.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -494,6 +494,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    
-    

@@ -158,7 +158,7 @@ export default function LibraryPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Inventaire de la Bibliothèque</h1>
+            <h1 className="text-lg font-semibold md:text-2xl">Bibliothèque</h1>
             <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
@@ -167,12 +167,12 @@ export default function LibraryPage() {
           }}>
             <DialogTrigger asChild>
               <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un livre
+                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Ajouter un nouveau livre</DialogTitle>
+                <DialogTitle>Ajouter un Nouveau Livre</DialogTitle>
                 <DialogDescription>
                   Renseignez les informations du nouveau livre.
                 </DialogDescription>
@@ -263,7 +263,7 @@ export default function LibraryPage() {
       }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Modifier le livre</DialogTitle>
+            <DialogTitle>Modifier le Livre</DialogTitle>
             <DialogDescription>
               Mettez à jour les informations du livre <strong>"{editingBook?.title}"</strong>.
             </DialogDescription>
@@ -313,5 +313,3 @@ export default function LibraryPage() {
     </>
   );
 }
-
-    

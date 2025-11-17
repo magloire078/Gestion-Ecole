@@ -262,11 +262,11 @@ export default function FeesPage() {
             <h2 className="text-xl font-semibold">Grille Tarifaire</h2>
             <Dialog open={isAddFeeGridDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) resetFeeForm(); setIsAddFeeGridDialogOpen(isOpen); }}>
                 <DialogTrigger asChild>
-                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une grille</Button>
+                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Grille</Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Nouvelle grille tarifaire</DialogTitle>
+                        <DialogTitle>Nouvelle Grille Tarifaire</DialogTitle>
                         <DialogDescription>Entrez les détails de la nouvelle grille.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -352,7 +352,7 @@ export default function FeesPage() {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h2 className="text-xl font-semibold">Suivi des paiements des élèves</h2>
+                <h2 className="text-xl font-semibold">Suivi des Paiements des Élèves</h2>
                 <p className="text-muted-foreground">
                     Filtrez par classe ou par statut pour affiner les résultats.
                 </p>
@@ -388,10 +388,10 @@ export default function FeesPage() {
                 <Table>
                     <TableHeader>
                     <TableRow>
-                        <TableHead>Nom de l'élève</TableHead>
+                        <TableHead>Nom de l'Élève</TableHead>
                         <TableHead>Classe</TableHead>
-                        <TableHead className="text-center">Statut du paiement</TableHead>
-                        <TableHead className="text-right">Solde dû</TableHead>
+                        <TableHead className="text-center">Statut du Paiement</TableHead>
+                        <TableHead className="text-right">Solde Dû</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                     </TableHeader>
@@ -488,7 +488,7 @@ export default function FeesPage() {
       <Dialog open={isEditFeeGridDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) { setEditingFee(null); resetFeeForm(); } setIsEditFeeGridDialogOpen(isOpen); }}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Modifier la grille tarifaire</DialogTitle>
+                <DialogTitle>Modifier la Grille Tarifaire</DialogTitle>
                 <DialogDescription>Mettez à jour les détails de la grille.</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
@@ -534,5 +534,3 @@ export default function FeesPage() {
     </>
   );
 }
-
-    

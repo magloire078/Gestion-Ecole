@@ -181,12 +181,12 @@ export default function TimetablePage() {
            }}>
             <DialogTrigger asChild>
               <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une entrée
+                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Entrée
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Ajouter à l'emploi du temps</DialogTitle>
+                <DialogTitle>Ajouter à l'Emploi du Temps</DialogTitle>
                 <DialogDescription>
                   Sélectionnez une classe, un enseignant et une matière.
                 </DialogDescription>
@@ -283,7 +283,7 @@ export default function TimetablePage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Modifier l'entrée</DialogTitle>
+            <DialogTitle>Modifier l'Entrée</DialogTitle>
              <DialogDescription>
                   Mettez à jour la classe, l'enseignant ou la matière.
              </DialogDescription>

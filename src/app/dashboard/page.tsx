@@ -1,3 +1,4 @@
+
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookUser, BookOpen } from 'lucide-react';
@@ -38,7 +39,7 @@ export default function DashboardPage() {
           <PerformanceChart />
           <Card className="col-span-1 lg:col-span-3">
               <CardHeader>
-                  <CardTitle>Activité récente</CardTitle>
+                  <CardTitle>Activité Récente</CardTitle>
                   <CardDescription>Dernières actions et notifications.</CardDescription>
               </CardHeader>
               <CardContent>

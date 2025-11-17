@@ -101,14 +101,14 @@ export default function RegistrationPage() {
 
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>Formulaire d'inscription</CardTitle>
+          <CardTitle>Formulaire d'Inscription</CardTitle>
           <CardDescription>Étape {step} sur 3</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-8">
             {step === 1 && (
               <div className="space-y-4 animate-in fade-in-50">
-                <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5"/>Informations de l'élève</div>
+                <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5"/>Informations de l'Élève</div>
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nom complet de l'élève</Label>
@@ -134,7 +134,7 @@ export default function RegistrationPage() {
             
             {step === 2 && (
               <div className="space-y-4 animate-in fade-in-50">
-                <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations scolaires</div>
+                <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations Scolaires</div>
                 <div className="space-y-2">
                     <Label htmlFor="classId">Classe souhaitée</Label>
                     <Select name="classId" onValueChange={(value) => handleSelectChange('classId', value)} value={formData.classId} required>
@@ -151,7 +151,7 @@ export default function RegistrationPage() {
             
             {step === 3 && (
               <div className="space-y-4 animate-in fade-in-50">
-                <div className="flex items-center gap-2 text-lg font-semibold text-primary"><Users className="h-5 w-5"/>Informations des parents/tuteurs</div>
+                <div className="flex items-center gap-2 text-lg font-semibold text-primary"><Users className="h-5 w-5"/>Informations des Parents/Tuteurs</div>
                 <div className="p-4 border rounded-lg space-y-4">
                     <h4 className="font-medium">Parent 1</h4>
                      <div className="grid sm:grid-cols-2 gap-4">
@@ -193,7 +193,7 @@ export default function RegistrationPage() {
                 </Button>
               ) : (
                 <Button type="submit">
-                  Soumettre l'inscription
+                  Soumettre l'Inscription
                 </Button>
               )}
             </div>
@@ -203,5 +203,3 @@ export default function RegistrationPage() {
     </div>
   );
 }
-
-    

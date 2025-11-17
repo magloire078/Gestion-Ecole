@@ -235,11 +235,11 @@ export default function AccountingPage() {
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
             <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) resetForm(); setIsAddDialogOpen(isOpen); }}>
                 <DialogTrigger asChild>
-                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une transaction</Button>
+                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Transaction</Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Nouvelle transaction</DialogTitle>
+                        <DialogTitle>Nouvelle Transaction</DialogTitle>
                         <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
@@ -326,7 +326,7 @@ export default function AccountingPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {if (!isOpen) { setEditingTransaction(null); resetForm();} setIsEditDialogOpen(isOpen);}}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier la transaction</DialogTitle>
+            <DialogTitle>Modifier la Transaction</DialogTitle>
              <DialogDescription>Mettez à jour les détails de la transaction.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
