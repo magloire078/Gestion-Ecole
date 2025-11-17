@@ -26,17 +26,23 @@ export default function DashboardLayout({
   }, []);
 
   useEffect(() => {
-    if (isClient && !loading && !user) {
-      router.push('/login');
+    if (isClient && !loading) {
+      if (!user) {
+        // If user is not logged in, redirect to login page
+        router.push('/login');
+      } else if (user && !user.customClaims?.schoolId) {
+        // If user is logged in but has no schoolId, redirect to onboarding
+        router.push('/onboarding');
+      }
     }
   }, [user, loading, router, isClient]);
 
-  if (!isClient || loading || !user) {
+  if (!isClient || loading || !user || !user.customClaims?.schoolId) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
                 <p className="text-lg font-semibold">Chargement...</p>
-                <p className="text-muted-foreground">Vérification de l'authentification.</p>
+                <p className="text-muted-foreground">Vérification de votre compte et de votre école.</p>
             </div>
         </div>
     );
