@@ -19,12 +19,19 @@ import {
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Moon, Sun } from "lucide-react";
+import { useAuth } from "@/firebase";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 const DIRECTOR_NAME_KEY = 'directorName';
 
 export function UserNav() {
   const [directorName, setDirectorName] = useState("Jean Dupont");
   const { setTheme } = useTheme();
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
 
   const updateDirectorName = () => {
     const savedDirectorName = localStorage.getItem(DIRECTOR_NAME_KEY);
@@ -43,6 +50,24 @@ export function UserNav() {
     };
   }, []);
   
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({
+        title: "Déconnexion réussie",
+        description: "Vous avez été déconnecté(e).",
+      });
+      router.push('/login');
+    } catch (error) {
+      console.error("Erreur de déconnexion: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de se déconnecter. Veuillez réessayer.",
+      });
+    }
+  };
+
   const fallback = directorName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() || 'JD';
 
   return (
@@ -68,7 +93,7 @@ export function UserNav() {
         <DropdownMenuGroup>
           <DropdownMenuItem>Profil</DropdownMenuItem>
           <DropdownMenuItem>Facturation</DropdownMenuItem>
-          <DropdownMenuItem>Paramètres</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Paramètres</DropdownMenuItem>
            <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -91,7 +116,7 @@ export function UserNav() {
           </DropdownMenuSub>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
           Se déconnecter
         </DropdownMenuItem>
       </DropdownMenuContent>
