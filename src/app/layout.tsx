@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning>
       <body className={`${ptSans.variable} font-body antialiased`}>
         <MainLayout>{children}</MainLayout>
       </body>
