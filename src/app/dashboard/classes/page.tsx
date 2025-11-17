@@ -111,6 +111,12 @@ export default function ClassesPage() {
   const [cycleToDelete, setCycleToDelete] = useState<Cycle | null>(null);
 
   const { toast } = useToast();
+  
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const getMainTeacher = (teacherId?: string) => {
     if (!teacherId) return null;
@@ -255,6 +261,17 @@ export default function ClassesPage() {
   }
   
   const isLoading = classesLoading || teachersLoading || cyclesLoading;
+  
+  if (!isClient) {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-10 w-1/2" />
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
+            </div>
+        </div>
+    );
+  }
 
   return (
     <>
