@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from "@/firebase";
 import { doc, setDoc, writeBatch } from "firebase/firestore";
 import { Logo } from '@/components/logo';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function OnboardingPage() {
   const { user, loading } = useUser();
@@ -33,31 +35,23 @@ export default function OnboardingPage() {
 
     setIsProcessing(true);
 
+    const schoolId = schoolName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
+    const schoolData = { name: schoolName, directorId: user.uid, createdAt: new Date() };
+    const schoolRef = doc(firestore, `schools/${schoolId}`);
+    const userData = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        schoolId: schoolId,
+        role: 'director',
+    };
+    const userRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
+
     try {
-        // In a real application, this part should be handled by a Cloud Function
-        // that creates the school, sets the custom claim, and then returns.
-        // For this demo, we will simulate this by directly writing to Firestore
-        // and assuming the claim will be set externally or in a subsequent step.
-        
-        // This is a placeholder for the schoolId. In a real app, you'd generate a truly unique ID.
-        const schoolId = schoolName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-
         const batch = writeBatch(firestore);
-
-        // 1. Create a document for the school
-        const schoolRef = doc(firestore, `schools/${schoolId}`);
-        batch.set(schoolRef, { name: schoolName, directorId: user.uid, createdAt: new Date() });
-
-        // 2. Create the user's profile within that school
-        const userRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
-        batch.set(userRef, {
-            uid: user.uid,
-            email: user.email,
-            displayName: user.displayName,
-            photoURL: user.photoURL,
-            schoolId: schoolId, // Denormalize for easy access
-            role: 'director', // Assign a default role
-        });
+        batch.set(schoolRef, schoolData);
+        batch.set(userRef, userData);
         
         await batch.commit();
 
@@ -65,25 +59,30 @@ export default function OnboardingPage() {
             title: 'École créée avec succès !',
             description: `Bienvenue à ${schoolName}. Vous allez être redirigé. Veuillez rafraîchir la page si la redirection ne fonctionne pas.`,
         });
-
-        // This is the crucial part that's missing from a client-only flow:
-        // await setCustomUserClaims(user.uid, { schoolId: schoolId });
-        // Since we can't do this from the client, we'll inform the user.
         
         alert("IMPORTANT: Dans une application réelle, un processus serveur attribuerait maintenant votre école à votre compte. Pour cette démo, nous allons recharger la page. Vous devrez peut-être vous reconnecter pour que les changements prennent effet.");
 
-        // Force a token refresh to try and get the new claims (if they were set by a function)
         await user.getIdToken(true);
         
         router.push('/dashboard');
 
-    } catch (error) {
-        console.error("Error creating school:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Erreur lors de la création',
-            description: 'Impossible de créer l\'école. Veuillez réessayer.',
-        });
+    } catch (error: any) {
+        // This is where we catch the permission error
+        if (error.code === 'permission-denied') {
+            const permissionError = new FirestorePermissionError({
+                path: `[BATCH WRITE] schools/${schoolId} and schools/${schoolId}/users/${user.uid}`,
+                operation: 'write', // Batch write involves set/create operations
+                requestResourceData: { school: schoolData, user: userData },
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        } else {
+             console.error("Error creating school:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Erreur lors de la création',
+                description: 'Impossible de créer l\'école. Veuillez réessayer.',
+            });
+        }
     } finally {
         setIsProcessing(false);
     }
@@ -133,4 +132,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-
