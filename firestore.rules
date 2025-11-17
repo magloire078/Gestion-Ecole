@@ -9,12 +9,14 @@ service cloud.firestore {
     }
 
     function getUserSchoolId() {
-      // Reading custom claims from the auth token.
-      return request.auth.token.schoolId;
+      // It's safer to read from the existing resource for security rules
+      // rather than relying on custom claims that might not be set yet.
+      return get(/databases/$(database)/documents/schools/$(request.auth.token.schoolId)).data.schoolId;
     }
 
     function isUserInSchool(schoolId) {
-      return isUserAuthenticated() && getUserSchoolId() == schoolId;
+      // Check if the user document exists within the school context
+      return isUserAuthenticated() && exists(/databases/$(database)/documents/schools/$(schoolId)/users/$(request.auth.uid));
     }
 
     function isCreatingOwnSchool(schoolId) {
@@ -22,7 +24,7 @@ service cloud.firestore {
       return isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
     }
     
-    function isCreatingOwnProfile(schoolId, userId) {
+    function isCreatingOwnProfile(userId) {
         // Allow if the user is authenticated and is creating their own user document.
         return isUserAuthenticated() && request.auth.uid == userId;
     }
@@ -39,20 +41,22 @@ service cloud.firestore {
       // Deny listing or updating/deleting the school document itself by clients.
       allow list, update, delete: if false;
 
-      // Rules for all subcollections within a school
+      // Rules for the users subcollection
       match /users/{userId} {
          // Allow users to create their own user profile during onboarding
-         allow create: if isCreatingOwnProfile(schoolId, userId);
-         // Once created, only allow users to operate on data within their assigned school.
-         allow read, update, delete: if isUserInSchool(schoolId);
+         allow create: if isCreatingOwnProfile(userId);
+         // Once created, only allow users to read/update their own profile
+         allow read, update: if isUserInSchool(schoolId) && request.auth.uid == userId;
+         // Deny deleting user profiles via client
+         allow delete: if false;
       }
       
-      match /{collection}/{docId} {
-         // This rule applies to all other collections (teachers, classes, etc.)
-         // Deny create for other collections if it's not the user collection.
-         allow create: if false;
-         // Users can only read, write, and delete data within their own school's collections.
-         allow read, write, delete: if isUserInSchool(schoolId) && collection != 'users';
+      // Rules for all other subcollections within a school
+      match /{otherCollections}/{docId} {
+         // Users can read/write/delete data within their own school's collections,
+         // but cannot create (creations are handled by specific logic like student registration pages).
+         allow read, write, delete: if isUserInSchool(schoolId);
+         allow create: if false; // Deny generic creation for other collections
       }
     }
   }
