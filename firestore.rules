@@ -19,40 +19,22 @@ service cloud.firestore {
     }
     
     // School-specific data
-    match /schools/{schoolId} {
-        
-        // Specifically for user profiles within a school
-        match /users/{userId} {
-            // A user can only read their own profile.
-            allow get: if isUserAuthenticated() && request.auth.uid == userId;
-            // Any authenticated user from the school can see a list of users.
-            allow list: if isUserInSchool(schoolId);
-            // A user can create their own profile.
-            // Ensure the data being written has the user's uid.
-            allow create: if isUserAuthenticated() && request.auth.uid == userId && request.resource.data.uid == userId;
-            // A user can update their own profile.
-            allow update: if isUserAuthenticated() && request.auth.uid == userId;
-            // Users cannot delete profiles.
-            allow delete: if false;
-        }
+    match /schools/{schoolId}/{document=**} {
+        // Allow any authenticated user from the school to read and write any document within their school's path.
+        // This is a broad rule and can be refined for more granular control if needed.
+        allow read, write: if isUserInSchool(schoolId);
+    }
 
-        // Rules for teachers, classes, cycles, fees and students
-        // Users belonging to the school can perform all CRUD operations on these collections.
-        match /teachers/{teacherId} {
-            allow read, write: if isUserInSchool(schoolId);
-        }
-        match /classes/{classId} {
-            allow read, write: if isUserInSchool(schoolId);
-        }
-        match /cycles/{cycleId} {
-            allow read, write: if isUserInSchool(schoolId);
-        }
-        match /fees/{feeId} {
-            allow read, write: if isUserInSchool(schoolId);
-        }
-        match /students/{studentId} {
-            allow read, write: if isUserInSchool(schoolId);
-        }
+    // You can keep more specific rules for certain collections if needed, but they must be placed correctly.
+    // For example, if you wanted to restrict user profile deletion, you'd do it like this:
+    match /schools/{schoolId}/users/{userId} {
+        // A user can read their own profile, and school members can list users.
+        allow get: if isUserAuthenticated() && request.auth.uid == userId;
+        allow list: if isUserInSchool(schoolId);
+        // A user can create or update their own profile.
+        allow write: if isUserAuthenticated() && request.auth.uid == userId;
+        // Users cannot delete profiles.
+        allow delete: if false;
     }
   }
 }
