@@ -2,7 +2,7 @@
 export type Teacher = {
   id: string;
   name: string;
-  class?: string; // class is now optional as a teacher can teach multiple classes
+  class?: string; // class est optionnel car un enseignant peut enseigner à plusieurs classes
   subject: string;
   email: string;
   phone?: string;
@@ -88,8 +88,7 @@ export const mockClassData: Class[] = [
   { id: 'C10', name: 'Ingénierie 1ère année', studentCount: 45, mainTeacherId: 'T7', building: 'Bâtiment F', cycle: 'Grandes Écoles' },
 ];
 
-// Teachers now have subjects, but are not tied to a single class.
-// The 'class' property can be re-interpreted as 'main class supervised'.
+// La propriété 'class' est maintenant interprétée comme 'classe principale supervisée'.
 export const mockTeacherData: Teacher[] = [
   { id: 'T1', name: 'Laurent Dubois', subject: 'Mathématiques', email: 'l.dubois@ecole.com', phone: '+221 77 123 45 67', class: 'Terminale A' },
   { id: 'T2', name: 'Sophie Martin', subject: 'Français', email: 's.martin@ecole.com', phone: '+221 77 234 56 78', class: 'Terminale B' },
@@ -230,11 +229,11 @@ export const mockStudentPerformanceData: Record<string, string> = {
 };
 
 export const mockPerformanceData = [
-    { subject: 'Maths', 'Ce Semestre': 82, 'Semestre Précédent': 75 },
-    { subject: 'Français', 'Ce Semestre': 91, 'Semestre Précédent': 88 },
-    { subject: 'Physique', 'Ce Semestre': 78, 'Semestre Précédent': 81 },
-    { subject: 'Histoire', 'Ce Semestre': 85, 'Semestre Précédent': 80 },
-    { subject: 'Anglais', 'Ce Semestre': 95, 'Semestre Précédent': 92 },
+    { subject: 'Maths', 'Ce Semestre': 14, 'Semestre Précédent': 12 },
+    { subject: 'Français', 'Ce Semestre': 16, 'Semestre Précédent': 15 },
+    { subject: 'Physique', 'Ce Semestre': 13, 'Semestre Précédent': 14 },
+    { subject: 'Histoire', 'Ce Semestre': 15, 'Semestre Précédent': 13 },
+    { subject: 'Anglais', 'Ce Semestre': 17, 'Semestre Précédent': 16 },
 ];
 
 export const mockGradeData: Grade[] = [

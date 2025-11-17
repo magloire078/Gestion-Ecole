@@ -1,95 +1,130 @@
 {
   "entities": {
     "user": {
-      "title": "User",
-      "description": "A user of the application.",
+      "title": "Utilisateur",
+      "description": "Un utilisateur de l'application.",
       "type": "object",
       "properties": {
-        "uid": { "type": "string", "description": "The user's unique ID." },
-        "email": { "type": "string", "format": "email", "description": "The user's email address." },
-        "displayName": { "type": "string", "description": "The user's display name." },
-        "photoURL": { "type": "string", "format": "uri", "description": "The URL of the user's profile photo." },
-        "schoolId": { "type": "string", "description": "The ID of the school the user belongs to." }
+        "uid": { "type": "string", "description": "L'identifiant unique de l'utilisateur." },
+        "email": { "type": "string", "format": "email", "description": "L'adresse e-mail de l'utilisateur." },
+        "displayName": { "type": "string", "description": "Le nom d'affichage de l'utilisateur." },
+        "photoURL": { "type": "string", "format": "uri", "description": "L'URL de la photo de profil de l'utilisateur." },
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." }
       },
       "required": ["uid", "email", "schoolId"]
     },
     "user_root": {
-      "title": "User Root",
-      "description": "A root document mapping a user's UID to their school ID.",
+      "title": "Racine Utilisateur",
+      "description": "Un document racine qui associe l'UID d'un utilisateur à l'identifiant de son école.",
       "type": "object",
       "properties": {
-        "schoolId": { "type": "string", "description": "The ID of the school the user belongs to." }
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." }
       },
       "required": ["schoolId"]
     },
     "teacher": {
-      "title": "Teacher",
-      "description": "A teacher in the school.",
+      "title": "Enseignant",
+      "description": "Un enseignant de l'école.",
       "type": "object",
       "properties": {
-        "name": { "type": "string", "description": "The teacher's full name." },
-        "subject": { "type": "string", "description": "The main subject the teacher teaches." },
-        "email": { "type": "string", "format": "email", "description": "The teacher's email address." },
-        "phone": { "type": "string", "description": "The teacher's phone number." },
-        "class": { "type": "string", "description": "The main class the teacher supervises." }
+        "name": { "type": "string", "description": "Le nom complet de l'enseignant." },
+        "subject": { "type": "string", "description": "La matière principale enseignée par l'enseignant." },
+        "email": { "type": "string", "format": "email", "description": "L'adresse e-mail de l'enseignant." },
+        "phone": { "type": "string", "description": "Le numéro de téléphone de l'enseignant." },
+        "class": { "type": "string", "description": "La classe principale supervisée par l'enseignant." }
       },
       "required": ["name", "subject", "email"]
     },
     "class": {
-      "title": "Class",
-      "description": "A class in the school.",
+      "title": "Classe",
+      "description": "Une classe de l'école.",
       "type": "object",
       "properties": {
-        "name": { "type": "string", "description": "The name of the class." },
-        "studentCount": { "type": "number", "description": "The number of students in the class." },
-        "mainTeacherId": { "type": "string", "description": "The ID of the main teacher for the class." },
-        "building": { "type": "string", "description": "The building where the class is located." },
-        "cycle": { "type": "string", "description": "The educational cycle (e.g., Lycée, Collège)." }
+        "name": { "type": "string", "description": "Le nom de la classe." },
+        "studentCount": { "type": "number", "description": "Le nombre d'élèves dans la classe." },
+        "mainTeacherId": { "type": "string", "description": "L'identifiant de l'enseignant principal de la classe." },
+        "building": { "type": "string", "description": "Le bâtiment où se trouve la classe." },
+        "cycle": { "type": "string", "description": "Le cycle d'enseignement (ex: Lycée, Collège)." }
       },
       "required": ["name", "studentCount", "mainTeacherId", "building", "cycle"]
     },
     "cycle": {
         "title": "Cycle",
-        "description": "An educational cycle (e.g., Lycée, Collège).",
+        "description": "Un cycle d'enseignement (ex: Lycée, Collège).",
         "type": "object",
         "properties": {
-            "name": { "type": "string", "description": "The name of the cycle." },
-            "order": { "type": "number", "description": "The display order of the cycle." }
+            "name": { "type": "string", "description": "Le nom du cycle." },
+            "order": { "type": "number", "description": "L'ordre d'affichage du cycle." }
         },
         "required": ["name", "order"]
     },
     "fee": {
-        "title": "Fee",
-        "description": "A tuition fee structure.",
+        "title": "Frais de Scolarité",
+        "description": "Une structure de frais de scolarité.",
         "type": "object",
         "properties": {
-            "grade": { "type": "string", "description": "The grade level for the fee." },
-            "amount": { "type": "string", "description": "The total amount of the fee." },
-            "details": { "type": "string", "description": "Additional details about the fee." },
-            "installments": { "type": "string", "description": "Payment installment options." }
+            "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
+            "amount": { "type": "string", "description": "Le montant total des frais." },
+            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
+            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
         },
         "required": ["grade", "amount", "installments"]
     },
     "student": {
-        "title": "Student",
-        "description": "A student enrolled in the school.",
+        "title": "Élève",
+        "description": "Un élève inscrit à l'école.",
         "type": "object",
         "properties": {
-            "name": { "type": "string", "description": "The student's full name." },
-            "class": { "type": "string", "description": "The student's class name." },
-            "classId": { "type": "string", "description": "The ID of the student's class." },
-            "dateOfBirth": { "type": "string", "format": "date", "description": "The student's date of birth." },
-            "placeOfBirth": { "type": "string", "description": "The student's place of birth." },
-            "parent1Name": { "type": "string", "description": "The name of the first parent/guardian." },
-            "parent1Contact": { "type": "string", "description": "The contact number of the first parent/guardian." },
-            "parent2Name": { "type": "string", "description": "The name of the second parent/guardian (optional)." },
-            "parent2Contact": { "type": "string", "description": "The contact number of the second parent/guardian (optional)." },
-            "previousSchool": { "type": "string", "description": "The student's previous school (optional)." },
-            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "The status of tuition payment." },
-            "amountDue": { "type": "number", "description": "The outstanding tuition amount." },
-            "feedback": { "type": "string", "description": "General feedback about the student." }
+            "name": { "type": "string", "description": "Le nom complet de l'élève." },
+            "class": { "type": "string", "description": "Le nom de la classe de l'élève." },
+            "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
+            "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
+            "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
+            "parent1Name": { "type": "string", "description": "Le nom du premier parent/tuteur." },
+            "parent1Contact": { "type": "string", "description": "Le contact du premier parent/tuteur." },
+            "parent2Name": { "type": "string", "description": "Le nom du deuxième parent/tuteur (optionnel)." },
+            "parent2Contact": { "type": "string", "description": "Le contact du deuxième parent/tuteur (optionnel)." },
+            "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
+            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
+            "amountDue": { "type": "number", "description": "Le montant restant à payer." },
+            "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." }
         },
         "required": ["name", "class", "classId", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
+    },
+    "accountingTransaction": {
+      "title": "Transaction Comptable",
+      "description": "Une transaction financière (revenu ou dépense).",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "La date de la transaction." },
+        "description": { "type": "string", "description": "La description de la transaction." },
+        "category": { "type": "string", "description": "La catégorie de la transaction." },
+        "type": { "type": "string", "enum": ["Revenu", "Dépense"], "description": "Le type de transaction." },
+        "amount": { "type": "number", "description": "Le montant de la transaction." }
+      },
+      "required": ["date", "description", "category", "type", "amount"]
+    },
+    "libraryBook": {
+        "title": "Livre de Bibliothèque",
+        "description": "Un livre disponible dans la bibliothèque de l'école.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string", "description": "Le titre du livre." },
+            "author": { "type": "string", "description": "L'auteur du livre." },
+            "quantity": { "type": "number", "description": "Le nombre d'exemplaires disponibles." }
+        },
+        "required": ["title", "author", "quantity"]
+    },
+    "timetableEntry": {
+        "title": "Entrée d'Emploi du Temps",
+        "description": "Une entrée dans l'emploi du temps, associant une classe, un enseignant et une matière.",
+        "type": "object",
+        "properties": {
+            "classId": { "type": "string", "description": "L'ID de la classe." },
+            "teacherId": { "type": "string", "description": "L'ID de l'enseignant." },
+            "subject": { "type": "string", "description": "La matière enseignée." }
+        },
+        "required": ["classId", "teacherId", "subject"]
     }
   },
   "auth": {
@@ -98,31 +133,43 @@
   "firestore": {
     "/users/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
-        "description": "Stores a mapping of a user's UID to their school ID for permission checks."
+        "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
     "/schools/{schoolId}/users/{userId}": {
       "schema": { "$ref": "#/entities/user" },
-      "description": "Stores user profiles, partitioned by school."
+      "description": "Stocke les profils des utilisateurs, partitionnés par école."
     },
     "/schools/{schoolId}/teachers/{teacherId}": {
       "schema": { "$ref": "#/entities/teacher" },
-      "description": "Stores teacher profiles for a school."
+      "description": "Stocke les profils des enseignants pour une école."
     },
     "/schools/{schoolId}/classes/{classId}": {
       "schema": { "$ref": "#/entities/class" },
-      "description": "Stores class information for a school."
+      "description": "Stocke les informations des classes pour une école."
     },
     "/schools/{schoolId}/cycles/{cycleId}": {
         "schema": { "$ref": "#/entities/cycle" },
-        "description": "Stores the list of educational cycles for a school."
+        "description": "Stocke la liste des cycles d'enseignement pour une école."
     },
     "/schools/{schoolId}/fees/{feeId}": {
         "schema": { "$ref": "#/entities/fee" },
-        "description": "Stores the tuition fee structure for the school."
+        "description": "Stocke la structure des frais de scolarité pour l'école."
     },
     "/schools/{schoolId}/students/{studentId}": {
         "schema": { "$ref": "#/entities/student" },
-        "description": "Stores student profiles for a school."
+        "description": "Stocke les profils des élèves pour une école."
+    },
+    "/schools/{schoolId}/accounting/{transactionId}": {
+        "schema": { "$ref": "#/entities/accountingTransaction" },
+        "description": "Stocke les transactions comptables pour une école."
+    },
+    "/schools/{schoolId}/library/{bookId}": {
+        "schema": { "$ref": "#/entities/libraryBook" },
+        "description": "Stocke les livres de la bibliothèque pour une école."
+    },
+    "/schools/{schoolId}/timetable/{entryId}": {
+        "schema": { "$ref": "#/entities/timetableEntry" },
+        "description": "Stocke les entrées de l'emploi du temps pour une école."
     }
   }
 }

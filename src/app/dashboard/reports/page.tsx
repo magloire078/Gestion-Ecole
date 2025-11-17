@@ -220,7 +220,7 @@ export default function ReportsPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={3} className="text-center text-muted-foreground h-24">
-                        Sélectionnez une classe pour voir les élèves.
+                        Aucun élève dans cette classe.
                       </TableCell>
                     </TableRow>
                   )}
