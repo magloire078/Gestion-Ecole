@@ -10,7 +10,7 @@ import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function DashboardLayout({
   children,
@@ -19,17 +19,24 @@ export default function DashboardLayout({
 }) {
   const { user, loading } = useUser();
   const router = useRouter();
-  
+  const [isClient, setIsClient] = useState(false);
+
   useEffect(() => {
-    // Cette logique ne s'exécute que côté client, après que le chargement soit terminé.
-    if (!loading && !user) {
+    // This effect runs only on the client, after the initial render
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // This effect handles redirection and should only run on the client
+    // after the auth state is determined.
+    if (isClient && !loading && !user) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, isClient]);
 
-  // Affiche un état de chargement tant que l'authentification est en cours de vérification.
-  // Cet état est le même sur le serveur et le client au premier rendu.
-  if (loading) {
+  // On the server, and on the initial client render, `isClient` will be `false`,
+  // so we'll always show the loading screen. This prevents hydration mismatch.
+  if (!isClient || loading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
@@ -40,13 +47,13 @@ export default function DashboardLayout({
     );
   }
 
-  // Si après le chargement, il n'y a pas d'utilisateur, ne rien rendre.
-  // L'useEffect ci-dessus s'occupera de la redirection.
+  // After the client has mounted and loading is complete, we check for the user.
+  // If there's no user, we render nothing, as the useEffect above will handle the redirect.
   if (!user) {
     return null;
   }
 
-  // Si l'utilisateur est bien là, on affiche le tableau de bord.
+  // If we have a user, render the full dashboard layout.
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-card sm:flex">
