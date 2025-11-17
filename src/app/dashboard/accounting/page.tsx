@@ -92,8 +92,10 @@ export default function AccountingPage() {
   useEffect(() => {
     setIsClient(true);
     // Initialize date on the client to avoid hydration mismatch
-    setDate(format(new Date(), 'yyyy-MM-dd'));
-  }, []);
+    if (!date) {
+      setDate(format(new Date(), 'yyyy-MM-dd'));
+    }
+  }, [date]);
 
   const resetForm = () => {
     setDescription("");
@@ -385,4 +387,5 @@ export default function AccountingPage() {
     </>
   );
 
+    
     
