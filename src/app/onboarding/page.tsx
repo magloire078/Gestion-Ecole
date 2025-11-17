@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useUser, useFirestore } from "@/firebase";
+import { useUser, useFirestore, useAuth } from "@/firebase";
 import { doc, setDoc, writeBatch } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -17,6 +17,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 export default function OnboardingPage() {
   const { user, loading } = useUser();
   const firestore = useFirestore();
+  const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
@@ -62,7 +63,7 @@ export default function OnboardingPage() {
         
         alert("IMPORTANT: Dans une application réelle, un processus serveur attribuerait maintenant votre école à votre compte. Pour cette démo, nous allons recharger la page. Vous devrez peut-être vous reconnecter pour que les changements prennent effet.");
 
-        await user.getIdToken(true);
+        await auth.currentUser?.getIdToken(true);
         
         router.push('/dashboard');
 
