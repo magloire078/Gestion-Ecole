@@ -22,20 +22,15 @@ export default function DashboardLayout({
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // This effect runs only on the client, after the initial render
     setIsClient(true);
   }, []);
 
   useEffect(() => {
-    // This effect handles redirection and should only run on the client
-    // after the auth state is determined.
     if (isClient && !loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router, isClient]);
 
-  // On the server, and on the initial client render, `isClient` will be `false`,
-  // so we'll always show the loading screen. This prevents hydration mismatch.
   if (!isClient || loading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
@@ -47,13 +42,10 @@ export default function DashboardLayout({
     );
   }
 
-  // After the client has mounted and loading is complete, we check for the user.
-  // If there's no user, we render nothing, as the useEffect above will handle the redirect.
   if (!user) {
-    return null;
+    return null; // The useEffect above will handle the redirect.
   }
 
-  // If we have a user, render the full dashboard layout.
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-card sm:flex">
