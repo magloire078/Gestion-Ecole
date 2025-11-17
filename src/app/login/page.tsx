@@ -106,7 +106,6 @@ export default function LoginPage() {
             toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès.' });
             router.push('/dashboard');
         } catch (error: any) {
-            console.error(error);
             const description = error.code === 'auth/email-already-in-use' ? 'Cet email est déjà utilisé.' : 'Une erreur est survenue.';
             toast({ variant: 'destructive', title: 'Erreur d\'inscription', description });
         } finally {
@@ -124,7 +123,6 @@ export default function LoginPage() {
             toast({ title: 'Connexion réussie', description: 'Vous allez être redirigé vers le tableau de bord.' });
             router.push('/dashboard');
         } catch (error: any) {
-            console.error(error);
             toast({ variant: 'destructive', title: 'Erreur de connexion', description: 'Email ou mot de passe incorrect.' });
         } finally {
             setIsProcessing(false);
@@ -144,7 +142,6 @@ export default function LoginPage() {
       });
       router.push('/dashboard');
     } catch (error: any) {
-      console.error(error);
       toast({
         variant: 'destructive',
         title: 'Erreur de connexion',
