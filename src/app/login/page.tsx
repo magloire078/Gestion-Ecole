@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider,
   signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signInWithPopup,
+  updateProfile,
 } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -55,9 +57,12 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 
 
 export default function LoginPage() {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
   const auth = useAuth();
   const { user, loading } = useUser();
@@ -80,39 +85,56 @@ export default function LoginPage() {
         </div>
       );
   }
-
-  const handleSignIn = async () => {
-    setIsSigningIn(true);
-    if (!email || !password) {
-      toast({
-        variant: 'destructive',
-        title: 'Champs requis',
-        description: 'Veuillez renseigner votre email et votre mot de passe.',
-      });
-      setIsSigningIn(false);
-      return;
-    }
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      toast({
-        title: 'Connexion réussie',
-        description: 'Vous allez être redirigé vers le tableau de bord.',
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-      console.error(error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur de connexion',
-        description: 'Email ou mot de passe incorrect.',
-      });
-    } finally {
-        setIsSigningIn(false);
-    }
+  
+  const handleAuthAction = async () => {
+      setIsProcessing(true);
+      if (isSignUp) {
+        // Sign Up
+        if (!name || !email || !password || !confirmPassword) {
+            toast({ variant: 'destructive', title: 'Champs requis', description: 'Veuillez remplir tous les champs.' });
+            setIsProcessing(false);
+            return;
+        }
+        if (password !== confirmPassword) {
+            toast({ variant: 'destructive', title: 'Erreur de mot de passe', description: 'Les mots de passe ne correspondent pas.' });
+            setIsProcessing(false);
+            return;
+        }
+        try {
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            await updateProfile(userCredential.user, { displayName: name });
+            toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès.' });
+            router.push('/dashboard');
+        } catch (error: any) {
+            console.error(error);
+            const description = error.code === 'auth/email-already-in-use' ? 'Cet email est déjà utilisé.' : 'Une erreur est survenue.';
+            toast({ variant: 'destructive', title: 'Erreur d\'inscription', description });
+        } finally {
+            setIsProcessing(false);
+        }
+      } else {
+        // Sign In
+        if (!email || !password) {
+            toast({ variant: 'destructive', title: 'Champs requis', description: 'Veuillez renseigner votre email et votre mot de passe.' });
+            setIsProcessing(false);
+            return;
+        }
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            toast({ title: 'Connexion réussie', description: 'Vous allez être redirigé vers le tableau de bord.' });
+            router.push('/dashboard');
+        } catch (error: any) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Erreur de connexion', description: 'Email ou mot de passe incorrect.' });
+        } finally {
+            setIsProcessing(false);
+        }
+      }
   };
 
+
   const handleGoogleSignIn = async () => {
-    setIsSigningIn(true);
+    setIsProcessing(true);
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
@@ -129,7 +151,7 @@ export default function LoginPage() {
         description: 'Impossible de se connecter avec Google.',
       });
     } finally {
-        setIsSigningIn(false);
+        setIsProcessing(false);
     }
   };
 
@@ -140,12 +162,25 @@ export default function LoginPage() {
             <div className="mb-4 flex justify-center">
                  <Logo />
             </div>
-          <CardTitle className="text-2xl">Connexion</CardTitle>
+          <CardTitle className="text-2xl">{isSignUp ? 'Créer un compte' : 'Connexion'}</CardTitle>
           <CardDescription>
-            Accédez à votre tableau de bord de gestion scolaire.
+            {isSignUp ? 'Remplissez les informations pour vous inscrire.' : 'Accédez à votre tableau de bord de gestion scolaire.'}
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
+          {isSignUp && (
+            <div className="grid gap-2">
+                <Label htmlFor="name">Nom complet</Label>
+                <Input
+                id="name"
+                placeholder="Ex: Jean Dupont"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                disabled={isProcessing}
+                />
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -155,7 +190,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              disabled={isSigningIn}
+              disabled={isProcessing}
             />
           </div>
           <div className="grid gap-2">
@@ -166,21 +201,37 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              disabled={isSigningIn}
+              disabled={isProcessing}
             />
           </div>
+          {isSignUp && (
+            <div className="grid gap-2">
+                <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
+                <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                disabled={isProcessing}
+                />
+            </div>
+           )}
         </CardContent>
         <CardFooter className="flex-col gap-4">
-          <Button className="w-full" onClick={handleSignIn} disabled={isSigningIn}>
-            {isSigningIn ? 'Connexion en cours...' : 'Se connecter'}
+          <Button className="w-full" onClick={handleAuthAction} disabled={isProcessing}>
+            {isProcessing ? 'Traitement...' : (isSignUp ? 'Créer un compte' : 'Se connecter')}
           </Button>
-            <div className="relative w-full">
-                <Separator />
-                <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
-            </div>
-           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn}>
+          <div className="relative w-full">
+              <Separator />
+              <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
+          </div>
+           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
             <GoogleIcon className="mr-2 h-4 w-4" />
             Continuer avec Google
+          </Button>
+           <Button variant="link" size="sm" onClick={() => setIsSignUp(!isSignUp)} className="text-xs">
+            {isSignUp ? 'Vous avez déjà un compte ? Se connecter' : 'Pas encore de compte ? Créer un compte'}
           </Button>
         </CardFooter>
       </Card>
