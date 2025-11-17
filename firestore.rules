@@ -21,7 +21,7 @@ service cloud.firestore {
     // --- Root Collections ---
 
     // The `users` collection maps a user's UID to their school ID.
-    // This is the cornerstone of the new security model.
+    // This is the cornerstone of the security model.
     match /users/{userId} {
       // Allow a user to create their own mapping document during onboarding.
       allow create: if isUserAuthenticated() && request.auth.uid == userId;
@@ -39,11 +39,11 @@ service cloud.firestore {
       // Allow an authenticated user to create a school document IF their UID matches the directorId in the new document.
       allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
       
-      // Once created, only users belonging to that school can read the main school document.
-      allow get: if isUserInSchool(schoolId);
+      // Once created, only users belonging to that school can read or update the main school document (e.g. from settings page).
+      allow get, update: if isUserInSchool(schoolId);
       
-      // Deny listing, updating, or deleting the school document itself by clients.
-      allow list, update, delete: if false;
+      // Deny listing or deleting the school document itself by clients.
+      allow list, delete: if false;
 
       // --- Subcollections within a School ---
 
@@ -57,14 +57,15 @@ service cloud.firestore {
          
          // Deny deleting user profiles via client.
          allow delete: if false;
+         
+         // Deny listing all user profiles.
+         allow list: if false;
       }
       
       // Generic rules for all other subcollections (teachers, classes, students, etc.).
       match /{otherCollections}/{docId} {
-         // Allow full read/write/delete access for any user who belongs to the school.
-         // Creation of documents in these collections is handled by specific app logic (e.g., student registration page).
-         allow read, write, delete: if isUserInSchool(schoolId);
-         allow create: if isUserInSchool(schoolId);
+         // Allow full read/write access for any user who belongs to the school.
+         allow read, write: if isUserInSchool(schoolId);
       }
     }
   }
