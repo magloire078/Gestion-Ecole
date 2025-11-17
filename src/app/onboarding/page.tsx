@@ -58,11 +58,10 @@ export default function OnboardingPage() {
 
         toast({
             title: 'École créée avec succès !',
-            description: `Bienvenue à ${schoolName}. Vous allez être redirigé. Veuillez rafraîchir la page si la redirection ne fonctionne pas.`,
+            description: `Bienvenue à ${schoolName}. Vous allez être redirigé.`,
         });
         
-        alert("IMPORTANT: Dans une application réelle, un processus serveur attribuerait maintenant votre école à votre compte. Pour cette démo, nous allons recharger la page. Vous devrez peut-être vous reconnecter pour que les changements prennent effet.");
-
+        // Refresh the user's token to get the new custom claim
         await auth.currentUser?.getIdToken(true);
         
         router.push('/dashboard');
