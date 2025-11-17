@@ -3,60 +3,68 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // --- Helper Functions ---
     function isUserAuthenticated() {
       return request.auth != null;
     }
 
+    // Reads the user's schoolId from the root /users/{uid} document.
     function getUserSchoolId() {
-      // It's safer to read from the existing resource for security rules
-      // rather than relying on custom claims that might not be set yet.
-      return get(/databases/$(database)/documents/schools/$(request.auth.token.schoolId)).data.schoolId;
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schoolId;
     }
 
+    // Checks if the user making the request belongs to the school they are trying to access.
     function isUserInSchool(schoolId) {
-      // Check if the user document exists within the school context
-      return isUserAuthenticated() && exists(/databases/$(database)/documents/schools/$(schoolId)/users/$(request.auth.uid));
+      return isUserAuthenticated() && getUserSchoolId() == schoolId;
+    }
+    
+    // --- Root Collections ---
+
+    // The `users` collection maps a user's UID to their school ID.
+    // This is the cornerstone of the new security model.
+    match /users/{userId} {
+      // Allow a user to create their own mapping document during onboarding.
+      allow create: if isUserAuthenticated() && request.auth.uid == userId;
+
+      // Allow a user to read their own mapping document.
+      allow get: if isUserAuthenticated() && request.auth.uid == userId;
+      
+      // Deny any updates or deletions by clients to prevent users from changing their school.
+      allow update, delete, list: if false;
     }
 
-    function isCreatingOwnSchool(schoolId) {
-      // Allow if user is authenticated and the incoming document's directorId matches their UID.
-      return isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
-    }
-    
-    function isCreatingOwnProfile(userId) {
-        // Allow if the user is authenticated and is creating their own user document.
-        return isUserAuthenticated() && request.auth.uid == userId;
-    }
-    
-    // School-specific data
+    // --- School-Specific Data ---
     match /schools/{schoolId} {
       
-      // Allow a user to read their own school's main document.
+      // Allow an authenticated user to create a school document IF their UID matches the directorId in the new document.
+      allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
+      
+      // Once created, only users belonging to that school can read the main school document.
       allow get: if isUserInSchool(schoolId);
       
-      // Allow an authenticated user to create their school document.
-      allow create: if isCreatingOwnSchool(schoolId);
-
-      // Deny listing or updating/deleting the school document itself by clients.
+      // Deny listing, updating, or deleting the school document itself by clients.
       allow list, update, delete: if false;
 
-      // Rules for the users subcollection
+      // --- Subcollections within a School ---
+
+      // Rule for the users subcollection.
       match /users/{userId} {
-         // Allow users to create their own user profile during onboarding
-         allow create: if isCreatingOwnProfile(userId);
-         // Once created, only allow users to read/update their own profile
+         // Allow users to create their own user profile during onboarding (as part of the batch).
+         allow create: if isUserAuthenticated() && request.auth.uid == userId;
+         
+         // Allow users to read/update their own profile if they are in the school.
          allow read, update: if isUserInSchool(schoolId) && request.auth.uid == userId;
-         // Deny deleting user profiles via client
+         
+         // Deny deleting user profiles via client.
          allow delete: if false;
       }
       
-      // Rules for all other subcollections within a school
+      // Generic rules for all other subcollections (teachers, classes, students, etc.).
       match /{otherCollections}/{docId} {
-         // Users can read/write/delete data within their own school's collections,
-         // but cannot create (creations are handled by specific logic like student registration pages).
+         // Allow full read/write/delete access for any user who belongs to the school.
+         // Creation of documents in these collections is handled by specific app logic (e.g., student registration page).
          allow read, write, delete: if isUserInSchool(schoolId);
-         allow create: if false; // Deny generic creation for other collections
+         allow create: if isUserInSchool(schoolId);
       }
     }
   }

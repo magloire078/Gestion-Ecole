@@ -17,7 +17,6 @@ import { errorEmitter } from '@/firebase/error-emitter';
 export default function OnboardingPage() {
   const { user, loading } = useUser();
   const firestore = useFirestore();
-  const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
   
@@ -37,10 +36,10 @@ export default function OnboardingPage() {
     setIsProcessing(true);
 
     const schoolId = schoolName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-    const schoolData = { name: schoolName, directorId: user.uid, createdAt: new Date() };
     const schoolRef = doc(firestore, `schools/${schoolId}`);
+    const schoolData = { name: schoolName, directorId: user.uid, createdAt: new Date() };
     
-    // This is the user document inside the school's subcollection
+    // Reference to the user document inside the school's subcollection
     const schoolUserRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
     const schoolUserData = {
         uid: user.uid,
@@ -51,14 +50,21 @@ export default function OnboardingPage() {
         role: 'director',
     };
 
+    // Reference to the root user mapping document
+    const rootUserRef = doc(firestore, `users/${user.uid}`);
+    const rootUserData = { schoolId: schoolId };
+
     try {
         const batch = writeBatch(firestore);
         
-        // Set the school document
+        // 1. Set the main school document
         batch.set(schoolRef, schoolData);
 
-        // Set the user document in the school's subcollection
+        // 2. Set the user profile document within the school's subcollection
         batch.set(schoolUserRef, schoolUserData);
+
+        // 3. Set the root user-to-school mapping document
+        batch.set(rootUserRef, rootUserData);
         
         await batch.commit();
 
@@ -67,16 +73,16 @@ export default function OnboardingPage() {
             description: `Bienvenue à ${schoolName}. Vous allez être redirigé.`,
         });
         
-        // No need to refresh token as we are not using custom claims for this logic
-        // Use a full page reload to ensure auth state and component state is fully refreshed
+        // Use a full page reload to ensure auth state and all component states are fully refreshed.
+        // This is the most reliable way to handle redirection after a significant auth-related change.
         window.location.href = '/dashboard';
 
     } catch (error: any) {
         if (error.code === 'permission-denied') {
             const permissionError = new FirestorePermissionError({
-                path: `[BATCH WRITE] schools/${schoolId} and schools/${schoolId}/users/${user.uid}`,
+                path: `[BATCH WRITE] /schools/${schoolId}, /schools/${schoolId}/users/${user.uid}, /users/${user.uid}`,
                 operation: 'write',
-                requestResourceData: { school: schoolData, user: schoolUserData },
+                requestResourceData: { school: schoolData, userInSchool: schoolUserData, userRoot: rootUserData },
             });
             errorEmitter.emit('permission-error', permissionError);
         } else {

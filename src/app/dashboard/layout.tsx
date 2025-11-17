@@ -11,7 +11,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collectionGroup, query, where, getDocs, limit } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function DashboardLayout({
   children,
@@ -31,14 +31,13 @@ export default function DashboardLayout({
   useEffect(() => {
     if (isClient && !userLoading && user) {
       const checkOnboardingStatus = async () => {
-        // Query the 'users' collection group to find if a document exists for this user.
-        // This is more reliable than custom claims if they are not set by a backend process.
-        const usersRef = collectionGroup(firestore, 'users');
-        const q = query(usersRef, where('uid', '==', user.uid), limit(1));
+        // Check for the root user document to see if onboarding is complete.
+        const userDocRef = doc(firestore, 'users', user.uid);
         
         try {
-            const querySnapshot = await getDocs(q);
-            const userDocExists = !querySnapshot.empty;
+            const docSnap = await getDoc(userDocRef);
+            const userDocExists = docSnap.exists();
+            
             setHasCompletedOnboarding(userDocExists);
             
             if (!userDocExists) {

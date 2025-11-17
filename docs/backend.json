@@ -13,6 +13,15 @@
       },
       "required": ["uid", "email", "schoolId"]
     },
+    "user_root": {
+      "title": "User Root",
+      "description": "A root document mapping a user's UID to their school ID.",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "description": "The ID of the school the user belongs to." }
+      },
+      "required": ["schoolId"]
+    },
     "teacher": {
       "title": "Teacher",
       "description": "A teacher in the school.",
@@ -87,6 +96,10 @@
     "providers": ["Google", "Email"]
   },
   "firestore": {
+    "/users/{userId}": {
+        "schema": { "$ref": "#/entities/user_root" },
+        "description": "Stores a mapping of a user's UID to their school ID for permission checks."
+    },
     "/schools/{schoolId}/users/{userId}": {
       "schema": { "$ref": "#/entities/user" },
       "description": "Stores user profiles, partitioned by school."
