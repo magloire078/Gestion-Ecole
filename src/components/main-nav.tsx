@@ -1,11 +1,12 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
   { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
+  { href: '/dashboard/registration', label: 'Inscription', icon: UserPlus },
   { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
   { href: '/dashboard/teachers', label: 'Enseignants', icon: Users },
   { href: '/dashboard/students', label: 'Élèves', icon: Users },

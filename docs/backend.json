@@ -59,7 +59,28 @@
             "details": { "type": "string", "description": "Additional details about the fee." },
             "installments": { "type": "string", "description": "Payment installment options." }
         },
-        "required": ["grade", "amount"]
+        "required": ["grade", "amount", "installments"]
+    },
+    "student": {
+        "title": "Student",
+        "description": "A student enrolled in the school.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "The student's full name." },
+            "class": { "type": "string", "description": "The student's class name." },
+            "classId": { "type": "string", "description": "The ID of the student's class." },
+            "dateOfBirth": { "type": "string", "format": "date", "description": "The student's date of birth." },
+            "placeOfBirth": { "type": "string", "description": "The student's place of birth." },
+            "parent1Name": { "type": "string", "description": "The name of the first parent/guardian." },
+            "parent1Contact": { "type": "string", "description": "The contact number of the first parent/guardian." },
+            "parent2Name": { "type": "string", "description": "The name of the second parent/guardian (optional)." },
+            "parent2Contact": { "type": "string", "description": "The contact number of the second parent/guardian (optional)." },
+            "previousSchool": { "type": "string", "description": "The student's previous school (optional)." },
+            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "The status of tuition payment." },
+            "amountDue": { "type": "number", "description": "The outstanding tuition amount." },
+            "feedback": { "type": "string", "description": "General feedback about the student." }
+        },
+        "required": ["name", "class", "classId", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
     }
   },
   "auth": {
@@ -85,6 +106,10 @@
     "/schools/{schoolId}/fees/{feeId}": {
         "schema": { "$ref": "#/entities/fee" },
         "description": "Stores the tuition fee structure for the school."
+    },
+    "/schools/{schoolId}/students/{studentId}": {
+        "schema": { "$ref": "#/entities/student" },
+        "description": "Stores student profiles for a school."
     }
   }
 }

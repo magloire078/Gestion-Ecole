@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -14,9 +13,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { mockStudentData, mockClassData } from "@/lib/data";
 import { PlusCircle, Bot, Smile, Meh, Frown, Sparkles, MoreHorizontal } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { summarizeStudentFeedback } from "@/ai/flows/summarize-student-feedback";
 import { analyzeStudentSentiment } from "@/ai/flows/analyze-student-sentiment";
 import { useToast } from "@/hooks/use-toast";
@@ -55,6 +53,12 @@ import {
 import type { Student } from "@/lib/data";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from 'next/navigation';
 
 
 type Summary = {
@@ -65,8 +69,24 @@ type Summary = {
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 type Sentiment = 'Positif' | 'Neutre' | 'Négatif';
 
+interface Class {
+  id: string;
+  name: string;
+}
+
 export default function StudentsPage() {
-  const [students, setStudents] = useState<Student[]>(mockStudentData);
+  const router = useRouter();
+  const firestore = useFirestore();
+  const schoolId = 'test-school';
+
+  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/students`) : null, [firestore, schoolId]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
   const [feedbackText, setFeedbackText] = useState('');
   const [summary, setSummary] = useState<Summary | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -74,17 +94,10 @@ export default function StudentsPage() {
   const [sentiments, setSentiments] = useState<Record<string, Sentiment | null>>({});
   const { toast } = useToast();
 
-  // Add Student State
-  const [isAddStudentDialogOpen, setIsAddStudentDialogOpen] = useState(false);
-  const [newStudentName, setNewStudentName] = useState('');
-  const [newStudentClassId, setNewStudentClassId] = useState('');
-  const [newStudentFeedback, setNewStudentFeedback] = useState('');
-  const [newStudentAmountDue, setNewStudentAmountDue] = useState('');
-  const [newStudentTuitionStatus, setNewStudentTuitionStatus] = useState<TuitionStatus>('Soldé');
-  
   // Edit Student State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [formState, setFormState] = useState<Partial<Student>>({});
 
   // Delete Student State
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -98,13 +111,15 @@ export default function StudentsPage() {
   
   useEffect(() => {
     if(editingStudent) {
-        setNewStudentName(editingStudent.name);
-        setNewStudentClassId(mockClassData.find(c => c.name === editingStudent.class)?.id || '');
-        setNewStudentFeedback(editingStudent.feedback);
-        setNewStudentAmountDue(String(editingStudent.amountDue));
-        setNewStudentTuitionStatus(editingStudent.tuitionStatus);
+      setFormState({
+        name: editingStudent.name,
+        classId: classes.find(c => c.name === editingStudent.class)?.id || '',
+        feedback: editingStudent.feedback,
+        amountDue: editingStudent.amountDue,
+        tuitionStatus: editingStudent.tuitionStatus,
+      });
     }
-  }, [editingStudent]);
+  }, [editingStudent, classes]);
 
   const handleAnalyzeSentiments = async () => {
     setIsAnalyzing(true);
@@ -157,44 +172,6 @@ export default function StudentsPage() {
       setIsSummarizing(false);
     }
   };
-
-  const resetAddStudentForm = () => {
-    setNewStudentName('');
-    setNewStudentClassId('');
-    setNewStudentFeedback('');
-    setNewStudentAmountDue('');
-    setNewStudentTuitionStatus('Soldé');
-  };
-
-  const handleAddStudent = async () => {
-    if (!newStudentName || !newStudentClassId) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Le nom et la classe de l'élève sont requis.",
-      });
-      return;
-    }
-
-    const newStudent: Student = {
-      id: `S${String(students.length + 1).padStart(3, '0')}`,
-      name: newStudentName,
-      class: mockClassData.find(c => c.id === newStudentClassId)?.name || 'N/A',
-      feedback: newStudentFeedback,
-      amountDue: parseFloat(newStudentAmountDue) || 0,
-      tuitionStatus: newStudentTuitionStatus,
-    };
-
-    setStudents([...students, newStudent]);
-    
-    toast({
-      title: "Élève ajouté",
-      description: `${newStudentName} a été ajouté(e) à la liste.`,
-    });
-
-    resetAddStudentForm();
-    setIsAddStudentDialogOpen(false);
-  };
   
   const handleOpenEditDialog = (student: Student) => {
     setEditingStudent(student);
@@ -202,32 +179,31 @@ export default function StudentsPage() {
   };
 
   const handleEditStudent = () => {
-    if (!editingStudent) return;
-     if (!newStudentName || !newStudentClassId) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Le nom et la classe de l'élève sont requis.",
-      });
+    if (!editingStudent || !formState.name || !formState.classId) {
+      toast({ variant: "destructive", title: "Erreur", description: "Le nom et la classe de l'élève sont requis." });
       return;
     }
     
-    setStudents(students.map(s => s.id === editingStudent.id ? {
-      ...s,
-      name: newStudentName,
-      class: mockClassData.find(c => c.id === newStudentClassId)?.name || 'N/A',
-      feedback: newStudentFeedback,
-      amountDue: parseFloat(newStudentAmountDue) || 0,
-      tuitionStatus: newStudentTuitionStatus,
-    } : s));
-
-    toast({
-      title: "Élève modifié",
-      description: `Les informations de ${newStudentName} ont été mises à jour.`,
-    });
+    const studentDocRef = doc(firestore, `schools/${schoolId}/students/${editingStudent.id}`);
+    const updatedData = {
+      ...editingStudent,
+      name: formState.name,
+      class: classes.find(c => c.id === formState.classId)?.name || 'N/A',
+      classId: formState.classId,
+      feedback: formState.feedback || '',
+      amountDue: Number(formState.amountDue) || 0,
+      tuitionStatus: formState.tuitionStatus || 'Partiel',
+    };
     
-    setIsEditDialogOpen(false);
-    setEditingStudent(null);
+    setDoc(studentDocRef, updatedData, { merge: true })
+    .then(() => {
+        toast({ title: "Élève modifié", description: `Les informations de ${formState.name} ont été mises à jour.` });
+        setIsEditDialogOpen(false);
+        setEditingStudent(null);
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: studentDocRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
   const handleOpenDeleteDialog = (student: Student) => {
@@ -237,13 +213,17 @@ export default function StudentsPage() {
 
   const handleDeleteStudent = () => {
     if (!studentToDelete) return;
-    setStudents(students.filter(s => s.id !== studentToDelete.id));
-     toast({
-      title: "Élève supprimé",
-      description: `L'élève ${studentToDelete.name} a été supprimé(e).`,
+
+    const studentDocRef = doc(firestore, `schools/${schoolId}/students/${studentToDelete.id}`);
+    deleteDoc(studentDocRef)
+    .then(() => {
+        toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.name} a été supprimé(e).` });
+        setIsDeleteDialogOpen(false);
+        setStudentToDelete(null);
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: studentDocRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
     });
-    setIsDeleteDialogOpen(false);
-    setStudentToDelete(null);
   }
 
   const SentimentIcon = ({ sentiment }: { sentiment: Sentiment | null }) => {
@@ -259,6 +239,7 @@ export default function StudentsPage() {
     }
   };
   
+  const isLoading = studentsLoading || classesLoading;
 
   return (
     <>
@@ -274,78 +255,9 @@ export default function StudentsPage() {
                 <Sparkles className="mr-2 h-4 w-4" />
                 {isAnalyzing ? "Analyse..." : "Analyser les sentiments"}
               </Button>
-              <Dialog open={isAddStudentDialogOpen} onOpenChange={(isOpen) => {
-                  setIsAddStudentDialogOpen(isOpen);
-                  if (!isOpen) resetAddStudentForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button>
+               <Button onClick={() => router.push('/dashboard/registration')}>
                     <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un élève
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Ajouter un nouvel élève</DialogTitle>
-                    <DialogDescription>
-                      Renseignez les informations du nouvel élève.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="student-name" className="text-right">
-                        Nom
-                      </Label>
-                      <Input id="student-name" value={newStudentName} onChange={(e) => setNewStudentName(e.target.value)} className="col-span-3" placeholder="Ex: Jean Dupont" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="student-class" className="text-right">
-                        Classe
-                      </Label>
-                      <Select onValueChange={setNewStudentClassId} value={newStudentClassId}>
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Sélectionner une classe" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {mockClassData.map((cls) => (
-                            <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="student-amount" className="text-right">
-                        Solde (CFA)
-                      </Label>
-                      <Input id="student-amount" type="number" value={newStudentAmountDue} onChange={(e) => setNewStudentAmountDue(e.target.value)} className="col-span-3" placeholder="Ex: 50000" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="student-tuition-status" className="text-right">
-                        Statut
-                      </Label>
-                      <Select onValueChange={(value) => setNewStudentTuitionStatus(value as any)} value={newStudentTuitionStatus}>
-                        <SelectTrigger className="col-span-3">
-                          <SelectValue placeholder="Statut du paiement" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Soldé">Soldé</SelectItem>
-                            <SelectItem value="En retard">En retard</SelectItem>
-                            <SelectItem value="Partiel">Partiel</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                      <Label htmlFor="student-feedback" className="text-right pt-2">
-                        Feedback
-                      </Label>
-                      <Textarea id="student-feedback" value={newStudentFeedback} onChange={(e) => setNewStudentFeedback(e.target.value)} className="col-span-3" placeholder="Feedback initial (optionnel)"/>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setIsAddStudentDialogOpen(false)}>Annuler</Button>
-                    <Button onClick={handleAddStudent}>Ajouter l'élève</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                </Button>
             </div>
           </div>
           <Card>
@@ -362,7 +274,19 @@ export default function StudentsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {students.map((student) => (
+                      {isLoading ? (
+                        [...Array(5)].map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                            <TableCell><Skeleton className="h-5 w-16"/></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-5 w-12 mx-auto"/></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-5 w-5 mx-auto rounded-full"/></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto"/></TableCell>
+                          </TableRow>
+                        ))
+                      ) : students.length > 0 ? (
+                        students.map((student) => (
                         <TableRow key={student.id}>
                           <TableCell className="font-medium">
                             <Link href={`/dashboard/students/${student.id}`} className="hover:underline text-primary">
@@ -398,7 +322,12 @@ export default function StudentsPage() {
                               </DropdownMenu>
                           </TableCell>
                         </TableRow>
-                      ))}
+                      ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={6} className="h-24 text-center">Aucun élève inscrit pour le moment.</TableCell>
+                        </TableRow>
+                      )}
                     </TableBody>
                   </Table>
               </CardContent>
@@ -462,18 +391,18 @@ export default function StudentsPage() {
               <Label htmlFor="edit-student-name" className="text-right">
                 Nom
               </Label>
-              <Input id="edit-student-name" value={newStudentName} onChange={(e) => setNewStudentName(e.target.value)} className="col-span-3" />
+              <Input id="edit-student-name" value={formState.name || ''} onChange={(e) => setFormState(s => ({...s, name: e.target.value}))} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-student-class" className="text-right">
                 Classe
               </Label>
-              <Select onValueChange={setNewStudentClassId} value={newStudentClassId}>
+              <Select onValueChange={(v) => setFormState(s => ({...s, classId: v}))} value={formState.classId || ''}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Sélectionner une classe" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockClassData.map((cls) => (
+                  {classes.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
                   ))}
                 </SelectContent>
@@ -483,13 +412,13 @@ export default function StudentsPage() {
               <Label htmlFor="edit-student-amount" className="text-right">
                 Solde (CFA)
               </Label>
-              <Input id="edit-student-amount" type="number" value={newStudentAmountDue} onChange={(e) => setNewStudentAmountDue(e.target.value)} className="col-span-3" />
+              <Input id="edit-student-amount" type="number" value={formState.amountDue || ''} onChange={(e) => setFormState(s => ({...s, amountDue: Number(e.target.value)}))} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-student-tuition-status" className="text-right">
                 Statut
               </Label>
-              <Select onValueChange={(value) => setNewStudentTuitionStatus(value as any)} value={newStudentTuitionStatus}>
+              <Select onValueChange={(v) => setFormState(s => ({...s, tuitionStatus: v as TuitionStatus}))} value={formState.tuitionStatus || 'Partiel'}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Statut du paiement" />
                 </SelectTrigger>
@@ -504,7 +433,7 @@ export default function StudentsPage() {
               <Label htmlFor="edit-student-feedback" className="text-right pt-2">
                 Feedback
               </Label>
-              <Textarea id="edit-student-feedback" value={newStudentFeedback} onChange={(e) => setNewStudentFeedback(e.target.value)} className="col-span-3" />
+              <Textarea id="edit-student-feedback" value={formState.feedback || ''} onChange={(e) => setFormState(s => ({...s, feedback: e.target.value}))} className="col-span-3" />
             </div>
           </div>
           <DialogFooter>

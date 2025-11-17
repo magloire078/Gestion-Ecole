@@ -38,7 +38,7 @@ service cloud.firestore {
             allow delete: if false;
         }
 
-        // Rules for teachers, classes, and cycles
+        // Rules for teachers, classes, cycles, fees and students
         match /teachers/{teacherId} {
             allow read, create, update, delete: if isUserInSchool(schoolId);
         }
@@ -49,6 +49,9 @@ service cloud.firestore {
             allow read, create, update, delete: if isUserInSchool(schoolId);
         }
         match /fees/{feeId} {
+            allow read, create, update, delete: if isUserInSchool(schoolId);
+        }
+        match /students/{studentId} {
             allow read, create, update, delete: if isUserInSchool(schoolId);
         }
     }
