@@ -81,7 +81,7 @@ export default function AccountingPage() {
   const [amount, setAmount] = useState("");
   const [type, setType] = useState<'Revenu' | 'Dépense'>('Dépense');
   const [category, setCategory] = useState("");
-  const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [date, setDate] = useState('');
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
@@ -91,6 +91,8 @@ export default function AccountingPage() {
 
   useEffect(() => {
     setIsClient(true);
+    // Initialize date on the client to avoid hydration mismatch
+    setDate(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
   const resetForm = () => {
@@ -383,3 +385,5 @@ export default function AccountingPage() {
     </>
   );
 }
+
+    
