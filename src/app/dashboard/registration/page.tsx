@@ -57,7 +57,7 @@ export default function RegistrationPage() {
   const handleNextStep = () => setStep(s => Math.min(s + 1, 3));
   const handlePrevStep = () => setStep(s => Math.max(s - 1, 1));
   
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!schoolId || !formData.name || !formData.dateOfBirth || !formData.placeOfBirth || !formData.classId || !formData.parent1Name || !formData.parent1Contact) {
       toast({
