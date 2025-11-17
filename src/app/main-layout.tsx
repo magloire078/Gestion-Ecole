@@ -3,8 +3,9 @@
 
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { FirebaseClientProvider, getFirebase } from "@/firebase";
+import { FirebaseContextValue } from "@/firebase/provider";
 
 const SCHOOL_NAME_KEY = 'schoolName';
 const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
@@ -12,30 +13,33 @@ const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 export function MainLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
-  const [firebase, setFirebase] = useState<ReturnType<typeof getFirebase>>(null);
+  const [firebase, setFirebase] = useState<FirebaseContextValue | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Initialize Firebase on the client
+    // This effect runs only on the client, after the initial render.
+    setIsClient(true);
     setFirebase(getFirebase());
     
-    // Title update logic
     const updateTitle = () => {
       const savedName = localStorage.getItem(SCHOOL_NAME_KEY);
       document.title = savedName ? `${savedName} - Gestion Scolaire` : DEFAULT_TITLE;
     };
     
-    updateTitle();
-    window.addEventListener('settings-updated', updateTitle);
+    updateTitle(); // Initial call
+    window.addEventListener('settings-updated', updateTitle); // Listen for changes
     
     return () => {
       window.removeEventListener('settings-updated', updateTitle);
     };
 
   }, []);
-
-  if (!firebase) {
+  
+  if (!isClient || !firebase) {
+    // During server-side rendering and initial client-side render before useEffect runs,
+    // show a consistent loading state to prevent hydration mismatches.
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <div className="text-center">
