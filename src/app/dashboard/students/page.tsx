@@ -54,7 +54,7 @@ import {
 import type { Student } from "@/lib/data";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -78,7 +78,8 @@ interface Class {
 export default function StudentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
-  const schoolId = 'test-school';
+  const { user } = useUser();
+  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
 
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/students`) : null, [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
@@ -180,7 +181,7 @@ export default function StudentsPage() {
   };
 
   const handleEditStudent = () => {
-    if (!editingStudent || !formState.name || !formState.classId) {
+    if (!schoolId || !editingStudent || !formState.name || !formState.classId) {
       toast({ variant: "destructive", title: "Erreur", description: "Le nom et la classe de l'élève sont requis." });
       return;
     }
@@ -213,7 +214,7 @@ export default function StudentsPage() {
   };
 
   const handleDeleteStudent = () => {
-    if (!studentToDelete) return;
+    if (!schoolId || !studentToDelete) return;
 
     const studentDocRef = doc(firestore, `schools/${schoolId}/students/${studentToDelete.id}`);
     deleteDoc(studentDocRef)
@@ -240,7 +241,7 @@ export default function StudentsPage() {
     }
   };
   
-  const isLoading = studentsLoading || classesLoading;
+  const isLoading = !schoolId || studentsLoading || classesLoading;
 
   return (
     <>
@@ -462,3 +463,5 @@ export default function StudentsPage() {
     </>
   );
 }
+
+    

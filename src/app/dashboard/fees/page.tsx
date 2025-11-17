@@ -46,7 +46,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Pencil, GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Image from "next/image";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -74,7 +74,8 @@ const getImageHintForGrade = (grade: string): string => {
 
 export default function FeesPage() {
   const firestore = useFirestore();
-  const schoolId = 'test-school';
+  const { user } = useUser();
+  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
 
   // --- Firestore Data Hooks ---
   const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/fees`) : null, [firestore, schoolId]);
@@ -173,7 +174,7 @@ export default function FeesPage() {
   };
 
   const handleAddFeeGrid = () => {
-    if (!newFeeGrade || !newFeeAmount || !newFeeInstallments) {
+    if (!schoolId || !newFeeGrade || !newFeeAmount || !newFeeInstallments) {
         toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
         return;
     }
@@ -202,7 +203,7 @@ export default function FeesPage() {
   };
 
   const handleEditFeeGrid = () => {
-    if (!editingFee || !newFeeGrade || !newFeeAmount || !newFeeInstallments) {
+    if (!schoolId || !editingFee || !newFeeGrade || !newFeeAmount || !newFeeInstallments) {
         toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
         return;
     }
@@ -233,7 +234,7 @@ export default function FeesPage() {
   };
 
   const handleDeleteFeeGrid = () => {
-    if (!feeToDelete) return;
+    if (!schoolId || !feeToDelete) return;
     const feeDocRef = getFeeDocRef(feeToDelete.id);
     deleteDoc(feeDocRef)
       .then(() => {
@@ -245,6 +246,8 @@ export default function FeesPage() {
         errorEmitter.emit('permission-error', permissionError);
       });
   };
+
+  const isLoading = !schoolId || feesLoading;
 
   return (
     <>
@@ -292,7 +295,7 @@ export default function FeesPage() {
             </Dialog>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {feesLoading ? (
+            {isLoading ? (
                 [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
             ) : (
                 fees.map((fee: Fee) => (
@@ -531,3 +534,5 @@ export default function FeesPage() {
     </>
   );
 }
+
+    

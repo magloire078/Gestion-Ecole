@@ -43,7 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -61,7 +61,8 @@ interface Teacher {
 
 export default function TeachersPage() {
   const firestore = useFirestore();
-  const schoolId = 'test-school'; // Hardcoded for now
+  const { user } = useUser();
+  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
 
   // --- Firestore Data Hooks ---
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
@@ -112,7 +113,7 @@ export default function TeachersPage() {
   };
 
   const handleAddTeacher = () => {
-    if (!newTeacherName || !newTeacherSubject || !newTeacherEmail) {
+    if (!schoolId || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -145,7 +146,7 @@ export default function TeachersPage() {
   };
   
   const handleEditTeacher = () => {
-    if (!editingTeacher || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
+    if (!schoolId || !editingTeacher || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
       toast({
         variant: "destructive",
         title: "Erreur",
@@ -178,7 +179,7 @@ export default function TeachersPage() {
   };
   
   const handleDeleteTeacher = () => {
-    if (!teacherToDelete) return;
+    if (!schoolId || !teacherToDelete) return;
     
     const teacherDocRef = getTeacherDocRef(teacherToDelete.id);
     deleteDoc(teacherDocRef)
@@ -194,6 +195,8 @@ export default function TeachersPage() {
         errorEmitter.emit('permission-error', permissionError);
       });
   };
+
+  const isLoading = !schoolId || teachersLoading;
 
   return (
     <>
@@ -261,7 +264,7 @@ export default function TeachersPage() {
           </Dialog>
         </div>
         
-        {teachersLoading ? (
+        {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-44 w-full" />)}
           </div>
@@ -395,5 +398,7 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    
 
     

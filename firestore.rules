@@ -8,26 +8,28 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getSchoolId() {
+    function getUserSchoolId() {
       // Allow reading custom claims from the token.
       // Make sure to set these custom claims when the user logs in.
       return request.auth.token.schoolId;
     }
 
     function isUserInSchool(schoolId) {
-      return isUserAuthenticated() && getSchoolId() == schoolId;
+      return isUserAuthenticated() && getUserSchoolId() == schoolId;
     }
     
     // School-specific data
-    match /schools/{schoolId}/{document=**} {
-        // Allow any authenticated user from the school to read and write any document within their school's path.
-        // This is a broad rule and can be refined for more granular control if needed.
-        allow read, write: if isUserInSchool(schoolId);
-    }
+    match /schools/{schoolId} {
+      // Allow read/write access to the school document itself for users of that school.
+      allow read, write: if isUserInSchool(schoolId);
 
-    // You can keep more specific rules for certain collections if needed, but they must be placed correctly.
-    // For example, if you wanted to restrict user profile deletion, you'd do it like this:
-    match /schools/{schoolId}/users/{userId} {
+      // Rules for subcollections within a school
+      match /{collection}/{docId} {
+         allow read, write: if isUserInSchool(schoolId);
+      }
+
+      // More specific rules can be added here. For example, for user profiles:
+      match /users/{userId} {
         // A user can read their own profile, and school members can list users.
         allow get: if isUserAuthenticated() && request.auth.uid == userId;
         allow list: if isUserInSchool(schoolId);
@@ -35,6 +37,9 @@ service cloud.firestore {
         allow write: if isUserAuthenticated() && request.auth.uid == userId;
         // Users cannot delete profiles.
         allow delete: if false;
+      }
     }
   }
 }
+
+    

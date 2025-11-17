@@ -76,8 +76,11 @@ interface Cycle {
 export default function ClassesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  // For now, we'll hardcode the schoolId. In a real app, this would come from user's custom claims.
-  const schoolId = 'test-school';
+  
+  // In a real multi-tenant app, the schoolId would come from user's custom claims or a context/selector.
+  // For now, we continue to use a fixed ID but recognize it should be dynamic.
+  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
+
 
   // --- Firestore Data Hooks ---
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
@@ -136,7 +139,7 @@ export default function ClassesPage() {
 
   // --- CRUD Operations ---
   const handleAddClass = async () => {
-    if (!formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
+    if (!schoolId || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
         toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
         return;
     }
@@ -172,7 +175,7 @@ export default function ClassesPage() {
   };
 
   const handleEditClass = async () => {
-    if (!editingClass || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
+    if (!schoolId || !editingClass || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
       return;
     }
@@ -203,7 +206,7 @@ export default function ClassesPage() {
   };
 
   const handleDeleteClass = async () => {
-    if (!classToDelete) return;
+    if (!schoolId || !classToDelete) return;
     
     const classDocRef = getClassDocRef(classToDelete.id);
     deleteDoc(classDocRef)
@@ -218,7 +221,7 @@ export default function ClassesPage() {
   }
   
   const handleAddCycle = () => {
-    if (!newCycleName.trim()) {
+    if (!schoolId || !newCycleName.trim()) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
         return;
     }
@@ -248,7 +251,7 @@ export default function ClassesPage() {
   };
 
   const handleDeleteCycle = () => {
-      if (!cycleToDelete) return;
+      if (!schoolId || !cycleToDelete) return;
       const cycleDocRef = getCycleDocRef(cycleToDelete.id);
       deleteDoc(cycleDocRef)
       .then(() => {
@@ -260,7 +263,7 @@ export default function ClassesPage() {
       });
   }
   
-  const isLoading = classesLoading || teachersLoading || cyclesLoading;
+  const isLoading = !schoolId || classesLoading || teachersLoading || cyclesLoading;
   
   if (!isClient) {
     return (
@@ -305,7 +308,7 @@ export default function ClassesPage() {
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                             <Label>Niveaux actuels</Label>
-                            {isLoading ? <Skeleton className="h-10 w-full" /> : cycles.map(cycle => (
+                            {cyclesLoading ? <Skeleton className="h-10 w-full" /> : cycles.map(cycle => (
                                 <div key={cycle.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
                                     <span>{cycle.name}</span>
                                     <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleOpenDeleteCycleDialog(cycle)}>
@@ -493,3 +496,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
