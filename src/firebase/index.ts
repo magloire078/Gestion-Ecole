@@ -1,7 +1,7 @@
 
 import * as React from 'react';
 import {initializeApp, getApp, getApps, FirebaseApp} from 'firebase/app';
-import {getAuth, Auth, connectAuthEmulator} from 'firebase/auth';
+import {getAuth, Auth} from 'firebase/auth';
 import {getFirestore, Firestore} from 'firebase/firestore';
 import {firebaseConfig} from './config';
 export * from './provider';
@@ -20,10 +20,6 @@ function initializeFirebase() {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       firestore = getFirestore(app);
-      // Connect to the auth emulator
-      if (process.env.NODE_ENV === 'development') {
-        connectAuthEmulator(auth, "http://localhost:9099");
-      }
     } else {
       app = getApp();
       auth = getAuth(app);
