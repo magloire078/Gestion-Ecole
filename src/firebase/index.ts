@@ -20,6 +20,10 @@ function initializeFirebase() {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       firestore = getFirestore(app);
+      // Connect to the auth emulator
+      if (process.env.NODE_ENV === 'development') {
+        connectAuthEmulator(auth, "http://localhost:9099");
+      }
     } else {
       app = getApp();
       auth = getAuth(app);
