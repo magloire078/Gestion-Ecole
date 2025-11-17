@@ -14,33 +14,28 @@ export function MainLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const firebase = getFirebase();
-  const [isClient, setIsClient] = useState(false);
-  
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const [firebase, setFirebase] = useState<ReturnType<typeof getFirebase>>(null);
 
   useEffect(() => {
-    if (!isClient) return;
-
+    // Initialize Firebase on the client
+    setFirebase(getFirebase());
+    
+    // Title update logic
     const updateTitle = () => {
       const savedName = localStorage.getItem(SCHOOL_NAME_KEY);
-      const newTitle = savedName ? `${savedName} - Gestion Scolaire` : DEFAULT_TITLE;
-      document.title = newTitle;
+      document.title = savedName ? `${savedName} - Gestion Scolaire` : DEFAULT_TITLE;
     };
     
-    updateTitle(); // Set on initial client load
-    
+    updateTitle();
     window.addEventListener('settings-updated', updateTitle);
     
     return () => {
       window.removeEventListener('settings-updated', updateTitle);
     };
 
-  }, [isClient]);
+  }, []);
 
-  if (!firebase || !isClient) {
+  if (!firebase) {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <div className="text-center">
