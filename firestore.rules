@@ -9,8 +9,8 @@ service cloud.firestore {
     }
 
     function getUserSchoolId() {
-      // Allow reading custom claims from the token.
-      // Make sure to set these custom claims when the user logs in.
+      // Reading custom claims from the auth token.
+      // These claims should be set securely on the server-side when a user logs in.
       return request.auth.token.schoolId;
     }
 
@@ -20,23 +20,17 @@ service cloud.firestore {
     
     // School-specific data
     match /schools/{schoolId} {
-      // Allow read/write access to the school document itself for users of that school.
-      allow read, write: if isUserInSchool(schoolId);
+      
+      // Allow a user to read their own school's main document.
+      allow get: if isUserInSchool(schoolId);
 
-      // Rules for subcollections within a school
+      // Deny listing or writing to the school document itself by clients.
+      allow list, write: if false;
+
+      // Rules for all subcollections within a school
       match /{collection}/{docId} {
-         allow read, write: if isUserInSchool(schoolId);
-      }
-
-      // More specific rules can be added here. For example, for user profiles:
-      match /users/{userId} {
-        // A user can read their own profile, and school members can list users.
-        allow get: if isUserAuthenticated() && request.auth.uid == userId;
-        allow list: if isUserInSchool(schoolId);
-        // A user can create or update their own profile.
-        allow write: if isUserAuthenticated() && request.auth.uid == userId;
-        // Users cannot delete profiles.
-        allow delete: if false;
+         // Users can only read, write, and delete data within their own school's collections.
+         allow read, write, delete: if isUserInSchool(schoolId);
       }
     }
   }

@@ -79,7 +79,7 @@ export default function StudentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
-  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
+  const schoolId = user?.customClaims?.schoolId;
 
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/students`) : null, [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
@@ -464,4 +464,5 @@ export default function StudentsPage() {
   );
 }
 
+    
     

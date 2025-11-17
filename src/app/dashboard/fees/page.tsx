@@ -75,7 +75,7 @@ const getImageHintForGrade = (grade: string): string => {
 export default function FeesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
+  const schoolId = user?.customClaims?.schoolId;
 
   // --- Firestore Data Hooks ---
   const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/fees`) : null, [firestore, schoolId]);
@@ -535,4 +535,5 @@ export default function FeesPage() {
   );
 }
 
+    
     

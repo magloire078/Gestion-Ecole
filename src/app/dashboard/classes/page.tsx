@@ -77,9 +77,7 @@ export default function ClassesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   
-  // In a real multi-tenant app, the schoolId would come from user's custom claims or a context/selector.
-  // For now, we continue to use a fixed ID but recognize it should be dynamic.
-  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
+  const schoolId = user?.customClaims?.schoolId;
 
 
   // --- Firestore Data Hooks ---
@@ -497,4 +495,5 @@ export default function ClassesPage() {
   );
 }
 
+    
     

@@ -24,7 +24,7 @@ export default function RegistrationPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useUser();
-  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
+  const schoolId = user?.customClaims?.schoolId;
 
 
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
@@ -203,4 +203,5 @@ export default function RegistrationPage() {
   );
 }
 
+    
     

@@ -62,7 +62,7 @@ interface Teacher {
 export default function TeachersPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const schoolId = user ? (user.customClaims?.schoolId as string || 'test-school') : null;
+  const schoolId = user?.customClaims?.schoolId;
 
   // --- Firestore Data Hooks ---
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
@@ -401,4 +401,5 @@ export default function TeachersPage() {
 
     
 
+    
     
