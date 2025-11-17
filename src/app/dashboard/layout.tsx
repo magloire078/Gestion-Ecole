@@ -31,7 +31,7 @@ export default function DashboardLayout({
     }
   }, [user, loading, router, isClient]);
 
-  if (!isClient || loading) {
+  if (!isClient || loading || !user) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
@@ -40,10 +40,6 @@ export default function DashboardLayout({
             </div>
         </div>
     );
-  }
-
-  if (!user) {
-    return null; // The useEffect above will handle the redirect.
   }
 
   return (

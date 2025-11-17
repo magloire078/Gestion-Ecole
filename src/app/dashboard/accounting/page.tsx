@@ -386,7 +386,3 @@ export default function AccountingPage() {
       </AlertDialog>
     </>
   );
-
-    
-    
-    
