@@ -64,7 +64,8 @@ export default function OnboardingPage() {
         // Refresh the user's token to get the new custom claim
         await auth.currentUser?.getIdToken(true);
         
-        router.push('/dashboard');
+        // Use a full page reload to ensure auth state is updated across the app
+        window.location.href = '/dashboard';
 
     } catch (error: any) {
         // This is where we catch the permission error
