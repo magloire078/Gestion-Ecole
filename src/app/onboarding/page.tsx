@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useAuth } from "@/firebase";
-import { doc, setDoc, writeBatch } from "firebase/firestore";
+import { doc, writeBatch } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -39,7 +39,10 @@ export default function OnboardingPage() {
     const schoolId = schoolName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
     const schoolData = { name: schoolName, directorId: user.uid, createdAt: new Date() };
     const schoolRef = doc(firestore, `schools/${schoolId}`);
-    const userData = {
+    
+    // This is the user document inside the school's subcollection
+    const schoolUserRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
+    const schoolUserData = {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
@@ -47,12 +50,15 @@ export default function OnboardingPage() {
         schoolId: schoolId,
         role: 'director',
     };
-    const userRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
 
     try {
         const batch = writeBatch(firestore);
+        
+        // Set the school document
         batch.set(schoolRef, schoolData);
-        batch.set(userRef, userData);
+
+        // Set the user document in the school's subcollection
+        batch.set(schoolUserRef, schoolUserData);
         
         await batch.commit();
 
@@ -61,19 +67,16 @@ export default function OnboardingPage() {
             description: `Bienvenue à ${schoolName}. Vous allez être redirigé.`,
         });
         
-        // Refresh the user's token to get the new custom claim
-        await auth.currentUser?.getIdToken(true);
-        
-        // Use a full page reload to ensure auth state is updated across the app
+        // No need to refresh token as we are not using custom claims for this logic
+        // Use a full page reload to ensure auth state and component state is fully refreshed
         window.location.href = '/dashboard';
 
     } catch (error: any) {
-        // This is where we catch the permission error
         if (error.code === 'permission-denied') {
             const permissionError = new FirestorePermissionError({
                 path: `[BATCH WRITE] schools/${schoolId} and schools/${schoolId}/users/${user.uid}`,
-                operation: 'write', // Batch write involves set/create operations
-                requestResourceData: { school: schoolData, user: userData },
+                operation: 'write',
+                requestResourceData: { school: schoolData, user: schoolUserData },
             });
             errorEmitter.emit('permission-error', permissionError);
         } else {

@@ -8,36 +8,60 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { collectionGroup, query, where, getDocs, limit } from 'firebase/firestore';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
-    if (isClient && !loading) {
-      if (!user) {
-        // If user is not logged in, redirect to login page
-        router.push('/login');
-      } else if (user && !user.customClaims?.schoolId) {
-        // If user is logged in but has no schoolId, redirect to onboarding
-        router.push('/onboarding');
-      }
-    }
-  }, [user, loading, router, isClient]);
+    if (isClient && !userLoading && user) {
+      const checkOnboardingStatus = async () => {
+        // Query the 'users' collection group to find if a document exists for this user.
+        // This is more reliable than custom claims if they are not set by a backend process.
+        const usersRef = collectionGroup(firestore, 'users');
+        const q = query(usersRef, where('uid', '==', user.uid), limit(1));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            const userDocExists = !querySnapshot.empty;
+            setHasCompletedOnboarding(userDocExists);
+            
+            if (!userDocExists) {
+                router.push('/onboarding');
+            }
+        } catch (error) {
+            console.error("Error checking onboarding status:", error);
+            // Fallback: if there's an error, assume not onboarded to be safe
+            setHasCompletedOnboarding(false);
+            router.push('/onboarding');
+        }
+      };
+      
+      checkOnboardingStatus();
 
-  if (!isClient || loading || !user || !user.customClaims?.schoolId) {
+    } else if (isClient && !userLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, userLoading, router, isClient, firestore]);
+  
+  const isLoading = userLoading || hasCompletedOnboarding === null;
+
+  if (!isClient || isLoading) {
     return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
@@ -47,6 +71,18 @@ export default function DashboardLayout({
         </div>
     );
   }
+
+  if (!user || !hasCompletedOnboarding) {
+      // This case should be handled by the useEffect redirects, but as a fallback:
+       return (
+        <div className="flex h-screen w-full items-center justify-center">
+            <div className="text-center">
+                <p className="text-lg font-semibold">Redirection...</p>
+            </div>
+        </div>
+    );
+  }
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
