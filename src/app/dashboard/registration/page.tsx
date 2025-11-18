@@ -160,8 +160,8 @@ export default function RegistrationPage() {
                             <Input id="parent1Name" name="parent1Name" value={formData.parent1Name} onChange={handleChange} placeholder="Nom du parent 1" required />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="parent1Contact">Contact</Label>
-                            <Input id="parent1Contact" name="parent1Contact" value={formData.parent1Contact} onChange={handleChange} placeholder="Téléphone, Email..." required />
+                            <Label htmlFor="parent1Contact">Contact (Téléphone)</Label>
+                            <Input id="parent1Contact" name="parent1Contact" value={formData.parent1Contact} onChange={handleChange} placeholder="Numéro de téléphone" required />
                         </div>
                     </div>
                 </div>
@@ -173,8 +173,8 @@ export default function RegistrationPage() {
                             <Input id="parent2Name" name="parent2Name" value={formData.parent2Name} onChange={handleChange} placeholder="Nom du parent 2" />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="parent2Contact">Contact</Label>
-                            <Input id="parent2Contact" name="parent2Contact" value={formData.parent2Contact} onChange={handleChange} placeholder="Téléphone, Email..." />
+                            <Label htmlFor="parent2Contact">Contact (Téléphone)</Label>
+                            <Input id="parent2Contact" name="parent2Contact" value={formData.parent2Contact} onChange={handleChange} placeholder="Numéro de téléphone" />
                         </div>
                     </div>
                 </div>
