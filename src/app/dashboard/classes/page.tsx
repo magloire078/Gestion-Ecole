@@ -222,7 +222,6 @@ export default function ClassesPage() {
         toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
         return null;
     }
-    // Trim the input and check if it's empty
     const trimmedName = cycleName.trim();
     if (!trimmedName) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
@@ -237,16 +236,25 @@ export default function ClassesPage() {
     try {
         const docRef = await addCycle(newCycleData);
         toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
-        return { value: trimmedName, label: trimmedName }; // Return name for Combobox value
+        return { value: trimmedName, label: trimmedName };
     } catch(e) {
-      // Error is handled by useCollection
       return null;
     }
   };
 
- const handleAddCycleFromDialog = () => {
-    // This function now specifically handles the "Add" button from the dialog
-    if (handleCreateCycle(newCycleName)) {
+ const handleAddCycleFromDialog = async () => {
+    const trimmedName = newCycleName.trim();
+    if (!schoolId) {
+        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé. Veuillez réessayer." });
+        return;
+    }
+    if (!trimmedName) {
+        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
+        return;
+    }
+
+    const result = await handleCreateCycle(trimmedName);
+    if (result) {
         setNewCycleName(""); // Clear input only on successful creation
     }
   }
