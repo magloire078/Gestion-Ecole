@@ -219,11 +219,11 @@ export default function ClassesPage() {
   }
   
   const handleCreateCycle = async (cycleName: string) => {
+    const trimmedName = cycleName.trim();
     if (!schoolId) {
-        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
+        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé. Rechargez la page." });
         return null;
     }
-    const trimmedName = cycleName.trim();
     if (!trimmedName) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
         return null;
@@ -236,7 +236,7 @@ export default function ClassesPage() {
     
     const cycleCollectionRef = collection(firestore, `schools/${schoolId}/cycles`);
     try {
-        const docRef = await addDoc(cycleCollectionRef, newCycleData);
+        await addDoc(cycleCollectionRef, newCycleData);
         toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
         return { value: trimmedName, label: trimmedName };
     } catch(serverError) {
@@ -247,17 +247,7 @@ export default function ClassesPage() {
   };
 
   const handleAddCycleFromDialog = async () => {
-    if (!schoolId) {
-        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé. Veuillez réessayer." });
-        return;
-    }
-    const trimmedName = newCycleName.trim();
-    if (!trimmedName) {
-        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
-        return;
-    }
-
-    const result = await handleCreateCycle(trimmedName);
+    const result = await handleCreateCycle(newCycleName);
     if (result) {
         setNewCycleName(""); // Clear input only on successful creation
     }
@@ -292,24 +282,28 @@ export default function ClassesPage() {
     setIsAddTeacherDialogOpen(true);
   }
 
-  const handleCreateTeacher = async () => {
-    if (!schoolId || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
+  const handleCreateTeacher = async (name: string) => {
+    if (!schoolId || !name || !newTeacherSubject || !newTeacherEmail) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom, la matière et l'email sont requis." });
         return null;
     }
-    const newTeacherData = { name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail };
+    const newTeacherData = { name, subject: newTeacherSubject, email: newTeacherEmail };
     const teacherCollectionRef = collection(firestore, `schools/${schoolId}/teachers`);
     try {
         const docRef = await addDoc(teacherCollectionRef, newTeacherData);
-        toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
+        toast({ title: "Enseignant ajouté", description: `${name} a été ajouté(e).` });
         setIsAddTeacherDialogOpen(false);
         setFormTeacherId(docRef.id); // auto-select the newly created teacher
-        return { value: docRef.id, label: newTeacherName };
+        return { value: docRef.id, label: name };
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({ path: teacherCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
         errorEmitter.emit('permission-error', permissionError);
         return null;
     }
+  }
+
+  const handleCreateTeacherFromDialog = async () => {
+    await handleCreateTeacher(newTeacherName);
   }
 
 
@@ -360,18 +354,18 @@ export default function ClassesPage() {
                     <div className="py-4 space-y-4">
                         <div className="flex gap-2">
                             <Input value={newCycleName} onChange={(e) => setNewCycleName(e.target.value)} placeholder="Nom du nouveau cycle"/>
-                            <Button onClick={handleAddCycleFromDialog}>Ajouter</Button>
+                            <Button onClick={handleAddCycleFromDialog} disabled={!newCycleName.trim() || !schoolId}>Ajouter</Button>
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                             <Label>Cycles actuels</Label>
-                            {cyclesLoading ? <Skeleton className="h-10 w-full" /> : cycles.map(cycle => (
+                            {cyclesLoading ? <Skeleton className="h-10 w-full" /> : cycles.length > 0 ? cycles.map(cycle => (
                                 <div key={cycle.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
                                     <span>{cycle.name}</span>
                                     <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleOpenDeleteCycleDialog(cycle)}>
                                         <X className="h-4 w-4" />
                                     </Button>
                                 </div>
-                            ))}
+                            )) : <p className="text-sm text-muted-foreground text-center py-4">Aucun cycle créé.</p>}
                         </div>
                     </div>
                 </DialogContent>
@@ -418,7 +412,7 @@ export default function ClassesPage() {
                     <Combobox
                         className="col-span-3"
                         placeholder="Sélectionner un enseignant"
-                        searchPlaceholder="Chercher un enseignant..."
+                        searchPlaceholder="Chercher ou créer..."
                         options={teacherOptions}
                         value={formTeacherId}
                         onValueChange={setFormTeacherId}
@@ -556,7 +550,7 @@ export default function ClassesPage() {
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsAddTeacherDialogOpen(false)}>Annuler</Button>
-                    <Button onClick={handleCreateTeacher}>Créer l'enseignant</Button>
+                    <Button onClick={handleCreateTeacherFromDialog}>Créer l'enseignant</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
