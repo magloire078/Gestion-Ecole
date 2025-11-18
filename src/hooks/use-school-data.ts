@@ -64,19 +64,18 @@ export function useSchoolData() {
 
     }, [schoolId, firestore, user, loading]);
 
-    const updateSchoolData = async (data: Partial<SchoolData>) => {
+    const updateSchoolData = (data: Partial<SchoolData>) => {
         if (!schoolId) {
             throw new Error("ID de l'école non disponible. Impossible de mettre à jour.");
         }
         const schoolDocRef = doc(firestore, 'schools', schoolId);
-        try {
-            await setDoc(schoolDocRef, data, { merge: true });
-        } catch (error) {
+        
+        setDoc(schoolDocRef, data, { merge: true })
+        .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'update', requestResourceData: data });
             errorEmitter.emit('permission-error', permissionError);
-            // Re-throw or handle as needed
-            throw error;
-        }
+            throw permissionError; // Re-throw the rich error
+        });
     };
 
     return { schoolId, schoolName, directorName, loading, updateSchoolData };
