@@ -2,36 +2,59 @@
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
-import { mockTeacherData, mockStudentPerformanceData } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookUser, Mail, Book, Bot, Phone } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from '@/ai/flows/generate-teacher-recommendations';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSchoolData } from '@/hooks/use-school-data';
+import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Teacher {
+  name: string;
+  subject: string;
+  email: string;
+  phone?: string;
+  class?: string;
+}
+
+const mockStudentPerformanceData: Record<string, string> = {
+  'Mathématiques': 'Les résultats des élèves en mathématiques montrent une nette amélioration ce semestre, avec une moyenne de classe en hausse de 15%. 80% des élèves ont obtenu une note supérieure à la moyenne. Les points faibles restent la géométrie dans l\'espace.',
+  'Français': 'Excellente participation en classe et des résultats solides à l\'écrit. La moyenne de la classe est de 14/20. Quelques difficultés persistent en orthographe pour un petit groupe d\'élèves.',
+  'Physique-Chimie': 'Très bon semestre avec des résultats remarquables en travaux pratiques. La moyenne générale est de 16/20. La section sur la thermodynamique a été particulièrement bien réussie par les élèves.',
+  'Histoire-Géographie': 'Les élèves montrent un grand intérêt pour la matière. Les dissertations sont de bonne qualité, mais les connaissances sur les dates clés pourraient être améliorées. La moyenne de la classe est stable à 13/20.'
+};
+
 
 export default function TeacherProfilePage() {
   const params = useParams();
   const teacherId = params.teacherId as string;
-  const { schoolName, directorName } = useSchoolData();
+  const { user } = useUser();
+  const schoolId = user?.customClaims?.schoolId;
+  const firestore = useFirestore();
+  const { schoolName, directorName, loading: schoolDataLoading } = useSchoolData();
 
-  const teacher = mockTeacherData.find(t => t.id === teacherId);
+  const teacherRef = useMemoFirebase(() => 
+    (schoolId && teacherId) ? doc(firestore, `schools/${schoolId}/teachers/${teacherId}`) : null
+  , [firestore, schoolId, teacherId]);
+
+  const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);
+  const teacher = teacherData as Teacher | null;
 
   const [recommendation, setRecommendation] = useState('');
   const [teacherSkills, setTeacherSkills] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  if (!teacher) {
-    notFound();
-  }
-
   const handleGenerateRecommendation = async () => {
-    setIsLoading(true);
+    if (!teacher) return;
+    setIsGenerating(true);
     setRecommendation('');
 
     try {
@@ -60,9 +83,34 @@ export default function TeacherProfilePage() {
         description: "Impossible de générer la lettre de recommandation.",
       });
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
   };
+
+  const isLoading = teacherLoading || schoolDataLoading;
+  
+  if (isLoading) {
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Skeleton className="h-8 w-96" />
+                <Skeleton className="h-4 w-1/2" />
+            </div>
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-1 space-y-6">
+                    <Skeleton className="h-56 w-full" />
+                </div>
+                <div className="lg:col-span-2">
+                    <Skeleton className="h-64 w-full" />
+                </div>
+            </div>
+        </div>
+    );
+  }
+
+  if (!teacher) {
+    notFound();
+  }
   
   const fallback = teacher.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
@@ -77,12 +125,12 @@ export default function TeacherProfilePage() {
                  <Card>
                     <CardHeader className="flex-row items-center gap-4">
                         <Avatar className="h-16 w-16">
-                            <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100/100`} alt={teacher.name} data-ai-hint="person face" />
+                            <AvatarImage src={`https://picsum.photos/seed/${teacherId}/100`} alt={teacher.name} data-ai-hint="person face" />
                             <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div>
                              <CardTitle className="text-2xl">{teacher.name}</CardTitle>
-                             <CardDescription>ID Enseignant: {teacher.id}</CardDescription>
+                             <CardDescription>ID Enseignant: {teacherId}</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -125,9 +173,9 @@ export default function TeacherProfilePage() {
                                 onChange={(e) => setTeacherSkills(e.target.value)}
                             />
                         </div>
-                         <Button onClick={handleGenerateRecommendation} disabled={isLoading} className="w-full bg-accent hover:bg-accent/90">
+                         <Button onClick={handleGenerateRecommendation} disabled={isGenerating} className="w-full bg-accent hover:bg-accent/90">
                           <Bot className="mr-2 h-4 w-4" />
-                          {isLoading ? 'Génération en cours...' : 'Générer la Lettre avec l\'IA'}
+                          {isGenerating ? 'Génération en cours...' : 'Générer la Lettre avec l\'IA'}
                         </Button>
 
                         {recommendation && (
@@ -143,3 +191,5 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+
+    

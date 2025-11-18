@@ -79,7 +79,7 @@ export default function TeachersPage() {
   const [newTeacherName, setNewTeacherName] = useState('');
   const [newTeacherSubject, setNewTeacherSubject] = useState('');
   const [newTeacherEmail, setNewTeacherEmail] = useState('');
-  const [newTeacherPhone, setNewTeacherPhone] useState('');
+  const [newTeacherPhone, setNewTeacherPhone] = useState('');
   const [newTeacherClass, setNewTeacherClass] = useState('');
   
   useEffect(() => {
@@ -398,3 +398,5 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    
