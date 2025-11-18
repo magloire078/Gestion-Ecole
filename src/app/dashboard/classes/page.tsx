@@ -232,7 +232,7 @@ export default function ClassesPage() {
         const docRef = await addCycle(newCycleData);
         setNewCycleName("");
         toast({ title: "Niveau ajouté", description: `Le niveau "${cycleName}" a été ajouté.` });
-        return { value: docRef.id, label: cycleName };
+        return { value: cycleName, label: cycleName }; // Return name for Combobox value
     } catch(e) {
       // Error is handled by useCollection
       return null;
@@ -377,7 +377,7 @@ export default function ClassesPage() {
                      <Combobox
                         className="col-span-3"
                         placeholder="Sélectionner un niveau"
-                        searchPlaceholder="Chercher un niveau..."
+                        searchPlaceholder="Chercher ou créer..."
                         options={cycleOptions}
                         value={formCycleName}
                         onValueChange={setFormCycleName}
@@ -478,7 +478,7 @@ export default function ClassesPage() {
                <Combobox
                     className="col-span-3"
                     placeholder="Sélectionner un niveau"
-                    searchPlaceholder="Chercher un niveau..."
+                    searchPlaceholder="Chercher ou créer..."
                     options={cycleOptions}
                     value={formCycleName}
                     onValueChange={setFormCycleName}
@@ -569,5 +569,7 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
 
     
