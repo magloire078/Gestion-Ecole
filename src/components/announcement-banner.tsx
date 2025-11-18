@@ -1,3 +1,4 @@
+
 'use client';
 
 import { generateSchoolAnnouncement } from '@/ai/flows/dynamically-generate-school-announcements';
@@ -14,14 +15,15 @@ export function AnnouncementBanner() {
       setIsLoading(true);
       try {
         const result = await generateSchoolAnnouncement({
-          userRole: 'administrator',
+          userRole: 'administrator', // This can be dynamically set based on user's actual role
           schoolEvents: 'La semaine prochaine, c\'est la semaine des examens. Journée portes ouvertes le 25 du mois.',
           schoolDetails: 'GèreEcole est une institution qui valorise l\'excellence académique et le développement personnel.'
         });
         setAnnouncement(result.announcement);
       } catch (error) {
         console.error('Failed to generate announcement:', error);
-        setAnnouncement('Impossible de charger les annonces pour le moment.');
+        // Fallback to a default message if the AI service fails
+        setAnnouncement('Bienvenue sur votre tableau de bord GèreEcole.');
       } finally {
         setIsLoading(false);
       }
