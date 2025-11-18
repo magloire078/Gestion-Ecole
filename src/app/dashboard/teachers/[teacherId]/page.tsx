@@ -6,19 +6,18 @@ import { mockTeacherData, mockStudentPerformanceData } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookUser, Mail, Book, Bot, Phone } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from '@/ai/flows/generate-teacher-recommendations';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-const SCHOOL_NAME_KEY = 'schoolName';
-const DIRECTOR_NAME_KEY = 'directorName';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 export default function TeacherProfilePage() {
   const params = useParams();
   const teacherId = params.teacherId as string;
+  const { schoolName, directorName } = useSchoolData();
 
   const teacher = mockTeacherData.find(t => t.id === teacherId);
 
@@ -35,10 +34,6 @@ export default function TeacherProfilePage() {
     setIsLoading(true);
     setRecommendation('');
 
-    // Fetch school settings from localStorage
-    const schoolName = localStorage.getItem(SCHOOL_NAME_KEY) || 'GèreEcole';
-    const directorName = localStorage.getItem(DIRECTOR_NAME_KEY) || 'Jean Dupont';
-
     try {
       const skillsArray = teacherSkills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
       
@@ -46,8 +41,8 @@ export default function TeacherProfilePage() {
         teacherName: teacher.name,
         className: teacher.class || 'N/A',
         studentPerformanceData: mockStudentPerformanceData[teacher.subject] || "Aucune donnée de performance disponible.",
-        directorName: directorName, 
-        schoolName: schoolName,
+        directorName: directorName || 'Le Directeur/La Directrice', 
+        schoolName: schoolName || 'GèreEcole',
         teacherSkills: skillsArray.length > 0 ? skillsArray : ['Excellente communication', 'Pédagogie adaptée', 'Gestion de classe efficace'],
       };
 
