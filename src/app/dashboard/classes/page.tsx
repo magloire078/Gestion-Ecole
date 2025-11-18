@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -217,7 +218,7 @@ export default function ClassesPage() {
     });
   }
   
- const handleCreateCycle = async (cycleName: string) => {
+  const handleCreateCycle = async (cycleName: string) => {
     if (!schoolId) {
         toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
         return null;
@@ -245,12 +246,12 @@ export default function ClassesPage() {
     }
   };
 
- const handleAddCycleFromDialog = async () => {
-    const trimmedName = newCycleName.trim();
+  const handleAddCycleFromDialog = async () => {
     if (!schoolId) {
         toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé. Veuillez réessayer." });
         return;
     }
+    const trimmedName = newCycleName.trim();
     if (!trimmedName) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
         return;
@@ -590,3 +591,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
