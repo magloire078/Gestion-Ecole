@@ -23,6 +23,8 @@ import {
   TrendingUp,
   TrendingDown,
   Scale,
+  ChevronsUpDown,
+  Check
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -59,22 +61,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useToast } from "@/hooks/use-toast";
 import { mockAccountingData } from "@/lib/data";
 import type { Transaction } from "@/lib/data";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
-const categories = {
-    Revenu: ['Scolarité', 'Dons', 'Événements', 'Autre'],
-    Dépense: ['Salaires', 'Fournitures', 'Maintenance', 'Services Publics', 'Marketing', 'Autre']
-};
 
 export default function AccountingPage() {
   const [transactions, setTransactions] = useState<Transaction[]>(mockAccountingData);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+
+  const [allCategories, setAllCategories] = useState({
+    Revenu: ['Scolarité', 'Dons', 'Événements'],
+    Dépense: ['Salaires', 'Fournitures', 'Maintenance', 'Services Publics', 'Marketing']
+  });
 
   // Form state
   const [description, setDescription] = useState("");
@@ -88,6 +94,8 @@ export default function AccountingPage() {
 
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -188,6 +196,74 @@ export default function AccountingPage() {
   
   const formatCurrency = (value: number) => isClient ? `${value.toLocaleString('fr-FR')} CFA` : `${value} CFA`;
 
+  const CategoryCombobox = ({ value, onValueChange, categories, onCategoryCreate }: { value: string, onValueChange: (v: string) => void, categories: string[], onCategoryCreate: (v: string) => void }) => {
+    const [inputValue, setInputValue] = useState("");
+    const filteredCategories = categories.filter(cat => cat.toLowerCase().includes(inputValue.toLowerCase()));
+    const showCreateOption = inputValue && !categories.some(cat => cat.toLowerCase() === inputValue.toLowerCase());
+
+    return (
+        <Popover open={isCategoryPopoverOpen} onOpenChange={setIsCategoryPopoverOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isCategoryPopoverOpen}
+                    className="w-full justify-between col-span-3 font-normal"
+                >
+                    {value ? value : "Sélectionner ou créer..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                <Command>
+                    <CommandInput 
+                      placeholder="Chercher ou créer..."
+                      value={inputValue}
+                      onValueChange={setInputValue}
+                    />
+                    <CommandList>
+                      <CommandEmpty>
+                        {showCreateOption ? ' ' : 'Aucune catégorie trouvée.'}
+                      </CommandEmpty>
+                      <CommandGroup>
+                          {filteredCategories.map((cat) => (
+                              <CommandItem
+                                  key={cat}
+                                  value={cat}
+                                  onSelect={(currentValue) => {
+                                      onValueChange(currentValue === value ? "" : currentValue);
+                                      setInputValue("");
+                                      setIsCategoryPopoverOpen(false);
+                                  }}
+                              >
+                                  <Check
+                                      className={cn("mr-2 h-4 w-4", value === cat ? "opacity-100" : "opacity-0")}
+                                  />
+                                  {cat}
+                              </CommandItem>
+                          ))}
+                          {showCreateOption && (
+                            <CommandItem
+                              onSelect={() => {
+                                onCategoryCreate(inputValue);
+                                onValueChange(inputValue);
+                                setInputValue("");
+                                setIsCategoryPopoverOpen(false);
+                              }}
+                              className="text-primary"
+                            >
+                               <PlusCircle className="mr-2 h-4 w-4" />
+                               Créer "{inputValue}"
+                            </CommandItem>
+                          )}
+                      </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -243,7 +319,6 @@ export default function AccountingPage() {
                         <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                        {/* Form fields here */}
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="type" className="text-right">Type</Label>
                             <Select onValueChange={(v) => { setType(v as any); setCategory(''); }} value={type}>
@@ -256,12 +331,15 @@ export default function AccountingPage() {
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="category" className="text-right">Catégorie</Label>
-                            <Select onValueChange={setCategory} value={category}>
-                                <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner une catégorie" /></SelectTrigger>
-                                <SelectContent>
-                                    {categories[type].map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            <CategoryCombobox
+                                value={category}
+                                onValueChange={setCategory}
+                                categories={allCategories[type]}
+                                onCategoryCreate={(newCat) => {
+                                  setAllCategories(prev => ({...prev, [type]: [...prev[type], newCat]}));
+                                  toast({ title: 'Catégorie créée', description: `La catégorie "${newCat}" a été ajoutée.` });
+                                }}
+                            />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="description" className="text-right">Description</Label>
@@ -342,12 +420,15 @@ export default function AccountingPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-category" className="text-right">Catégorie</Label>
-                  <Select onValueChange={setCategory} value={category}>
-                      <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner une catégorie" /></SelectTrigger>
-                      <SelectContent>
-                          {categories[type].map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                      </SelectContent>
-                  </Select>
+                   <CategoryCombobox
+                        value={category}
+                        onValueChange={setCategory}
+                        categories={allCategories[type]}
+                        onCategoryCreate={(newCat) => {
+                            setAllCategories(prev => ({...prev, [type]: [...prev[type], newCat]}));
+                            toast({ title: 'Catégorie créée', description: `La catégorie "${newCat}" a été ajoutée.` });
+                        }}
+                    />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-description" className="text-right">Description</Label>
