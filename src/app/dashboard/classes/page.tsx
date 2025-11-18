@@ -236,9 +236,9 @@ export default function ClassesPage() {
     
     const cycleCollectionRef = collection(firestore, `schools/${schoolId}/cycles`);
     try {
-        await addDoc(cycleCollectionRef, newCycleData);
+        const docRef = await addDoc(cycleCollectionRef, newCycleData);
         toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
-        return { value: trimmedName, label: trimmedName };
+        return { value: docRef.id, label: trimmedName };
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({ path: cycleCollectionRef.path, operation: 'create', requestResourceData: newCycleData });
         errorEmitter.emit('permission-error', permissionError);
@@ -247,10 +247,6 @@ export default function ClassesPage() {
   };
 
   const handleAddCycleFromDialog = async () => {
-    if (!schoolId || !newCycleName.trim()) {
-        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut être vide." });
-        return;
-    }
     const result = await handleCreateCycle(newCycleName);
     if (result) {
         setNewCycleName(""); // Clear input only on successful creation
@@ -585,5 +581,7 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
 
     
