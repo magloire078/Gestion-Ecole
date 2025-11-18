@@ -57,9 +57,12 @@ export function useSchoolData() {
             setSchoolName('GèreEcole');
             setDirectorName(user.displayName || 'Directeur/rice');
             document.title = DEFAULT_TITLE;
+        } else if (!user && !loading) {
+            // User is not logged in and we are not in a loading state
+            setLoading(false);
         }
 
-    }, [schoolId, firestore, user]);
+    }, [schoolId, firestore, user, loading]);
 
     const updateSchoolData = async (data: Partial<SchoolData>) => {
         if (!schoolId) {
@@ -76,5 +79,5 @@ export function useSchoolData() {
         }
     };
 
-    return { schoolName, directorName, loading, updateSchoolData };
+    return { schoolId, schoolName, directorName, loading, updateSchoolData };
 }

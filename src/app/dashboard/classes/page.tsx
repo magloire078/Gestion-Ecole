@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -40,6 +39,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy } from "fire
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSchoolData } from "@/hooks/use-school-data";
 
 // Define TypeScript interfaces based on backend.json
 interface Teacher {
@@ -69,9 +69,7 @@ interface Cycle {
 
 export default function ClassesPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
-  
-  const schoolId = user?.customClaims?.schoolId;
+  const { schoolId, loading: schoolDataLoading } = useSchoolData();
 
 
   // --- Firestore Data Hooks ---
@@ -79,9 +77,9 @@ export default function ClassesPage() {
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
   const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `schools/${schoolId}/cycles`), orderBy('order')) : null, [firestore, schoolId]);
   
-  const { data: teachersData, loading: teachersLoading, add: addTeacher } = useCollection(teachersQuery);
-  const { data: classesData, loading: classesLoading, add: addClass } = useCollection(classesQuery);
-  const { data: cyclesData, loading: cyclesLoading, add: addCycle } = useCollection(cyclesQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
 
   const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
@@ -307,19 +305,22 @@ export default function ClassesPage() {
   }
 
 
-  const isLoading = !schoolId || classesLoading || teachersLoading || cyclesLoading;
+  const isLoading = !isClient || schoolDataLoading || classesLoading || teachersLoading || cyclesLoading;
   
-  if (!isClient) {
+  if (isLoading) {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
-                <Skeleton className="h-10 w-1/2" />
+                <div className="space-y-2">
+                    <Skeleton className="h-8 w-64" />
+                    <Skeleton className="h-4 w-96" />
+                </div>
                 <div className="flex gap-2">
                     <Skeleton className="h-10 w-32" />
                     <Skeleton className="h-10 w-36" />
                 </div>
             </div>
-             <Skeleton className="h-10 w-full" />
+             <Skeleton className="h-10 w-full max-w-lg" />
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
             </div>
@@ -430,51 +431,44 @@ export default function ClassesPage() {
           </div>
         </div>
 
-        {isLoading ? (
-            <div className="space-y-4">
-                <Skeleton className="h-10 w-full" />
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
-                </div>
-            </div>
-        ) : (
-            <Tabs defaultValue={cycles[0]?.name} className="space-y-4">
-                <TabsList>
-                    {cycles.map((cycle) => ( <TabsTrigger key={cycle.id} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
-                </TabsList>
-                {cycles.map((cycle) => (
-                    <TabsContent key={cycle.id} value={cycle.name}>
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {classes.filter(c => c.cycle === cycle.name).map((cls) => {
-                                const mainTeacher = getMainTeacher(cls.mainTeacherId);
-                                return (
-                                <Card key={cls.id} id={cls.id} className="flex flex-col">
-                                    <CardHeader>
-                                    <div className="flex items-center justify-between">
-                                        <CardTitle>{cls.name}</CardTitle>
-                                        <DropdownMenu>
-                                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end">
-                                            <DropdownMenuItem onClick={() => handleOpenEditDialog(cls)}>Modifier</DropdownMenuItem>
-                                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(cls)}>Supprimer</DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                    <CardDescription>ID de la classe: {cls.id}</CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-3 flex-1">
-                                        <div className="flex items-center text-sm text-muted-foreground"><Building className="mr-2 h-4 w-4 flex-shrink-0" /><span>Bâtiment: {cls.building}</span></div>
-                                        <div className="flex items-center text-sm text-muted-foreground"><User className="mr-2 h-4 w-4 flex-shrink-0" /><span>Prof. principal: {mainTeacher?.name || 'Non assigné'}</span></div>
-                                        <div className="flex items-center text-sm text-muted-foreground"><Users className="mr-2 h-4 w-4 flex-shrink-0" /><span>{cls.studentCount} élèves</span></div>
-                                    </CardContent>
-                                </Card>
-                                );
-                            })}
-                        </div>
-                    </TabsContent>
-                ))}
-            </Tabs>
-        )}
+        
+        <Tabs defaultValue={cycles[0]?.name} className="space-y-4">
+            <TabsList>
+                {cycles.map((cycle) => ( <TabsTrigger key={cycle.id} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
+            </TabsList>
+            {cycles.map((cycle) => (
+                <TabsContent key={cycle.id} value={cycle.name}>
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {classes.filter(c => c.cycle === cycle.name).map((cls) => {
+                            const mainTeacher = getMainTeacher(cls.mainTeacherId);
+                            return (
+                            <Card key={cls.id} id={cls.id} className="flex flex-col">
+                                <CardHeader>
+                                <div className="flex items-center justify-between">
+                                    <CardTitle>{cls.name}</CardTitle>
+                                    <DropdownMenu>
+                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => handleOpenEditDialog(cls)}>Modifier</DropdownMenuItem>
+                                        <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(cls)}>Supprimer</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                                <CardDescription>ID de la classe: {cls.id}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3 flex-1">
+                                    <div className="flex items-center text-sm text-muted-foreground"><Building className="mr-2 h-4 w-4 flex-shrink-0" /><span>Bâtiment: {cls.building}</span></div>
+                                    <div className="flex items-center text-sm text-muted-foreground"><User className="mr-2 h-4 w-4 flex-shrink-0" /><span>Prof. principal: {mainTeacher?.name || 'Non assigné'}</span></div>
+                                    <div className="flex items-center text-sm text-muted-foreground"><Users className="mr-2 h-4 w-4 flex-shrink-0" /><span>{cls.studentCount} élèves</span></div>
+                                </CardContent>
+                            </Card>
+                            );
+                        })}
+                    </div>
+                </TabsContent>
+            ))}
+        </Tabs>
+        
       </div>
       
       {/* Edit Dialog */}
