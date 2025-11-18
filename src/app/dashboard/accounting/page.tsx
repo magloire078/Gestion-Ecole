@@ -23,8 +23,6 @@ import {
   TrendingUp,
   TrendingDown,
   Scale,
-  ChevronsUpDown,
-  Check
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -61,14 +59,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { mockAccountingData } from "@/lib/data";
 import type { Transaction } from "@/lib/data";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 
 
 export default function AccountingPage() {
@@ -94,7 +90,6 @@ export default function AccountingPage() {
 
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
-  const [isCategoryPopoverOpen, setIsCategoryPopoverOpen] = useState(false);
 
 
   useEffect(() => {
@@ -196,73 +191,16 @@ export default function AccountingPage() {
   
   const formatCurrency = (value: number) => isClient ? `${value.toLocaleString('fr-FR')} CFA` : `${value} CFA`;
 
-  const CategoryCombobox = ({ value, onValueChange, categories, onCategoryCreate }: { value: string, onValueChange: (v: string) => void, categories: string[], onCategoryCreate: (v: string) => void }) => {
-    const [inputValue, setInputValue] = useState("");
-    const filteredCategories = categories.filter(cat => cat.toLowerCase().includes(inputValue.toLowerCase()));
-    const showCreateOption = inputValue && !categories.some(cat => cat.toLowerCase() === inputValue.toLowerCase());
-
-    return (
-        <Popover open={isCategoryPopoverOpen} onOpenChange={setIsCategoryPopoverOpen}>
-            <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={isCategoryPopoverOpen}
-                    className="w-full justify-between col-span-3 font-normal"
-                >
-                    {value ? value : "Sélectionner ou créer..."}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                <Command>
-                    <CommandInput 
-                      placeholder="Chercher ou créer..."
-                      value={inputValue}
-                      onValueChange={setInputValue}
-                    />
-                    <CommandList>
-                      <CommandEmpty>
-                        {showCreateOption ? ' ' : 'Aucune catégorie trouvée.'}
-                      </CommandEmpty>
-                      <CommandGroup>
-                          {filteredCategories.map((cat) => (
-                              <CommandItem
-                                  key={cat}
-                                  value={cat}
-                                  onSelect={(currentValue) => {
-                                      onValueChange(currentValue === value ? "" : currentValue);
-                                      setInputValue("");
-                                      setIsCategoryPopoverOpen(false);
-                                  }}
-                              >
-                                  <Check
-                                      className={cn("mr-2 h-4 w-4", value === cat ? "opacity-100" : "opacity-0")}
-                                  />
-                                  {cat}
-                              </CommandItem>
-                          ))}
-                          {showCreateOption && (
-                            <CommandItem
-                              onSelect={() => {
-                                onCategoryCreate(inputValue);
-                                onValueChange(inputValue);
-                                setInputValue("");
-                                setIsCategoryPopoverOpen(false);
-                              }}
-                              className="text-primary"
-                            >
-                               <PlusCircle className="mr-2 h-4 w-4" />
-                               Créer "{inputValue}"
-                            </CommandItem>
-                          )}
-                      </CommandGroup>
-                    </CommandList>
-                </Command>
-            </PopoverContent>
-        </Popover>
-    );
+  const handleCreateCategory = (newCategory: string) => {
+      setAllCategories(prev => {
+          const newCategoriesForType = [...prev[type], newCategory];
+          return { ...prev, [type]: newCategoriesForType };
+      });
+      toast({ title: 'Catégorie créée', description: `La catégorie "${newCategory}" a été ajoutée.` });
+      return Promise.resolve({ value: newCategory, label: newCategory });
   }
+
+  const categoryOptions = allCategories[type].map(cat => ({ value: cat, label: cat }));
 
   return (
     <>
@@ -331,14 +269,14 @@ export default function AccountingPage() {
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="category" className="text-right">Catégorie</Label>
-                            <CategoryCombobox
+                             <Combobox
+                                className="col-span-3"
+                                placeholder="Sélectionner une catégorie"
+                                searchPlaceholder="Chercher ou créer..."
+                                options={categoryOptions}
                                 value={category}
                                 onValueChange={setCategory}
-                                categories={allCategories[type]}
-                                onCategoryCreate={(newCat) => {
-                                  setAllCategories(prev => ({...prev, [type]: [...prev[type], newCat]}));
-                                  toast({ title: 'Catégorie créée', description: `La catégorie "${newCat}" a été ajoutée.` });
-                                }}
+                                onCreate={handleCreateCategory}
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
@@ -420,14 +358,14 @@ export default function AccountingPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-category" className="text-right">Catégorie</Label>
-                   <CategoryCombobox
+                   <Combobox
+                        className="col-span-3"
+                        placeholder="Sélectionner une catégorie"
+                        searchPlaceholder="Chercher ou créer..."
+                        options={categoryOptions}
                         value={category}
                         onValueChange={setCategory}
-                        categories={allCategories[type]}
-                        onCategoryCreate={(newCat) => {
-                            setAllCategories(prev => ({...prev, [type]: [...prev[type], newCat]}));
-                            toast({ title: 'Catégorie créée', description: `La catégorie "${newCat}" a été ajoutée.` });
-                        }}
+                        onCreate={handleCreateCategory}
                     />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">

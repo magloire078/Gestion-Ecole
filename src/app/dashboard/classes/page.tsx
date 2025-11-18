@@ -32,13 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
@@ -85,9 +79,9 @@ export default function ClassesPage() {
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
   const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `schools/${schoolId}/cycles`), orderBy('order')) : null, [firestore, schoolId]);
   
-  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
-  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
+  const { data: teachersData, loading: teachersLoading, add: addTeacher } = useCollection(teachersQuery);
+  const { data: classesData, loading: classesLoading, add: addClass } = useCollection(classesQuery);
+  const { data: cyclesData, loading: cyclesLoading, add: addCycle } = useCollection(cyclesQuery);
 
   const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
@@ -98,18 +92,25 @@ export default function ClassesPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isManageCyclesDialogOpen, setIsManageCyclesDialogOpen] = useState(false);
+  const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
   
   // Form states
   const [formClassName, setFormClassName] = useState("");
   const [formTeacherId, setFormTeacherId] = useState("");
   const [formStudentCount, setFormStudentCount] = useState("");
   const [formBuilding, setFormBuilding] = useState("");
-  const [formCycle, setFormCycle] = useState("");
+  const [formCycleName, setFormCycleName] = useState("");
   const [newCycleName, setNewCycleName] = useState("");
 
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
   const [cycleToDelete, setCycleToDelete] = useState<Cycle | null>(null);
+
+  // Add teacher dialog state
+  const [newTeacherName, setNewTeacherName] = useState("");
+  const [newTeacherEmail, setNewTeacherEmail] = useState("");
+  const [newTeacherSubject, setNewTeacherSubject] = useState("");
+
 
   const { toast } = useToast();
   
@@ -129,15 +130,15 @@ export default function ClassesPage() {
     setFormTeacherId("");
     setFormStudentCount("");
     setFormBuilding("");
-    setFormCycle("");
+    setFormCycleName("");
   }
   
   const getCycleDocRef = (cycleId: string) => doc(firestore, `schools/${schoolId}/cycles/${cycleId}`);
   const getClassDocRef = (classId: string) => doc(firestore, `schools/${schoolId}/classes/${classId}`);
 
   // --- CRUD Operations ---
-  const handleAddClass = () => {
-    if (!schoolId || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
+  const handleAddClass = async () => {
+    if (!schoolId || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycleName) {
         toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
         return;
     }
@@ -147,19 +148,17 @@ export default function ClassesPage() {
         mainTeacherId: formTeacherId,
         studentCount: parseInt(formStudentCount, 10),
         building: formBuilding,
-        cycle: formCycle,
+        cycle: formCycleName,
     };
 
-    const classesCollectionRef = collection(firestore, `schools/${schoolId}/classes`);
-    addDoc(classesCollectionRef, newClassData)
-    .then(() => {
-        toast({ title: "Classe ajoutée", description: `La classe ${formClassName} a été créée avec succès.` });
-        resetAddDialog();
-        setIsAddDialogOpen(false);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: classesCollectionRef.path, operation: 'create', requestResourceData: newClassData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+    try {
+      await addClass(newClassData);
+      toast({ title: "Classe ajoutée", description: `La classe ${formClassName} a été créée avec succès.` });
+      resetAddDialog();
+      setIsAddDialogOpen(false);
+    } catch(e) {
+      // Error is already handled by useCollection hook
+    }
   };
   
   const handleOpenEditDialog = (cls: Class) => {
@@ -168,12 +167,12 @@ export default function ClassesPage() {
     setFormTeacherId(cls.mainTeacherId);
     setFormStudentCount(String(cls.studentCount));
     setFormBuilding(cls.building);
-    setFormCycle(cls.cycle);
+    setFormCycleName(cls.cycle);
     setIsEditDialogOpen(true);
   };
 
   const handleEditClass = () => {
-    if (!schoolId || !editingClass || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycle) {
+    if (!schoolId || !editingClass || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycleName) {
        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
       return;
     }
@@ -184,7 +183,7 @@ export default function ClassesPage() {
       mainTeacherId: formTeacherId,
       studentCount: parseInt(formStudentCount, 10),
       building: formBuilding,
-      cycle: formCycle,
+      cycle: formCycleName,
     };
     
     setDoc(classDocRef, updatedData, { merge: true })
@@ -218,25 +217,26 @@ export default function ClassesPage() {
     });
   }
   
-  const handleAddCycle = () => {
-    if (!schoolId || !newCycleName.trim()) {
+  const handleCreateCycle = async (cycleName: string) => {
+    if (!schoolId || !cycleName.trim()) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
-        return;
+        return null;
     }
-    if (cycles.some(c => c.name === newCycleName)) {
+    if (cycles.some(c => c.name.toLowerCase() === cycleName.toLowerCase())) {
         toast({ variant: "destructive", title: "Erreur", description: "Ce cycle existe déjà." });
-        return;
+        return null;
     }
-    const cyclesCollectionRef = collection(firestore, `schools/${schoolId}/cycles`);
-    const newCycleData = { name: newCycleName, order: (cycles.length > 0 ? Math.max(...cycles.map(c => c.order)) : 0) + 1 };
-    addDoc(cyclesCollectionRef, newCycleData)
-    .then(() => {
+    const newCycleData = { name: cycleName, order: (cycles.length > 0 ? Math.max(...cycles.map(c => c.order)) : 0) + 1 };
+    
+    try {
+        const docRef = await addCycle(newCycleData);
         setNewCycleName("");
-        toast({ title: "Cycle ajouté", description: `Le cycle "${newCycleName}" a été ajouté.` });
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: cyclesCollectionRef.path, operation: 'create', requestResourceData: newCycleData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+        toast({ title: "Niveau ajouté", description: `Le niveau "${cycleName}" a été ajouté.` });
+        return { value: docRef.id, label: cycleName };
+    } catch(e) {
+      // Error is handled by useCollection
+      return null;
+    }
   };
   
   const handleOpenDeleteCycleDialog = (cycle: Cycle) => {
@@ -261,6 +261,32 @@ export default function ClassesPage() {
       });
   }
   
+  const handleOpenAddTeacherDialog = (teacherName: string) => {
+    setNewTeacherName(teacherName);
+    setNewTeacherEmail("");
+    setNewTeacherSubject("");
+    setIsAddTeacherDialogOpen(true);
+  }
+
+  const handleCreateTeacher = async () => {
+    if (!schoolId || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
+        toast({ variant: "destructive", title: "Erreur", description: "Le nom, la matière et l'email sont requis." });
+        return null;
+    }
+    const newTeacherData = { name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail };
+    try {
+        const docRef = await addTeacher(newTeacherData);
+        toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
+        setIsAddTeacherDialogOpen(false);
+        setFormTeacherId(docRef.id); // auto-select the newly created teacher
+        return { value: docRef.id, label: newTeacherName };
+    } catch(e) {
+        // error handled by hook
+        return null;
+    }
+  }
+
+
   const isLoading = !schoolId || classesLoading || teachersLoading || cyclesLoading;
   
   if (!isClient) {
@@ -280,6 +306,9 @@ export default function ClassesPage() {
         </div>
     );
   }
+
+  const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
+  const teacherOptions = teachers.map(t => ({ value: t.id, label: t.name }));
 
   return (
     <>
@@ -302,7 +331,7 @@ export default function ClassesPage() {
                     <div className="py-4 space-y-4">
                         <div className="flex gap-2">
                             <Input value={newCycleName} onChange={(e) => setNewCycleName(e.target.value)} placeholder="Nom du nouveau niveau"/>
-                            <Button onClick={handleAddCycle}>Ajouter</Button>
+                            <Button onClick={() => handleCreateCycle(newCycleName)}>Ajouter</Button>
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                             <Label>Niveaux actuels</Label>
@@ -345,21 +374,27 @@ export default function ClassesPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="cycle" className="text-right">Niveau</Label>
-                    <Select onValueChange={setFormCycle} value={formCycle}>
-                      <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un niveau" /></SelectTrigger>
-                      <SelectContent>
-                        {cycles.map((cycle) => ( <SelectItem key={cycle.id} value={cycle.name}>{cycle.name}</SelectItem> ))}
-                      </SelectContent>
-                    </Select>
+                     <Combobox
+                        className="col-span-3"
+                        placeholder="Sélectionner un niveau"
+                        searchPlaceholder="Chercher un niveau..."
+                        options={cycleOptions}
+                        value={formCycleName}
+                        onValueChange={setFormCycleName}
+                        onCreate={handleCreateCycle}
+                    />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="teacher" className="text-right">Prof. Principal</Label>
-                    <Select onValueChange={setFormTeacherId} value={formTeacherId}>
-                      <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un enseignant" /></SelectTrigger>
-                      <SelectContent>
-                        {teachers.map((teacher: Teacher) => ( <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem> ))}
-                      </SelectContent>
-                    </Select>
+                    <Combobox
+                        className="col-span-3"
+                        placeholder="Sélectionner un enseignant"
+                        searchPlaceholder="Chercher un enseignant..."
+                        options={teacherOptions}
+                        value={formTeacherId}
+                        onValueChange={setFormTeacherId}
+                        onCreate={handleOpenAddTeacherDialog}
+                    />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="students" className="text-right">Nb. Élèves</Label>
@@ -440,17 +475,27 @@ export default function ClassesPage() {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-cycle" className="text-right">Niveau</Label>
-               <Select onValueChange={setFormCycle} value={formCycle}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un niveau" /></SelectTrigger>
-                <SelectContent>{cycles.map((cycle) => ( <SelectItem key={cycle.id} value={cycle.name}>{cycle.name}</SelectItem> ))}</SelectContent>
-              </Select>
+               <Combobox
+                    className="col-span-3"
+                    placeholder="Sélectionner un niveau"
+                    searchPlaceholder="Chercher un niveau..."
+                    options={cycleOptions}
+                    value={formCycleName}
+                    onValueChange={setFormCycleName}
+                    onCreate={handleCreateCycle}
+                />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-teacher" className="text-right">Prof. Principal</Label>
-               <Select onValueChange={setFormTeacherId} value={formTeacherId}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un enseignant" /></SelectTrigger>
-                <SelectContent>{teachers.map((teacher: Teacher) => ( <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem> ))}</SelectContent>
-              </Select>
+               <Combobox
+                    className="col-span-3"
+                    placeholder="Sélectionner un enseignant"
+                    searchPlaceholder="Chercher un enseignant..."
+                    options={teacherOptions}
+                    value={formTeacherId}
+                    onValueChange={setFormTeacherId}
+                    onCreate={handleOpenAddTeacherDialog}
+                />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-students" className="text-right">Nb. Élèves</Label>
@@ -463,6 +508,36 @@ export default function ClassesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+       {/* Add Teacher Dialog (modal over a modal) */}
+       <Dialog open={isAddTeacherDialogOpen} onOpenChange={setIsAddTeacherDialogOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Ajouter un nouvel enseignant</DialogTitle>
+                    <DialogDescription>
+                        L'enseignant "{newTeacherName}" n'a pas été trouvé. Veuillez fournir les détails requis.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="new-teacher-name" className="text-right">Nom</Label>
+                        <Input id="new-teacher-name" value={newTeacherName} onChange={e => setNewTeacherName(e.target.value)} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="new-teacher-subject" className="text-right">Matière principale</Label>
+                        <Input id="new-teacher-subject" value={newTeacherSubject} onChange={e => setNewTeacherSubject(e.target.value)} className="col-span-3" placeholder="Ex: Mathématiques" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="new-teacher-email" className="text-right">Email</Label>
+                        <Input id="new-teacher-email" type="email" value={newTeacherEmail} onChange={e => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: prof@ecole.com" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsAddTeacherDialogOpen(false)}>Annuler</Button>
+                    <Button onClick={handleCreateTeacher}>Créer l'enseignant</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
       
       {/* Delete Confirmation Dialog */}
        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

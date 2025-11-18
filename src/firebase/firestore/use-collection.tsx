@@ -1,3 +1,4 @@
+
 'use client';
 import {useState, useEffect} from 'react';
 import {
@@ -6,6 +7,9 @@ import {
   Query,
   DocumentData,
   QueryDocumentSnapshot,
+  addDoc,
+  CollectionReference,
+  DocumentReference,
 } from 'firebase/firestore';
 import {useFirestore} from '../provider';
 import { FirestorePermissionError } from '../errors';
@@ -38,6 +42,26 @@ export function useCollection<T>(query: Query<T> | null) {
 
     return () => unsubscribe();
   }, [query, firestore]);
+  
+  const add = async (data: T): Promise<DocumentReference<T>> => {
+    if (!query) {
+        throw new Error("Query is not defined, cannot add document.");
+    }
+    try {
+        const collRef = query.firestore.collection((query as any)._query.path.segments.join('/')) as CollectionReference<T>;
+        const docRef = await addDoc(collRef, data);
+        return docRef;
+    } catch(serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: (query as any)._query.path.segments.join('/'),
+            operation: 'create',
+            requestResourceData: data,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw serverError; // Re-throw the original error after emitting our custom one
+    }
+  }
 
-  return {data, loading};
+
+  return {data, loading, add };
 }
