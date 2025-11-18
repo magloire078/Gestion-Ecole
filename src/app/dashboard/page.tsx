@@ -1,17 +1,44 @@
 
+'use client';
+
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookUser, BookOpen } from 'lucide-react';
-import { mockStudentData, mockTeacherData, mockClassData, mockLibraryData } from '@/lib/data';
 import { PerformanceChart } from '@/components/performance-chart';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { collection } from 'firebase/firestore';
+import { useMemo } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Book {
+    quantity: number;
+}
 
 export default function DashboardPage() {
+  const firestore = useFirestore();
+  const { schoolId, loading: schoolLoading } = useSchoolData();
+
+  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/students`) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const libraryQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/library`) : null, [firestore, schoolId]);
+
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: libraryData, loading: libraryLoading } = useCollection(libraryQuery);
+  
+  const books: Book[] = useMemo(() => libraryData?.map(d => d.data() as Book) || [], [libraryData]);
+
   const stats = [
-    { title: 'Élèves', value: mockStudentData.length, icon: Users, color: 'text-sky-500' },
-    { title: 'Enseignants', value: mockTeacherData.length, icon: Users, color: 'text-emerald-500' },
-    { title: 'Classes', value: mockClassData.length, icon: BookUser, color: 'text-amber-500' },
-    { title: 'Livres', value: mockLibraryData.reduce((sum, book) => sum + book.quantity, 0), icon: BookOpen, color: 'text-violet-500' }
+    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, color: 'text-sky-500', loading: studentsLoading },
+    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: Users, color: 'text-emerald-500', loading: teachersLoading },
+    { title: 'Classes', value: classesData?.length ?? 0, icon: BookUser, color: 'text-amber-500', loading: classesLoading },
+    { title: 'Livres', value: books.reduce((sum, book) => sum + book.quantity, 0), icon: BookOpen, color: 'text-violet-500', loading: libraryLoading }
   ];
+
+  const isLoading = schoolLoading || studentsLoading || teachersLoading || classesLoading || libraryLoading;
 
   return (
     <div className="space-y-6">
@@ -28,7 +55,11 @@ export default function DashboardPage() {
               <stat.icon className={`h-4 w-4 text-muted-foreground ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {stat.loading ? (
+                <Skeleton className="h-8 w-1/2" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
               <p className="text-xs text-muted-foreground">Total dans l'école</p>
             </CardContent>
           </Card>
