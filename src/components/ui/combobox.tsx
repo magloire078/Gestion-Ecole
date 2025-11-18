@@ -46,7 +46,11 @@ export function Combobox({ options, value, onValueChange, onCreate, placeholder,
   const showCreateOption = onCreate && inputValue && !options.some(option => option.label.toLowerCase() === inputValue.toLowerCase());
 
   const handleSelect = (currentValue: string) => {
-    onValueChange(currentValue === value ? "" : currentValue);
+    // The `onSelect` for CommandItem passes the *label* of the item, not the value.
+    // We need to find the corresponding option to get its value.
+    const option = options.find(opt => opt.label.toLowerCase() === currentValue.toLowerCase());
+    const realValue = option ? option.value : "";
+    onValueChange(realValue === value ? "" : realValue);
     setInputValue("");
     setOpen(false);
   };
