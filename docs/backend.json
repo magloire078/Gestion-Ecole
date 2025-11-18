@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "user": {
@@ -21,6 +22,19 @@
         "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." }
       },
       "required": ["schoolId"]
+    },
+    "school": {
+        "title": "École",
+        "description": "Un établissement scolaire.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Le nom de l'établissement." },
+            "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
+            "directorName": { "type": "string", "description": "Le nom du directeur de l'école." },
+            "schoolCode": { "type": "string", "description": "Un code lisible par l'homme pour rejoindre l'école." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date de création de l'école." }
+        },
+        "required": ["name", "directorId", "directorName", "schoolCode"]
     },
     "teacher": {
       "title": "Enseignant",
@@ -134,6 +148,10 @@
     "/users/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+    },
+    "/schools/{schoolId}": {
+      "schema": { "$ref": "#/entities/school" },
+      "description": "Stocke les informations générales sur un établissement."
     },
     "/schools/{schoolId}/users/{userId}": {
       "schema": { "$ref": "#/entities/user" },
