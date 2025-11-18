@@ -28,7 +28,7 @@ import { Skeleton } from "./ui/skeleton";
 export function UserNav() {
   const { setTheme } = useTheme();
   const auth = useAuth();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
   const { directorName, loading: schoolDataLoading } = useSchoolData();
@@ -52,11 +52,13 @@ export function UserNav() {
     }
   };
 
-  if (schoolDataLoading) {
+  const isLoading = userLoading || schoolDataLoading;
+
+  if (isLoading) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
-  const displayName = directorName || user?.displayName || '...';
+  const displayName = directorName || user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
   return (
