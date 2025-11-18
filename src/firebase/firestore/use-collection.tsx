@@ -22,10 +22,12 @@ export function useCollection<T>(query: Query<T> | null) {
 
   useEffect(() => {
     if (!query || !firestore) {
-      setData(null);
+      setData([]); // Return empty array instead of null
       setLoading(false);
       return;
     }
+    
+    setLoading(true); // Set loading to true when a new query comes in
 
     const unsubscribe = onSnapshot(query, (snapshot) => {
       setData(snapshot.docs);
@@ -36,7 +38,7 @@ export function useCollection<T>(query: Query<T> | null) {
             operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
-        setData(null);
+        setData([]); // Return empty array on error
         setLoading(false);
     });
 

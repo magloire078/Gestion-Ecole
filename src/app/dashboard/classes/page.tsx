@@ -34,7 +34,7 @@ import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -135,7 +135,7 @@ export default function ClassesPage() {
   const getClassDocRef = (classId: string) => doc(firestore, `schools/${schoolId}/classes/${classId}`);
 
   // --- CRUD Operations ---
-  const handleAddClass = async () => {
+  const handleAddClass = () => {
     if (!schoolId || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycleName) {
         toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
         return;
@@ -149,14 +149,16 @@ export default function ClassesPage() {
         cycle: formCycleName,
     };
 
-    try {
-      await addClass(newClassData);
+    const classCollectionRef = collection(firestore, `schools/${schoolId}/classes`);
+    addDoc(classCollectionRef, newClassData)
+    .then(() => {
       toast({ title: "Classe ajoutée", description: `La classe ${formClassName} a été créée avec succès.` });
       resetAddDialog();
       setIsAddDialogOpen(false);
-    } catch(e) {
-      // Error is already handled by useCollection hook
-    }
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: classCollectionRef.path, operation: 'create', requestResourceData: newClassData });
+        errorEmitter.emit('permission-error', permissionError);
+    });
   };
   
   const handleOpenEditDialog = (cls: Class) => {
@@ -231,11 +233,14 @@ export default function ClassesPage() {
     }
     const newCycleData = { name: trimmedName, order: (cycles.length > 0 ? Math.max(...cycles.map(c => c.order)) : 0) + 1 };
     
+    const cycleCollectionRef = collection(firestore, `schools/${schoolId}/cycles`);
     try {
-        const docRef = await addCycle(newCycleData);
+        const docRef = await addDoc(cycleCollectionRef, newCycleData);
         toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
         return { value: trimmedName, label: trimmedName };
-    } catch(e) {
+    } catch(serverError) {
+        const permissionError = new FirestorePermissionError({ path: cycleCollectionRef.path, operation: 'create', requestResourceData: newCycleData });
+        errorEmitter.emit('permission-error', permissionError);
       return null;
     }
   };
@@ -292,14 +297,16 @@ export default function ClassesPage() {
         return null;
     }
     const newTeacherData = { name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail };
+    const teacherCollectionRef = collection(firestore, `schools/${schoolId}/teachers`);
     try {
-        const docRef = await addTeacher(newTeacherData);
+        const docRef = await addDoc(teacherCollectionRef, newTeacherData);
         toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
         setIsAddTeacherDialogOpen(false);
         setFormTeacherId(docRef.id); // auto-select the newly created teacher
         return { value: docRef.id, label: newTeacherName };
-    } catch(e) {
-        // error handled by hook
+    } catch(serverError) {
+        const permissionError = new FirestorePermissionError({ path: teacherCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
+        errorEmitter.emit('permission-error', permissionError);
         return null;
     }
   }
