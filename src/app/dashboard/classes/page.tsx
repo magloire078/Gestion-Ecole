@@ -247,6 +247,10 @@ export default function ClassesPage() {
   };
 
   const handleAddCycleFromDialog = async () => {
+    if (!schoolId || !newCycleName.trim()) {
+        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut être vide." });
+        return;
+    }
     const result = await handleCreateCycle(newCycleName);
     if (result) {
         setNewCycleName(""); // Clear input only on successful creation
@@ -275,35 +279,31 @@ export default function ClassesPage() {
       });
   }
   
-  const handleOpenAddTeacherDialog = (teacherName: string) => {
+  const handleOpenAddTeacherDialog = async (teacherName: string) => {
     setNewTeacherName(teacherName);
     setNewTeacherEmail("");
     setNewTeacherSubject("");
     setIsAddTeacherDialogOpen(true);
   }
 
-  const handleCreateTeacher = async (name: string) => {
-    if (!schoolId || !name || !newTeacherSubject || !newTeacherEmail) {
+  const handleCreateTeacher = async () => {
+    if (!schoolId || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom, la matière et l'email sont requis." });
         return null;
     }
-    const newTeacherData = { name, subject: newTeacherSubject, email: newTeacherEmail };
+    const newTeacherData = { name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail };
     const teacherCollectionRef = collection(firestore, `schools/${schoolId}/teachers`);
     try {
         const docRef = await addDoc(teacherCollectionRef, newTeacherData);
-        toast({ title: "Enseignant ajouté", description: `${name} a été ajouté(e).` });
+        toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
         setIsAddTeacherDialogOpen(false);
         setFormTeacherId(docRef.id); // auto-select the newly created teacher
-        return { value: docRef.id, label: name };
+        return { value: docRef.id, label: newTeacherName };
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({ path: teacherCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
         errorEmitter.emit('permission-error', permissionError);
         return null;
     }
-  }
-
-  const handleCreateTeacherFromDialog = async () => {
-    await handleCreateTeacher(newTeacherName);
   }
 
 
@@ -550,7 +550,7 @@ export default function ClassesPage() {
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsAddTeacherDialogOpen(false)}>Annuler</Button>
-                    <Button onClick={handleCreateTeacherFromDialog}>Créer l'enseignant</Button>
+                    <Button onClick={handleCreateTeacher}>Créer l'enseignant</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
