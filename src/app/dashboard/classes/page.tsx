@@ -217,38 +217,38 @@ export default function ClassesPage() {
     });
   }
   
-  const handleCreateCycle = async (cycleName: string) => {
+ const handleCreateCycle = async (cycleName: string) => {
     if (!schoolId) {
         toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
         return null;
     }
-     if (!cycleName || !cycleName.trim()) {
+    // Trim the input and check if it's empty
+    const trimmedName = cycleName.trim();
+    if (!trimmedName) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
         return null;
     }
-    if (cycles.some(c => c.name.toLowerCase() === cycleName.toLowerCase())) {
+    if (cycles.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
         toast({ variant: "destructive", title: "Erreur", description: "Ce cycle existe déjà." });
         return null;
     }
-    const newCycleData = { name: cycleName, order: (cycles.length > 0 ? Math.max(...cycles.map(c => c.order)) : 0) + 1 };
+    const newCycleData = { name: trimmedName, order: (cycles.length > 0 ? Math.max(...cycles.map(c => c.order)) : 0) + 1 };
     
     try {
         const docRef = await addCycle(newCycleData);
-        setNewCycleName("");
-        toast({ title: "Niveau ajouté", description: `Le niveau "${cycleName}" a été ajouté.` });
-        return { value: cycleName, label: cycleName }; // Return name for Combobox value
+        toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
+        return { value: trimmedName, label: trimmedName }; // Return name for Combobox value
     } catch(e) {
       // Error is handled by useCollection
       return null;
     }
   };
 
-  const handleAddCycleFromDialog = () => {
-    if (!newCycleName.trim()) {
-        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
-        return;
+ const handleAddCycleFromDialog = () => {
+    // This function now specifically handles the "Add" button from the dialog
+    if (handleCreateCycle(newCycleName)) {
+        setNewCycleName(""); // Clear input only on successful creation
     }
-    handleCreateCycle(newCycleName);
   }
   
   const handleOpenDeleteCycleDialog = (cycle: Cycle) => {
@@ -333,20 +333,20 @@ export default function ClassesPage() {
           <div className="flex gap-2">
             <Dialog open={isManageCyclesDialogOpen} onOpenChange={setIsManageCyclesDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Gérer les Niveaux</Button>
+                    <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Gérer les Cycles</Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Gérer les Niveaux</DialogTitle>
-                        <DialogDescription>Ajoutez ou supprimez des niveaux d'enseignement.</DialogDescription>
+                        <DialogTitle>Gérer les Cycles</DialogTitle>
+                        <DialogDescription>Ajoutez ou supprimez des cycles d'enseignement.</DialogDescription>
                     </DialogHeader>
                     <div className="py-4 space-y-4">
                         <div className="flex gap-2">
-                            <Input value={newCycleName} onChange={(e) => setNewCycleName(e.target.value)} placeholder="Nom du nouveau niveau"/>
+                            <Input value={newCycleName} onChange={(e) => setNewCycleName(e.target.value)} placeholder="Nom du nouveau cycle"/>
                             <Button onClick={handleAddCycleFromDialog}>Ajouter</Button>
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                            <Label>Niveaux actuels</Label>
+                            <Label>Cycles actuels</Label>
                             {cyclesLoading ? <Skeleton className="h-10 w-full" /> : cycles.map(cycle => (
                                 <div key={cycle.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
                                     <span>{cycle.name}</span>
@@ -385,10 +385,10 @@ export default function ClassesPage() {
                     <Input id="building" value={formBuilding} onChange={(e) => setFormBuilding(e.target.value)} className="col-span-3" placeholder="Ex: Bâtiment A" />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="cycle" className="text-right">Niveau</Label>
+                    <Label htmlFor="cycle" className="text-right">Cycle</Label>
                      <Combobox
                         className="col-span-3"
-                        placeholder="Sélectionner un niveau"
+                        placeholder="Sélectionner un cycle"
                         searchPlaceholder="Chercher ou créer..."
                         options={cycleOptions}
                         value={formCycleName}
@@ -486,10 +486,10 @@ export default function ClassesPage() {
               <Input id="edit-building" value={formBuilding} onChange={(e) => setFormBuilding(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-cycle" className="text-right">Niveau</Label>
+              <Label htmlFor="edit-cycle" className="text-right">Cycle</Label>
                <Combobox
                     className="col-span-3"
-                    placeholder="Sélectionner un niveau"
+                    placeholder="Sélectionner un cycle"
                     searchPlaceholder="Chercher ou créer..."
                     options={cycleOptions}
                     value={formCycleName}
@@ -581,9 +581,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    
-
-    
-
-    
