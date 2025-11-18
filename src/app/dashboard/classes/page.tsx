@@ -218,7 +218,11 @@ export default function ClassesPage() {
   }
   
   const handleCreateCycle = async (cycleName: string) => {
-    if (!schoolId || !cycleName.trim()) {
+    if (!schoolId) {
+        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
+        return null;
+    }
+     if (!cycleName || !cycleName.trim()) {
         toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
         return null;
     }
@@ -238,6 +242,14 @@ export default function ClassesPage() {
       return null;
     }
   };
+
+  const handleAddCycleFromDialog = () => {
+    if (!newCycleName.trim()) {
+        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
+        return;
+    }
+    handleCreateCycle(newCycleName);
+  }
   
   const handleOpenDeleteCycleDialog = (cycle: Cycle) => {
       const classesInCycle = classes.filter(c => c.cycle === cycle.name).length;
@@ -331,7 +343,7 @@ export default function ClassesPage() {
                     <div className="py-4 space-y-4">
                         <div className="flex gap-2">
                             <Input value={newCycleName} onChange={(e) => setNewCycleName(e.target.value)} placeholder="Nom du nouveau niveau"/>
-                            <Button onClick={() => handleCreateCycle(newCycleName)}>Ajouter</Button>
+                            <Button onClick={handleAddCycleFromDialog}>Ajouter</Button>
                         </div>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                             <Label>Niveaux actuels</Label>
@@ -569,6 +581,8 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
 
     
 
