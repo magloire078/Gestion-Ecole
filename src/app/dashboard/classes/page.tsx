@@ -12,6 +12,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -237,7 +238,7 @@ export default function ClassesPage() {
     try {
         const docRef = await addDoc(cycleCollectionRef, newCycleData);
         toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
-        return { value: docRef.id, label: trimmedName };
+        return { value: trimmedName, label: trimmedName };
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({ path: cycleCollectionRef.path, operation: 'create', requestResourceData: newCycleData });
         errorEmitter.emit('permission-error', permissionError);
@@ -580,5 +581,7 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
 
     
