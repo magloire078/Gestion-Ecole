@@ -10,10 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { mockLibraryData } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, BookOpen, User, Hash } from "lucide-react";
-import { useState } from "react";
+import { PlusCircle, MoreHorizontal, User, Hash } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -42,11 +41,29 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import type { Book } from "@/lib/data";
 import Image from 'next/image';
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { useSchoolData } from "@/hooks/use-school-data";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface LibraryBook {
+    id: string;
+    title: string;
+    author: string;
+    quantity: number;
+}
 
 export default function LibraryPage() {
-  const [books, setBooks] = useState<Book[]>(mockLibraryData);
+  const firestore = useFirestore();
+  const { schoolId, loading: schoolLoading } = useSchoolData();
+  
+  const booksQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/library`) : null, [firestore, schoolId]);
+  const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
+  const books: LibraryBook[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook)) || [], [booksData]);
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -55,10 +72,12 @@ export default function LibraryPage() {
   const [newAuthor, setNewAuthor] = useState("");
   const [newQuantity, setNewQuantity] = useState("");
 
-  const [editingBook, setEditingBook] = useState<Book | null>(null);
-  const [bookToDelete, setBookToDelete] = useState<Book | null>(null);
+  const [editingBook, setEditingBook] = useState<LibraryBook | null>(null);
+  const [bookToDelete, setBookToDelete] = useState<LibraryBook | null>(null);
 
   const { toast } = useToast();
+
+  const getBookDocRef = (bookId: string) => doc(firestore, `schools/${schoolId}/library/${bookId}`);
 
   const resetForm = () => {
     setNewTitle("");
@@ -67,33 +86,28 @@ export default function LibraryPage() {
   };
 
   const handleAddBook = () => {
-    if (!newTitle || !newAuthor || !newQuantity) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Tous les champs sont requis.",
-      });
+    if (!schoolId || !newTitle || !newAuthor || !newQuantity) {
+      toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
       return;
     }
-
-    const newBook: Book = {
-      id: `L${books.length + 1}`,
+    const newBookData = {
       title: newTitle,
       author: newAuthor,
       quantity: parseInt(newQuantity, 10),
     };
-
-    setBooks([...books, newBook]);
-    toast({
-      title: "Livre ajouté",
-      description: `"${newTitle}" a été ajouté à la bibliothèque.`,
+    const booksCollectionRef = collection(firestore, `schools/${schoolId}/library`);
+    addDoc(booksCollectionRef, newBookData)
+    .then(() => {
+        toast({ title: "Livre ajouté", description: `"${newTitle}" a été ajouté à la bibliothèque.` });
+        resetForm();
+        setIsAddDialogOpen(false);
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: booksCollectionRef.path, operation: 'create', requestResourceData: newBookData });
+        errorEmitter.emit('permission-error', permissionError);
     });
-
-    resetForm();
-    setIsAddDialogOpen(false);
   };
 
-  const handleOpenEditDialog = (book: Book) => {
+  const handleOpenEditDialog = (book: LibraryBook) => {
     setEditingBook(book);
     setNewTitle(book.title);
     setNewAuthor(book.author);
@@ -102,56 +116,48 @@ export default function LibraryPage() {
   };
 
   const handleEditBook = () => {
-    if (!editingBook || !newTitle || !newAuthor || !newQuantity) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Tous les champs sont requis.",
-      });
+    if (!schoolId || !editingBook || !newTitle || !newAuthor || !newQuantity) {
+      toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
       return;
     }
-
-    setBooks(
-      books.map((b) =>
-        b.id === editingBook.id
-          ? {
-              ...b,
-              title: newTitle,
-              author: newAuthor,
-              quantity: parseInt(newQuantity, 10),
-            }
-          : b
-      )
-    );
-
-    toast({
-      title: "Livre modifié",
-      description: `Les informations pour "${newTitle}" ont été mises à jour.`,
+    const updatedData = {
+      title: newTitle,
+      author: newAuthor,
+      quantity: parseInt(newQuantity, 10),
+    };
+    const bookDocRef = getBookDocRef(editingBook.id);
+    setDoc(bookDocRef, updatedData, { merge: true })
+    .then(() => {
+        toast({ title: "Livre modifié", description: `Les informations pour "${newTitle}" ont été mises à jour.` });
+        setIsEditDialogOpen(false);
+        setEditingBook(null);
+        resetForm();
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: bookDocRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
     });
-
-    setIsEditDialogOpen(false);
-    setEditingBook(null);
-    resetForm();
   };
 
-  const handleOpenDeleteDialog = (book: Book) => {
+  const handleOpenDeleteDialog = (book: LibraryBook) => {
     setBookToDelete(book);
     setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteBook = () => {
-    if (!bookToDelete) return;
-
-    setBooks(books.filter((b) => b.id !== bookToDelete.id));
-
-    toast({
-      title: "Livre supprimé",
-      description: `"${bookToDelete.title}" a été retiré de la bibliothèque.`,
+    if (!schoolId || !bookToDelete) return;
+    const bookDocRef = getBookDocRef(bookToDelete.id);
+    deleteDoc(bookDocRef)
+    .then(() => {
+        toast({ title: "Livre supprimé", description: `"${bookToDelete.title}" a été retiré de la bibliothèque.` });
+        setIsDeleteDialogOpen(false);
+        setBookToDelete(null);
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: bookDocRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
     });
-
-    setIsDeleteDialogOpen(false);
-    setBookToDelete(null);
   };
+  
+  const isLoading = schoolLoading || booksLoading;
 
   return (
     <>
@@ -166,34 +172,24 @@ export default function LibraryPage() {
               setIsAddDialogOpen(isOpen)
           }}>
             <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
-              </Button>
+              <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
                 <DialogTitle>Ajouter un Nouveau Livre</DialogTitle>
-                <DialogDescription>
-                  Renseignez les informations du nouveau livre.
-                </DialogDescription>
+                <DialogDescription>Renseignez les informations du nouveau livre.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="title" className="text-right">
-                    Titre
-                  </Label>
+                  <Label htmlFor="title" className="text-right">Titre</Label>
                   <Input id="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="col-span-3" placeholder="Ex: Les Misérables" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="author" className="text-right">
-                    Auteur
-                  </Label>
+                  <Label htmlFor="author" className="text-right">Auteur</Label>
                   <Input id="author" value={newAuthor} onChange={(e) => setNewAuthor(e.target.value)} className="col-span-3" placeholder="Ex: Victor Hugo" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="quantity" className="text-right">
-                    Quantité
-                  </Label>
+                  <Label htmlFor="quantity" className="text-right">Quantité</Label>
                   <Input id="quantity" type="number" value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} className="col-span-3" placeholder="Ex: 5" />
                 </div>
               </div>
@@ -206,7 +202,9 @@ export default function LibraryPage() {
         </div>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {books.map((book) => (
+            {isLoading ? (
+                [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
+            ) : books.map((book) => (
              <Card key={book.id} className="flex flex-col">
               <CardHeader className="p-0">
                   <div className="relative h-40 w-full">
@@ -230,12 +228,7 @@ export default function LibraryPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleOpenEditDialog(book)}>Modifier</DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleOpenDeleteDialog(book)}
-                              >
-                                Supprimer
-                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(book)}>Supprimer</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                     </div>
@@ -254,37 +247,31 @@ export default function LibraryPage() {
             </Card>
           ))}
         </div>
+        { !isLoading && books.length === 0 && (
+             <Card className="flex items-center justify-center h-48">
+                <p className="text-muted-foreground">Aucun livre dans la bibliothèque pour le moment.</p>
+            </Card>
+        )}
       </div>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
-          if(!isOpen) setEditingBook(null);
-          setIsEditDialogOpen(isOpen);
-      }}>
+      <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => { if(!isOpen) setEditingBook(null); setIsEditDialogOpen(isOpen); }}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Modifier le Livre</DialogTitle>
-            <DialogDescription>
-              Mettez à jour les informations du livre <strong>"{editingBook?.title}"</strong>.
-            </DialogDescription>
+            <DialogDescription>Mettez à jour les informations du livre <strong>"{editingBook?.title}"</strong>.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-title" className="text-right">
-                Titre
-              </Label>
+              <Label htmlFor="edit-title" className="text-right">Titre</Label>
               <Input id="edit-title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-author" className="text-right">
-                Auteur
-              </Label>
+              <Label htmlFor="edit-author" className="text-right">Auteur</Label>
               <Input id="edit-author" value={newAuthor} onChange={(e) => setNewAuthor(e.target.value)} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-quantity" className="text-right">
-                Quantité
-              </Label>
+              <Label htmlFor="edit-quantity" className="text-right">Quantité</Label>
               <Input id="edit-quantity" type="number" value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} className="col-span-3" />
             </div>
           </div>
@@ -300,9 +287,7 @@ export default function LibraryPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. Le livre <strong>"{bookToDelete?.title}"</strong> sera définitivement supprimé.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Cette action est irréversible. Le livre <strong>"{bookToDelete?.title}"</strong> sera définitivement supprimé.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
@@ -313,3 +298,5 @@ export default function LibraryPage() {
     </>
   );
 }
+
+    

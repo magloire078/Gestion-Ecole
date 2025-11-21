@@ -61,14 +61,33 @@ import {
 } from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
-import { mockAccountingData } from "@/lib/data";
-import type { Transaction } from "@/lib/data";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { useSchoolData } from "@/hooks/use-school-data";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { Skeleton } from "@/components/ui/skeleton";
 
+
+interface AccountingTransaction {
+  id: string;
+  date: string;
+  description: string;
+  category: string;
+  type: 'Revenu' | 'Dépense';
+  amount: number;
+}
 
 export default function AccountingPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>(mockAccountingData);
+  const firestore = useFirestore();
+  const { schoolId, loading: schoolLoading } = useSchoolData();
+
+  const transactionsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/accounting`) : null, [firestore, schoolId]);
+  const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
+  const transactions: AccountingTransaction[] = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction)) || [], [transactionsData]);
+
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -85,20 +104,20 @@ export default function AccountingPage() {
   const [category, setCategory] = useState("");
   const [date, setDate] = useState('');
 
-  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  const [transactionToDelete, setTransactionToDelete] = useState<Transaction | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<AccountingTransaction | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<AccountingTransaction | null>(null);
 
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
 
-
   useEffect(() => {
     setIsClient(true);
-    // Initialize date on the client to avoid hydration mismatch
     if (!date) {
       setDate(format(new Date(), 'yyyy-MM-dd'));
     }
   }, [date]);
+
+  const getTransactionDocRef = (transactionId: string) => doc(firestore, `schools/${schoolId}/accounting/${transactionId}`);
 
   const resetForm = () => {
     setDescription("");
@@ -109,35 +128,30 @@ export default function AccountingPage() {
   };
 
   const handleAddTransaction = () => {
-    if (!description || !amount || !category || !date) {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Tous les champs sont requis.",
-      });
+    if (!schoolId || !description || !amount || !category || !date) {
+      toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
       return;
     }
-
-    const newTransaction: Transaction = {
-      id: `TR${transactions.length + 1}`,
+    const newTransactionData = {
       description,
       amount: parseFloat(amount),
       type,
       category,
       date: format(new Date(date), "yyyy-MM-dd"),
     };
-
-    setTransactions([...transactions, newTransaction]);
-    toast({
-      title: "Transaction ajoutée",
-      description: `La transaction a été enregistrée avec succès.`,
+    const transactionCollectionRef = collection(firestore, `schools/${schoolId}/accounting`);
+    addDoc(transactionCollectionRef, newTransactionData)
+    .then(() => {
+        toast({ title: "Transaction ajoutée", description: `La transaction a été enregistrée.` });
+        resetForm();
+        setIsAddDialogOpen(false);
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: transactionCollectionRef.path, operation: 'create', requestResourceData: newTransactionData });
+        errorEmitter.emit('permission-error', permissionError);
     });
-
-    resetForm();
-    setIsAddDialogOpen(false);
   };
   
-  const handleOpenEditDialog = (transaction: Transaction) => {
+  const handleOpenEditDialog = (transaction: AccountingTransaction) => {
     setEditingTransaction(transaction);
     setDescription(transaction.description);
     setAmount(String(transaction.amount));
@@ -148,38 +162,47 @@ export default function AccountingPage() {
   };
 
   const handleEditTransaction = () => {
-    if (!editingTransaction || !description || !amount || !category || !date) {
+    if (!schoolId || !editingTransaction || !description || !amount || !category || !date) {
       toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
       return;
     }
-    
-    setTransactions(transactions.map(t => t.id === editingTransaction.id ? {
-      ...t,
+    const updatedData = {
       description,
       amount: parseFloat(amount),
       type,
       category,
       date: format(new Date(date), 'yyyy-MM-dd'),
-    } : t));
-
-    toast({ title: "Transaction modifiée", description: "La transaction a été mise à jour." });
-    
-    setIsEditDialogOpen(false);
-    setEditingTransaction(null);
-    resetForm();
+    };
+    const transactionDocRef = getTransactionDocRef(editingTransaction.id);
+    setDoc(transactionDocRef, updatedData, { merge: true })
+    .then(() => {
+        toast({ title: "Transaction modifiée", description: "La transaction a été mise à jour." });
+        setIsEditDialogOpen(false);
+        setEditingTransaction(null);
+        resetForm();
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: transactionDocRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
-  const handleOpenDeleteDialog = (transaction: Transaction) => {
+  const handleOpenDeleteDialog = (transaction: AccountingTransaction) => {
     setTransactionToDelete(transaction);
     setIsDeleteDialogOpen(true);
   };
 
   const handleDeleteTransaction = () => {
-    if (!transactionToDelete) return;
-    setTransactions(transactions.filter(t => t.id !== transactionToDelete.id));
-    toast({ title: "Transaction supprimée", description: "La transaction a été supprimée." });
-    setIsDeleteDialogOpen(false);
-    setTransactionToDelete(null);
+    if (!schoolId || !transactionToDelete) return;
+    const transactionDocRef = getTransactionDocRef(transactionToDelete.id);
+    deleteDoc(transactionDocRef)
+    .then(() => {
+        toast({ title: "Transaction supprimée", description: "La transaction a été supprimée." });
+        setIsDeleteDialogOpen(false);
+        setTransactionToDelete(null);
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: transactionDocRef.path, operation: 'delete' });
+        errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
   const { totalRevenue, totalExpenses, netBalance } = useMemo(() => {
@@ -202,6 +225,8 @@ export default function AccountingPage() {
 
   const categoryOptions = allCategories[type].map(cat => ({ value: cat, label: cat }));
 
+  const isLoading = !isClient || schoolLoading || transactionsLoading;
+
   return (
     <>
       <div className="space-y-6">
@@ -219,7 +244,7 @@ export default function AccountingPage() {
                 <TrendingUp className="h-4 w-4 text-emerald-500" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-2xl font-bold text-emerald-500">{formatCurrency(totalRevenue)}</div>
+                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold text-emerald-500">{formatCurrency(totalRevenue)}</div>}
                 <p className="text-xs text-muted-foreground">Sur la période sélectionnée</p>
                 </CardContent>
             </Card>
@@ -229,7 +254,7 @@ export default function AccountingPage() {
                 <TrendingDown className="h-4 w-4 text-destructive" />
                 </CardHeader>
                 <CardContent>
-                <div className="text-2xl font-bold text-destructive">{formatCurrency(totalExpenses)}</div>
+                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold text-destructive">{formatCurrency(totalExpenses)}</div>}
                 <p className="text-xs text-muted-foreground">Sur la période sélectionnée</p>
                 </CardContent>
             </Card>
@@ -239,7 +264,7 @@ export default function AccountingPage() {
                 <Scale className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(netBalance)}</div>
+                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(netBalance)}</div>}
                 <p className="text-xs text-muted-foreground">Revenus - Dépenses</p>
                 </CardContent>
             </Card>
@@ -313,25 +338,41 @@ export default function AccountingPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell>{isClient ? format(new Date(transaction.date), 'd MMM yyyy', { locale: fr }) : transaction.date}</TableCell>
-                    <TableCell className="font-medium">{transaction.description}</TableCell>
-                    <TableCell>{transaction.category}</TableCell>
-                    <TableCell className={`text-right font-mono ${transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive'}`}>
-                        {transaction.type === 'Revenu' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                       <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleOpenEditDialog(transaction)}>Modifier</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : transactions.length > 0 ? (
+                    transactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((transaction) => (
+                    <TableRow key={transaction.id}>
+                        <TableCell>{isClient ? format(new Date(transaction.date), 'd MMM yyyy', { locale: fr }) : transaction.date}</TableCell>
+                        <TableCell className="font-medium">{transaction.description}</TableCell>
+                        <TableCell>{transaction.category}</TableCell>
+                        <TableCell className={`text-right font-mono ${transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive'}`}>
+                            {transaction.type === 'Revenu' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                        <DropdownMenu>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(transaction)}>Modifier</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">Aucune transaction pour le moment.</TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -406,3 +447,5 @@ export default function AccountingPage() {
     </>
   );
 }
+
+    
