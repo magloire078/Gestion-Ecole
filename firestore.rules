@@ -24,6 +24,10 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    function isSchoolDirector(schoolId) {
+      return request.auth.uid == get(/databases/$(database)/documents/schools/$(schoolId)).data.directorId;
+    }
+
     // --- Root Collections ---
 
     // The `users` collection maps a user's UID to their school ID.
@@ -47,8 +51,11 @@ service cloud.firestore {
         // must also be created in the same transaction (checked implicitly by subcollection rules).
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         
-        // Any user belonging to the school can read or update it (e.g. from settings page).
-        allow get, update: if isUserInSchool(schoolId);
+        // Any user belonging to the school can read the school document.
+        allow get: if isUserInSchool(schoolId);
+        
+        // ONLY the director of the school can update it.
+        allow update: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
         
         // Anyone authenticated can query the list of schools to find one by code.
         allow list: if isUserAuthenticated();
