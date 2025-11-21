@@ -10,12 +10,14 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { collection } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface Book {
     quantity: number;
 }
 
 export default function DashboardPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
@@ -38,6 +40,9 @@ export default function DashboardPage() {
     { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, color: 'text-violet-500', loading: schoolLoading || libraryLoading }
   ];
 
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
 
   return (
     <div className="space-y-6">

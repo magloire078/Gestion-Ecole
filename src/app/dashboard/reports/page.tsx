@@ -46,6 +46,7 @@ import { Bot, FilePenLine } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface Student {
   id: string;
@@ -59,6 +60,7 @@ interface Class {
 }
 
 export default function ReportsPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -170,6 +172,10 @@ export default function ReportsPage() {
   };
 
   const isLoading = schoolLoading || classesLoading;
+
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
 
   return (
     <>

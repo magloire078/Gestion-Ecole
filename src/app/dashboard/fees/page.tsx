@@ -51,6 +51,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
@@ -73,6 +74,7 @@ const getImageHintForGrade = (grade: string): string => {
 
 
 export default function FeesPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { user } = useUser();
   const schoolId = user?.customClaims?.schoolId;
@@ -248,6 +250,10 @@ export default function FeesPage() {
   };
 
   const isLoading = !schoolId || feesLoading;
+
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
 
   return (
     <>
@@ -534,5 +540,3 @@ export default function FeesPage() {
     </>
   );
 }
-
-    

@@ -14,6 +14,7 @@ import { collection, addDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Building } from 'lucide-react';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface Class {
   id: string;
@@ -21,6 +22,7 @@ interface Class {
 }
 
 export default function RegistrationPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -91,6 +93,10 @@ export default function RegistrationPage() {
         errorEmitter.emit('permission-error', permissionError);
     });
   };
+
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
 
   return (
     <div className="space-y-6">

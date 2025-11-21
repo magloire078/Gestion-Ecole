@@ -10,8 +10,10 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 export default function SettingsPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const { toast } = useToast();
   const { user } = useUser();
   const { schoolName: initialSchoolName, directorName: initialDirectorName, loading, updateSchoolData } = useSchoolData();
@@ -53,6 +55,10 @@ export default function SettingsPage() {
     }
   };
   
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
+
   if (loading) {
       return (
           <div className="space-y-6">

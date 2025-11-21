@@ -59,6 +59,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface Student {
   id: string;
@@ -84,6 +85,7 @@ interface Class {
 }
 
 export default function StudentsPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const router = useRouter();
   const firestore = useFirestore();
   const { user } = useUser();
@@ -250,6 +252,10 @@ export default function StudentsPage() {
   };
   
   const isLoading = !schoolId || studentsLoading || classesLoading;
+
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
 
   return (
     <>

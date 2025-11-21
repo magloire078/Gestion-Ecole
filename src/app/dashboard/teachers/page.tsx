@@ -49,6 +49,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 // Define TypeScript interface based on backend.json
 interface Teacher {
@@ -61,6 +62,7 @@ interface Teacher {
 }
 
 export default function TeachersPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -175,6 +177,10 @@ export default function TeachersPage() {
 
   const isLoading = schoolLoading || teachersLoading;
 
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -185,7 +191,7 @@ export default function TeachersPage() {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => { setIsAddDialogOpen(isOpen); if (!isOpen) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button disabled={isLoading}>
+              <Button disabled={!schoolId}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Enseignant
               </Button>
             </DialogTrigger>

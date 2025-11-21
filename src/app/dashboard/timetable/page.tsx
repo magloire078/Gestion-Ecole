@@ -55,6 +55,7 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface TimetableEntry {
   id: string;
@@ -64,6 +65,7 @@ interface TimetableEntry {
 }
 
 export default function TimetablePage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -192,6 +194,10 @@ export default function TimetablePage() {
   };
 
   const isLoading = schoolLoading || timetableLoading || teachersLoading || classesLoading;
+
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
 
   return (
     <>
@@ -343,5 +349,3 @@ export default function TimetablePage() {
     </>
   );
 }
-
-    

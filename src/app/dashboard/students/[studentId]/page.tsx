@@ -13,6 +13,7 @@ import { useDoc, useCollection, useFirestore, useMemoFirebase } from '@/firebase
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface Student {
   name: string;
@@ -45,6 +46,7 @@ interface Class {
 }
 
 export default function StudentProfilePage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const params = useParams();
   const studentId = params.studentId as string;
   const firestore = useFirestore();
@@ -76,6 +78,10 @@ export default function StudentProfilePage() {
   const averageGrade = 'N/A'; // For now
 
   const isLoading = schoolLoading || studentLoading || classLoading || teacherLoading;
+
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
 
   if (isLoading) {
     return (
@@ -226,5 +232,3 @@ export default function StudentProfilePage() {
     </div>
   );
 }
-
-    

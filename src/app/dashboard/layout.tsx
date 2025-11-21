@@ -8,81 +8,12 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
-import { useUser, useFirestore } from '@/firebase';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
-  const router = useRouter();
-  const [isClient, setIsClient] = useState(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (isClient && !userLoading && user) {
-      const checkOnboardingStatus = async () => {
-        // Check for the root user document to see if onboarding is complete.
-        const userDocRef = doc(firestore, 'users', user.uid);
-        
-        try {
-            const docSnap = await getDoc(userDocRef);
-            const userDocExists = docSnap.exists();
-            
-            setHasCompletedOnboarding(userDocExists);
-            
-            if (!userDocExists) {
-                router.push('/onboarding');
-            }
-        } catch (error) {
-            console.error("Error checking onboarding status:", error);
-            // Fallback: if there's an error, assume not onboarded to be safe
-            setHasCompletedOnboarding(false);
-            router.push('/onboarding');
-        }
-      };
-      
-      checkOnboardingStatus();
-
-    } else if (isClient && !userLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, userLoading, router, isClient, firestore]);
-  
-  const isLoading = userLoading || hasCompletedOnboarding === null;
-
-  if (!isClient || isLoading) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <div className="text-center">
-                <p className="text-lg font-semibold">Chargement...</p>
-                <p className="text-muted-foreground">Vérification de votre compte et de votre école.</p>
-            </div>
-        </div>
-    );
-  }
-
-  if (!user || !hasCompletedOnboarding) {
-      // This case should be handled by the useEffect redirects, but as a fallback:
-       return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <div className="text-center">
-                <p className="text-lg font-semibold">Redirection...</p>
-            </div>
-        </div>
-    );
-  }
-
-
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-card sm:flex">
