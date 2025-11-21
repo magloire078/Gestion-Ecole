@@ -95,39 +95,3 @@ export const mockPerformanceData = [
     { subject: 'Anglais', 'Ce Semestre': 17, 'Semestre Précédent': 16 },
 ];
 
-export const mockStudentData: Omit<Student, 'id' | 'classId'>[] = [
-  { 
-    matricule: '2023-001A',
-    name: 'Alice Durand', 
-    class: 'Terminale A', 
-    dateOfBirth: '15/05/2006',
-    placeOfBirth: 'Dakar',
-    previousSchool: 'Lycée Français de Dakar',
-    parent1Name: 'Jean Durand',
-    parent1Contact: '+221 77 123 45 67',
-    feedback: 'Le cours de mathématiques est difficile mais M. Dubois explique très bien.', 
-    tuitionStatus: 'Soldé', 
-    amountDue: 0 
-  },
-  { 
-    matricule: '2023-002A',
-    name: 'Bob Lemoine', 
-    class: 'Terminale A', 
-    dateOfBirth: '20/02/2006',
-    placeOfBirth: 'Thiès',
-    parent1Name: 'Marie Lemoine',
-    parent1Contact: '+221 77 234 56 78',
-    guardianName: 'Paul Lemoine',
-    guardianContact: '+221 77 345 67 89',
-    feedback: 'J\'aimerais plus d\'exercices pratiques en mathématiques pour mieux me préparer.', 
-    tuitionStatus: 'En retard', 
-    amountDue: 197000 
-  },
-];
-
-export const mockClassData: Omit<Class, 'id' | 'studentCount' | 'mainTeacherId' | 'building' | 'cycle'>[] = [
-  { name: 'Terminale A' },
-  { name: 'Terminale B' },
-];
-
-    
