@@ -48,6 +48,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSchoolData } from "@/hooks/use-school-data";
 
 // Define TypeScript interface based on backend.json
 interface Teacher {
@@ -61,8 +62,7 @@ interface Teacher {
 
 export default function TeachersPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
-  const schoolId = user?.customClaims?.schoolId;
+  const { schoolId, loading: schoolLoading } = useSchoolData();
 
   // --- Firestore Data Hooks ---
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
@@ -196,7 +196,7 @@ export default function TeachersPage() {
       });
   };
 
-  const isLoading = !schoolId || teachersLoading;
+  const isLoading = schoolLoading || teachersLoading;
 
   return (
     <>
@@ -213,7 +213,7 @@ export default function TeachersPage() {
             }
           }}>
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={isLoading}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Enseignant
               </Button>
             </DialogTrigger>
@@ -398,7 +398,3 @@ export default function TeachersPage() {
     </>
   );
 }
-
-    
-
-    

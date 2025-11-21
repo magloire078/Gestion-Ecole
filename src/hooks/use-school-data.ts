@@ -15,7 +15,7 @@ interface SchoolData extends DocumentData {
 }
 
 export function useSchoolData() {
-    const { user } = useUser();
+    const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     const schoolId = user?.customClaims?.schoolId;
 
@@ -44,7 +44,6 @@ export function useSchoolData() {
                 }
                 setLoading(false);
             }, (error) => {
-                console.error("Erreur d'écoute du document de l'école:", error);
                  const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
                  errorEmitter.emit('permission-error', permissionError);
                 setLoading(false);
@@ -57,12 +56,12 @@ export function useSchoolData() {
             setSchoolName('GèreEcole');
             setDirectorName(user.displayName || 'Directeur/rice');
             document.title = DEFAULT_TITLE;
-        } else if (!user && !loading) {
+        } else if (!user && !userLoading) {
             // User is not logged in and we are not in a loading state
             setLoading(false);
         }
 
-    }, [schoolId, firestore, user, loading]);
+    }, [schoolId, firestore, user, userLoading]);
 
     const updateSchoolData = (data: Partial<SchoolData>) => {
         if (!schoolId) {
@@ -70,7 +69,7 @@ export function useSchoolData() {
         }
         const schoolDocRef = doc(firestore, 'schools', schoolId);
         
-        setDoc(schoolDocRef, data, { merge: true })
+        return setDoc(schoolDocRef, data, { merge: true })
         .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'update', requestResourceData: data });
             errorEmitter.emit('permission-error', permissionError);
