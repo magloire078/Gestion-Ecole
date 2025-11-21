@@ -51,7 +51,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Student } from "@/lib/data";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
@@ -61,6 +60,15 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 
+interface Student {
+  id: string;
+  name: string;
+  class: string;
+  classId: string;
+  feedback: string;
+  tuitionStatus: TuitionStatus;
+  amountDue: number;
+}
 
 type Summary = {
     summary: string;
@@ -115,13 +123,13 @@ export default function StudentsPage() {
     if(editingStudent) {
       setFormState({
         name: editingStudent.name,
-        classId: classes.find(c => c.name === editingStudent.class)?.id || '',
+        classId: editingStudent.classId,
         feedback: editingStudent.feedback,
         amountDue: editingStudent.amountDue,
         tuitionStatus: editingStudent.tuitionStatus,
       });
     }
-  }, [editingStudent, classes]);
+  }, [editingStudent]);
 
   const handleAnalyzeSentiments = async () => {
     setIsAnalyzing(true);
@@ -414,7 +422,7 @@ export default function StudentsPage() {
               <Label htmlFor="edit-student-amount" className="text-right">
                 Solde (CFA)
               </Label>
-              <Input id="edit-student-amount" type="number" value={formState.amountDue || ''} onChange={(e) => setFormState(s => ({...s, amountDue: Number(e.target.value)}))} className="col-span-3" />
+              <Input id="edit-student-amount" type="number" value={formState.amountDue || 0} onChange={(e) => setFormState(s => ({...s, amountDue: Number(e.target.value)}))} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-student-tuition-status" className="text-right">
@@ -463,3 +471,5 @@ export default function StudentsPage() {
     </>
   );
 }
+
+    

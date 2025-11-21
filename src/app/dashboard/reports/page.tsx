@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -37,49 +37,64 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { mockClassData, mockStudentData, mockGradeData, allSubjects, type Student, type Grade } from '@/lib/data';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { allSubjects } from '@/lib/data';
 import { Bot, FilePenLine } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
+
+interface Student {
+  id: string;
+  name: string;
+  classId: string;
+  grades?: Record<string, number>;
+}
+interface Class {
+  id: string;
+  name: string;
+}
 
 export default function ReportsPage() {
+  const firestore = useFirestore();
+  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { toast } = useToast();
+
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  const [studentsInClass, setStudentsInClass] = useState<Student[]>([]);
-  const [grades, setGrades] = useState<Grade[]>(mockGradeData);
+  
+  // --- Data Fetching ---
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+  const studentsQuery = useMemoFirebase(() => 
+    schoolId && selectedClassId ? query(collection(firestore, `schools/${schoolId}/students`), where('classId', '==', selectedClassId)) : null
+  , [firestore, schoolId, selectedClassId]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+
+  // --- UI State ---
   const [isManageGradesDialogOpen, setIsManageGradesDialogOpen] = useState(false);
   const [isGenerateCommentDialogOpen, setIsGenerateCommentDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [currentGrades, setCurrentGrades] = useState<Partial<Record<string, number>>>({});
+  const [currentGrades, setCurrentGrades] = useState<Record<string, number>>({});
   const [generatedComment, setGeneratedComment] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-
-  const { toast } = useToast();
-
-  const handleClassChange = (classId: string) => {
-    setSelectedClassId(classId);
-    const selectedClassName = mockClassData.find(c => c.id === classId)?.name;
-    if (selectedClassName) {
-      setStudentsInClass(mockStudentData.filter(s => s.class === selectedClassName));
-    } else {
-      setStudentsInClass([]);
-    }
-  };
-
-  const getStudentAverage = (studentId: string) => {
-    const studentGrades = grades.filter(g => g.studentId === studentId);
-    if (studentGrades.length === 0) return 'N/A';
-    const total = studentGrades.reduce((acc, g) => acc + g.score, 0);
-    const average = total / studentGrades.length;
+  
+  const getStudentAverage = (student?: Student) => {
+    if (!student?.grades || Object.keys(student.grades).length === 0) return 'N/A';
+    const grades = Object.values(student.grades);
+    const total = grades.reduce((acc, g) => acc + g, 0);
+    const average = total / grades.length;
     return average.toFixed(2);
   };
-
+  
   const openManageGradesDialog = (student: Student) => {
     setSelectedStudent(student);
-    const studentGrades = grades.filter(g => g.studentId === student.id);
-    const gradesRecord: Partial<Record<string, number>> = {};
-    studentGrades.forEach(g => {
-        gradesRecord[g.subject] = g.score;
-    });
-    setCurrentGrades(gradesRecord);
+    setCurrentGrades(student.grades || {});
     setIsManageGradesDialogOpen(true);
   };
 
@@ -95,26 +110,24 @@ export default function ReportsPage() {
   };
 
   const saveGrades = () => {
-    if (!selectedStudent) return;
+    if (!schoolId || !selectedStudent) return;
     
-    const otherStudentsGrades = grades.filter(g => g.studentId !== selectedStudent.id);
+    const studentRef = doc(firestore, `schools/${schoolId}/students/${selectedStudent.id}`);
+    const updatedData = { grades: currentGrades };
     
-    const newStudentGrades: Grade[] = Object.entries(currentGrades).map(([subject, score], index) => ({
-        id: `G${selectedStudent.id}${subject}${index}`, // Create a more unique ID
-        studentId: selectedStudent.id,
-        subject,
-        score: score!,
-    }));
-
-    setGrades([...otherStudentsGrades, ...newStudentGrades]);
-    
-    toast({
-      title: 'Notes enregistrées',
-      description: `Les notes pour ${selectedStudent.name} ont été mises à jour.`,
+    setDoc(studentRef, updatedData, { merge: true })
+    .then(() => {
+        toast({
+          title: 'Notes enregistrées',
+          description: `Les notes pour ${selectedStudent.name} ont été mises à jour.`,
+        });
+        setIsManageGradesDialogOpen(false);
+        setSelectedStudent(null);
+    })
+    .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
     });
-    
-    setIsManageGradesDialogOpen(false);
-    setSelectedStudent(null);
   };
 
   const openGenerateCommentDialog = (student: Student) => {
@@ -128,14 +141,15 @@ export default function ReportsPage() {
     setIsGenerating(true);
 
     try {
-      const studentGrades = grades
-        .filter(g => g.studentId === selectedStudent.id)
-        .map(g => `${g.subject}: ${g.score}/20`)
-        .join(', ');
+      const studentGradesText = selectedStudent.grades 
+        ? Object.entries(selectedStudent.grades)
+            .map(([subject, score]) => `${subject}: ${score}/20`)
+            .join(', ')
+        : "Aucune note enregistrée.";
         
       const result = await generateReportCardComment({
         studentName: selectedStudent.name,
-        grades: studentGrades || "Aucune note enregistrée.",
+        grades: studentGradesText,
         teacherName: "Le Conseil de Classe" // Placeholder
       });
       setGeneratedComment(result.comment);
@@ -155,6 +169,7 @@ export default function ReportsPage() {
     }
   };
 
+  const isLoading = schoolLoading || classesLoading;
 
   return (
     <>
@@ -167,12 +182,12 @@ export default function ReportsPage() {
             </p>
           </div>
           <div className="w-[250px]">
-            <Select onValueChange={handleClassChange}>
+            <Select onValueChange={setSelectedClassId} disabled={isLoading}>
               <SelectTrigger>
-                <SelectValue placeholder="Sélectionner une classe" />
+                <SelectValue placeholder={isLoading ? "Chargement..." : "Sélectionner une classe"} />
               </SelectTrigger>
               <SelectContent>
-                {mockClassData.map(cls => (
+                {classes.map(cls => (
                   <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
                 ))}
               </SelectContent>
@@ -184,7 +199,7 @@ export default function ReportsPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {mockClassData.find(c => c.id === selectedClassId)?.name}
+                {classes.find(c => c.id === selectedClassId)?.name}
               </CardTitle>
               <CardDescription>
                 Liste des élèves et leurs moyennes.
@@ -200,12 +215,20 @@ export default function ReportsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {studentsInClass.length > 0 ? (
+                  {studentsLoading ? (
+                    [...Array(3)].map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-5 w-16 mx-auto" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-9 w-64 ml-auto" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : studentsInClass.length > 0 ? (
                     studentsInClass.map(student => (
                       <TableRow key={student.id}>
                         <TableCell className="font-medium">{student.name}</TableCell>
                         <TableCell className="text-center font-mono">
-                          {getStudentAverage(student.id)}
+                          {getStudentAverage(student)}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" className="mr-2" onClick={() => openManageGradesDialog(student)}>
@@ -303,3 +326,5 @@ export default function ReportsPage() {
     </>
   );
 }
+
+    
