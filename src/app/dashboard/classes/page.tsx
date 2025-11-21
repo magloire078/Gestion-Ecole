@@ -440,7 +440,7 @@ export default function ClassesPage() {
                         {classes.filter(c => c.cycle === cycle.name).map((cls) => {
                             const mainTeacher = getMainTeacher(cls.mainTeacherId);
                             return (
-                            <Card key={cls.id} id={cls.id} className="flex flex-col">
+                            <Card key={cls.id} className="flex flex-col">
                                 <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <CardTitle>{cls.name}</CardTitle>
