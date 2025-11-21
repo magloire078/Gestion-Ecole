@@ -3,7 +3,7 @@
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, BookOpen } from 'lucide-react';
+import { Users, BookUser, BookOpen, Landmark } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -32,13 +32,12 @@ export default function DashboardPage() {
   const books: Book[] = useMemo(() => libraryData?.map(d => d.data() as Book) || [], [libraryData]);
 
   const stats = [
-    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, color: 'text-sky-500', loading: studentsLoading },
-    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: Users, color: 'text-emerald-500', loading: teachersLoading },
-    { title: 'Classes', value: classesData?.length ?? 0, icon: BookUser, color: 'text-amber-500', loading: classesLoading },
-    { title: 'Livres', value: books.reduce((sum, book) => sum + book.quantity, 0), icon: BookOpen, color: 'text-violet-500', loading: libraryLoading }
+    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, color: 'text-sky-500', loading: schoolLoading || studentsLoading },
+    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: Users, color: 'text-emerald-500', loading: schoolLoading || teachersLoading },
+    { title: 'Classes', value: classesData?.length ?? 0, icon: BookUser, color: 'text-amber-500', loading: schoolLoading || classesLoading },
+    { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, color: 'text-violet-500', loading: schoolLoading || libraryLoading }
   ];
 
-  const isLoading = schoolLoading || studentsLoading || teachersLoading || classesLoading || libraryLoading;
 
   return (
     <div className="space-y-6">
