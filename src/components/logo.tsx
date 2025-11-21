@@ -3,9 +3,10 @@
 
 import Link from 'next/link';
 import { useSchoolData } from '@/hooks/use-school-data';
+import { Skeleton } from './ui/skeleton';
 
 export function Logo() {
-  const { schoolName } = useSchoolData();
+  const { schoolName, loading } = useSchoolData();
 
   return (
     <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
@@ -27,8 +28,13 @@ export function Logo() {
         </svg>
         <div className="flex flex-col">
             <h1 className="text-lg font-bold font-headline leading-tight">GèreEcole</h1>
-            {schoolName && schoolName !== 'GèreEcole' && (
+            {loading ? (
+                <Skeleton className="h-3 w-24 mt-1" />
+            ) : schoolName && schoolName !== 'GèreEcole' ? (
                 <p className="text-xs text-muted-foreground leading-tight">{schoolName}</p>
+            ) : (
+                // Render a placeholder with the same height to avoid layout shift
+                <div className="h-3 mt-1" /> 
             )}
         </div>
     </Link>
