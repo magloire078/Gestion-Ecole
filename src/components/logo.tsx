@@ -25,7 +25,12 @@ export function Logo() {
             <path d="M8 16h8" />
             <path d="M12 2v2" />
         </svg>
-      <h1 className="text-lg font-bold font-headline">{schoolName || 'GèreEcole'}</h1>
+        <div className="flex flex-col">
+            <h1 className="text-lg font-bold font-headline leading-tight">GèreEcole</h1>
+            {schoolName && schoolName !== 'GèreEcole' && (
+                <p className="text-xs text-muted-foreground leading-tight">{schoolName}</p>
+            )}
+        </div>
     </Link>
   );
 }
