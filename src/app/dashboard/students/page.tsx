@@ -60,6 +60,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useSchoolData } from "@/hooks/use-school-data";
 
 interface Student {
   id: string;
@@ -88,14 +89,13 @@ export default function StudentsPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const router = useRouter();
   const firestore = useFirestore();
-  const { user } = useUser();
-  const schoolId = user?.customClaims?.schoolId;
+  const { schoolId, loading: schoolLoading } = useSchoolData();
 
-  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/students`) : null, [firestore, schoolId]);
+  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
@@ -196,7 +196,7 @@ export default function StudentsPage() {
       return;
     }
     
-    const studentDocRef = doc(firestore, `schools/${schoolId}/students/${editingStudent.id}`);
+    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingStudent.id}`);
     const updatedData = {
       ...editingStudent,
       name: formState.name,
@@ -226,7 +226,7 @@ export default function StudentsPage() {
   const handleDeleteStudent = () => {
     if (!schoolId || !studentToDelete) return;
 
-    const studentDocRef = doc(firestore, `schools/${schoolId}/students/${studentToDelete.id}`);
+    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToDelete.id}`);
     deleteDoc(studentDocRef)
     .then(() => {
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.name} a été supprimé(e).` });
@@ -251,7 +251,7 @@ export default function StudentsPage() {
     }
   };
   
-  const isLoading = !schoolId || studentsLoading || classesLoading;
+  const isLoading = schoolLoading || studentsLoading || classesLoading;
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;

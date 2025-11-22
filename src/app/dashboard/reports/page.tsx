@@ -68,12 +68,12 @@ export default function ReportsPage() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   
   // --- Data Fetching ---
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const studentsQuery = useMemoFirebase(() => 
-    schoolId && selectedClassId ? query(collection(firestore, `schools/${schoolId}/students`), where('classId', '==', selectedClassId)) : null
+    schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', selectedClassId)) : null
   , [firestore, schoolId, selectedClassId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
@@ -114,7 +114,7 @@ export default function ReportsPage() {
   const saveGrades = () => {
     if (!schoolId || !selectedStudent) return;
     
-    const studentRef = doc(firestore, `schools/${schoolId}/students/${selectedStudent.id}`);
+    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}`);
     const updatedData = { grades: currentGrades };
     
     setDoc(studentRef, updatedData, { merge: true })

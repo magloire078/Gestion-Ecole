@@ -68,7 +68,7 @@ export default function TeachersPage() {
   const { toast } = useToast();
 
   // --- Firestore Data Hooks ---
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
 
@@ -95,7 +95,7 @@ export default function TeachersPage() {
   };
   
   // --- Firestore Actions ---
-  const getTeacherDocRef = (teacherId: string) => doc(firestore, `schools/${schoolId}/teachers/${teacherId}`);
+  const getTeacherDocRef = (teacherId: string) => doc(firestore, `ecoles/${schoolId}/enseignants/${teacherId}`);
 
   const handleAddTeacher = () => {
     if (!schoolId || !formState.name || !formState.subject || !formState.email) {
@@ -111,7 +111,7 @@ export default function TeachersPage() {
       class: formState.class || '',
     };
     
-    const teachersCollectionRef = collection(firestore, `schools/${schoolId}/teachers`);
+    const teachersCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
     addDoc(teachersCollectionRef, newTeacherData)
       .then(() => {
         toast({ title: "Enseignant ajouté", description: `${formState.name} a été ajouté(e).` });

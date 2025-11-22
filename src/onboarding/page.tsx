@@ -38,7 +38,7 @@ export default function OnboardingPage() {
     setIsProcessing(true);
 
     const schoolId = schoolName.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now();
-    const schoolRef = doc(firestore, `schools/${schoolId}`);
+    const schoolRef = doc(firestore, `ecoles/${schoolId}`);
     const schoolData = { 
       name: schoolName, 
       directorId: user.uid, 
@@ -47,7 +47,7 @@ export default function OnboardingPage() {
     };
     
     // Reference to the user document inside the school's subcollection
-    const schoolUserRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
+    const schoolUserRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
     const schoolUserData = {
         uid: user.uid,
         email: user.email,
@@ -58,7 +58,7 @@ export default function OnboardingPage() {
     };
 
     // Reference to the root user mapping document
-    const rootUserRef = doc(firestore, `users/${user.uid}`);
+    const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
     const rootUserData = { schoolId: schoolId };
 
     try {
@@ -84,7 +84,7 @@ export default function OnboardingPage() {
     } catch (error: any) {
         if (error.code === 'permission-denied') {
             const permissionError = new FirestorePermissionError({
-                path: `[BATCH WRITE] /schools/${schoolId}, /schools/${schoolId}/users/${user.uid}, /users/${user.uid}`,
+                path: `[BATCH WRITE] /ecoles/${schoolId}, /ecoles/${schoolId}/utilisateurs/${user.uid}, /utilisateurs/${user.uid}`,
                 operation: 'write',
                 requestResourceData: { school: schoolData, userInSchool: schoolUserData, userRoot: rootUserData },
             });
