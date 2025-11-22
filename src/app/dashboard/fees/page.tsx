@@ -17,8 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockStudentData, mockClassData } from "@/lib/data";
-import type { Student, Fee } from "@/lib/data";
+import type { Student, Fee, Class } from "@/lib/data";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -52,6 +51,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useSchoolData } from "@/hooks/use-school-data";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
@@ -76,16 +76,22 @@ const getImageHintForGrade = (grade: string): string => {
 export default function FeesPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
-  const { user } = useUser();
-  const schoolId = user?.customClaims?.schoolId;
+  const { schoolId, loading: schoolDataLoading } = useSchoolData();
 
   // --- Firestore Data Hooks ---
-  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/fees`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
+  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+  const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  // Student payment tracking state (still using mock data)
-  const [students, setStudents] = useState<Student[]>(mockStudentData);
+  // Student payment tracking state
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isManageFeeDialogOpen, setIsManageFeeDialogOpen] = useState(false);
@@ -131,7 +137,7 @@ export default function FeesPage() {
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
-      const classMatch = selectedClass === 'all' || student.class === selectedClass;
+      const classMatch = selectedClass === 'all' || student.classId === selectedClass;
       const statusMatch = selectedStatus === 'all' || student.tuitionStatus === selectedStatus;
       return classMatch && statusMatch;
     });
@@ -141,32 +147,38 @@ export default function FeesPage() {
     return filteredStudents.reduce((acc, student) => acc + student.amountDue, 0);
   }, [filteredStudents]);
   
-  // Student payment functions (still using mock data logic)
+  // Student payment functions
   const handleOpenManageDialog = (student: Student) => {
     setSelectedStudent(student);
     setIsManageFeeDialogOpen(true);
   };
   
   const handleSaveChanges = () => {
-    if (!selectedStudent) return;
+    if (!selectedStudent || !schoolId) return;
+
+    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}`);
+    const updatedData = {
+      amountDue: parseFloat(currentAmountDue) || 0,
+      tuitionStatus: currentTuitionStatus
+    };
     
-    setStudents(students.map(s => 
-        s.id === selectedStudent.id 
-        ? { ...s, amountDue: parseFloat(currentAmountDue) || 0, tuitionStatus: currentTuitionStatus }
-        : s
-    ));
-    
-    toast({
-        title: "Scolarité mise à jour",
-        description: `Les informations de paiement pour ${selectedStudent.name} ont été enregistrées.`
-    });
-    
-    setIsManageFeeDialogOpen(false);
-    setSelectedStudent(null);
+    setDoc(studentRef, updatedData, { merge: true })
+      .then(() => {
+        toast({
+            title: "Scolarité mise à jour",
+            description: `Les informations de paiement pour ${selectedStudent.name} ont été enregistrées.`
+        });
+        setIsManageFeeDialogOpen(false);
+        setSelectedStudent(null);
+      })
+      .catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
+      });
   };
 
   // --- Firestore CRUD for Fee Grid ---
-  const getFeeDocRef = (feeId: string) => doc(firestore, `schools/${schoolId}/fees/${feeId}`);
+  const getFeeDocRef = (feeId: string) => doc(firestore, `ecoles/${schoolId}/frais_scolarite/${feeId}`);
 
   const resetFeeForm = () => {
     setNewFeeGrade('');
@@ -187,7 +199,7 @@ export default function FeesPage() {
         details: newFeeDetails,
     };
 
-    const feesCollectionRef = collection(firestore, `schools/${schoolId}/fees`);
+    const feesCollectionRef = collection(firestore, `ecoles/${schoolId}/frais_scolarite`);
     addDoc(feesCollectionRef, newFeeData)
       .then(() => {
         toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${newFeeGrade} a été créée.` });
@@ -249,7 +261,7 @@ export default function FeesPage() {
       });
   };
 
-  const isLoading = !schoolId || feesLoading;
+  const isLoading = schoolDataLoading || feesLoading || studentsLoading || classesLoading;
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
@@ -311,7 +323,7 @@ export default function FeesPage() {
                                 <Image 
                                     src={`https://picsum.photos/seed/${fee.id}/400/200`} 
                                     alt={fee.grade}
-                                    layout="fill"
+                                    fill
                                     objectFit="cover"
                                     className="rounded-t-lg"
                                     data-ai-hint={getImageHintForGrade(fee.grade)}
@@ -364,18 +376,18 @@ export default function FeesPage() {
                 </p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
-                <Select value={selectedClass} onValueChange={setSelectedClass}>
+                <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isLoading}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Toutes les classes" />
                 </SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Toutes les classes</SelectItem>
-                    {mockClassData.map(cls => (
-                    <SelectItem key={cls.id} value={cls.name}>{cls.name}</SelectItem>
+                    {classes.map(cls => (
+                    <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
                     ))}
                 </SelectContent>
                 </Select>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoading}>
                 <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Tous les statuts" />
                 </SelectTrigger>
@@ -402,7 +414,17 @@ export default function FeesPage() {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {filteredStudents.length > 0 ? (
+                    {isLoading ? (
+                        [...Array(5)].map((_, i) => (
+                           <TableRow key={i}>
+                               <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                               <TableCell><Skeleton className="h-5 w-16"/></TableCell>
+                               <TableCell className="text-center"><Skeleton className="h-6 w-16 mx-auto"/></TableCell>
+                               <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
+                               <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto"/></TableCell>
+                           </TableRow>
+                        ))
+                    ) : filteredStudents.length > 0 ? (
                         filteredStudents.map((student) => (
                         <TableRow key={student.id}>
                             <TableCell className="font-medium">

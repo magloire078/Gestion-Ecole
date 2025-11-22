@@ -85,7 +85,7 @@ export default function AccountingPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
-  const transactionsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/accounting`) : null, [firestore, schoolId]);
+  const transactionsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/comptabilite`) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
   const transactions: AccountingTransaction[] = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction)) || [], [transactionsData]);
 
@@ -118,7 +118,7 @@ export default function AccountingPage() {
     }
   }, [date]);
 
-  const getTransactionDocRef = (transactionId: string) => doc(firestore, `schools/${schoolId}/accounting/${transactionId}`);
+  const getTransactionDocRef = (transactionId: string) => doc(firestore, `ecoles/${schoolId}/comptabilite/${transactionId}`);
 
   const resetForm = () => {
     setDescription("");
@@ -140,7 +140,7 @@ export default function AccountingPage() {
       category,
       date: format(new Date(date), "yyyy-MM-dd"),
     };
-    const transactionCollectionRef = collection(firestore, `schools/${schoolId}/accounting`);
+    const transactionCollectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
     addDoc(transactionCollectionRef, newTransactionData)
     .then(() => {
         toast({ title: "Transaction ajoutée", description: `La transaction a été enregistrée.` });

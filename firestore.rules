@@ -9,9 +9,9 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Reads the user's schoolId from the root /users/{uid} document.
+    // Reads the user's schoolId from the root /utilisateurs/{uid} document.
     function getUserSchoolId(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.schoolId;
+      return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
     }
 
     // Checks if the user making the request belongs to the school they are trying to access.
@@ -25,17 +25,17 @@ service cloud.firestore {
     }
 
     function isSchoolDirector(schoolId) {
-      return request.auth.uid == get(/databases/$(database)/documents/schools/$(schoolId)).data.directorId;
+      return request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
     }
 
     // --- Root Collections ---
 
-    // The `users` collection maps a user's UID to their school ID.
+    // The `utilisateurs` collection maps a user's UID to their school ID.
     // This is the cornerstone of the security model.
-    match /users/{userId} {
+    match /utilisateurs/{userId} {
       // Allow an authenticated user to create their own mapping, if it doesn't exist yet.
       // This is for joining or creating a school.
-      allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/users/$(userId));
+      allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
       
       // Allow a user to read their own mapping document.
       allow get: if isUserAuthenticated() && isCreatingOwnDocument(userId);
@@ -44,10 +44,10 @@ service cloud.firestore {
       allow update, delete, list: if false;
     }
     
-    // The `schools` collection contains all school documents.
-    match /schools/{schoolId} {
+    // The `ecoles` collection contains all school documents.
+    match /ecoles/{schoolId} {
         // Any authenticated user can create a school, as long as they set themselves as the director.
-        // The corresponding `/users/{uid}` and `/schools/{schoolId}/users/{uid}` documents
+        // The corresponding `/utilisateurs/{uid}` and `/ecoles/{schoolId}/utilisateurs/{uid}` documents
         // must also be created in the same transaction (checked implicitly by subcollection rules).
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         
@@ -65,11 +65,11 @@ service cloud.firestore {
 
         // --- Subcollections within a School ---
 
-        // Rule for the users subcollection.
-        match /users/{userId} {
+        // Rule for the utilisateurs subcollection.
+        match /utilisateurs/{userId} {
             // Allow a user to create their OWN user profile document in a school.
             // This is used for both creating a new school (director) and joining an existing one.
-            // The corresponding `/users/{uid}` document must exist or be created in the same transaction.
+            // The corresponding `/utilisateurs/{uid}` document must exist or be created in the same transaction.
             allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId);
             
             // Allow users to read/update their own profile if they are in the school.
@@ -80,7 +80,7 @@ service cloud.firestore {
             allow delete: if false;
         }
         
-        // Generic rules for all other subcollections (teachers, classes, students, etc.).
+        // Generic rules for all other subcollections (enseignants, classes, eleves, etc.).
         // A user must belong to the school to perform any action.
         match /{otherCollections}/{docId} {
             allow read, write: if isUserInSchool(schoolId);

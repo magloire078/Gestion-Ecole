@@ -62,7 +62,7 @@ export default function LibraryPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   
-  const booksQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/library`) : null, [firestore, schoolId]);
+  const booksQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/bibliotheque`) : null, [firestore, schoolId]);
   const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
   const books: LibraryBook[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook)) || [], [booksData]);
 
@@ -79,7 +79,7 @@ export default function LibraryPage() {
 
   const { toast } = useToast();
 
-  const getBookDocRef = (bookId: string) => doc(firestore, `schools/${schoolId}/library/${bookId}`);
+  const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
 
   const resetForm = () => {
     setNewTitle("");
@@ -97,7 +97,7 @@ export default function LibraryPage() {
       author: newAuthor,
       quantity: parseInt(newQuantity, 10),
     };
-    const booksCollectionRef = collection(firestore, `schools/${schoolId}/library`);
+    const booksCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
     addDoc(booksCollectionRef, newBookData)
     .then(() => {
         toast({ title: "Livre ajouté", description: `"${newTitle}" a été ajouté à la bibliothèque.` });
@@ -217,7 +217,7 @@ export default function LibraryPage() {
                      <Image 
                         src={`https://picsum.photos/seed/${book.id}/400/200`} 
                         alt={`Couverture du livre ${book.title}`} 
-                        layout="fill"
+                        fill
                         objectFit="cover"
                         className="rounded-t-lg"
                         data-ai-hint="book cover"

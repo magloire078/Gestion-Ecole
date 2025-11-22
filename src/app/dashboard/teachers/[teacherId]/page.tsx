@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
@@ -37,13 +37,11 @@ export default function TeacherProfilePage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const params = useParams();
   const teacherId = params.teacherId as string;
-  const { user } = useUser();
-  const schoolId = user?.customClaims?.schoolId;
+  const { schoolId, schoolName, directorName, loading: schoolDataLoading } = useSchoolData();
   const firestore = useFirestore();
-  const { schoolName, directorName, loading: schoolDataLoading } = useSchoolData();
 
   const teacherRef = useMemoFirebase(() => 
-    (schoolId && teacherId) ? doc(firestore, `schools/${schoolId}/teachers/${teacherId}`) : null
+    (schoolId && teacherId) ? doc(firestore, `ecoles/${schoolId}/enseignants/${teacherId}`) : null
   , [firestore, schoolId, teacherId]);
 
   const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);

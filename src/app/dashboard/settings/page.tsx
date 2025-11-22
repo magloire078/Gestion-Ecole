@@ -20,7 +20,6 @@ export default function SettingsPage() {
 
   const [schoolName, setSchoolName] = useState("");
   const [directorName, setDirectorName] = useState("");
-  const [founderName, setFounderName] = useState(""); // This can remain local or be moved to Firestore if needed
   const [isSaving, setIsSaving] = useState(false);
 
 
@@ -28,7 +27,6 @@ export default function SettingsPage() {
     if (!loading) {
       setSchoolName(initialSchoolName || "");
       setDirectorName(initialDirectorName || "");
-      // You might want to fetch founderName from Firestore as well if it's important
     }
   }, [initialSchoolName, initialDirectorName, loading]);
 
@@ -38,7 +36,6 @@ export default function SettingsPage() {
       await updateSchoolData({
         name: schoolName,
         directorName: directorName,
-        // founderName: founderName // Uncomment to save founderName to Firestore
       });
       toast({
         title: "Paramètres enregistrés",

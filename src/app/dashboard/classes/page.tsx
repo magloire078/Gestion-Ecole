@@ -76,9 +76,9 @@ export default function ClassesPage() {
 
 
   // --- Firestore Data Hooks ---
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `schools/${schoolId}/cycles`), orderBy('order')) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`), orderBy('order')) : null, [firestore, schoolId]);
   
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -134,8 +134,8 @@ export default function ClassesPage() {
     setFormCycleName("");
   }
   
-  const getCycleDocRef = (cycleId: string) => doc(firestore, `schools/${schoolId}/cycles/${cycleId}`);
-  const getClassDocRef = (classId: string) => doc(firestore, `schools/${schoolId}/classes/${classId}`);
+  const getCycleDocRef = (cycleId: string) => doc(firestore, `ecoles/${schoolId}/cycles/${cycleId}`);
+  const getClassDocRef = (classId: string) => doc(firestore, `ecoles/${schoolId}/classes/${classId}`);
 
   // --- CRUD Operations ---
   const handleAddClass = () => {
@@ -152,7 +152,7 @@ export default function ClassesPage() {
         cycle: formCycleName,
     };
 
-    const classCollectionRef = collection(firestore, `schools/${schoolId}/classes`);
+    const classCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
     addDoc(classCollectionRef, newClassData)
     .then(() => {
       toast({ title: "Classe ajoutée", description: `La classe ${formClassName} a été créée avec succès.` });
@@ -236,7 +236,7 @@ export default function ClassesPage() {
     }
     const newCycleData = { name: trimmedName, order: (cycles.length > 0 ? Math.max(...cycles.map(c => c.order)) : 0) + 1 };
     
-    const cycleCollectionRef = collection(firestore, `schools/${schoolId}/cycles`);
+    const cycleCollectionRef = collection(firestore, `ecoles/${schoolId}/cycles`);
     try {
         const docRef = await addDoc(cycleCollectionRef, newCycleData);
         toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
@@ -290,7 +290,7 @@ export default function ClassesPage() {
         return null;
     }
     const newTeacherData = { name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail };
-    const teacherCollectionRef = collection(firestore, `schools/${schoolId}/teachers`);
+    const teacherCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
     try {
         const docRef = await addDoc(teacherCollectionRef, newTeacherData);
         toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });

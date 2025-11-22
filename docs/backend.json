@@ -145,47 +145,47 @@
     "providers": ["Google", "Email"]
   },
   "firestore": {
-    "/users/{userId}": {
+    "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
-    "/schools/{schoolId}": {
+    "/ecoles/{schoolId}": {
       "schema": { "$ref": "#/entities/school" },
       "description": "Stocke les informations générales sur un établissement."
     },
-    "/schools/{schoolId}/users/{userId}": {
+    "/ecoles/{schoolId}/utilisateurs/{userId}": {
       "schema": { "$ref": "#/entities/user" },
       "description": "Stocke les profils des utilisateurs, partitionnés par école."
     },
-    "/schools/{schoolId}/teachers/{teacherId}": {
+    "/ecoles/{schoolId}/enseignants/{teacherId}": {
       "schema": { "$ref": "#/entities/teacher" },
       "description": "Stocke les profils des enseignants pour une école."
     },
-    "/schools/{schoolId}/classes/{classId}": {
+    "/ecoles/{schoolId}/classes/{classId}": {
       "schema": { "$ref": "#/entities/class" },
       "description": "Stocke les informations des classes pour une école."
     },
-    "/schools/{schoolId}/cycles/{cycleId}": {
+    "/ecoles/{schoolId}/cycles/{cycleId}": {
         "schema": { "$ref": "#/entities/cycle" },
         "description": "Stocke la liste des cycles d'enseignement pour une école."
     },
-    "/schools/{schoolId}/fees/{feeId}": {
+    "/ecoles/{schoolId}/frais_scolarite/{feeId}": {
         "schema": { "$ref": "#/entities/fee" },
         "description": "Stocke la structure des frais de scolarité pour l'école."
     },
-    "/schools/{schoolId}/students/{studentId}": {
+    "/ecoles/{schoolId}/eleves/{studentId}": {
         "schema": { "$ref": "#/entities/student" },
         "description": "Stocke les profils des élèves pour une école."
     },
-    "/schools/{schoolId}/accounting/{transactionId}": {
+    "/ecoles/{schoolId}/comptabilite/{transactionId}": {
         "schema": { "$ref": "#/entities/accountingTransaction" },
         "description": "Stocke les transactions comptables pour une école."
     },
-    "/schools/{schoolId}/library/{bookId}": {
+    "/ecoles/{schoolId}/bibliotheque/{bookId}": {
         "schema": { "$ref": "#/entities/libraryBook" },
         "description": "Stocke les livres de la bibliothèque pour une école."
     },
-    "/schools/{schoolId}/timetable/{entryId}": {
+    "/ecoles/{schoolId}/emploi_du_temps/{entryId}": {
         "schema": { "$ref": "#/entities/timetableEntry" },
         "description": "Stocke les entrées de l'emploi du temps pour une école."
     }

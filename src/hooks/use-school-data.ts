@@ -25,7 +25,7 @@ export function useSchoolData() {
 
     useEffect(() => {
         if (schoolId) {
-            const schoolDocRef = doc(firestore, 'schools', schoolId);
+            const schoolDocRef = doc(firestore, 'ecoles', schoolId);
             const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data() as SchoolData;
@@ -67,7 +67,7 @@ export function useSchoolData() {
         if (!schoolId) {
             throw new Error("ID de l'école non disponible. Impossible de mettre à jour.");
         }
-        const schoolDocRef = doc(firestore, 'schools', schoolId);
+        const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         
         return setDoc(schoolDocRef, data, { merge: true })
         .catch(async (serverError) => {

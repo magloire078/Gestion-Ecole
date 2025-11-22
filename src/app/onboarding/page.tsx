@@ -11,8 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useAuth } from "@/firebase";
 import { doc, writeBatch, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { Logo } from '@/components/logo';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 type OnboardingMode = "create" | "join";
@@ -51,7 +51,7 @@ export default function OnboardingPage() {
 
     const newSchoolCode = generateSchoolCode(schoolName);
     // The unique ID for the document is still a standard Firestore ID
-    const schoolRef = doc(collection(firestore, 'schools'));
+    const schoolRef = doc(collection(firestore, 'ecoles'));
     const schoolId = schoolRef.id;
 
     const schoolData = { 
@@ -62,7 +62,7 @@ export default function OnboardingPage() {
       schoolCode: newSchoolCode,
     };
     
-    const schoolUserRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
+    const schoolUserRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
     const schoolUserData = {
         uid: user.uid,
         email: user.email,
@@ -72,7 +72,7 @@ export default function OnboardingPage() {
         role: 'director',
     };
 
-    const rootUserRef = doc(firestore, `users/${user.uid}`);
+    const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
     const rootUserData = { schoolId: schoolId };
 
     try {
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
         window.location.href = '/dashboard';
 
     } catch (error: any) {
-        const path = `[BATCH WRITE] /schools/${schoolId}, /schools/${schoolId}/users/${user.uid}, /users/${user.uid}`;
+        const path = `[BATCH WRITE] /ecoles/${schoolId}, /ecoles/${schoolId}/utilisateurs/${user.uid}, /utilisateurs/${user.uid}`;
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'write',
@@ -120,7 +120,7 @@ export default function OnboardingPage() {
     setIsProcessing(true);
 
     try {
-        const schoolsRef = collection(firestore, 'schools');
+        const schoolsRef = collection(firestore, 'ecoles');
         const q = query(schoolsRef, where("schoolCode", "==", schoolCode.trim()));
         const querySnapshot = await getDocs(q);
 
@@ -133,8 +133,8 @@ export default function OnboardingPage() {
         const schoolDoc = querySnapshot.docs[0];
         const schoolId = schoolDoc.id;
 
-        const rootUserRef = doc(firestore, `users/${user.uid}`);
-        const schoolUserRef = doc(firestore, `schools/${schoolId}/users/${user.uid}`);
+        const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
+        const schoolUserRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
         
         const rootUserData = { schoolId: schoolId };
         const schoolUserData = {
@@ -162,7 +162,7 @@ export default function OnboardingPage() {
 
     } catch(error: any) {
          const permissionError = new FirestorePermissionError({
-            path: `/users/${user.uid} and /schools/{schoolId}/users/${user.uid}`,
+            path: `/utilisateurs/${user.uid} and /ecoles/{schoolId}/utilisateurs/${user.uid}`,
             operation: 'write',
             requestResourceData: { schoolCode },
         });

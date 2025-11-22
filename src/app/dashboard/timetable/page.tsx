@@ -71,9 +71,9 @@ export default function TimetablePage() {
   const { toast } = useToast();
 
   // --- Firestore Data Hooks ---
-  const timetableQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/timetable`) : null, [firestore, schoolId]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/teachers`) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const timetableQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/emploi_du_temps`) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
@@ -108,7 +108,7 @@ export default function TimetablePage() {
     });
   }, [timetable, classes, teachers]);
 
-  const getEntryDocRef = (entryId: string) => doc(firestore, `schools/${schoolId}/timetable/${entryId}`);
+  const getEntryDocRef = (entryId: string) => doc(firestore, `ecoles/${schoolId}/emploi_du_temps/${entryId}`);
 
   const resetForm = () => {
     setNewClassId("");
@@ -128,7 +128,7 @@ export default function TimetablePage() {
       subject: newSubject,
     };
 
-    const timetableCollectionRef = collection(firestore, `schools/${schoolId}/timetable`);
+    const timetableCollectionRef = collection(firestore, `ecoles/${schoolId}/emploi_du_temps`);
     addDoc(timetableCollectionRef, newEntryData)
     .then(() => {
         toast({ title: "Entrée ajoutée", description: "La nouvelle entrée a été ajoutée à l'emploi du temps." });
@@ -307,8 +307,7 @@ export default function TimetablePage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-class" className="text-right">Classe</Label>
-                   <Select onValueChange={setNewClassId} value={newClassId}>
+                  <Label htmlFor="edit-class" className="text-right">Classe</Label>                   <Select onValueChange={setNewClassId} value={newClassId}>
                     <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner une classe" /></SelectTrigger>
                     <SelectContent>{classes.map((cls: Class) => (<SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>))}</SelectContent>
                   </Select>

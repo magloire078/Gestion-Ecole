@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser, useFirestore } from '@/firebase';
@@ -30,7 +31,7 @@ export function useAuthProtection() {
     }
 
     // User is authenticated, check onboarding status
-    const userDocRef = doc(firestore, 'users', user.uid);
+    const userDocRef = doc(firestore, 'utilisateurs', user.uid);
     getDoc(userDocRef).then(docSnap => {
       if (docSnap.exists()) {
         setAuthStatus('authenticated');

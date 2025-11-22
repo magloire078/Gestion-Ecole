@@ -9,9 +9,9 @@ import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, S
 import { useMemo } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
-import { useDoc, useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 
@@ -53,21 +53,21 @@ export default function StudentProfilePage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   const studentRef = useMemoFirebase(() => 
-    (schoolId && studentId) ? doc(firestore, `schools/${schoolId}/students/${studentId}`) : null
+    (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
 
   const { data: studentData, loading: studentLoading } = useDoc(studentRef);
   const student = studentData as Student | null;
 
   const classRef = useMemoFirebase(() => 
-    (schoolId && student?.classId) ? doc(firestore, `schools/${schoolId}/classes/${student.classId}`) : null
+    (schoolId && student?.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null
   , [firestore, schoolId, student?.classId]);
 
   const { data: classData, loading: classLoading } = useDoc(classRef);
   const studentClass = classData as Class | null;
 
   const teacherRef = useMemoFirebase(() => 
-    (schoolId && studentClass?.mainTeacherId) ? doc(firestore, `schools/${schoolId}/teachers/${studentClass.mainTeacherId}`) : null
+    (schoolId && studentClass?.mainTeacherId) ? doc(firestore, `ecoles/${schoolId}/enseignants/${studentClass.mainTeacherId}`) : null
   , [firestore, schoolId, studentClass?.mainTeacherId]);
 
   const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);

@@ -15,6 +15,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Building } from 'lucide-react';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 interface Class {
   id: string;
@@ -26,11 +27,10 @@ export default function RegistrationPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useUser();
-  const schoolId = user?.customClaims?.schoolId;
+  const { schoolId } = useSchoolData();
 
 
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `schools/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [];
 
@@ -80,7 +80,7 @@ export default function RegistrationPage() {
       feedback: '', // Default value
     };
 
-    const studentsCollectionRef = collection(firestore, `schools/${schoolId}/students`);
+    const studentsCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves`);
     addDoc(studentsCollectionRef, studentData)
     .then((docRef) => {
         toast({
