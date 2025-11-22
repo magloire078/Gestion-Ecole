@@ -55,7 +55,7 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 
 interface TimetableEntry {
   id: string;
@@ -234,8 +234,7 @@ export default function TimetablePage() {
                    <Select onValueChange={setNewTeacherId} value={newTeacherId}>
                     <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un enseignant" /></SelectTrigger>
                     <SelectContent>
-                      {teachers.map((teacher: Teacher) => (<SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>))}
-                    </SelectContent>
+                      {teachers.map((teacher: Teacher) => (<SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>))}</SelectContent>
                   </Select>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">

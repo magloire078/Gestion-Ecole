@@ -14,7 +14,7 @@ import { collection, addDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Building } from 'lucide-react';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 
 interface Class {
   id: string;

@@ -59,7 +59,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 
 interface Student {
   id: string;

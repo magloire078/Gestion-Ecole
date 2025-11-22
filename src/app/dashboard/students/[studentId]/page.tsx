@@ -13,7 +13,7 @@ import { useDoc, useCollection, useFirestore, useMemoFirebase } from '@/firebase
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 
 interface Student {
   name: string;

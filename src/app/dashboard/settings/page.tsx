@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 
 export default function SettingsPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();

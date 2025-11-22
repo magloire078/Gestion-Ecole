@@ -46,7 +46,7 @@ import { Bot, FilePenLine } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 
 interface Student {
   id: string;
