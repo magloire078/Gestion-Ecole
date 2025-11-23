@@ -3,7 +3,8 @@
 export type Teacher = {
   id: string;
   name: string;
-  class?: string; // class est optionnel car un enseignant peut enseigner à plusieurs classes
+  classId?: string; // ID of the main class
+  class?: string; // Name of the main class (denormalized for display)
   subject: string;
   email: string;
   phone?: string;
@@ -115,4 +116,4 @@ export const schoolClasses = [
     { name: "Terminale", cycle: "Secondaire" },
 ];
 
-
+    

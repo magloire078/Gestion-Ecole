@@ -53,6 +53,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Class } from "@/lib/data";
 
 // Define Zod schema for validation
 const teacherSchema = z.object({
@@ -60,7 +62,7 @@ const teacherSchema = z.object({
   subject: z.string().min(1, { message: "La matière est requise." }),
   email: z.string().email({ message: "L'adresse email est invalide." }),
   phone: z.string().optional(),
-  class: z.string().optional(),
+  classId: z.string().optional(),
 });
 
 type TeacherFormValues = z.infer<typeof teacherSchema>;
@@ -79,8 +81,13 @@ export default function TeachersPage() {
 
   // --- Firestore Data Hooks ---
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  
   const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -98,21 +105,27 @@ export default function TeachersPage() {
       subject: '',
       email: '',
       phone: '',
-      class: '',
+      classId: '',
     },
   });
 
   // Effect to reset form when dialog closes or editing teacher changes
   useEffect(() => {
     if (isFormOpen && editingTeacher) {
-      form.reset(editingTeacher);
+      form.reset({
+          name: editingTeacher.name,
+          subject: editingTeacher.subject,
+          email: editingTeacher.email,
+          phone: editingTeacher.phone || '',
+          classId: editingTeacher.classId || '',
+      });
     } else {
       form.reset({
         name: '',
         subject: '',
         email: '',
         phone: '',
-        class: '',
+        classId: '',
       });
     }
   }, [isFormOpen, editingTeacher, form]);
@@ -124,8 +137,7 @@ export default function TeachersPage() {
   };
 
   const onSubmit = async (values: TeacherFormValues) => {
-    // Get the most up-to-date schoolId from user claims as a fallback
-    const currentSchoolId = schoolId || user?.customClaims?.schoolId;
+    const currentSchoolId = schoolId;
 
     if (!currentSchoolId) {
       toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de déterminer l'école. Veuillez rafraîchir la page." });
@@ -133,15 +145,21 @@ export default function TeachersPage() {
     }
 
     try {
+      const selectedClass = classes.find(c => c.id === values.classId);
+      const dataToSave = {
+          ...values,
+          class: selectedClass ? selectedClass.name : '' // Keep class name for simple display
+      };
+
       if (editingTeacher) {
         // --- UPDATE ---
         const teacherDocRef = doc(firestore, `ecoles/${currentSchoolId}/enseignants/${editingTeacher.id}`);
-        await setDoc(teacherDocRef, values, { merge: true });
+        await setDoc(teacherDocRef, dataToSave, { merge: true });
         toast({ title: "Enseignant modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
       } else {
         // --- CREATE ---
         const teachersCollectionRef = collection(firestore, `ecoles/${currentSchoolId}/enseignants`);
-        await addDoc(teachersCollectionRef, values);
+        await addDoc(teachersCollectionRef, dataToSave);
         toast({ title: "Enseignant ajouté", description: `${values.name} a été ajouté(e).` });
       }
       setIsFormOpen(false);
@@ -182,10 +200,15 @@ export default function TeachersPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const isLoading = schoolLoading || teachersLoading;
+  const isLoading = schoolLoading || teachersLoading || classesLoading;
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
+  }
+
+  const getClassName = (classId?: string) => {
+      if(!classId) return 'N/A';
+      return classes.find(c => c.id === classId)?.name || 'N/A';
   }
 
   return (
@@ -251,7 +274,7 @@ export default function TeachersPage() {
                       )}
                      <div className="flex items-center">
                           <BookUser className="mr-2 h-4 w-4" />
-                          <span>Classe principale: <strong>{teacher.class || 'N/A'}</strong></span>
+                          <span>Classe principale: <strong>{getClassName(teacher.classId)}</strong></span>
                      </div>
                   </CardContent>
                 </Card>
@@ -324,13 +347,23 @@ export default function TeachersPage() {
                 />
                  <FormField
                   control={form.control}
-                  name="class"
+                  name="classId"
                   render={({ field }) => (
                     <FormItem className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Classe princ.</FormLabel>
-                      <FormControl className="col-span-3">
-                        <Input placeholder="Ex: Terminale A (optionnel)" {...field} />
-                      </FormControl>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl className="col-span-3">
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner une classe (optionnel)" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="">Aucune</SelectItem>
+                          {classes.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </FormItem>
                   )}
                 />
@@ -362,7 +395,5 @@ export default function TeachersPage() {
     </>
   );
 }
-
-    
 
     

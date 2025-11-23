@@ -5,24 +5,25 @@ import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookUser, Mail, Book, Bot, Phone } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from '@/ai/flows/generate-teacher-recommendations';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { doc, collection } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import type { Class } from '@/lib/data';
 
 interface Teacher {
   name: string;
   subject: string;
   email: string;
   phone?: string;
-  class?: string;
+  classId?: string;
 }
 
 const mockStudentPerformanceData: Record<string, string> = {
@@ -47,6 +48,13 @@ export default function TeacherProfilePage() {
   const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);
   const teacher = teacherData as Teacher | null;
 
+  const classRef = useMemoFirebase(() =>
+    (schoolId && teacher?.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${teacher.classId}`) : null
+  , [firestore, schoolId, teacher?.classId]);
+
+  const { data: classData, loading: classLoading } = useDoc(classRef);
+  const mainClass = classData as Class | null;
+
   const [recommendation, setRecommendation] = useState('');
   const [teacherSkills, setTeacherSkills] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -62,7 +70,7 @@ export default function TeacherProfilePage() {
       
       const input: GenerateTeacherRecommendationsInput = {
         teacherName: teacher.name,
-        className: teacher.class || 'N/A',
+        className: mainClass?.name || 'N/A',
         studentPerformanceData: mockStudentPerformanceData[teacher.subject] || "Aucune donnée de performance disponible.",
         directorName: directorName || 'Le Directeur/La Directrice', 
         schoolName: schoolName || 'GèreEcole',
@@ -87,7 +95,7 @@ export default function TeacherProfilePage() {
     }
   };
 
-  const isLoading = teacherLoading || schoolDataLoading;
+  const isLoading = teacherLoading || schoolDataLoading || classLoading;
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
@@ -144,7 +152,7 @@ export default function TeacherProfilePage() {
                         </div>
                         <div className="flex items-center text-sm">
                             <BookUser className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Classe principale: <strong>{teacher.class || 'N/A'}</strong></span>
+                            <span>Classe principale: <strong>{mainClass?.name || 'N/A'}</strong></span>
                         </div>
                         <div className="flex items-center text-sm">
                             <Mail className="mr-3 h-5 w-5 text-muted-foreground" />
@@ -195,3 +203,5 @@ export default function TeacherProfilePage() {
     </div>
   );
 }
+
+    
