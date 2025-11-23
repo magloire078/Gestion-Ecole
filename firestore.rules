@@ -9,17 +9,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Reads the user's schoolId from the root /utilisateurs/{uid} document.
     function getUserSchoolId(userId) {
       return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
     }
 
-    // Checks if the user making the request belongs to the school they are trying to access.
     function isUserInSchool(schoolId) {
       return isUserAuthenticated() && getUserSchoolId(request.auth.uid) == schoolId;
     }
     
-    // Checks if the user trying to be created is the one making the request.
     function isCreatingOwnDocument(userId) {
       return request.auth.uid == userId;
     }
@@ -30,60 +27,50 @@ service cloud.firestore {
 
     // --- Root Collections ---
 
-    // The `utilisateurs` collection maps a user's UID to their school ID.
-    // This is the cornerstone of the security model.
     match /utilisateurs/{userId} {
-      // Allow an authenticated user to create their own mapping, if it doesn't exist yet.
-      // This is for joining or creating a school.
       allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-      
-      // Allow a user to read their own mapping document.
       allow get: if isUserAuthenticated() && isCreatingOwnDocument(userId);
-      
-      // Deny any updates or deletions by clients to prevent users from changing their school.
       allow update, delete, list: if false;
     }
     
-    // The `ecoles` collection contains all school documents.
     match /ecoles/{schoolId} {
-        // Any authenticated user can create a school, as long as they set themselves as the director.
-        // The corresponding `/utilisateurs/{uid}` and `/ecoles/{schoolId}/utilisateurs/{uid}` documents
-        // must also be created in the same transaction (checked implicitly by subcollection rules).
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
-        
-        // Any user belonging to the school can read the school document.
         allow get: if isUserInSchool(schoolId);
-        
-        // ONLY the director of the school can update it.
-        allow update: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
-        
-        // Anyone authenticated can query the list of schools to find one by code.
         allow list: if isUserAuthenticated();
         
-        // Deny deleting school documents.
+        // --- CORRECTION: Only the director can update the school document ---
+        allow update: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
+        
         allow delete: if false;
 
         // --- Subcollections within a School ---
 
-        // Rule for the utilisateurs subcollection.
         match /utilisateurs/{userId} {
-            // Allow a user to create their OWN user profile document in a school.
-            // This is used for both creating a new school (director) and joining an existing one.
-            // The corresponding `/utilisateurs/{uid}` document must exist or be created in the same transaction.
             allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId);
-            
-            // Allow users to read/update their own profile if they are in the school.
-            // Allow a director to list all user profiles in their school.
             allow read, list, update: if isUserInSchool(schoolId);
-            
-            // Deny deleting user profiles via client.
             allow delete: if false;
         }
         
-        // Generic rules for all other subcollections (enseignants, classes, eleves, etc.).
-        // A user must belong to the school to perform any action.
+        // --- CORRECTION: Only the director can write to these collections ---
+        // Any user in the school can read.
+        match /enseignants/{docId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
+        }
+        match /classes/{docId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
+        }
+        match /eleves/{docId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
+        }
+
+        // Generic rules for other subcollections.
+        // Director can write, members can read.
         match /{otherCollections}/{docId} {
-            allow read, write: if isUserInSchool(schoolId);
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
         }
     }
   }
