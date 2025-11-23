@@ -54,7 +54,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Class } from "@/lib/data";
+import type { Class } from '@/lib/data';
 
 // Define Zod schema for validation
 const teacherSchema = z.object({
@@ -143,7 +143,8 @@ export default function TeachersPage() {
     }
 
     try {
-      const dataToSave = { ...values };
+      // Ensure empty string is saved if 'none' is selected
+      const dataToSave = { ...values, classId: values.classId === 'none' ? '' : values.classId };
 
       if (editingTeacher) {
         // --- UPDATE ---
@@ -345,14 +346,17 @@ export default function TeachersPage() {
                   render={({ field }) => (
                     <FormItem className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Classe princ.</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        value={field.value || ''}
+                      >
                         <FormControl className="col-span-3">
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionner une classe (optionnel)" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Aucune</SelectItem>
+                          <SelectItem value="none">Aucune</SelectItem>
                           {classes.map((c) => (
                             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                           ))}
@@ -389,5 +393,3 @@ export default function TeachersPage() {
     </>
   );
 }
-
-    
