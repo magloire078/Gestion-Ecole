@@ -32,7 +32,6 @@ export function Logo() {
             ) : (
                 <h1 className="text-lg font-bold font-headline leading-tight">{schoolName || 'Mon École'}</h1>
             )}
-            <p className="text-xs text-muted-foreground leading-tight">par GèreEcole</p>
         </div>
     </Link>
   );
