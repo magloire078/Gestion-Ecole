@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, setDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, DocumentData } from 'firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -26,13 +26,36 @@ export function useSchoolData() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Set loading to true whenever the user or schoolId changes
+        setLoading(true);
+
+        if (userLoading) {
+            // Still waiting for user auth state, do nothing yet
+            return;
+        }
+
+        if (!user) {
+            // User is not logged in
+            setLoading(false);
+            return;
+        }
+
+        if (user && !schoolId) {
+            // User is logged in but has no school assigned yet (e.g., mid-onboarding)
+             setSchoolName('GèreEcole');
+             setDirectorName(user.displayName || 'Directeur/rice');
+             document.title = DEFAULT_TITLE;
+             setLoading(false);
+             return;
+        }
+
         if (schoolId) {
             const schoolDocRef = doc(firestore, 'ecoles', schoolId);
             const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     const data = docSnap.data() as SchoolData;
-                    const name = data.name || 'GèreEcole';
-                    const dirName = data.directorName || user?.displayName || 'Directeur/rice';
+                    const name = data.name || 'Mon École'; // Use a more appropriate fallback
+                    const dirName = data.directorName || user.displayName || 'Directeur/rice';
                     
                     setSchoolName(name);
                     setDirectorName(dirName);
@@ -41,8 +64,8 @@ export function useSchoolData() {
                     document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
                 } else {
                     // Fallback if school doc doesn't exist for some reason
-                    setSchoolName('GèreEcole');
-                    setDirectorName(user?.displayName || 'Directeur/rice');
+                    setSchoolName('École non trouvée');
+                    setDirectorName(user.displayName || 'Directeur/rice');
                     setSchoolCode(null);
                     document.title = DEFAULT_TITLE;
                 }
@@ -54,17 +77,7 @@ export function useSchoolData() {
             });
 
             return () => unsubscribe();
-        } else if (user) {
-            // User is authenticated but might not have a schoolId yet (e.g. during onboarding)
-            setLoading(false);
-            setSchoolName('GèreEcole');
-            setDirectorName(user.displayName || 'Directeur/rice');
-            document.title = DEFAULT_TITLE;
-        } else if (!user && !userLoading) {
-            // User is not logged in and we are not in a loading state
-            setLoading(false);
         }
-
     }, [schoolId, firestore, user, userLoading]);
 
     const updateSchoolData = (data: Partial<SchoolData>) => {
