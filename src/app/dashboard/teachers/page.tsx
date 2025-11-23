@@ -191,7 +191,7 @@ export default function TeachersPage() {
           </div>
           <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => { setIsAddDialogOpen(isOpen); if (!isOpen) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button disabled={!schoolId}>
+              <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Enseignant
               </Button>
             </DialogTrigger>
