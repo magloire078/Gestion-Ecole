@@ -12,6 +12,7 @@ const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 interface SchoolData extends DocumentData {
     name?: string;
     directorName?: string;
+    schoolCode?: string;
 }
 
 export function useSchoolData() {
@@ -21,6 +22,7 @@ export function useSchoolData() {
 
     const [schoolName, setSchoolName] = useState<string | null>(null);
     const [directorName, setDirectorName] = useState<string | null>(null);
+    const [schoolCode, setSchoolCode] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -34,12 +36,14 @@ export function useSchoolData() {
                     
                     setSchoolName(name);
                     setDirectorName(dirName);
+                    setSchoolCode(data.schoolCode || null);
                     
                     document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
                 } else {
                     // Fallback if school doc doesn't exist for some reason
                     setSchoolName('GèreEcole');
                     setDirectorName(user?.displayName || 'Directeur/rice');
+                    setSchoolCode(null);
                     document.title = DEFAULT_TITLE;
                 }
                 setLoading(false);
@@ -77,5 +81,5 @@ export function useSchoolData() {
         });
     };
 
-    return { schoolId, schoolName, directorName, loading, updateSchoolData };
+    return { schoolId, schoolName, directorName, schoolCode, loading, updateSchoolData };
 }

@@ -11,12 +11,19 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { Copy } from "lucide-react";
 
 export default function SettingsPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const { toast } = useToast();
   const { user } = useUser();
-  const { schoolName: initialSchoolName, directorName: initialDirectorName, loading, updateSchoolData } = useSchoolData();
+  const { 
+    schoolName: initialSchoolName, 
+    directorName: initialDirectorName, 
+    schoolCode,
+    loading, 
+    updateSchoolData 
+  } = useSchoolData();
 
   const [schoolName, setSchoolName] = useState("");
   const [directorName, setDirectorName] = useState("");
@@ -51,41 +58,55 @@ export default function SettingsPage() {
         setIsSaving(false);
     }
   };
+
+  const handleCopyCode = () => {
+    if (schoolCode) {
+      navigator.clipboard.writeText(schoolCode);
+      toast({
+        title: "Code copié !",
+        description: "Le code de l'établissement a été copié dans le presse-papiers.",
+      });
+    }
+  };
   
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
   }
 
-  if (loading) {
-      return (
-          <div className="space-y-6">
-               <div>
-                <h1 className="text-lg font-semibold md:text-2xl">Paramètres</h1>
-                <p className="text-muted-foreground">
-                Gérez les paramètres de votre compte et de votre école.
-                </p>
+  const renderSkeleton = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold md:text-2xl">Paramètres</h1>
+        <p className="text-muted-foreground">
+          Gérez les paramètres de votre compte et de votre école.
+        </p>
+      </div>
+      {[...Array(2)].map((_, i) => (
+        <Card key={i}>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-1/5" />
+              <Skeleton className="h-10 w-full" />
             </div>
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-24" />
-                    <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
-                     <div className="space-y-2">
-                        <Skeleton className="h-4 w-32" />
-                        <Skeleton className="h-10 w-full" />
-                    </div>
-                </CardContent>
-                 <CardFooter className="border-t px-6 py-4">
-                    <Skeleton className="h-10 w-48" />
-                </CardFooter>
-            </Card>
-          </div>
-      )
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-1/5" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          </CardContent>
+          <CardFooter className="border-t px-6 py-4">
+            <Skeleton className="h-10 w-48" />
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  );
+
+  if (loading) {
+      return renderSkeleton();
   }
 
   return (
@@ -99,7 +120,7 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>École</CardTitle>
-          <CardDescription>Modifiez les détails de votre établissement.</CardDescription>
+          <CardDescription>Modifiez les détails de votre établissement et consultez son code.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -111,6 +132,19 @@ export default function SettingsPage() {
               placeholder="Nom de votre école" 
             />
           </div>
+           {schoolCode && (
+            <div className="space-y-2">
+              <Label htmlFor="school-code">Code de l'Établissement</Label>
+              <div className="flex items-center gap-2">
+                <Input id="school-code" value={schoolCode} readOnly disabled />
+                <Button variant="outline" size="icon" onClick={handleCopyCode}>
+                  <Copy className="h-4 w-4" />
+                  <span className="sr-only">Copier le code</span>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Partagez ce code avec les enseignants pour leur permettre de rejoindre votre école.</p>
+            </div>
+           )}
           <div className="space-y-2">
             <Label htmlFor="director-name">Nom du Directeur</Label>
             <Input 
