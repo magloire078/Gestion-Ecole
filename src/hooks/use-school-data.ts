@@ -18,7 +18,7 @@ interface SchoolData extends DocumentData {
 export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
-    const schoolId = user?.customClaims?.schoolId;
+    const [schoolId, setSchoolId] = useState<string | undefined>(undefined);
 
     const [schoolName, setSchoolName] = useState<string | null>(null);
     const [directorName, setDirectorName] = useState<string | null>(null);
@@ -26,56 +26,59 @@ export function useSchoolData() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // We need to reactively get schoolId from the user object
+        setSchoolId(user?.customClaims?.schoolId);
+    }, [user]);
+
+
+    useEffect(() => {
+        // Initial loading state is true, and it should only change when we have a definitive answer.
         setLoading(true);
 
         if (userLoading) {
+            // Don't do anything until the user object is resolved
             return;
         }
 
-        if (!user) {
+        if (!schoolId) {
+             // If there's no schoolId even after user is loaded, it means they need onboarding
+             // or there's an issue. We can stop loading and show default/empty state.
             setLoading(false);
+            setSchoolName('GèreEcole');
+            setDirectorName(user?.displayName || null);
+            document.title = DEFAULT_TITLE;
             return;
-        }
-
-        if (user && !schoolId) {
-             setSchoolName('GèreEcole');
-             setDirectorName(user.displayName || 'Directeur/rice');
-             document.title = DEFAULT_TITLE;
-             setLoading(false);
-             return;
         }
         
-        if (schoolId) {
-            const schoolDocRef = doc(firestore, 'ecoles', schoolId);
-            const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data() as SchoolData;
-                    const name = data.name || 'Mon École';
-                    const dirName = data.directorName || user.displayName || 'Directeur/rice';
-                    
-                    setSchoolName(name);
-                    setDirectorName(dirName);
-                    setSchoolCode(data.schoolCode || null);
-                    
-                    document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
-                } else {
-                    setSchoolName('École non trouvée');
-                    setDirectorName(user.displayName || 'Directeur/rice');
-                    setSchoolCode(null);
-                    document.title = DEFAULT_TITLE;
-                }
-                setLoading(false);
-            }, (error) => {
-                 const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
-                 errorEmitter.emit('permission-error', permissionError);
-                setLoading(false);
-            });
+        const schoolDocRef = doc(firestore, 'ecoles', schoolId);
+        const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data() as SchoolData;
+                const name = data.name || 'Mon École';
+                const dirName = data.directorName || user?.displayName || 'Directeur/rice';
+                
+                setSchoolName(name);
+                setDirectorName(dirName);
+                setSchoolCode(data.schoolCode || null);
+                
+                document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
+            } else {
+                // The schoolId exists but the document doesn't, which is an error state.
+                setSchoolName('École non trouvée');
+                setDirectorName(user?.displayName || 'Directeur/rice');
+                setSchoolCode(null);
+                document.title = DEFAULT_TITLE;
+            }
+            setLoading(false);
+        }, (error) => {
+             const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
+             errorEmitter.emit('permission-error', permissionError);
+            setLoading(false);
+        });
 
-            return () => unsubscribe();
-        } else {
-          // If no schoolId and user is loaded, it means we are not in an onboarding or authenticated state that we can handle here.
-          setLoading(false);
-        }
+        // Cleanup subscription on component unmount
+        return () => unsubscribe();
+        
     }, [schoolId, firestore, user, userLoading]);
 
     const updateSchoolData = (data: Partial<SchoolData>) => {
