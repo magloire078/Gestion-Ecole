@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, setDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, DocumentData } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -26,27 +26,41 @@ export function useSchoolData() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // We need to reactively get schoolId from the user object
-        setSchoolId(user?.customClaims?.schoolId);
-    }, [user]);
-
-
-    useEffect(() => {
-        // Initial loading state is true, and it should only change when we have a definitive answer.
-        setLoading(true);
-
         if (userLoading) {
-            // Don't do anything until the user object is resolved
+            setLoading(true);
             return;
         }
 
-        if (!schoolId) {
-             // If there's no schoolId even after user is loaded, it means they need onboarding
-             // or there's an issue. We can stop loading and show default/empty state.
+        if (!user) {
             setLoading(false);
-            setSchoolName('GèreEcole');
-            setDirectorName(user?.displayName || null);
-            document.title = DEFAULT_TITLE;
+            return;
+        }
+
+        // --- Nouvelle logique ---
+        // 1. Récupérer le schoolId directement depuis la collection `utilisateurs`
+        const userRootRef = doc(firestore, 'utilisateurs', user.uid);
+        getDoc(userRootRef).then(userDocSnap => {
+            if (userDocSnap.exists()) {
+                const userSchoolId = userDocSnap.data()?.schoolId;
+                if (userSchoolId) {
+                    setSchoolId(userSchoolId);
+                } else {
+                    setLoading(false); // Pas de schoolId, probablement en cours d'onboarding
+                }
+            } else {
+                setLoading(false); // Pas encore de document, en cours d'onboarding
+            }
+        }).catch(error => {
+            console.error("Error fetching user root doc:", error);
+            setLoading(false);
+        });
+
+    }, [user, userLoading, firestore]);
+
+    useEffect(() => {
+        if (!schoolId) {
+            // Si pas de schoolId, on ne fait rien et on attend. 
+            // `loading` reste à true jusqu'à ce que `schoolId` soit défini.
             return;
         }
         
@@ -63,23 +77,20 @@ export function useSchoolData() {
                 
                 document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
-                // The schoolId exists but the document doesn't, which is an error state.
                 setSchoolName('École non trouvée');
-                setDirectorName(user?.displayName || 'Directeur/rice');
-                setSchoolCode(null);
                 document.title = DEFAULT_TITLE;
             }
             setLoading(false);
         }, (error) => {
              const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
              errorEmitter.emit('permission-error', permissionError);
-            setLoading(false);
+             setLoading(false);
         });
 
         // Cleanup subscription on component unmount
         return () => unsubscribe();
         
-    }, [schoolId, firestore, user, userLoading]);
+    }, [schoolId, firestore, user]);
 
     const updateSchoolData = (data: Partial<SchoolData>) => {
         if (!schoolId) {
