@@ -1,8 +1,16 @@
+
 'use client';
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockPerformanceData } from '@/lib/data';
+
+const mockPerformanceData = [
+  { subject: 'Maths', 'Semestre Précédent': 11, 'Ce Semestre': 13 },
+  { subject: 'Français', 'Semestre Précédent': 14, 'Ce Semestre': 12.5 },
+  { subject: 'Physique', 'Semestre Précédent': 10, 'Ce Semestre': 14 },
+  { subject: 'Histoire', 'Semestre Précédent': 15, 'Ce Semestre': 14.5 },
+  { subject: 'Anglais', 'Semestre Précédent': 12, 'Ce Semestre': 13 },
+];
 
 const chartData = mockPerformanceData;
 

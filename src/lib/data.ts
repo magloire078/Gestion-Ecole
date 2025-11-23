@@ -85,13 +85,34 @@ export const allSubjects = [
     "EPS"
 ];
 
-// --- Mock Data Section - Kept for reference or quick testing ---
+// --- Données standardisées pour le système éducatif Ivoirien ---
 
-export const mockPerformanceData = [
-    { subject: 'Maths', 'Ce Semestre': 14, 'Semestre Précédent': 12 },
-    { subject: 'Français', 'Ce Semestre': 16, 'Semestre Précédent': 15 },
-    { subject: 'Physique', 'Ce Semestre': 13, 'Semestre Précédent': 14 },
-    { subject: 'Histoire', 'Ce Semestre': 15, 'Semestre Précédent': 13 },
-    { subject: 'Anglais', 'Ce Semestre': 17, 'Semestre Précédent': 16 },
+export const schoolCycles = [
+    { name: "Maternelle", order: 1 },
+    { name: "Primaire", order: 2 },
+    { name: "Secondaire", order: 3 }, // Regroupe collège et lycée
 ];
+
+export const schoolClasses = [
+    // Maternelle
+    { name: "Petite Section", cycle: "Maternelle" },
+    { name: "Moyenne Section", cycle: "Maternelle" },
+    { name: "Grande Section", cycle: "Maternelle" },
+    // Primaire
+    { name: "CP1", cycle: "Primaire" },
+    { name: "CP2", cycle: "Primaire" },
+    { name: "CE1", cycle: "Primaire" },
+    { name: "CE2", cycle: "Primaire" },
+    { name: "CM1", cycle: "Primaire" },
+    { name: "CM2", cycle: "Primaire" },
+    // Secondaire
+    { name: "6ème", cycle: "Secondaire" },
+    { name: "5ème", cycle: "Secondaire" },
+    { name: "4ème", cycle: "Secondaire" },
+    { name: "3ème", cycle: "Secondaire" },
+    { name: "Seconde", cycle: "Secondaire" },
+    { name: "Première", cycle: "Secondaire" },
+    { name: "Terminale", cycle: "Secondaire" },
+];
+
 

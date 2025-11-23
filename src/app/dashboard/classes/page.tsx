@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Users, User, Building, MoreHorizontal, X, Settings } from "lucide-react";
+import { PlusCircle, Users, User, Building, MoreHorizontal } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
@@ -36,12 +36,15 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { schoolCycles, schoolClasses } from '@/lib/data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 // Define TypeScript interfaces based on backend.json
 interface Teacher {
@@ -62,13 +65,6 @@ interface Class {
   cycle: string;
 }
 
-interface Cycle {
-    id: string;
-    name: string;
-    order: number;
-}
-
-
 export default function ClassesPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
@@ -78,21 +74,17 @@ export default function ClassesPage() {
   // --- Firestore Data Hooks ---
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`), orderBy('order')) : null, [firestore, schoolId]);
   
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
 
   const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
-  const cycles: Cycle[] = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle)) || [], [cyclesData]);
   
   // --- UI State ---
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isManageCyclesDialogOpen, setIsManageCyclesDialogOpen] = useState(false);
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
   
   // Form states
@@ -101,17 +93,14 @@ export default function ClassesPage() {
   const [formStudentCount, setFormStudentCount] = useState("");
   const [formBuilding, setFormBuilding] = useState("");
   const [formCycleName, setFormCycleName] = useState("");
-  const [newCycleName, setNewCycleName] = useState("");
 
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
-  const [cycleToDelete, setCycleToDelete] = useState<Cycle | null>(null);
 
   // Add teacher dialog state
   const [newTeacherName, setNewTeacherName] = useState("");
   const [newTeacherEmail, setNewTeacherEmail] = useState("");
   const [newTeacherSubject, setNewTeacherSubject] = useState("");
-
 
   const { toast } = useToast();
   
@@ -119,7 +108,6 @@ export default function ClassesPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
 
   const getMainTeacher = (teacherId?: string) => {
     if (!teacherId) return null;
@@ -134,7 +122,6 @@ export default function ClassesPage() {
     setFormCycleName("");
   }
   
-  const getCycleDocRef = (cycleId: string) => doc(firestore, `ecoles/${schoolId}/cycles/${cycleId}`);
   const getClassDocRef = (classId: string) => doc(firestore, `ecoles/${schoolId}/classes/${classId}`);
 
   // --- CRUD Operations ---
@@ -220,63 +207,6 @@ export default function ClassesPage() {
     });
   }
   
-  const handleCreateCycle = async (cycleName: string) => {
-    const trimmedName = cycleName.trim();
-    if (!schoolId) {
-        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé. Rechargez la page." });
-        return null;
-    }
-    if (!trimmedName) {
-        toast({ variant: "destructive", title: "Erreur", description: "Le nom du cycle ne peut pas être vide." });
-        return null;
-    }
-    if (cycles.some(c => c.name.toLowerCase() === trimmedName.toLowerCase())) {
-        toast({ variant: "destructive", title: "Erreur", description: "Ce cycle existe déjà." });
-        return null;
-    }
-    const newCycleData = { name: trimmedName, order: (cycles.length > 0 ? Math.max(...cycles.map(c => c.order)) : 0) + 1 };
-    
-    const cycleCollectionRef = collection(firestore, `ecoles/${schoolId}/cycles`);
-    try {
-        const docRef = await addDoc(cycleCollectionRef, newCycleData);
-        toast({ title: "Cycle ajouté", description: `Le cycle "${trimmedName}" a été ajouté.` });
-        return { value: trimmedName, label: trimmedName };
-    } catch(serverError) {
-        const permissionError = new FirestorePermissionError({ path: cycleCollectionRef.path, operation: 'create', requestResourceData: newCycleData });
-        errorEmitter.emit('permission-error', permissionError);
-      return null;
-    }
-  };
-
-  const handleAddCycleFromDialog = async () => {
-    const result = await handleCreateCycle(newCycleName);
-    if (result) {
-        setNewCycleName(""); // Clear input only on successful creation
-    }
-  }
-  
-  const handleOpenDeleteCycleDialog = (cycle: Cycle) => {
-      const classesInCycle = classes.filter(c => c.cycle === cycle.name).length;
-      if (classesInCycle > 0) {
-          toast({ variant: "destructive", title: "Action impossible", description: `Impossible de supprimer le cycle "${cycle.name}" car il contient ${classesInCycle} classe(s).` });
-          return;
-      }
-      setCycleToDelete(cycle);
-  };
-
-  const handleDeleteCycle = () => {
-      if (!schoolId || !cycleToDelete) return;
-      const cycleDocRef = getCycleDocRef(cycleToDelete.id);
-      deleteDoc(cycleDocRef)
-      .then(() => {
-          toast({ title: "Cycle supprimé", description: `Le cycle "${cycleToDelete.name}" a été supprimé.` });
-          setCycleToDelete(null);
-      }).catch(async (serverError) => {
-          const permissionError = new FirestorePermissionError({ path: cycleDocRef.path, operation: 'delete' });
-          errorEmitter.emit('permission-error', permissionError);
-      });
-  }
-  
   const handleOpenAddTeacherDialog = async (teacherName: string) => {
     setNewTeacherName(teacherName);
     setNewTeacherEmail("");
@@ -304,8 +234,7 @@ export default function ClassesPage() {
     }
   }
 
-
-  const isLoading = !isClient || schoolDataLoading || classesLoading || teachersLoading || cyclesLoading;
+  const isLoading = !isClient || schoolDataLoading || classesLoading || teachersLoading;
   
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
@@ -320,7 +249,6 @@ export default function ClassesPage() {
                     <Skeleton className="h-4 w-96" />
                 </div>
                 <div className="flex gap-2">
-                    <Skeleton className="h-10 w-32" />
                     <Skeleton className="h-10 w-36" />
                 </div>
             </div>
@@ -332,8 +260,9 @@ export default function ClassesPage() {
     );
   }
 
-  const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
   const teacherOptions = teachers.map(t => ({ value: t.id, label: t.name }));
+  const cycleOptions = schoolCycles.map(c => ({ value: c.name, label: c.name }));
+  const classOptionsForCycle = formCycleName ? schoolClasses.filter(c => c.cycle === formCycleName).map(c => ({ value: c.name, label: c.name })) : [];
 
   return (
     <>
@@ -344,34 +273,6 @@ export default function ClassesPage() {
             <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={isManageCyclesDialogOpen} onOpenChange={setIsManageCyclesDialogOpen}>
-                <DialogTrigger asChild>
-                    <Button variant="outline"><Settings className="mr-2 h-4 w-4" /> Gérer les Cycles</Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Gérer les Cycles</DialogTitle>
-                        <DialogDescription>Ajoutez ou supprimez des cycles d'enseignement.</DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        <div className="flex gap-2">
-                            <Input value={newCycleName} onChange={(e) => setNewCycleName(e.target.value)} placeholder="Nom du nouveau cycle"/>
-                            <Button onClick={handleAddCycleFromDialog} disabled={!newCycleName.trim() || !schoolId}>Ajouter</Button>
-                        </div>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                            <Label>Cycles actuels</Label>
-                            {cyclesLoading ? <Skeleton className="h-10 w-full" /> : cycles.length > 0 ? cycles.map(cycle => (
-                                <div key={cycle.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/50">
-                                    <span>{cycle.name}</span>
-                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive" onClick={() => handleOpenDeleteCycleDialog(cycle)}>
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            )) : <p className="text-sm text-muted-foreground text-center py-4">Aucun cycle créé.</p>}
-                        </div>
-                    </div>
-                </DialogContent>
-            </Dialog>
             <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
               if(!isOpen) resetAddDialog();
               setIsAddDialogOpen(isOpen);
@@ -389,25 +290,31 @@ export default function ClassesPage() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="cycle" className="text-right">Cycle</Label>
+                    <Select value={formCycleName} onValueChange={setFormCycleName}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner un cycle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {cycleOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                  </div>
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">Nom</Label>
-                    <Input id="name" value={formClassName} onChange={(e) => setFormClassName(e.target.value)} className="col-span-3" placeholder="Ex: Sixième A" />
+                    <Label htmlFor="name" className="text-right">Classe</Label>
+                    <Select value={formClassName} onValueChange={setFormClassName} disabled={!formCycleName}>
+                        <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner une classe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {classOptionsForCycle.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="building" className="text-right">Bâtiment</Label>
                     <Input id="building" value={formBuilding} onChange={(e) => setFormBuilding(e.target.value)} className="col-span-3" placeholder="Ex: Bâtiment A" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="cycle" className="text-right">Cycle</Label>
-                     <Combobox
-                        className="col-span-3"
-                        placeholder="Sélectionner un cycle"
-                        searchPlaceholder="Chercher ou créer..."
-                        options={cycleOptions}
-                        value={formCycleName}
-                        onValueChange={setFormCycleName}
-                        onCreate={handleCreateCycle}
-                    />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="teacher" className="text-right">Prof. Principal</Label>
@@ -436,12 +343,12 @@ export default function ClassesPage() {
         </div>
 
         
-        <Tabs defaultValue={cycles[0]?.name} className="space-y-4">
+        <Tabs defaultValue={schoolCycles[0]?.name} className="space-y-4">
             <TabsList>
-                {cycles.map((cycle) => ( <TabsTrigger key={cycle.id} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
+                {schoolCycles.map((cycle) => ( <TabsTrigger key={cycle.order} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
             </TabsList>
-            {cycles.map((cycle) => (
-                <TabsContent key={cycle.id} value={cycle.name}>
+            {schoolCycles.map((cycle) => (
+                <TabsContent key={cycle.order} value={cycle.name}>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {classes.filter(c => c.cycle === cycle.name).map((cls) => {
                             const mainTeacher = getMainTeacher(cls.mainTeacherId);
@@ -469,6 +376,11 @@ export default function ClassesPage() {
                             );
                         })}
                     </div>
+                     {classes.filter(c => c.cycle === cycle.name).length === 0 && (
+                        <div className="text-center text-muted-foreground py-10">
+                            Aucune classe n'a été créée pour le cycle {cycle.name}.
+                        </div>
+                    )}
                 </TabsContent>
             ))}
         </Tabs>
@@ -484,24 +396,30 @@ export default function ClassesPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
              <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">Nom</Label>
-              <Input id="edit-name" value={formClassName} onChange={(e) => setFormClassName(e.target.value)} className="col-span-3" />
+              <Label htmlFor="edit-cycle" className="text-right">Cycle</Label>
+              <Select value={formCycleName} onValueChange={setFormCycleName}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionner un cycle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {cycleOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                    </SelectContent>
+                </Select>
             </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-name" className="text-right">Classe</Label>
+                <Select value={formClassName} onValueChange={setFormClassName} disabled={!formCycleName}>
+                    <SelectTrigger className="col-span-3">
+                        <SelectValue placeholder="Sélectionner une classe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {classOptionsForCycle.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
+                    </SelectContent>
+                </Select>
+             </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-building" className="text-right">Bâtiment</Label>
               <Input id="edit-building" value={formBuilding} onChange={(e) => setFormBuilding(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-cycle" className="text-right">Cycle</Label>
-               <Combobox
-                    className="col-span-3"
-                    placeholder="Sélectionner un cycle"
-                    searchPlaceholder="Chercher ou créer..."
-                    options={cycleOptions}
-                    value={formCycleName}
-                    onValueChange={setFormCycleName}
-                    onCreate={handleCreateCycle}
-                />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-teacher" className="text-right">Prof. Principal</Label>
@@ -567,20 +485,6 @@ export default function ClassesPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteClass} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Cycle Confirmation Dialog */}
-       <AlertDialog open={!!cycleToDelete} onOpenChange={(isOpen) => !isOpen && setCycleToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-            <AlertDialogDescription>Cette action est irréversible. Le cycle <strong>{cycleToDelete?.name}</strong> sera définitivement supprimé.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCycleToDelete(null)}>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCycle} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

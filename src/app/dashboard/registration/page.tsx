@@ -13,9 +13,10 @@ import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebas
 import { collection, addDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
-import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Building } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 import { useSchoolData } from '@/hooks/use-school-data';
+import { schoolClasses } from '@/lib/data';
 
 interface Class {
   id: string;
@@ -29,18 +30,13 @@ export default function RegistrationPage() {
   const { toast } = useToast();
   const { schoolId } = useSchoolData();
 
-
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const classes: Class[] = classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [];
-
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
     dateOfBirth: '',
     placeOfBirth: '',
     previousSchool: '',
-    classId: '',
+    className: '', // Storing the name of the class now
     parent1Name: '',
     parent1Contact: '',
     parent2Name: '',
@@ -61,7 +57,7 @@ export default function RegistrationPage() {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolId || !formData.name || !formData.dateOfBirth || !formData.placeOfBirth || !formData.classId || !formData.parent1Name || !formData.parent1Contact) {
+    if (!schoolId || !formData.name || !formData.dateOfBirth || !formData.placeOfBirth || !formData.className || !formData.parent1Name || !formData.parent1Contact) {
       toast({
         variant: "destructive",
         title: "Champs requis",
@@ -70,14 +66,23 @@ export default function RegistrationPage() {
       return;
     }
     
-    const selectedClass = classes.find(c => c.id === formData.classId);
+    // Find the corresponding class from the predefined list to get its cycle
+    const selectedClassInfo = schoolClasses.find(c => c.name === formData.className);
 
     const studentData = {
-      ...formData,
-      class: selectedClass?.name || 'N/A',
-      amountDue: 0, // Default value
-      tuitionStatus: 'Partiel', // Default value
-      feedback: '', // Default value
+      name: formData.name,
+      dateOfBirth: formData.dateOfBirth,
+      placeOfBirth: formData.placeOfBirth,
+      previousSchool: formData.previousSchool,
+      class: formData.className,
+      cycle: selectedClassInfo?.cycle || 'N/A', // Add cycle here
+      parent1Name: formData.parent1Name,
+      parent1Contact: formData.parent1Contact,
+      parent2Name: formData.parent2Name,
+      parent2Contact: formData.parent2Contact,
+      amountDue: 0, 
+      tuitionStatus: 'Partiel',
+      feedback: '',
     };
 
     const studentsCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves`);
@@ -97,6 +102,8 @@ export default function RegistrationPage() {
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
   }
+
+  const classOptions = schoolClasses.map(c => ({ value: c.name, label: c.name }));
 
   return (
     <div className="space-y-6">
@@ -142,13 +149,13 @@ export default function RegistrationPage() {
               <div className="space-y-4 animate-in fade-in-50">
                 <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations Scolaires</div>
                 <div className="space-y-2">
-                    <Label htmlFor="classId">Classe souhaitée</Label>
-                    <Select name="classId" onValueChange={(value) => handleSelectChange('classId', value)} value={formData.classId} required>
+                    <Label htmlFor="className">Classe souhaitée</Label>
+                    <Select name="className" onValueChange={(value) => handleSelectChange('className', value)} value={formData.className} required>
                         <SelectTrigger>
-                            <SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} />
+                            <SelectValue placeholder={"Sélectionner une classe"} />
                         </SelectTrigger>
                         <SelectContent>
-                            {!classesLoading && classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            {classOptions.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>

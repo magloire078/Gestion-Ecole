@@ -61,12 +61,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 import { useSchoolData } from "@/hooks/use-school-data";
+import { schoolClasses } from '@/lib/data';
 
 interface Student {
   id: string;
   name: string;
   class: string;
-  classId: string;
   feedback: string;
   tuitionStatus: TuitionStatus;
   amountDue: number;
@@ -80,11 +80,6 @@ type Summary = {
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 type Sentiment = 'Positif' | 'Neutre' | 'Négatif';
 
-interface Class {
-  id: string;
-  name: string;
-}
-
 export default function StudentsPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const router = useRouter();
@@ -94,10 +89,6 @@ export default function StudentsPage() {
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
-
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const [feedbackText, setFeedbackText] = useState('');
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -125,7 +116,7 @@ export default function StudentsPage() {
     if(editingStudent) {
       setFormState({
         name: editingStudent.name,
-        classId: editingStudent.classId,
+        class: editingStudent.class,
         feedback: editingStudent.feedback,
         amountDue: editingStudent.amountDue,
         tuitionStatus: editingStudent.tuitionStatus,
@@ -191,17 +182,19 @@ export default function StudentsPage() {
   };
 
   const handleEditStudent = () => {
-    if (!schoolId || !editingStudent || !formState.name || !formState.classId) {
+    if (!schoolId || !editingStudent || !formState.name || !formState.class) {
       toast({ variant: "destructive", title: "Erreur", description: "Le nom et la classe de l'élève sont requis." });
       return;
     }
     
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingStudent.id}`);
+    const selectedClassInfo = schoolClasses.find(c => c.name === formState.class);
+    
     const updatedData = {
       ...editingStudent,
       name: formState.name,
-      class: classes.find(c => c.id === formState.classId)?.name || 'N/A',
-      classId: formState.classId,
+      class: formState.class,
+      cycle: selectedClassInfo?.cycle || editingStudent.cycle, // Keep old cycle if not found
       feedback: formState.feedback || '',
       amountDue: Number(formState.amountDue) || 0,
       tuitionStatus: formState.tuitionStatus || 'Partiel',
@@ -251,11 +244,13 @@ export default function StudentsPage() {
     }
   };
   
-  const isLoading = schoolLoading || studentsLoading || classesLoading;
+  const isLoading = schoolLoading || studentsLoading;
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
   }
+  
+  const classOptions = schoolClasses.map(c => ({ value: c.name, label: c.name }));
 
   return (
     <>
@@ -413,13 +408,13 @@ export default function StudentsPage() {
               <Label htmlFor="edit-student-class" className="text-right">
                 Classe
               </Label>
-              <Select onValueChange={(v) => setFormState(s => ({...s, classId: v}))} value={formState.classId || ''}>
+              <Select onValueChange={(v) => setFormState(s => ({...s, class: v}))} value={formState.class || ''}>
                 <SelectTrigger className="col-span-3">
                   <SelectValue placeholder="Sélectionner une classe" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                  {classOptions.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
