@@ -136,7 +136,7 @@ export default function SettingsPage() {
             <div className="space-y-2">
               <Label htmlFor="school-code">Code de l'Établissement</Label>
               <div className="flex items-center gap-2">
-                <Input id="school-code" value={schoolCode} readOnly disabled />
+                <Input id="school-code" value={schoolCode} readOnly className="bg-muted" />
                 <Button variant="outline" size="icon" onClick={handleCopyCode}>
                   <Copy className="h-4 w-4" />
                   <span className="sr-only">Copier le code</span>
