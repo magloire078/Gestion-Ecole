@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,11 +16,11 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { schoolClasses } from '@/lib/data';
 
 interface Class {
   id: string;
   name: string;
+  cycle: string;
 }
 
 export default function RegistrationPage() {
@@ -28,7 +28,7 @@ export default function RegistrationPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { schoolId } = useSchoolData();
+  const { schoolId, loading: schoolDataLoading } = useSchoolData();
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -36,12 +36,17 @@ export default function RegistrationPage() {
     dateOfBirth: '',
     placeOfBirth: '',
     previousSchool: '',
-    className: '', // Storing the name of the class now
+    classId: '', // Storing the ID of the class now
     parent1Name: '',
     parent1Contact: '',
     parent2Name: '',
     parent2Contact: '',
   });
+  
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -57,7 +62,7 @@ export default function RegistrationPage() {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolId || !formData.name || !formData.dateOfBirth || !formData.placeOfBirth || !formData.className || !formData.parent1Name || !formData.parent1Contact) {
+    if (!schoolId || !formData.name || !formData.dateOfBirth || !formData.placeOfBirth || !formData.classId || !formData.parent1Name || !formData.parent1Contact) {
       toast({
         variant: "destructive",
         title: "Champs requis",
@@ -66,22 +71,22 @@ export default function RegistrationPage() {
       return;
     }
     
-    // Find the corresponding class from the predefined list to get its cycle
-    const selectedClassInfo = schoolClasses.find(c => c.name === formData.className);
+    const selectedClassInfo = classes.find(c => c.id === formData.classId);
 
     const studentData = {
       name: formData.name,
       dateOfBirth: formData.dateOfBirth,
       placeOfBirth: formData.placeOfBirth,
       previousSchool: formData.previousSchool,
-      class: formData.className,
-      cycle: selectedClassInfo?.cycle || 'N/A', // Add cycle here
+      classId: formData.classId,
+      class: selectedClassInfo?.name || 'N/A',
+      cycle: selectedClassInfo?.cycle || 'N/A',
       parent1Name: formData.parent1Name,
       parent1Contact: formData.parent1Contact,
       parent2Name: formData.parent2Name,
       parent2Contact: formData.parent2Contact,
       amountDue: 0, 
-      tuitionStatus: 'Partiel',
+      tuitionStatus: 'Partiel' as const,
       feedback: '',
     };
 
@@ -99,11 +104,9 @@ export default function RegistrationPage() {
     });
   };
 
-  if (isAuthLoading) {
+  if (isAuthLoading || schoolDataLoading) {
     return <AuthProtectionLoader />;
   }
-
-  const classOptions = schoolClasses.map(c => ({ value: c.name, label: c.name }));
 
   return (
     <div className="space-y-6">
@@ -149,13 +152,13 @@ export default function RegistrationPage() {
               <div className="space-y-4 animate-in fade-in-50">
                 <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations Scolaires</div>
                 <div className="space-y-2">
-                    <Label htmlFor="className">Classe souhaitée</Label>
-                    <Select name="className" onValueChange={(value) => handleSelectChange('className', value)} value={formData.className} required>
+                    <Label htmlFor="classId">Classe souhaitée</Label>
+                    <Select name="classId" onValueChange={(value) => handleSelectChange('classId', value)} value={formData.classId} required>
                         <SelectTrigger>
-                            <SelectValue placeholder={"Sélectionner une classe"} />
+                            <SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} />
                         </SelectTrigger>
                         <SelectContent>
-                            {classOptions.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                            {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                 </div>
@@ -216,3 +219,5 @@ export default function RegistrationPage() {
     </div>
   );
 }
+
+    
