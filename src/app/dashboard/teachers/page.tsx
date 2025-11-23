@@ -42,7 +42,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -73,6 +73,7 @@ interface Teacher extends TeacherFormValues {
 export default function TeachersPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
+  const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
@@ -117,23 +118,29 @@ export default function TeachersPage() {
   }, [isFormOpen, editingTeacher, form]);
 
   // --- Firestore Actions ---
-  const getTeacherDocRef = (teacherId: string) => doc(firestore, `ecoles/${schoolId}/enseignants/${teacherId}`);
+  const getTeacherDocRef = (id: string) => {
+    if (!schoolId) throw new Error("ID de l'école non disponible");
+    return doc(firestore, `ecoles/${schoolId}/enseignants/${id}`);
+  };
 
   const onSubmit = async (values: TeacherFormValues) => {
-    if (!schoolId) {
-      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de déterminer l'école." });
+    // Get the most up-to-date schoolId from user claims as a fallback
+    const currentSchoolId = schoolId || user?.customClaims?.schoolId;
+
+    if (!currentSchoolId) {
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de déterminer l'école. Veuillez rafraîchir la page." });
       return;
     }
 
     try {
       if (editingTeacher) {
         // --- UPDATE ---
-        const teacherDocRef = getTeacherDocRef(editingTeacher.id);
+        const teacherDocRef = doc(firestore, `ecoles/${currentSchoolId}/enseignants/${editingTeacher.id}`);
         await setDoc(teacherDocRef, values, { merge: true });
         toast({ title: "Enseignant modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
       } else {
         // --- CREATE ---
-        const teachersCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
+        const teachersCollectionRef = collection(firestore, `ecoles/${currentSchoolId}/enseignants`);
         await addDoc(teachersCollectionRef, values);
         toast({ title: "Enseignant ajouté", description: `${values.name} a été ajouté(e).` });
       }
@@ -141,7 +148,9 @@ export default function TeachersPage() {
       setEditingTeacher(null);
     } catch (error: any) {
       const operation = editingTeacher ? 'update' : 'create';
-      const path = editingTeacher ? getTeacherDocRef(editingTeacher.id).path : `ecoles/${schoolId}/enseignants`;
+      const path = editingTeacher 
+        ? `ecoles/${currentSchoolId}/enseignants/${editingTeacher.id}` 
+        : `ecoles/${currentSchoolId}/enseignants`;
       const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
       errorEmitter.emit('permission-error', permissionError);
     }
@@ -353,5 +362,7 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    
 
     
