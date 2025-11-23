@@ -27,15 +27,12 @@ export function Logo() {
             <path d="M12 2v2" />
         </svg>
         <div className="flex flex-col">
-            <h1 className="text-lg font-bold font-headline leading-tight">GèreEcole</h1>
             {loading ? (
-                <Skeleton className="h-3 w-24 mt-1" />
-            ) : schoolName && schoolName !== 'GèreEcole' ? (
-                <p className="text-xs text-muted-foreground leading-tight">{schoolName}</p>
+                 <Skeleton className="h-5 w-32" />
             ) : (
-                // Render a placeholder with the same height to avoid layout shift
-                <div className="h-3 mt-1" /> 
+                <h1 className="text-lg font-bold font-headline leading-tight">{schoolName || 'Mon École'}</h1>
             )}
+            <p className="text-xs text-muted-foreground leading-tight">par GèreEcole</p>
         </div>
     </Link>
   );
