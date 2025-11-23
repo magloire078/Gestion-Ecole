@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -24,7 +25,6 @@ import {
   DialogTitle, 
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -49,15 +49,25 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
-// Define TypeScript interface based on backend.json
-interface Teacher {
+// Define Zod schema for validation
+const teacherSchema = z.object({
+  name: z.string().min(1, { message: "Le nom est requis." }),
+  subject: z.string().min(1, { message: "La matière est requise." }),
+  email: z.string().email({ message: "L'adresse email est invalide." }),
+  phone: z.string().optional(),
+  class: z.string().optional(),
+});
+
+type TeacherFormValues = z.infer<typeof teacherSchema>;
+
+// Define TypeScript interface based on backend.json, including the ID
+interface Teacher extends TeacherFormValues {
   id: string;
-  name: string;
-  subject: string;
-  email: string;
-  phone?: string;
-  class?: string;
 }
 
 export default function TeachersPage() {
@@ -72,91 +82,69 @@ export default function TeachersPage() {
   const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
 
   // --- UI State ---
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
-  // --- Form State ---
-  // State for ADDING a new teacher
-  const [newTeacherName, setNewTeacherName] = useState('');
-  const [newTeacherSubject, setNewTeacherSubject] = useState('');
-  const [newTeacherEmail, setNewTeacherEmail] = useState('');
-  const [newTeacherPhone, setNewTeacherPhone] = useState('');
-  const [newTeacherClass, setNewTeacherClass] = useState('');
-  
-  // State for EDITING a teacher
+  // State for EDITING/DELETING a teacher
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
-  const [formState, setFormState] = useState<Partial<Teacher>>({});
-
   const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
   
+  // --- React Hook Form ---
+  const form = useForm<TeacherFormValues>({
+    resolver: zodResolver(teacherSchema),
+    defaultValues: {
+      name: '',
+      subject: '',
+      email: '',
+      phone: '',
+      class: '',
+    },
+  });
 
-  // --- Form Handlers ---
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormState(prev => ({ ...prev, [name]: value }));
-  };
+  // Effect to reset form when dialog closes or editing teacher changes
+  useEffect(() => {
+    if (isFormOpen && editingTeacher) {
+      form.reset(editingTeacher);
+    } else {
+      form.reset({
+        name: '',
+        subject: '',
+        email: '',
+        phone: '',
+        class: '',
+      });
+    }
+  }, [isFormOpen, editingTeacher, form]);
 
-  const resetAddForm = () => {
-    setNewTeacherName('');
-    setNewTeacherSubject('');
-    setNewTeacherEmail('');
-    setNewTeacherPhone('');
-    setNewTeacherClass('');
-  };
-  
   // --- Firestore Actions ---
   const getTeacherDocRef = (teacherId: string) => doc(firestore, `ecoles/${schoolId}/enseignants/${teacherId}`);
 
-  const handleAddTeacher = () => {
-    if (!schoolId || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
-      toast({ variant: "destructive", title: "Erreur", description: "Le nom, la matière et l'email sont requis." });
+  const onSubmit = async (values: TeacherFormValues) => {
+    if (!schoolId) {
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de déterminer l'école." });
       return;
     }
 
-    const newTeacherData = {
-      name: newTeacherName,
-      subject: newTeacherSubject,
-      email: newTeacherEmail,
-      phone: newTeacherPhone || '',
-      class: newTeacherClass || '',
-    };
-    
-    const teachersCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
-    addDoc(teachersCollectionRef, newTeacherData)
-      .then(() => {
-        toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
-        resetAddForm();
-        setIsAddDialogOpen(false);
-      }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: teachersCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
-        errorEmitter.emit('permission-error', permissionError);
-      });
-  };
-  
-  const handleEditTeacher = () => {
-    if (!schoolId || !editingTeacher || !formState.name || !formState.subject || !formState.email) {
-      toast({ variant: "destructive", title: "Erreur", description: "Le nom, la matière et l'email sont requis." });
-      return;
+    try {
+      if (editingTeacher) {
+        // --- UPDATE ---
+        const teacherDocRef = getTeacherDocRef(editingTeacher.id);
+        await setDoc(teacherDocRef, values, { merge: true });
+        toast({ title: "Enseignant modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
+      } else {
+        // --- CREATE ---
+        const teachersCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
+        await addDoc(teachersCollectionRef, values);
+        toast({ title: "Enseignant ajouté", description: `${values.name} a été ajouté(e).` });
+      }
+      setIsFormOpen(false);
+      setEditingTeacher(null);
+    } catch (error: any) {
+      const operation = editingTeacher ? 'update' : 'create';
+      const path = editingTeacher ? getTeacherDocRef(editingTeacher.id).path : `ecoles/${schoolId}/enseignants`;
+      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
+      errorEmitter.emit('permission-error', permissionError);
     }
-
-    const teacherDocRef = getTeacherDocRef(editingTeacher.id);
-    const updatedData = {
-      name: formState.name,
-      subject: formState.subject,
-      email: formState.email,
-      phone: formState.phone || '',
-      class: formState.class || '',
-    };
-    
-    setDoc(teacherDocRef, updatedData, { merge: true })
-      .then(() => {
-        toast({ title: "Enseignant modifié", description: `Les informations de ${formState.name} ont été mises à jour.` });
-        setIsEditDialogOpen(false);
-      }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: teacherDocRef.path, operation: 'update', requestResourceData: updatedData });
-        errorEmitter.emit('permission-error', permissionError);
-      });
   };
   
   const handleDeleteTeacher = () => {
@@ -175,10 +163,9 @@ export default function TeachersPage() {
   };
 
   // --- Dialog Triggers ---
-  const handleOpenEditDialog = (teacher: Teacher) => {
+  const handleOpenFormDialog = (teacher: Teacher | null) => {
     setEditingTeacher(teacher);
-    setFormState(teacher);
-    setIsEditDialogOpen(true);
+    setIsFormOpen(true);
   };
   
   const handleOpenDeleteDialog = (teacher: Teacher) => {
@@ -200,45 +187,9 @@ export default function TeachersPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Liste des Enseignants</h1>
               <p className="text-muted-foreground">Gérez les enseignants de votre école.</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => { setIsAddDialogOpen(isOpen); if (!isOpen) resetAddForm(); }}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Enseignant
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Ajouter un Nouvel Enseignant</DialogTitle>
-                <DialogDescription>Renseignez les informations du nouvel enseignant.</DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="new-name" className="text-right">Nom</Label>
-                  <Input id="new-name" value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)} className="col-span-3" placeholder="Ex: Marie Curie" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="new-subject" className="text-right">Matière</Label>
-                   <Input id="new-subject" value={newTeacherSubject} onChange={(e) => setNewTeacherSubject(e.target.value)} className="col-span-3" placeholder="Ex: Physique"/>
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="new-email" className="text-right">Email</Label>
-                  <Input id="new-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="new-phone" className="text-right">Téléphone</Label>
-                  <Input id="new-phone" type="tel" value={newTeacherPhone} onChange={(e) => setNewTeacherPhone(e.target.value)} className="col-span-3" placeholder="Ex: +221 77... (optionnel)"/>
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="new-class" className="text-right">Classe princ.</Label>
-                  <Input id="new-class" value={newTeacherClass} onChange={(e) => setNewTeacherClass(e.target.value)} className="col-span-3" placeholder="Ex: Terminale A (optionnel)"/>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleAddTeacher}>Ajouter</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            <Button onClick={() => handleOpenFormDialog(null)}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Enseignant
+            </Button>
         </div>
         
         {isLoading ? (
@@ -272,8 +223,8 @@ export default function TeachersPage() {
                           </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleOpenEditDialog(teacher)}>Modifier</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(teacher)}>Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenFormDialog(teacher)}>Modifier</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(teacher)}>Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -301,38 +252,87 @@ export default function TeachersPage() {
         )}
       </div>
       
-       <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => { setIsEditDialogOpen(isOpen); if (!isOpen) setEditingTeacher(null); }}>
+       <Dialog open={isFormOpen} onOpenChange={(isOpen) => { setIsFormOpen(isOpen); if (!isOpen) setEditingTeacher(null); }}>
         <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Modifier l'Enseignant</DialogTitle>
-            <DialogDescription>Mettez à jour les informations de <strong>{editingTeacher?.name}</strong>.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-name" className="text-right">Nom</Label>
-              <Input id="edit-name" name="name" value={formState.name || ''} onChange={handleEditInputChange} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-subject" className="text-right">Matière</Label>
-              <Input id="edit-subject" name="subject" value={formState.subject || ''} onChange={handleEditInputChange} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-email" className="text-right">Email</Label>
-              <Input id="edit-email" name="email" type="email" value={formState.email || ''} onChange={handleEditInputChange} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-phone" className="text-right">Téléphone</Label>
-                <Input id="edit-phone" name="phone" type="tel" value={formState.phone || ''} onChange={handleEditInputChange} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-class" className="text-right">Classe princ.</Label>
-              <Input id="edit-class" name="class" value={formState.class || ''} onChange={handleEditInputChange} className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleEditTeacher}>Enregistrer</Button>
-          </DialogFooter>
+            <DialogHeader>
+              <DialogTitle>{editingTeacher ? "Modifier l'Enseignant" : "Ajouter un Nouvel Enseignant"}</DialogTitle>
+              <DialogDescription>
+                {editingTeacher ? `Mettez à jour les informations de ${editingTeacher.name}.` : "Renseignez les informations du nouvel enseignant."}
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Nom</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input placeholder="Ex: Marie Curie" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="subject"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Matière</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input placeholder="Ex: Physique" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Email</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="email" placeholder="Ex: m.curie@ecole.com" {...field} />
+                      </FormControl>
+                       <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Téléphone</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="tel" placeholder="Ex: +221 77... (optionnel)" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="class"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Classe princ.</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input placeholder="Ex: Terminale A (optionnel)" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                 <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                      {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                    </Button>
+                </DialogFooter>
+              </form>
+            </Form>
         </DialogContent>
       </Dialog>
       
@@ -353,3 +353,5 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    
