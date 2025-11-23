@@ -4,7 +4,6 @@ export type Teacher = {
   id: string;
   name: string;
   classId?: string; // ID of the main class
-  class?: string; // Name of the main class (denormalized for display)
   subject: string;
   email: string;
   phone?: string;

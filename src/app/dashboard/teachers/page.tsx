@@ -137,28 +137,22 @@ export default function TeachersPage() {
   };
 
   const onSubmit = async (values: TeacherFormValues) => {
-    const currentSchoolId = schoolId;
-
-    if (!currentSchoolId) {
+    if (!schoolId) {
       toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de déterminer l'école. Veuillez rafraîchir la page." });
       return;
     }
 
     try {
-      const selectedClass = classes.find(c => c.id === values.classId);
-      const dataToSave = {
-          ...values,
-          class: selectedClass ? selectedClass.name : '' // Keep class name for simple display
-      };
+      const dataToSave = { ...values };
 
       if (editingTeacher) {
         // --- UPDATE ---
-        const teacherDocRef = doc(firestore, `ecoles/${currentSchoolId}/enseignants/${editingTeacher.id}`);
+        const teacherDocRef = doc(firestore, `ecoles/${schoolId}/enseignants/${editingTeacher.id}`);
         await setDoc(teacherDocRef, dataToSave, { merge: true });
         toast({ title: "Enseignant modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
       } else {
         // --- CREATE ---
-        const teachersCollectionRef = collection(firestore, `ecoles/${currentSchoolId}/enseignants`);
+        const teachersCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
         await addDoc(teachersCollectionRef, dataToSave);
         toast({ title: "Enseignant ajouté", description: `${values.name} a été ajouté(e).` });
       }
@@ -167,8 +161,8 @@ export default function TeachersPage() {
     } catch (error: any) {
       const operation = editingTeacher ? 'update' : 'create';
       const path = editingTeacher 
-        ? `ecoles/${currentSchoolId}/enseignants/${editingTeacher.id}` 
-        : `ecoles/${currentSchoolId}/enseignants`;
+        ? `ecoles/${schoolId}/enseignants/${editingTeacher.id}` 
+        : `ecoles/${schoolId}/enseignants`;
       const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
       errorEmitter.emit('permission-error', permissionError);
     }
@@ -351,7 +345,7 @@ export default function TeachersPage() {
                   render={({ field }) => (
                     <FormItem className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Classe princ.</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl className="col-span-3">
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionner une classe (optionnel)" />
