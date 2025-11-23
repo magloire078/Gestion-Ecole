@@ -77,45 +77,57 @@ export default function TeachersPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
+  // --- Form State ---
+  // State for ADDING a new teacher
+  const [newTeacherName, setNewTeacherName] = useState('');
+  const [newTeacherSubject, setNewTeacherSubject] = useState('');
+  const [newTeacherEmail, setNewTeacherEmail] = useState('');
+  const [newTeacherPhone, setNewTeacherPhone] = useState('');
+  const [newTeacherClass, setNewTeacherClass] = useState('');
+  
+  // State for EDITING a teacher
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [formState, setFormState] = useState<Partial<Teacher>>({});
+
   const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
   
-  const [formState, setFormState] = useState<Partial<Teacher>>({
-    name: '', subject: '', email: '', phone: '', class: ''
-  });
 
   // --- Form Handlers ---
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormState(prev => ({ ...prev, [name]: value }));
   };
 
-  const resetForm = () => {
-    setFormState({ name: '', subject: '', email: '', phone: '', class: '' });
+  const resetAddForm = () => {
+    setNewTeacherName('');
+    setNewTeacherSubject('');
+    setNewTeacherEmail('');
+    setNewTeacherPhone('');
+    setNewTeacherClass('');
   };
   
   // --- Firestore Actions ---
   const getTeacherDocRef = (teacherId: string) => doc(firestore, `ecoles/${schoolId}/enseignants/${teacherId}`);
 
   const handleAddTeacher = () => {
-    if (!schoolId || !formState.name || !formState.subject || !formState.email) {
+    if (!schoolId || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
       toast({ variant: "destructive", title: "Erreur", description: "Le nom, la matière et l'email sont requis." });
       return;
     }
 
     const newTeacherData = {
-      name: formState.name,
-      subject: formState.subject,
-      email: formState.email,
-      phone: formState.phone || '',
-      class: formState.class || '',
+      name: newTeacherName,
+      subject: newTeacherSubject,
+      email: newTeacherEmail,
+      phone: newTeacherPhone || '',
+      class: newTeacherClass || '',
     };
     
     const teachersCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
     addDoc(teachersCollectionRef, newTeacherData)
       .then(() => {
-        toast({ title: "Enseignant ajouté", description: `${formState.name} a été ajouté(e).` });
-        resetForm();
+        toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
+        resetAddForm();
         setIsAddDialogOpen(false);
       }).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({ path: teachersCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
@@ -189,7 +201,7 @@ export default function TeachersPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Liste des Enseignants</h1>
               <p className="text-muted-foreground">Gérez les enseignants de votre école.</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => { setIsAddDialogOpen(isOpen); if (!isOpen) resetForm(); }}>
+          <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => { setIsAddDialogOpen(isOpen); if (!isOpen) resetAddForm(); }}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Enseignant
@@ -202,24 +214,24 @@ export default function TeachersPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">Nom</Label>
-                  <Input id="name" name="name" value={formState.name} onChange={handleInputChange} className="col-span-3" placeholder="Ex: Marie Curie" />
+                  <Label htmlFor="new-name" className="text-right">Nom</Label>
+                  <Input id="new-name" value={newTeacherName} onChange={(e) => setNewTeacherName(e.target.value)} className="col-span-3" placeholder="Ex: Marie Curie" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="subject" className="text-right">Matière</Label>
-                   <Input id="subject" name="subject" value={formState.subject} onChange={handleInputChange} className="col-span-3" placeholder="Ex: Physique"/>
+                  <Label htmlFor="new-subject" className="text-right">Matière</Label>
+                   <Input id="new-subject" value={newTeacherSubject} onChange={(e) => setNewTeacherSubject(e.target.value)} className="col-span-3" placeholder="Ex: Physique"/>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">Email</Label>
-                  <Input id="email" name="email" type="email" value={formState.email} onChange={handleInputChange} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
+                  <Label htmlFor="new-email" className="text-right">Email</Label>
+                  <Input id="new-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: m.curie@ecole.com"/>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="phone" className="text-right">Téléphone</Label>
-                  <Input id="phone" name="phone" type="tel" value={formState.phone} onChange={handleInputChange} className="col-span-3" placeholder="Ex: +221 77... (optionnel)"/>
+                  <Label htmlFor="new-phone" className="text-right">Téléphone</Label>
+                  <Input id="new-phone" type="tel" value={newTeacherPhone} onChange={(e) => setNewTeacherPhone(e.target.value)} className="col-span-3" placeholder="Ex: +221 77... (optionnel)"/>
                 </div>
                  <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="class" className="text-right">Classe princ.</Label>
-                  <Input id="class" name="class" value={formState.class} onChange={handleInputChange} className="col-span-3" placeholder="Ex: Terminale A (optionnel)"/>
+                  <Label htmlFor="new-class" className="text-right">Classe princ.</Label>
+                  <Input id="new-class" value={newTeacherClass} onChange={(e) => setNewTeacherClass(e.target.value)} className="col-span-3" placeholder="Ex: Terminale A (optionnel)"/>
                 </div>
               </div>
               <DialogFooter>
@@ -299,23 +311,23 @@ export default function TeachersPage() {
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-name" className="text-right">Nom</Label>
-              <Input id="edit-name" name="name" value={formState.name} onChange={handleInputChange} className="col-span-3" />
+              <Input id="edit-name" name="name" value={formState.name || ''} onChange={handleEditInputChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-subject" className="text-right">Matière</Label>
-              <Input id="edit-subject" name="subject" value={formState.subject} onChange={handleInputChange} className="col-span-3" />
+              <Input id="edit-subject" name="subject" value={formState.subject || ''} onChange={handleEditInputChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-email" className="text-right">Email</Label>
-              <Input id="edit-email" name="email" type="email" value={formState.email} onChange={handleInputChange} className="col-span-3" />
+              <Input id="edit-email" name="email" type="email" value={formState.email || ''} onChange={handleEditInputChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-phone" className="text-right">Téléphone</Label>
-                <Input id="edit-phone" name="phone" type="tel" value={formState.phone} onChange={handleInputChange} className="col-span-3" />
+                <Input id="edit-phone" name="phone" type="tel" value={formState.phone || ''} onChange={handleEditInputChange} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-class" className="text-right">Classe princ.</Label>
-              <Input id="edit-class" name="class" value={formState.class} onChange={handleInputChange} className="col-span-3" />
+              <Input id="edit-class" name="class" value={formState.class || ''} onChange={handleEditInputChange} className="col-span-3" />
             </div>
           </div>
           <DialogFooter>
