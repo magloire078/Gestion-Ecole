@@ -8,19 +8,6 @@ runConfig:
 
 # Environment variables and secrets
 env:
-  - variable: STORAGE_BUCKET
-    value: mybucket.firebasestorage.app
-    availability:
-      - BUILD
-      - RUNTIME
-  - variable: API_KEY
-    secret: myApiKeySecret
-  - variable: PINNED_API_KEY
-    secret: myApiKeySecret@5
-  - variable: VERBOSE_API_KEY
-    secret: projects/greecole/secrets/secretID
-  - variable: PINNED_VERBOSE_API_KEY
-    secret: projects/greecole/secrets/secretID/versions/5
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     value: "AIzaSyAmhQB4yUoskfJIoBme4OStNkpGzXUxR7c"
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
