@@ -46,26 +46,14 @@ service cloud.firestore {
         // --- Subcollections within a School ---
 
         match /utilisateurs/{userId} {
-            allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId);
-            allow read, list, update: if isUserInSchool(schoolId);
+            // Allow creation of own user doc.
+            // Allow any user in the school to read profiles (for features like student/teacher lists).
+            // Only allow a user to update their own profile.
+            allow create, update: if isUserInSchool(schoolId) && isCreatingOwnDocument(userId);
+            allow read, list: if isUserInSchool(schoolId);
             allow delete: if false;
         }
         
-        // --- CORRECTION: Only the director can write to these collections ---
-        // Any user in the school can read.
-        match /enseignants/{docId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow write: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
-        }
-        match /classes/{docId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow write: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
-        }
-        match /eleves/{docId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow write: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
-        }
-
         // Generic rules for other subcollections.
         // Director can write, members can read.
         match /{otherCollections}/{docId} {
