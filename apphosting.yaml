@@ -28,8 +28,8 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
     value: "greecole"
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    value: "greecole.appspot.com"
+    value: "greecole.firebasestorage.app"
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
     value: "97019754371"
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
-    value: "1:97019754371:web:ca4fc0c74ec26db408e8b6"
+    value: "1:97019754371:web:4822d9c017bf4be808e8b6"
