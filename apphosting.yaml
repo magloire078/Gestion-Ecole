@@ -23,8 +23,8 @@ env:
 
     # Same as API_KEY above but with the long form secret reference as defined by Cloud Secret Manager.
   - variable: VERBOSE_API_KEY
-    secret: projects/test-project/secrets/secretID
+    secret: projects/greecole/secrets/secretID
 
     # Same as API_KEY above but with the long form secret reference with pinned version.
   - variable: PINNED_VERBOSE_API_KEY
-    secret: projects/test-project/secrets/secretID/versions/5
+    secret: projects/greecole/secrets/secretID/versions/5
