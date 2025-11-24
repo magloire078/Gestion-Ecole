@@ -36,13 +36,13 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
-import { schoolCycles, schoolClasses } from '@/lib/data';
+import { schoolClasses } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 
@@ -65,6 +65,12 @@ interface Class {
   cycle: string;
 }
 
+interface Cycle {
+    id: string;
+    name: string;
+    order: number;
+}
+
 export default function ClassesPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
@@ -74,12 +80,15 @@ export default function ClassesPage() {
   // --- Firestore Data Hooks ---
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`), orderBy("order")) : null, [firestore, schoolId]);
   
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
 
   const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const cycles: Cycle[] = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle)) || [], [cyclesData]);
   
   // --- UI State ---
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -234,7 +243,7 @@ export default function ClassesPage() {
     }
   }
 
-  const isLoading = !isClient || schoolDataLoading || classesLoading || teachersLoading;
+  const isLoading = !isClient || schoolDataLoading || classesLoading || teachersLoading || cyclesLoading;
   
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
@@ -261,7 +270,7 @@ export default function ClassesPage() {
   }
 
   const teacherOptions = teachers.map(t => ({ value: t.id, label: t.name }));
-  const cycleOptions = schoolCycles.map(c => ({ value: c.name, label: c.name }));
+  const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
   const classOptionsForCycle = formCycleName ? schoolClasses.filter(c => c.cycle === formCycleName).map(c => ({ value: c.name, label: c.name })) : [];
 
   return (
@@ -343,11 +352,11 @@ export default function ClassesPage() {
         </div>
 
         
-        <Tabs defaultValue={schoolCycles[0]?.name} className="space-y-4">
+        <Tabs defaultValue={cycles[0]?.name} className="space-y-4">
             <TabsList>
-                {schoolCycles.map((cycle) => ( <TabsTrigger key={cycle.order} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
+                {cycles.map((cycle) => ( <TabsTrigger key={cycle.order} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
             </TabsList>
-            {schoolCycles.map((cycle) => (
+            {cycles.map((cycle) => (
                 <TabsContent key={cycle.order} value={cycle.name}>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {classes.filter(c => c.cycle === cycle.name).map((cls) => {

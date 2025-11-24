@@ -1,7 +1,30 @@
-# Settings to manage and configure a Firebase App Hosting backend.
-# https://firebase.google.com/docs/app-hosting/configure
-
+# Settings for Cloud Run
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
+  minInstances: 2
+  maxInstances: 100
+  concurrency: 100
+  cpu: 2
+  memoryMiB: 1024
+
+# Environment variables and secrets
+env:
+  - variable: STORAGE_BUCKET
+    value: mybucket.firebasestorage.app
+    availability:
+      - BUILD
+      - RUNTIME
+
+  - variable: API_KEY
+    secret: myApiKeySecret
+
+    # Same as API_KEY above but with a pinned version.
+  - variable: PINNED_API_KEY
+    secret: myApiKeySecret@5
+
+    # Same as API_KEY above but with the long form secret reference as defined by Cloud Secret Manager.
+  - variable: VERBOSE_API_KEY
+    secret: projects/test-project/secrets/secretID
+
+    # Same as API_KEY above but with the long form secret reference with pinned version.
+  - variable: PINNED_VERBOSE_API_KEY
+    secret: projects/test-project/secrets/secretID/versions/5

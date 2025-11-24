@@ -58,7 +58,7 @@
         "studentCount": { "type": "number", "description": "Le nombre d'élèves dans la classe." },
         "mainTeacherId": { "type": "string", "description": "L'identifiant de l'enseignant principal de la classe." },
         "building": { "type": "string", "description": "Le bâtiment où se trouve la classe." },
-        "cycle": { "type": "string", "description": "Le cycle d'enseignement (ex: Lycée, Collège)." }
+        "cycle": { "type": "string", "description": "Le nom du cycle d'enseignement (ex: Lycée, Collège)." }
       },
       "required": ["name", "studentCount", "mainTeacherId", "building", "cycle"]
     },
@@ -191,5 +191,3 @@
     }
   }
 }
-
-    
