@@ -1,12 +1,11 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -35,10 +34,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, doc, writeBatch } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
@@ -66,73 +64,109 @@ export default function ReportsPage() {
   const { toast } = useToast();
 
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
-  
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+
   // --- Data Fetching ---
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const studentsQuery = useMemoFirebase(() => 
+  const studentsQuery = useMemoFirebase(() =>
     schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', selectedClassId)) : null
-  , [firestore, schoolId, selectedClassId]);
+    , [firestore, schoolId, selectedClassId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
-
+  
   // --- UI State ---
-  const [isManageGradesDialogOpen, setIsManageGradesDialogOpen] = useState(false);
+  const [gradesForSubject, setGradesForSubject] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const [isGenerateCommentDialogOpen, setIsGenerateCommentDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [currentGrades, setCurrentGrades] = useState<Record<string, number>>({});
   const [generatedComment, setGeneratedComment] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // --- Effects ---
+  useEffect(() => {
+    // Reset subject and grades when class changes
+    setSelectedSubject(null);
+    setGradesForSubject({});
+  }, [selectedClassId]);
+
+  useEffect(() => {
+    // Populate grades for the selected subject
+    if (selectedSubject) {
+      const initialGrades: Record<string, string> = {};
+      studentsInClass.forEach(student => {
+        const grade = student.grades?.[selectedSubject];
+        if (grade !== undefined) {
+          initialGrades[student.id] = String(grade);
+        } else {
+          initialGrades[student.id] = '';
+        }
+      });
+      setGradesForSubject(initialGrades);
+    } else {
+      setGradesForSubject({});
+    }
+  }, [selectedSubject, studentsInClass]);
   
-  const getStudentAverage = (student?: Student) => {
-    if (!student?.grades || Object.keys(student.grades).length === 0) return 'N/A';
-    const grades = Object.values(student.grades);
-    const total = grades.reduce((acc, g) => acc + g, 0);
-    const average = total / grades.length;
-    return average.toFixed(2);
-  };
-  
-  const openManageGradesDialog = (student: Student) => {
-    setSelectedStudent(student);
-    setCurrentGrades(student.grades || {});
-    setIsManageGradesDialogOpen(true);
+
+  const handleGradeChange = (studentId: string, value: string) => {
+    setGradesForSubject(prev => ({...prev, [studentId]: value}));
   };
 
-  const handleGradeChange = (subject: string, score: string) => {
-    const newScore = parseFloat(score);
-    if (!isNaN(newScore) && newScore >= 0 && newScore <= 20) {
-        setCurrentGrades(prev => ({...prev, [subject]: newScore}));
-    } else {
-        const newGrades = {...currentGrades};
-        delete newGrades[subject];
-        setCurrentGrades(newGrades);
+  const saveGradesForSubject = async () => {
+    if (!schoolId || !selectedSubject) return;
+
+    setIsSaving(true);
+    const batch = writeBatch(firestore);
+
+    let hasErrors = false;
+    for (const studentId in gradesForSubject) {
+        const gradeValue = gradesForSubject[studentId];
+        const grade = parseFloat(gradeValue);
+        
+        if (gradeValue === '' || isNaN(grade)) {
+             continue; // Skip empty or invalid grades
+        }
+        
+        if (grade < 0 || grade > 20) {
+            toast({
+                variant: 'destructive',
+                title: 'Note invalide',
+                description: `La note pour un élève doit être entre 0 et 20.`,
+            });
+            hasErrors = true;
+            break;
+        }
+
+        const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
+        batch.update(studentRef, {
+            [`grades.${selectedSubject}`]: grade
+        });
+    }
+    
+    if (hasErrors) {
+        setIsSaving(false);
+        return;
+    }
+
+    try {
+        await batch.commit();
+        toast({
+            title: 'Notes enregistrées',
+            description: `Les notes de ${selectedSubject} pour la classe ont été mises à jour.`,
+        });
+    } catch (error: any) {
+        console.error("Error saving grades:", error);
+         const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/eleves`, operation: 'update' });
+         errorEmitter.emit('permission-error', permissionError);
+    } finally {
+        setIsSaving(false);
     }
   };
-
-  const saveGrades = () => {
-    if (!schoolId || !selectedStudent) return;
-    
-    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}`);
-    const updatedData = { grades: currentGrades };
-    
-    setDoc(studentRef, updatedData, { merge: true })
-    .then(() => {
-        toast({
-          title: 'Notes enregistrées',
-          description: `Les notes pour ${selectedStudent.name} ont été mises à jour.`,
-        });
-        setIsManageGradesDialogOpen(false);
-        setSelectedStudent(null);
-    })
-    .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update', requestResourceData: updatedData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  };
-
-  const openGenerateCommentDialog = (student: Student) => {
+  
+   const openGenerateCommentDialog = (student: Student) => {
     setSelectedStudent(student);
     setGeneratedComment('');
     setIsGenerateCommentDialogOpen(true);
@@ -143,12 +177,12 @@ export default function ReportsPage() {
     setIsGenerating(true);
 
     try {
-      const studentGradesText = selectedStudent.grades 
+      const studentGradesText = selectedStudent.grades
         ? Object.entries(selectedStudent.grades)
             .map(([subject, score]) => `${subject}: ${score}/20`)
             .join(', ')
         : "Aucune note enregistrée.";
-        
+
       const result = await generateReportCardComment({
         studentName: selectedStudent.name,
         grades: studentGradesText,
@@ -180,16 +214,16 @@ export default function ReportsPage() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-lg font-semibold md:text-2xl">Bulletins et Notes</h1>
             <p className="text-muted-foreground">
-              Consultez et gérez les notes des élèves par classe.
+              Saisissez les notes des élèves par classe et par matière.
             </p>
           </div>
-          <div className="w-[250px]">
+          <div className="flex gap-2 w-full md:w-auto">
             <Select onValueChange={setSelectedClassId} disabled={isLoading}>
-              <SelectTrigger>
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder={isLoading ? "Chargement..." : "Sélectionner une classe"} />
               </SelectTrigger>
               <SelectContent>
@@ -198,26 +232,43 @@ export default function ReportsPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Select onValueChange={setSelectedSubject} value={selectedSubject || ''} disabled={!selectedClassId}>
+               <SelectTrigger className="w-full md:w-[200px]">
+                <SelectValue placeholder="Sélectionner une matière" />
+              </SelectTrigger>
+              <SelectContent>
+                {allSubjects.map(subject => (
+                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        {selectedClassId ? (
+        {selectedClassId && selectedSubject ? (
           <Card>
             <CardHeader>
-              <CardTitle>
-                {classes.find(c => c.id === selectedClassId)?.name}
-              </CardTitle>
-              <CardDescription>
-                Liste des élèves et leurs moyennes.
-              </CardDescription>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
+                <div>
+                  <CardTitle>
+                    Saisie des notes pour : {classes.find(c => c.id === selectedClassId)?.name}
+                  </CardTitle>
+                  <CardDescription>
+                    Matière : <span className="font-semibold text-primary">{selectedSubject}</span>
+                  </CardDescription>
+                </div>
+                <Button onClick={saveGradesForSubject} disabled={isSaving}>
+                  {isSaving ? 'Enregistrement...' : 'Enregistrer les notes'}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nom de l'Élève</TableHead>
-                    <TableHead className="text-center">Moyenne Générale</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="w-[150px]">Note /20</TableHead>
+                    <TableHead className="text-right">Appréciation IA</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -225,23 +276,26 @@ export default function ReportsPage() {
                     [...Array(3)].map((_, i) => (
                       <TableRow key={i}>
                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell className="text-center"><Skeleton className="h-5 w-16 mx-auto" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-9 w-64 ml-auto" /></TableCell>
+                        <TableCell><Skeleton className="h-9 w-full" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-9 w-32 ml-auto" /></TableCell>
                       </TableRow>
                     ))
                   ) : studentsInClass.length > 0 ? (
                     studentsInClass.map(student => (
                       <TableRow key={student.id}>
                         <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell className="text-center font-mono">
-                          {getStudentAverage(student)}
+                        <TableCell>
+                           <Input
+                            type="text" // Use text to allow empty string
+                            value={gradesForSubject[student.id] || ''}
+                            onChange={e => handleGradeChange(student.id, e.target.value)}
+                            className="text-center font-mono"
+                            placeholder="-"
+                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="outline" size="sm" className="mr-2" onClick={() => openManageGradesDialog(student)}>
-                             <FilePenLine className="mr-2 h-4 w-4" /> Gérer les Notes
-                          </Button>
-                           <Button variant="outline" size="sm" className="bg-accent hover:bg-accent/90" onClick={() => openGenerateCommentDialog(student)}>
-                             <Bot className="mr-2 h-4 w-4" /> Appréciation IA
+                           <Button variant="outline" size="sm" onClick={() => openGenerateCommentDialog(student)}>
+                             <Bot className="mr-2 h-4 w-4" /> Générer
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -259,49 +313,10 @@ export default function ReportsPage() {
           </Card>
         ) : (
             <Card className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">Veuillez sélectionner une classe pour commencer.</p>
+                <p className="text-muted-foreground">Veuillez sélectionner une classe et une matière pour commencer.</p>
             </Card>
         )}
       </div>
-
-      {/* Manage Grades Dialog */}
-      <Dialog open={isManageGradesDialogOpen} onOpenChange={setIsManageGradesDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gérer les notes de {selectedStudent?.name}</DialogTitle>
-            <DialogDescription>
-              Entrez ou modifiez les notes sur 20 pour chaque matière.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-4">
-            {allSubjects.map(subject => {
-              const grade = currentGrades[subject];
-              return (
-                <div key={subject} className="grid grid-cols-3 items-center gap-4">
-                  <Label htmlFor={`grade-${subject}`} className="text-left col-span-1">
-                    {subject}
-                  </Label>
-                  <Input
-                    id={`grade-${subject}`}
-                    type="number"
-                    min="0"
-                    max="20"
-                    step="0.5"
-                    defaultValue={grade}
-                    onChange={e => handleGradeChange(subject, e.target.value)}
-                    className="col-span-2"
-                    placeholder="Note /20"
-                  />
-                </div>
-              );
-            })}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsManageGradesDialogOpen(false)}>Annuler</Button>
-            <Button onClick={saveGrades}>Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
       {/* Generate Comment Dialog */}
       <Dialog open={isGenerateCommentDialogOpen} onOpenChange={setIsGenerateCommentDialogOpen}>
