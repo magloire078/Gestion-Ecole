@@ -13,18 +13,23 @@ env:
     availability:
       - BUILD
       - RUNTIME
-
   - variable: API_KEY
     secret: myApiKeySecret
-
-    # Same as API_KEY above but with a pinned version.
   - variable: PINNED_API_KEY
     secret: myApiKeySecret@5
-
-    # Same as API_KEY above but with the long form secret reference as defined by Cloud Secret Manager.
   - variable: VERBOSE_API_KEY
     secret: projects/greecole/secrets/secretID
-
-    # Same as API_KEY above but with the long form secret reference with pinned version.
   - variable: PINNED_VERBOSE_API_KEY
     secret: projects/greecole/secrets/secretID/versions/5
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyAmhQB4yUoskfJIoBme4OStNkpGzXUxR7c"
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "greecole.firebaseapp.com"
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "greecole"
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "greecole.appspot.com"
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "97019754371"
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:97019754371:web:ca4fc0c74ec26db408e8b6"
