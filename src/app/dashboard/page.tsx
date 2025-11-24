@@ -35,8 +35,8 @@ export default function DashboardPage() {
 
   const stats = [
     { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, color: 'text-sky-500', loading: schoolLoading || studentsLoading },
-    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: Users, color: 'text-emerald-500', loading: schoolLoading || teachersLoading },
-    { title: 'Classes', value: classesData?.length ?? 0, icon: BookUser, color: 'text-amber-500', loading: schoolLoading || classesLoading },
+    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: BookUser, color: 'text-emerald-500', loading: schoolLoading || teachersLoading },
+    { title: 'Classes', value: classesData?.length ?? 0, icon: Landmark, color: 'text-amber-500', loading: schoolLoading || classesLoading },
     { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, color: 'text-violet-500', loading: schoolLoading || libraryLoading }
   ];
 
