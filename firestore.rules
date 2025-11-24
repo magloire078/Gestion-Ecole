@@ -37,10 +37,7 @@ service cloud.firestore {
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
-        
-        // --- CORRECTION: Only the director can update the school document ---
         allow update: if isUserInSchool(schoolId) && isSchoolDirector(schoolId);
-        
         allow delete: if false;
 
         // --- Subcollections within a School ---
