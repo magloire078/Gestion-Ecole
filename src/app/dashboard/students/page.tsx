@@ -14,10 +14,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Bot, Smile, Meh, Frown, Sparkles, MoreHorizontal } from "lucide-react";
+import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { summarizeStudentFeedback } from "@/ai/flows/summarize-student-feedback";
-import { analyzeStudentSentiment } from "@/ai/flows/analyze-student-sentiment";
+import { analyzeAndSummarizeFeedback } from "@/ai/flows/analyze-and-summarize-feedback";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -51,7 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TuitionStatusBadge } from "@/components/tuition-status-badge";
+import { TuitionStatusBadge } from "@/components/ui/badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
 import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
@@ -79,13 +78,32 @@ interface Class {
     cycle: string;
 }
 
-type Summary = {
+type AnalysisResult = {
+    sentiment: Sentiment;
     summary: string;
     keyImprovementAreas: string;
 };
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 type Sentiment = 'Positif' | 'Neutre' | 'Négatif';
+
+const SentimentDisplay = ({ sentiment }: { sentiment: Sentiment }) => {
+    const sentimentConfig = {
+      Positif: { icon: Smile, color: 'text-emerald-500', label: 'Positif' },
+      Neutre: { icon: Meh, color: 'text-amber-500', label: 'Neutre' },
+      Négatif: { icon: Frown, color: 'text-red-500', label: 'Négatif' },
+    };
+
+    const { icon: Icon, color, label } = sentimentConfig[sentiment] || sentimentConfig.Neutre;
+
+    return (
+        <div className={`flex items-center gap-2 font-semibold ${color}`}>
+            <Icon className="h-5 w-5" />
+            <span>{label}</span>
+        </div>
+    );
+};
+
 
 export default function StudentsPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
@@ -103,10 +121,8 @@ export default function StudentsPage() {
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const [feedbackText, setFeedbackText] = useState('');
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [sentiments, setSentiments] = useState<Record<string, Sentiment | null>>({});
   const { toast } = useToast();
 
   // Edit Student State
@@ -136,55 +152,30 @@ export default function StudentsPage() {
     }
   }, [editingStudent]);
 
-  const handleAnalyzeSentiments = async () => {
-    setIsAnalyzing(true);
-    const newSentiments: Record<string, Sentiment | null> = {};
-    for (const student of students) {
-      if (student.feedback && !sentiments[student.id]) { // Avoid re-analyzing
-          try {
-            await new Promise(resolve => setTimeout(resolve, 200)); // Add a small delay between requests
-            const result = await analyzeStudentSentiment({ feedbackText: student.feedback });
-            newSentiments[student.id] = result.sentiment as Sentiment;
-          } catch (error) {
-            console.error(`Failed to analyze sentiment for student ${student.id}:`, error);
-            newSentiments[student.id] = null;
-            toast({
-              variant: "destructive",
-              title: "Erreur d'analyse",
-              description: `Impossible d'analyser le sentiment pour ${student.name}.`,
-            });
-          }
-      }
-    }
-    setSentiments(prev => ({...prev, ...newSentiments}));
-    setIsAnalyzing(false);
-    toast({
-        title: "Analyse terminée",
-        description: "Les sentiments des feedbacks ont été analysés.",
-      });
-  };
-
-
-  const handleSummarize = async () => {
+  const handleAnalyzeFeedback = async () => {
     if (!feedbackText.trim()) return;
-    setIsSummarizing(true);
-    setSummary(null);
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
     try {
-      const result = await summarizeStudentFeedback({ feedbackText });
-      setSummary(result);
+      const result = await analyzeAndSummarizeFeedback({ feedbackText });
+      setAnalysisResult({
+          sentiment: result.sentiment as Sentiment,
+          summary: result.summary,
+          keyImprovementAreas: result.keyImprovementAreas,
+      });
       toast({
-        title: "Résumé généré",
+        title: "Analyse terminée",
         description: "Le feedback a été analysé avec succès.",
       });
     } catch (error) {
-      console.error("Failed to summarize feedback:", error);
+      console.error("Failed to analyze feedback:", error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de générer le résumé.",
+        title: "Erreur d'analyse",
+        description: "Impossible de générer l'analyse du feedback.",
       });
     } finally {
-      setIsSummarizing(false);
+      setIsAnalyzing(false);
     }
   };
   
@@ -243,19 +234,6 @@ export default function StudentsPage() {
         errorEmitter.emit('permission-error', permissionError);
     });
   }
-
-  const SentimentIcon = ({ sentiment }: { sentiment: Sentiment | null }) => {
-    switch (sentiment) {
-      case 'Positif':
-        return <Smile className="h-5 w-5 text-emerald-500" />;
-      case 'Neutre':
-        return <Meh className="h-5 w-5 text-amber-500" />;
-      case 'Négatif':
-        return <Frown className="h-5 w-5 text-red-500" />;
-      default:
-        return <span className="text-muted-foreground">-</span>;
-    }
-  };
   
   const isLoading = schoolLoading || studentsLoading || classesLoading;
 
@@ -272,15 +250,9 @@ export default function StudentsPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Liste des Élèves</h1>
               <p className="text-muted-foreground">Consultez et gérez les élèves inscrits.</p>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleAnalyzeSentiments} disabled={isAnalyzing}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isAnalyzing ? "Analyse..." : "Analyser les Sentiments"}
-              </Button>
-               <Button onClick={() => router.push('/dashboard/registration')}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Élève
-                </Button>
-            </div>
+            <Button onClick={() => router.push('/dashboard/registration')}>
+                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Élève
+            </Button>
           </div>
           <Card>
               <CardContent className="p-0">
@@ -291,7 +263,6 @@ export default function StudentsPage() {
                         <TableHead>Classe</TableHead>
                         <TableHead className="text-center">Statut Paiement</TableHead>
                         <TableHead className="text-right">Solde Scolarité</TableHead>
-                        <TableHead className="text-center">Sentiment</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -303,7 +274,6 @@ export default function StudentsPage() {
                             <TableCell><Skeleton className="h-5 w-16"/></TableCell>
                             <TableCell className="text-center"><Skeleton className="h-5 w-12 mx-auto"/></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-5 w-5 mx-auto rounded-full"/></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto"/></TableCell>
                           </TableRow>
                         ))
@@ -321,9 +291,6 @@ export default function StudentsPage() {
                           </TableCell>
                           <TableCell className="text-right font-mono">
                               {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString('fr-FR')} CFA` : `${student.amountDue} CFA`) : '-'}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <SentimentIcon sentiment={sentiments[student.id]} />
                           </TableCell>
                           <TableCell className="text-right">
                              <DropdownMenu>
@@ -347,7 +314,7 @@ export default function StudentsPage() {
                       ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={6} className="h-24 text-center">Aucun élève inscrit pour le moment.</TableCell>
+                          <TableCell colSpan={5} className="h-24 text-center">Aucun élève inscrit pour le moment.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -359,9 +326,9 @@ export default function StudentsPage() {
         <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Résumé du Feedback</CardTitle>
+              <CardTitle>Analyse de Feedback</CardTitle>
               <CardDescription>
-                Utilisez l'IA pour analyser et résumer le feedback des élèves.
+                Utilisez l'IA pour analyser le sentiment et résumer le feedback des élèves.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -375,19 +342,23 @@ export default function StudentsPage() {
                   rows={5}
                 />
               </div>
-              <Button onClick={handleSummarize} disabled={isSummarizing || !feedbackText.trim()} className="w-full bg-accent hover:bg-accent/90">
+              <Button onClick={handleAnalyzeFeedback} disabled={isAnalyzing || !feedbackText.trim()} className="w-full bg-accent hover:bg-accent/90">
                 <Bot className="mr-2 h-4 w-4" />
-                {isSummarizing ? 'Analyse en cours...' : 'Générer le Résumé'}
+                {isAnalyzing ? 'Analyse en cours...' : 'Analyser le Feedback'}
               </Button>
-              {summary && (
+              {analysisResult && (
                 <div className="space-y-4 rounded-lg border bg-muted p-4">
                   <div>
+                    <h4 className="font-semibold text-primary">Sentiment Général</h4>
+                    <SentimentDisplay sentiment={analysisResult.sentiment} />
+                  </div>
+                  <div className="pt-2">
                     <h4 className="font-semibold text-primary">Résumé</h4>
-                    <p className="text-sm text-muted-foreground">{summary.summary}</p>
+                    <p className="text-sm text-muted-foreground">{analysisResult.summary}</p>
                   </div>
                   <div className="pt-2">
                     <h4 className="font-semibold text-primary">Axes d'Amélioration</h4>
-                    <p className="text-sm text-muted-foreground">{summary.keyImprovementAreas}</p>
+                    <p className="text-sm text-muted-foreground">{analysisResult.keyImprovementAreas}</p>
                   </div>
                 </div>
               )}
