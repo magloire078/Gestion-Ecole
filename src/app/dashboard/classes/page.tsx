@@ -500,5 +500,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    

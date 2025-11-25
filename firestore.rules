@@ -22,7 +22,8 @@ service cloud.firestore {
     }
 
     function isSchoolDirector(schoolId) {
-      return request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+      let directorId = get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+      return isUserAuthenticated() && request.auth.uid == directorId;
     }
 
     // --- Root Collections ---
