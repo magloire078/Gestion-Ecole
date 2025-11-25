@@ -14,6 +14,7 @@ const ptSans = PT_Sans({
 export const metadata: Metadata = {
   title: 'GèreEcole - Solution de gestion scolaire tout-en-un',
   description: 'GèreEcole est une solution complète pour la gestion des écoles.',
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
