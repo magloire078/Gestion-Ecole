@@ -15,7 +15,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 import type { Class } from '@/lib/data';
 
 interface Teacher {

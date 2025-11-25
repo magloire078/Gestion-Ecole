@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { Copy } from "lucide-react";
 
 export default function SettingsPage() {

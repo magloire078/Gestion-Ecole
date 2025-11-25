@@ -10,7 +10,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { collection } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface Book {
     quantity: number;

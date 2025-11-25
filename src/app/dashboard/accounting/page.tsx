@@ -69,7 +69,7 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface AccountingTransaction {
   id: string;

@@ -50,7 +50,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection.tsx';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from "@/hooks/use-school-data";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
