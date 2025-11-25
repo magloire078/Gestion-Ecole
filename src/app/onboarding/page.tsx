@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useAuth } from "@/firebase";
-import { doc, writeBatch, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+import { doc, writeBatch, collection, query, where, getDocs } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
         displayName: user.displayName,
         photoURL: user.photoURL,
         schoolId: schoolId,
-        role: 'director',
+        role: 'directeur',
     };
 
     const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
@@ -143,7 +143,7 @@ export default function OnboardingPage() {
             displayName: user.displayName,
             photoURL: user.photoURL,
             schoolId: schoolId,
-            role: 'teacher', // Default role for joining users
+            role: 'enseignant', // Default role for joining users
         };
 
         const batch = writeBatch(firestore);

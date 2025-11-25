@@ -1,0 +1,68 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- Helper Functions ---
+    function isUserAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserSchoolId(userId) {
+      return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
+    }
+
+    function isUserInSchool(schoolId) {
+      return isUserAuthenticated() && getUserSchoolId(request.auth.uid) == schoolId;
+    }
+
+    // NEW: Get user's role from their profile within the school's subcollection
+    function getUserRole(schoolId, userId) {
+        return get(/databases/$(database)/documents/ecoles/$(schoolId)/utilisateurs/$(userId)).data.role;
+    }
+    
+    function isSchoolDirector(schoolId, userId) {
+      return isUserInSchool(schoolId) && getUserRole(schoolId, userId) == 'directeur';
+    }
+
+    function isCreatingOwnDocument(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // --- Root Collections ---
+
+    match /utilisateurs/{userId} {
+      allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
+      allow get: if isUserAuthenticated() && isCreatingOwnDocument(userId);
+      allow update, delete, list: if false;
+    }
+    
+    match /ecoles/{schoolId} {
+        allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
+        allow get: if isUserInSchool(schoolId);
+        allow list: if isUserAuthenticated();
+        // Allow director to update school info.
+        allow update: if isSchoolDirector(schoolId, request.auth.uid);
+        allow delete: if false;
+
+        // --- Subcollections within a School ---
+
+        match /utilisateurs/{userId} {
+            // Allow creation of own user doc.
+            // Allow any user in the school to read profiles (for features like student/teacher lists).
+            // Only allow a user to update their own profile, or a director to update any profile.
+            allow create, update: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
+            allow read, list: if isUserInSchool(schoolId);
+            allow delete: if false;
+        }
+        
+        // Generic rules for other subcollections.
+        // Director can write, members can read.
+        match /{otherCollections}/{docId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid);
+        }
+    }
+  }
+}
