@@ -43,8 +43,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { schoolClasses } from '@/lib/data';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
 
 // Define TypeScript interfaces based on backend.json
 interface Teacher {
@@ -315,14 +313,14 @@ export default function ClassesPage() {
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">Classe</Label>
-                    <Select value={formClassName} onValueChange={setFormClassName} disabled={!formCycleName}>
-                        <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Sélectionner une classe" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {classOptionsForCycle.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    <Combobox
+                        className="col-span-3"
+                        placeholder="Sélectionner une classe"
+                        searchPlaceholder="Chercher une classe..."
+                        options={classOptionsForCycle}
+                        value={formClassName}
+                        onValueChange={setFormClassName}
+                    />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="building" className="text-right">Bâtiment</Label>
@@ -423,14 +421,14 @@ export default function ClassesPage() {
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-name" className="text-right">Classe</Label>
-                <Select value={formClassName} onValueChange={setFormClassName} disabled={!formCycleName}>
-                    <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Sélectionner une classe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {classOptionsForCycle.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+                <Combobox
+                    className="col-span-3"
+                    placeholder="Sélectionner une classe"
+                    searchPlaceholder="Chercher une classe..."
+                    options={classOptionsForCycle}
+                    value={formClassName}
+                    onValueChange={setFormClassName}
+                />
              </div>
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-building" className="text-right">Bâtiment</Label>
@@ -506,3 +504,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
