@@ -40,6 +40,8 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
                     .receipt-container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; }
                     .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
                     .school-info h1 { font-size: 1.5rem; margin: 0; }
+                    /* --- Correction pour le logo --- */
+                    .logo-container svg { width: 40px !important; height: 40px !important; }
                     .receipt-info { text-align: right; }
                     .receipt-info h2 { font-size: 1.2rem; margin: 0; color: #555; }
                     .receipt-info p { margin: 0; }
@@ -69,7 +71,7 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
     <div>
         <div ref={receiptRef} className="p-6 rounded-lg border bg-background text-sm">
             <div className="flex justify-between items-start pb-4 border-b-2 border-primary mb-6">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 logo-container">
                      <Logo />
                 </div>
                 <div className="text-right">
