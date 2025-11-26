@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar } from 'lucide-react';
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
@@ -319,3 +319,4 @@ export default function StudentProfilePage() {
     </div>
   );
 }
+
