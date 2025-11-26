@@ -5,15 +5,18 @@ import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar } from 'lucide-react';
 import { useMemo } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc } from 'firebase/firestore';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { allSubjects } from '@/lib/data';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Student {
   name: string;
@@ -33,6 +36,15 @@ interface Student {
   amountDue: number;
 }
 
+interface GradeEntry {
+    id: string;
+    subject: string;
+    type: 'Interrogation' | 'Devoir';
+    date: string;
+    grade: number;
+    coefficient: number;
+}
+
 interface Teacher {
   id: string;
   name: string;
@@ -44,6 +56,36 @@ interface Class {
   mainTeacherId: string;
   cycle: string;
 }
+
+const calculateAverages = (grades: GradeEntry[]) => {
+    const gradesBySubject: Record<string, { totalPoints: number; totalCoeffs: number }> = {};
+
+    grades.forEach(g => {
+        if (!gradesBySubject[g.subject]) {
+            gradesBySubject[g.subject] = { totalPoints: 0, totalCoeffs: 0 };
+        }
+        gradesBySubject[g.subject].totalPoints += g.grade * g.coefficient;
+        gradesBySubject[g.subject].totalCoeffs += g.coefficient;
+    });
+    
+    const averages: Record<string, number> = {};
+    let grandTotalPoints = 0;
+    let grandTotalCoeffs = 0;
+
+    for (const subject in gradesBySubject) {
+        const { totalPoints, totalCoeffs } = gradesBySubject[subject];
+        if (totalCoeffs > 0) {
+            const average = totalPoints / totalCoeffs;
+            averages[subject] = average;
+            grandTotalPoints += average; // Use the subject average for general average
+            grandTotalCoeffs += 1; // Each subject counts as 1 for the general average
+        }
+    }
+    
+    const generalAverage = grandTotalCoeffs > 0 ? grandTotalPoints / grandTotalCoeffs : null;
+
+    return { subjectAverages: averages, generalAverage };
+};
 
 export default function StudentProfilePage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
@@ -59,6 +101,16 @@ export default function StudentProfilePage() {
   const { data: studentData, loading: studentLoading } = useDoc(studentRef);
   const student = studentData as Student | null;
 
+  const gradesQuery = useMemoFirebase(() =>
+    (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc')) : null
+  , [firestore, schoolId, studentId]);
+
+  const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
+  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
+
+  const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
+
+
   const classRef = useMemoFirebase(() => 
     (schoolId && student?.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null
   , [firestore, schoolId, student?.classId]);
@@ -73,11 +125,7 @@ export default function StudentProfilePage() {
   const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);
   const mainTeacher = teacherData as Teacher | null;
   
-  // Note: Grades are still mock data as per request to focus on main pages first
-  const studentGrades = []; // mockGradeData.filter(g => g.studentId === studentId);
-  const averageGrade = 'N/A'; // For now
-
-  const isLoading = schoolLoading || studentLoading || classLoading || teacherLoading;
+  const isLoading = schoolLoading || studentLoading || classLoading || teacherLoading || gradesLoading;
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
@@ -191,17 +239,56 @@ export default function StudentProfilePage() {
                             </div>
                              <div className="text-right">
                                 <p className="text-sm text-muted-foreground">Moyenne Générale</p>
-                                <p className="text-3xl font-bold text-primary">{averageGrade}</p>
+                                <p className="text-3xl font-bold text-primary">{generalAverage !== null ? generalAverage.toFixed(2) : 'N/A'}</p>
                             </div>
                         </div>
                     </CardHeader>
                     <CardContent>
                         <Table>
-                            <TableHeader><TableRow><TableHead>Matière</TableHead><TableHead className="text-right">Note</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Matière</TableHead><TableHead className="text-right">Moyenne</TableHead></TableRow></TableHeader>
                             <TableBody>
-                                {studentGrades.length > 0 ? studentGrades.map((grade: any) => (
-                                    <TableRow key={grade.id}><TableCell className="font-medium">{grade.subject}</TableCell><TableCell className="text-right font-mono text-lg">{grade.score}/20</TableCell></TableRow>
-                                )) : (
+                                {allSubjects.map((subject) => {
+                                    const average = subjectAverages[subject];
+                                    const subjectGrades = grades.filter(g => g.subject === subject);
+
+                                    if(subjectGrades.length === 0) return null; // Don't show subjects with no grades
+
+                                    return (
+                                        <React.Fragment key={subject}>
+                                            <TableRow>
+                                                <TableCell className="font-medium">{subject}</TableCell>
+                                                <TableCell className="text-right font-mono text-lg">{average !== undefined ? average.toFixed(2) : 'N/A'}</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell colSpan={2} className="p-0">
+                                                    <div className="px-4 py-2 bg-muted/50">
+                                                        <Table>
+                                                            <TableHeader>
+                                                                <TableRow>
+                                                                    <TableHead className="h-8 text-xs">Date</TableHead>
+                                                                    <TableHead className="h-8 text-xs">Type</TableHead>
+                                                                    <TableHead className="h-8 text-xs text-right">Note</TableHead>
+                                                                    <TableHead className="h-8 text-xs text-right">Coeff.</TableHead>
+                                                                </TableRow>
+                                                            </TableHeader>
+                                                            <TableBody>
+                                                                {subjectGrades.map(grade => (
+                                                                    <TableRow key={grade.id} className="bg-muted/50">
+                                                                        <TableCell className="py-1 text-xs">{format(new Date(grade.date), 'd MMM', { locale: fr })}</TableCell>
+                                                                        <TableCell className="py-1 text-xs">{grade.type}</TableCell>
+                                                                        <TableCell className="py-1 text-xs text-right">{grade.grade}/20</TableCell>
+                                                                        <TableCell className="py-1 text-xs text-right">x{grade.coefficient}</TableCell>
+                                                                    </TableRow>
+                                                                ))}
+                                                            </TableBody>
+                                                        </Table>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        </React.Fragment>
+                                    );
+                                })}
+                                 {grades.length === 0 && (
                                     <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
                                 )}
                             </TableBody>
