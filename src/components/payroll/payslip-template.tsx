@@ -4,7 +4,6 @@
 import React from 'react';
 import { isValid, parseISO, lastDayOfMonth, format } from "date-fns";
 import { fr } from "date-fns/locale";
-// import QRCode from "react-qr-code";
 import type { PayslipDetails } from '@/app/bulletin-de-paie';
 
 export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDetails }) {
@@ -191,3 +190,5 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
+
+    
