@@ -102,7 +102,8 @@
             "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
             "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
             "amountDue": { "type": "number", "description": "Le montant restant à payer." },
-            "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." }
+            "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
         "required": ["name", "class", "classId", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
     },
@@ -139,7 +140,8 @@
         "properties": {
             "title": { "type": "string", "description": "Le titre du livre." },
             "author": { "type": "string", "description": "L'auteur du livre." },
-            "quantity": { "type": "number", "description": "Le nombre d'exemplaires disponibles." }
+            "quantity": { "type": "number", "description": "Le nombre d'exemplaires disponibles." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'ajout du livre." }
         },
         "required": ["title", "author", "quantity"]
     },
@@ -209,3 +211,5 @@
     }
   }
 }
+
+    

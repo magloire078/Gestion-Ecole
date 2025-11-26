@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
@@ -88,6 +88,7 @@ export default function RegistrationPage() {
       amountDue: 0, 
       tuitionStatus: 'Partiel' as const,
       feedback: '',
+      createdAt: serverTimestamp(),
     };
 
     const studentsCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves`);

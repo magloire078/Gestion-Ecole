@@ -43,7 +43,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -96,6 +96,7 @@ export default function LibraryPage() {
       title: newTitle,
       author: newAuthor,
       quantity: parseInt(newQuantity, 10),
+      createdAt: serverTimestamp(),
     };
     const booksCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
     addDoc(booksCollectionRef, newBookData)
@@ -304,3 +305,5 @@ export default function LibraryPage() {
     </>
   );
 }
+
+    

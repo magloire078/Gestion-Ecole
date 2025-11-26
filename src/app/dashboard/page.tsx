@@ -3,24 +3,45 @@
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, BookOpen, Landmark } from 'lucide-react';
+import { Users, BookUser, BookOpen, Landmark, UserPlus } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Book {
+    id: string;
+    title: string;
     quantity: number;
+    createdAt?: { seconds: number, nanoseconds: number };
 }
+
+interface Student {
+    id: string;
+    name: string;
+    class: string;
+    createdAt?: { seconds: number, nanoseconds: number };
+}
+
+type Activity = {
+    id: string;
+    type: 'student' | 'book';
+    icon: React.ComponentType<{ className?: string }>;
+    description: React.ReactNode;
+    date: Date;
+};
 
 export default function DashboardPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
+  // --- Data for Stats Cards ---
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
@@ -31,7 +52,53 @@ export default function DashboardPage() {
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const { data: libraryData, loading: libraryLoading } = useCollection(libraryQuery);
   
-  const books: Book[] = useMemo(() => libraryData?.map(d => d.data() as Book) || [], [libraryData]);
+  const books: Book[] = useMemo(() => libraryData?.map(d => ({ id: d.id, ...d.data() } as Book)) || [], [libraryData]);
+
+  // --- Data for Recent Activity ---
+  const recentStudentsQuery = useMemoFirebase(() => 
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(5)) : null
+  , [firestore, schoolId]);
+  const recentBooksQuery = useMemoFirebase(() => 
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(5)) : null
+  , [firestore, schoolId]);
+
+  const { data: recentStudentsData, loading: recentStudentsLoading } = useCollection(recentStudentsQuery);
+  const { data: recentBooksData, loading: recentBooksLoading } = useCollection(recentBooksQuery);
+  
+  const recentActivity = useMemo(() => {
+    const activities: Activity[] = [];
+
+    recentStudentsData?.forEach(doc => {
+        const student = doc.data() as Student;
+        const createdAt = student.createdAt ? new Date(student.createdAt.seconds * 1000) : new Date();
+        activities.push({
+            id: doc.id,
+            type: 'student',
+            icon: UserPlus,
+            description: (
+                <>Nouvel élève, <strong>{student.name}</strong>, ajouté à la classe <strong>{student.class}</strong>.</>
+            ),
+            date: createdAt,
+        });
+    });
+
+    recentBooksData?.forEach(doc => {
+        const book = doc.data() as Book;
+         const createdAt = book.createdAt ? new Date(book.createdAt.seconds * 1000) : new Date();
+        activities.push({
+            id: doc.id,
+            type: 'book',
+            icon: BookOpen,
+            description: (
+                 <><strong>{book.quantity}</strong> exemplaire(s) de <strong>"{book.title}"</strong> ajouté(s) à la bibliothèque.</>
+            ),
+            date: createdAt,
+        });
+    });
+
+    return activities.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+
+  }, [recentStudentsData, recentBooksData]);
 
   const stats = [
     { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, color: 'text-sky-500', loading: schoolLoading || studentsLoading },
@@ -39,6 +106,8 @@ export default function DashboardPage() {
     { title: 'Classes', value: classesData?.length ?? 0, icon: Landmark, color: 'text-amber-500', loading: schoolLoading || classesLoading },
     { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, color: 'text-violet-500', loading: schoolLoading || libraryLoading }
   ];
+  
+  const activityLoading = recentStudentsLoading || recentBooksLoading;
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
@@ -75,22 +144,39 @@ export default function DashboardPage() {
           <Card className="col-span-1 lg:col-span-3">
               <CardHeader>
                   <CardTitle>Activité Récente</CardTitle>
-                  <CardDescription>Dernières actions et notifications.</CardDescription>
+                  <CardDescription>Dernières actions et notifications au sein de l'école.</CardDescription>
               </CardHeader>
               <CardContent>
                   <div className="space-y-4">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 bg-muted rounded-full"><Users className="h-4 w-4" /></div>
-                        <p className="text-sm text-muted-foreground">Nouvel élève, <strong>Alice Durand</strong>, ajouté à la classe <strong>Terminale A</strong>.</p>
-                      </div>
-                       <div className="flex items-center gap-4">
-                        <div className="p-2 bg-muted rounded-full"><BookUser className="h-4 w-4" /></div>
-                        <p className="text-sm text-muted-foreground">La classe <strong>Terminale B</strong> a été mise à jour par <strong>Mme. Martin</strong>.</p>
-                      </div>
-                       <div className="flex items-center gap-4">
-                        <div className="p-2 bg-muted rounded-full"><BookOpen className="h-4 w-4" /></div>
-                        <p className="text-sm text-muted-foreground">5 copies de <strong>"Les Misérables"</strong> ont été ajoutées à la bibliothèque.</p>
-                      </div>
+                      {activityLoading ? (
+                        [...Array(3)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4">
+                                <Skeleton className="h-8 w-8 rounded-full" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-64" />
+                                    <Skeleton className="h-3 w-24" />
+                                </div>
+                            </div>
+                        ))
+                      ) : recentActivity.length > 0 ? (
+                        recentActivity.map((activity) => (
+                            <div key={activity.id} className="flex items-center gap-4">
+                                <div className="p-2 bg-muted rounded-full">
+                                    <activity.icon className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                                <div className="text-sm">
+                                    <p className="text-muted-foreground">{activity.description}</p>
+                                    <p className="text-xs text-muted-foreground/70">
+                                        il y a {formatDistanceToNow(activity.date, { locale: fr, addSuffix: false })}
+                                    </p>
+                                </div>
+                            </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-muted-foreground py-8">
+                            Aucune activité récente à afficher.
+                        </div>
+                      )}
                   </div>
               </CardContent>
           </Card>
@@ -98,3 +184,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
