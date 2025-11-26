@@ -53,7 +53,7 @@ interface Teacher {
   subject: string;
   email: string;
   phone?: string;
-  class?: string;
+  classId?: string;
 }
 
 interface Class {
@@ -354,10 +354,10 @@ export default function ClassesPage() {
         
         <Tabs defaultValue={cycles[0]?.name} className="space-y-4">
             <TabsList>
-                {cycles.map((cycle) => ( <TabsTrigger key={cycle.order} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
+                {cycles.map((cycle) => ( <TabsTrigger key={cycle.name} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
             </TabsList>
             {cycles.map((cycle) => (
-                <TabsContent key={cycle.order} value={cycle.name}>
+                <TabsContent key={cycle.name} value={cycle.name}>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {classes.filter(c => c.cycle === cycle.name).map((cls) => {
                             const mainTeacher = getMainTeacher(cls.mainTeacherId);
@@ -374,7 +374,7 @@ export default function ClassesPage() {
                                     </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
-                                <CardDescription>ID de la classe: {cls.id}</CardDescription>
+                                <CardDescription>ID: {cls.id.substring(0, 10)}...</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-3 flex-1">
                                     <div className="flex items-center text-sm text-muted-foreground"><Building className="mr-2 h-4 w-4 flex-shrink-0" /><span>Bâtiment: {cls.building}</span></div>

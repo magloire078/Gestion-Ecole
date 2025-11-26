@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useAuth } from "@/firebase";
-import { doc, writeBatch, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, writeBatch, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { schoolCycles } from '@/lib/data';
 
 type OnboardingMode = "create" | "join";
 
@@ -50,7 +51,6 @@ export default function OnboardingPage() {
     setIsProcessing(true);
 
     const newSchoolCode = generateSchoolCode(schoolName);
-    // The unique ID for the document is still a standard Firestore ID
     const schoolRef = doc(collection(firestore, 'ecoles'));
     const schoolId = schoolRef.id;
 
@@ -58,7 +58,7 @@ export default function OnboardingPage() {
       name: schoolName, 
       directorId: user.uid, 
       directorName: directorName,
-      createdAt: new Date(),
+      createdAt: serverTimestamp(),
       schoolCode: newSchoolCode,
     };
     
@@ -78,9 +78,17 @@ export default function OnboardingPage() {
     try {
         const batch = writeBatch(firestore);
         
+        // 1. Create school document
         batch.set(schoolRef, schoolData);
+        // 2. Create user document within the school
         batch.set(schoolUserRef, schoolUserData);
+        // 3. Create root user-to-school mapping
         batch.set(rootUserRef, rootUserData);
+        // 4. Pre-populate school cycles
+        schoolCycles.forEach(cycle => {
+            const cycleRef = doc(collection(firestore, `ecoles/${schoolId}/cycles`));
+            batch.set(cycleRef, cycle);
+        });
         
         await batch.commit();
 
@@ -95,7 +103,7 @@ export default function OnboardingPage() {
         window.location.href = '/dashboard';
 
     } catch (error: any) {
-        const path = `[BATCH WRITE] /ecoles/${schoolId}, /ecoles/${schoolId}/utilisateurs/${user.uid}, /utilisateurs/${user.uid}`;
+        const path = `[BATCH WRITE] /ecoles/${schoolId}, user data, cycles`;
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'write',
