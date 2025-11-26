@@ -31,7 +31,6 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -214,14 +213,14 @@ export default function GradeEntryPage() {
             const gradeRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingGrade.studentId}/notes/${editingGrade.id}`);
             await setDoc(gradeRef, gradeData);
             toast({ title: 'Note modifiée', description: `La note a été mise à jour.` });
-            setAllGradesForSubject(prev => prev.map(g => g.id === editingGrade.id ? { ...editingGrade, ...gradeData } : g));
+            setAllGradesForSubject(prev => prev.map(g => g.id === editingGrade.id ? { ...g, ...gradeData } : g));
         } else {
             // Create
             const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${gradeForm.studentId}/notes`);
             const newDocRef = await addDoc(gradesCollectionRef, gradeData);
             toast({ title: 'Note ajoutée', description: `La note a été enregistrée.` });
             const student = studentsInClass.find(s => s.id === gradeForm.studentId);
-            setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: gradeForm.studentId, studentName: student?.name || '' }, ...prev]);
+            setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: gradeForm.studentId, studentName: student?.name || '' }, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         }
       setIsFormOpen(false);
     } catch(error) {
@@ -387,17 +386,15 @@ export default function GradeEntryPage() {
                 <DialogDescription>Matière: {selectedSubject}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-                {!editingGrade && (
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="grade-student" className="text-right">Élève</Label>
-                        <Select onValueChange={(v) => setGradeForm(f => ({...f, studentId: v}))} value={gradeForm.studentId}>
-                            <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger>
-                            <SelectContent>
-                                {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                )}
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="grade-student" className="text-right">Élève</Label>
+                    <Select onValueChange={(v) => setGradeForm(f => ({...f, studentId: v}))} value={gradeForm.studentId} disabled={!!editingGrade}>
+                        <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger>
+                        <SelectContent>
+                            {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="grade-type" className="text-right">Type</Label>
                     <Select onValueChange={(v) => setGradeForm(f => ({...f, type: v as any}))} value={gradeForm.type}>
@@ -447,3 +444,5 @@ export default function GradeEntryPage() {
     </>
   );
 }
+
+    
