@@ -52,17 +52,16 @@ service cloud.firestore {
         }
 
         match /eleves/{studentId} {
-          allow read, list: if isUserInSchool(schoolId);
-          allow write: if isUserInSchool(schoolId);
+          allow read, list, write: if isUserInSchool(schoolId);
+        }
 
-          match /notes/{gradeId} {
-              allow read, write: if isUserInSchool(schoolId);
-          }
-          
-          match /paiements/{paymentId} {
-              allow list, read, create: if isUserInSchool(schoolId);
-              allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
-          }
+        match /eleves/{studentId}/notes/{gradeId} {
+            allow read, write: if isUserInSchool(schoolId);
+        }
+        
+        match /eleves/{studentId}/paiements/{paymentId} {
+            allow list, read, create: if isUserInSchool(schoolId);
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
         
         match /comptabilite/{transactionId} {
@@ -72,7 +71,7 @@ service cloud.firestore {
 
         // --- Generic Rules for other subcollections ---
         // This rule applies to collections NOT explicitly matched above (e.g., enseignants, classes, cycles, etc.)
-        match /{otherCollections=**} {
+        match /{otherCollections}/{docId} {
             allow read, list: if isUserInSchool(schoolId);
             allow write: if isSchoolDirector(schoolId, request.auth.uid);
         }
