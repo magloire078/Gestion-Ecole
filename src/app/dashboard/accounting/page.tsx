@@ -70,6 +70,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { AccountingCharts } from "./charts";
 
 interface AccountingTransaction {
   id: string;
@@ -274,6 +275,8 @@ export default function AccountingPage() {
                 </CardContent>
             </Card>
         </div>
+        
+        <AccountingCharts transactions={transactions} />
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
