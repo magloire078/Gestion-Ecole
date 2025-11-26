@@ -3,43 +3,81 @@
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useMemo } from 'react';
+import { Skeleton } from './ui/skeleton';
 
-const mockPerformanceData = [
-  { subject: 'Maths', 'Semestre Précédent': 11, 'Ce Semestre': 13 },
-  { subject: 'Français', 'Semestre Précédent': 14, 'Ce Semestre': 12.5 },
-  { subject: 'Physique', 'Semestre Précédent': 10, 'Ce Semestre': 14 },
-  { subject: 'Histoire', 'Semestre Précédent': 15, 'Ce Semestre': 14.5 },
-  { subject: 'Anglais', 'Semestre Précédent': 12, 'Ce Semestre': 13 },
-];
+interface GradeEntry {
+  subject: string;
+  grade: number;
+  coefficient: number;
+}
 
-const chartData = mockPerformanceData;
+interface PerformanceChartProps {
+  grades: GradeEntry[];
+  loading: boolean;
+}
 
-export function PerformanceChart() {
+export function PerformanceChart({ grades, loading }: PerformanceChartProps) {
+  
+  const performanceData = useMemo(() => {
+    if (!grades || grades.length === 0) {
+      return [];
+    }
+
+    const gradesBySubject: Record<string, { totalPoints: number; totalCoeffs: number }> = {};
+
+    grades.forEach(g => {
+        if (!gradesBySubject[g.subject]) {
+            gradesBySubject[g.subject] = { totalPoints: 0, totalCoeffs: 0 };
+        }
+        gradesBySubject[g.subject].totalPoints += g.grade * g.coefficient;
+        gradesBySubject[g.subject].totalCoeffs += g.coefficient;
+    });
+
+    const data = Object.entries(gradesBySubject).map(([subject, { totalPoints, totalCoeffs }]) => ({
+      subject,
+      'Moyenne': totalCoeffs > 0 ? parseFloat((totalPoints / totalCoeffs).toFixed(2)) : 0,
+    }));
+    
+    return data.sort((a,b) => b.Moyenne - a.Moyenne);
+
+  }, [grades]);
+
+
   return (
     <Card className="col-span-1 lg:col-span-4">
       <CardHeader>
         <CardTitle>Aperçu des performances</CardTitle>
-        <CardDescription>Comparaison des notes moyennes par matière ce semestre par rapport au précédent.</CardDescription>
+        <CardDescription>Moyenne générale par matière pour l'ensemble de l'école.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="subject" />
-                    <YAxis />
-                    <Tooltip 
-                        contentStyle={{
-                            background: "hsl(var(--background))",
-                            border: "1px solid hsl(var(--border))",
-                            borderRadius: "var(--radius)",
-                        }}
-                    />
-                    <Legend />
-                    <Bar dataKey="Semestre Précédent" fill="hsl(var(--secondary-foreground))" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Ce Semestre" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="w-full h-full flex items-center justify-center">
+                <Skeleton className="w-full h-full" />
+              </div>
+            ) : performanceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={performanceData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="subject" />
+                        <YAxis domain={[0, 20]} />
+                        <Tooltip 
+                            contentStyle={{
+                                background: "hsl(var(--background))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "var(--radius)",
+                            }}
+                        />
+                        <Legend />
+                        <Bar dataKey="Moyenne" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            ) : (
+               <div className="flex h-full w-full items-center justify-center">
+                 <p className="text-muted-foreground">Aucune note disponible pour afficher les performances.</p>
+               </div>
+            )}
         </div>
       </CardContent>
     </Card>

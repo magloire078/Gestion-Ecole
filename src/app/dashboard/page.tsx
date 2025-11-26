@@ -7,8 +7,8 @@ import { Users, BookUser, BookOpen, Landmark, UserPlus } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import { useMemo } from 'react';
+import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { formatDistanceToNow } from 'date-fns';
@@ -26,6 +26,12 @@ interface Student {
     name: string;
     class: string;
     createdAt?: { seconds: number, nanoseconds: number };
+}
+
+interface GradeEntry {
+  subject: string;
+  grade: number;
+  coefficient: number;
 }
 
 type Activity = {
@@ -53,6 +59,36 @@ export default function DashboardPage() {
   const { data: libraryData, loading: libraryLoading } = useCollection(libraryQuery);
   
   const books: Book[] = useMemo(() => libraryData?.map(d => ({ id: d.id, ...d.data() } as Book)) || [], [libraryData]);
+
+  // --- Data for Performance Chart ---
+  const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
+  const [gradesLoading, setGradesLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchAllGrades() {
+      if (!schoolId || !studentsData) return;
+
+      setGradesLoading(true);
+      const grades: GradeEntry[] = [];
+      
+      for (const studentDoc of studentsData) {
+        const studentId = studentDoc.id;
+        const notesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`);
+        const notesSnapshot = await getDocs(notesCollectionRef);
+        notesSnapshot.forEach(noteDoc => {
+          grades.push(noteDoc.data() as GradeEntry);
+        });
+      }
+      setAllGrades(grades);
+      setGradesLoading(false);
+    }
+    
+    if(!studentsLoading) {
+      fetchAllGrades();
+    }
+
+  }, [schoolId, firestore, studentsData, studentsLoading]);
+
 
   // --- Data for Recent Activity ---
   const recentStudentsQuery = useMemoFirebase(() => 
@@ -140,7 +176,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
-          <PerformanceChart />
+          <PerformanceChart grades={allGrades} loading={gradesLoading} />
           <Card className="col-span-1 lg:col-span-3">
               <CardHeader>
                   <CardTitle>Activité Récente</CardTitle>
@@ -184,5 +220,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
