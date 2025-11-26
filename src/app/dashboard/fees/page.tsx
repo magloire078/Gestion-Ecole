@@ -54,22 +54,35 @@ import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { format } from "date-fns";
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
+import { Combobox } from "@/components/ui/combobox";
+import { schoolCycles } from "@/lib/data";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
+
+const feeSchema = z.object({
+  grade: z.string().min(1, { message: "Le niveau est requis." }),
+  amount: z.string().min(1, { message: "Le montant est requis." }),
+  installments: z.string().min(1, { message: "Les modalités de paiement sont requises." }),
+  details: z.string().optional(),
+});
+
+type FeeFormValues = z.infer<typeof feeSchema>;
+
 
 const getImageHintForGrade = (grade: string): string => {
     const lowerCaseGrade = grade.toLowerCase();
     if (lowerCaseGrade.includes('maternelle')) {
         return 'kindergarten children';
     }
-    if (lowerCaseGrade.includes('primaire')) {
+    if (lowerCaseGrade.includes('primaire') || lowerCaseGrade.includes('collège')) {
         return 'primary school';
     }
-    if (lowerCaseGrade.includes('collège')) {
-        return 'middle school';
-    }
-    if (lowerCaseGrade.includes('lycée')) {
+    if (lowerCaseGrade.includes('lycée') || lowerCaseGrade.includes('secondaire')) {
         return 'high school';
     }
     return 'school students';
@@ -109,24 +122,42 @@ export default function FeesPage() {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   
   // Fee grid management state
-  const [isAddFeeGridDialogOpen, setIsAddFeeGridDialogOpen] = useState(false);
-  const [isEditFeeGridDialogOpen, setIsEditFeeGridDialogOpen] = useState(false);
-  const [isDeleteFeeGridDialogOpen, setIsDeleteFeeGridDialogOpen] = useState(false);
+  const [isFeeGridDialogOpen, setIsFeeGridDialogOpen] = useState(false);
   const [editingFee, setEditingFee] = useState<Fee | null>(null);
+  const [isDeleteFeeGridDialogOpen, setIsDeleteFeeGridDialogOpen] = useState(false);
   const [feeToDelete, setFeeToDelete] = useState<Fee | null>(null);
-  const [newFeeGrade, setNewFeeGrade] = useState('');
-  const [newFeeAmount, setNewFeeAmount] = useState('');
-  const [newFeeInstallments, setNewFeeInstallments] = useState('');
-  const [newFeeDetails, setNewFeeDetails] = useState('');
+ 
 
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
   
+    const form = useForm<FeeFormValues>({
+        resolver: zodResolver(feeSchema),
+        defaultValues: {
+            grade: '',
+            amount: '',
+            installments: '',
+            details: '',
+        },
+    });
+
   useEffect(() => {
     setIsClient(true);
   }, []);
   
-  // Effect for student fee management dialog
+  useEffect(() => {
+    if (isFeeGridDialogOpen && editingFee) {
+        form.reset({
+            grade: editingFee.grade,
+            amount: editingFee.amount,
+            installments: editingFee.installments,
+            details: editingFee.details || '',
+        });
+    } else {
+        form.reset();
+    }
+  }, [isFeeGridDialogOpen, editingFee, form]);
+  
   useEffect(() => {
     if (selectedStudent) {
         setPaymentAmount('');
@@ -134,16 +165,6 @@ export default function FeesPage() {
         setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
     }
   }, [selectedStudent]);
-  
-  // Effect for fee grid management dialog
-  useEffect(() => {
-    if (editingFee) {
-        setNewFeeGrade(editingFee.grade);
-        setNewFeeAmount(editingFee.amount);
-        setNewFeeInstallments(editingFee.installments);
-        setNewFeeDetails(editingFee.details);
-    }
-  }, [editingFee]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -255,66 +276,48 @@ export default function FeesPage() {
   // --- Firestore CRUD for Fee Grid ---
   const getFeeDocRef = (feeId: string) => doc(firestore, `ecoles/${schoolId}/frais_scolarite/${feeId}`);
 
-  const resetFeeForm = () => {
-    setNewFeeGrade('');
-    setNewFeeAmount('');
-    setNewFeeInstallments('');
-    setNewFeeDetails('');
-  };
-
-  const handleAddFeeGrid = () => {
-    if (!schoolId || !newFeeGrade || !newFeeAmount || !newFeeInstallments) {
-        toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
-        return;
-    }
-    const newFeeData = {
-        grade: newFeeGrade,
-        amount: newFeeAmount,
-        installments: newFeeInstallments,
-        details: newFeeDetails,
-    };
-
-    const feesCollectionRef = collection(firestore, `ecoles/${schoolId}/frais_scolarite`);
-    addDoc(feesCollectionRef, newFeeData)
-      .then(() => {
-        toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${newFeeGrade} a été créée.` });
-        resetFeeForm();
-        setIsAddFeeGridDialogOpen(false);
-      }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: feesCollectionRef.path, operation: 'create', requestResourceData: newFeeData });
-        errorEmitter.emit('permission-error', permissionError);
-      });
-  };
-
-  const handleOpenEditFeeGridDialog = (fee: Fee) => {
-    setEditingFee(fee);
-    setIsEditFeeGridDialogOpen(true);
-  };
-
-  const handleEditFeeGrid = () => {
-    if (!schoolId || !editingFee || !newFeeGrade || !newFeeAmount || !newFeeInstallments) {
-        toast({ variant: "destructive", title: "Erreur", description: "Le niveau, le montant et les tranches sont requis." });
+  const onFeeFormSubmit = (values: FeeFormValues) => {
+    if (!schoolId) {
+        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
         return;
     }
     
-    const feeDocRef = getFeeDocRef(editingFee.id);
-    const updatedData = { 
-        grade: newFeeGrade, 
-        amount: newFeeAmount, 
-        installments: newFeeInstallments, 
-        details: newFeeDetails 
+    const feeData = {
+        grade: values.grade,
+        amount: values.amount,
+        installments: values.installments,
+        details: values.details || "",
     };
 
-    setDoc(feeDocRef, updatedData, { merge: true })
-      .then(() => {
-        toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${newFeeGrade} a été mise à jour.` });
-        setIsEditFeeGridDialogOpen(false);
-        setEditingFee(null);
-        resetFeeForm();
-      }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: feeDocRef.path, operation: 'update', requestResourceData: updatedData });
-        errorEmitter.emit('permission-error', permissionError);
-      });
+    if (editingFee) {
+        // Update existing fee
+        const feeDocRef = getFeeDocRef(editingFee.id);
+        setDoc(feeDocRef, feeData, { merge: true })
+          .then(() => {
+            toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${values.grade} a été mise à jour.` });
+            setIsFeeGridDialogOpen(false);
+          }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: feeDocRef.path, operation: 'update', requestResourceData: feeData });
+            errorEmitter.emit('permission-error', permissionError);
+          });
+    } else {
+        // Add new fee
+        const feesCollectionRef = collection(firestore, `ecoles/${schoolId}/frais_scolarite`);
+        addDoc(feesCollectionRef, feeData)
+          .then(() => {
+            toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${values.grade} a été créée.` });
+            setIsFeeGridDialogOpen(false);
+          }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: feesCollectionRef.path, operation: 'create', requestResourceData: feeData });
+            errorEmitter.emit('permission-error', permissionError);
+          });
+    }
+  };
+
+
+  const handleOpenFeeGridDialog = (fee: Fee | null) => {
+    setEditingFee(fee);
+    setIsFeeGridDialogOpen(true);
   };
 
   const handleOpenDeleteFeeGridDialog = (fee: Fee) => {
@@ -338,6 +341,8 @@ export default function FeesPage() {
 
   const isLoading = schoolDataLoading || feesLoading || studentsLoading || classesLoading;
 
+  const cycleOptions = schoolCycles.map(cycle => ({ value: cycle.name, label: cycle.name }));
+
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
   }
@@ -353,39 +358,7 @@ export default function FeesPage() {
        <div className="space-y-4">
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Grille Tarifaire</h2>
-            <Dialog open={isAddFeeGridDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) resetFeeForm(); setIsAddFeeGridDialogOpen(isOpen); }}>
-                <DialogTrigger asChild>
-                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Grille</Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Nouvelle Grille Tarifaire</DialogTitle>
-                        <DialogDescription>Entrez les détails de la nouvelle grille.</DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="grade" className="text-right">Niveau</Label>
-                            <Input id="grade" value={newFeeGrade} onChange={(e) => setNewFeeGrade(e.target.value)} className="col-span-3" placeholder="Ex: Maternelle" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="amount" className="text-right">Montant</Label>
-                            <Input id="amount" value={newFeeAmount} onChange={(e) => setNewFeeAmount(e.target.value)} className="col-span-3" placeholder="Ex: 980 000 CFA" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="installments" className="text-right">Tranches</Label>
-                            <Input id="installments" value={newFeeInstallments} onChange={(e) => setNewFeeInstallments(e.target.value)} className="col-span-3" placeholder="Ex: 10 tranches mensuelles" />
-                        </div>
-                        <div className="grid grid-cols-4 items-start gap-4">
-                            <Label htmlFor="details" className="text-right pt-2">Détails</Label>
-                            <Textarea id="details" value={newFeeDetails} onChange={(e) => setNewFeeDetails(e.target.value)} className="col-span-3" placeholder="Détails supplémentaires... (optionnel)" />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddFeeGridDialogOpen(false)}>Annuler</Button>
-                        <Button onClick={handleAddFeeGrid}>Ajouter</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+             <Button onClick={() => handleOpenFeeGridDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Grille</Button>
         </div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {isLoading ? (
@@ -399,7 +372,7 @@ export default function FeesPage() {
                                     src={`https://picsum.photos/seed/${fee.id}/400/200`} 
                                     alt={fee.grade}
                                     fill
-                                    objectFit="cover"
+                                    style={{objectFit: 'cover'}}
                                     className="rounded-t-lg"
                                     data-ai-hint={getImageHintForGrade(fee.grade)}
                                 />
@@ -410,7 +383,7 @@ export default function FeesPage() {
                                         <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full"><MoreHorizontal className="h-4 w-4" /></Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleOpenEditFeeGridDialog(fee)}>Modifier</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleOpenFeeGridDialog(fee)}>Modifier</DropdownMenuItem>
                                         <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteFeeGridDialog(fee)}>Supprimer</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -596,37 +569,81 @@ export default function FeesPage() {
         </DialogContent>
       </Dialog>
       
-      {/* Edit Fee Grid Dialog */}
-      <Dialog open={isEditFeeGridDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) { setEditingFee(null); resetFeeForm(); } setIsEditFeeGridDialogOpen(isOpen); }}>
+      {/* Fee Grid Dialog (Add/Edit) */}
+      <Dialog open={isFeeGridDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) setEditingFee(null); setIsFeeGridDialogOpen(isOpen); }}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>Modifier la Grille Tarifaire</DialogTitle>
-                <DialogDescription>Mettez à jour les détails de la grille.</DialogDescription>
+                <DialogTitle>{editingFee ? 'Modifier la' : 'Nouvelle'} Grille Tarifaire</DialogTitle>
+                <DialogDescription>Entrez les détails de la grille.</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="edit-grade" className="text-right">Niveau</Label>
-                    <Input id="edit-grade" value={newFeeGrade} onChange={(e) => setNewFeeGrade(e.target.value)} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="edit-amount" className="text-right">Montant</Label>
-                    <Input id="edit-amount" value={newFeeAmount} onChange={(e) => setNewFeeAmount(e.target.value)} className="col-span-3" />
-                </div>
-                 <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="edit-installments" className="text-right">Tranches</Label>
-                    <Input id="edit-installments" value={newFeeInstallments} onChange={(e) => setNewFeeInstallments(e.target.value)} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                    <Label htmlFor="edit-details" className="text-right pt-2">Détails</Label>
-                    <Textarea id="edit-details" value={newFeeDetails} onChange={(e) => setNewFeeDetails(e.target.value)} className="col-span-3" />
-                </div>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditFeeGridDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleEditFeeGrid}>Enregistrer</Button>
-            </DialogFooter>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onFeeFormSubmit)} className="grid gap-4 py-4">
+                    <FormField
+                      control={form.control}
+                      name="grade"
+                      render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Niveau</FormLabel>
+                           <FormControl className="col-span-3">
+                               <Combobox
+                                    placeholder="Sélectionner ou créer"
+                                    searchPlaceholder="Chercher un niveau..."
+                                    options={cycleOptions}
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                />
+                           </FormControl>
+                          <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="amount"
+                      render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Montant (CFA)</FormLabel>
+                          <FormControl className="col-span-3">
+                            <Input placeholder="Ex: 980000" {...field} />
+                           </FormControl>
+                          <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="installments"
+                      render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Tranches</FormLabel>
+                           <FormControl className="col-span-3">
+                                <Input placeholder="Ex: 10 tranches mensuelles" {...field} />
+                           </FormControl>
+                          <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="details"
+                      render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-start gap-4">
+                          <FormLabel className="text-right pt-2">Détails</FormLabel>
+                           <FormControl className="col-span-3">
+                                <Textarea placeholder="Détails supplémentaires (optionnel)..." {...field} />
+                           </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                     <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => setIsFeeGridDialogOpen(false)}>Annuler</Button>
+                        <Button type="submit">{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</Button>
+                    </DialogFooter>
+                </form>
+            </Form>
         </DialogContent>
       </Dialog>
+
 
       {/* --- Receipt Dialog --- */}
       <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
@@ -657,5 +674,3 @@ export default function FeesPage() {
     </>
   );
 }
-
-    
