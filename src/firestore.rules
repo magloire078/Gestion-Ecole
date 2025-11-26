@@ -17,7 +17,6 @@ service cloud.firestore {
       return isUserAuthenticated() && getUserSchoolId(request.auth.uid) == schoolId;
     }
 
-    // NEW: Get user's role from their profile within the school's subcollection
     function getUserRole(schoolId, userId) {
         return get(/databases/$(database)/documents/ecoles/$(schoolId)/utilisateurs/$(userId)).data.role;
     }
@@ -42,19 +41,31 @@ service cloud.firestore {
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
-        // Allow director to update school info.
         allow update: if isSchoolDirector(schoolId, request.auth.uid);
         allow delete: if false;
 
         // --- Subcollections within a School ---
 
         match /utilisateurs/{userId} {
-            // Allow creation of own user doc.
-            // Allow any user in the school to read profiles (for features like student/teacher lists).
-            // Only allow a user to update their own profile, or a director to update any profile.
             allow create, update: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
             allow read, list: if isUserInSchool(schoolId);
             allow delete: if false;
+        }
+
+        match /eleves/{studentId} {
+          allow read, list: if isUserInSchool(schoolId);
+          // Allow any authenticated user of the school to update student info (e.g., for tuition payments)
+          allow write: if isUserInSchool(schoolId);
+
+          match /notes/{gradeId} {
+              allow read, write: if isUserInSchool(schoolId);
+          }
+        }
+        
+        match /comptabilite/{transactionId} {
+            // Allow any school member to create transactions (like tuition payments), but only directors can modify/delete them.
+            allow read, list, create: if isUserInSchool(schoolId);
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
         
         // Generic rules for other subcollections.
