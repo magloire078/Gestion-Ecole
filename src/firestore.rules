@@ -54,7 +54,6 @@ service cloud.firestore {
 
         match /eleves/{studentId} {
           allow read, list: if isUserInSchool(schoolId);
-          // Allow any authenticated user of the school to update student info (e.g., for tuition payments)
           allow write: if isUserInSchool(schoolId);
 
           match /notes/{gradeId} {
@@ -62,16 +61,12 @@ service cloud.firestore {
           }
           
           match /paiements/{paymentId} {
-              // Allow any member of the school to read and create payment history entries.
-              // This is crucial for recording tuition and viewing history.
               allow read, list, create: if isUserInSchool(schoolId);
-              // Only directors should be able to alter or delete payment history.
               allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
           }
         }
         
         match /comptabilite/{transactionId} {
-            // Allow any school member to create transactions (like tuition payments), but only directors can modify/delete them.
             allow read, list, create: if isUserInSchool(schoolId);
             allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
