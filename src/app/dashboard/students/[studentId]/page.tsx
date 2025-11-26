@@ -151,9 +151,11 @@ export default function StudentProfilePage() {
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
-    const currentAmountDue = student.amountDue;
-    const previousAmountDue = currentAmountDue + payment.amount;
-
+    
+    // We assume the student's amountDue is the state *after* the payment in this history entry was made.
+    // This isn't perfectly accurate for historical receipts, but it's the best we can do without storing snapshots.
+    // A simpler approach is just to show what was paid and what the *current* balance is.
+    
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
         studentName: student.name,
@@ -162,7 +164,7 @@ export default function StudentProfilePage() {
         date: new Date(payment.date),
         description: payment.description,
         amountPaid: payment.amount,
-        amountDue: previousAmountDue - payment.amount,
+        amountDue: student.amountDue, // Show the *current* amount due for simplicity
     };
     setReceiptToView(receipt);
     setIsReceiptOpen(true);
