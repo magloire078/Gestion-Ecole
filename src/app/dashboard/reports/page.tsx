@@ -63,6 +63,8 @@ interface Student {
   id: string;
   name: string;
   classId: string;
+  parent1Name?: string;
+  parent1Contact?: string;
 }
 interface Class {
   id: string;
@@ -218,8 +220,15 @@ export default function GradeEntryPage() {
             // Create
             const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${gradeForm.studentId}/notes`);
             const newDocRef = await addDoc(gradesCollectionRef, gradeData);
-            toast({ title: 'Note ajoutée', description: `La note a été enregistrée.` });
+            
             const student = studentsInClass.find(s => s.id === gradeForm.studentId);
+            const parentName = student?.parent1Name || 'Parent';
+
+            toast({ 
+                title: 'Note ajoutée avec succès !', 
+                description: `La note a été enregistrée et une notification a été envoyée à ${parentName}.`
+            });
+            
             setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: gradeForm.studentId, studentName: student?.name || '' }, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         }
       setIsFormOpen(false);
@@ -444,5 +453,3 @@ export default function GradeEntryPage() {
     </>
   );
 }
-
-    

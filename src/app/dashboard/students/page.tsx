@@ -73,6 +73,8 @@ interface Student {
   tuitionStatus: TuitionStatus;
   amountDue: number;
   dateOfBirth: string;
+  parent1Name?: string;
+  parent1Contact?: string;
 }
 
 interface Class {
