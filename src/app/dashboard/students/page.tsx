@@ -64,6 +64,7 @@ import { differenceInYears } from "date-fns";
 
 interface Student {
   id: string;
+  matricule?: string;
   name: string;
   class: string;
   classId: string;
@@ -300,7 +301,7 @@ export default function StudentsPage() {
                         students.map((student, index) => (
                         <TableRow key={student.id}>
                           <TableCell>{index + 1}</TableCell>
-                          <TableCell className="font-mono text-xs">{student.id}</TableCell>
+                          <TableCell className="font-mono text-xs">{student.matricule || student.id.substring(0,8)}</TableCell>
                           <TableCell className="font-medium">
                             <Link href={`/dashboard/students/${student.id}`} className="hover:underline text-primary">
                                 {student.name}
@@ -439,5 +440,3 @@ export default function StudentsPage() {
     </>
   );
 }
-
-    

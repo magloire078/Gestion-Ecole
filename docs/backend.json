@@ -90,6 +90,7 @@
         "description": "Un élève inscrit à l'école.",
         "type": "object",
         "properties": {
+            "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève, généré automatiquement." },
             "name": { "type": "string", "description": "Le nom complet de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe de l'élève." },
             "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
@@ -105,7 +106,7 @@
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
-        "required": ["name", "class", "classId", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
+        "required": ["name", "matricule", "class", "classId", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
     },
     "gradeEntry": {
         "title": "Note",
@@ -212,5 +213,3 @@
     }
   }
 }
-
-    

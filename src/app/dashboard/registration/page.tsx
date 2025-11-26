@@ -23,6 +23,20 @@ interface Class {
   cycle: string;
 }
 
+// Fonction pour générer un numéro matricule
+const generateMatricule = (fullName: string): string => {
+    if (!fullName) return '';
+    const parts = fullName.trim().split(/\s+/);
+    const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
+    const firstName = parts[0] || '';
+    
+    const lastNamePrefix = lastName.substring(0, 3).toUpperCase();
+    const firstNamePrefix = firstName.substring(0, 3).toUpperCase();
+    const year = new Date().getFullYear().toString().slice(-2);
+
+    return `${lastNamePrefix}${firstNamePrefix}-${year}`;
+};
+
 export default function RegistrationPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
@@ -74,6 +88,7 @@ export default function RegistrationPage() {
     const selectedClassInfo = classes.find(c => c.id === formData.classId);
 
     const studentData = {
+      matricule: generateMatricule(formData.name),
       name: formData.name,
       dateOfBirth: formData.dateOfBirth,
       placeOfBirth: formData.placeOfBirth,
@@ -96,7 +111,7 @@ export default function RegistrationPage() {
     .then((docRef) => {
         toast({
             title: "Inscription réussie",
-            description: `${formData.name} a été inscrit(e) avec succès.`,
+            description: `${formData.name} a été inscrit(e) avec succès. Matricule: ${studentData.matricule}`,
         });
         router.push(`/dashboard/students/${docRef.id}`);
     }).catch(async (serverError) => {
@@ -220,5 +235,3 @@ export default function RegistrationPage() {
     </div>
   );
 }
-
-    

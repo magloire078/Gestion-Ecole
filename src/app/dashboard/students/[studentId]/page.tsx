@@ -19,6 +19,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface Student {
+  matricule?: string;
   name: string;
   class: string;
   classId: string;
@@ -175,7 +176,7 @@ export default function StudentProfilePage() {
                         </Avatar>
                         <div>
                              <CardTitle className="text-2xl">{student.name}</CardTitle>
-                             <CardDescription>Matricule: {studentId}</CardDescription>
+                             <CardDescription>Matricule: {student.matricule || 'N/A'}</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
@@ -319,4 +320,3 @@ export default function StudentProfilePage() {
     </div>
   );
 }
-
