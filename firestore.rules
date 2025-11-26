@@ -71,6 +71,10 @@ service cloud.firestore {
             allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
 
+        match /classes/{classId} {
+            allow read, list, write: if isUserInSchool(schoolId);
+        }
+
         // --- Generic Rules for other subcollections ---
         // This rule applies to collections NOT explicitly matched above
         match /{otherCollections}/{docId} {
