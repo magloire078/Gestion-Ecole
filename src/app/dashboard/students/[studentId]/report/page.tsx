@@ -1,0 +1,100 @@
+'use client';
+
+import { notFound, useParams } from 'next/navigation';
+import { useMemo } from 'react';
+import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { doc, collection, query } from 'firebase/firestore';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { ReportCard } from '@/components/report-card';
+import { Skeleton } from '@/components/ui/skeleton';
+
+// Interfaces for data shapes
+interface Student {
+  name: string;
+  matricule?: string;
+  class?: string;
+}
+interface School {
+    name: string;
+    directorName?: string;
+}
+interface Grade {
+  subject: string;
+  grade: number;
+  coefficient: number;
+}
+interface Teacher {
+    id: string;
+    name: string;
+    subject: string;
+}
+
+
+export default function StudentReportPage() {
+  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
+  const params = useParams();
+  const studentId = params.studentId as string;
+  const firestore = useFirestore();
+  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+
+  // --- Data Fetching ---
+  const studentRef = useMemoFirebase(() => 
+    (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
+  , [firestore, schoolId, studentId]);
+
+  const gradesQuery = useMemoFirebase(() =>
+    (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`)) : null
+  , [firestore, schoolId, studentId]);
+  
+  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+
+
+  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: gradesData, loading: gradesLoading } = useCollection<Grade>(gradesQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher>(teachersQuery);
+
+  const student = studentData;
+  const grades = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
+  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
+
+  const isLoading = schoolLoading || studentLoading || gradesLoading || teachersLoading;
+
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
+  }
+
+  if (isLoading) {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-[70vh] w-full" />
+        </div>
+    );
+  }
+
+  if (!student) {
+    notFound();
+  }
+
+  const schoolInfo = {
+      name: schoolName || 'Votre École',
+      // Add more school details if available from useSchoolData
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold md:text-2xl">Bulletin de {student.name}</h1>
+        <p className="text-muted-foreground">Aperçu des résultats scolaires de l'élève pour le trimestre en cours.</p>
+      </div>
+      <ReportCard 
+        student={student}
+        school={schoolInfo}
+        grades={grades}
+        teachers={teachers}
+      />
+    </div>
+  );
+}

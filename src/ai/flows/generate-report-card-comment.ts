@@ -33,10 +33,10 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateReportCardCommentInputSchema},
   output: {schema: GenerateReportCardCommentOutputSchema},
   prompt: `Vous êtes un conseiller pédagogique expérimenté. Rédigez une appréciation générale pour le bulletin de l'élève en vous basant sur les informations suivantes.
-Le ton doit être encourageant mais réaliste. Mettez en avant les points forts et suggérez des pistes d'amélioration si nécessaire.
+Le ton doit être encourageant mais réaliste, en français. Mettez en avant les points forts et suggérez des pistes d'amélioration si nécessaire. Le commentaire doit être concis et percutant.
 
 Nom de l'élève: {{{studentName}}}
-Notes: {{{grades}}}
+Notes par matière: {{{grades}}}
 Rédigé par: {{{teacherName}}}
 
 Appréciation générale:
