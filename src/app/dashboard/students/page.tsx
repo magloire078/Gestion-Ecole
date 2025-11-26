@@ -198,7 +198,6 @@ export default function StudentsPage() {
     const selectedClassInfo = classes.find(c => c.id === formState.classId);
     
     const updatedData = {
-      ...editingStudent,
       name: formState.name,
       classId: formState.classId,
       class: selectedClassInfo?.name || 'N/A',
@@ -440,5 +439,3 @@ export default function StudentsPage() {
     </>
   );
 }
-
-    

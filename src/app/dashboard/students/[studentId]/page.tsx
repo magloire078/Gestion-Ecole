@@ -11,7 +11,7 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, collection, query, orderBy, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { allSubjects } from '@/lib/data';
@@ -134,17 +134,22 @@ export default function StudentProfilePage() {
         setClassTeacherLoading(true);
         try {
             const classRef = doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`);
-            const classSnap = await classRef.get();
+            const classSnap = await getDoc(classRef);
+            
             if (classSnap.exists()) {
                 const classData = { id: classSnap.id, ...classSnap.data() } as Class;
                 setStudentClass(classData);
                 
                 if (classData.mainTeacherId) {
                     const teacherRef = doc(firestore, `ecoles/${schoolId}/enseignants/${classData.mainTeacherId}`);
-                    const teacherSnap = await teacherRef.get();
+                    const teacherSnap = await getDoc(teacherRef);
                     if (teacherSnap.exists()) {
                         setMainTeacher({ id: teacherSnap.id, ...teacherSnap.data() } as Teacher);
+                    } else {
+                        setMainTeacher(null); // Teacher not found or deleted
                     }
+                } else {
+                  setMainTeacher(null); // No main teacher assigned
                 }
             }
         } catch (error) {
@@ -154,7 +159,7 @@ export default function StudentProfilePage() {
         }
     }
     fetchClassAndTeacher();
-  }, [firestore, schoolId, student]);
+  }, [firestore, schoolId, student?.classId]);
 
 
   // --- Grades and Payments ---
@@ -445,5 +450,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    

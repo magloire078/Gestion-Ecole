@@ -43,7 +43,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -142,38 +142,67 @@ export default function TeachersPage() {
       return;
     }
 
+    const batch = writeBatch(firestore);
+    const dataToSave = { ...values, classId: values.classId === 'none' ? '' : values.classId };
+    
     try {
-      // Ensure empty string is saved if 'none' is selected
-      const dataToSave = { ...values, classId: values.classId === 'none' ? '' : values.classId };
+        if (editingTeacher) {
+            // --- UPDATE ---
+            const teacherDocRef = doc(firestore, `ecoles/${schoolId}/enseignants/${editingTeacher.id}`);
+            batch.update(teacherDocRef, dataToSave);
 
-      if (editingTeacher) {
-        // --- UPDATE ---
-        const teacherDocRef = doc(firestore, `ecoles/${schoolId}/enseignants/${editingTeacher.id}`);
-        await setDoc(teacherDocRef, dataToSave, { merge: true });
-        toast({ title: "Enseignant modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
-      } else {
-        // --- CREATE ---
-        const teachersCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
-        await addDoc(teachersCollectionRef, dataToSave);
-        toast({ title: "Enseignant ajouté", description: `${values.name} a été ajouté(e).` });
-      }
-      setIsFormOpen(false);
-      setEditingTeacher(null);
+            // If the classId has changed, update the old and new class documents
+            if (editingTeacher.classId !== dataToSave.classId) {
+                // Remove teacher from old class if it exists
+                if (editingTeacher.classId) {
+                    const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${editingTeacher.classId}`);
+                    batch.update(oldClassRef, { mainTeacherId: '' });
+                }
+                // Add teacher to new class if selected
+                if (dataToSave.classId) {
+                    const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${dataToSave.classId}`);
+                    batch.update(newClassRef, { mainTeacherId: editingTeacher.id });
+                }
+            }
+            await batch.commit();
+            toast({ title: "Enseignant modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
+        } else {
+            // --- CREATE ---
+            const newTeacherRef = doc(collection(firestore, `ecoles/${schoolId}/enseignants`));
+            batch.set(newTeacherRef, dataToSave);
+            
+            // If a class is assigned, update the class document with the new teacher's ID
+            if (dataToSave.classId) {
+                const classRef = doc(firestore, `ecoles/${schoolId}/classes/${dataToSave.classId}`);
+                batch.update(classRef, { mainTeacherId: newTeacherRef.id });
+            }
+            await batch.commit();
+            toast({ title: "Enseignant ajouté", description: `${values.name} a été ajouté(e).` });
+        }
+        setIsFormOpen(false);
+        setEditingTeacher(null);
     } catch (error: any) {
-      const operation = editingTeacher ? 'update' : 'create';
-      const path = editingTeacher 
-        ? `ecoles/${schoolId}/enseignants/${editingTeacher.id}` 
-        : `ecoles/${schoolId}/enseignants`;
-      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
-      errorEmitter.emit('permission-error', permissionError);
+        const operation = editingTeacher ? 'update' : 'create';
+        const path = `[BATCH WRITE] /ecoles/${schoolId}/enseignants & /classes`;
+        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
+        errorEmitter.emit('permission-error', permissionError);
     }
   };
   
   const handleDeleteTeacher = () => {
     if (!schoolId || !teacherToDelete) return;
     
+    const batch = writeBatch(firestore);
     const teacherDocRef = getTeacherDocRef(teacherToDelete.id);
-    deleteDoc(teacherDocRef)
+    batch.delete(teacherDocRef);
+
+    // If the teacher was a main teacher of a class, unset it
+    if (teacherToDelete.classId) {
+        const classRef = doc(firestore, `ecoles/${schoolId}/classes/${teacherToDelete.classId}`);
+        batch.update(classRef, { mainTeacherId: '' });
+    }
+
+    batch.commit()
       .then(() => {
         toast({ title: "Enseignant supprimé", description: `${teacherToDelete.name} a été retiré(e).` });
         setIsDeleteDialogOpen(false);
