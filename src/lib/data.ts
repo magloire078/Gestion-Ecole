@@ -1,5 +1,4 @@
 
-
 export type Teacher = {
   id: string;
   name: string;
@@ -100,12 +99,12 @@ export const schoolClasses = [
     { name: "Moyenne Section", cycle: "Maternelle" },
     { name: "Grande Section", cycle: "Maternelle" },
     // Primaire (selon le système ivoirien)
-    { name: "CP1 (1ère année)", cycle: "Enseignement Primaire" },
-    { name: "CP2 (2ème année)", cycle: "Enseignement Primaire" },
-    { name: "CE1 (3ème année)", cycle: "Enseignement Primaire" },
-    { name: "CE2 (4ème année)", cycle: "Enseignement Primaire" },
-    { name: "CM1 (5ème année)", cycle: "Enseignement Primaire" },
-    { name: "CM2 (6ème année)", cycle: "Enseignement Primaire" },
+    { name: "CP1", cycle: "Enseignement Primaire" },
+    { name: "CP2", cycle: "Enseignement Primaire" },
+    { name: "CE1", cycle: "Enseignement Primaire" },
+    { name: "CE2", cycle: "Enseignement Primaire" },
+    { name: "CM1", cycle: "Enseignement Primaire" },
+    { name: "CM2", cycle: "Enseignement Primaire" },
     // Secondaire - Premier cycle (Collège)
     { name: "6ème", cycle: "Enseignement Secondaire - Premier cycle" },
     { name: "5ème", cycle: "Enseignement Secondaire - Premier cycle" },

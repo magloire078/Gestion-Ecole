@@ -88,7 +88,7 @@
     "student": {
         "title": "Élève",
         "description": "Un élève inscrit à l'école.",
-        "type": "object"
+        "type": "object",
         "properties": {
             "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève, généré automatiquement." },
             "name": { "type": "string", "description": "Le nom complet de l'élève." },
@@ -180,7 +180,7 @@
   "firestore": {
     "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
-        "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+        "description": "Stocke une correspondance between l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
     "/ecoles/{schoolId}": {
       "schema": { "$ref": "#/entities/school" },

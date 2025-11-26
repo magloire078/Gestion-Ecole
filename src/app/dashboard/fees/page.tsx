@@ -175,7 +175,7 @@ export default function FeesPage() {
   }, [students, selectedClass, selectedStatus]);
 
   const totalDue = useMemo(() => {
-    return filteredStudents.reduce((acc, student) => acc + student.amountDue, 0);
+    return filteredStudents.reduce((acc, student) => acc + (student.amountDue || 0), 0);
   }, [filteredStudents]);
   
   // Student payment functions
@@ -520,7 +520,7 @@ export default function FeesPage() {
           <DialogHeader>
             <DialogTitle>Enregistrer un paiement pour {selectedStudent?.name}</DialogTitle>
             <DialogDescription>
-              Le solde actuel est de <strong>{selectedStudent?.amountDue.toLocaleString('fr-FR')} CFA</strong>.
+              Le solde actuel est de <strong>{(selectedStudent?.amountDue || 0).toLocaleString('fr-FR')} CFA</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -674,3 +674,5 @@ export default function FeesPage() {
     </>
   );
 }
+
+    
