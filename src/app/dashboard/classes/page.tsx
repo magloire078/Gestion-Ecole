@@ -301,7 +301,7 @@ export default function ClassesPage() {
                 <div className="grid gap-4 py-4">
                    <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="cycle" className="text-right">Cycle</Label>
-                    <Select value={formCycleName} onValueChange={setFormCycleName}>
+                    <Select value={formCycleName} onValueChange={v => { setFormCycleName(v); setFormClassName(''); }}>
                         <SelectTrigger className="col-span-3">
                             <SelectValue placeholder="Sélectionner un cycle" />
                         </SelectTrigger>
@@ -406,7 +406,7 @@ export default function ClassesPage() {
           <div className="grid gap-4 py-4">
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-cycle" className="text-right">Cycle</Label>
-              <Select value={formCycleName} onValueChange={setFormCycleName}>
+              <Select value={formCycleName} onValueChange={v => { setFormCycleName(v); setFormClassName(''); }}>
                     <SelectTrigger className="col-span-3">
                         <SelectValue placeholder="Sélectionner un cycle" />
                     </SelectTrigger>
