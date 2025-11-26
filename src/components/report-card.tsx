@@ -94,9 +94,9 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 teacherName: teacher?.name || 'N/A',
                 average: studentAverage,
                 // Mock data for class stats as we don't have them yet
-                classMin: studentAverage - 1.5,
-                classMax: studentAverage + 1.2,
-                classAverage: studentAverage + 0.5,
+                classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
+                classMax: studentAverage < 19 ? studentAverage + 1.2 : 20,
+                classAverage: studentAverage < 19.5 ? studentAverage + 0.5 : 20,
                 appreciation: `Trimestre solide en ${subject}.`
             });
 
@@ -135,42 +135,45 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     
     const handlePrint = () => {
         const printContent = printRef.current?.innerHTML;
+        const pageStyles = `
+            @media print {
+                body {
+                    -webkit-print-color-adjust: exact;
+                    print-color-adjust: exact;
+                }
+                .no-print {
+                    display: none;
+                }
+                 .report-card {
+                    border: none;
+                    box-shadow: none;
+                }
+            }
+        `;
+
         if (printContent) {
             const printWindow = window.open('', '', 'height=800,width=800');
             if (printWindow) {
                 printWindow.document.write('<html><head><title>Bulletin de Notes</title>');
-                printWindow.document.write(`
-                    <style>
-                        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; line-height: 1.5; color: #333; }
-                        .report-card { border: 1px solid #e2e8f0; padding: 1rem; }
-                        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000; padding-bottom: 1rem; margin-bottom: 1.5rem; }
-                        .school-info { font-size: 0.8rem; }
-                        .title-container { text-align: center; margin-bottom: 1.5rem; }
-                        .title-container h1 { font-size: 1.5rem; font-weight: bold; margin: 0; }
-                        .title-container p { margin: 0; color: #718096; }
-                        .student-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-                        .grades-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-                        .grades-table th, .grades-table td { border: 1px solid #cbd5e0; padding: 0.5rem; }
-                        .grades-table thead { background-color: #f1f5f9; }
-                        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; background-color: #4a5568; color: white; padding: 0.75rem; border-radius: 0.25rem; margin-top: 1.5rem; }
-                        .final-comments { margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; }
-                        .text-right { text-align: right; } .font-bold { font-weight: bold; }
-                    </style>
-                `);
+                printWindow.document.write('<link rel="stylesheet" href="/_next/static/css/app/layout.css" type="text/css" media="print">');
+                printWindow.document.write(`<style>${pageStyles}</style>`);
                 printWindow.document.write('</head><body>');
                 printWindow.document.write(printContent);
                 printWindow.document.write('</body></html>');
                 printWindow.document.close();
                 printWindow.focus();
-                printWindow.print();
-                printWindow.close();
+                
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 250);
             }
         }
     };
 
 
   return (
-    <Card>
+    <Card className="report-card">
       <CardContent className="p-4 sm:p-6">
         <div ref={printRef}>
             {/* Header */}
@@ -255,7 +258,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                  <div className="md:col-span-2 p-3 bg-muted rounded-md">
                     <div className="flex justify-between items-start">
                         <p className="font-bold mb-1">Appréciations du conseil de classe</p>
-                        <Button variant="ghost" size="sm" onClick={handleGenerateComment} disabled={isGeneratingComment}>
+                        <Button variant="ghost" size="sm" onClick={handleGenerateComment} disabled={isGeneratingComment} className="no-print">
                              <Bot className="mr-2 h-4 w-4" />
                             {isGeneratingComment ? "Génération..." : "Générer"}
                         </Button>
@@ -264,7 +267,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 </div>
             </div>
         </div>
-         <div className="mt-6 flex justify-end">
+         <div className="mt-6 flex justify-end no-print">
             <Button onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" />
                 Imprimer le Bulletin
