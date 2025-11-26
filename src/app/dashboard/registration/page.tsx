@@ -16,6 +16,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from '@/hooks/use-school-data';
+import { schoolClasses } from '@/lib/data';
 
 interface Class {
   id: string;
@@ -87,7 +88,13 @@ export default function RegistrationPage() {
       return;
     }
     
+    // Find the full class object from the selected classId
     const selectedClassInfo = classes.find(c => c.id === formData.classId);
+    
+    // Find the cycle from the standard schoolClasses list based on the class name
+    const schoolClassInfo = schoolClasses.find(sc => sc.name === selectedClassInfo?.name);
+    const studentCycle = schoolClassInfo?.cycle || selectedClassInfo?.cycle || 'N/A';
+
 
     const studentData = {
       matricule: generateMatricule(formData.name),
@@ -99,7 +106,7 @@ export default function RegistrationPage() {
       previousSchool: formData.previousSchool,
       classId: formData.classId,
       class: selectedClassInfo?.name || 'N/A',
-      cycle: selectedClassInfo?.cycle || 'N/A',
+      cycle: studentCycle,
       parent1Name: formData.parent1Name,
       parent1Contact: formData.parent1Contact,
       parent2Name: formData.parent2Name,
