@@ -50,5 +50,3 @@ export function MainNav() {
     </nav>
   );
 }
-
-    
