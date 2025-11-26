@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
@@ -12,6 +12,7 @@ const menuItems = [
   { href: '/dashboard/teachers', label: 'Enseignants', icon: Users },
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
   { href: '/dashboard/reports', label: 'Saisie des Notes', icon: NotebookText },
+  { href: '/dashboard/hr', label: 'RH / Personnel', icon: Briefcase },
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
   { href: '/dashboard/library', label: 'Bibliothèque', icon: BookOpen },
   { href: '/dashboard/fees', label: 'Scolarité', icon: Wallet },
