@@ -249,7 +249,7 @@ export default function ClassesPage() {
     return <AuthProtectionLoader />;
   }
 
-  if (isLoading) {
+  if (isLoading && !cycles.length) {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
@@ -301,14 +301,17 @@ export default function ClassesPage() {
                 <div className="grid gap-4 py-4">
                    <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="cycle" className="text-right">Cycle</Label>
-                    <Select value={formCycleName} onValueChange={v => { setFormCycleName(v); setFormClassName(''); }}>
-                        <SelectTrigger className="col-span-3">
-                            <SelectValue placeholder="Sélectionner un cycle" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {cycleOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
+                    <Combobox
+                        className="col-span-3"
+                        placeholder="Sélectionner un cycle"
+                        searchPlaceholder="Chercher un cycle..."
+                        options={cycleOptions}
+                        value={formCycleName}
+                        onValueChange={value => {
+                            setFormCycleName(value);
+                            setFormClassName(''); // Reset class name when cycle changes
+                        }}
+                    />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">Classe</Label>
@@ -354,10 +357,10 @@ export default function ClassesPage() {
         
         <Tabs defaultValue={cycles[0]?.name} className="space-y-4">
             <TabsList>
-                {cycles.map((cycle) => ( <TabsTrigger key={cycle.name} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
+                {cycles.map((cycle) => ( <TabsTrigger key={cycle.id} value={cycle.name}>{cycle.name}</TabsTrigger> ))}
             </TabsList>
             {cycles.map((cycle) => (
-                <TabsContent key={cycle.name} value={cycle.name}>
+                <TabsContent key={cycle.id} value={cycle.name}>
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {classes.filter(c => c.cycle === cycle.name).map((cls) => {
                             const mainTeacher = getMainTeacher(cls.mainTeacherId);
@@ -406,14 +409,17 @@ export default function ClassesPage() {
           <div className="grid gap-4 py-4">
              <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-cycle" className="text-right">Cycle</Label>
-              <Select value={formCycleName} onValueChange={v => { setFormCycleName(v); setFormClassName(''); }}>
-                    <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Sélectionner un cycle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {cycleOptions.map(opt => <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>)}
-                    </SelectContent>
-                </Select>
+              <Combobox
+                    className="col-span-3"
+                    placeholder="Sélectionner un cycle"
+                    searchPlaceholder="Chercher un cycle..."
+                    options={cycleOptions}
+                    value={formCycleName}
+                    onValueChange={value => {
+                        setFormCycleName(value);
+                        setFormClassName(''); // Reset class name when cycle changes
+                    }}
+                />
             </div>
              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-name" className="text-right">Classe</Label>
