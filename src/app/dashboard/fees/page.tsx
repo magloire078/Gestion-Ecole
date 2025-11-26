@@ -186,10 +186,10 @@ export default function FeesPage() {
       amountDue: newAmountDue,
       tuitionStatus: newStatus
     };
-    batch.set(studentRef, studentUpdateData, { merge: true });
+    batch.update(studentRef, studentUpdateData);
 
     // 2. Create accounting transaction
-    const accountingRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
+    const accountingRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
     const accountingData = {
         date: format(new Date(), 'yyyy-MM-dd'),
         description: paymentDescription || `Paiement scolarité pour ${selectedStudent.name}`,
@@ -197,7 +197,7 @@ export default function FeesPage() {
         type: 'Revenu' as 'Revenu' | 'Dépense',
         amount: amountPaid,
     };
-    batch.set(accountingRef, accountingData);
+    batch.add(accountingRef, accountingData);
     
     try {
         await batch.commit();
@@ -517,6 +517,18 @@ export default function FeesPage() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="payment-description" className="text-right">
+                Description
+              </Label>
+              <Input
+                id="payment-description"
+                value={paymentDescription}
+                onChange={(e) => setPaymentDescription(e.target.value)}
+                className="col-span-3"
+                placeholder="Ex: Paiement 1ère tranche"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="payment-amount" className="text-right">
                 Montant Payé
               </Label>
@@ -528,17 +540,6 @@ export default function FeesPage() {
                 className="col-span-3"
                 placeholder="Ex: 50000"
               />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="payment-description" className="text-right">
-                    Description
-                </Label>
-                <Input
-                    id="payment-description"
-                    value={paymentDescription}
-                    onChange={(e) => setPaymentDescription(e.target.value)}
-                    className="col-span-3"
-                />
             </div>
           </div>
           <DialogFooter>
