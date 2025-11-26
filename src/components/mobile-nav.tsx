@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, School, FolderCog } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, School, FolderCog, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import {
@@ -27,7 +27,7 @@ const administrativeLinks = [
 
 const pedagogicalLinks = [
     { href: '/dashboard/reports', label: 'Saisie des Notes', icon: NotebookText },
-    { href: '/dashboard/library', label: 'Bibliothèque', icon: BookOpen },
+    { href: '/dashboard/library', label: 'Bibliothèque', icon: BookUser },
 ];
 
 const financialLinks = [
@@ -97,7 +97,7 @@ export function MobileNav() {
              
                 <AccordionItem value="pedagogy" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                        Pédagogie
+                        <span className='flex items-center gap-3'><GraduationCap className="h-5 w-5" />Pédagogie</span>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -106,7 +106,7 @@ export function MobileNav() {
                 
                 <AccordionItem value="finance" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                        Finance
+                        <span className='flex items-center gap-3'><Landmark className="h-5 w-5" />Finance</span>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
