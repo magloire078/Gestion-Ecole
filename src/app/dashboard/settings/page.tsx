@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -76,7 +75,7 @@ export default function SettingsPage() {
   const renderSkeleton = () => (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Paramètres</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">Paramètres Généraux</h1>
         <p className="text-muted-foreground">
           Gérez les paramètres de votre compte et de votre école.
         </p>
@@ -112,7 +111,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Paramètres</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">Paramètres Généraux</h1>
         <p className="text-muted-foreground">
           Gérez les paramètres de votre compte et de votre école.
         </p>
