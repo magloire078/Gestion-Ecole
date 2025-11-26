@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar, Receipt, VenetianMask, MapPin } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
@@ -26,6 +26,7 @@ interface Student {
   name: string;
   class: string;
   classId: string;
+  cycle?: string;
   dateOfBirth: string;
   placeOfBirth: string;
   gender: string;
@@ -111,13 +112,52 @@ export default function StudentProfilePage() {
   const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
+  // --- Student Data ---
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
+  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const student = studentData;
 
-  const { data: studentData, loading: studentLoading } = useDoc(studentRef);
-  const student = studentData as Student | null;
+  // --- Teacher and Class Data (Loaded separately) ---
+  const [mainTeacher, setMainTeacher] = useState<Teacher | null>(null);
+  const [studentClass, setStudentClass] = useState<Class | null>(null);
+  const [classTeacherLoading, setClassTeacherLoading] = useState(true);
 
+  useEffect(() => {
+    async function fetchClassAndTeacher() {
+        if (!firestore || !schoolId || !student?.classId) {
+            setClassTeacherLoading(false);
+            return;
+        }
+
+        setClassTeacherLoading(true);
+        try {
+            const classRef = doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`);
+            const classSnap = await classRef.get();
+            if (classSnap.exists()) {
+                const classData = { id: classSnap.id, ...classSnap.data() } as Class;
+                setStudentClass(classData);
+                
+                if (classData.mainTeacherId) {
+                    const teacherRef = doc(firestore, `ecoles/${schoolId}/enseignants/${classData.mainTeacherId}`);
+                    const teacherSnap = await teacherRef.get();
+                    if (teacherSnap.exists()) {
+                        setMainTeacher({ id: teacherSnap.id, ...teacherSnap.data() } as Teacher);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching class and teacher details:", error);
+        } finally {
+            setClassTeacherLoading(false);
+        }
+    }
+    fetchClassAndTeacher();
+  }, [firestore, schoolId, student]);
+
+
+  // --- Grades and Payments ---
   const gradesQuery = useMemoFirebase(() =>
     (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc')) : null
   , [firestore, schoolId, studentId]);
@@ -126,37 +166,18 @@ export default function StudentProfilePage() {
     (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc')) : null
   , [firestore, schoolId, studentId]);
 
-  const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
-  const { data: paymentsData, loading: paymentsLoading } = useCollection(paymentsQuery);
+  const { data: gradesData, loading: gradesLoading } = useCollection<GradeEntry>(gradesQuery);
+  const { data: paymentsData, loading: paymentsLoading } = useCollection<PaymentHistoryEntry>(paymentsQuery);
   
-  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
-  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentsData]);
+  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
+  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() })) || [], [paymentsData]);
 
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
-
-
-  const classRef = useMemoFirebase(() => 
-    (schoolId && student?.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null
-  , [firestore, schoolId, student?.classId]);
-
-  const { data: classData, loading: classLoading } = useDoc(classRef);
-  const studentClass = classData as Class | null;
-
-  const teacherRef = useMemoFirebase(() => 
-    (schoolId && studentClass?.mainTeacherId) ? doc(firestore, `ecoles/${schoolId}/enseignants/${studentClass.mainTeacherId}`) : null
-  , [firestore, schoolId, studentClass?.mainTeacherId]);
-
-  const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);
-  const mainTeacher = teacherData as Teacher | null;
   
-  const isLoading = schoolLoading || studentLoading || classLoading || teacherLoading || gradesLoading || paymentsLoading;
+  const isLoading = schoolLoading || studentLoading || classTeacherLoading || gradesLoading || paymentsLoading;
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
-    
-    // We assume the student's amountDue is the state *after* the payment in this history entry was made.
-    // This isn't perfectly accurate for historical receipts, but it's the best we can do without storing snapshots.
-    // A simpler approach is just to show what was paid and what the *current* balance is.
     
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
@@ -229,7 +250,7 @@ export default function StudentProfilePage() {
                     <CardContent className="space-y-3 text-sm">
                          <div className="flex items-center">
                             <Cake className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Né(e) le <strong>{student.dateOfBirth}</strong> à <strong>{student.placeOfBirth}</strong></span>
+                            <span>Né(e) le <strong>{student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'}</strong> à <strong>{student.placeOfBirth}</strong></span>
                         </div>
                         <div className="flex items-center">
                             <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />
@@ -250,7 +271,7 @@ export default function StudentProfilePage() {
                         </div>
                         <div className="flex items-center">
                             <Building className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Cycle: <strong>{studentClass?.cycle || 'N/A'}</strong></span>
+                            <span>Cycle: <strong>{studentClass?.cycle || student.cycle || 'N/A'}</strong></span>
                         </div>
                         <div className="flex items-center">
                             <School className="mr-3 h-5 w-5 text-muted-foreground" />
@@ -390,7 +411,7 @@ export default function StudentProfilePage() {
                                 {paymentHistory.length > 0 ? (
                                     paymentHistory.map(payment => (
                                         <TableRow key={payment.id}>
-                                            <TableCell>{format(new Date(payment.date), 'd MMM yyyy', {locale: fr})}</TableCell>
+                                            <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
                                             <TableCell>{payment.description}</TableCell>
                                             <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
                                             <TableCell className="text-right">
@@ -424,3 +445,5 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
+    
