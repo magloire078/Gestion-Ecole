@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, ChevronDown, School } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Accordion,
@@ -15,12 +15,15 @@ import {
 const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary text-sm";
 const activeClass = "bg-muted text-primary";
 
+const mySchoolLinks = [
+  { href: '/dashboard/students', label: 'Élèves', icon: Users },
+  { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
+  { href: '/dashboard/teachers', label: 'Professeurs', icon: Users },
+];
+
 const administrativeLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/students', label: 'Élèves', icon: Users },
-  { href: '/dashboard/teachers', label: 'Enseignants', icon: Users },
   { href: '/dashboard/hr', label: 'RH / Personnel', icon: Briefcase },
-  { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
@@ -52,6 +55,16 @@ export function MainNav() {
   
   const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
 
+  const getDefaultOpenValues = () => {
+    const openValues = [];
+    if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
+    if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
+    if (isLinkActive(financialLinks)) openValues.push('finance');
+    // We can add the old admin links here if we decide to show them
+    // if (isLinkActive(administrativeLinks)) openValues.push('admin');
+    return openValues;
+  }
+
   return (
     <nav className="flex flex-col justify-between flex-1 p-2 font-medium">
       <div className='flex-1 space-y-1'>
@@ -63,18 +76,13 @@ export function MainNav() {
           Tableau de Bord
         </Link>
         
-        <Accordion type="multiple" className="w-full" defaultValue={['admin', 'pedagogy', 'finance'].filter(group => {
-            if (group === 'admin') return isLinkActive(administrativeLinks);
-            if (group === 'pedagogy') return isLinkActive(pedagogicalLinks);
-            if (group === 'finance') return isLinkActive(financialLinks);
-            return false;
-        })}>
-          <AccordionItem value="admin" className="border-b-0">
+        <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
+          <AccordionItem value="my-school" className="border-b-0">
             <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                <span className='flex items-center gap-3'>Administration</span>
+                <span className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
-              {administrativeLinks.map(item => <NavLink key={item.href} {...item} />)}
+              {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
 
@@ -95,6 +103,18 @@ export function MainNav() {
                {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
+          
+          {/* You can uncomment this if you want to bring back the other admin links under their own accordion */}
+          {/*
+          <AccordionItem value="admin" className="border-b-0">
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+                <span className='flex items-center gap-3'>Administration</span>
+            </AccordionTrigger>
+            <AccordionContent className="pl-4 pt-1 space-y-1">
+              {administrativeLinks.map(item => <NavLink key={item.href} {...item} />)}
+            </AccordionContent>
+          </AccordionItem>
+          */}
         </Accordion>
       </div>
 

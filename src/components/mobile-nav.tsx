@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, Building, FileText, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, School } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import {
@@ -13,12 +13,15 @@ import {
 } from "@/components/ui/accordion"
 
 
+const mySchoolLinks = [
+  { href: '/dashboard/students', label: 'Élèves', icon: Users },
+  { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
+  { href: '/dashboard/teachers', label: 'Professeurs', icon: Users },
+];
+
 const administrativeLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/students', label: 'Élèves', icon: Users },
-  { href: '/dashboard/teachers', label: 'Enseignants', icon: Users },
   { href: '/dashboard/hr', label: 'RH / Personnel', icon: Briefcase },
-  { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
@@ -50,6 +53,14 @@ export function MobileNav() {
   const pathname = usePathname();
   const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
 
+  const getDefaultOpenValues = () => {
+    const openValues = [];
+    if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
+    if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
+    if (isLinkActive(financialLinks)) openValues.push('finance');
+    return openValues;
+  }
+
   return (
     <div className='flex flex-col h-full'>
         <div className="flex h-[60px] items-center p-6 border-b">
@@ -64,21 +75,16 @@ export function MobileNav() {
                 Tableau de Bord
             </Link>
 
-             <Accordion type="multiple" className="w-full" defaultValue={['admin', 'pedagogy', 'finance'].filter(group => {
-                if (group === 'admin') return isLinkActive(administrativeLinks);
-                if (group === 'pedagogy') return isLinkActive(pedagogicalLinks);
-                if (group === 'finance') return isLinkActive(financialLinks);
-                return false;
-            })}>
-                <AccordionItem value="admin" className="border-b-0">
+             <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
+                <AccordionItem value="my-school" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                        Administration
+                       <span className='flex items-center gap-3'><School className="h-5 w-5" />Mon École</span>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
-                        {administrativeLinks.map(item => <NavLink key={item.href} {...item} />)}
+                        {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
                     </AccordionContent>
                 </AccordionItem>
-
+             
                 <AccordionItem value="pedagogy" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
                         Pédagogie
@@ -110,4 +116,3 @@ export function MobileNav() {
     </div>
   );
 }
-
