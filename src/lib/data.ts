@@ -90,7 +90,8 @@ export const allSubjects = [
 export const schoolCycles = [
     { name: "Maternelle", order: 1 },
     { name: "Primaire", order: 2 },
-    { name: "Secondaire", order: 3 }, // Regroupe collège et lycée
+    { name: "Collège", order: 3 },
+    { name: "Lycée", order: 4 },
 ];
 
 export const schoolClasses = [
@@ -105,14 +106,15 @@ export const schoolClasses = [
     { name: "CE2", cycle: "Primaire" },
     { name: "CM1", cycle: "Primaire" },
     { name: "CM2", cycle: "Primaire" },
-    // Secondaire
-    { name: "6ème", cycle: "Secondaire" },
-    { name: "5ème", cycle: "Secondaire" },
-    { name: "4ème", cycle: "Secondaire" },
-    { name: "3ème", cycle: "Secondaire" },
-    { name: "Seconde", cycle: "Secondaire" },
-    { name: "Première", cycle: "Secondaire" },
-    { name: "Terminale", cycle: "Secondaire" },
+    // Collège
+    { name: "6ème", cycle: "Collège" },
+    { name: "5ème", cycle: "Collège" },
+    { name: "4ème", cycle: "Collège" },
+    { name: "3ème", cycle: "Collège" },
+    // Lycée
+    { name: "Seconde", cycle: "Lycée" },
+    { name: "Première", cycle: "Lycée" },
+    { name: "Terminale", cycle: "Lycée" },
 ];
 
     
