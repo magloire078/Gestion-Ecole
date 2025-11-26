@@ -219,7 +219,7 @@
         "schema": { "$ref": "#/entities/accountingTransaction" },
         "description": "Stocke les transactions comptables pour une école."
     },
-    "/ecoles/{schoolId}/bibliotheque/{bookId}": {
+    "/ecole/{schoolId}/bibliotheque/{bookId}": {
         "schema": { "$ref": "#/entities/libraryBook" },
         "description": "Stocke les livres de la bibliothèque pour une école."
     },
@@ -229,5 +229,3 @@
     }
   }
 }
-
-    
