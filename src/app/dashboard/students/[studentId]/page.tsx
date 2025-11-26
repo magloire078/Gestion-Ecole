@@ -5,8 +5,8 @@ import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar } from 'lucide-react';
-import React, { useMemo } from 'react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar, Receipt } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
@@ -17,6 +17,9 @@ import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 
 interface Student {
   matricule?: string;
@@ -44,6 +47,14 @@ interface GradeEntry {
     date: string;
     grade: number;
     coefficient: number;
+}
+
+interface PaymentHistoryEntry {
+    id: string;
+    date: string;
+    amount: number;
+    description: string;
+    accountingTransactionId: string;
 }
 
 interface Teacher {
@@ -93,7 +104,10 @@ export default function StudentProfilePage() {
   const params = useParams();
   const studentId = params.studentId as string;
   const firestore = useFirestore();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+
+  const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
@@ -106,8 +120,15 @@ export default function StudentProfilePage() {
     (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc')) : null
   , [firestore, schoolId, studentId]);
 
+  const paymentsQuery = useMemoFirebase(() =>
+    (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc')) : null
+  , [firestore, schoolId, studentId]);
+
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
+  const { data: paymentsData, loading: paymentsLoading } = useCollection(paymentsQuery);
+  
   const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
+  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentsData]);
 
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
 
@@ -126,7 +147,27 @@ export default function StudentProfilePage() {
   const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);
   const mainTeacher = teacherData as Teacher | null;
   
-  const isLoading = schoolLoading || studentLoading || classLoading || teacherLoading || gradesLoading;
+  const isLoading = schoolLoading || studentLoading || classLoading || teacherLoading || gradesLoading || paymentsLoading;
+  
+  const handleViewReceipt = (payment: PaymentHistoryEntry) => {
+    if (!student) return;
+    const currentAmountDue = student.amountDue;
+    const previousAmountDue = currentAmountDue + payment.amount;
+
+    const receipt: ReceiptData = {
+        schoolName: schoolName || "Votre École",
+        studentName: student.name,
+        studentMatricule: student.matricule || "N/A",
+        className: student.class,
+        date: new Date(payment.date),
+        description: payment.description,
+        amountPaid: payment.amount,
+        amountDue: previousAmountDue - payment.amount,
+    };
+    setReceiptToView(receipt);
+    setIsReceiptOpen(true);
+  };
+
 
   if (isAuthLoading) {
     return <AuthProtectionLoader />;
@@ -143,6 +184,7 @@ export default function StudentProfilePage() {
                 <div className="lg:col-span-1 flex flex-col gap-6">
                     <Skeleton className="h-56 w-full" />
                     <Skeleton className="h-40 w-full" />
+                    <Skeleton className="h-48 w-full" />
                 </div>
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     <Skeleton className="h-64 w-full" />
@@ -161,6 +203,7 @@ export default function StudentProfilePage() {
 
 
   return (
+    <>
     <div className="space-y-6">
        <div>
             <h1 className="text-lg font-semibold md:text-2xl">Fiche d'Information de l'Élève</h1>
@@ -296,7 +339,7 @@ export default function StudentProfilePage() {
                         </Table>
                     </CardContent>
                 </Card>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Card>
                         <CardHeader><CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /><span>Scolarité</span></CardTitle></CardHeader>
                         <CardContent className="space-y-4">
@@ -315,8 +358,56 @@ export default function StudentProfilePage() {
                         <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucun feedback pour le moment."}"</p></CardContent>
                     </Card>
                 </div>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Historique des Paiements</CardTitle>
+                        <CardDescription>Liste de tous les versements de scolarité effectués.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Date</TableHead>
+                                    <TableHead>Description</TableHead>
+                                    <TableHead className="text-right">Montant</TableHead>
+                                    <TableHead className="text-right">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {paymentHistory.length > 0 ? (
+                                    paymentHistory.map(payment => (
+                                        <TableRow key={payment.id}>
+                                            <TableCell>{format(new Date(payment.date), 'd MMM yyyy', {locale: fr})}</TableCell>
+                                            <TableCell>{payment.description}</TableCell>
+                                            <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
+                                                    <Receipt className="mr-2 h-3 w-3" /> Reçu
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={4} className="text-center h-24">Aucun paiement enregistré.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
         </div>
     </div>
+     <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Reçu de Paiement</DialogTitle>
+            <DialogDescription>Aperçu du reçu. Vous pouvez l'imprimer.</DialogDescription>
+          </DialogHeader>
+          {receiptToView && <TuitionReceipt receiptData={receiptToView} />}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

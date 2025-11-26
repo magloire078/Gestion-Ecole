@@ -16,7 +16,7 @@ service cloud.firestore {
     function isUserInSchool(schoolId) {
       return isUserAuthenticated() && getUserSchoolId(request.auth.uid) == schoolId;
     }
-
+    
     function getUserRole(schoolId, userId) {
         return get(/databases/$(database)/documents/ecoles/$(schoolId)/utilisateurs/$(userId)).data.role;
     }
@@ -59,6 +59,14 @@ service cloud.firestore {
 
           match /notes/{gradeId} {
               allow read, write: if isUserInSchool(schoolId);
+          }
+          
+          match /paiements/{paymentId} {
+              // Allow any member of the school to read and create payment history entries.
+              // This is crucial for recording tuition and viewing history.
+              allow read, list, create: if isUserInSchool(schoolId);
+              // Only directors should be able to alter or delete payment history.
+              allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
           }
         }
         

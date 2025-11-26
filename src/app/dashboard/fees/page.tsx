@@ -101,6 +101,7 @@ export default function FeesPage() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   
   const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDate, setPaymentDate] = useState('');
   const [paymentDescription, setPaymentDescription] = useState('');
 
   // --- Receipt State ---
@@ -130,6 +131,7 @@ export default function FeesPage() {
     if (selectedStudent) {
         setPaymentAmount('');
         setPaymentDescription(`Scolarité - ${selectedStudent.name}`);
+        setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
     }
   }, [selectedStudent]);
   
@@ -162,11 +164,11 @@ export default function FeesPage() {
   };
   
   const handleSaveChanges = async () => {
-    if (!selectedStudent || !schoolId || !paymentAmount) {
+    if (!selectedStudent || !schoolId || !paymentAmount || !paymentDate) {
         toast({
             variant: "destructive",
             title: "Erreur",
-            description: "Veuillez entrer un montant de paiement."
+            description: "Veuillez entrer un montant et une date de paiement."
         });
         return;
     }
@@ -198,13 +200,23 @@ export default function FeesPage() {
     const accountingColRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
     const newTransactionRef = doc(accountingColRef);
     const accountingData = {
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: paymentDate,
         description: paymentDescription || `Paiement scolarité pour ${selectedStudent.name}`,
         category: 'Scolarité',
         type: 'Revenu' as 'Revenu' | 'Dépense',
         amount: amountPaid,
     };
     batch.set(newTransactionRef, accountingData);
+    
+    // 3. Create payment history entry
+    const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}/paiements`));
+    const paymentHistoryData = {
+        date: paymentDate,
+        amount: amountPaid,
+        description: paymentDescription,
+        accountingTransactionId: newTransactionRef.id
+    };
+    batch.set(paymentHistoryRef, paymentHistoryData);
     
     try {
         await batch.commit();
@@ -220,7 +232,7 @@ export default function FeesPage() {
             studentName: selectedStudent.name,
             studentMatricule: selectedStudent.matricule || 'N/A',
             className: selectedStudent.class,
-            date: new Date(),
+            date: new Date(paymentDate),
             description: paymentDescription,
             amountPaid: amountPaid,
             amountDue: newAmountDue,
@@ -232,9 +244,9 @@ export default function FeesPage() {
 
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `BATCH WRITE: /eleves/${selectedStudent.id} & /comptabilite`,
+            path: `BATCH WRITE: student, accounting, payment history`,
             operation: 'write',
-            requestResourceData: { studentUpdate: studentUpdateData, accountingEntry: accountingData },
+            requestResourceData: { studentUpdate: studentUpdateData, accountingEntry: accountingData, paymentHistory: paymentHistoryData },
         });
         errorEmitter.emit('permission-error', permissionError);
     }
@@ -539,6 +551,18 @@ export default function FeesPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="payment-date" className="text-right">
+                Date
+              </Label>
+              <Input
+                id="payment-date"
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="payment-description" className="text-right">
                 Description

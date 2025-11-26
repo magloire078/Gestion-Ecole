@@ -135,6 +135,18 @@
       },
       "required": ["date", "description", "category", "type", "amount"]
     },
+    "payment": {
+      "title": "Paiement de scolarité",
+      "description": "Un versement de frais de scolarité pour un élève.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "La date du paiement." },
+        "amount": { "type": "number", "description": "Le montant payé." },
+        "description": { "type": "string", "description": "Description du paiement (ex: 1ère tranche)." },
+        "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." }
+      },
+      "required": ["date", "amount", "description", "accountingTransactionId"]
+    },
     "libraryBook": {
         "title": "Livre de Bibliothèque",
         "description": "Un livre disponible dans la bibliothèque de l'école.",
@@ -198,6 +210,10 @@
     "/ecoles/{schoolId}/eleves/{studentId}/notes/{gradeId}": {
         "schema": { "$ref": "#/entities/gradeEntry" },
         "description": "Stocke les notes individuelles d'un élève."
+    },
+     "/ecoles/{schoolId}/eleves/{studentId}/paiements/{paymentId}": {
+        "schema": { "$ref": "#/entities/payment" },
+        "description": "Stocke l'historique des paiements de scolarité pour un élève."
     },
     "/ecoles/{schoolId}/comptabilite/{transactionId}": {
         "schema": { "$ref": "#/entities/accountingTransaction" },
