@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, ChevronDown, School } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, ChevronDown, School, FolderCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Accordion,
@@ -58,10 +58,9 @@ export function MainNav() {
   const getDefaultOpenValues = () => {
     const openValues = [];
     if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
+    if (isLinkActive(administrativeLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
-    // We can add the old admin links here if we decide to show them
-    // if (isLinkActive(administrativeLinks)) openValues.push('admin');
     return openValues;
   }
 
@@ -85,6 +84,15 @@ export function MainNav() {
               {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
+          
+          <AccordionItem value="administration" className="border-b-0">
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+                <span className='flex items-center gap-3'><FolderCog className="h-4 w-4" /> Administration</span>
+            </AccordionTrigger>
+            <AccordionContent className="pl-4 pt-1 space-y-1">
+              {administrativeLinks.map(item => <NavLink key={item.href} {...item} />)}
+            </AccordionContent>
+          </AccordionItem>
 
           <AccordionItem value="pedagogy" className="border-b-0">
             <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
@@ -103,18 +111,7 @@ export function MainNav() {
                {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
-          
-          {/* You can uncomment this if you want to bring back the other admin links under their own accordion */}
-          {/*
-          <AccordionItem value="admin" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                <span className='flex items-center gap-3'>Administration</span>
-            </AccordionTrigger>
-            <AccordionContent className="pl-4 pt-1 space-y-1">
-              {administrativeLinks.map(item => <NavLink key={item.href} {...item} />)}
-            </AccordionContent>
-          </AccordionItem>
-          */}
+
         </Accordion>
       </div>
 

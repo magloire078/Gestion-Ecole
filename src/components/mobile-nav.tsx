@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, School } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, BookOpen, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, Briefcase, School, FolderCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import {
@@ -56,6 +56,7 @@ export function MobileNav() {
   const getDefaultOpenValues = () => {
     const openValues = [];
     if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
+    if (isLinkActive(administrativeLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
     return openValues;
@@ -82,6 +83,15 @@ export function MobileNav() {
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
+                    </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="administration" className="border-b-0">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                       <span className='flex items-center gap-3'><FolderCog className="h-5 w-5" />Administration</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pl-6 pt-2 space-y-4">
+                        {administrativeLinks.map(item => <NavLink key={item.href} {...item} />)}
                     </AccordionContent>
                 </AccordionItem>
              
