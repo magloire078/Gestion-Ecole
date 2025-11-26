@@ -46,12 +46,13 @@ import { Pencil, GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDa
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Image from "next/image";
 import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from "@/hooks/use-school-data";
+import { format } from "date-fns";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
@@ -96,8 +97,9 @@ export default function FeesPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isManageFeeDialogOpen, setIsManageFeeDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [currentAmountDue, setCurrentAmountDue] = useState('');
-  const [currentTuitionStatus, setCurrentTuitionStatus] = useState<TuitionStatus>('Soldé');
+  
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentDescription, setPaymentDescription] = useState('');
   
   // Fee grid management state
   const [isAddFeeGridDialogOpen, setIsAddFeeGridDialogOpen] = useState(false);
@@ -120,8 +122,8 @@ export default function FeesPage() {
   // Effect for student fee management dialog
   useEffect(() => {
     if (selectedStudent) {
-        setCurrentAmountDue(String(selectedStudent.amountDue));
-        setCurrentTuitionStatus(selectedStudent.tuitionStatus);
+        setPaymentAmount('');
+        setPaymentDescription(`Scolarité - ${selectedStudent.name}`);
     }
   }, [selectedStudent]);
   
@@ -153,28 +155,66 @@ export default function FeesPage() {
     setIsManageFeeDialogOpen(true);
   };
   
-  const handleSaveChanges = () => {
-    if (!selectedStudent || !schoolId) return;
-
-    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}`);
-    const updatedData = {
-      amountDue: parseFloat(currentAmountDue) || 0,
-      tuitionStatus: currentTuitionStatus
-    };
-    
-    setDoc(studentRef, updatedData, { merge: true })
-      .then(() => {
+  const handleSaveChanges = async () => {
+    if (!selectedStudent || !schoolId || !paymentAmount) {
         toast({
-            title: "Scolarité mise à jour",
-            description: `Les informations de paiement pour ${selectedStudent.name} ont été enregistrées.`
+            variant: "destructive",
+            title: "Erreur",
+            description: "Veuillez entrer un montant de paiement."
+        });
+        return;
+    }
+
+    const amountPaid = parseFloat(paymentAmount);
+    if (isNaN(amountPaid) || amountPaid <= 0) {
+        toast({
+            variant: "destructive",
+            title: "Montant invalide",
+            description: "Le montant du paiement doit être un nombre positif."
+        });
+        return;
+    }
+    
+    const newAmountDue = selectedStudent.amountDue - amountPaid;
+    const newStatus: TuitionStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
+    
+    const batch = writeBatch(firestore);
+
+    // 1. Update student's tuition info
+    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}`);
+    const studentUpdateData = {
+      amountDue: newAmountDue,
+      tuitionStatus: newStatus
+    };
+    batch.set(studentRef, studentUpdateData, { merge: true });
+
+    // 2. Create accounting transaction
+    const accountingRef = doc(collection(firestore, `ecoles/${schoolId}/comptabilite`));
+    const accountingData = {
+        date: format(new Date(), 'yyyy-MM-dd'),
+        description: paymentDescription || `Paiement scolarité pour ${selectedStudent.name}`,
+        category: 'Scolarité',
+        type: 'Revenu' as 'Revenu' | 'Dépense',
+        amount: amountPaid,
+    };
+    batch.set(accountingRef, accountingData);
+    
+    try {
+        await batch.commit();
+        toast({
+            title: "Paiement enregistré",
+            description: `Le paiement de ${amountPaid.toLocaleString('fr-FR')} CFA pour ${selectedStudent.name} a été enregistré.`
         });
         setIsManageFeeDialogOpen(false);
         setSelectedStudent(null);
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: studentRef.path, operation: 'update', requestResourceData: updatedData });
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `BATCH WRITE: /eleves/${selectedStudent.id} & /comptabilite`,
+            operation: 'write',
+            requestResourceData: { studentUpdate: studentUpdateData, accountingEntry: accountingData },
+        });
         errorEmitter.emit('permission-error', permissionError);
-      });
+    }
   };
 
   // --- Firestore CRUD for Fee Grid ---
@@ -470,44 +510,40 @@ export default function FeesPage() {
      <Dialog open={isManageFeeDialogOpen} onOpenChange={setIsManageFeeDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Gérer la scolarité de {selectedStudent?.name}</DialogTitle>
+            <DialogTitle>Enregistrer un paiement pour {selectedStudent?.name}</DialogTitle>
             <DialogDescription>
-              Mettez à jour le statut et le solde dû pour cet élève.
+              Le solde actuel est de <strong>{selectedStudent?.amountDue.toLocaleString('fr-FR')} CFA</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="tuition-status" className="text-right">
-                Statut
-              </Label>
-              <Select onValueChange={(value) => setCurrentTuitionStatus(value as any)} value={currentTuitionStatus}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Statut du paiement" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Soldé">Soldé</SelectItem>
-                  <SelectItem value="En retard">En retard</SelectItem>
-                  <SelectItem value="Partiel">Partiel</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="amount-due" className="text-right">
-                Solde dû (CFA)
+              <Label htmlFor="payment-amount" className="text-right">
+                Montant Payé
               </Label>
               <Input
-                id="amount-due"
+                id="payment-amount"
                 type="number"
-                value={currentAmountDue}
-                onChange={(e) => setCurrentAmountDue(e.target.value)}
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
                 className="col-span-3"
                 placeholder="Ex: 50000"
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="payment-description" className="text-right">
+                    Description
+                </Label>
+                <Input
+                    id="payment-description"
+                    value={paymentDescription}
+                    onChange={(e) => setPaymentDescription(e.target.value)}
+                    className="col-span-3"
+                />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsManageFeeDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleSaveChanges}>Enregistrer</Button>
+            <Button onClick={handleSaveChanges}>Enregistrer le Paiement</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
