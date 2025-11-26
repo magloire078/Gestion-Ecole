@@ -53,6 +53,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { format } from "date-fns";
+import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
+
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
@@ -77,7 +79,7 @@ const getImageHintForGrade = (grade: string): string => {
 export default function FeesPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
-  const { schoolId, loading: schoolDataLoading } = useSchoolData();
+  const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
 
   // --- Firestore Data Hooks ---
   const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
@@ -100,6 +102,10 @@ export default function FeesPage() {
   
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDescription, setPaymentDescription] = useState('');
+
+  // --- Receipt State ---
+  const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
+  const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   
   // Fee grid management state
   const [isAddFeeGridDialogOpen, setIsAddFeeGridDialogOpen] = useState(false);
@@ -189,7 +195,8 @@ export default function FeesPage() {
     batch.update(studentRef, studentUpdateData);
 
     // 2. Create accounting transaction
-    const accountingRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+    const accountingColRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+    const newTransactionRef = doc(accountingColRef);
     const accountingData = {
         date: format(new Date(), 'yyyy-MM-dd'),
         description: paymentDescription || `Paiement scolarité pour ${selectedStudent.name}`,
@@ -197,16 +204,32 @@ export default function FeesPage() {
         type: 'Revenu' as 'Revenu' | 'Dépense',
         amount: amountPaid,
     };
-    batch.add(accountingRef, accountingData);
+    batch.set(newTransactionRef, accountingData);
     
     try {
         await batch.commit();
+        
         toast({
             title: "Paiement enregistré",
             description: `Le paiement de ${amountPaid.toLocaleString('fr-FR')} CFA pour ${selectedStudent.name} a été enregistré.`
         });
+        
+        // Prepare and show receipt
+        setReceiptData({
+            schoolName: schoolName || 'Votre École',
+            studentName: selectedStudent.name,
+            studentMatricule: selectedStudent.matricule || 'N/A',
+            className: selectedStudent.class,
+            date: new Date(),
+            description: paymentDescription,
+            amountPaid: amountPaid,
+            amountDue: newAmountDue,
+        });
+
         setIsManageFeeDialogOpen(false);
+        setIsReceiptDialogOpen(true);
         setSelectedStudent(null);
+
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
             path: `BATCH WRITE: /eleves/${selectedStudent.id} & /comptabilite`,
@@ -578,6 +601,17 @@ export default function FeesPage() {
                 <Button variant="outline" onClick={() => setIsEditFeeGridDialogOpen(false)}>Annuler</Button>
                 <Button onClick={handleEditFeeGrid}>Enregistrer</Button>
             </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Receipt Dialog --- */}
+      <Dialog open={isReceiptDialogOpen} onOpenChange={setIsReceiptDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Reçu de Paiement</DialogTitle>
+            <DialogDescription>Le paiement a été enregistré avec succès. Vous pouvez imprimer ce reçu.</DialogDescription>
+          </DialogHeader>
+          {receiptData && <TuitionReceipt receiptData={receiptData} />}
         </DialogContent>
       </Dialog>
       
