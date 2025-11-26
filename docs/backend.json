@@ -88,7 +88,7 @@
     "student": {
         "title": "Élève",
         "description": "Un élève inscrit à l'école.",
-        "type": "object",
+        "type": "object"
         "properties": {
             "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève, généré automatiquement." },
             "name": { "type": "string", "description": "Le nom complet de l'élève." },
@@ -222,7 +222,7 @@
         "schema": { "$ref": "#/entities/accountingTransaction" },
         "description": "Stocke les transactions comptables pour une école."
     },
-    "/ecole/{schoolId}/bibliotheque/{bookId}": {
+    "/ecoles/{schoolId}/bibliotheque/{bookId}": {
         "schema": { "$ref": "#/entities/libraryBook" },
         "description": "Stocke les livres de la bibliothèque pour une école."
     },
@@ -232,3 +232,5 @@
     }
   }
 }
+
+    

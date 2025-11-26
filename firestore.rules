@@ -44,23 +44,35 @@ service cloud.firestore {
         allow update: if isSchoolDirector(schoolId, request.auth.uid);
         allow delete: if false;
 
-        // --- Subcollections within a School ---
+        // --- Subcollections with Specific Rules ---
 
         match /utilisateurs/{userId} {
             allow create, update: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
             allow read, list: if isUserInSchool(schoolId);
-            allow delete: if false;
+            allow delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
 
-        // --- NEW RULE for Student Grades ---
+        match /eleves/{studentId} {
+            allow read, list, create, update: if isUserInSchool(schoolId);
+            allow delete: if isSchoolDirector(schoolId, request.auth.uid);
+        }
+
         match /eleves/{studentId}/notes/{gradeId} {
-            // Allow any user in the school to read, create, update, and delete grades.
-            // This allows teachers to manage grades for their students.
             allow read, write: if isUserInSchool(schoolId);
         }
         
-        // Generic rules for other subcollections.
-        // Director can write, members can read.
+        match /eleves/{studentId}/paiements/{paymentId} {
+            allow read, list, create: if isUserInSchool(schoolId);
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
+        }
+        
+        match /comptabilite/{transactionId} {
+            allow read, list, create: if isUserInSchool(schoolId);
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
+        }
+
+        // --- Generic Rules for other subcollections ---
+        // This rule applies to collections NOT explicitly matched above (e.g., enseignants, classes, cycles, etc.)
         match /{otherCollections}/{docId} {
             allow read, list: if isUserInSchool(schoolId);
             allow write: if isSchoolDirector(schoolId, request.auth.uid);
@@ -68,3 +80,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
