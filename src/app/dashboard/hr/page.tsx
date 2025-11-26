@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, Mail, Phone, BadgeDollarSign, Calendar } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Mail, Phone, BadgeDollarSign, Calendar, FileText } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -50,8 +50,10 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { format, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getPayslipDetails, type PayslipDetails, type Employe } from '@/app/bulletin-de-paie';
+import { PayslipTemplate } from '@/components/payroll/payslip-template';
 
-interface StaffMember {
+interface StaffMember extends Employe {
   id: string;
   name: string;
   role: string;
@@ -59,6 +61,8 @@ interface StaffMember {
   phone?: string;
   salary?: number;
   hireDate: string;
+  poste: string;
+  matricule: string;
 }
 
 export default function HRPage() {
@@ -75,8 +79,12 @@ export default function HRPage() {
   // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPayslipOpen, setIsPayslipOpen] = useState(false);
+
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
+  const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
+  const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
   
   const [formState, setFormState] = useState<Omit<StaffMember, 'id'>>({
       name: '',
@@ -85,6 +93,11 @@ export default function HRPage() {
       phone: '',
       salary: 0,
       hireDate: '',
+      poste: '',
+      matricule: '',
+      status: 'Actif',
+      photoUrl: '',
+      baseSalary: 0,
   });
 
   useEffect(() => {
@@ -96,6 +109,11 @@ export default function HRPage() {
         phone: editingStaff.phone || '',
         salary: editingStaff.salary || 0,
         hireDate: editingStaff.hireDate,
+        poste: editingStaff.poste || editingStaff.role,
+        matricule: editingStaff.matricule || '',
+        status: editingStaff.status || 'Actif',
+        photoUrl: editingStaff.photoUrl || '',
+        baseSalary: editingStaff.baseSalary || editingStaff.salary || 0,
       });
     } else {
       setFormState({
@@ -105,13 +123,23 @@ export default function HRPage() {
         phone: '',
         salary: 0,
         hireDate: format(new Date(), 'yyyy-MM-dd'),
+        poste: '',
+        matricule: '',
+        status: 'Actif',
+        photoUrl: '',
+        baseSalary: 0,
       });
     }
   }, [isFormOpen, editingStaff]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    setFormState(prev => ({ ...prev, [id]: value }));
+    setFormState(prev => ({ 
+        ...prev, 
+        [id]: value,
+        ...(id === 'role' && { poste: value }), // sync poste with role if not specified
+        ...(id === 'salary' && { baseSalary: Number(value) }), // sync baseSalary
+     }));
   };
 
   const handleSubmit = async () => {
@@ -120,7 +148,13 @@ export default function HRPage() {
       return;
     }
     
-    const dataToSave = { ...formState, salary: Number(formState.salary) || 0 };
+    const dataToSave = { 
+        ...formState, 
+        salary: Number(formState.salary) || 0,
+        baseSalary: Number(formState.baseSalary) || Number(formState.salary) || 0,
+        poste: formState.poste || formState.role,
+        matricule: formState.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`
+    };
 
     try {
         if (editingStaff) {
@@ -155,6 +189,27 @@ export default function HRPage() {
         errorEmitter.emit('permission-error', permissionError);
       });
   };
+  
+  const handleGeneratePayslip = async (staffMember: StaffMember) => {
+    setIsGeneratingPayslip(true);
+    setIsPayslipOpen(true);
+    try {
+        const payslipDate = new Date().toISOString();
+        const details = await getPayslipDetails(staffMember, payslipDate);
+        setPayslipDetails(details);
+    } catch(e) {
+        console.error(e);
+        toast({
+            variant: "destructive",
+            title: "Erreur de génération",
+            description: "Impossible de calculer le bulletin de paie.",
+        });
+        setIsPayslipOpen(false);
+    } finally {
+        setIsGeneratingPayslip(false);
+    }
+  };
+
 
   const handleOpenFormDialog = (staffMember: StaffMember | null) => {
     setEditingStaff(staffMember);
@@ -205,7 +260,7 @@ export default function HRPage() {
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                <TableCell><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-9 w-28 ml-auto" /></TableCell>
                             </TableRow>
                         ))
                     ) : staff.length > 0 ? (
@@ -229,13 +284,18 @@ export default function HRPage() {
                                     <TableCell className="font-mono">{member.salary ? `${member.salary.toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
                                     <TableCell>{format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr })}</TableCell>
                                     <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>Supprimer</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                        <div className="flex gap-2 justify-end">
+                                            <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(member)}>
+                                                <FileText className="mr-2 h-3 w-3" /> Bulletin
+                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>Supprimer</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             );
@@ -308,6 +368,32 @@ export default function HRPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
+        <DialogContent className="max-w-4xl p-0">
+          <div className="p-6">
+            <DialogHeader>
+              <DialogTitle>Bulletin de paie</DialogTitle>
+              <DialogDescription>
+                Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.name}.
+              </DialogDescription>
+            </DialogHeader>
+            {isGeneratingPayslip ? (
+                <div className="flex items-center justify-center h-96">
+                    <p>Génération du bulletin de paie...</p>
+                </div>
+            ) : payslipDetails ? (
+                <div className="mt-4 max-h-[70vh] overflow-y-auto">
+                    <PayslipTemplate payslipDetails={payslipDetails} />
+                </div>
+            ) : (
+                 <div className="flex items-center justify-center h-96">
+                    <p className="text-red-500">Impossible de charger le bulletin de paie.</p>
+                </div>
+            )}
+            </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
