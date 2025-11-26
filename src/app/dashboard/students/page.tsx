@@ -60,6 +60,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from "@/hooks/use-school-data";
+import { differenceInYears } from "date-fns";
 
 interface Student {
   id: string;
@@ -70,6 +71,7 @@ interface Student {
   feedback: string;
   tuitionStatus: TuitionStatus;
   amountDue: number;
+  dateOfBirth: string;
 }
 
 interface Class {
@@ -148,6 +150,7 @@ export default function StudentsPage() {
         feedback: editingStudent.feedback,
         amountDue: editingStudent.amountDue,
         tuitionStatus: editingStudent.tuitionStatus,
+        dateOfBirth: editingStudent.dateOfBirth,
       });
     }
   }, [editingStudent]);
@@ -202,6 +205,7 @@ export default function StudentsPage() {
       feedback: formState.feedback || '',
       amountDue: Number(formState.amountDue) || 0,
       tuitionStatus: formState.tuitionStatus || 'Partiel',
+      dateOfBirth: formState.dateOfBirth || '',
     };
     
     setDoc(studentDocRef, updatedData, { merge: true })
@@ -235,6 +239,15 @@ export default function StudentsPage() {
     });
   }
   
+  const getAge = (dateOfBirth: string | undefined) => {
+    if (!dateOfBirth) return 'N/A';
+    try {
+      return differenceInYears(new Date(), new Date(dateOfBirth));
+    } catch {
+      return 'N/A';
+    }
+  }
+
   const isLoading = schoolLoading || studentsLoading || classesLoading;
 
   if (isAuthLoading) {
@@ -244,10 +257,10 @@ export default function StudentsPage() {
   return (
     <>
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
           <div className="flex justify-between items-center gap-4">
             <div>
-              <h1 className="text-lg font-semibold md:text-2xl">Liste des Élèves</h1>
+              <h1 className="text-lg font-semibold md:text-2xl">Liste des Élèves ({students.length})</h1>
               <p className="text-muted-foreground">Consultez et gérez les élèves inscrits.</p>
             </div>
             <Button onClick={() => router.push('/dashboard/registration')}>
@@ -259,10 +272,13 @@ export default function StudentsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[50px]">N°</TableHead>
+                        <TableHead>Matricule</TableHead>
                         <TableHead>Nom</TableHead>
                         <TableHead>Classe</TableHead>
-                        <TableHead className="text-center">Statut Paiement</TableHead>
+                        <TableHead>Âge</TableHead>
                         <TableHead className="text-right">Solde Scolarité</TableHead>
+                        <TableHead className="text-center">Statut Paiement</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -270,27 +286,33 @@ export default function StudentsPage() {
                       {isLoading ? (
                         [...Array(5)].map((_, i) => (
                           <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-8"/></TableCell>
                             <TableCell><Skeleton className="h-5 w-24"/></TableCell>
+                            <TableCell><Skeleton className="h-5 w-32"/></TableCell>
                             <TableCell><Skeleton className="h-5 w-16"/></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-5 w-12 mx-auto"/></TableCell>
+                            <TableCell><Skeleton className="h-5 w-8"/></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-5 w-12 mx-auto"/></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto"/></TableCell>
                           </TableRow>
                         ))
                       ) : students.length > 0 ? (
-                        students.map((student) => (
+                        students.map((student, index) => (
                         <TableRow key={student.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell className="font-mono text-xs">{student.id}</TableCell>
                           <TableCell className="font-medium">
                             <Link href={`/dashboard/students/${student.id}`} className="hover:underline text-primary">
                                 {student.name}
                             </Link>
                           </TableCell>
                           <TableCell>{student.class}</TableCell>
-                          <TableCell className="text-center">
-                              <TuitionStatusBadge status={student.tuitionStatus} />
-                          </TableCell>
+                          <TableCell>{getAge(student.dateOfBirth)}</TableCell>
                           <TableCell className="text-right font-mono">
                               {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString('fr-FR')} CFA` : `${student.amountDue} CFA`) : '-'}
+                          </TableCell>
+                          <TableCell className="text-center">
+                              <TuitionStatusBadge status={student.tuitionStatus} />
                           </TableCell>
                           <TableCell className="text-right">
                              <DropdownMenu>
@@ -314,55 +336,12 @@ export default function StudentsPage() {
                       ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={5} className="h-24 text-center">Aucun élève inscrit pour le moment.</TableCell>
+                          <TableCell colSpan={8} className="h-24 text-center">Aucun élève inscrit pour le moment.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
               </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analyse de Feedback</CardTitle>
-              <CardDescription>
-                Utilisez l'IA pour analyser le sentiment et résumer le feedback des élèves.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid w-full gap-1.5">
-                <Label htmlFor="feedback-text">Collez le feedback ici</Label>
-                <Textarea 
-                  placeholder="Entrez un ou plusieurs feedbacks d'élèves..." 
-                  id="feedback-text"
-                  value={feedbackText}
-                  onChange={(e) => setFeedbackText(e.target.value)}
-                  rows={5}
-                />
-              </div>
-              <Button onClick={handleAnalyzeFeedback} disabled={isAnalyzing || !feedbackText.trim()} className="w-full bg-accent hover:bg-accent/90">
-                <Bot className="mr-2 h-4 w-4" />
-                {isAnalyzing ? 'Analyse en cours...' : 'Analyser le Feedback'}
-              </Button>
-              {analysisResult && (
-                <div className="space-y-4 rounded-lg border bg-muted p-4">
-                  <div>
-                    <h4 className="font-semibold text-primary">Sentiment Général</h4>
-                    <SentimentDisplay sentiment={analysisResult.sentiment} />
-                  </div>
-                  <div className="pt-2">
-                    <h4 className="font-semibold text-primary">Résumé</h4>
-                    <p className="text-sm text-muted-foreground">{analysisResult.summary}</p>
-                  </div>
-                  <div className="pt-2">
-                    <h4 className="font-semibold text-primary">Axes d'Amélioration</h4>
-                    <p className="text-sm text-muted-foreground">{analysisResult.keyImprovementAreas}</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
           </Card>
         </div>
       </div>
@@ -385,6 +364,12 @@ export default function StudentsPage() {
                 Nom
               </Label>
               <Input id="edit-student-name" value={formState.name || ''} onChange={(e) => setFormState(s => ({...s, name: e.target.value}))} className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="edit-student-dob" className="text-right">
+                Date de naiss.
+              </Label>
+              <Input id="edit-student-dob" type="date" value={formState.dateOfBirth || ''} onChange={(e) => setFormState(s => ({...s, dateOfBirth: e.target.value}))} className="col-span-3" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="edit-student-class" className="text-right">
