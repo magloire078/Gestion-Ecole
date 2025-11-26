@@ -18,6 +18,8 @@ export interface ReceiptData {
   description: string;
   amountPaid: number;
   amountDue: number;
+  payerName: string;
+  payerContact?: string;
 }
 
 interface TuitionReceiptProps {
@@ -82,14 +84,15 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
 
             <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                    <h3 className="font-semibold mb-1">Reçu de :</h3>
+                    <h3 className="font-semibold mb-1">Reçu pour :</h3>
                     <p className="font-bold">{receiptData.studentName}</p>
                     <p className="text-muted-foreground">Matricule: {receiptData.studentMatricule}</p>
                     <p className="text-muted-foreground">Classe: {receiptData.className}</p>
                 </div>
                  <div>
-                    <h3 className="font-semibold mb-1">Émis par :</h3>
-                    <p className="font-bold">{receiptData.schoolName}</p>
+                    <h3 className="font-semibold mb-1">Payé par :</h3>
+                    <p className="font-bold">{receiptData.payerName}</p>
+                    {receiptData.payerContact && <p className="text-muted-foreground">Contact: {receiptData.payerContact}</p>}
                 </div>
             </div>
             
@@ -138,3 +141,5 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
     </div>
   );
 };
+
+    

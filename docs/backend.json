@@ -146,9 +146,11 @@
         "date": { "type": "string", "format": "date", "description": "La date du paiement." },
         "amount": { "type": "number", "description": "Le montant payé." },
         "description": { "type": "string", "description": "Description du paiement (ex: 1ère tranche)." },
-        "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." }
+        "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." },
+        "payerName": { "type": "string", "description": "Le nom de la personne qui a effectué le paiement." },
+        "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." }
       },
-      "required": ["date", "amount", "description", "accountingTransactionId"]
+      "required": ["date", "amount", "description", "accountingTransactionId", "payerName"]
     },
     "libraryBook": {
         "title": "Livre de Bibliothèque",

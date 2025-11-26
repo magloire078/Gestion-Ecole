@@ -116,6 +116,8 @@ export default function FeesPage() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDate, setPaymentDate] = useState('');
   const [paymentDescription, setPaymentDescription] = useState('');
+  const [payerName, setPayerName] = useState('');
+  const [payerContact, setPayerContact] = useState('');
 
   // --- Receipt State ---
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
@@ -163,6 +165,8 @@ export default function FeesPage() {
         setPaymentAmount('');
         setPaymentDescription(`Scolarité - ${selectedStudent.name}`);
         setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
+        setPayerName(selectedStudent.parent1Name || '');
+        setPayerContact(selectedStudent.parent1Contact || '');
     }
   }, [selectedStudent]);
 
@@ -185,11 +189,11 @@ export default function FeesPage() {
   };
   
   const handleSaveChanges = async () => {
-    if (!selectedStudent || !schoolId || !paymentAmount || !paymentDate) {
+    if (!selectedStudent || !schoolId || !paymentAmount || !paymentDate || !payerName) {
         toast({
             variant: "destructive",
             title: "Erreur",
-            description: "Veuillez entrer un montant et une date de paiement."
+            description: "Veuillez entrer un montant, une date et le nom du payeur."
         });
         return;
     }
@@ -235,7 +239,9 @@ export default function FeesPage() {
         date: paymentDate,
         amount: amountPaid,
         description: paymentDescription,
-        accountingTransactionId: newTransactionRef.id
+        accountingTransactionId: newTransactionRef.id,
+        payerName: payerName,
+        payerContact: payerContact,
     };
     batch.set(paymentHistoryRef, paymentHistoryData);
     
@@ -257,6 +263,8 @@ export default function FeesPage() {
             description: paymentDescription,
             amountPaid: amountPaid,
             amountDue: newAmountDue,
+            payerName: payerName,
+            payerContact: payerContact,
         });
 
         setIsManageFeeDialogOpen(false);
@@ -561,6 +569,30 @@ export default function FeesPage() {
                 placeholder="Ex: 50000"
               />
             </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="payer-name" className="text-right">
+                Payé par
+              </Label>
+              <Input
+                id="payer-name"
+                value={payerName}
+                onChange={(e) => setPayerName(e.target.value)}
+                className="col-span-3"
+                placeholder="Nom de la personne qui paie"
+              />
+            </div>
+             <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="payer-contact" className="text-right">
+                Contact
+              </Label>
+              <Input
+                id="payer-contact"
+                value={payerContact}
+                onChange={(e) => setPayerContact(e.target.value)}
+                className="col-span-3"
+                placeholder="Contact du payeur (optionnel)"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsManageFeeDialogOpen(false)}>Annuler</Button>
@@ -637,7 +669,9 @@ export default function FeesPage() {
                     />
                      <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setIsFeeGridDialogOpen(false)}>Annuler</Button>
-                        <Button type="submit">{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</Button>
+                        <Button type="submit" disabled={form.formState.isSubmitting}>
+                          {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                        </Button>
                     </DialogFooter>
                 </form>
             </Form>

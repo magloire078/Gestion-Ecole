@@ -58,6 +58,8 @@ interface PaymentHistoryEntry {
     amount: number;
     description: string;
     accountingTransactionId: string;
+    payerName: string;
+    payerContact?: string;
 }
 
 interface Teacher {
@@ -185,6 +187,12 @@ export default function StudentProfilePage() {
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
     
+    // Calculate the amount due *at the time of this payment*
+    const currentPaymentIndex = paymentHistory.findIndex(p => p.id === payment.id);
+    const paymentsUpToThisOne = paymentHistory.slice(currentPaymentIndex);
+    const totalPaidSinceThisPayment = paymentsUpToThisOne.reduce((sum, p) => sum + p.amount, 0);
+    const amountDueAtTimeOfPayment = student.amountDue + totalPaidSinceThisPayment - payment.amount;
+
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
         studentName: student.name,
@@ -193,7 +201,9 @@ export default function StudentProfilePage() {
         date: new Date(payment.date),
         description: payment.description,
         amountPaid: payment.amount,
-        amountDue: student.amountDue, // Show the *current* amount due for simplicity
+        amountDue: amountDueAtTimeOfPayment,
+        payerName: payment.payerName,
+        payerContact: payment.payerContact,
     };
     setReceiptToView(receipt);
     setIsReceiptOpen(true);
