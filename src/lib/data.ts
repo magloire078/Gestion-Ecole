@@ -89,9 +89,9 @@ export const allSubjects = [
 
 export const schoolCycles = [
     { name: "Maternelle", order: 1 },
-    { name: "Enseignement primaire", order: 2 },
-    { name: "Enseignement secondaire du premier cycle", order: 3 },
-    { name: "Enseignement secondaire du second cycle", order: 4 },
+    { name: "Enseignement Primaire", order: 2 },
+    { name: "Enseignement Secondaire - Premier cycle", order: 3 },
+    { name: "Enseignement Secondaire - Deuxième cycle", order: 4 },
 ];
 
 export const schoolClasses = [
@@ -99,22 +99,22 @@ export const schoolClasses = [
     { name: "Petite Section", cycle: "Maternelle" },
     { name: "Moyenne Section", cycle: "Maternelle" },
     { name: "Grande Section", cycle: "Maternelle" },
-    // Primaire
-    { name: "CP1", cycle: "Enseignement primaire" },
-    { name: "CP2", cycle: "Enseignement primaire" },
-    { name: "CE1", cycle: "Enseignement primaire" },
-    { name: "CE2", cycle: "Enseignement primaire" },
-    { name: "CM1", cycle: "Enseignement primaire" },
-    { name: "CM2", cycle: "Enseignement primaire" },
-    // Collège
-    { name: "6ème", cycle: "Enseignement secondaire du premier cycle" },
-    { name: "5ème", cycle: "Enseignement secondaire du premier cycle" },
-    { name: "4ème", cycle: "Enseignement secondaire du premier cycle" },
-    { name: "3ème", cycle: "Enseignement secondaire du premier cycle" },
-    // Lycée
-    { name: "Seconde", cycle: "Enseignement secondaire du second cycle" },
-    { name: "Première", cycle: "Enseignement secondaire du second cycle" },
-    { name: "Terminale", cycle: "Enseignement secondaire du second cycle" },
+    // Primaire (selon le système ivoirien)
+    { name: "CP1 (1ère année)", cycle: "Enseignement Primaire" },
+    { name: "CP2 (2ème année)", cycle: "Enseignement Primaire" },
+    { name: "CE1 (3ème année)", cycle: "Enseignement Primaire" },
+    { name: "CE2 (4ème année)", cycle: "Enseignement Primaire" },
+    { name: "CM1 (5ème année)", cycle: "Enseignement Primaire" },
+    { name: "CM2 (6ème année)", cycle: "Enseignement Primaire" },
+    // Secondaire - Premier cycle (Collège)
+    { name: "6ème", cycle: "Enseignement Secondaire - Premier cycle" },
+    { name: "5ème", cycle: "Enseignement Secondaire - Premier cycle" },
+    { name: "4ème", cycle: "Enseignement Secondaire - Premier cycle" },
+    { name: "3ème", cycle: "Enseignement Secondaire - Premier cycle" },
+    // Secondaire - Deuxième cycle (Lycée)
+    { name: "Seconde", cycle: "Enseignement Secondaire - Deuxième cycle" },
+    { name: "Première", cycle: "Enseignement Secondaire - Deuxième cycle" },
+    { name: "Terminale", cycle: "Enseignement Secondaire - Deuxième cycle" },
 ];
 
     
