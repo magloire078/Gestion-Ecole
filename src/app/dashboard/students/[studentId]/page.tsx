@@ -5,7 +5,7 @@ import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar, Receipt } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar, Receipt, VenetianMask, MapPin } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -28,6 +28,8 @@ interface Student {
   classId: string;
   dateOfBirth: string;
   placeOfBirth: string;
+  gender: string;
+  address: string;
   previousSchool: string;
   parent1Name: string;
   parent1Contact: string;
@@ -229,6 +231,15 @@ export default function StudentProfilePage() {
                             <Cake className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Né(e) le <strong>{student.dateOfBirth}</strong> à <strong>{student.placeOfBirth}</strong></span>
                         </div>
+                        <div className="flex items-center">
+                            <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />
+                            <span>Sexe: <strong>{student.gender || 'N/A'}</strong></span>
+                        </div>
+                        <div className="flex items-start">
+                            <MapPin className="mr-3 h-5 w-5 text-muted-foreground flex-shrink-0" />
+                            <span>Adresse: <strong>{student.address || 'N/A'}</strong></span>
+                        </div>
+                        <Separator />
                         <div className="flex items-center">
                             <BookUser className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Classe: <strong>{student.class}</strong></span>

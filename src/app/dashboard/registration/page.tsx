@@ -49,6 +49,8 @@ export default function RegistrationPage() {
     name: '',
     dateOfBirth: '',
     placeOfBirth: '',
+    gender: '',
+    address: '',
     previousSchool: '',
     classId: '', // Storing the ID of the class now
     parent1Name: '',
@@ -92,6 +94,8 @@ export default function RegistrationPage() {
       name: formData.name,
       dateOfBirth: formData.dateOfBirth,
       placeOfBirth: formData.placeOfBirth,
+      gender: formData.gender,
+      address: formData.address,
       previousSchool: formData.previousSchool,
       classId: formData.classId,
       class: selectedClassInfo?.name || 'N/A',
@@ -157,16 +161,32 @@ export default function RegistrationPage() {
                         <Input id="placeOfBirth" name="placeOfBirth" value={formData.placeOfBirth} onChange={handleChange} placeholder="Ex: Dakar" required />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="previousSchool">Ancien établissement (si applicable)</Label>
-                        <Input id="previousSchool" name="previousSchool" value={formData.previousSchool} onChange={handleChange} placeholder="Ex: Lycée Lamine Gueye" />
+                        <Label htmlFor="gender">Sexe</Label>
+                        <Select name="gender" onValueChange={(value) => handleSelectChange('gender', value)} value={formData.gender}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner le sexe" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Masculin">Masculin</SelectItem>
+                                <SelectItem value="Féminin">Féminin</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                  </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="address">Adresse</Label>
+                    <Input id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Ex: Cité Keur Gorgui, Villa 123" />
+                </div>
               </div>
             )}
             
             {step === 2 && (
               <div className="space-y-4 animate-in fade-in-50">
                 <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations Scolaires</div>
+                 <div className="space-y-2">
+                    <Label htmlFor="previousSchool">Ancien établissement (si applicable)</Label>
+                    <Input id="previousSchool" name="previousSchool" value={formData.previousSchool} onChange={handleChange} placeholder="Ex: Lycée Lamine Gueye" />
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="classId">Classe souhaitée</Label>
                     <Select name="classId" onValueChange={(value) => handleSelectChange('classId', value)} value={formData.classId} required>
@@ -235,3 +255,5 @@ export default function RegistrationPage() {
     </div>
   );
 }
+
+    

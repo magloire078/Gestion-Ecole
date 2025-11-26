@@ -96,6 +96,8 @@
             "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
+            "gender": { "type": "string", "description": "Le sexe de l'élève (Masculin, Féminin)." },
+            "address": { "type": "string", "description": "L'adresse de l'élève." },
             "parent1Name": { "type": "string", "description": "Le nom du premier parent/tuteur." },
             "parent1Contact": { "type": "string", "description": "Le contact téléphonique du premier parent/tuteur." },
             "parent2Name": { "type": "string", "description": "Le nom du deuxième parent/tuteur (optionnel)." },
@@ -229,3 +231,5 @@
     }
   }
 }
+
+    
