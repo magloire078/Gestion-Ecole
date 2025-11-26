@@ -42,7 +42,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useAuthProtection } from '@/hooks/use-auth-protection';
-import { schoolClasses } from '@/lib/data';
+import { schoolClasses, schoolCycles } from '@/lib/data';
 
 // Define TypeScript interfaces based on backend.json
 interface Teacher {
@@ -268,7 +268,7 @@ export default function ClassesPage() {
   }
 
   const teacherOptions = teachers.map(t => ({ value: t.id, label: t.name }));
-  const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
+  const cycleOptions = schoolCycles.map(c => ({ value: c.name, label: c.name }));
   const classOptionsForCycle = formCycleName ? schoolClasses.filter(c => c.cycle === formCycleName).map(c => ({ value: c.name, label: c.name })) : [];
 
   return (
@@ -306,7 +306,8 @@ export default function ClassesPage() {
                         options={cycleOptions}
                         value={formCycleName}
                         onValueChange={value => {
-                            setFormCycleName(value);
+                            const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
+                            setFormCycleName(cycleOption ? cycleOption.value : '');
                             setFormClassName(''); // Reset class name when cycle changes
                         }}
                     />
@@ -315,11 +316,14 @@ export default function ClassesPage() {
                     <Label htmlFor="name" className="text-right">Classe</Label>
                     <Combobox
                         className="col-span-3"
-                        placeholder="Sélectionner une classe"
+                        placeholder={formCycleName ? "Sélectionner une classe" : "Sélectionnez un cycle d'abord"}
                         searchPlaceholder="Chercher une classe..."
                         options={classOptionsForCycle}
                         value={formClassName}
-                        onValueChange={setFormClassName}
+                        onValueChange={(value) => {
+                            const classOption = classOptionsForCycle.find(c => c.value.toLowerCase() === value.toLowerCase());
+                            setFormClassName(classOption ? classOption.value : '');
+                        }}
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -414,7 +418,8 @@ export default function ClassesPage() {
                     options={cycleOptions}
                     value={formCycleName}
                     onValueChange={value => {
-                        setFormCycleName(value);
+                        const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
+                        setFormCycleName(cycleOption ? cycleOption.value : '');
                         setFormClassName(''); // Reset class name when cycle changes
                     }}
                 />
@@ -423,11 +428,14 @@ export default function ClassesPage() {
                 <Label htmlFor="edit-name" className="text-right">Classe</Label>
                 <Combobox
                     className="col-span-3"
-                    placeholder="Sélectionner une classe"
+                    placeholder={formCycleName ? "Sélectionner une classe" : "Sélectionnez un cycle d'abord"}
                     searchPlaceholder="Chercher une classe..."
                     options={classOptionsForCycle}
                     value={formClassName}
-                    onValueChange={setFormClassName}
+                     onValueChange={(value) => {
+                        const classOption = classOptionsForCycle.find(c => c.value.toLowerCase() === value.toLowerCase());
+                        setFormClassName(classOption ? classOption.value : '');
+                    }}
                 />
              </div>
              <div className="grid grid-cols-4 items-center gap-4">
@@ -504,5 +512,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    

@@ -88,13 +88,9 @@ export default function RegistrationPage() {
       return;
     }
     
-    // Find the full class object from the selected classId
     const selectedClassInfo = classes.find(c => c.id === formData.classId);
-    
-    // Find the cycle from the standard schoolClasses list based on the class name
     const schoolClassInfo = schoolClasses.find(sc => sc.name === selectedClassInfo?.name);
     const studentCycle = schoolClassInfo?.cycle || selectedClassInfo?.cycle || 'N/A';
-
 
     const studentData = {
       matricule: generateMatricule(formData.name),
