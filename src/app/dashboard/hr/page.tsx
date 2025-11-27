@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -694,5 +693,3 @@ export default function HRPage() {
     </>
   );
 }
-
-    
