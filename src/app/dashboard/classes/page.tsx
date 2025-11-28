@@ -41,7 +41,6 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { schoolClasses, schoolCycles } from '@/lib/data';
 
 // Define TypeScript interfaces based on backend.json
@@ -71,7 +70,6 @@ type Cycle = {
 
 
 export default function ClassesPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
 
@@ -244,10 +242,6 @@ export default function ClassesPage() {
 
   const isLoading = !isClient || schoolDataLoading || classesLoading || teachersLoading;
   
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
-
   if (isLoading && !cycles.length) {
     return (
         <div className="space-y-4">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -5,7 +6,6 @@ import { useMemo } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query } from 'firebase/firestore';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { ReportCard } from '@/components/report-card';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -32,7 +32,6 @@ interface Teacher {
 
 
 export default function StudentReportPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const params = useParams();
   const studentId = params.studentId as string;
   const firestore = useFirestore();
@@ -59,10 +58,6 @@ export default function StudentReportPage() {
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
 
   const isLoading = schoolLoading || studentLoading || gradesLoading || teachersLoading;
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
 
   if (isLoading) {
     return (

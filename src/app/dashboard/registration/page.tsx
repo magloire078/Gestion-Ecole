@@ -14,7 +14,6 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { schoolClasses } from '@/lib/data';
 
@@ -39,7 +38,6 @@ const generateMatricule = (fullName: string): string => {
 };
 
 export default function RegistrationPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -127,8 +125,8 @@ export default function RegistrationPage() {
     });
   };
 
-  if (isAuthLoading || schoolDataLoading) {
-    return <AuthProtectionLoader />;
+  if (schoolDataLoading) {
+    return <div>Chargement...</div>;
   }
 
   return (

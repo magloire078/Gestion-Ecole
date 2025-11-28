@@ -13,7 +13,6 @@ import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, orderBy, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -105,7 +104,6 @@ const calculateAverages = (grades: GradeEntry[]) => {
 };
 
 export default function StudentProfilePage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const params = useParams();
   const router = useRouter();
   const studentId = params.studentId as string;
@@ -209,10 +207,6 @@ export default function StudentProfilePage() {
     setIsReceiptOpen(true);
   };
 
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
 
   if (isLoading) {
     return (
@@ -467,5 +461,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    

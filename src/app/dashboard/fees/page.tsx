@@ -50,7 +50,6 @@ import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch } from "firebase
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { format } from "date-fns";
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
@@ -90,7 +89,6 @@ const getImageHintForGrade = (grade: string): string => {
 
 
 export default function FeesPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
 
@@ -350,10 +348,6 @@ export default function FeesPage() {
   const isLoading = schoolDataLoading || feesLoading || studentsLoading || classesLoading;
 
   const cycleOptions = schoolCycles.map(cycle => ({ value: cycle.name, label: cycle.name }));
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
 
   return (
     <>

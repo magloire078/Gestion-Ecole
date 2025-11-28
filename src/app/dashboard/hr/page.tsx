@@ -47,7 +47,6 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { PayslipTemplate } from '@/components/payroll/payslip-template';
@@ -693,13 +692,18 @@ function HRContent() {
 }
 
 export default function HRPage() {
-    const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
     const { subscription, loading: subscriptionLoading } = useSubscription();
 
-    const isLoading = isAuthLoading || subscriptionLoading;
+    const isLoading = subscriptionLoading;
 
     if (isLoading) {
-        return <AuthProtectionLoader />;
+        return (
+            <div className="flex h-[calc(100vh-100px)] w-full items-center justify-center">
+                <div className="text-center">
+                    <p className="text-lg font-semibold">Chargement...</p>
+                </div>
+            </div>
+        );
     }
 
     if (subscription?.plan !== 'Pro') {

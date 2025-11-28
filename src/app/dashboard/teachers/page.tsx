@@ -48,7 +48,6 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -73,7 +72,6 @@ interface Teacher extends TeacherFormValues {
 }
 
 export default function TeachersPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -225,10 +223,6 @@ export default function TeachersPage() {
   };
 
   const isLoading = schoolLoading || teachersLoading || classesLoading;
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
 
   const getClassName = (classId?: string) => {
       if(!classId) return 'N/A';

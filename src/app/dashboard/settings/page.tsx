@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -9,11 +10,9 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { Copy } from "lucide-react";
 
 export default function SettingsPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const { toast } = useToast();
   const { user } = useUser();
   const { 
@@ -68,10 +67,6 @@ export default function SettingsPage() {
     }
   };
   
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
-
   const renderSkeleton = () => (
     <div className="space-y-6">
       <div>

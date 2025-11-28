@@ -58,7 +58,6 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { differenceInYears } from "date-fns";
 
@@ -111,7 +110,6 @@ const SentimentDisplay = ({ sentiment }: { sentiment: Sentiment }) => {
 
 
 export default function StudentsPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const router = useRouter();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -251,10 +249,6 @@ export default function StudentsPage() {
   }
 
   const isLoading = schoolLoading || studentsLoading || classesLoading;
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
 
   return (
     <>

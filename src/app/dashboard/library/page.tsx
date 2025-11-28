@@ -48,7 +48,6 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 
 interface LibraryBook {
     id: string;
@@ -58,7 +57,6 @@ interface LibraryBook {
 }
 
 export default function LibraryPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   
@@ -161,10 +159,6 @@ export default function LibraryPage() {
   };
   
   const isLoading = schoolLoading || booksLoading;
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
 
   return (
     <>

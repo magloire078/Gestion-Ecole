@@ -5,15 +5,15 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookUser, BookOpen, Landmark, UserPlus, TrendingUp, TrendingDown, Scale } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, doc } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { AccountingTransaction } from '@/lib/data';
+import { useRouter } from 'next/navigation';
 
 interface Book {
     id: string;
@@ -43,15 +43,53 @@ type Activity = {
     date: Date;
 };
 
+function AuthProtectionLoader() {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg font-semibold">Chargement...</p>
+          <p className="text-muted-foreground">Vérification de votre compte et de votre école.</p>
+        </div>
+      </div>
+    );
+}
+
 export default function DashboardPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
+  const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
+  const [authStatus, setAuthStatus] = useState<'loading' | 'onboarding' | 'authenticated' | 'unauthenticated'>('loading');
+
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (userLoading) return;
+
+    if (!user) {
+      setAuthStatus('unauthenticated');
+      router.push('/login');
+      return;
+    }
+
+    const userDocRef = doc(firestore, 'utilisateurs', user.uid);
+    getDoc(userDocRef).then(docSnap => {
+      if (docSnap.exists()) {
+        setAuthStatus('authenticated');
+      } else {
+        setAuthStatus('onboarding');
+        router.push('/onboarding');
+      }
+    }).catch(error => {
+      console.error("Error checking onboarding status:", error);
+      setAuthStatus('onboarding');
+      router.push('/onboarding');
+    });
+  }, [user, userLoading, router, firestore]);
 
   // --- Data for Stats Cards ---
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
@@ -167,7 +205,7 @@ export default function DashboardPage() {
   const overallLoading = schoolLoading || studentsLoading || teachersLoading || classesLoading || libraryLoading || transactionsLoading;
   const activityLoading = recentStudentsLoading || recentBooksLoading;
 
-  if (isAuthLoading) {
+  if (authStatus !== 'authenticated') {
     return <AuthProtectionLoader />;
   }
 
