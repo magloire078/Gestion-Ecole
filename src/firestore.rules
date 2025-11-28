@@ -41,7 +41,8 @@ service cloud.firestore {
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
-        allow update: if isSchoolDirector(schoolId, request.auth.uid) && ('matricule' in request.resource.data || 'name' in request.resource.data || 'directorName' in request.resource.data || 'subscription' in request.resource.data);
+        // Allow the director to update their own school's information.
+        allow update: if request.auth.uid == resource.data.directorId;
         allow delete: if false;
 
         // --- Subcollections with Specific Rules ---
@@ -50,7 +51,7 @@ service cloud.firestore {
             // Allow users to create their own doc, or directors to manage users
             allow create: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
             // Allow directors to update any user, and users to update their own profile
-            allow update: if isSchoolDirector(schoolId, request.auth.uid) || (isCreatingOwnDocument(userId) && request.resource.data.keys().hasOnly(['displayName']));
+            allow update: if isSchoolDirector(schoolId, request.auth.uid) || isCreatingOwnDocument(userId);
             allow read, list: if isUserInSchool(schoolId);
             allow delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
