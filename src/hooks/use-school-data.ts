@@ -94,9 +94,6 @@ export function useSchoolData() {
         if (!schoolId || !user) {
             throw new Error("ID de l'école ou utilisateur non disponible. Impossible de mettre à jour.");
         }
-        
-        // Optimistically update local state
-        setSchoolData(prevData => prevData ? { ...prevData, ...data } : data);
 
         const batch = writeBatch(firestore);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
@@ -116,9 +113,7 @@ export function useSchoolData() {
                 requestResourceData: data 
             });
             errorEmitter.emit('permission-error', permissionError);
-            // Revert optimistic update on error
-            // Note: This is a simple revert. For a more robust solution, you'd refetch.
-             setSchoolData(prevData => prevData ? { ...prevData } : null);
+            // Revert optimistic update on error is no longer needed
             throw permissionError;
         }
     }, [schoolId, user, firestore]);
