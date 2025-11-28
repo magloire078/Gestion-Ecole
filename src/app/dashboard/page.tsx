@@ -14,6 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { AccountingTransaction } from '@/lib/data';
 import { useRouter } from 'next/navigation';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface Book {
     id: string;
@@ -55,6 +56,7 @@ function AuthProtectionLoader() {
 }
 
 export default function DashboardPage() {
+  const isMounted = useHydrationFix();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
@@ -95,7 +97,7 @@ export default function DashboardPage() {
 
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(classesQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const { data: libraryData, loading: libraryLoading } = useCollection(libraryQuery);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
@@ -202,6 +204,10 @@ export default function DashboardPage() {
 
   if (authStatus !== 'authenticated') {
     return <AuthProtectionLoader />;
+  }
+
+  if (!isMounted) {
+    return null;
   }
 
   return (
