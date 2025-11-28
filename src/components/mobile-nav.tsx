@@ -110,7 +110,7 @@ export function MobileNav() {
                 </AccordionItem>
                 
                 <AccordionItem value="finance" className="border-b-0">
-                    <AccordionTrigger className="py-2 hover_no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
                         <span className='flex items-center gap-3'><Landmark className="h-5 w-5" />Finance</span>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
