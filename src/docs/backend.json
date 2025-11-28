@@ -112,7 +112,7 @@
         "description": "Un élève inscrit à l'école.",
         "type": "object",
         "properties": {
-            "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève, généré automatiquement." },
+            "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève." },
             "name": { "type": "string", "description": "Le nom complet de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe de l'élève." },
             "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
@@ -260,5 +260,3 @@
     }
   }
 }
-
-    

@@ -23,20 +23,6 @@ interface Class {
   cycle: string;
 }
 
-// Fonction pour générer un numéro matricule
-const generateMatricule = (fullName: string): string => {
-    if (!fullName) return '';
-    const parts = fullName.trim().split(/\s+/);
-    const lastName = parts.length > 1 ? parts[parts.length - 1] : parts[0] || '';
-    const firstName = parts[0] || '';
-    
-    const lastNamePrefix = lastName.substring(0, 3).toUpperCase();
-    const firstNamePrefix = firstName.substring(0, 3).toUpperCase();
-    const year = new Date().getFullYear().toString().slice(-2);
-
-    return `${lastNamePrefix}${firstNamePrefix}-${year}`;
-};
-
 export default function RegistrationPage() {
   const firestore = useFirestore();
   const router = useRouter();
@@ -46,6 +32,7 @@ export default function RegistrationPage() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: '',
+    matricule: '',
     dateOfBirth: '',
     placeOfBirth: '',
     gender: '',
@@ -77,11 +64,11 @@ export default function RegistrationPage() {
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!schoolId || !formData.name || !formData.dateOfBirth || !formData.placeOfBirth || !formData.classId || !formData.parent1Name || !formData.parent1Contact) {
+    if (!schoolId || !formData.name || !formData.dateOfBirth || !formData.placeOfBirth || !formData.classId || !formData.parent1Name || !formData.parent1Contact || !formData.matricule) {
       toast({
         variant: "destructive",
         title: "Champs requis",
-        description: "Veuillez remplir tous les champs obligatoires.",
+        description: "Veuillez remplir tous les champs obligatoires, y compris le matricule.",
       });
       return;
     }
@@ -91,7 +78,7 @@ export default function RegistrationPage() {
     const studentCycle = schoolClassInfo?.cycle || selectedClassInfo?.cycle || 'N/A';
 
     const studentData = {
-      matricule: generateMatricule(formData.name),
+      matricule: formData.matricule,
       name: formData.name,
       dateOfBirth: formData.dateOfBirth,
       placeOfBirth: formData.placeOfBirth,
@@ -151,16 +138,22 @@ export default function RegistrationPage() {
                     <Label htmlFor="name">Nom complet de l'élève</Label>
                     <Input id="name" name="name" value={formData.name} onChange={handleChange} placeholder="Ex: Adama Gueye" required />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date de naissance</Label>
-                    <Input id="dateOfBirth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} type="date" required />
+                   <div className="space-y-2">
+                    <Label htmlFor="matricule">Numéro Matricule</Label>
+                    <Input id="matricule" name="matricule" value={formData.matricule} onChange={handleChange} placeholder="Ex: 2024-001" required />
                   </div>
                 </div>
                  <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
+                        <Label htmlFor="dateOfBirth">Date de naissance</Label>
+                        <Input id="dateOfBirth" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} type="date" required />
+                    </div>
+                    <div className="space-y-2">
                         <Label htmlFor="placeOfBirth">Lieu de naissance</Label>
                         <Input id="placeOfBirth" name="placeOfBirth" value={formData.placeOfBirth} onChange={handleChange} placeholder="Ex: Dakar" required />
                     </div>
+                 </div>
+                 <div className="grid sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="gender">Sexe</Label>
                         <Select name="gender" onValueChange={(value) => handleSelectChange('gender', value)} value={formData.gender}>
@@ -173,11 +166,11 @@ export default function RegistrationPage() {
                             </SelectContent>
                         </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address">Adresse</Label>
+                      <Input id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Ex: Cité Keur Gorgui, Villa 123" />
+                    </div>
                  </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="address">Adresse</Label>
-                    <Input id="address" name="address" value={formData.address} onChange={handleChange} placeholder="Ex: Cité Keur Gorgui, Villa 123" />
-                </div>
               </div>
             )}
             

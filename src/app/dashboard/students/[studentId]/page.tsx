@@ -259,7 +259,7 @@ export default function StudentProfilePage() {
                         </Avatar>
                         <div>
                              <CardTitle className="text-2xl">{student.name}</CardTitle>
-                             <CardDescription>Matricule: {student.matricule || 'N/A'}</CardDescription>
+                             <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
