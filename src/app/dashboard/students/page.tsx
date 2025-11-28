@@ -59,7 +59,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
-import { differenceInYears } from "date-fns";
+import { differenceInYears, differenceInMonths, addYears } from "date-fns";
 
 interface Student {
   id: string;
@@ -236,7 +236,17 @@ export default function StudentsPage() {
   const getAge = (dateOfBirth: string | undefined) => {
     if (!dateOfBirth) return 'N/A';
     try {
-      return differenceInYears(new Date(), new Date(dateOfBirth));
+      const birthDate = new Date(dateOfBirth);
+      const today = new Date();
+      const years = differenceInYears(today, birthDate);
+      const monthDate = addYears(birthDate, years);
+      const months = differenceInMonths(today, monthDate);
+      
+      let ageString = `${years} an${years > 1 ? 's' : ''}`;
+      if (months > 0) {
+        ageString += ` ${months} mois`;
+      }
+      return ageString;
     } catch {
       return 'N/A';
     }
