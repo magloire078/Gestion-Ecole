@@ -10,7 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PlusCircle, MoreHorizontal, Mail, Phone, BadgeDollarSign, Calendar, FileText, Lock } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -52,7 +52,6 @@ import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenc
 import { fr } from "date-fns/locale";
 import { PayslipTemplate } from '@/components/payroll/payslip-template';
 import { useSubscription } from '@/hooks/use-subscription';
-import { Alert, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 
 // ====================================================================================
@@ -732,5 +731,3 @@ export default function HRPage() {
     
     return <HRContent />;
 }
-
-    
