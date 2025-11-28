@@ -60,7 +60,7 @@ export function UserNav() {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
-  const displayName = directorName || user?.displayName || 'Utilisateur';
+  const displayName = directorName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
   return (

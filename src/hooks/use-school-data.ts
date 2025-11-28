@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, getDoc, DocumentData, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, DocumentData, setDoc, writeBatch } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -18,6 +18,10 @@ interface SchoolData extends DocumentData {
     directorName?: string;
     schoolCode?: string;
     subscription?: Subscription;
+}
+
+interface SchoolUserData extends DocumentData {
+    displayName?: string;
 }
 
 export function useSchoolData() {
@@ -42,78 +46,96 @@ export function useSchoolData() {
             return;
         }
 
-        // --- Nouvelle logique ---
-        // 1. Récupérer le schoolId directement depuis la collection `utilisateurs`
         const userRootRef = doc(firestore, 'utilisateurs', user.uid);
-        getDoc(userRootRef).then(userDocSnap => {
+        const unsubscribe = onSnapshot(userRootRef, (userDocSnap) => {
             if (userDocSnap.exists()) {
                 const userSchoolId = userDocSnap.data()?.schoolId;
-                if (userSchoolId) {
+                if (userSchoolId && userSchoolId !== schoolId) {
                     setSchoolId(userSchoolId);
-                } else {
-                    setLoading(false); // Pas de schoolId, probablement en cours d'onboarding
+                } else if (!userSchoolId) {
+                     setLoading(false);
                 }
             } else {
-                setLoading(false); // Pas encore de document, en cours d'onboarding
+                setLoading(false);
             }
-        }).catch(error => {
+        }, (error) => {
             console.error("Error fetching user root doc:", error);
             setLoading(false);
         });
+        
+        return () => unsubscribe();
 
-    }, [user, userLoading, firestore]);
+    }, [user, userLoading, firestore, schoolId]);
 
     useEffect(() => {
         if (!schoolId) {
-            // Si pas de schoolId, on ne fait rien et on attend. 
-            // `loading` reste à true jusqu'à ce que `schoolId` soit défini.
             return;
         }
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
-        const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
+        const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as SchoolData;
                 const name = data.name || 'Mon École';
-                const dirName = data.directorName || user?.displayName || 'Directeur/rice';
-                
                 setSchoolName(name);
-                setDirectorName(dirName);
                 setSchoolCode(data.schoolCode || null);
                 setSubscription(data.subscription || { plan: 'Essentiel', status: 'active' });
-                
                 document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolName('École non trouvée');
                 document.title = DEFAULT_TITLE;
             }
-            setLoading(false);
+             if (loading && user) setLoading(false);
         }, (error) => {
              const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
              errorEmitter.emit('permission-error', permissionError);
              setLoading(false);
         });
 
-        // Cleanup subscription on component unmount
-        return () => unsubscribe();
-        
-    }, [schoolId, firestore, user]);
+        const userInSchoolRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user?.uid}`);
+        const unsubscribeUser = onSnapshot(userInSchoolRef, (docSnap) => {
+            if (docSnap.exists()) {
+                 const data = docSnap.data() as SchoolUserData;
+                 setDirectorName(data.displayName || user?.displayName || 'Directeur/rice');
+            }
+             if (loading && user) setLoading(false);
+        });
 
-    const updateSchoolData = (data: Partial<SchoolData>) => {
-        if (!schoolId) {
-            throw new Error("ID de l'école non disponible. Impossible de mettre à jour.");
-        }
-        const schoolDocRef = doc(firestore, 'ecoles', schoolId);
+
+        return () => {
+          unsubscribeSchool();
+          unsubscribeUser();
+        };
         
-        return setDoc(schoolDocRef, data, { merge: true })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'update', requestResourceData: data });
+    }, [schoolId, firestore, user, loading]);
+
+    const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
+        if (!schoolId || !user) {
+            throw new Error("ID de l'école ou utilisateur non disponible. Impossible de mettre à jour.");
+        }
+
+        const batch = writeBatch(firestore);
+        const schoolDocRef = doc(firestore, 'ecoles', schoolId);
+        batch.update(schoolDocRef, data);
+        
+        // Si le nom du directeur est mis à jour, le synchroniser dans le profil utilisateur de l'école aussi
+        if (data.directorName) {
+            const userInSchoolRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
+            batch.update(userInSchoolRef, { displayName: data.directorName });
+        }
+        
+        try {
+            await batch.commit();
+        } catch (serverError) {
+            const permissionError = new FirestorePermissionError({ 
+                path: `BATCH WRITE on /ecoles/${schoolId} and /ecoles/${schoolId}/utilisateurs/${user.uid}`, 
+                operation: 'update', 
+                requestResourceData: data 
+            });
             errorEmitter.emit('permission-error', permissionError);
             throw permissionError;
-        });
-    };
+        }
+    }, [schoolId, user, firestore]);
 
     return { schoolId, schoolName, directorName, schoolCode, subscription, loading, updateSchoolData };
 }
-
-    
