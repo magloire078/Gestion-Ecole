@@ -47,9 +47,17 @@ service cloud.firestore {
         // --- Subcollections with Specific Rules ---
 
         match /utilisateurs/{userId} {
-            allow create, update: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
+            // Allow users to create their own doc, or directors to manage users
+            allow create: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
+            // Allow directors to update any user, and users to update their own profile
+            allow update: if isSchoolDirector(schoolId, request.auth.uid) || isCreatingOwnDocument(userId);
             allow read, list: if isUserInSchool(schoolId);
             allow delete: if isSchoolDirector(schoolId, request.auth.uid);
+        }
+
+        match /enseignants/{teacherId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid);
         }
 
         match /eleves/{studentId} {
@@ -76,8 +84,7 @@ service cloud.firestore {
         }
 
         match /personnel/{staffId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow write: if isSchoolDirector(schoolId, request.auth.uid);
+            allow read, list, create, update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
 
         // --- Generic Rules for other subcollections ---
