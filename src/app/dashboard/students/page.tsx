@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal } from "lucide-react";
+import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal, Eye } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { analyzeAndSummarizeFeedback } from "@/ai/flows/analyze-and-summarize-feedback";
 import { useToast } from "@/hooks/use-toast";
@@ -41,6 +41,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import {
@@ -324,7 +325,12 @@ export default function StudentsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => router.push(`/dashboard/students/${student.id}`)}>
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    Voir la fiche
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
+                                  <DropdownMenuSeparator />
                                   <DropdownMenuItem 
                                     className="text-destructive"
                                     onClick={() => handleOpenDeleteDialog(student)}
