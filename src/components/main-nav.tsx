@@ -38,6 +38,7 @@ const financialLinks = [
 ];
 
 const settingsLinks = [
+    { href: '/dashboard/settings', label: 'Général', icon: FolderCog },
     { href: '/dashboard/settings/subscription', label: 'Abonnement', icon: Wallet },
 ]
 
@@ -123,13 +124,6 @@ export function MainNav() {
                  <span className='flex items-center gap-3'><Settings className="h-4 w-4" />Paramètres</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
-                <Link
-                  href="/dashboard/settings"
-                  className={cn(navClass, pathname === '/dashboard/settings' && activeClass)}
-                >
-                  <FolderCog className="h-4 w-4" />
-                  Général
-                </Link>
                {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
