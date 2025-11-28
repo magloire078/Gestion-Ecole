@@ -43,6 +43,7 @@ export type Class = {
   mainTeacherId: string;
   building: string;
   cycle: string;
+  filiere?: string; // Stream/Major
 };
 
 export type Book = {
@@ -100,6 +101,7 @@ export const schoolCycles = [
     { name: "Enseignement Primaire", order: 2 },
     { name: "Enseignement Secondaire - Premier cycle", order: 3 },
     { name: "Enseignement Secondaire - Deuxième cycle", order: 4 },
+    { name: "Enseignement Supérieur", order: 5 },
 ];
 
 export const schoolClasses = [
@@ -123,6 +125,18 @@ export const schoolClasses = [
     { name: "Seconde", cycle: "Enseignement Secondaire - Deuxième cycle" },
     { name: "Première", cycle: "Enseignement Secondaire - Deuxième cycle" },
     { name: "Terminale", cycle: "Enseignement Secondaire - Deuxième cycle" },
+    // Supérieur
+    { name: "BTS 1", cycle: "Enseignement Supérieur" },
+    { name: "BTS 2", cycle: "Enseignement Supérieur" },
+    { name: "Licence 1", cycle: "Enseignement Supérieur" },
+    { name: "Licence 2", cycle: "Enseignement Supérieur" },
+    { name: "Licence 3", cycle: "Enseignement Supérieur" },
 ];
 
-    
+export const higherEdFiliere = [
+    "Ressources Humaines et Communication",
+    "Finance Comptabilité et Gestion des Entreprises",
+    "Logistique",
+    "Informatique Développeur d'Application",
+    "Marketing",
+];

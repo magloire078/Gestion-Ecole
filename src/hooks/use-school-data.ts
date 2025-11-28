@@ -17,6 +17,7 @@ interface SchoolData extends DocumentData {
     name?: string;
     directorName?: string;
     schoolCode?: string;
+    matricule?: string;
     subscription?: Subscription;
 }
 
@@ -28,6 +29,7 @@ export function useSchoolData() {
     const [schoolName, setSchoolName] = useState<string | null>(null);
     const [directorName, setDirectorName] = useState<string | null>(null);
     const [schoolCode, setSchoolCode] = useState<string | null>(null);
+    const [schoolMatricule, setSchoolMatricule] = useState<string | null>(null);
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -76,6 +78,7 @@ export function useSchoolData() {
                 setSchoolName(name);
                 setDirectorName(data.directorName || user?.displayName || 'Directeur/rice');
                 setSchoolCode(data.schoolCode || null);
+                setSchoolMatricule(data.matricule || null);
                 setSubscription(data.subscription || { plan: 'Essentiel', status: 'active' });
                 document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
@@ -124,5 +127,5 @@ export function useSchoolData() {
         }
     }, [schoolId, user, firestore]);
 
-    return { schoolId, schoolName, directorName, schoolCode, subscription, loading, updateSchoolData };
+    return { schoolId, schoolName, directorName, schoolCode, schoolMatricule, subscription, loading, updateSchoolData };
 }

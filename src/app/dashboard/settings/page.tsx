@@ -17,14 +17,16 @@ export default function SettingsPage() {
   const { user } = useUser();
   const { 
     schoolName: initialSchoolName, 
-    directorName: initialDirectorName, 
+    directorName: initialDirectorName,
     schoolCode,
+    schoolMatricule: initialSchoolMatricule,
     loading, 
     updateSchoolData 
   } = useSchoolData();
 
   const [schoolName, setSchoolName] = useState("");
   const [directorName, setDirectorName] = useState("");
+  const [schoolMatricule, setSchoolMatricule] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
 
@@ -32,8 +34,9 @@ export default function SettingsPage() {
     if (!loading) {
       setSchoolName(initialSchoolName || "");
       setDirectorName(initialDirectorName || "");
+      setSchoolMatricule(initialSchoolMatricule || "");
     }
-  }, [initialSchoolName, initialDirectorName, loading]);
+  }, [initialSchoolName, initialDirectorName, initialSchoolMatricule, loading]);
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
@@ -41,6 +44,7 @@ export default function SettingsPage() {
       await updateSchoolData({
         name: schoolName,
         directorName: directorName,
+        matricule: schoolMatricule,
       });
       toast({
         title: "Paramètres enregistrés",
@@ -126,9 +130,18 @@ export default function SettingsPage() {
               placeholder="Nom de votre école" 
             />
           </div>
+          <div className="space-y-2">
+            <Label htmlFor="school-matricule">Matricule de l'Établissement</Label>
+            <Input 
+              id="school-matricule" 
+              value={schoolMatricule}
+              onChange={(e) => setSchoolMatricule(e.target.value)}
+              placeholder="Ex: 0123/ETAB/2024" 
+            />
+          </div>
            {schoolCode && (
             <div className="space-y-2">
-              <Label htmlFor="school-code">Code de l'Établissement</Label>
+              <Label htmlFor="school-code">Code d'Invitation</Label>
               <div className="flex items-center gap-2">
                 <Input id="school-code" value={schoolCode} readOnly className="bg-muted" />
                 <Button variant="outline" size="icon" onClick={handleCopyCode}>

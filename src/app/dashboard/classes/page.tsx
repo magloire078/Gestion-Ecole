@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Users, User, Building, MoreHorizontal } from "lucide-react";
+import { PlusCircle, Users, User, Building, MoreHorizontal, BookCopy } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
@@ -41,7 +41,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { schoolClasses, schoolCycles } from '@/lib/data';
+import { schoolClasses, schoolCycles, higherEdFiliere } from '@/lib/data';
 
 // Define TypeScript interfaces based on backend.json
 interface Teacher {
@@ -60,6 +60,7 @@ interface Class {
   mainTeacherId: string;
   building: string;
   cycle: string;
+  filiere?: string;
 }
 
 // Using a static type for cycles for reliability
@@ -99,6 +100,7 @@ export default function ClassesPage() {
   const [formStudentCount, setFormStudentCount] = useState("");
   const [formBuilding, setFormBuilding] = useState("");
   const [formCycleName, setFormCycleName] = useState("");
+  const [formFiliere, setFormFiliere] = useState("");
 
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
@@ -121,6 +123,7 @@ export default function ClassesPage() {
     setFormStudentCount("");
     setFormBuilding("");
     setFormCycleName("");
+    setFormFiliere("");
   }
   
   const getClassDocRef = (classId: string) => doc(firestore, `ecoles/${schoolId}/classes/${classId}`);
@@ -132,12 +135,13 @@ export default function ClassesPage() {
         return;
     }
     
-    const newClassData = {
+    const newClassData: Omit<Class, 'id'> = {
         name: formClassName,
         mainTeacherId: formTeacherId,
         studentCount: parseInt(formStudentCount, 10),
         building: formBuilding,
         cycle: formCycleName,
+        filiere: formCycleName === "Enseignement Supérieur" ? formFiliere : "",
     };
 
     const classCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
@@ -159,6 +163,7 @@ export default function ClassesPage() {
     setFormStudentCount(String(cls.studentCount));
     setFormBuilding(cls.building);
     setFormCycleName(cls.cycle);
+    setFormFiliere(cls.filiere || "");
     setIsEditDialogOpen(true);
   };
 
@@ -169,12 +174,13 @@ export default function ClassesPage() {
     }
     
     const classDocRef = getClassDocRef(editingClass.id);
-    const updatedData = {
+    const updatedData: Omit<Class, 'id'> = {
       name: formClassName,
       mainTeacherId: formTeacherId,
       studentCount: parseInt(formStudentCount, 10),
       building: formBuilding,
       cycle: formCycleName,
+      filiere: formCycleName === "Enseignement Supérieur" ? formFiliere : "",
     };
     
     setDoc(classDocRef, updatedData, { merge: true })
@@ -260,6 +266,7 @@ export default function ClassesPage() {
   const teacherOptions = teachers.map(t => ({ value: t.id, label: t.name }));
   const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
   const classOptionsForCycle = formCycleName ? schoolClasses.filter(c => c.cycle === formCycleName).map(c => ({ value: c.name, label: c.name })) : [];
+  const filiereOptions = higherEdFiliere.map(f => ({ value: f, label: f }));
 
   return (
     <>
@@ -299,9 +306,23 @@ export default function ClassesPage() {
                             const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
                             setFormCycleName(cycleOption ? cycleOption.value : '');
                             setFormClassName(''); // Reset class name when cycle changes
+                            setFormFiliere('');
                         }}
                     />
                   </div>
+                  {formCycleName === "Enseignement Supérieur" && (
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="filiere" className="text-right">Filière</Label>
+                         <Combobox
+                            className="col-span-3"
+                            placeholder="Sélectionner une filière"
+                            searchPlaceholder="Chercher une filière..."
+                            options={filiereOptions}
+                            value={formFiliere}
+                            onValueChange={setFormFiliere}
+                        />
+                    </div>
+                  )}
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">Classe</Label>
                     <Combobox
@@ -372,6 +393,7 @@ export default function ClassesPage() {
                                 <CardDescription>ID: {cls.id.substring(0, 10)}...</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-3 flex-1">
+                                    {cls.filiere && <div className="flex items-center text-sm text-muted-foreground"><BookCopy className="mr-2 h-4 w-4 flex-shrink-0" /><span>Filière: {cls.filiere}</span></div>}
                                     <div className="flex items-center text-sm text-muted-foreground"><Building className="mr-2 h-4 w-4 flex-shrink-0" /><span>Bâtiment: {cls.building}</span></div>
                                     <div className="flex items-center text-sm text-muted-foreground"><User className="mr-2 h-4 w-4 flex-shrink-0" /><span>Prof. principal: {mainTeacher?.name || 'Non assigné'}</span></div>
                                     <div className="flex items-center text-sm text-muted-foreground"><Users className="mr-2 h-4 w-4 flex-shrink-0" /><span>{cls.studentCount} élèves</span></div>
@@ -411,9 +433,23 @@ export default function ClassesPage() {
                         const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
                         setFormCycleName(cycleOption ? cycleOption.value : '');
                         setFormClassName(''); // Reset class name when cycle changes
+                        setFormFiliere('');
                     }}
                 />
             </div>
+             {formCycleName === "Enseignement Supérieur" && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="filiere" className="text-right">Filière</Label>
+                        <Combobox
+                        className="col-span-3"
+                        placeholder="Sélectionner une filière"
+                        searchPlaceholder="Chercher une filière..."
+                        options={filiereOptions}
+                        value={formFiliere}
+                        onValueChange={setFormFiliere}
+                    />
+                </div>
+            )}
              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-name" className="text-right">Classe</Label>
                 <Combobox
