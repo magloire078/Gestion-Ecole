@@ -8,6 +8,7 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 export default function SubscriptionPage() {
     const { schoolName, loading: schoolLoading } = useSchoolData();
@@ -61,7 +62,7 @@ export default function SubscriptionPage() {
             ],
             isCurrent: subscription?.plan === "Essentiel",
             action: handleDowngrade,
-            actionLabel: "Revenir au plan Essentiel",
+            actionLabel: "Votre Plan Actuel",
         },
         {
             name: "Pro",
@@ -107,11 +108,11 @@ export default function SubscriptionPage() {
             </div>
             <div className="grid gap-8 md:grid-cols-2">
                 {plans.map(plan => (
-                    <Card key={plan.name} className={plan.isCurrent ? "border-primary border-2" : ""}>
+                    <Card key={plan.name} className={plan.isCurrent ? "border-primary" : ""}>
                         <CardHeader>
-                            <CardTitle className="flex justify-between items-center">
+                            <CardTitle className="flex items-center gap-2">
                                 <span>{plan.name}</span>
-                                {plan.isCurrent && <span className="text-xs font-normal bg-primary text-primary-foreground rounded-full px-3 py-1">Plan Actuel</span>}
+                                {plan.isCurrent && <Badge variant="default" className="text-xs">Plan</Badge>}
                             </CardTitle>
                             <CardDescription>{plan.description}</CardDescription>
                         </CardHeader>
@@ -121,8 +122,8 @@ export default function SubscriptionPage() {
                              </div>
                              <ul className="space-y-2 text-sm text-muted-foreground">
                                 {plan.features.map(feature => (
-                                    <li key={feature} className="flex items-center gap-2">
-                                        <CheckCircle className="h-4 w-4 text-emerald-500" />
+                                    <li key={feature} className="flex items-start gap-2">
+                                        <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
                                         <span>{feature}</span>
                                     </li>
                                 ))}
@@ -130,12 +131,8 @@ export default function SubscriptionPage() {
                         </CardContent>
                         <CardFooter>
                             <Button className="w-full" onClick={plan.action} disabled={plan.isCurrent}>
-                                {plan.isCurrent ? "Votre Plan Actuel" : (
-                                    <>
-                                        {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
-                                        {plan.actionLabel}
-                                    </>
-                                )}
+                                {plan.name === 'Pro' && !plan.isCurrent && <Zap className="mr-2 h-4 w-4" />}
+                                {plan.actionLabel}
                             </Button>
                         </CardFooter>
                     </Card>
