@@ -20,9 +20,6 @@ import { Button } from "@/components/ui/button";
 import {
   PlusCircle,
   MoreHorizontal,
-  TrendingUp,
-  TrendingDown,
-  Scale,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -207,13 +204,6 @@ export default function AccountingPage() {
     });
   };
 
-  const { totalRevenue, totalExpenses, netBalance } = useMemo(() => {
-    const totalRevenue = transactions.filter(t => t.type === 'Revenu').reduce((sum, t) => sum + t.amount, 0);
-    const totalExpenses = transactions.filter(t => t.type === 'Dépense').reduce((sum, t) => sum + t.amount, 0);
-    const netBalance = totalRevenue - totalExpenses;
-    return { totalRevenue, totalExpenses, netBalance };
-  }, [transactions]);
-  
   const formatCurrency = (value: number) => isClient ? `${value.toLocaleString('fr-FR')} CFA` : `${value} CFA`;
 
   const handleCreateCategory = (newCategory: string) => {
@@ -241,39 +231,6 @@ export default function AccountingPage() {
           <p className="text-muted-foreground">
             Suivez les revenus, les dépenses et la santé financière de votre école.
           </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Revenu Total</CardTitle>
-                <TrendingUp className="h-4 w-4 text-emerald-500" />
-                </CardHeader>
-                <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold text-emerald-500">{formatCurrency(totalRevenue)}</div>}
-                <p className="text-xs text-muted-foreground">Sur la période sélectionnée</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Dépenses Totales</CardTitle>
-                <TrendingDown className="h-4 w-4 text-destructive" />
-                </CardHeader>
-                <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold text-destructive">{formatCurrency(totalExpenses)}</div>}
-                <p className="text-xs text-muted-foreground">Sur la période sélectionnée</p>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Solde Net</CardTitle>
-                <Scale className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className={`text-2xl font-bold ${netBalance >= 0 ? 'text-primary' : 'text-destructive'}`}>{formatCurrency(netBalance)}</div>}
-                <p className="text-xs text-muted-foreground">Revenus - Dépenses</p>
-                </CardContent>
-            </Card>
         </div>
         
         <AccountingCharts transactions={transactions} />
