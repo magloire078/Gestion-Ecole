@@ -20,10 +20,6 @@ interface SchoolData extends DocumentData {
     subscription?: Subscription;
 }
 
-interface SchoolUserData extends DocumentData {
-    displayName?: string;
-}
-
 export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
@@ -78,11 +74,13 @@ export function useSchoolData() {
                 const data = docSnap.data() as SchoolData;
                 const name = data.name || 'Mon École';
                 setSchoolName(name);
+                setDirectorName(data.directorName || user?.displayName || 'Directeur/rice');
                 setSchoolCode(data.schoolCode || null);
                 setSubscription(data.subscription || { plan: 'Essentiel', status: 'active' });
                 document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolName('École non trouvée');
+                setDirectorName('N/A');
                 document.title = DEFAULT_TITLE;
             }
              if (loading && user) setLoading(false);
@@ -92,19 +90,8 @@ export function useSchoolData() {
              setLoading(false);
         });
 
-        const userInSchoolRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user?.uid}`);
-        const unsubscribeUser = onSnapshot(userInSchoolRef, (docSnap) => {
-            if (docSnap.exists()) {
-                 const data = docSnap.data() as SchoolUserData;
-                 setDirectorName(data.displayName || user?.displayName || 'Directeur/rice');
-            }
-             if (loading && user) setLoading(false);
-        });
-
-
         return () => {
           unsubscribeSchool();
-          unsubscribeUser();
         };
         
     }, [schoolId, firestore, user, loading]);
