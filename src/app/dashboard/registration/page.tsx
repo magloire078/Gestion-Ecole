@@ -30,6 +30,7 @@ export default function RegistrationPage() {
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
 
   const [step, setStep] = useState(1);
+  const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     matricule: '',
@@ -73,6 +74,8 @@ export default function RegistrationPage() {
       return;
     }
     
+    setIsProcessing(true);
+
     const selectedClassInfo = classes.find(c => c.id === formData.classId);
     const schoolClassInfo = schoolClasses.find(sc => sc.name === selectedClassInfo?.name);
     const studentCycle = schoolClassInfo?.cycle || selectedClassInfo?.cycle || 'N/A';
@@ -103,12 +106,14 @@ export default function RegistrationPage() {
     .then((docRef) => {
         toast({
             title: "Inscription réussie",
-            description: `${formData.name} a été inscrit(e) avec succès. Matricule: ${studentData.matricule}`,
+            description: `${formData.name} a été inscrit(e) avec succès.`,
         });
-        router.push(`/dashboard/students/${docRef.id}`);
+        router.push(`/dashboard/students`);
     }).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({ path: studentsCollectionRef.path, operation: 'create', requestResourceData: studentData });
         errorEmitter.emit('permission-error', permissionError);
+    }).finally(() => {
+        setIsProcessing(false);
     });
   };
 
@@ -229,7 +234,7 @@ export default function RegistrationPage() {
 
             <div className="flex justify-between pt-4">
               {step > 1 ? (
-                <Button type="button" variant="outline" onClick={handlePrevStep}>
+                <Button type="button" variant="outline" onClick={handlePrevStep} disabled={isProcessing}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Précédent
                 </Button>
               ) : <div />}
@@ -238,8 +243,8 @@ export default function RegistrationPage() {
                   Suivant <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               ) : (
-                <Button type="submit">
-                  Soumettre l'Inscription
+                <Button type="submit" disabled={isProcessing}>
+                  {isProcessing ? 'Inscription en cours...' : 'Soumettre l\'Inscription'}
                 </Button>
               )}
             </div>
