@@ -24,8 +24,10 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "./ui/skeleton";
+import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
 export function UserNav() {
+  const isMounted = useHydrationFix();
   const { setTheme } = useTheme();
   const auth = useAuth();
   const { user, loading: userLoading } = useUser();
@@ -54,7 +56,7 @@ export function UserNav() {
 
   const isLoading = userLoading || schoolDataLoading;
 
-  if (isLoading) {
+  if (isLoading || !isMounted) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
