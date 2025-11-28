@@ -17,12 +17,12 @@ const mySchoolLinks = [
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
   { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
   { href: '/dashboard/teachers', label: 'Professeurs', icon: Users },
+  { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
 const administrativeLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
   { href: '/dashboard/hr', label: 'RH / Personnel', icon: Briefcase },
-  { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
 const pedagogicalLinks = [
