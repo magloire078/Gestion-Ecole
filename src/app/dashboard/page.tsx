@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
@@ -7,7 +6,7 @@ import { Users, BookUser, BookOpen, Landmark, UserPlus, TrendingUp, TrendingDown
 import { PerformanceChart } from '@/components/performance-chart';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
