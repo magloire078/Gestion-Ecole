@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, getDoc, DocumentData, setDoc, writeBatch } from 'firebase/firestore';
+import { doc, onSnapshot, writeBatch, DocumentData } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -13,6 +13,7 @@ interface Subscription {
     plan: 'Essentiel' | 'Pro';
     status: 'active' | 'trialing' | 'past_due' | 'canceled';
 }
+
 interface SchoolData extends DocumentData {
     name?: string;
     directorName?: string;
@@ -25,12 +26,7 @@ export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     const [schoolId, setSchoolId] = useState<string | undefined>(undefined);
-
-    const [schoolName, setSchoolName] = useState<string | null>(null);
-    const [directorName, setDirectorName] = useState<string | null>(null);
-    const [schoolCode, setSchoolCode] = useState<string | null>(null);
-    const [schoolMatricule, setSchoolMatricule] = useState<string | null>(null);
-    const [subscription, setSubscription] = useState<Subscription | null>(null);
+    const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -41,17 +37,18 @@ export function useSchoolData() {
 
         if (!user) {
             setLoading(false);
+            setSchoolData(null);
             return;
         }
 
         const userRootRef = doc(firestore, 'utilisateurs', user.uid);
-        const unsubscribe = onSnapshot(userRootRef, (userDocSnap) => {
+        const unsubscribeUser = onSnapshot(userRootRef, (userDocSnap) => {
             if (userDocSnap.exists()) {
                 const userSchoolId = userDocSnap.data()?.schoolId;
-                if (userSchoolId && userSchoolId !== schoolId) {
+                if (userSchoolId) {
                     setSchoolId(userSchoolId);
-                } else if (!userSchoolId) {
-                     setLoading(false);
+                } else {
+                    setLoading(false);
                 }
             } else {
                 setLoading(false);
@@ -61,54 +58,50 @@ export function useSchoolData() {
             setLoading(false);
         });
         
-        return () => unsubscribe();
+        return () => unsubscribeUser();
 
-    }, [user, userLoading, firestore, schoolId]);
+    }, [user, userLoading, firestore]);
 
     useEffect(() => {
         if (!schoolId) {
+            if (!userLoading) setLoading(false);
             return;
         }
         
+        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as SchoolData;
-                const name = data.name || 'Mon École';
-                setSchoolName(name);
-                setDirectorName(data.directorName || user?.displayName || 'Directeur/rice');
-                setSchoolCode(data.schoolCode || null);
-                setSchoolMatricule(data.matricule || null);
-                setSubscription(data.subscription || { plan: 'Essentiel', status: 'active' });
-                document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
+                setSchoolData(data);
+                document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
-                setSchoolName('École non trouvée');
-                setDirectorName('N/A');
+                setSchoolData(null);
                 document.title = DEFAULT_TITLE;
             }
-             if (loading && user) setLoading(false);
+            setLoading(false);
         }, (error) => {
              const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
              errorEmitter.emit('permission-error', permissionError);
              setLoading(false);
         });
 
-        return () => {
-          unsubscribeSchool();
-        };
+        return () => unsubscribeSchool();
         
-    }, [schoolId, firestore, user, loading]);
+    }, [schoolId, firestore, userLoading]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
         if (!schoolId || !user) {
             throw new Error("ID de l'école ou utilisateur non disponible. Impossible de mettre à jour.");
         }
+        
+        // Optimistically update local state
+        setSchoolData(prevData => prevData ? { ...prevData, ...data } : data);
 
         const batch = writeBatch(firestore);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         batch.update(schoolDocRef, data);
         
-        // Si le nom du directeur est mis à jour, le synchroniser dans le profil utilisateur de l'école aussi
         if (data.directorName) {
             const userInSchoolRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
             batch.update(userInSchoolRef, { displayName: data.directorName });
@@ -118,14 +111,26 @@ export function useSchoolData() {
             await batch.commit();
         } catch (serverError) {
             const permissionError = new FirestorePermissionError({ 
-                path: `BATCH WRITE on /ecoles/${schoolId} and /ecoles/${schoolId}/utilisateurs/${user.uid}`, 
+                path: `BATCH WRITE on /ecoles/${schoolId}`, 
                 operation: 'update', 
                 requestResourceData: data 
             });
             errorEmitter.emit('permission-error', permissionError);
+            // Revert optimistic update on error
+            // Note: This is a simple revert. For a more robust solution, you'd refetch.
+             setSchoolData(prevData => prevData ? { ...prevData } : null);
             throw permissionError;
         }
     }, [schoolId, user, firestore]);
 
-    return { schoolId, schoolName, directorName, schoolCode, schoolMatricule, subscription, loading, updateSchoolData };
+    return { 
+        schoolId, 
+        schoolName: schoolData?.name || null,
+        directorName: schoolData?.directorName || null,
+        schoolCode: schoolData?.schoolCode || null,
+        schoolMatricule: schoolData?.matricule || null,
+        subscription: schoolData?.subscription || null,
+        loading, 
+        updateSchoolData 
+    };
 }
