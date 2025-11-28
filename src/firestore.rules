@@ -52,6 +52,11 @@ service cloud.firestore {
             allow delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
 
+        match /enseignants/{teacherId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid);
+        }
+
         match /eleves/{studentId} {
             allow read, list, create, update: if isUserInSchool(schoolId);
             allow delete: if isSchoolDirector(schoolId, request.auth.uid);
