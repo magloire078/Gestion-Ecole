@@ -19,6 +19,7 @@ import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface Student {
   matricule?: string;
@@ -98,12 +99,13 @@ const calculateAverages = (grades: GradeEntry[]) => {
         }
     }
     
-    const generalAverage = grandTotalCoeffs > 0 ? grandTotalPoints / grandTotalCoeffs : null;
+    const generalAverage = grandTotalCoeffs > 0 ? totalPoints / grandTotalCoeffs : null;
 
     return { subjectAverages: averages, generalAverage };
 };
 
 export default function StudentProfilePage() {
+  const isMounted = useHydrationFix();
   const params = useParams();
   const router = useRouter();
   const studentId = params.studentId as string;
@@ -207,6 +209,9 @@ export default function StudentProfilePage() {
     setIsReceiptOpen(true);
   };
 
+  if (!isMounted) {
+    return null;
+  }
 
   if (isLoading) {
     return (

@@ -68,8 +68,10 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountingCharts } from "./charts";
 import type { AccountingTransaction } from '@/lib/data';
+import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
 export default function AccountingPage() {
+  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
@@ -206,6 +208,10 @@ export default function AccountingPage() {
   const categoryOptions = allCategories[type].map(cat => ({ value: cat, label: cat }));
 
   const isLoading = schoolLoading || transactionsLoading;
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>

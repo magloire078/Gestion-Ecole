@@ -52,6 +52,7 @@ import { fr } from "date-fns/locale";
 import { PayslipTemplate } from '@/components/payroll/payslip-template';
 import { useSubscription } from '@/hooks/use-subscription';
 import Link from "next/link";
+import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
 // ====================================================================================
 // 1. DATA TYPES (Logique de paie déplacée ici)
@@ -364,6 +365,7 @@ interface StaffMember extends Employe {
 }
 
 function HRContent() {
+  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -519,8 +521,12 @@ function HRContent() {
   };
 
   const isLoading = schoolLoading || staffLoading;
+  
+  if (!isMounted) {
+    return null;
+  }
 
-    return (
+  return (
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
