@@ -1,0 +1,264 @@
+
+{
+  "entities": {
+    "user": {
+      "title": "Utilisateur",
+      "description": "Un utilisateur de l'application.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "L'identifiant unique de l'utilisateur." },
+        "email": { "type": "string", "format": "email", "description": "L'adresse e-mail de l'utilisateur." },
+        "displayName": { "type": "string", "description": "Le nom d'affichage de l'utilisateur." },
+        "photoURL": { "type": "string", "format": "uri", "description": "L'URL de la photo de profil de l'utilisateur." },
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
+        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel"], "description": "Le rôle de l'utilisateur dans l'école." }
+      },
+      "required": ["uid", "email", "schoolId", "role"]
+    },
+    "user_root": {
+      "title": "Racine Utilisateur",
+      "description": "Un document racine qui associe l'UID d'un utilisateur à l'identifiant de son école.",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." }
+      },
+      "required": ["schoolId"]
+    },
+    "school": {
+        "title": "École",
+        "description": "Un établissement scolaire.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Le nom de l'établissement." },
+            "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
+            "directorName": { "type": "string", "description": "Le nom du directeur de l'école." },
+            "schoolCode": { "type": "string", "description": "Un code lisible par l'homme pour rejoindre l'école." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date de création de l'école." },
+            "subscription": {
+                "type": "object",
+                "description": "Détails de l'abonnement de l'école.",
+                "properties": {
+                    "plan": { "type": "string", "enum": ["Essentiel", "Pro"], "description": "Le nom du plan." },
+                    "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"], "description": "Le statut de l'abonnement." }
+                }
+            }
+        },
+        "required": ["name", "directorId", "directorName", "schoolCode"]
+    },
+    "teacher": {
+      "title": "Enseignant",
+      "description": "Un enseignant de l'école.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Le nom complet de l'enseignant." },
+        "subject": { "type": "string", "description": "La matière principale enseignée par l'enseignant." },
+        "email": { "type": "string", "format": "email", "description": "L'adresse e-mail de l'enseignant." },
+        "phone": { "type": "string", "description": "Le numéro de téléphone de l'enseignant." },
+        "classId": { "type": "string", "description": "L'identifiant de la classe principale supervisée par l'enseignant." }
+      },
+      "required": ["name", "subject", "email"]
+    },
+    "staff": {
+      "title": "Membre du Personnel",
+      "description": "Un membre du personnel de l'école (hors enseignants).",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Le nom complet du membre du personnel." },
+        "role": { "type": "string", "description": "Le poste ou la fonction (ex: Comptable, Secrétaire, Gardien)." },
+        "email": { "type": "string", "format": "email", "description": "L'adresse e-mail." },
+        "phone": { "type": "string", "description": "Le numéro de téléphone." },
+        "salary": { "type": "number", "description": "Le salaire mensuel." },
+        "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." }
+      },
+      "required": ["name", "role", "hireDate", "salary"]
+    },
+    "class": {
+      "title": "Classe",
+      "description": "Une classe de l'école.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Le nom de la classe." },
+        "studentCount": { "type": "number", "description": "Le nombre d'élèves dans la classe." },
+        "mainTeacherId": { "type": "string", "description": "L'identifiant de l'enseignant principal de la classe." },
+        "building": { "type": "string", "description": "Le bâtiment où se trouve la classe." },
+        "cycle": { "type": "string", "enum": ["Maternelle", "Enseignement Primaire", "Enseignement Secondaire - Premier cycle", "Enseignement Secondaire - Deuxième cycle"], "description": "Le cycle d'enseignement." }
+      },
+      "required": ["name", "studentCount", "mainTeacherId", "building", "cycle"]
+    },
+    "cycle": {
+        "title": "Cycle",
+        "description": "Un cycle d'enseignement (ex: Lycée, Collège).",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Le nom du cycle." },
+            "order": { "type": "number", "description": "L'ordre d'affichage du cycle." }
+        },
+        "required": ["name", "order"]
+    },
+    "fee": {
+        "title": "Frais de Scolarité",
+        "description": "Une structure de frais de scolarité.",
+        "type": "object",
+        "properties": {
+            "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
+            "amount": { "type": "string", "description": "Le montant total des frais." },
+            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
+            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
+        },
+        "required": ["grade", "amount", "installments"]
+    },
+    "student": {
+        "title": "Élève",
+        "description": "Un élève inscrit à l'école.",
+        "type": "object",
+        "properties": {
+            "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève, généré automatiquement." },
+            "name": { "type": "string", "description": "Le nom complet de l'élève." },
+            "class": { "type": "string", "description": "Le nom de la classe de l'élève." },
+            "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
+            "cycle": { "type": "string", "description": "Le cycle d'enseignement de l'élève." },
+            "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
+            "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
+            "gender": { "type": "string", "description": "Le sexe de l'élève (Masculin, Féminin)." },
+            "address": { "type": "string", "description": "L'adresse de l'élève." },
+            "parent1Name": { "type": "string", "description": "Le nom du premier parent/tuteur." },
+            "parent1Contact": { "type": "string", "description": "Le contact téléphonique du premier parent/tuteur." },
+            "parent2Name": { "type": "string", "description": "Le nom du deuxième parent/tuteur (optionnel)." },
+            "parent2Contact": { "type": "string", "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)." },
+            "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
+            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
+            "amountDue": { "type": "number", "description": "Le montant restant à payer." },
+            "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
+        },
+        "required": ["name", "matricule", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
+    },
+    "gradeEntry": {
+        "title": "Note",
+        "description": "Une note individuelle pour un élève dans une matière.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string", "description": "L'identifiant de l'élève." },
+            "subject": { "type": "string", "description": "La matière concernée." },
+            "type": { "type": "string", "enum": ["Interrogation", "Devoir"], "description": "Le type d'évaluation." },
+            "date": { "type": "string", "format": "date", "description": "La date de l'évaluation." },
+            "grade": { "type": "number", "description": "La note obtenue." },
+            "coefficient": { "type": "number", "description": "Le coefficient de la note." }
+        },
+        "required": ["studentId", "subject", "type", "date", "grade", "coefficient"]
+    },
+    "accountingTransaction": {
+      "title": "Transaction Comptable",
+      "description": "Une transaction financière (revenu ou dépense).",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "La date de la transaction." },
+        "description": { "type": "string", "description": "La description de la transaction." },
+        "category": { "type": "string", "description": "La catégorie de la transaction." },
+        "type": { "type": "string", "enum": ["Revenu", "Dépense"], "description": "Le type de transaction." },
+        "amount": { "type": "number", "description": "Le montant de la transaction." }
+      },
+      "required": ["date", "description", "category", "type", "amount"]
+    },
+    "payment": {
+      "title": "Paiement de scolarité",
+      "description": "Un versement de frais de scolarité pour un élève.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "La date du paiement." },
+        "amount": { "type": "number", "description": "Le montant payé." },
+        "description": { "type": "string", "description": "Description du paiement (ex: 1ère tranche)." },
+        "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." },
+        "payerName": { "type": "string", "description": "Le nom de la personne qui a effectué le paiement." },
+        "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." }
+      },
+      "required": ["date", "amount", "description", "accountingTransactionId", "payerName"]
+    },
+    "libraryBook": {
+        "title": "Livre de Bibliothèque",
+        "description": "Un livre disponible dans la bibliothèque de l'école.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string", "description": "Le titre du livre." },
+            "author": { "type": "string", "description": "L'auteur du livre." },
+            "quantity": { "type": "number", "description": "Le nombre d'exemplaires disponibles." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'ajout du livre." }
+        },
+        "required": ["title", "author", "quantity"]
+    },
+    "timetableEntry": {
+        "title": "Entrée d'Emploi du Temps",
+        "description": "Une entrée dans l'emploi du temps, associant une classe, un enseignant et une matière.",
+        "type": "object",
+        "properties": {
+            "classId": { "type": "string", "description": "L'ID de la classe." },
+            "teacherId": { "type": "string", "description": "L'ID de l'enseignant." },
+            "subject": { "type": "string", "description": "La matière enseignée." }
+        },
+        "required": ["classId", "teacherId", "subject"]
+    }
+  },
+  "auth": {
+    "providers": ["Google", "Email"]
+  },
+  "firestore": {
+    "/utilisateurs/{userId}": {
+        "schema": { "$ref": "#/entities/user_root" },
+        "description": "Stocke une correspondance between l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+    },
+    "/ecoles/{schoolId}": {
+      "schema": { "$ref": "#/entities/school" },
+      "description": "Stocke les informations générales sur un établissement."
+    },
+    "/ecoles/{schoolId}/utilisateurs/{userId}": {
+      "schema": { "$ref": "#/entities/user" },
+      "description": "Stocke les profils des utilisateurs, partitionnés par école."
+    },
+    "/ecoles/{schoolId}/enseignants/{teacherId}": {
+      "schema": { "$ref": "#/entities/teacher" },
+      "description": "Stocke les profils des enseignants pour une école."
+    },
+     "/ecoles/{schoolId}/personnel/{staffId}": {
+      "schema": { "$ref": "#/entities/staff" },
+      "description": "Stocke les profils du personnel (non-enseignant) pour une école."
+    },
+    "/ecoles/{schoolId}/classes/{classId}": {
+      "schema": { "$ref": "#/entities/class" },
+      "description": "Stocke les informations des classes pour une école."
+    },
+    "/ecoles/{schoolId}/cycles/{cycleId}": {
+        "schema": { "$ref": "#/entities/cycle" },
+        "description": "Stocke la liste des cycles d'enseignement pour une école."
+    },
+    "/ecoles/{schoolId}/frais_scolarite/{feeId}": {
+        "schema": { "$ref": "#/entities/fee" },
+        "description": "Stocke la structure des frais de scolarité pour l'école."
+    },
+    "/ecoles/{schoolId}/eleves/{studentId}": {
+        "schema": { "$ref": "#/entities/student" },
+        "description": "Stocke les profils des élèves pour une école."
+    },
+    "/ecoles/{schoolId}/eleves/{studentId}/notes/{gradeId}": {
+        "schema": { "$ref": "#/entities/gradeEntry" },
+        "description": "Stocke les notes individuelles d'un élève."
+    },
+     "/ecoles/{schoolId}/eleves/{studentId}/paiements/{paymentId}": {
+        "schema": { "$ref": "#/entities/payment" },
+        "description": "Stocke l'historique des paiements de scolarité pour un élève."
+    },
+    "/ecoles/{schoolId}/comptabilite/{transactionId}": {
+        "schema": { "$ref": "#/entities/accountingTransaction" },
+        "description": "Stocke les transactions comptables pour une école."
+    },
+    "/ecoles/{schoolId}/bibliotheque/{bookId}": {
+        "schema": { "$ref": "#/entities/libraryBook" },
+        "description": "Stocke les livres de la bibliothèque pour une école."
+    },
+    "/ecoles/{schoolId}/emploi_du_temps/{entryId}": {
+        "schema": { "$ref": "#/entities/timetableEntry" },
+        "description": "Stocke les entrées de l'emploi du temps pour une école."
+    }
+  }
+}
+
+    

@@ -3,13 +3,49 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, Zap } from "lucide-react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useSubscription } from "@/hooks/use-subscription";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SubscriptionPage() {
+    const { schoolName, loading: schoolLoading } = useSchoolData();
+    const { subscription, updateSubscription, loading: subscriptionLoading } = useSubscription();
+    const { toast } = useToast();
+    const isLoading = schoolLoading || subscriptionLoading;
 
-    const { schoolName, loading } = useSchoolData();
+    const handleUpgrade = async () => {
+        try {
+            await updateSubscription({ plan: 'Pro', status: 'active' });
+            toast({
+                title: 'Mise à niveau réussie !',
+                description: 'Votre école a maintenant accès à toutes les fonctionnalités Pro.',
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur de mise à niveau',
+                description: 'Une erreur est survenue. Veuillez réessayer.',
+            });
+        }
+    };
+
+    const handleDowngrade = async () => {
+        try {
+            await updateSubscription({ plan: 'Essentiel', status: 'active' });
+            toast({
+                title: 'Modification enregistrée',
+                description: 'Votre abonnement a été changé pour le plan Essentiel.',
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: 'Une erreur est survenue. Veuillez réessayer.',
+            });
+        }
+    };
 
     const plans = [
         {
@@ -18,28 +54,33 @@ export default function SubscriptionPage() {
             description: "Idéal pour les petites écoles qui débutent.",
             features: [
                 "Jusqu'à 50 élèves",
-                "Jusqu'à 10 membres du personnel",
                 "Gestion des élèves, classes et professeurs",
-                "Fonctionnalités de base"
+                "Suivi basique des notes",
+                "Gestion de la scolarité",
+                "Comptabilité de base",
             ],
-            isCurrent: true,
+            isCurrent: subscription?.plan === "Essentiel",
+            action: handleDowngrade,
+            actionLabel: "Revenir au plan Essentiel",
         },
         {
             name: "Pro",
-            price: "Bientôt disponible",
+            price: "49 900 CFA / mois",
             description: "Pour les écoles en croissance avec des besoins avancés.",
             features: [
+                "Toutes les fonctionnalités du plan Essentiel",
                 "Nombre d'élèves illimité",
-                "Gestion RH et paie",
-                "Gestion pédagogique complète",
-                "Fonctionnalités IA avancées",
-                "Support prioritaire"
+                "Gestion des RH et de la paie",
+                "Fonctionnalités IA (appréciations, etc.)",
+                "Support prioritaire",
             ],
-            isCurrent: false,
+            isCurrent: subscription?.plan === "Pro",
+            action: handleUpgrade,
+            actionLabel: "Passer au Plan Pro",
         }
     ];
 
-    if (loading) {
+    if (isLoading) {
         return (
              <div className="space-y-6">
                 <div>
@@ -49,8 +90,8 @@ export default function SubscriptionPage() {
                     </p>
                 </div>
                 <div className="grid gap-6 md:grid-cols-2">
-                    <Skeleton className="h-80 w-full" />
-                    <Skeleton className="h-80 w-full" />
+                    <Skeleton className="h-96 w-full" />
+                    <Skeleton className="h-96 w-full" />
                 </div>
             </div>
         )
@@ -88,8 +129,13 @@ export default function SubscriptionPage() {
                              </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" disabled={plan.isCurrent || plan.name === "Pro"}>
-                                {plan.isCurrent ? "Votre Plan Actuel" : "Choisir ce Plan"}
+                            <Button className="w-full" onClick={plan.action} disabled={plan.isCurrent}>
+                                {plan.isCurrent ? "Votre Plan Actuel" : (
+                                    <>
+                                        {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
+                                        {plan.actionLabel}
+                                    </>
+                                )}
                             </Button>
                         </CardFooter>
                     </Card>
@@ -98,3 +144,5 @@ export default function SubscriptionPage() {
         </div>
     )
 }
+
+    

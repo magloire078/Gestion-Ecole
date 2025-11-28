@@ -60,6 +60,10 @@ export default function OnboardingPage() {
       directorName: directorName,
       createdAt: serverTimestamp(),
       schoolCode: newSchoolCode,
+      subscription: {
+        plan: 'Essentiel',
+        status: 'active',
+      }
     };
     
     const schoolUserRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
@@ -271,3 +275,5 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
+    

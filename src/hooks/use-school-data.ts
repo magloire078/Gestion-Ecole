@@ -3,16 +3,21 @@
 
 import { useState, useEffect } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, getDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, DocumentData, setDoc } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
 const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 
+interface Subscription {
+    plan: 'Essentiel' | 'Pro';
+    status: 'active' | 'trialing' | 'past_due' | 'canceled';
+}
 interface SchoolData extends DocumentData {
     name?: string;
     directorName?: string;
     schoolCode?: string;
+    subscription?: Subscription;
 }
 
 export function useSchoolData() {
@@ -23,6 +28,7 @@ export function useSchoolData() {
     const [schoolName, setSchoolName] = useState<string | null>(null);
     const [directorName, setDirectorName] = useState<string | null>(null);
     const [schoolCode, setSchoolCode] = useState<string | null>(null);
+    const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -74,6 +80,7 @@ export function useSchoolData() {
                 setSchoolName(name);
                 setDirectorName(dirName);
                 setSchoolCode(data.schoolCode || null);
+                setSubscription(data.subscription || { plan: 'Essentiel', status: 'active' });
                 
                 document.title = name ? `${name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
@@ -106,5 +113,7 @@ export function useSchoolData() {
         });
     };
 
-    return { schoolId, schoolName, directorName, schoolCode, loading, updateSchoolData };
+    return { schoolId, schoolName, directorName, schoolCode, subscription, loading, updateSchoolData };
 }
+
+    

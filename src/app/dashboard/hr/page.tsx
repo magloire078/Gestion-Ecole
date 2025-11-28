@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, Mail, Phone, BadgeDollarSign, Calendar, FileText } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Mail, Phone, BadgeDollarSign, Calendar, FileText, Lock } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -50,6 +51,9 @@ import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { PayslipTemplate } from '@/components/payroll/payslip-template';
+import { useSubscription } from '@/hooks/use-subscription';
+import { Alert, AlertTitle } from "@/components/ui/alert";
+import Link from "next/link";
 
 // ====================================================================================
 // 1. DATA TYPES (Logique de paie déplacée ici)
@@ -361,8 +365,7 @@ interface StaffMember extends Employe {
   matricule: string;
 }
 
-export default function HRPage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
+function HRContent() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -519,11 +522,7 @@ export default function HRPage() {
 
   const isLoading = schoolLoading || staffLoading;
 
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
-
-  return (
+    return (
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -693,3 +692,45 @@ export default function HRPage() {
     </>
   );
 }
+
+export default function HRPage() {
+    const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
+    const { subscription, loading: subscriptionLoading } = useSubscription();
+
+    const isLoading = isAuthLoading || subscriptionLoading;
+
+    if (isLoading) {
+        return <AuthProtectionLoader />;
+    }
+
+    if (subscription?.plan !== 'Pro') {
+        return (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <Card className="max-w-lg">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-center gap-2">
+                            <Lock className="h-6 w-6 text-primary" />
+                            Fonctionnalité du Plan Pro
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">
+                            La gestion des ressources humaines et de la paie est une fonctionnalité avancée. Pour y accéder, veuillez mettre à niveau votre abonnement.
+                        </p>
+                    </CardContent>
+                    <CardFooter>
+                        <Button asChild className="w-full">
+                            <Link href="/dashboard/settings/subscription">
+                                Mettre à niveau vers le Plan Pro
+                            </Link>
+                        </Button>
+                    </CardFooter>
+                </Card>
+            </div>
+        );
+    }
+    
+    return <HRContent />;
+}
+
+    
