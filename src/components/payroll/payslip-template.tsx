@@ -5,8 +5,15 @@ import React from 'react';
 import { isValid, parseISO, lastDayOfMonth, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { PayslipDetails } from '@/app/bulletin-de-paie';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDetails }) {
+    const isMounted = useHydrationFix();
+    
+    if (!isMounted) {
+        return null; // Ne rien rendre côté serveur ou avant l'hydratation
+    }
+
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationLogos } = payslipDetails;
     const fullName = `${employeeInfo.lastName || ''} ${employeeInfo.firstName || ''}`.trim() || employeeInfo.name;
     const qrCodeValue = `${fullName} | ${employeeInfo.matricule} | ${employeeInfo.departmentId}`;
@@ -190,5 +197,3 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
-
-    
