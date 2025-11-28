@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
