@@ -68,15 +68,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { AccountingCharts } from "./charts";
-
-interface AccountingTransaction {
-  id: string;
-  date: string;
-  description: string;
-  category: string;
-  type: 'Revenu' | 'Dépense';
-  amount: number;
-}
+import type { AccountingTransaction } from '@/lib/data';
 
 export default function AccountingPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();

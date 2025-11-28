@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import type { AccountingTransaction } from '@/lib/data';
 
 interface Book {
     id: string;
@@ -32,15 +33,6 @@ interface GradeEntry {
   subject: string;
   grade: number;
   coefficient: number;
-}
-
-interface AccountingTransaction {
-  id: string;
-  date: string;
-  description: string;
-  category: string;
-  type: 'Revenu' | 'Dépense';
-  amount: number;
 }
 
 type Activity = {
