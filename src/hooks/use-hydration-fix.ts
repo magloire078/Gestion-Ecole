@@ -4,12 +4,11 @@
 import { useState, useEffect } from 'react';
 
 /**
- * Ce hook résout les erreurs d'hydratation Next.js en s'assurant qu'un composant
- * ne est rendu côté client qu'après la fin de l'hydratation.
- *
- * @returns {boolean} - `true` si le composant est monté côté client, sinon `false`.
+ * Custom hook to fix hydration issues by ensuring a component only renders
+ * on the client-side after it has been mounted.
+ * @returns {boolean} - `true` if the component is mounted, `false` otherwise.
  */
-export const useHydrationFix = () => {
+export function useHydrationFix() {
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -17,4 +16,4 @@ export const useHydrationFix = () => {
   }, []);
 
   return isMounted;
-};
+}

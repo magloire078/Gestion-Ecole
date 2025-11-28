@@ -8,17 +8,18 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { useAuthProtection } from '@/hooks/use-auth-protection';
+
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const isMounted = useHydrationFix();
+  const { isLoading, AuthProtectionLoader } = useAuthProtection();
 
-  if (!isMounted) {
-    return null;
+  if (isLoading) {
+    return <AuthProtectionLoader />;
   }
 
   return (

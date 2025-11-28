@@ -61,6 +61,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { differenceInYears, differenceInMonths, addYears } from "date-fns";
+import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
 interface Student {
   id: string;
@@ -111,6 +112,7 @@ const SentimentDisplay = ({ sentiment }: { sentiment: Sentiment }) => {
 
 
 export default function StudentsPage() {
+  const isMounted = useHydrationFix();
   const router = useRouter();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -256,6 +258,10 @@ export default function StudentsPage() {
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   const isLoading = schoolLoading || studentsLoading || classesLoading;
+
+  if (!isMounted) {
+    return null;
+  }
 
   return (
     <>
