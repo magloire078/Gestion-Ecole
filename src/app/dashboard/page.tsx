@@ -61,11 +61,6 @@ export default function DashboardPage() {
   const [authStatus, setAuthStatus] = useState<'loading' | 'onboarding' | 'authenticated' | 'unauthenticated'>('loading');
 
   const { schoolId, loading: schoolLoading } = useSchoolData();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
 
   useEffect(() => {
     if (userLoading) return;
@@ -192,7 +187,7 @@ export default function DashboardPage() {
     return { totalRevenue, totalExpenses, netBalance };
   }, [transactions]);
   
-  const formatCurrency = (value: number) => isClient ? `${value.toLocaleString('fr-FR')} CFA` : `${value} CFA`;
+  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
 
   const stats = [

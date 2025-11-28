@@ -97,10 +97,8 @@ export default function AccountingPage() {
   const [transactionToDelete, setTransactionToDelete] = useState<AccountingTransaction | null>(null);
 
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
     if (!date) {
       setDate(format(new Date(), 'yyyy-MM-dd'));
     }
@@ -194,7 +192,7 @@ export default function AccountingPage() {
     });
   };
 
-  const formatCurrency = (value: number) => isClient ? `${value.toLocaleString('fr-FR')} CFA` : `${value} CFA`;
+  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   const handleCreateCategory = (newCategory: string) => {
       setAllCategories(prev => {
@@ -207,7 +205,7 @@ export default function AccountingPage() {
 
   const categoryOptions = allCategories[type].map(cat => ({ value: cat, label: cat }));
 
-  const isLoading = !isClient || schoolLoading || transactionsLoading;
+  const isLoading = schoolLoading || transactionsLoading;
 
   return (
     <>
@@ -302,7 +300,7 @@ export default function AccountingPage() {
                 ) : transactions.length > 0 ? (
                     transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
-                        <TableCell>{isClient ? format(new Date(transaction.date), 'd MMM yyyy', { locale: fr }) : transaction.date}</TableCell>
+                        <TableCell>{format(new Date(transaction.date), 'd MMM yyyy', { locale: fr })}</TableCell>
                         <TableCell className="font-medium">{transaction.description}</TableCell>
                         <TableCell>{transaction.category}</TableCell>
                         <TableCell className={`text-right font-mono ${transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive'}`}>

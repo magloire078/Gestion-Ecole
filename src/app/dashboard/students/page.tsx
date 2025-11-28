@@ -137,12 +137,6 @@ export default function StudentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
   useEffect(() => {
     if(editingStudent) {
       setFormState({
@@ -248,6 +242,8 @@ export default function StudentsPage() {
     }
   }
 
+  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
+
   const isLoading = schoolLoading || studentsLoading || classesLoading;
 
   return (
@@ -305,7 +301,7 @@ export default function StudentsPage() {
                           <TableCell>{student.class}</TableCell>
                           <TableCell>{getAge(student.dateOfBirth)}</TableCell>
                           <TableCell className="text-right font-mono">
-                              {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString('fr-FR')} CFA` : `${student.amountDue} CFA`) : '-'}
+                              {student.amountDue > 0 ? formatCurrency(student.amountDue) : '-'}
                           </TableCell>
                           <TableCell className="text-center">
                               <TuitionStatusBadge status={student.tuitionStatus} />

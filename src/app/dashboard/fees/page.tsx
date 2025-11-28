@@ -129,7 +129,6 @@ export default function FeesPage() {
  
 
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
   
     const form = useForm<FeeFormValues>({
         resolver: zodResolver(feeSchema),
@@ -141,10 +140,6 @@ export default function FeesPage() {
         },
     });
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-  
   useEffect(() => {
     if (isFeeGridDialogOpen && editingFee) {
         form.reset({
@@ -349,6 +344,8 @@ export default function FeesPage() {
 
   const cycleOptions = schoolCycles.map(cycle => ({ value: cycle.name, label: cycle.name }));
 
+  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
+
   return (
     <>
     <div className="space-y-8">
@@ -487,7 +484,7 @@ export default function FeesPage() {
                                 <TuitionStatusBadge status={student.tuitionStatus} />
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                            {student.amountDue > 0 ? (isClient ? `${student.amountDue.toLocaleString('fr-FR')} CFA` : `${student.amountDue} CFA`) : '-'}
+                            {student.amountDue > 0 ? formatCurrency(student.amountDue) : '-'}
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
@@ -506,7 +503,7 @@ export default function FeesPage() {
                     <TableRow className="font-bold bg-muted/50">
                             <TableCell colSpan={3} className="text-right">Total dû (filtré)</TableCell>
                             <TableCell className="text-right font-mono text-lg text-primary">
-                                {isClient ? `${totalDue.toLocaleString('fr-FR')} CFA` : `${totalDue} CFA`}
+                                {formatCurrency(totalDue)}
                             </TableCell>
                             <TableCell></TableCell>
                         </TableRow>
@@ -522,7 +519,7 @@ export default function FeesPage() {
           <DialogHeader>
             <DialogTitle>Enregistrer un paiement pour {selectedStudent?.name}</DialogTitle>
             <DialogDescription>
-              Le solde actuel est de <strong>{(selectedStudent?.amountDue || 0).toLocaleString('fr-FR')} CFA</strong>.
+              Le solde actuel est de <strong>{formatCurrency(selectedStudent?.amountDue || 0)}</strong>.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

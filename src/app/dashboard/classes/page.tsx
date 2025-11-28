@@ -110,11 +110,6 @@ export default function ClassesPage() {
 
   const { toast } = useToast();
   
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const getMainTeacher = (teacherId?: string) => {
     if (!teacherId) return null;
     return teachers.find(t => t.id === teacherId);
@@ -240,7 +235,7 @@ export default function ClassesPage() {
     }
   }
 
-  const isLoading = !isClient || schoolDataLoading || classesLoading || teachersLoading;
+  const isLoading = schoolDataLoading || classesLoading || teachersLoading;
   
   if (isLoading && !cycles.length) {
     return (
