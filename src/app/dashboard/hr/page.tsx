@@ -52,7 +52,6 @@ import { fr } from "date-fns/locale";
 import { PayslipTemplate } from '@/components/payroll/payslip-template';
 import { useSubscription } from '@/hooks/use-subscription';
 import Link from "next/link";
-import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { getPayslipDetails, type Employe, type PayslipDetails } from '@/app/bulletin-de-paie';
 
 interface StaffMember extends Employe {
@@ -68,7 +67,6 @@ interface StaffMember extends Employe {
 }
 
 function HRContent() {
-  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -224,10 +222,6 @@ function HRContent() {
   };
 
   const isLoading = schoolLoading || staffLoading;
-  
-  if (!isMounted) {
-    return null;
-  }
 
   return (
     <>

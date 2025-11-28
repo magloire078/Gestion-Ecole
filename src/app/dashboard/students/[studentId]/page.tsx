@@ -19,7 +19,6 @@ import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface Student {
   matricule?: string;
@@ -86,26 +85,25 @@ const calculateAverages = (grades: GradeEntry[]) => {
     });
     
     const averages: Record<string, number> = {};
-    let grandTotalPoints = 0;
-    let grandTotalCoeffs = 0;
+    let totalPoints = 0;
+    let totalCoeffs = 0;
 
     for (const subject in gradesBySubject) {
-        const { totalPoints, totalCoeffs } = gradesBySubject[subject];
-        if (totalCoeffs > 0) {
-            const average = totalPoints / totalCoeffs;
+        const { totalPoints: subjectTotalPoints, totalCoeffs: subjectTotalCoeffs } = gradesBySubject[subject];
+        if (subjectTotalCoeffs > 0) {
+            const average = subjectTotalPoints / subjectTotalCoeffs;
             averages[subject] = average;
-            grandTotalPoints += average; // Use the subject average for general average
-            grandTotalCoeffs += 1; // Each subject counts as 1 for the general average
+            totalPoints += subjectTotalPoints;
+            totalCoeffs += subjectTotalCoeffs;
         }
     }
     
-    const generalAverage = grandTotalCoeffs > 0 ? totalPoints / grandTotalCoeffs : null;
+    const generalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : null;
 
     return { subjectAverages: averages, generalAverage };
 };
 
 export default function StudentProfilePage() {
-  const isMounted = useHydrationFix();
   const params = useParams();
   const router = useRouter();
   const studentId = params.studentId as string;
@@ -208,10 +206,6 @@ export default function StudentProfilePage() {
     setReceiptToView(receipt);
     setIsReceiptOpen(true);
   };
-
-  if (!isMounted) {
-    return null;
-  }
 
   if (isLoading) {
     return (

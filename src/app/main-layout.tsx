@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ReactNode } from "react";
 import { FirebaseClientProvider, getFirebase } from "@/firebase";
-import { FirebaseContextValue } from "@/firebase/provider";
 
 export function MainLayout({
   children,

@@ -57,7 +57,6 @@ import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 // --- Interfaces ---
 interface Student {
@@ -120,7 +119,6 @@ export default function GradeEntryPage() {
   });
   
   const [isSaving, setIsSaving] = useState(false);
-  const isMounted = useHydrationFix();
 
   // --- Effects ---
   useEffect(() => {
@@ -275,8 +273,8 @@ export default function GradeEntryPage() {
   const isLoading = schoolLoading || classesLoading;
   const isDataLoading = studentsLoading || isGradesLoading;
 
-  if (!isMounted || isAuthLoading) {
-    return isAuthLoading ? <AuthProtectionLoader /> : null;
+  if (isAuthLoading) {
+    return <AuthProtectionLoader />;
   }
 
   return (
