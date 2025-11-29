@@ -17,6 +17,7 @@ interface Subscription {
 interface SchoolData extends DocumentData {
     name?: string;
     directorName?: string;
+    directorPhone?: string;
     schoolCode?: string;
     matricule?: string;
     subscription?: Subscription;
@@ -94,10 +95,21 @@ export function useSchoolData() {
         if (!schoolId || !user) {
             throw new Error("ID de l'école ou utilisateur non disponible. Impossible de mettre à jour.");
         }
+        
+        // Optimistically update the local state
+        setSchoolData(prev => prev ? { ...prev, ...data } : data);
 
         const batch = writeBatch(firestore);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
-        batch.update(schoolDocRef, data);
+        
+        const updatePayload: Partial<SchoolData> = {};
+        if(data.name !== undefined) updatePayload.name = data.name;
+        if(data.directorName !== undefined) updatePayload.directorName = data.directorName;
+        if(data.matricule !== undefined) updatePayload.matricule = data.matricule;
+        if(data.directorPhone !== undefined) updatePayload.directorPhone = data.directorPhone;
+        if(data.subscription !== undefined) updatePayload.subscription = data.subscription;
+
+        batch.update(schoolDocRef, updatePayload);
         
         if (data.directorName) {
             const userInSchoolRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
@@ -113,18 +125,13 @@ export function useSchoolData() {
                 requestResourceData: data 
             });
             errorEmitter.emit('permission-error', permissionError);
-            // Revert optimistic update on error is no longer needed
             throw permissionError;
         }
     }, [schoolId, user, firestore]);
 
     return { 
         schoolId, 
-        schoolName: schoolData?.name || null,
-        directorName: schoolData?.directorName || null,
-        schoolCode: schoolData?.schoolCode || null,
-        schoolMatricule: schoolData?.matricule || null,
-        subscription: schoolData?.subscription || null,
+        schoolData,
         loading, 
         updateSchoolData 
     };

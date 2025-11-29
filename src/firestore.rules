@@ -42,7 +42,7 @@ service cloud.firestore {
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
         // Allow the director to update their own school's information.
-        allow update: if request.auth.uid == resource.data.directorId;
+        allow update: if isUserAuthenticated() && request.auth.uid == resource.data.directorId;
         allow delete: if false;
 
         // --- Subcollections with Specific Rules ---

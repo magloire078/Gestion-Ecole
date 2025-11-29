@@ -16,35 +16,34 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { user } = useUser();
   const { 
-    schoolName: initialSchoolName, 
-    directorName: initialDirectorName,
-    schoolCode,
-    schoolMatricule: initialSchoolMatricule,
+    schoolData,
     loading, 
     updateSchoolData 
   } = useSchoolData();
 
-  const [schoolName, setSchoolName] = useState("");
+  const [name, setName] = useState("");
   const [directorName, setDirectorName] = useState("");
-  const [schoolMatricule, setSchoolMatricule] = useState("");
+  const [matricule, setMatricule] = useState("");
+  const [directorPhone, setDirectorPhone] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
-
   useEffect(() => {
-    if (!loading) {
-      setSchoolName(initialSchoolName || "");
-      setDirectorName(initialDirectorName || "");
-      setSchoolMatricule(initialSchoolMatricule || "");
+    if (schoolData) {
+      setName(schoolData.name || "");
+      setDirectorName(schoolData.directorName || "");
+      setMatricule(schoolData.matricule || "");
+      setDirectorPhone(schoolData.directorPhone || "");
     }
-  }, [initialSchoolName, initialDirectorName, initialSchoolMatricule, loading]);
+  }, [schoolData]);
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
     try {
       await updateSchoolData({
-        name: schoolName,
-        directorName: directorName,
-        matricule: schoolMatricule,
+        name,
+        directorName,
+        matricule,
+        directorPhone
       });
       toast({
         title: "Paramètres enregistrés",
@@ -62,8 +61,8 @@ export default function SettingsPage() {
   };
 
   const handleCopyCode = () => {
-    if (schoolCode) {
-      navigator.clipboard.writeText(schoolCode);
+    if (schoolData?.schoolCode) {
+      navigator.clipboard.writeText(schoolData.schoolCode);
       toast({
         title: "Code copié !",
         description: "Le code de l'établissement a été copié dans le presse-papiers.",
@@ -125,8 +124,8 @@ export default function SettingsPage() {
             <Label htmlFor="school-name">Nom de l'École</Label>
             <Input 
               id="school-name" 
-              value={schoolName}
-              onChange={(e) => setSchoolName(e.target.value)}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Nom de votre école" 
             />
           </div>
@@ -134,16 +133,16 @@ export default function SettingsPage() {
             <Label htmlFor="school-matricule">Matricule de l'Établissement</Label>
             <Input 
               id="school-matricule" 
-              value={schoolMatricule}
-              onChange={(e) => setSchoolMatricule(e.target.value)}
+              value={matricule}
+              onChange={(e) => setMatricule(e.target.value)}
               placeholder="Ex: 0123/ETAB/2024" 
             />
           </div>
-           {schoolCode && (
+           {schoolData?.schoolCode && (
             <div className="space-y-2">
               <Label htmlFor="school-code">Code d'Invitation</Label>
               <div className="flex items-center gap-2">
-                <Input id="school-code" value={schoolCode} readOnly className="bg-muted" />
+                <Input id="school-code" value={schoolData.schoolCode} readOnly className="bg-muted" />
                 <Button variant="outline" size="icon" onClick={handleCopyCode}>
                   <Copy className="h-4 w-4" />
                   <span className="sr-only">Copier le code</span>
@@ -159,6 +158,16 @@ export default function SettingsPage() {
               value={directorName}
               onChange={(e) => setDirectorName(e.target.value)}
               placeholder="Nom du directeur ou de la directrice" 
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="director-phone">Téléphone du Directeur</Label>
+            <Input 
+              id="director-phone" 
+              type="tel"
+              value={directorPhone}
+              onChange={(e) => setDirectorPhone(e.target.value)}
+              placeholder="Numéro de téléphone" 
             />
           </div>
         </CardContent>

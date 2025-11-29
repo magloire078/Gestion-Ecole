@@ -30,8 +30,10 @@
         "type": "object",
         "properties": {
             "name": { "type": "string", "description": "Le nom de l'établissement." },
+            "matricule": { "type": "string", "description": "Le numéro matricule de l'établissement." },
             "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
             "directorName": { "type": "string", "description": "Le nom du directeur de l'école." },
+            "directorPhone": { "type": "string", "description": "Le numéro de téléphone du directeur." },
             "schoolCode": { "type": "string", "description": "Un code lisible par l'homme pour rejoindre l'école." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date de création de l'école." },
             "subscription": {
@@ -78,10 +80,11 @@
       "type": "object",
       "properties": {
         "name": { "type": "string", "description": "Le nom de la classe." },
+        "filiere": { "type": "string", "description": "La filière pour les classes de l'enseignement supérieur." },
         "studentCount": { "type": "number", "description": "Le nombre d'élèves dans la classe." },
         "mainTeacherId": { "type": "string", "description": "L'identifiant de l'enseignant principal de la classe." },
         "building": { "type": "string", "description": "Le bâtiment où se trouve la classe." },
-        "cycle": { "type": "string", "enum": ["Maternelle", "Enseignement Primaire", "Enseignement Secondaire - Premier cycle", "Enseignement Secondaire - Deuxième cycle"], "description": "Le cycle d'enseignement." }
+        "cycle": { "type": "string", "enum": ["Maternelle", "Enseignement Primaire", "Enseignement Secondaire - Premier cycle", "Enseignement Secondaire - Deuxième cycle", "Enseignement Supérieur"], "description": "Le cycle d'enseignement." }
       },
       "required": ["name", "studentCount", "mainTeacherId", "building", "cycle"]
     },
