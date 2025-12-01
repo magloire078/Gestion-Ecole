@@ -193,27 +193,26 @@ function HRContent() {
   };
   
   const handleGeneratePayslip = async (staffMember: StaffMember) => {
+    if (!isMounted) return;
+
     setIsGeneratingPayslip(true);
     setPayslipDetails(null);
     setIsPayslipOpen(true);
     
-    // This function will only run on the client due to the isMounted check.
-    if (isMounted) {
-      try {
-          const payslipDate = new Date().toISOString();
-          const details = await getPayslipDetails(staffMember, payslipDate);
-          setPayslipDetails(details);
-      } catch(e) {
-          console.error(e);
-          toast({
-              variant: "destructive",
-              title: "Erreur de génération",
-              description: "Impossible de calculer le bulletin de paie.",
-          });
-          setIsPayslipOpen(false);
-      } finally {
-          setIsGeneratingPayslip(false);
-      }
+    try {
+        const payslipDate = new Date().toISOString();
+        const details = await getPayslipDetails(staffMember, payslipDate);
+        setPayslipDetails(details);
+    } catch(e) {
+        console.error(e);
+        toast({
+            variant: "destructive",
+            title: "Erreur de génération",
+            description: "Impossible de calculer le bulletin de paie.",
+        });
+        setIsPayslipOpen(false);
+    } finally {
+        setIsGeneratingPayslip(false);
     }
   };
 
@@ -381,7 +380,7 @@ function HRContent() {
                 Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.name}.
               </DialogDescription>
             </DialogHeader>
-            {(isGeneratingPayslip || !isMounted) ? (
+            {isGeneratingPayslip ? (
                 <div className="flex items-center justify-center h-96">
                     <p>Génération du bulletin de paie...</p>
                 </div>
@@ -445,5 +444,3 @@ export default function HRPage() {
     
     return <HRContent />;
 }
-
-    

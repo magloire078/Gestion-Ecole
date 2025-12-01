@@ -261,7 +261,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         faviconUrl: ''
     };
     
-    const paymentDateObject = parseISO(payslipDate);
+    const payslipDateObject = parseISO(payslipDate);
     const numeroCompteComplet = [employee.CB, employee.CG, employee.numeroCompte, employee.Cle_RIB].filter(Boolean).join(' ');
 
     const formattedDateEmbauche = employee.dateEmbauche && isValid(parseISO(employee.dateEmbauche)) 
@@ -275,7 +275,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         anciennete: seniorityInfo.text,
         categorie: employee.categorie || 'Catégorie',
         cnpsEmployeur: "320491", // À remplacer par votre numéro
-        paymentDate: isValid(paymentDateObject) ? format(lastDayOfMonth(paymentDateObject), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx") : '',
+        paymentDate: isValid(payslipDateObject) ? format(lastDayOfMonth(payslipDateObject), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx") : payslipDate,
         paymentLocation: 'Yamoussoukro', // À remplacer
         parts: employee.parts || 1.5,
         numeroCompteComplet: numeroCompteComplet
