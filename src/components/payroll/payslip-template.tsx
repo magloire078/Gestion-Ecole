@@ -17,8 +17,8 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
             if (isValid(payslipDateObject)) {
                 const lastDay = lastDayOfMonth(payslipDateObject);
                 setDisplayDate({
-                    period: lastDay.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
-                    payment: new Date(payslipDetails.employeeInfo.paymentDate!).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                    period: format(lastDay, 'MMMM yyyy', { locale: fr }),
+                    payment: format(payslipDateObject, 'EEEE d MMMM yyyy', { locale: fr })
                 });
             }
         }
@@ -207,7 +207,5 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
-
-    
 
     
