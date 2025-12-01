@@ -19,6 +19,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 const settingsSchema = z.object({
   name: z.string().min(1, { message: "Le nom de l'école est requis." }),
   matricule: z.string().optional(),
+  cnpsEmployeur: z.string().optional(),
   directorName: z.string().min(1, { message: "Le nom du directeur est requis." }),
   directorPhone: z.string().optional(),
   address: z.string().optional(),
@@ -43,6 +44,7 @@ export default function SettingsPage() {
       name: "",
       directorName: "",
       matricule: "",
+      cnpsEmployeur: "",
       directorPhone: "",
       address: "",
       phone: "",
@@ -56,6 +58,7 @@ export default function SettingsPage() {
         name: schoolData.name || "",
         directorName: schoolData.directorName || "",
         matricule: schoolData.matricule || "",
+        cnpsEmployeur: schoolData.cnpsEmployeur || "",
         directorPhone: schoolData.directorPhone || "",
         address: schoolData.address || "",
         phone: schoolData.phone || "",
@@ -70,6 +73,7 @@ export default function SettingsPage() {
         name: values.name,
         directorName: values.directorName,
         matricule: values.matricule,
+        cnpsEmployeur: values.cnpsEmployeur,
         directorPhone: values.directorPhone,
         address: values.address,
         phone: values.phone,
@@ -171,6 +175,19 @@ export default function SettingsPage() {
                     <FormLabel>Matricule de l'Établissement</FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: 0123/ETAB/2024" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="cnpsEmployeur"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>N° CNPS Employeur</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

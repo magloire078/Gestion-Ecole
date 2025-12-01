@@ -262,7 +262,7 @@ function HRContent() {
             address: schoolData?.address,
             phone: schoolData?.phone,
             website: schoolData?.website,
-            cnpsEmployeur: "123456-T" // Example data, should be from settings
+            cnpsEmployeur: schoolData?.cnpsEmployeur,
         };
         const details = await getPayslipDetails(staffMember, payslipDate, orgSettings);
         setPayslipDetails(details);
