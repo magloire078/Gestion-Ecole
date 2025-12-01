@@ -41,9 +41,16 @@ service cloud.firestore {
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
-        // Allow the director to update their own school's information.
-        allow update: if isUserAuthenticated() && request.auth.uid == resource.data.directorId;
+        // Allow the director to update their school's info, but NOT change the directorId field.
+        allow update: if isSchoolDirector(schoolId, request.auth.uid) && request.resource.data.directorId == resource.data.directorId;
         allow delete: if false;
+        
+        // --- Collection Group Queries ---
+        match /{path=**}/eleves/{studentId} {
+            // Allow authenticated users to read from the 'eleves' collection group,
+            // but only for documents within their own school.
+            allow get, list: if isUserInSchool(schoolId);
+        }
 
         // --- Subcollections with Specific Rules ---
 
