@@ -8,7 +8,7 @@ import {
     Wallet, 
     Settings, 
     CalendarClock, 
-    NotebookText, 
+    FileText, 
     Landmark, 
     UserPlus, 
     ClipboardUser, 
@@ -40,7 +40,7 @@ const administrativeLinks = [
 ];
 
 const pedagogicalLinks = [
-    { href: '/dashboard/reports', label: 'Saisie des Notes', icon: NotebookText },
+    { href: '/dashboard/reports', label: 'Saisie des Notes', icon: FileText },
     { href: '/dashboard/library', label: 'Bibliothèque', icon: BookOpen },
 ];
 
