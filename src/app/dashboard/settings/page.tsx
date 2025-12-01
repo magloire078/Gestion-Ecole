@@ -21,6 +21,9 @@ const settingsSchema = z.object({
   matricule: z.string().optional(),
   directorName: z.string().min(1, { message: "Le nom du directeur est requis." }),
   directorPhone: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  website: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -41,6 +44,9 @@ export default function SettingsPage() {
       directorName: "",
       matricule: "",
       directorPhone: "",
+      address: "",
+      phone: "",
+      website: "",
     },
   });
 
@@ -51,6 +57,9 @@ export default function SettingsPage() {
         directorName: schoolData.directorName || "",
         matricule: schoolData.matricule || "",
         directorPhone: schoolData.directorPhone || "",
+        address: schoolData.address || "",
+        phone: schoolData.phone || "",
+        website: schoolData.website || "",
       });
     }
   }, [schoolData, form]);
@@ -62,6 +71,9 @@ export default function SettingsPage() {
         directorName: values.directorName,
         matricule: values.matricule,
         directorPhone: values.directorPhone,
+        address: values.address,
+        phone: values.phone,
+        website: values.website,
       });
       toast({
         title: "Paramètres enregistrés",
@@ -161,6 +173,45 @@ export default function SettingsPage() {
                       <Input placeholder="Ex: 0123/ETAB/2024" {...field} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Adresse de l'École</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: 123, Avenue de l'Indépendance" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Téléphone de l'École</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="Numéro de téléphone général" {...field} />
+                    </FormControl>
+                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Site Web de l'École</FormLabel>
+                    <FormControl>
+                      <Input type="url" placeholder="https://www.mon-ecole.com" {...field} />
+                    </FormControl>
+                     <FormMessage />
                   </FormItem>
                 )}
               />
