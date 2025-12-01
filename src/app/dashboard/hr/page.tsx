@@ -61,6 +61,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 
 const staffSchema = z.object({
@@ -388,7 +394,7 @@ function HRContent() {
                             <TabsTrigger value="personal">Personnel</TabsTrigger>
                             <TabsTrigger value="banking">Bancaire</TabsTrigger>
                         </TabsList>
-                        <div className="py-6">
+                        <div className="py-6 max-h-[60vh] overflow-y-auto px-1">
                             <TabsContent value="general" className="space-y-4">
                                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom complet" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><FormControl><Input placeholder="Ex: Comptable" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -400,16 +406,22 @@ function HRContent() {
                             </TabsContent>
                             <TabsContent value="payroll" className="space-y-4">
                                 <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <h4 className="font-semibold text-sm pt-2">Indemnités et Primes</h4>
-                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <FormField control={form.control} name="indemniteTransportImposable" render={({ field }) => (<FormItem><FormLabel>Transport (imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                    <FormField control={form.control} name="transportNonImposable" render={({ field }) => (<FormItem><FormLabel>Transport (non-imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                    <FormField control={form.control} name="indemniteLogement" render={({ field }) => (<FormItem><FormLabel>Logement</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                    <FormField control={form.control} name="indemniteResponsabilite" render={({ field }) => (<FormItem><FormLabel>Responsabilité</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                    <FormField control={form.control} name="indemniteSujetion" render={({ field }) => (<FormItem><FormLabel>Sujétion</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                    <FormField control={form.control} name="indemniteCommunication" render={({ field }) => (<FormItem><FormLabel>Communication</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                    <FormField control={form.control} name="indemniteRepresentation" render={({ field }) => (<FormItem><FormLabel>Représentation</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                </div>
+                                <Accordion type="single" collapsible className="w-full">
+                                  <AccordionItem value="indemnities">
+                                    <AccordionTrigger>Indemnités et Primes</AccordionTrigger>
+                                    <AccordionContent>
+                                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                                          <FormField control={form.control} name="indemniteTransportImposable" render={({ field }) => (<FormItem><FormLabel>Transport (imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="transportNonImposable" render={({ field }) => (<FormItem><FormLabel>Transport (non-imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteLogement" render={({ field }) => (<FormItem><FormLabel>Logement</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteResponsabilite" render={({ field }) => (<FormItem><FormLabel>Responsabilité</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteSujetion" render={({ field }) => (<FormItem><FormLabel>Sujétion</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteCommunication" render={({ field }) => (<FormItem><FormLabel>Communication</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteRepresentation" render={({ field }) => (<FormItem><FormLabel>Représentation</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                      </div>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                </Accordion>
                             </TabsContent>
                              <TabsContent value="personal" className="space-y-4">
                                  <div className="grid grid-cols-2 gap-4">
@@ -532,4 +544,3 @@ export default function HRPage() {
     return <HRContent />;
 }
 
-    
