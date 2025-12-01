@@ -142,7 +142,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     print-color-adjust: exact;
                 }
                 .no-print {
-                    display: none;
+                    display: none !important;
                 }
                  .report-card {
                     border: none;
