@@ -408,8 +408,8 @@ export default function StudentProfilePage() {
                         </CardContent>
                     </Card>
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /><span>Feedback</span></CardTitle></CardHeader>
-                        <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucun feedback pour le moment."}"</p></CardContent>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /><span>Appréciations</span></CardTitle></CardHeader>
+                        <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucune appréciation pour le moment."}"</p></CardContent>
                     </Card>
                 </div>
                  <Card>

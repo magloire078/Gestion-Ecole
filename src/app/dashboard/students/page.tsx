@@ -14,9 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal, Eye } from "lucide-react";
+import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal, Eye, MessageSquare } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
-import { analyzeAndSummarizeFeedback } from "@/ai/flows/analyze-and-summarize-feedback";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -25,7 +24,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -53,7 +51,7 @@ import {
 } from "@/components/ui/select";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
-import { useCollection, useFirestore, useUser, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -62,6 +60,11 @@ import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { differenceInYears, differenceInMonths, addYears } from "date-fns";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
 
 interface Student {
   id: string;
@@ -84,31 +87,18 @@ interface Class {
     cycle: string;
 }
 
-type AnalysisResult = {
-    sentiment: Sentiment;
-    summary: string;
-    keyImprovementAreas: string;
-};
-
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
-type Sentiment = 'Positif' | 'Neutre' | 'Négatif';
 
-const SentimentDisplay = ({ sentiment }: { sentiment: Sentiment }) => {
-    const sentimentConfig = {
-      Positif: { icon: Smile, color: 'text-emerald-500', label: 'Positif' },
-      Neutre: { icon: Meh, color: 'text-amber-500', label: 'Neutre' },
-      Négatif: { icon: Frown, color: 'text-red-500', label: 'Négatif' },
-    };
+const studentSchema = z.object({
+    name: z.string().min(1, { message: "Le nom est requis." }),
+    classId: z.string().min(1, { message: "La classe est requise." }),
+    dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
+    amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
+    tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
+    feedback: z.string().optional(),
+});
 
-    const { icon: Icon, color, label } = sentimentConfig[sentiment] || sentimentConfig.Neutre;
-
-    return (
-        <div className={`flex items-center gap-2 font-semibold ${color}`}>
-            <Icon className="h-5 w-5" />
-            <span>{label}</span>
-        </div>
-    );
-};
+type StudentFormValues = z.infer<typeof studentSchema>;
 
 
 export default function StudentsPage() {
@@ -129,15 +119,26 @@ export default function StudentsPage() {
   // Edit Student State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [formState, setFormState] = useState<Partial<Student>>({});
 
   // Delete Student State
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+  
+  const form = useForm<StudentFormValues>({
+    resolver: zodResolver(studentSchema),
+    defaultValues: {
+        name: '',
+        classId: '',
+        dateOfBirth: '',
+        amountDue: 0,
+        tuitionStatus: 'Partiel',
+        feedback: '',
+    }
+  });
 
   useEffect(() => {
-    if(editingStudent) {
-      setFormState({
+    if(isEditDialogOpen && editingStudent) {
+      form.reset({
         name: editingStudent.name,
         classId: editingStudent.classId,
         feedback: editingStudent.feedback,
@@ -145,37 +146,39 @@ export default function StudentsPage() {
         tuitionStatus: editingStudent.tuitionStatus,
         dateOfBirth: editingStudent.dateOfBirth,
       });
+    } else {
+        form.reset();
     }
-  }, [editingStudent]);
+  }, [editingStudent, isEditDialogOpen, form]);
   
   const handleOpenEditDialog = (student: Student) => {
     setEditingStudent(student);
     setIsEditDialogOpen(true);
   };
 
-  const handleEditStudent = () => {
-    if (!schoolId || !editingStudent || !formState.name || !formState.classId) {
-      toast({ variant: "destructive", title: "Erreur", description: "Le nom et la classe de l'élève sont requis." });
+  const handleEditStudent = (values: StudentFormValues) => {
+    if (!schoolId || !editingStudent) {
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier l'élève." });
       return;
     }
     
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingStudent.id}`);
-    const selectedClassInfo = classes.find(c => c.id === formState.classId);
+    const selectedClassInfo = classes.find(c => c.id === values.classId);
     
     const updatedData = {
-      name: formState.name,
-      classId: formState.classId,
+      name: values.name,
+      classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
       cycle: selectedClassInfo?.cycle || editingStudent.cycle,
-      feedback: formState.feedback || '',
-      amountDue: Number(formState.amountDue) || 0,
-      tuitionStatus: formState.tuitionStatus || 'Partiel',
-      dateOfBirth: formState.dateOfBirth || '',
+      feedback: values.feedback || '',
+      amountDue: values.amountDue,
+      tuitionStatus: values.tuitionStatus,
+      dateOfBirth: values.dateOfBirth,
     };
     
     setDoc(studentDocRef, updatedData, { merge: true })
     .then(() => {
-        toast({ title: "Élève modifié", description: `Les informations de ${formState.name} ont été mises à jour.` });
+        toast({ title: "Élève modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
         setIsEditDialogOpen(false);
         setEditingStudent(null);
     }).catch(async (serverError) => {
@@ -337,65 +340,105 @@ export default function StudentsPage() {
                 Mettez à jour les informations de <strong>{editingStudent?.name}</strong>.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-student-name" className="text-right">
-                Nom
-              </Label>
-              <Input id="edit-student-name" value={formState.name || ''} onChange={(e) => setFormState(s => ({...s, name: e.target.value}))} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-student-dob" className="text-right">
-                Date de naiss.
-              </Label>
-              <Input id="edit-student-dob" type="date" value={formState.dateOfBirth || ''} onChange={(e) => setFormState(s => ({...s, dateOfBirth: e.target.value}))} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-student-class" className="text-right">
-                Classe
-              </Label>
-              <Select onValueChange={(v) => setFormState(s => ({...s, classId: v}))} value={formState.classId || ''}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Sélectionner une classe" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classes.map((opt) => (
-                    <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-student-amount" className="text-right">
-                Solde (CFA)
-              </Label>
-              <Input id="edit-student-amount" type="number" value={formState.amountDue || 0} onChange={(e) => setFormState(s => ({...s, amountDue: Number(e.target.value)}))} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-student-tuition-status" className="text-right">
-                Statut
-              </Label>
-              <Select onValueChange={(v) => setFormState(s => ({...s, tuitionStatus: v as TuitionStatus}))} value={formState.tuitionStatus || 'Partiel'}>
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Statut du paiement" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Soldé">Soldé</SelectItem>
-                    <SelectItem value="En retard">En retard</SelectItem>
-                    <SelectItem value="Partiel">Partiel</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-start gap-4">
-              <Label htmlFor="edit-student-feedback" className="text-right pt-2">
-                Feedback
-              </Label>
-              <Textarea id="edit-student-feedback" value={formState.feedback || ''} onChange={(e) => setFormState(s => ({...s, feedback: e.target.value}))} className="col-span-3" />
-            </div>
-          </div>
+          <Form {...form}>
+            <form id="edit-student-form" onSubmit={form.handleSubmit(handleEditStudent)} className="grid gap-4 py-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Nom</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="dateOfBirth"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Date de naiss.</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="classId"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Classe</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl className="col-span-3">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {classes.map((opt) => (
+                          <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="amountDue"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Solde (CFA)</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Input type="number" {...field} />
+                    </FormControl>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tuitionStatus"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Statut</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                       <FormControl className="col-span-3">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Soldé">Soldé</SelectItem>
+                        <SelectItem value="En retard">En retard</SelectItem>
+                        <SelectItem value="Partiel">Partiel</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="feedback"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-start gap-4">
+                    <FormLabel className="text-right pt-2">Feedback</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Textarea {...field} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleEditStudent}>Enregistrer</Button>
+            <Button type="submit" form="edit-student-form" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
