@@ -168,14 +168,14 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     const baseCalculITS = brutImposable * 0.8; // Abattement de 20%
     
     // Calcul de l'ITS
-    const its = baseCalculITS * 0.012; // 1.2% du brut imposable (après abattement de 20%)
+    const its = baseCalculITS * 0.015;
 
     // Calcul de la Contribution Nationale (CN)
     let cn = 0;
     if (baseCalculITS > 50000) {
         const tranche1 = Math.min(baseCalculITS, 150000) - 50000;
         const tranche2 = Math.max(0, baseCalculITS - 150000);
-        cn = (tranche1 * 0.01) + (tranche2 * 0.05); // 1% et 5% selon les tranches
+        cn = (tranche1 * 0.015) + (tranche2 * 0.05); // 1.5% et 5% selon les tranches
     }
 
     // Calcul de l'IGR
@@ -220,10 +220,10 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     const organizationLogos: OrganizationSettings = {
         organizationName: organizationSettings.organizationName || "VOTRE ORGANISATION",
-        mainLogoUrl: organizationSettings.mainLogoUrl || "https://cnrct.ci/wp-content/uploads/2018/03/logo_chambre.png",
+        mainLogoUrl: organizationSettings.mainLogoUrl,
         secondaryLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg/512px-Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg.png",
         faviconUrl: '',
-        cnpsEmployeur: organizationSettings.cnpsEmployeur || "320491",
+        cnpsEmployeur: organizationSettings.cnpsEmployeur,
         address: organizationSettings.address,
         phone: organizationSettings.phone,
         website: organizationSettings.website,
