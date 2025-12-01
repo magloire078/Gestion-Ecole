@@ -14,11 +14,13 @@ import {
 import {useFirestore} from '../provider';
 import { FirestorePermissionError } from '../errors';
 import { errorEmitter } from '../error-emitter';
+import { useToast } from '@/hooks/use-toast';
 
 export function useCollection<T>(query: Query<T> | null) {
   const [data, setData] = useState<QueryDocumentSnapshot<T>[] | null>(null);
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!query || !firestore) {
@@ -45,22 +47,25 @@ export function useCollection<T>(query: Query<T> | null) {
     return () => unsubscribe();
   }, [query, firestore]);
   
-  const add = async (data: T): Promise<DocumentReference<T> | undefined> => {
+  const add = async (data: DocumentData): Promise<DocumentReference<DocumentData> | undefined> => {
     if (!query) {
         toast({ variant: 'destructive', title: 'Erreur', description: "La requête n'est pas définie." });
         return;
     }
-    const collRef = query.firestore.collection((query as any)._query.path.segments.join('/')) as CollectionReference<T>;
+    const collRef = query.firestore.collection((query as any)._query.path.segments.join('/')) as CollectionReference<DocumentData>;
     
-    addDoc(collRef, data)
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({
-                path: (query as any)._query.path.segments.join('/'),
-                operation: 'create',
-                requestResourceData: data,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+    try {
+        const docRef = await addDoc(collRef, data);
+        return docRef;
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: (query as any)._query.path.segments.join('/'),
+            operation: 'create',
+            requestResourceData: data,
         });
+        errorEmitter.emit('permission-error', permissionError);
+        return undefined;
+    }
   }
 
 
