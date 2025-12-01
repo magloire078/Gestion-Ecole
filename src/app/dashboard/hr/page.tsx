@@ -200,6 +200,7 @@ function HRContent() {
     setIsPayslipOpen(true);
     
     try {
+        // Use a consistent ISO string for date to avoid hydration mismatch
         const payslipDate = new Date().toISOString();
         const details = await getPayslipDetails(staffMember, payslipDate);
         setPayslipDetails(details);
@@ -377,14 +378,14 @@ function HRContent() {
             <DialogHeader>
               <DialogTitle>Bulletin de paie</DialogTitle>
               <DialogDescription>
-                Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.name}.
+                Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.name || "..."}.
               </DialogDescription>
             </DialogHeader>
             {isGeneratingPayslip ? (
                 <div className="flex items-center justify-center h-96">
                     <p>Génération du bulletin de paie...</p>
                 </div>
-            ) : payslipDetails ? (
+            ) : isMounted && payslipDetails ? (
                 <div className="mt-4 max-h-[70vh] overflow-y-auto">
                     <PayslipTemplate payslipDetails={payslipDetails} />
                 </div>
@@ -444,3 +445,5 @@ export default function HRPage() {
     
     return <HRContent />;
 }
+
+    

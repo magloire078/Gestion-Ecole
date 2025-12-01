@@ -173,7 +173,7 @@ function numberToWords(num: number): string {
 // 3. PAYSLIP CALCULATION LOGIC
 // ====================================================================================
 
-function calculateSeniority(hireDateStr: string | undefined, payslipDateStr: string): { text: string, years: number } {
+function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text: string, years: number } {
     if (!hireDateStr || !payslipDateStr) return { text: 'N/A', years: 0 };
     
     const hireDate = parseISO(hireDateStr);
@@ -275,7 +275,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         anciennete: seniorityInfo.text,
         categorie: employee.categorie || 'Catégorie',
         cnpsEmployeur: "320491", // À remplacer par votre numéro
-        paymentDate: isValid(payslipDateObject) ? format(lastDayOfMonth(payslipDateObject), "yyyy-MM-dd'T'HH:mm:ss.SSSxxx") : payslipDate,
+        paymentDate: payslipDate, // Use the consistent date string
         paymentLocation: 'Yamoussoukro', // À remplacer
         parts: employee.parts || 1.5,
         numeroCompteComplet: numeroCompteComplet
@@ -295,3 +295,5 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         organizationLogos
     };
 }
+
+    
