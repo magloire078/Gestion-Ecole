@@ -79,13 +79,11 @@ export default function DashboardPage() {
       
       setGradesLoading(true);
       
-      // Correctly create a reference to the school's path for the query
-      const schoolPath = `ecoles/${schoolId}`;
-      const gradesQuery = query(collectionGroup(firestore, 'notes'), where('__name__', '>=', `${schoolPath}/`), where('__name__', '<', `${schoolPath}0`));
+      const gradesQuery = query(collectionGroup(firestore, 'notes'));
 
       try {
         const querySnapshot = await getDocs(gradesQuery);
-        const grades = querySnapshot.docs.map(doc => doc.data() as GradeEntry);
+        const grades = querySnapshot.docs.filter(doc => doc.ref.path.startsWith(`ecoles/${schoolId}/`)).map(doc => doc.data() as GradeEntry);
         setAllGrades(grades);
       } catch (error) {
         console.error("Erreur lors de la récupération des notes (collection group):", error);
