@@ -3,57 +3,11 @@ import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenc
 import { fr } from "date-fns/locale";
 import { numberToWords } from "french-numbers-to-words";
 import placeholderImages from '@/lib/placeholder-images.json';
+import type { staff as Employe, school as OrganizationSettings } from '@/lib/data-types';
 
 // ====================================================================================
-// 1. DATA TYPES
+// 1. DATA TYPES (now imported)
 // ====================================================================================
-
-export type OrganizationSettings = {
-    organizationName?: string;
-    cnpsEmployeur?: string;
-    address?: string;
-    phone?: string;
-    website?: string;
-    mainLogoUrl?: string;
-};
-
-export type Employe = {
-  id: string;
-  name: string;
-  matricule?: string;
-  role: string;
-  status: 'Actif' | 'Inactif';
-  
-  // Personal Info
-  email?: string;
-  situationMatrimoniale?: 'Célibataire' | 'Marié(e)' | 'Divorcé(e)' | 'Veuf(ve)';
-  enfants?: number;
-
-  // Professional Info
-  hireDate?: string;
-  categorie?: string;
-  
-  // Payroll Info
-  baseSalary?: number;
-  cnpsEmploye?: string;
-  CNPS?: boolean;
-  
-  // Earnings & Deductions
-  indemniteTransportImposable?: number;
-  indemniteResponsabilite?: number;
-  indemniteLogement?: number;
-  indemniteSujetion?: number;
-  indemniteCommunication?: number;
-  indemniteRepresentation?: number;
-  transportNonImposable?: number;
-
-  // Bank Info
-  banque?: string;
-  numeroCompte?: string;
-  CB?: string;
-  CG?: string;
-  Cle_RIB?: string;
-};
 
 export type PayslipEarning = {
     label: string;
@@ -208,14 +162,14 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     const getIGRFromTranche = (revenu: number) => {
         if (revenu <= 25000) return 0;
-        if (revenu <= 46250) return (revenu * 10/110) - 2273;
-        if (revenu <= 73750) return (revenu * 15/115) - 4565;
-        if (revenu <= 121250) return (revenu * 20/120) - 8208;
-        if (revenu <= 203750) return (revenu * 25/125) - 14271;
-        if (revenu <= 346250) return (revenu * 35/135) - 34653;
-        if (revenu <= 843750) return (revenu * 45/145) - 69022;
-        return (revenu * 60/160) - 195703;
-    }
+        if (revenu <= 46250) return (revenu * (10 / 110)) - (25000 * 0.1);
+        if (revenu <= 73750) return (revenu * (15 / 115)) - (46250 * 0.15 + 25000 * 0.1);
+        if (revenu <= 121250) return (revenu * (20 / 120)) - (73750 * 0.20 + 46250 * 0.15 + 25000 * 0.1);
+        if (revenu <= 203750) return (revenu * (25 / 125)) - (121250 * 0.25 + 73750 * 0.20 + 46250 * 0.15 + 25000 * 0.1);
+        if (revenu <= 346250) return (revenu * (35 / 135)) - (203750 * 0.35 + 121250 * 0.25 + 73750 * 0.20 + 46250 * 0.15 + 25000 * 0.1);
+        if (revenu <= 843750) return (revenu * (45 / 145)) - (346250 * 0.45 + 203750 * 0.35 + 121250 * 0.25 + 73750 * 0.20 + 46250 * 0.15 + 25000 * 0.1);
+        return (revenu * (60 / 160)) - (843750 * 0.60 + 346250 * 0.45 + 203750 * 0.35 + 121250 * 0.25 + 73750 * 0.20 + 46250 * 0.15 + 25000 * 0.1);
+    };
     const igr = Math.round(getIGRFromTranche(Q) * parts);
 
     
@@ -275,3 +229,5 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         }
     };
 }
+
+    

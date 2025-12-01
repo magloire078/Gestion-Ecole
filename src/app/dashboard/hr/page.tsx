@@ -51,7 +51,8 @@ import { fr } from "date-fns/locale";
 import { PayslipTemplate } from '@/components/payroll/payslip-template';
 import { useSubscription } from '@/hooks/use-subscription';
 import Link from "next/link";
-import { getPayslipDetails, type Employe, type PayslipDetails, type OrganizationSettings } from '@/app/bulletin-de-paie';
+import { getPayslipDetails, type PayslipDetails } from '@/app/bulletin-de-paie';
+import type { staff as Employe, school as OrganizationSettings } from '@/lib/data-types';
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -249,7 +250,7 @@ function HRContent() {
   };
   
   const handleGeneratePayslip = async (staffMember: StaffMember) => {
-    if (!isMounted) return;
+    if (!isMounted || !schoolData) return;
 
     setIsGeneratingPayslip(true);
     setPayslipDetails(null);
@@ -257,15 +258,7 @@ function HRContent() {
     
     try {
         const payslipDate = new Date().toISOString();
-        const orgSettings: OrganizationSettings = {
-            organizationName: schoolData?.name,
-            address: schoolData?.address,
-            phone: schoolData?.phone,
-            website: schoolData?.website,
-            cnpsEmployeur: schoolData?.cnpsEmployeur,
-            mainLogoUrl: schoolData?.mainLogoUrl,
-        };
-        const details = await getPayslipDetails(staffMember, payslipDate, orgSettings);
+        const details = await getPayslipDetails(staffMember, payslipDate, schoolData as OrganizationSettings);
         setPayslipDetails(details);
     } catch(e) {
         console.error(e);
