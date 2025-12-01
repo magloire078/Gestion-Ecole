@@ -206,15 +206,15 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     const getIGRFromTranche = (revenu: number) => {
         if (revenu <= 25000) return 0;
-        if (revenu <= 46250) return (revenu * 10/110) - (25000 * 10/110);
-        if (revenu <= 73750) return (revenu * 15/115) - (4812.5 * 1.15);
-        if (revenu <= 121250) return (revenu * 20/120) - (8500 * 1.2);
-        if (revenu <= 203750) return (revenu * 25/125) - (14562.5 * 1.25);
-        if (revenu <= 346250) return (revenu * 35/135) - (35062.5 * 1.35);
-        if (revenu <= 843750) return (revenu * 45/145) - (69687.5 * 1.45);
-        return (revenu * 60/160) - (196250 * 1.6);
+        if (revenu <= 46250) return (revenu * (10/110)) - 2273;
+        if (revenu <= 73750) return (revenu * (15/115)) - 4565;
+        if (revenu <= 121250) return (revenu * (20/120)) - 8208;
+        if (revenu <= 203750) return (revenu * (25/125)) - 14271;
+        if (revenu <= 346250) return (revenu * (35/135)) - 34653;
+        if (revenu <= 843750) return (revenu * (45/145)) - 69022;
+        return (revenu * (60/160)) - 195703;
     }
-    const igr = getIGRFromTranche(Q) * parts;
+    const igr = Math.round(getIGRFromTranche(Q) * parts);
 
     
     const deductions: PayslipDeduction[] = [
