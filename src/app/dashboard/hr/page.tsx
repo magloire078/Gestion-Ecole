@@ -39,7 +39,6 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
@@ -54,6 +53,21 @@ import { useSubscription } from '@/hooks/use-subscription';
 import Link from "next/link";
 import { getPayslipDetails, type Employe, type PayslipDetails } from '@/app/bulletin-de-paie';
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const staffSchema = z.object({
+  name: z.string().min(1, { message: "Le nom est requis." }),
+  role: z.string().min(1, { message: "Le rôle est requis." }),
+  email: z.string().email({ message: "L'adresse email est invalide." }).optional().or(z.literal('')),
+  phone: z.string().optional(),
+  salary: z.coerce.number().min(0, { message: 'Le salaire doit être positif.' }),
+  hireDate: z.string().min(1, { message: "La date d'embauche est requise." }),
+});
+
+type StaffFormValues = z.infer<typeof staffSchema>;
 
 interface StaffMember extends Employe {
   id: string;
@@ -88,85 +102,65 @@ function HRContent() {
   const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
   const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
   
-  const [formState, setFormState] = useState<Omit<StaffMember, 'id'>>({
+  const form = useForm<StaffFormValues>({
+    resolver: zodResolver(staffSchema),
+    defaultValues: {
       name: '',
       role: '',
       email: '',
       phone: '',
       salary: 0,
-      hireDate: '',
-      poste: '',
-      matricule: '',
-      status: 'Actif',
-      photoUrl: '',
-      baseSalary: 0,
+      hireDate: format(new Date(), 'yyyy-MM-dd'),
+    },
   });
 
   useEffect(() => {
-    if (isFormOpen && editingStaff) {
-      setFormState({
-        name: editingStaff.name,
-        role: editingStaff.role,
-        email: editingStaff.email || '',
-        phone: editingStaff.phone || '',
-        salary: editingStaff.salary || 0,
-        hireDate: editingStaff.hireDate,
-        poste: editingStaff.poste || editingStaff.role,
-        matricule: editingStaff.matricule || '',
-        status: editingStaff.status || 'Actif',
-        photoUrl: editingStaff.photoUrl || '',
-        baseSalary: editingStaff.baseSalary || editingStaff.salary || 0,
-      });
-    } else {
-      setFormState({
-        name: '',
-        role: '',
-        email: '',
-        phone: '',
-        salary: 0,
-        hireDate: format(new Date(), 'yyyy-MM-dd'),
-        poste: '',
-        matricule: '',
-        status: 'Actif',
-        photoUrl: '',
-        baseSalary: 0,
-      });
+    if (isFormOpen) {
+      if (editingStaff) {
+        form.reset({
+          name: editingStaff.name,
+          role: editingStaff.role,
+          email: editingStaff.email || '',
+          phone: editingStaff.phone || '',
+          salary: editingStaff.salary || 0,
+          hireDate: editingStaff.hireDate ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+        });
+      } else {
+        form.reset({
+          name: '',
+          role: '',
+          email: '',
+          phone: '',
+          salary: 0,
+          hireDate: format(new Date(), 'yyyy-MM-dd'),
+        });
+      }
     }
-  }, [isFormOpen, editingStaff]);
+  }, [isFormOpen, editingStaff, form]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFormState(prev => ({ 
-        ...prev, 
-        [id]: value,
-        ...(id === 'role' && { poste: value }), // sync poste with role if not specified
-        ...(id === 'salary' && { baseSalary: Number(value) }), // sync baseSalary
-     }));
-  };
-
-  const handleSubmit = async () => {
-    if (!schoolId || !formState.name || !formState.role || !formState.hireDate) {
-      toast({ variant: 'destructive', title: 'Erreur', description: "Le nom, le rôle et la date d'embauche sont requis." });
+  const handleSubmit = async (values: StaffFormValues) => {
+    if (!schoolId) {
+      toast({ variant: 'destructive', title: 'Erreur', description: "ID de l'école non trouvé." });
       return;
     }
     
     const dataToSave = { 
-        ...formState, 
-        salary: Number(formState.salary) || 0,
-        baseSalary: Number(formState.baseSalary) || Number(formState.salary) || 0,
-        poste: formState.poste || formState.role,
-        matricule: formState.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`
+        ...values,
+        baseSalary: values.salary,
+        poste: values.role,
+        matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: editingStaff?.status || 'Actif',
     };
 
     try {
         if (editingStaff) {
             const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
             await setDoc(staffDocRef, dataToSave, { merge: true });
-            toast({ title: "Membre du personnel modifié", description: `Les informations de ${formState.name} ont été mises à jour.` });
+            toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
         } else {
             const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
             await addDoc(staffCollectionRef, dataToSave);
-            toast({ title: "Membre du personnel ajouté", description: `${formState.name} a été ajouté(e) à la liste du personnel.` });
+            toast({ title: "Membre du personnel ajouté", description: `${values.name} a été ajouté(e) à la liste du personnel.` });
         }
         setIsFormOpen(false);
         setEditingStaff(null);
@@ -200,7 +194,6 @@ function HRContent() {
     setIsPayslipOpen(true);
     
     try {
-        // Use a consistent ISO string for date to avoid hydration mismatch
         const payslipDate = new Date().toISOString();
         const details = await getPayslipDetails(staffMember, payslipDate);
         setPayslipDetails(details);
@@ -216,7 +209,6 @@ function HRContent() {
         setIsGeneratingPayslip(false);
     }
   };
-
 
   const handleOpenFormDialog = (staffMember: StaffMember | null) => {
     setEditingStaff(staffMember);
@@ -324,36 +316,93 @@ function HRContent() {
                 {editingStaff ? `Mettez à jour les informations de ${editingStaff.name}.` : "Renseignez les informations du nouveau membre."}
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">Nom</Label>
-                    <Input id="name" value={formState.name} onChange={handleInputChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="role" className="text-right">Rôle/Poste</Label>
-                    <Input id="role" value={formState.role} onChange={handleInputChange} className="col-span-3" placeholder="Ex: Comptable" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">Email</Label>
-                    <Input id="email" type="email" value={formState.email} onChange={handleInputChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="phone" className="text-right">Téléphone</Label>
-                    <Input id="phone" type="tel" value={formState.phone} onChange={handleInputChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="salary" className="text-right">Salaire (CFA)</Label>
-                    <Input id="salary" type="number" value={formState.salary} onChange={handleInputChange} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="hireDate" className="text-right">Date d'embauche</Label>
-                    <Input id="hireDate" type="date" value={formState.hireDate} onChange={handleInputChange} className="col-span-3" />
-                </div>
-            </div>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                <Button onClick={handleSubmit}>Enregistrer</Button>
-            </DialogFooter>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Nom</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input placeholder="Nom complet" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Rôle/Poste</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input placeholder="Ex: Comptable" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Email</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="email" placeholder="email@exemple.com" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Téléphone</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="tel" placeholder="(Optionnel)" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="salary"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Salaire (CFA)</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="hireDate"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Date d'embauche</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="date" {...field} />
+                      </FormControl>
+                       <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                      {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                    </Button>
+                </DialogFooter>
+              </form>
+            </Form>
         </DialogContent>
       </Dialog>
       
@@ -445,5 +494,3 @@ export default function HRPage() {
     
     return <HRContent />;
 }
-
-    
