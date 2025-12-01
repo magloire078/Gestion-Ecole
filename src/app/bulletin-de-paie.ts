@@ -1,6 +1,7 @@
 
 import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
+import { numberToWords } from "french-numbers-to-words";
 
 // ====================================================================================
 // 1. DATA TYPES
@@ -100,74 +101,11 @@ export type PayslipDetails = {
 // 2. UTILITY FUNCTION
 // ====================================================================================
 
-function numberToWords(num: number): string {
+function toWords(num: number): string {
     if (num === 0) return 'ZÉRO';
-
-    const units = ['', 'UN', 'DEUX', 'TROIS', 'QUATRE', 'CINQ', 'SIX', 'SEPT', 'HUIT', 'NEUF'];
-    const teens = ['DIX', 'ONZE', 'DOUZE', 'TREIZE', 'QUATORZE', 'QUINZE', 'SEIZE', 'DIX-SEPT', 'DIX-HUIT', 'DIX-NEUF'];
-    const tens = ['', 'DIX', 'VINGT', 'TRENTE', 'QUARANTE', 'CINQUANTE', 'SOIXANTE', 'SOIXANTE-DIX', 'QUATRE-VINGT', 'QUATRE-VINGT-DIX'];
-
-    function convert(n: number): string {
-        if (n < 10) return units[n];
-        if (n < 20) return teens[n - 10];
-        if (n < 70) {
-            const ten = Math.floor(n / 10);
-            const unit = n % 10;
-            if (unit === 1 && ten < 8) return tens[ten] + ' ET UN';
-            return tens[ten] + (unit > 0 ? '-' + units[unit] : '');
-        }
-        if (n < 80) { // 70-79
-             const unit = n % 10;
-             if (unit === 1) return tens[6] + '-ET-ONZE';
-             return tens[6] + '-' + teens[n - 70];
-        }
-        if (n < 100) {
-            const ten = Math.floor(n / 10);
-            const unit = n % 10;
-            if (unit === 0) return tens[ten] + 'S';
-            return tens[ten] + (unit > 0 ? '-' + units[unit] : '');
-        }
-        if (n < 200) {
-            return 'CENT' + (n % 100 > 0 ? ' ' + convert(n % 100) : '');
-        }
-        if (n < 1000) {
-            const hundred = Math.floor(n / 100);
-            const remainder = n % 100;
-            return units[hundred] + ' CENT' + (remainder > 0 ? ' ' + convert(remainder) : 'S');
-        }
-        return '';
-    }
-
-    function processGroup(n: number, groupName: string): string {
-        if (n === 0) return '';
-        let str = '';
-        if (n > 1) {
-            str = convert(n) + ' ' + groupName;
-             str += 'S';
-        } else {
-            str = 'UN ' + groupName;
-        }
-        return str;
-    }
-
-    const billions = Math.floor(num / 1000000000);
-    const millions = Math.floor((num % 1000000000) / 1000000);
-    const thousands = Math.floor((num % 1000000) / 1000);
-    const remainder = num % 1000;
-
-    let result = '';
-    if (billions > 0) result += processGroup(billions, 'MILLIARD') + ' ';
-    if (millions > 0) result += processGroup(millions, 'MILLION') + ' ';
-    if (thousands > 0) {
-        if (thousands === 1) result += 'MILLE ';
-        else result += convert(thousands).replace(/S$/, '') + ' MILLE ';
-    }
-    if (remainder > 0) result += convert(remainder);
-    
-    result = result.replace(/CENTS\s(MILLE|MILLION|MILLIARD)/g, 'CENT $1');
-
-    return result.trim().toUpperCase();
+    return numberToWords(num).toUpperCase();
 }
+
 
 // ====================================================================================
 // 3. PAYSLIP CALCULATION LOGIC
@@ -243,7 +181,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
     const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
 
     const netAPayer = brutImposable + (indemnityFields.transportNonImposable || 0) - totalDeductions;
-    const netAPayerInWords = numberToWords(Math.floor(netAPayer)) + " FRANCS CFA";
+    const netAPayerInWords = toWords(Math.floor(netAPayer)) + " FRANCS CFA";
 
     const employerContributions: PayslipEmployerContribution[] = [
         { label: 'ITS PART PATRONALE', base: Math.round(brutImposable), rate: '1,2%', amount: employee.CNPS ? Math.round(brutImposable * 0.012) : 0 },

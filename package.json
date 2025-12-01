@@ -41,6 +41,7 @@
     "embla-carousel-react": "^8.1.6",
     "events": "^3.3.0",
     "firebase": "^10.12.3",
+    "french-numbers-to-words": "^1.0.2",
     "lucide-react": "^0.417.0",
     "next": "14.2.4",
     "next-themes": "^0.3.0",
