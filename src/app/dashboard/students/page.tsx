@@ -259,10 +259,6 @@ export default function StudentsPage() {
 
   const isLoading = schoolLoading || studentsLoading || classesLoading;
 
-  if (!isMounted) {
-    return null;
-  }
-
   return (
     <>
       <div className="grid gap-6 lg:grid-cols-3">
@@ -299,7 +295,7 @@ export default function StudentsPage() {
                             <TableCell><Skeleton className="h-5 w-24"/></TableCell>
                             <TableCell><Skeleton className="h-5 w-32"/></TableCell>
                             <TableCell><Skeleton className="h-5 w-16"/></TableCell>
-                            <TableCell><Skeleton className="h-5 w-8"/></TableCell>
+                            <TableCell><Skeleton className="h-5 w-16"/></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
                             <TableCell className="text-center"><Skeleton className="h-5 w-12 mx-auto"/></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto"/></TableCell>
@@ -316,7 +312,7 @@ export default function StudentsPage() {
                             </Link>
                           </TableCell>
                           <TableCell>{student.class}</TableCell>
-                          <TableCell>{getAge(student.dateOfBirth)}</TableCell>
+                          <TableCell>{isMounted ? getAge(student.dateOfBirth) : <Skeleton className="h-5 w-16"/>}</TableCell>
                           <TableCell className="text-right font-mono">
                               {student.amountDue > 0 ? formatCurrency(student.amountDue) : '-'}
                           </TableCell>
