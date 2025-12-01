@@ -64,6 +64,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
 
 
 interface Student {
@@ -124,6 +125,10 @@ export default function StudentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   
+    // AI Analysis State
+  const [analysisResult, setAnalysisResult] = useState<AnalyzeAndSummarizeFeedbackOutput | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
@@ -149,6 +154,7 @@ export default function StudentsPage() {
     } else {
         form.reset();
     }
+    setAnalysisResult(null); // Clear analysis when dialog opens/closes
   }, [editingStudent, isEditDialogOpen, form]);
   
   const handleOpenEditDialog = (student: Student) => {
@@ -207,6 +213,25 @@ export default function StudentsPage() {
     });
   }
   
+  const handleAnalyzeFeedback = async () => {
+    const feedbackText = form.getValues('feedback');
+    if (!feedbackText) {
+        toast({ variant: 'destructive', title: "Aucun texte", description: "Le champ d'appréciation est vide."});
+        return;
+    }
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    try {
+        const result = await analyzeAndSummarizeFeedback({ feedbackText });
+        setAnalysisResult(result);
+    } catch (error) {
+        console.error("AI analysis failed:", error);
+        toast({ variant: 'destructive', title: "Erreur d'analyse", description: "L'analyse par IA a échoué."});
+    } finally {
+        setIsAnalyzing(false);
+    }
+  };
+  
   const getAge = (dateOfBirth: string | undefined) => {
     if (!dateOfBirth) return 'N/A';
     try {
@@ -230,6 +255,17 @@ export default function StudentsPage() {
 
   const isLoading = schoolLoading || studentsLoading || classesLoading;
   const { toast } = useToast();
+  
+  const renderSentiment = (sentiment: string) => {
+    const sentimentLower = sentiment.toLowerCase();
+    if (sentimentLower === 'positif') {
+        return <span className="flex items-center gap-1 text-emerald-600"><Smile className="h-4 w-4" /> Positif</span>
+    }
+    if (sentimentLower === 'négatif') {
+        return <span className="flex items-center gap-1 text-red-600"><Frown className="h-4 w-4" /> Négatif</span>
+    }
+    return <span className="flex items-center gap-1 text-gray-600"><Meh className="h-4 w-4" /> Neutre</span>
+  };
 
   return (
     <>
@@ -425,10 +461,32 @@ export default function StudentsPage() {
                 name="feedback"
                 render={({ field }) => (
                   <FormItem className="grid grid-cols-4 items-start gap-4">
-                    <FormLabel className="text-right pt-2">Feedback</FormLabel>
-                    <FormControl className="col-span-3">
-                      <Textarea {...field} />
-                    </FormControl>
+                    <FormLabel className="text-right pt-2">Appréciation</FormLabel>
+                    <div className="col-span-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                            <FormControl>
+                                <Textarea {...field} />
+                            </FormControl>
+                            <Button type="button" variant="outline" size="icon" onClick={handleAnalyzeFeedback} disabled={isAnalyzing}>
+                                <Bot className="h-4 w-4" />
+                            </Button>
+                        </div>
+                        {isAnalyzing && <p className="text-xs text-muted-foreground">Analyse en cours...</p>}
+                        {analysisResult && (
+                             <Card className="bg-muted/50 text-xs">
+                                <CardHeader className="p-3">
+                                    <CardTitle className="text-sm flex justify-between items-center">
+                                        <span>Analyse IA</span>
+                                        {renderSentiment(analysisResult.sentiment)}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="p-3 pt-0">
+                                    <p><strong>Résumé:</strong> {analysisResult.summary}</p>
+                                    <p className="mt-2"><strong>Points d'amélioration:</strong> {analysisResult.keyImprovementAreas}</p>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
                   </FormItem>
                 )}
               />
