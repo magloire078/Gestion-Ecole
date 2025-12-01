@@ -13,6 +13,9 @@ export type OrganizationSettings = {
     secondaryLogoUrl?: string;
     faviconUrl?: string;
     cnpsEmployeur?: string;
+    address?: string;
+    phone?: string;
+    website?: string;
 };
 
 export type Employe = {
@@ -158,10 +161,40 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         
     const brutImposable = earnings.reduce((sum, item) => sum + item.amount, 0);
     
+    // --- Déductions fiscales ---
     const cnps = employee.CNPS ? (brutImposable * 0.063) : 0;
-    const its = 0; // Calcul à implémenter
-    const igr = 0; // Calcul à implémenter
-    const cn = 0;  // Calcul à implémenter
+    
+    // Base de calcul pour ITS, CN, IGR
+    const baseCalculITS = brutImposable * 0.8; // Abattement de 20%
+    
+    // Calcul de l'ITS
+    const its = baseCalculITS * 0.012; // 1.2% du brut imposable (après abattement de 20%)
+
+    // Calcul de la Contribution Nationale (CN)
+    let cn = 0;
+    if (baseCalculITS > 50000) {
+        const tranche1 = Math.min(baseCalculITS, 150000) - 50000;
+        const tranche2 = Math.max(0, baseCalculITS - 150000);
+        cn = (tranche1 * 0.01) + (tranche2 * 0.05); // 1% et 5% selon les tranches
+    }
+
+    // Calcul de l'IGR
+    const N = baseCalculITS - (its + cn);
+    const parts = employee.parts || 1;
+    const Q = Math.floor(N / parts);
+    
+    const getIGRFromTranche = (revenu: number) => {
+        if (revenu <= 25000) return 0;
+        if (revenu <= 46250) return (revenu * 10/110) - 2273;
+        if (revenu <= 73750) return (revenu * 15/115) - 4443;
+        if (revenu <= 121250) return (revenu * 20/120) - 8104;
+        if (revenu <= 203750) return (revenu * 25/125) - 14167;
+        if (revenu <= 346250) return (revenu * 35/135) - 34537;
+        if (revenu <= 843750) return (revenu * 45/145) - 69162;
+        return (revenu * 60/160) - 195703;
+    }
+    const igr = getIGRFromTranche(Q) * parts;
+
     
     const deductions: PayslipDeduction[] = [
         { label: 'ITS', amount: Math.round(its) },
@@ -191,6 +224,9 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         secondaryLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg/512px-Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg.png",
         faviconUrl: '',
         cnpsEmployeur: organizationSettings.cnpsEmployeur || "320491",
+        address: organizationSettings.address,
+        phone: organizationSettings.phone,
+        website: organizationSettings.website,
     };
     
     const numeroCompteComplet = [employee.CB, employee.CG, employee.numeroCompte, employee.Cle_RIB].filter(Boolean).join(' ');
