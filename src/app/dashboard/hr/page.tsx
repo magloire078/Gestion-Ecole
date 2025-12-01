@@ -263,6 +263,7 @@ function HRContent() {
             phone: schoolData?.phone,
             website: schoolData?.website,
             cnpsEmployeur: schoolData?.cnpsEmployeur,
+            mainLogoUrl: schoolData?.mainLogoUrl,
         };
         const details = await getPayslipDetails(staffMember, payslipDate, orgSettings);
         setPayslipDetails(details);
@@ -536,3 +537,5 @@ export default function HRPage() {
     
     return <HRContent />;
 }
+
+    

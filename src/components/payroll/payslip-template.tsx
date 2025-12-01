@@ -13,7 +13,6 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
 
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationSettings } = payslipDetails;
     const fullName = employeeInfo.name;
-    const qrCodeValue = `${fullName} | ${employeeInfo.matricule} | ${employeeInfo.role}`;
     
     const payslipDateObject = parseISO(payslipDetails.employeeInfo.paymentDate);
     const displayDate = {
@@ -197,3 +196,5 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
+
+    
