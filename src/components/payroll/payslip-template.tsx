@@ -11,7 +11,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         return null; 
     }
 
-    const { employeeInfo, earnings, deductions, totals, employerContributions, organizationLogos } = payslipDetails;
+    const { employeeInfo, earnings, deductions, totals, employerContributions, organizationSettings } = payslipDetails;
     const fullName = employeeInfo.name;
     const qrCodeValue = `${fullName} | ${employeeInfo.matricule} | ${employeeInfo.role}`;
     
@@ -32,9 +32,9 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
             <header className="flex justify-between items-start pb-2 px-2 mb-2">
                 <div className="flex-1 text-center flex flex-col justify-center items-center h-full">
                     <div className='font-bold text-sm leading-tight'>
-                        <p className="whitespace-nowrap">{organizationLogos.organizationName}</p>
+                        <p className="whitespace-nowrap">{organizationSettings.organizationName}</p>
                     </div>
-                     {organizationLogos.mainLogoUrl && <img src={organizationLogos.mainLogoUrl} alt="Logo Principal" className="max-h-20 max-w-full h-auto w-auto mt-1" />}
+                     {organizationSettings.mainLogoUrl && <img src={organizationSettings.mainLogoUrl} alt="Logo Principal" className="max-h-20 max-w-full h-auto w-auto mt-1" />}
                 </div>
                 
                  <div className="flex-1 text-center pt-2">
@@ -43,7 +43,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
 
                 <div className="flex-1 text-center flex flex-col justify-center items-center h-full">
                     <p className="font-bold text-xs whitespace-nowrap">REPUBLIQUE DE CÔTE D'IVOIRE</p>
-                    {organizationLogos.secondaryLogoUrl && <img src={organizationLogos.secondaryLogoUrl} alt="Emblème national" className="max-h-[80px] max-w-full h-auto w-auto my-1" />}
+                    {organizationSettings.secondaryLogoUrl && <img src={organizationSettings.secondaryLogoUrl} alt="Emblème national" className="max-h-[80px] max-w-full h-auto w-auto my-1" />}
                     <p className="text-xs whitespace-nowrap">Union - Discipline - Travail</p>
                 </div>
             </header>
@@ -56,7 +56,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                 {/* Employee Info */}
                 <section className="flex">
                     <div className="w-1/3 space-y-1">
-                        <p className="text-[10px]"><span className="font-bold">N° CNPS EMPLOYEUR</span>: {employeeInfo.cnpsEmployeur}</p>
+                        <p className="text-[10px]"><span className="font-bold">N° CNPS EMPLOYEUR</span>: {organizationSettings.cnpsEmployeur}</p>
                         <p className="text-[10px]"><span className="font-bold">N° CNPS EMPLOYE</span>: {employeeInfo.cnpsEmploye}</p>
                         {/* <div className="mt-2 bg-white p-1 w-fit">
                             <QRCode value={qrCodeValue} size={32} />
@@ -186,11 +186,11 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
             {/* Footer */}
             <footer className="pt-2 mt-auto">
                 <div className="leading-tight text-center border-t border-gray-400 pt-1">
-                    <p className="font-bold">{organizationLogos.organizationName}</p>
-                    <p>{organizationLogos.address}</p>
+                    <p className="font-bold">{organizationSettings.organizationName}</p>
+                    <p>{organizationSettings.address}</p>
                     <p>
-                        {organizationLogos.phone && <span>Tél: {organizationLogos.phone}</span>}
-                        {organizationLogos.website && <span> | Site: {organizationLogos.website}</span>}
+                        {organizationSettings.phone && <span>Tél: {organizationSettings.phone}</span>}
+                        {organizationSettings.website && <span> | Site: {organizationSettings.website}</span>}
                     </p>
                 </div>
             </footer>

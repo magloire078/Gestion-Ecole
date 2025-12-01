@@ -2,6 +2,7 @@
 import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { numberToWords } from "french-numbers-to-words";
+import placeholderImages from '@/lib/placeholder-images.json';
 
 // ====================================================================================
 // 1. DATA TYPES
@@ -10,8 +11,6 @@ import { numberToWords } from "french-numbers-to-words";
 export type OrganizationSettings = {
     organizationName?: string;
     mainLogoUrl?: string;
-    secondaryLogoUrl?: string;
-    faviconUrl?: string;
     cnpsEmployeur?: string;
     address?: string;
     phone?: string;
@@ -94,7 +93,7 @@ export type PayslipDetails = {
         netAPayerInWords: string;
     };
     employerContributions: PayslipEmployerContribution[];
-    organizationLogos: OrganizationSettings;
+    organizationSettings: OrganizationSettings & { secondaryLogoUrl?: string; };
 };
 
 // ====================================================================================
@@ -132,7 +131,7 @@ function calculateParts(situation: Employe['situationMatrimoniale'], enfants: nu
         case 'Marié(e)':
             return 2 + (enfants * 0.5);
         case 'Veuf(ve)':
-            return 1 + (enfants * 0.5);
+            return 1.5 + (enfants * 0.5);
         case 'Divorcé(e)':
         case 'Célibataire':
             if (enfants > 0) {
@@ -184,7 +183,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     const baseCalculITS = brutImposable * 0.8; // Abattement de 20%
     
     // Calcul de l'ITS
-    const its = baseCalculITS * 0.015;
+    const its = baseCalculITS * 0.012; // Taux de 1.2% après abattement de 20% (équivalent à 1.5% sur 80% du brut)
 
     // Calcul de la Contribution Nationale (CN)
     let cn = 0;
@@ -230,20 +229,9 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         { label: 'TAXE D\'APPRENTISSAGE', base: Math.round(brutImposable), rate: '0,4%', amount: employee.CNPS ? Math.round(brutImposable * 0.004) : 0 },
         { label: 'TAXE FPC', base: Math.round(brutImposable), rate: '0,6%', amount: employee.CNPS ? Math.round(brutImposable * 0.006) : 0 },
         { label: 'PRESTATION FAMILIALE', base: Math.min(brutImposable, 70000), rate: '5,75%', amount: employee.CNPS ? Math.round(Math.min(brutImposable, 70000) * 0.0575) : 0 },
-        { label: 'ACCIDENT DE TRAVAIL', base: Math.min(brutImposable, 70000), rate: '2,0%', amount: employee.CNPS ? Math.round(Math.min(brutImposable, 70000) * 0.02) : 0 },
+        { label: 'ACCIDENT DE TRAVAIL', base: Math.min(brutImposable, 70000), rate: '2,5%', amount: employee.CNPS ? Math.round(Math.min(brutImposable, 70000) * 0.025) : 0 },
         { label: 'REGIME DE RETRAITE', base: Math.round(brutImposable), rate: '7,7%', amount: employee.CNPS ? Math.round(brutImposable * 0.077) : 0 },
     ];
-    
-    const organizationLogos: OrganizationSettings = {
-        organizationName: organizationSettings.organizationName || "VOTRE ORGANISATION",
-        mainLogoUrl: organizationSettings.mainLogoUrl,
-        secondaryLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg/512px-Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg.png",
-        faviconUrl: '',
-        cnpsEmployeur: organizationSettings.cnpsEmployeur,
-        address: organizationSettings.address,
-        phone: organizationSettings.phone,
-        website: organizationSettings.website,
-    };
     
     const numeroCompteComplet = [employee.CB, employee.CG, employee.numeroCompte, employee.Cle_RIB].filter(Boolean).join(' ');
 
@@ -273,6 +261,9 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
             netAPayerInWords,
         },
         employerContributions,
-        organizationLogos
+        organizationSettings: {
+            ...organizationSettings,
+            secondaryLogoUrl: placeholderImages.nationalEmblem,
+        }
     };
 }
