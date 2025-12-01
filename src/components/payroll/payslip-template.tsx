@@ -1,37 +1,26 @@
 
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { isValid, parseISO, lastDayOfMonth, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { PayslipDetails } from '@/app/bulletin-de-paie';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDetails }) {
-    const isMounted = useHydrationFix();
-    const [displayDate, setDisplayDate] = useState({ period: '', payment: '' });
-
-    useEffect(() => {
-        if (isMounted && payslipDetails?.employeeInfo?.paymentDate) {
-            const payslipDateObject = parseISO(payslipDetails.employeeInfo.paymentDate);
-            if (isValid(payslipDateObject)) {
-                const lastDay = lastDayOfMonth(payslipDateObject);
-                setDisplayDate({
-                    period: format(lastDay, 'MMMM yyyy', { locale: fr }),
-                    payment: format(payslipDateObject, 'EEEE d MMMM yyyy', { locale: fr })
-                });
-            }
-        }
-    }, [isMounted, payslipDetails]);
-
-    if (!isMounted || !payslipDetails) {
-        return null; // <-- LA CORRECTION CLÉ : Ne rien afficher si le composant n'est pas monté ou si les données ne sont pas prêtes.
+    if (!payslipDetails) {
+        return null; 
     }
 
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationLogos } = payslipDetails;
     const fullName = `${employeeInfo.lastName || ''} ${employeeInfo.firstName || ''}`.trim() || employeeInfo.name;
     const qrCodeValue = `${fullName} | ${employeeInfo.matricule} | ${employeeInfo.departmentId}`;
     
+    const payslipDateObject = parseISO(payslipDetails.employeeInfo.paymentDate);
+    const displayDate = {
+        period: isValid(payslipDateObject) ? format(lastDayOfMonth(payslipDateObject), 'MMMM yyyy', { locale: fr }) : 'N/A',
+        payment: isValid(payslipDateObject) ? format(payslipDateObject, 'EEEE d MMMM yyyy', { locale: fr }) : 'N/A'
+    };
+
     const formatCurrency = (value: number) => {
         if (value === 0) return '0';
         return value.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
