@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { PT_Sans } from 'next/font/google';
 import './globals.css';
 import { MainLayout } from './main-layout';
-import Link from 'next/link';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
