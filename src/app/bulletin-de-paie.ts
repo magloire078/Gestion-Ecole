@@ -161,14 +161,31 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     const Q = Math.floor(N / parts);
     
     const getIGRFromTranche = (revenu: number) => {
-        if (revenu <= 25000) return 0;
-        if (revenu <= 46250) return (revenu * 0.10) - (25000 * 0.1);
-        if (revenu <= 73750) return (revenu * 0.15) - (25000 * 0.1 + (46250 - 25000) * 0.15);
-        if (revenu <= 121250) return (revenu * 0.20) - (25000 * 0.1 + (46250 - 25000) * 0.15 + (73750 - 46250) * 0.20);
-        if (revenu <= 203750) return (revenu * 0.25) - (25000 * 0.1 + (46250 - 25000) * 0.15 + (73750 - 46250) * 0.20 + (121250 - 73750) * 0.25);
-        if (revenu <= 346250) return (revenu * 0.35) - (25000 * 0.1 + (46250 - 25000) * 0.15 + (73750 - 46250) * 0.20 + (121250 - 73750) * 0.25 + (203750 - 121250) * 0.35);
-        if (revenu <= 843750) return (revenu * 0.45) - (25000 * 0.1 + (46250 - 25000) * 0.15 + (73750 - 46250) * 0.20 + (121250 - 73750) * 0.25 + (203750 - 121250) * 0.35 + (346250 - 203750) * 0.45);
-        return (revenu * 0.60) - (25000 * 0.1 + (46250 - 25000) * 0.15 + (73750 - 46250) * 0.20 + (121250 - 73750) * 0.25 + (203750 - 121250) * 0.35 + (346250 - 203750) * 0.45 + (843750 - 346250) * 0.60);
+        const tranches = [
+            {limite: 25000, taux: 0},
+            {limite: 46250, taux: 0.10},
+            {limite: 73750, taux: 0.15},
+            {limite: 121250, taux: 0.20},
+            {limite: 203750, taux: 0.25},
+            {limite: 346250, taux: 0.35},
+            {limite: 843750, taux: 0.45},
+            {limite: Infinity, taux: 0.60}
+        ];
+        
+        let impot = 0;
+        let revenuRestant = revenu;
+        let limitePrecedente = 0;
+
+        for (const tranche of tranches) {
+            if (revenuRestant <= 0) break;
+
+            const montantTranche = Math.min(revenuRestant, tranche.limite - limitePrecedente);
+            impot += montantTranche * tranche.taux;
+            revenuRestant -= montantTranche;
+            limitePrecedente = tranche.limite;
+        }
+
+        return impot;
     };
     let igr = 0;
     if (Q > 0) {
@@ -233,5 +250,3 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         }
     };
 }
-
-    
