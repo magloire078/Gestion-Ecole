@@ -64,6 +64,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const transactionSchema = z.object({
     description: z.string().min(1, { message: "La description est requise." }),
@@ -210,23 +211,34 @@ export default function AccountingPage() {
   const renderFormContent = () => (
     <Form {...form}>
         <form id="transaction-form" onSubmit={form.handleSubmit(handleTransactionSubmit)} className="grid gap-4 py-4">
-            <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
+             <FormField
+              control={form.control}
+              name="type"
+              render={({ field }) => (
                 <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Type</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl className="col-span-3">
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="Revenu">Revenu</SelectItem>
-                        <SelectItem value="Dépense">Dépense</SelectItem>
-                    </SelectContent>
-                    </Select>
+                  <FormLabel className="text-right">Type</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      className="col-span-3 flex items-center space-x-4"
+                    >
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="Revenu" id="r1" />
+                        </FormControl>
+                        <FormLabel htmlFor="r1" className="font-normal">Revenu</FormLabel>
+                      </FormItem>
+                      <FormItem className="flex items-center space-x-2">
+                        <FormControl>
+                          <RadioGroupItem value="Dépense" id="r2" />
+                        </FormControl>
+                        <FormLabel htmlFor="r2" className="font-normal">Dépense</FormLabel>
+                      </FormItem>
+                    </RadioGroup>
+                  </FormControl>
                 </FormItem>
-                )}
+              )}
             />
             <FormField
                 control={form.control}
