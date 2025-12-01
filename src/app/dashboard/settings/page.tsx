@@ -11,6 +11,19 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Copy } from "lucide-react";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const settingsSchema = z.object({
+  name: z.string().min(1, { message: "Le nom de l'école est requis." }),
+  matricule: z.string().optional(),
+  directorName: z.string().min(1, { message: "Le nom du directeur est requis." }),
+  directorPhone: z.string().optional(),
+});
+
+type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -21,29 +34,34 @@ export default function SettingsPage() {
     updateSchoolData 
   } = useSchoolData();
 
-  const [name, setName] = useState("");
-  const [directorName, setDirectorName] = useState("");
-  const [matricule, setMatricule] = useState("");
-  const [directorPhone, setDirectorPhone] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
+  const form = useForm<SettingsFormValues>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      name: "",
+      directorName: "",
+      matricule: "",
+      directorPhone: "",
+    },
+  });
 
   useEffect(() => {
     if (schoolData) {
-      setName(schoolData.name || "");
-      setDirectorName(schoolData.directorName || "");
-      setMatricule(schoolData.matricule || "");
-      setDirectorPhone(schoolData.directorPhone || "");
+      form.reset({
+        name: schoolData.name || "",
+        directorName: schoolData.directorName || "",
+        matricule: schoolData.matricule || "",
+        directorPhone: schoolData.directorPhone || "",
+      });
     }
-  }, [schoolData]);
+  }, [schoolData, form]);
 
-  const handleSaveChanges = async () => {
-    setIsSaving(true);
+  const handleSaveChanges = async (values: SettingsFormValues) => {
     try {
       await updateSchoolData({
-        name,
-        directorName,
-        matricule,
-        directorPhone
+        name: values.name,
+        directorName: values.directorName,
+        matricule: values.matricule,
+        directorPhone: values.directorPhone,
       });
       toast({
         title: "Paramètres enregistrés",
@@ -55,8 +73,6 @@ export default function SettingsPage() {
         title: "Erreur",
         description: "Impossible d'enregistrer les paramètres. Vérifiez vos permissions.",
       });
-    } finally {
-        setIsSaving(false);
     }
   };
 
@@ -115,67 +131,86 @@ export default function SettingsPage() {
         </p>
       </div>
       <Card>
-        <CardHeader>
-          <CardTitle>École</CardTitle>
-          <CardDescription>Modifiez les détails de votre établissement et consultez son code.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="school-name">Nom de l'École</Label>
-            <Input 
-              id="school-name" 
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nom de votre école" 
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="school-matricule">Matricule de l'Établissement</Label>
-            <Input 
-              id="school-matricule" 
-              value={matricule}
-              onChange={(e) => setMatricule(e.target.value)}
-              placeholder="Ex: 0123/ETAB/2024" 
-            />
-          </div>
-           {schoolData?.schoolCode && (
-            <div className="space-y-2">
-              <Label htmlFor="school-code">Code d'Invitation</Label>
-              <div className="flex items-center gap-2">
-                <Input id="school-code" value={schoolData.schoolCode} readOnly className="bg-muted" />
-                <Button variant="outline" size="icon" onClick={handleCopyCode}>
-                  <Copy className="h-4 w-4" />
-                  <span className="sr-only">Copier le code</span>
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">Partagez ce code avec les enseignants pour leur permettre de rejoindre votre école.</p>
-            </div>
-           )}
-          <div className="space-y-2">
-            <Label htmlFor="director-name">Nom du Directeur</Label>
-            <Input 
-              id="director-name" 
-              value={directorName}
-              onChange={(e) => setDirectorName(e.target.value)}
-              placeholder="Nom du directeur ou de la directrice" 
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="director-phone">Téléphone du Directeur</Label>
-            <Input 
-              id="director-phone" 
-              type="tel"
-              value={directorPhone}
-              onChange={(e) => setDirectorPhone(e.target.value)}
-              placeholder="Numéro de téléphone" 
-            />
-          </div>
-        </CardContent>
-        <CardFooter className="border-t px-6 py-4">
-          <Button onClick={handleSaveChanges} disabled={isSaving}>
-              {isSaving ? "Enregistrement..." : "Enregistrer les Modifications"}
-          </Button>
-        </CardFooter>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSaveChanges)}>
+            <CardHeader>
+              <CardTitle>École</CardTitle>
+              <CardDescription>Modifiez les détails de votre établissement et consultez son code.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom de l'École</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nom de votre école" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="matricule"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Matricule de l'Établissement</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: 0123/ETAB/2024" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               {schoolData?.schoolCode && (
+                <div className="space-y-2">
+                  <Label htmlFor="school-code">Code d'Invitation</Label>
+                  <div className="flex items-center gap-2">
+                    <Input id="school-code" value={schoolData.schoolCode} readOnly className="bg-muted" />
+                    <Button type="button" variant="outline" size="icon" onClick={handleCopyCode}>
+                      <Copy className="h-4 w-4" />
+                      <span className="sr-only">Copier le code</span>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Partagez ce code avec les enseignants pour leur permettre de rejoindre votre école.</p>
+                </div>
+               )}
+              <FormField
+                control={form.control}
+                name="directorName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nom du Directeur</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nom du directeur ou de la directrice" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="directorPhone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Téléphone du Directeur</FormLabel>
+                    <FormControl>
+                      <Input type="tel" placeholder="Numéro de téléphone" {...field} />
+                    </FormControl>
+                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+            <CardFooter className="border-t px-6 py-4">
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? "Enregistrement..." : "Enregistrer les Modifications"}
+              </Button>
+            </CardFooter>
+          </form>
+        </Form>
       </Card>
        <Card>
         <CardHeader>
