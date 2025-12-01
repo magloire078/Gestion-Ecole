@@ -155,7 +155,14 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     let primeAnciennete = 0;
     if (seniorityInfo.years >= 2) {
-        const bonusRate = Math.min(25, seniorityInfo.years);
+        let bonusRate = 0;
+        if (seniorityInfo.years >= 25) bonusRate = 25;
+        else if (seniorityInfo.years >= 20) bonusRate = 20;
+        else if (seniorityInfo.years >= 15) bonusRate = 15;
+        else if (seniorityInfo.years >= 10) bonusRate = 10;
+        else if (seniorityInfo.years >= 5) bonusRate = 5;
+        else if (seniorityInfo.years >= 2) bonusRate = 2;
+        
         primeAnciennete = baseSalary * (bonusRate / 100);
     }
 
@@ -267,3 +274,5 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         }
     };
 }
+
+    
