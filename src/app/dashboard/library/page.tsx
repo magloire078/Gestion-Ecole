@@ -39,7 +39,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
@@ -48,6 +47,19 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const bookSchema = z.object({
+  title: z.string().min(1, { message: "Le titre est requis." }),
+  author: z.string().min(1, { message: "L'auteur est requis." }),
+  quantity: z.coerce.number().int().min(0, { message: "La quantité doit être un nombre positif." }),
+});
+
+type BookFormValues = z.infer<typeof bookSchema>;
+
 
 interface LibraryBook {
     id: string;
@@ -59,84 +71,85 @@ interface LibraryBook {
 export default function LibraryPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { toast } = useToast();
   
   const booksQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/bibliotheque`) : null, [firestore, schoolId]);
   const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
   const books: LibraryBook[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook)) || [], [booksData]);
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  const [newTitle, setNewTitle] = useState("");
-  const [newAuthor, setNewAuthor] = useState("");
-  const [newQuantity, setNewQuantity] = useState("");
 
   const [editingBook, setEditingBook] = useState<LibraryBook | null>(null);
   const [bookToDelete, setBookToDelete] = useState<LibraryBook | null>(null);
 
-  const { toast } = useToast();
+  const form = useForm<BookFormValues>({
+    resolver: zodResolver(bookSchema),
+    defaultValues: {
+      title: "",
+      author: "",
+      quantity: 0,
+    },
+  });
+
+  useEffect(() => {
+    if (isFormOpen) {
+      if (editingBook) {
+        form.reset({
+          title: editingBook.title,
+          author: editingBook.author,
+          quantity: editingBook.quantity,
+        });
+      } else {
+        form.reset({
+          title: "",
+          author: "",
+          quantity: 0,
+        });
+      }
+    }
+  }, [isFormOpen, editingBook, form]);
+
 
   const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
 
-  const resetForm = () => {
-    setNewTitle("");
-    setNewAuthor("");
-    setNewQuantity("");
-  };
-
-  const handleAddBook = () => {
-    if (!schoolId || !newTitle || !newAuthor || !newQuantity) {
-      toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
+  const handleBookSubmit = (values: BookFormValues) => {
+    if (!schoolId) {
+      toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
       return;
     }
-    const newBookData = {
-      title: newTitle,
-      author: newAuthor,
-      quantity: parseInt(newQuantity, 10),
+    
+    const bookData = {
+      ...values,
       createdAt: serverTimestamp(),
     };
-    const booksCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
-    addDoc(booksCollectionRef, newBookData)
-    .then(() => {
-        toast({ title: "Livre ajouté", description: `"${newTitle}" a été ajouté à la bibliothèque.` });
-        resetForm();
-        setIsAddDialogOpen(false);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: booksCollectionRef.path, operation: 'create', requestResourceData: newBookData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  };
 
-  const handleOpenEditDialog = (book: LibraryBook) => {
-    setEditingBook(book);
-    setNewTitle(book.title);
-    setNewAuthor(book.author);
-    setNewQuantity(String(book.quantity));
-    setIsEditDialogOpen(true);
-  };
-
-  const handleEditBook = () => {
-    if (!schoolId || !editingBook || !newTitle || !newAuthor || !newQuantity) {
-      toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
-      return;
+    if (editingBook) {
+        setDoc(getBookDocRef(editingBook.id), bookData, { merge: true })
+        .then(() => {
+            toast({ title: "Livre modifié", description: `Les informations pour "${values.title}" ont été mises à jour.` });
+            setIsFormOpen(false);
+        }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: getBookDocRef(editingBook.id).path, operation: 'update', requestResourceData: bookData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    } else {
+        const booksCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
+        addDoc(booksCollectionRef, bookData)
+        .then(() => {
+            toast({ title: "Livre ajouté", description: `"${values.title}" a été ajouté à la bibliothèque.` });
+            setIsFormOpen(false);
+        }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: booksCollectionRef.path, operation: 'create', requestResourceData: bookData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
     }
-    const updatedData = {
-      title: newTitle,
-      author: newAuthor,
-      quantity: parseInt(newQuantity, 10),
-    };
-    const bookDocRef = getBookDocRef(editingBook.id);
-    setDoc(bookDocRef, updatedData, { merge: true })
-    .then(() => {
-        toast({ title: "Livre modifié", description: `Les informations pour "${newTitle}" ont été mises à jour.` });
-        setIsEditDialogOpen(false);
-        setEditingBook(null);
-        resetForm();
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: bookDocRef.path, operation: 'update', requestResourceData: updatedData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+  };
+
+
+  const handleOpenFormDialog = (book: LibraryBook | null) => {
+    setEditingBook(book);
+    setIsFormOpen(true);
   };
 
   const handleOpenDeleteDialog = (book: LibraryBook) => {
@@ -160,6 +173,52 @@ export default function LibraryPage() {
   
   const isLoading = schoolLoading || booksLoading;
 
+  const renderForm = () => (
+    <Form {...form}>
+      <form id="book-form" onSubmit={form.handleSubmit(handleBookSubmit)} className="grid gap-4 py-4">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">Titre</FormLabel>
+              <FormControl className="col-span-3">
+                <Input placeholder="Ex: Les Misérables" {...field} />
+              </FormControl>
+              <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="author"
+          render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">Auteur</FormLabel>
+              <FormControl className="col-span-3">
+                <Input placeholder="Ex: Victor Hugo" {...field} />
+              </FormControl>
+              <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="quantity"
+          render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+              <FormLabel className="text-right">Quantité</FormLabel>
+              <FormControl className="col-span-3">
+                <Input type="number" placeholder="Ex: 5" {...field} />
+              </FormControl>
+              <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+          )}
+        />
+      </form>
+    </Form>
+  );
+
   return (
     <>
       <div className="space-y-6">
@@ -168,35 +227,23 @@ export default function LibraryPage() {
             <h1 className="text-lg font-semibold md:text-2xl">Bibliothèque</h1>
             <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
-              if(!isOpen) resetForm();
-              setIsAddDialogOpen(isOpen)
-          }}>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
-              <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre</Button>
+              <Button onClick={() => handleOpenFormDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre</Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>
-                <DialogTitle>Ajouter un Nouveau Livre</DialogTitle>
-                <DialogDescription>Renseignez les informations du nouveau livre.</DialogDescription>
+                <DialogTitle>{editingBook ? "Modifier le" : "Ajouter un Nouveau"} Livre</DialogTitle>
+                <DialogDescription>
+                  {editingBook ? `Mettez à jour les informations du livre "${editingBook.title}".` : "Renseignez les informations du nouveau livre."}
+                </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="title" className="text-right">Titre</Label>
-                  <Input id="title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="col-span-3" placeholder="Ex: Les Misérables" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="author" className="text-right">Auteur</Label>
-                  <Input id="author" value={newAuthor} onChange={(e) => setNewAuthor(e.target.value)} className="col-span-3" placeholder="Ex: Victor Hugo" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="quantity" className="text-right">Quantité</Label>
-                  <Input id="quantity" type="number" value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} className="col-span-3" placeholder="Ex: 5" />
-                </div>
-              </div>
+              {renderForm()}
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-                <Button onClick={handleAddBook}>Ajouter le livre</Button>
+                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                <Button type="submit" form="book-form" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -213,7 +260,7 @@ export default function LibraryPage() {
                         src={`https://picsum.photos/seed/${book.id}/400/200`} 
                         alt={`Couverture du livre ${book.title}`} 
                         fill
-                        objectFit="cover"
+                        style={{objectFit: 'cover'}}
                         className="rounded-t-lg"
                         data-ai-hint="book cover"
                      />
@@ -228,7 +275,7 @@ export default function LibraryPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenEditDialog(book)}>Modifier</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenFormDialog(book)}>Modifier</DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(book)}>Supprimer</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -255,34 +302,6 @@ export default function LibraryPage() {
         )}
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => { if(!isOpen) setEditingBook(null); setIsEditDialogOpen(isOpen); }}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Modifier le Livre</DialogTitle>
-            <DialogDescription>Mettez à jour les informations du livre <strong>"{editingBook?.title}"</strong>.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-title" className="text-right">Titre</Label>
-              <Input id="edit-title" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-author" className="text-right">Auteur</Label>
-              <Input id="edit-author" value={newAuthor} onChange={(e) => setNewAuthor(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-quantity" className="text-right">Quantité</Label>
-              <Input id="edit-quantity" type="number" value={newQuantity} onChange={(e) => setNewQuantity(e.target.value)} className="col-span-3" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleEditBook}>Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -299,5 +318,3 @@ export default function LibraryPage() {
     </>
   );
 }
-
-    
