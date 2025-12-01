@@ -56,9 +56,6 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                     <div className="w-1/3 space-y-1">
                         <p className="text-[10px]"><span className="font-bold">N° CNPS EMPLOYEUR</span>: {organizationSettings.cnpsEmployeur}</p>
                         <p className="text-[10px]"><span className="font-bold">N° CNPS EMPLOYE</span>: {employeeInfo.cnpsEmploye}</p>
-                        {/* <div className="mt-2 bg-white p-1 w-fit">
-                            <QRCode value={qrCodeValue} size={32} />
-                        </div> */}
                     </div>
                     <div className="w-2/3 pl-4">
                         <div className="border border-gray-400 rounded-lg p-2 text-[10px] grid grid-cols-1 gap-y-1">
