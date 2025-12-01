@@ -48,14 +48,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -68,6 +60,20 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AccountingCharts } from "./charts";
 import type { AccountingTransaction } from '@/lib/data';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+const transactionSchema = z.object({
+    description: z.string().min(1, { message: "La description est requise." }),
+    amount: z.coerce.number().positive({ message: "Le montant doit être un nombre positif." }),
+    type: z.enum(['Revenu', 'Dépense'], { required_error: "Le type est requis." }),
+    category: z.string().min(1, { message: "La catégorie est requise." }),
+    date: z.string().min(1, { message: "La date est requise." }),
+});
+
+type TransactionFormValues = z.infer<typeof transactionSchema>;
 
 export default function AccountingPage() {
   const firestore = useFirestore();
@@ -77,100 +83,94 @@ export default function AccountingPage() {
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
   const transactions: AccountingTransaction[] = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction)) || [], [transactionsData]);
 
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<AccountingTransaction | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<AccountingTransaction | null>(null);
 
   const [allCategories, setAllCategories] = useState({
     Revenu: ['Scolarité', 'Dons', 'Événements'],
     Dépense: ['Salaires', 'Fournitures', 'Maintenance', 'Services Publics', 'Marketing']
   });
 
-  // Form state
-  const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
-  const [type, setType] = useState<'Revenu' | 'Dépense'>('Dépense');
-  const [category, setCategory] = useState("");
-  const [date, setDate] = useState('');
-
-  const [editingTransaction, setEditingTransaction] = useState<AccountingTransaction | null>(null);
-  const [transactionToDelete, setTransactionToDelete] = useState<AccountingTransaction | null>(null);
-
   const { toast } = useToast();
 
+  const form = useForm<TransactionFormValues>({
+    resolver: zodResolver(transactionSchema),
+    defaultValues: {
+        description: "",
+        amount: 0,
+        type: "Dépense",
+        category: "",
+        date: format(new Date(), 'yyyy-MM-dd'),
+    },
+  });
+
+  const watchedType = form.watch('type');
+
   useEffect(() => {
-    if (!date) {
-      setDate(format(new Date(), 'yyyy-MM-dd'));
+    if (isFormOpen) {
+        if (editingTransaction) {
+            form.reset({
+                description: editingTransaction.description,
+                amount: editingTransaction.amount,
+                type: editingTransaction.type,
+                category: editingTransaction.category,
+                date: format(new Date(editingTransaction.date), 'yyyy-MM-dd'),
+            });
+        } else {
+            form.reset({
+                description: "",
+                amount: 0,
+                type: "Dépense",
+                category: "",
+                date: format(new Date(), 'yyyy-MM-dd'),
+            });
+        }
     }
-  }, [date]);
+  }, [isFormOpen, editingTransaction, form]);
+  
+  useEffect(() => {
+    form.setValue('category', '');
+  }, [watchedType, form]);
+
 
   const getTransactionDocRef = (transactionId: string) => doc(firestore, `ecoles/${schoolId}/comptabilite/${transactionId}`);
-
-  const resetForm = () => {
-    setDescription("");
-    setAmount("");
-    setType("Dépense");
-    setCategory("");
-    setDate(format(new Date(), 'yyyy-MM-dd'));
-  };
-
-  const handleAddTransaction = () => {
-    if (!schoolId || !description || !amount || !category || !date) {
-      toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
-      return;
-    }
-    const newTransactionData = {
-      description,
-      amount: parseFloat(amount),
-      type,
-      category,
-      date: format(new Date(date), "yyyy-MM-dd"),
-    };
-    const transactionCollectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
-    addDoc(transactionCollectionRef, newTransactionData)
-    .then(() => {
-        toast({ title: "Transaction ajoutée", description: `La transaction a été enregistrée.` });
-        resetForm();
-        setIsAddDialogOpen(false);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: transactionCollectionRef.path, operation: 'create', requestResourceData: newTransactionData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  };
   
-  const handleOpenEditDialog = (transaction: AccountingTransaction) => {
-    setEditingTransaction(transaction);
-    setDescription(transaction.description);
-    setAmount(String(transaction.amount));
-    setType(transaction.type);
-    setCategory(transaction.category);
-    setDate(format(new Date(transaction.date), 'yyyy-MM-dd'));
-    setIsEditDialogOpen(true);
+  const handleTransactionSubmit = (values: TransactionFormValues) => {
+    if (!schoolId) return;
+
+    const transactionData = {
+        ...values,
+        date: format(new Date(values.date), "yyyy-MM-dd"),
+    };
+
+    if (editingTransaction) {
+        const transactionDocRef = getTransactionDocRef(editingTransaction.id);
+        setDoc(transactionDocRef, transactionData, { merge: true })
+        .then(() => {
+            toast({ title: "Transaction modifiée", description: "La transaction a été mise à jour." });
+            setIsFormOpen(false);
+        }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: transactionDocRef.path, operation: 'update', requestResourceData: transactionData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    } else {
+        const transactionCollectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+        addDoc(transactionCollectionRef, transactionData)
+        .then(() => {
+            toast({ title: "Transaction ajoutée", description: `La transaction a été enregistrée.` });
+            setIsFormOpen(false);
+        }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: transactionCollectionRef.path, operation: 'create', requestResourceData: transactionData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    }
   };
 
-  const handleEditTransaction = () => {
-    if (!schoolId || !editingTransaction || !description || !amount || !category || !date) {
-      toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
-      return;
-    }
-    const updatedData = {
-      description,
-      amount: parseFloat(amount),
-      type,
-      category,
-      date: format(new Date(date), 'yyyy-MM-dd'),
-    };
-    const transactionDocRef = getTransactionDocRef(editingTransaction.id);
-    setDoc(transactionDocRef, updatedData, { merge: true })
-    .then(() => {
-        toast({ title: "Transaction modifiée", description: "La transaction a été mise à jour." });
-        setIsEditDialogOpen(false);
-        setEditingTransaction(null);
-        resetForm();
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: transactionDocRef.path, operation: 'update', requestResourceData: updatedData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+  const handleOpenFormDialog = (transaction: AccountingTransaction | null) => {
+    setEditingTransaction(transaction);
+    setIsFormOpen(true);
   };
 
   const handleOpenDeleteDialog = (transaction: AccountingTransaction) => {
@@ -196,16 +196,100 @@ export default function AccountingPage() {
 
   const handleCreateCategory = (newCategory: string) => {
       setAllCategories(prev => {
-          const newCategoriesForType = [...prev[type], newCategory];
-          return { ...prev, [type]: newCategoriesForType };
+          const newCategoriesForType = [...prev[watchedType], newCategory];
+          return { ...prev, [watchedType]: newCategoriesForType };
       });
       toast({ title: 'Catégorie créée', description: `La catégorie "${newCategory}" a été ajoutée.` });
+      form.setValue('category', newCategory);
       return Promise.resolve({ value: newCategory, label: newCategory });
   }
 
-  const categoryOptions = allCategories[type].map(cat => ({ value: cat, label: cat }));
-
+  const categoryOptions = allCategories[watchedType].map(cat => ({ value: cat, label: cat }));
   const isLoading = schoolLoading || transactionsLoading;
+  
+  const renderFormContent = () => (
+    <Form {...form}>
+        <form id="transaction-form" onSubmit={form.handleSubmit(handleTransactionSubmit)} className="grid gap-4 py-4">
+            <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl className="col-span-3">
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="Revenu">Revenu</SelectItem>
+                        <SelectItem value="Dépense">Dépense</SelectItem>
+                    </SelectContent>
+                    </Select>
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Catégorie</FormLabel>
+                    <FormControl className="col-span-3">
+                        <Combobox
+                            placeholder="Sélectionner une catégorie"
+                            searchPlaceholder="Chercher ou créer..."
+                            options={categoryOptions}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            onCreate={handleCreateCategory}
+                        />
+                    </FormControl>
+                     <FormMessage className="col-start-2 col-span-3" />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Description</FormLabel>
+                    <FormControl className="col-span-3">
+                        <Input {...field} />
+                    </FormControl>
+                     <FormMessage className="col-start-2 col-span-3" />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Montant (CFA)</FormLabel>
+                     <FormControl className="col-span-3">
+                        <Input type="number" {...field} />
+                    </FormControl>
+                     <FormMessage className="col-start-2 col-span-3" />
+                </FormItem>
+                )}
+            />
+            <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Date</FormLabel>
+                     <FormControl className="col-span-3">
+                        <Input type="date" {...field} />
+                    </FormControl>
+                     <FormMessage className="col-start-2 col-span-3" />
+                </FormItem>
+                )}
+            />
+        </form>
+    </Form>
+  );
 
   return (
     <>
@@ -221,54 +305,21 @@ export default function AccountingPage() {
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
-            <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => { if (!isOpen) resetForm(); setIsAddDialogOpen(isOpen); }}>
+            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setEditingTransaction(null); setIsFormOpen(isOpen); }}>
                 <DialogTrigger asChild>
-                    <Button><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Transaction</Button>
+                    <Button onClick={() => handleOpenFormDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Transaction</Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Nouvelle Transaction</DialogTitle>
+                        <DialogTitle>{editingTransaction ? 'Modifier' : 'Nouvelle'} Transaction</DialogTitle>
                         <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="type" className="text-right">Type</Label>
-                            <Select onValueChange={(v) => { setType(v as any); setCategory(''); }} value={type}>
-                                <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Revenu">Revenu</SelectItem>
-                                    <SelectItem value="Dépense">Dépense</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="category" className="text-right">Catégorie</Label>
-                             <Combobox
-                                className="col-span-3"
-                                placeholder="Sélectionner une catégorie"
-                                searchPlaceholder="Chercher ou créer..."
-                                options={categoryOptions}
-                                value={category}
-                                onValueChange={setCategory}
-                                onCreate={handleCreateCategory}
-                            />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="description" className="text-right">Description</Label>
-                            <Input id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="amount" className="text-right">Montant (CFA)</Label>
-                            <Input id="amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" />
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="date" className="text-right">Date</Label>
-                            <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="col-span-3" />
-                        </div>
-                    </div>
+                    {renderFormContent()}
                     <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-                        <Button onClick={handleAddTransaction}>Ajouter</Button>
+                        <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                        <Button type="submit" form="transaction-form" disabled={form.formState.isSubmitting}>
+                            {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -310,7 +361,7 @@ export default function AccountingPage() {
                         <DropdownMenu>
                                 <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleOpenEditDialog(transaction)}>Modifier</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
                                     <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -327,56 +378,6 @@ export default function AccountingPage() {
           </CardContent>
         </Card>
       </div>
-
-       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {if (!isOpen) { setEditingTransaction(null); resetForm();} setIsEditDialogOpen(isOpen);}}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier la Transaction</DialogTitle>
-             <DialogDescription>Mettez à jour les détails de la transaction.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-type" className="text-right">Type</Label>
-                  <Select onValueChange={(v) => { setType(v as any); setCategory(''); }} value={type}>
-                      <SelectTrigger className="col-span-3"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                          <SelectItem value="Revenu">Revenu</SelectItem>
-                          <SelectItem value="Dépense">Dépense</SelectItem>
-                      </SelectContent>
-                  </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-category" className="text-right">Catégorie</Label>
-                   <Combobox
-                        className="col-span-3"
-                        placeholder="Sélectionner une catégorie"
-                        searchPlaceholder="Chercher ou créer..."
-                        options={categoryOptions}
-                        value={category}
-                        onValueChange={setCategory}
-                        onCreate={handleCreateCategory}
-                    />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-description" className="text-right">Description</Label>
-                  <Input id="edit-description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-amount" className="text-right">Montant (CFA)</Label>
-                  <Input id="edit-amount" type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="col-span-3" />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="edit-date" className="text-right">Date</Label>
-                  <Input id="edit-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} className="col-span-3" />
-              </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleEditTransaction}>Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
       {/* Delete Confirmation Dialog */}
        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
@@ -396,3 +397,5 @@ export default function AccountingPage() {
     </>
   );
 }
+
+    

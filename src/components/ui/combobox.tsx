@@ -46,11 +46,7 @@ export function Combobox({ options, value, onValueChange, onCreate, placeholder,
   const showCreateOption = onCreate && inputValue && !options.some(option => option.label.toLowerCase() === inputValue.toLowerCase());
 
   const handleSelect = (currentValue: string) => {
-    // The `onSelect` for CommandItem passes the *label* of the item, not the value.
-    // We need to find the corresponding option to get its value.
-    const option = options.find(opt => opt.label.toLowerCase() === currentValue.toLowerCase());
-    const realValue = option ? option.value : "";
-    onValueChange(realValue === value ? "" : realValue);
+    onValueChange(currentValue === value ? "" : currentValue);
     setInputValue("");
     setOpen(false);
   };
@@ -95,7 +91,7 @@ export function Combobox({ options, value, onValueChange, onCreate, placeholder,
               {filteredOptions.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
+                  value={option.value}
                   onSelect={handleSelect}
                 >
                   <Check
@@ -123,3 +119,5 @@ export function Combobox({ options, value, onValueChange, onCreate, placeholder,
     </Popover>
   )
 }
+
+    
