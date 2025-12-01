@@ -154,5 +154,3 @@ export type timetableEntry = {
     startTime: string;
     endTime: string;
 };
-
-    
