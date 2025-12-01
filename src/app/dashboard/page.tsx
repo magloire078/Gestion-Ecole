@@ -7,7 +7,7 @@ import { Users, BookUser, BookOpen, Landmark, UserPlus, TrendingUp, TrendingDown
 import { PerformanceChart } from '@/components/performance-chart';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -112,28 +112,31 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchAllGrades() {
-      if (!schoolId || !studentsData) return;
-
-      setGradesLoading(true);
-      const grades: GradeEntry[] = [];
-      
-      for (const studentDoc of studentsData) {
-        const studentId = studentDoc.id;
-        const notesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`);
-        const notesSnapshot = await getDocs(notesCollectionRef);
-        notesSnapshot.forEach(noteDoc => {
-          grades.push(noteDoc.data() as GradeEntry);
-        });
+      if (!schoolId) {
+        setAllGrades([]);
+        setGradesLoading(false);
+        return;
       }
-      setAllGrades(grades);
-      setGradesLoading(false);
+      
+      setGradesLoading(true);
+      const schoolRef = doc(firestore, "ecoles", schoolId);
+      const gradesQuery = query(collectionGroup(firestore, 'notes'), where('__name__', '>=', schoolRef.path + '/'), where('__name__', '<', schoolRef.path + '0'));
+
+      try {
+        const querySnapshot = await getDocs(gradesQuery);
+        const grades = querySnapshot.docs.map(doc => doc.data() as GradeEntry);
+        setAllGrades(grades);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des notes (collection group):", error);
+        setAllGrades([]);
+      } finally {
+        setGradesLoading(false);
+      }
     }
     
-    if(!studentsLoading) {
-      fetchAllGrades();
-    }
+    fetchAllGrades();
 
-  }, [schoolId, firestore, studentsData, studentsLoading]);
+  }, [schoolId, firestore]);
 
 
   // --- Data for Recent Activity ---

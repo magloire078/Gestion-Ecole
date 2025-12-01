@@ -2,13 +2,20 @@
 {
   "indexes": [
     {
-      "collectionGroup": "users",
+      "collectionGroup": "utilisateurs",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
         {
           "fieldPath": "uid",
           "order": "ASCENDING"
         }
+      ]
+    },
+     {
+      "collectionGroup": "eleves",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "__name__", "order": "ASCENDING" }
       ]
     }
   ],

@@ -43,6 +43,13 @@ service cloud.firestore {
         allow list: if isUserAuthenticated();
         allow update: if isSchoolDirector(schoolId, request.auth.uid);
         allow delete: if false;
+        
+        // --- Collection Group Queries ---
+        match /{path=**}/eleves/{studentId} {
+            // Allow authenticated users to read from the 'eleves' collection group,
+            // but only for documents within their own school.
+            allow get, list: if isUserInSchool(schoolId);
+        }
 
         // --- Subcollections with Specific Rules ---
 
