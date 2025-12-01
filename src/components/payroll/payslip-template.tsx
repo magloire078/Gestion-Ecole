@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { isValid, parseISO, lastDayOfMonth, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { PayslipDetails } from '@/app/bulletin-de-paie';
@@ -10,8 +10,8 @@ import { useHydrationFix } from '@/hooks/use-hydration-fix';
 export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDetails }) {
     const isMounted = useHydrationFix();
     
-    if (!isMounted) {
-        return null; // Ne rien rendre côté serveur ou avant l'hydratation
+    if (!isMounted || !payslipDetails) {
+        return null; // Don't render on server or before hydration
     }
 
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationLogos } = payslipDetails;
@@ -197,3 +197,5 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
+
+    

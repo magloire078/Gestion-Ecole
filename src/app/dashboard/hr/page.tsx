@@ -194,9 +194,11 @@ function HRContent() {
     setIsGeneratingPayslip(true);
     setIsPayslipOpen(true);
     try {
-        const payslipDate = new Date().toISOString();
-        const details = await getPayslipDetails(staffMember, payslipDate);
-        setPayslipDetails(details);
+        const payslipDate = new Date().toISOString(); // Use a stable date format
+        if (typeof window !== 'undefined') { // Ensure this runs only on client
+            const details = await getPayslipDetails(staffMember, payslipDate);
+            setPayslipDetails(details);
+        }
     } catch(e) {
         console.error(e);
         toast({
@@ -438,3 +440,5 @@ export default function HRPage() {
     
     return <HRContent />;
 }
+
+    
