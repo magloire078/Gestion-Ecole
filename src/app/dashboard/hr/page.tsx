@@ -91,9 +91,8 @@ const staffSchema = z.object({
 
 type StaffFormValues = z.infer<typeof staffSchema>;
 
-interface StaffMember extends Employe {
-  id: string;
-}
+// The StaffMember for the UI is now equivalent to the Employe type for payroll logic
+type StaffMember = Employe;
 
 function HRContent() {
   const isMounted = useHydrationFix();
@@ -347,7 +346,7 @@ function HRContent() {
                                     </TableCell>
                                     <TableCell>{member.role}</TableCell>
                                     <TableCell className="font-mono">{member.baseSalary ? `${member.baseSalary.toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
-                                    <TableCell>{isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : member.hireDate}</TableCell>
+                                    <TableCell>{member.hireDate && isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : member.hireDate}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
                                             <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(member)}>

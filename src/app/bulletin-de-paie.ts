@@ -22,7 +22,7 @@ export type Employe = {
   id: string;
   name: string;
   matricule?: string;
-  role: string; 
+  role: string;
   status: 'Actif' | 'Inactif';
   
   // Personal Info
@@ -32,9 +32,13 @@ export type Employe = {
 
   // Professional Info
   hireDate?: string;
+  categorie?: string;
   
   // Payroll Info
   baseSalary?: number;
+  cnpsEmploye?: string;
+  CNPS?: boolean;
+  parts?: number;
   
   // Earnings & Deductions
   indemniteTransportImposable?: number;
@@ -51,15 +55,6 @@ export type Employe = {
   CB?: string;
   CG?: string;
   Cle_RIB?: string;
-
-  // Payslip specific details
-  cnpsEmploye?: string;
-  anciennete?: string;
-  categorie?: string;
-  parts?: number;
-  paymentDate?: string;
-  paymentLocation?: string;
-  CNPS?: boolean;
 };
 
 export type PayslipEarning = {
@@ -79,8 +74,17 @@ export type PayslipEmployerContribution = {
     amount: number;
 };
 
+// This type extends the base employee with calculated/static data for the payslip
+export type PayslipEmployeeInfo = Employe & {
+    numeroCompteComplet?: string;
+    anciennete: string;
+    paymentDate: string;
+    paymentLocation: string;
+};
+
+
 export type PayslipDetails = {
-    employeeInfo: Employe & { numeroCompteComplet?: string };
+    employeeInfo: PayslipEmployeeInfo;
     earnings: PayslipEarning[];
     deductions: PayslipDeduction[];
     totals: {
@@ -229,13 +233,11 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         ? format(parseISO(employee.hireDate), 'dd MMMM yyyy', { locale: fr })
         : 'N/A';
 
-    const employeeInfoWithStaticData: Employe & { numeroCompteComplet?: string } = {
+    const employeeInfoWithStaticData: PayslipEmployeeInfo = {
         ...employee,
-        role: employee.role,
         hireDate: formattedDateEmbauche,
         anciennete: seniorityInfo.text,
         categorie: employee.categorie || 'Catégorie',
-        cnpsEmployeur: organizationLogos.cnpsEmployeur,
         paymentDate: payslipDate,
         paymentLocation: 'Yamoussoukro', // À remplacer
         parts: employee.parts || 1.5,
