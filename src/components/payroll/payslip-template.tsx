@@ -25,7 +25,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
     }, [isMounted, payslipDetails]);
 
     if (!isMounted || !payslipDetails) {
-        return null; // Don't render on server or before hydration
+        return null; // <-- LA CORRECTION CLÉ : Ne rien afficher si le composant n'est pas monté ou si les données ne sont pas prêtes.
     }
 
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationLogos } = payslipDetails;
