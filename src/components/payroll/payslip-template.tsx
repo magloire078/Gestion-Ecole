@@ -12,7 +12,6 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
     }
 
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationSettings } = payslipDetails;
-    const fullName = employeeInfo.name;
     
     const payslipDateObject = parseISO(payslipDetails.employeeInfo.paymentDate);
     const displayDate = {
@@ -63,7 +62,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                     </div>
                     <div className="w-2/3 pl-4">
                         <div className="border border-gray-400 rounded-lg p-2 text-[10px] grid grid-cols-1 gap-y-1">
-                            <p><span className="font-bold inline-block w-[140px]">NOM & PRENOMS</span>: <span className="pl-1">{fullName}</span></p>
+                            <p><span className="font-bold inline-block w-[140px]">NOM & PRENOMS</span>: <span className="pl-1">{employeeInfo.name}</span></p>
                             <p><span className="font-bold inline-block w-[140px]">MATRICULE</span>: <span className="pl-1">{employeeInfo.matricule}</span></p>
                             <p><span className="font-bold inline-block w-[140px]">SITUATION MATRIMONIALE</span>: <span className="pl-1">{employeeInfo.situationMatrimoniale}</span></p>
                             <p><span className="font-bold inline-block w-[140px]">BANQUE</span>: <span className="pl-1">{employeeInfo.banque}</span></p>
@@ -196,5 +195,3 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
-
-    
