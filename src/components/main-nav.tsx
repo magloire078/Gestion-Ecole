@@ -2,7 +2,7 @@
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, BookUser, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, ClipboardUser, GraduationCap, School, FolderCog } from 'lucide-react';
+import { LayoutDashboard, Users, BookUser, Wallet, Settings, CalendarClock, NotebookText, Landmark, UserPlus, ClipboardUser, GraduationCap, School, FolderCog, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Accordion,
@@ -17,8 +17,8 @@ const activeClass = "bg-muted text-primary";
 
 const mySchoolLinks = [
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
-  { href: '/dashboard/classes', label: 'Classes', icon: BookUser },
-  { href: '/dashboard/teachers', label: 'Professeurs', icon: Users },
+  { href: '/dashboard/classes', label: 'Classes', icon: Landmark },
+  { href: '/dashboard/teachers', label: 'Professeurs', icon: BookUser },
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
@@ -29,7 +29,7 @@ const administrativeLinks = [
 
 const pedagogicalLinks = [
     { href: '/dashboard/reports', label: 'Saisie des Notes', icon: NotebookText },
-    { href: '/dashboard/library', label: 'Bibliothèque', icon: BookUser },
+    { href: '/dashboard/library', label: 'Bibliothèque', icon: BookOpen },
 ];
 
 const financialLinks = [
