@@ -83,13 +83,16 @@ type PaymentFormValues = z.infer<typeof paymentSchema>;
 const getImageHintForGrade = (grade: string): string => {
     const lowerCaseGrade = grade.toLowerCase();
     if (lowerCaseGrade.includes('maternelle')) {
-        return 'kindergarten children';
+        return 'kindergarten classroom';
     }
-    if (lowerCaseGrade.includes('primaire') || lowerCaseGrade.includes('collège')) {
-        return 'primary school';
+    if (lowerCaseGrade.includes('primaire') || lowerCaseGrade.includes('collège') || lowerCaseGrade.includes('cp') || lowerCaseGrade.includes('ce') || lowerCaseGrade.includes('cm') ) {
+        return 'primary school students';
     }
-    if (lowerCaseGrade.includes('lycée') || lowerCaseGrade.includes('secondaire')) {
-        return 'high school';
+    if (lowerCaseGrade.includes('lycée') || lowerCaseGrade.includes('secondaire') || lowerCaseGrade.includes('seconde') || lowerCaseGrade.includes('première') || lowerCaseGrade.includes('terminale')) {
+        return 'high school classroom';
+    }
+     if (lowerCaseGrade.includes('bts') || lowerCaseGrade.includes('licence') || lowerCaseGrade.includes('supérieur')) {
+        return 'university students';
     }
     return 'school students';
 };
@@ -362,7 +365,12 @@ export default function FeesPage() {
 
   const gradeOptions = useMemo(() => schoolClasses.map(c => ({ value: c.name, label: c.name })), []);
 
-  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
+  const formatCurrency = (value: number | string) => {
+    const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9]/g, '')) : value;
+    if (isNaN(num)) return value.toString();
+    return `${num.toLocaleString('fr-FR')} CFA`;
+  };
+
 
   return (
     <>
@@ -413,7 +421,7 @@ export default function FeesPage() {
                                     {fee.grade}
                                 </CardTitle>
                                 <div className="flex items-baseline gap-2 mt-2">
-                                    <p className="text-3xl font-bold text-primary">{fee.amount}</p>
+                                    <p className="text-3xl font-bold text-primary">{formatCurrency(fee.amount)}</p>
                                     <p className="text-sm text-muted-foreground">/ an</p>
                                 </div>
                                 <CardDescription className="flex items-center gap-2 mt-2 text-sm font-medium text-primary">
