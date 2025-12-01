@@ -10,7 +10,6 @@ import placeholderImages from '@/lib/placeholder-images.json';
 
 export type OrganizationSettings = {
     organizationName?: string;
-    mainLogoUrl?: string;
     cnpsEmployeur?: string;
     address?: string;
     phone?: string;
@@ -93,7 +92,7 @@ export type PayslipDetails = {
         netAPayerInWords: string;
     };
     employerContributions: PayslipEmployerContribution[];
-    organizationSettings: OrganizationSettings & { secondaryLogoUrl?: string; };
+    organizationSettings: OrganizationSettings & { mainLogoUrl?: string; secondaryLogoUrl?: string; };
 };
 
 // ====================================================================================
@@ -148,7 +147,7 @@ function calculateParts(situation: Employe['situationMatrimoniale'], enfants: nu
 // 3. PAYSLIP CALCULATION LOGIC
 // ====================================================================================
 
-export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings): Promise<PayslipDetails> {
+export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings & { mainLogoUrl?: string }): Promise<PayslipDetails> {
     const { baseSalary = 0, ...otherFields } = employee;
     
     const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);
@@ -207,13 +206,13 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     const getIGRFromTranche = (revenu: number) => {
         if (revenu <= 25000) return 0;
-        if (revenu <= 46250) return (revenu * 0.10) - 2500;
-        if (revenu <= 73750) return (revenu * 0.15) - 4812.5;
-        if (revenu <= 121250) return (revenu * 0.20) - 8500;
-        if (revenu <= 203750) return (revenu * 0.25) - 14562.5;
-        if (revenu <= 346250) return (revenu * 0.35) - 35062.5;
-        if (revenu <= 843750) return (revenu * 0.45) - 69687.5;
-        return (revenu * 0.60) - 196250;
+        if (revenu <= 46250) return (revenu * 10/110) - (25000 * 10/110);
+        if (revenu <= 73750) return (revenu * 15/115) - (4812.5 * 1.15);
+        if (revenu <= 121250) return (revenu * 20/120) - (8500 * 1.2);
+        if (revenu <= 203750) return (revenu * 25/125) - (14562.5 * 1.25);
+        if (revenu <= 346250) return (revenu * 35/135) - (35062.5 * 1.35);
+        if (revenu <= 843750) return (revenu * 45/145) - (69687.5 * 1.45);
+        return (revenu * 60/160) - (196250 * 1.6);
     }
     const igr = getIGRFromTranche(Q) * parts;
 
@@ -274,6 +273,3 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         }
     };
 }
-
-    
-    
