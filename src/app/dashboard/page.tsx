@@ -206,10 +206,6 @@ export default function DashboardPage() {
     return <AuthProtectionLoader />;
   }
 
-  if (!isMounted) {
-    return null;
-  }
-
   return (
     <div className="space-y-6">
        <div className="flex items-center">
@@ -297,7 +293,7 @@ export default function DashboardPage() {
                                 <div className="text-sm">
                                     <p className="text-muted-foreground">{activity.description}</p>
                                     <p className="text-xs text-muted-foreground/70">
-                                        il y a {formatDistanceToNow(activity.date, { locale: fr, addSuffix: false })}
+                                        {isMounted && `il y a ${formatDistanceToNow(activity.date, { locale: fr, addSuffix: false })}`}
                                     </p>
                                 </div>
                             </div>
