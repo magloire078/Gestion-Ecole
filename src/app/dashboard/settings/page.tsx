@@ -25,6 +25,7 @@ const settingsSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   website: z.string().optional(),
+  mainLogoUrl: z.string().url({ message: "Veuillez entrer une URL valide." }).optional().or(z.literal('')),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -49,6 +50,7 @@ export default function SettingsPage() {
       address: "",
       phone: "",
       website: "",
+      mainLogoUrl: "",
     },
   });
 
@@ -63,6 +65,7 @@ export default function SettingsPage() {
         address: schoolData.address || "",
         phone: schoolData.phone || "",
         website: schoolData.website || "",
+        mainLogoUrl: schoolData.mainLogoUrl || "",
       });
     }
   }, [schoolData, form]);
@@ -78,6 +81,7 @@ export default function SettingsPage() {
         address: values.address,
         phone: values.phone,
         website: values.website,
+        mainLogoUrl: values.mainLogoUrl,
       });
       toast({
         title: "Paramètres enregistrés",
@@ -162,6 +166,19 @@ export default function SettingsPage() {
                     <FormLabel>Nom de l'École</FormLabel>
                     <FormControl>
                       <Input placeholder="Nom de votre école" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="mainLogoUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL du Logo de l'École</FormLabel>
+                    <FormControl>
+                      <Input type="url" placeholder="https://example.com/logo.png" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -299,3 +316,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
