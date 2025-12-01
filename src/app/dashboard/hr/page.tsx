@@ -317,7 +317,7 @@ function HRContent() {
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4 py-4">
+              <form id="staff-form" onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4 py-4">
                 <FormField
                   control={form.control}
                   name="name"
@@ -395,14 +395,14 @@ function HRContent() {
                     </FormItem>
                   )}
                 />
-                <DialogFooter>
-                    <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                    <Button type="submit" disabled={form.formState.isSubmitting}>
-                      {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                    </Button>
-                </DialogFooter>
               </form>
             </Form>
+             <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                <Button type="submit" form="staff-form" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
       
