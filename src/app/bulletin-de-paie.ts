@@ -14,6 +14,7 @@ export type OrganizationSettings = {
     address?: string;
     phone?: string;
     website?: string;
+    mainLogoUrl?: string;
 };
 
 export type Employe = {
@@ -92,7 +93,7 @@ export type PayslipDetails = {
         netAPayerInWords: string;
     };
     employerContributions: PayslipEmployerContribution[];
-    organizationSettings: OrganizationSettings & { mainLogoUrl?: string; secondaryLogoUrl?: string; };
+    organizationSettings: OrganizationSettings & { secondaryLogoUrl?: string; };
 };
 
 // ====================================================================================
@@ -147,7 +148,7 @@ function calculateParts(situation: Employe['situationMatrimoniale'], enfants: nu
 // 3. PAYSLIP CALCULATION LOGIC
 // ====================================================================================
 
-export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings & { mainLogoUrl?: string }): Promise<PayslipDetails> {
+export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings): Promise<PayslipDetails> {
     const { baseSalary = 0, ...otherFields } = employee;
     
     const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);
@@ -194,11 +195,12 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     // Calcul de la Contribution Nationale (CN)
     let cn = 0;
     if (baseCalculITS > 50000) {
-        const tranche1 = Math.min(baseCalculITS, 150000) - 50000;
-        const tranche2 = Math.max(0, baseCalculITS - 150000);
-        cn = (tranche1 * 0.015) + (tranche2 * 0.05); // 1.5% et 5% selon les tranches
+        const tranche1 = Math.min(baseCalculITS, 130000) - 50000;
+        const tranche2 = baseCalculITS > 130000 ? Math.min(baseCalculITS, 200000) - 130000 : 0;
+        const tranche3 = Math.max(0, baseCalculITS - 200000);
+        cn = (tranche1 * 0.015) + (tranche2 * 0.05) + (tranche3 * 0.10);
     }
-
+    
     // Calcul de l'IGR
     const N = baseCalculITS - (its + cn);
     const parts = calculateParts(employee.situationMatrimoniale, employee.enfants);
@@ -206,13 +208,13 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     const getIGRFromTranche = (revenu: number) => {
         if (revenu <= 25000) return 0;
-        if (revenu <= 46250) return (revenu * (10/110)) - 2273;
-        if (revenu <= 73750) return (revenu * (15/115)) - 4565;
-        if (revenu <= 121250) return (revenu * (20/120)) - 8208;
-        if (revenu <= 203750) return (revenu * (25/125)) - 14271;
-        if (revenu <= 346250) return (revenu * (35/135)) - 34653;
-        if (revenu <= 843750) return (revenu * (45/145)) - 69022;
-        return (revenu * (60/160)) - 195703;
+        if (revenu <= 46250) return (revenu * 10/110) - 2273;
+        if (revenu <= 73750) return (revenu * 15/115) - 4565;
+        if (revenu <= 121250) return (revenu * 20/120) - 8208;
+        if (revenu <= 203750) return (revenu * 25/125) - 14271;
+        if (revenu <= 346250) return (revenu * 35/135) - 34653;
+        if (revenu <= 843750) return (revenu * 45/145) - 69022;
+        return (revenu * 60/160) - 195703;
     }
     const igr = Math.round(getIGRFromTranche(Q) * parts);
 
