@@ -53,7 +53,7 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { format } from "date-fns";
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Combobox } from "@/components/ui/combobox";
-import { schoolCycles } from "@/lib/data";
+import { schoolClasses } from '@/lib/data';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -350,9 +350,17 @@ export default function FeesPage() {
       });
   };
 
+  const handleCreateGrade = (newGrade: string) => {
+    // This function is for the Combobox to create a new grade if it doesn't exist.
+    // Since we're not adding it to a persistent list, we just update the form value.
+    feeForm.setValue('grade', newGrade);
+    toast({ title: 'Niveau utilisé', description: `Vous utilisez le nouveau niveau "${newGrade}".` });
+    return Promise.resolve({ value: newGrade, label: newGrade });
+  };
+
   const isLoading = schoolDataLoading || feesLoading || studentsLoading || classesLoading;
 
-  const cycleOptions = schoolCycles.map(cycle => ({ value: cycle.name, label: cycle.name }));
+  const gradeOptions = useMemo(() => schoolClasses.map(c => ({ value: c.name, label: c.name })), []);
 
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
@@ -628,9 +636,10 @@ export default function FeesPage() {
                                <Combobox
                                     placeholder="Sélectionner ou créer"
                                     searchPlaceholder="Chercher un niveau..."
-                                    options={cycleOptions}
+                                    options={gradeOptions}
                                     value={field.value}
                                     onValueChange={field.onChange}
+                                    onCreate={handleCreateGrade}
                                 />
                            </FormControl>
                           <FormMessage className="col-start-2 col-span-3" />
