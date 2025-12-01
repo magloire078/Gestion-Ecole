@@ -12,6 +12,7 @@ export type OrganizationSettings = {
     mainLogoUrl: string;
     secondaryLogoUrl: string;
     faviconUrl: string;
+    cnpsEmployeur?: string;
 };
 
 export type Employe = {
@@ -20,7 +21,7 @@ export type Employe = {
   name: string;
   lastName?: string;
   firstName?: string;
-  poste: string;
+  poste: string; // Utilise 'role' de l'entité 'staff'
   departmentId?: string;
   status: 'Actif' | 'En congé' | 'Licencié' | 'Retraité' | 'Décédé';
   photoUrl: string;
@@ -41,7 +42,6 @@ export type Employe = {
   primeAnciennete?: number;
   indemniteTransportImposable?: number;
   indemniteResponsabilite?: number;
-
   indemniteLogement?: number;
   indemniteSujetion?: number;
   indemniteCommunication?: number;
@@ -56,7 +56,6 @@ export type Employe = {
   Cle_RIB?: string;
 
   // Payslip specific details
-  cnpsEmployeur?: string;
   cnpsEmploye?: string;
   anciennete?: string;
   categorie?: string;
@@ -132,18 +131,7 @@ function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text
 }
 
 export async function getPayslipDetails(employee: Employe, payslipDate: string): Promise<PayslipDetails> {
-    const salaryStructure = {
-        baseSalary: employee.baseSalary || 0,
-        indemniteTransportImposable: employee.indemniteTransportImposable || 0,
-        indemniteResponsabilite: employee.indemniteResponsabilite || 0,
-        indemniteLogement: employee.indemniteLogement || 0,
-        indemniteSujetion: employee.indemniteSujetion || 0,
-        indemniteCommunication: employee.indemniteCommunication || 0,
-        indemniteRepresentation: employee.indemniteRepresentation || 0,
-        transportNonImposable: employee.transportNonImposable || 0,
-    };
-    
-    const { baseSalary, ...indemnityFields } = salaryStructure;
+    const { baseSalary = 0, ...otherFields } = employee;
     
     const seniorityInfo = calculateSeniority(employee.dateEmbauche || '', payslipDate);
     
@@ -153,34 +141,39 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         primeAnciennete = baseSalary * (bonusRate / 100);
     }
 
-    const earnings: PayslipEarning[] = [
-        { label: 'SALAIRE DE BASE', amount: Math.round(baseSalary) },
-        { label: 'PRIME D\'ANCIENNETE', amount: Math.round(primeAnciennete) },
-        { label: 'INDEMNITE DE TRANSPORT IMPOSABLE', amount: Math.round(indemnityFields.indemniteTransportImposable || 0) },
-        { label: 'INDEMNITE DE SUJETION', amount: Math.round(indemnityFields.indemniteSujetion || 0) },
-        { label: 'INDEMNITE DE COMMUNICATION', amount: Math.round(indemnityFields.indemniteCommunication || 0) },
-        { label: 'INDEMNITE DE REPRESENTATION', amount: Math.round(indemnityFields.indemniteRepresentation || 0) },
-        { label: 'INDEMNITE DE RESPONSABILITE', amount: Math.round(indemnityFields.indemniteResponsabilite || 0) },
-        { label: 'INDEMNITE DE LOGEMENT', amount: Math.round(indemnityFields.indemniteLogement || 0) },
-    ];
+    const earningsMap: { [key: string]: { label: string; amount: number } } = {
+        baseSalary: { label: 'SALAIRE DE BASE', amount: baseSalary },
+        primeAnciennete: { label: 'PRIME D\'ANCIENNETE', amount: primeAnciennete },
+        indemniteTransportImposable: { label: 'INDEMNITE DE TRANSPORT IMPOSABLE', amount: otherFields.indemniteTransportImposable || 0 },
+        indemniteSujetion: { label: 'INDEMNITE DE SUJETION', amount: otherFields.indemniteSujetion || 0 },
+        indemniteCommunication: { label: 'INDEMNITE DE COMMUNICATION', amount: otherFields.indemniteCommunication || 0 },
+        indemniteRepresentation: { label: 'INDEMNITE DE REPRESENTATION', amount: otherFields.indemniteRepresentation || 0 },
+        indemniteResponsabilite: { label: 'INDEMNITE DE RESPONSABILITE', amount: otherFields.indemniteResponsabilite || 0 },
+        indemniteLogement: { label: 'INDEMNITE DE LOGEMENT', amount: otherFields.indemniteLogement || 0 },
+    };
 
+    const earnings: PayslipEarning[] = Object.values(earningsMap)
+        .filter(item => item.amount > 0)
+        .map(item => ({...item, amount: Math.round(item.amount)}));
+        
     const brutImposable = earnings.reduce((sum, item) => sum + item.amount, 0);
     
     const cnps = employee.CNPS ? (brutImposable * 0.063) : 0;
-    const its = 0;
-    const igr = 0;
-    const cn = 0;
+    const its = 0; // Calcul à implémenter
+    const igr = 0; // Calcul à implémenter
+    const cn = 0;  // Calcul à implémenter
     
     const deductions: PayslipDeduction[] = [
         { label: 'ITS', amount: Math.round(its) },
         { label: 'CN', amount: Math.round(cn) },
         { label: 'IGR', amount: Math.round(igr) },
         { label: 'CNPS', amount: Math.round(cnps) },
-    ];
+    ].filter(d => d.amount > 0);
     
     const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
 
-    const netAPayer = brutImposable + (indemnityFields.transportNonImposable || 0) - totalDeductions;
+    const transportNonImposable = otherFields.transportNonImposable || 0;
+    const netAPayer = brutImposable + transportNonImposable - totalDeductions;
     const netAPayerInWords = toWords(Math.floor(netAPayer)) + " FRANCS CFA";
 
     const employerContributions: PayslipEmployerContribution[] = [
@@ -193,13 +186,13 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
     ];
     
     const organizationLogos: OrganizationSettings = {
-        organizationName: "VOTRE ORGANISATION", // Remplacez par le nom de votre organisation
-        mainLogoUrl: "https://cnrct.ci/wp-content/uploads/2018/03/logo_chambre.png", // Remplacez par votre logo
-        secondaryLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg/512px-Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg.png", // Remplacez par votre logo secondaire
-        faviconUrl: ''
+        organizationName: "VOTRE ORGANISATION",
+        mainLogoUrl: "https://cnrct.ci/wp-content/uploads/2018/03/logo_chambre.png",
+        secondaryLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg/512px-Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg.png",
+        faviconUrl: '',
+        cnpsEmployeur: "320491",
     };
     
-    const payslipDateObject = parseISO(payslipDate);
     const numeroCompteComplet = [employee.CB, employee.CG, employee.numeroCompte, employee.Cle_RIB].filter(Boolean).join(' ');
 
     const formattedDateEmbauche = employee.dateEmbauche && isValid(parseISO(employee.dateEmbauche)) 
@@ -208,12 +201,13 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
 
     const employeeInfoWithStaticData: Employe & { numeroCompteComplet?: string } = {
         ...employee,
+        poste: employee.poste || employee.role, // fallback to role
         dateEmbauche: formattedDateEmbauche,
         departmentId: employee.departmentId || 'Non spécifié',
         anciennete: seniorityInfo.text,
         categorie: employee.categorie || 'Catégorie',
-        cnpsEmployeur: "320491", // À remplacer par votre numéro
-        paymentDate: payslipDate, // Use the consistent date string
+        cnpsEmployeur: organizationLogos.cnpsEmployeur,
+        paymentDate: payslipDate,
         paymentLocation: 'Yamoussoukro', // À remplacer
         parts: employee.parts || 1.5,
         numeroCompteComplet: numeroCompteComplet
@@ -225,7 +219,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         deductions,
         totals: {
             brutImposable: Math.round(brutImposable),
-            transportNonImposable: { label: 'INDEMNITE DE TRANSPORT NON IMPOSABLE', amount: Math.round(indemnityFields.transportNonImposable || 0) },
+            transportNonImposable: { label: 'INDEMNITE DE TRANSPORT NON IMPOSABLE', amount: Math.round(transportNonImposable) },
             netAPayer: Math.round(netAPayer),
             netAPayerInWords,
         },
@@ -233,3 +227,5 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         organizationLogos
     };
 }
+
+    

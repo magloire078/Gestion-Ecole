@@ -63,7 +63,7 @@ const staffSchema = z.object({
   role: z.string().min(1, { message: "Le rôle est requis." }),
   email: z.string().email({ message: "L'adresse email est invalide." }).optional().or(z.literal('')),
   phone: z.string().optional(),
-  salary: z.coerce.number().min(0, { message: 'Le salaire doit être positif.' }),
+  baseSalary: z.coerce.number().min(0, { message: 'Le salaire doit être positif.' }),
   hireDate: z.string().min(1, { message: "La date d'embauche est requise." }),
 });
 
@@ -75,7 +75,7 @@ interface StaffMember extends Employe {
   role: string;
   email?: string;
   phone?: string;
-  salary?: number;
+  baseSalary?: number;
   hireDate: string;
   poste: string;
   matricule: string;
@@ -109,7 +109,7 @@ function HRContent() {
       role: '',
       email: '',
       phone: '',
-      salary: 0,
+      baseSalary: 0,
       hireDate: format(new Date(), 'yyyy-MM-dd'),
     },
   });
@@ -122,7 +122,7 @@ function HRContent() {
           role: editingStaff.role,
           email: editingStaff.email || '',
           phone: editingStaff.phone || '',
-          salary: editingStaff.salary || 0,
+          baseSalary: editingStaff.baseSalary || 0,
           hireDate: editingStaff.hireDate ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
         });
       } else {
@@ -131,7 +131,7 @@ function HRContent() {
           role: '',
           email: '',
           phone: '',
-          salary: 0,
+          baseSalary: 0,
           hireDate: format(new Date(), 'yyyy-MM-dd'),
         });
       }
@@ -146,7 +146,6 @@ function HRContent() {
     
     const dataToSave = { 
         ...values,
-        baseSalary: values.salary,
         poste: values.role,
         matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
         status: editingStaff?.status || 'Actif',
@@ -195,6 +194,7 @@ function HRContent() {
     
     try {
         const payslipDate = new Date().toISOString();
+        // @ts-ignore
         const details = await getPayslipDetails(staffMember, payslipDate);
         setPayslipDetails(details);
     } catch(e) {
@@ -242,7 +242,7 @@ function HRContent() {
                         <TableRow>
                             <TableHead>Nom</TableHead>
                             <TableHead>Rôle</TableHead>
-                            <TableHead>Salaire Mensuel</TableHead>
+                            <TableHead>Salaire de Base</TableHead>
                             <TableHead>Embauché le</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
@@ -276,7 +276,7 @@ function HRContent() {
                                         </div>
                                     </TableCell>
                                     <TableCell>{member.role}</TableCell>
-                                    <TableCell className="font-mono">{member.salary ? `${member.salary.toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
+                                    <TableCell className="font-mono">{member.baseSalary ? `${member.baseSalary.toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
                                     <TableCell>{isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : member.hireDate}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
@@ -371,7 +371,7 @@ function HRContent() {
                 />
                 <FormField
                   control={form.control}
-                  name="salary"
+                  name="baseSalary"
                   render={({ field }) => (
                     <FormItem className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Salaire (CFA)</FormLabel>
@@ -494,3 +494,5 @@ export default function HRPage() {
     
     return <HRContent />;
 }
+
+    
