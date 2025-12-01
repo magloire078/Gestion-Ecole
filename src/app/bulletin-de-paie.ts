@@ -27,7 +27,7 @@ export type Employe = {
   
   // Personal Info
   email?: string;
-  situationMatrimoniale?: string;
+  situationMatrimoniale?: 'Célibataire' | 'Marié(e)' | 'Divorcé(e)' | 'Veuf(ve)';
   enfants?: number;
 
   // Professional Info
@@ -38,7 +38,6 @@ export type Employe = {
   baseSalary?: number;
   cnpsEmploye?: string;
   CNPS?: boolean;
-  parts?: number;
   
   // Earnings & Deductions
   indemniteTransportImposable?: number;
@@ -80,6 +79,7 @@ export type PayslipEmployeeInfo = Employe & {
     anciennete: string;
     paymentDate: string;
     paymentLocation: string;
+    parts: number;
 };
 
 
@@ -98,7 +98,7 @@ export type PayslipDetails = {
 };
 
 // ====================================================================================
-// 2. UTILITY FUNCTION
+// 2. UTILITY FUNCTIONS
 // ====================================================================================
 
 function toWords(num: number): string {
@@ -106,10 +106,6 @@ function toWords(num: number): string {
     return numberToWords(num).toUpperCase();
 }
 
-
-// ====================================================================================
-// 3. PAYSLIP CALCULATION LOGIC
-// ====================================================================================
 
 function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text: string, years: number } {
     if (!hireDateStr || !payslipDateStr) return { text: 'N/A', years: 0 };
@@ -130,6 +126,28 @@ function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text
         years: years
     };
 }
+
+function calculateParts(situation: Employe['situationMatrimoniale'], enfants: number = 0): number {
+    switch(situation) {
+        case 'Marié(e)':
+            return 2 + (enfants * 0.5);
+        case 'Veuf(ve)':
+            return 1 + (enfants * 0.5);
+        case 'Divorcé(e)':
+        case 'Célibataire':
+            if (enfants > 0) {
+                return 1.5 + ((enfants - 1) * 0.5);
+            }
+            return 1;
+        default:
+            return 1;
+    }
+}
+
+
+// ====================================================================================
+// 3. PAYSLIP CALCULATION LOGIC
+// ====================================================================================
 
 export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings): Promise<PayslipDetails> {
     const { baseSalary = 0, ...otherFields } = employee;
@@ -178,7 +196,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
 
     // Calcul de l'IGR
     const N = baseCalculITS - (its + cn);
-    const parts = employee.parts || 1;
+    const parts = calculateParts(employee.situationMatrimoniale, employee.enfants);
     const Q = Math.floor(N / parts);
     
     const getIGRFromTranche = (revenu: number) => {
@@ -239,8 +257,8 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         anciennete: seniorityInfo.text,
         categorie: employee.categorie || 'Catégorie',
         paymentDate: payslipDate,
-        paymentLocation: 'Yamoussoukro', // À remplacer
-        parts: employee.parts || 1.5,
+        paymentLocation: organizationSettings.address || 'Yamoussoukro',
+        parts: parts,
         numeroCompteComplet: numeroCompteComplet
     };
 
