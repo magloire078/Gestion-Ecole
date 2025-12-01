@@ -55,8 +55,8 @@ service cloud.firestore {
         // --- Subcollections with Specific Rules ---
 
         match /utilisateurs/{userId} {
-            // Allow users to create their own doc, or directors to manage users
-            allow create: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
+            // Allow users to create their own doc during onboarding, or directors to manage users
+            allow create: if isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid);
             // Allow directors to update any user, and users to update their own profile
             allow update: if isSchoolDirector(schoolId, request.auth.uid) || isCreatingOwnDocument(userId);
             allow read, list: if isUserInSchool(schoolId);
