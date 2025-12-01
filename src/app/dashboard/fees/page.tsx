@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -149,7 +148,12 @@ export default function FeesPage() {
             details: editingFee.details || '',
         });
     } else {
-        form.reset();
+        form.reset({
+            grade: '',
+            amount: '',
+            installments: '',
+            details: '',
+        });
     }
   }, [isFeeGridDialogOpen, editingFee, form]);
   
@@ -699,5 +703,3 @@ export default function FeesPage() {
     </>
   );
 }
-
-    
