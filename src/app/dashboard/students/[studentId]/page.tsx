@@ -1,11 +1,10 @@
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar, Receipt, VenetianMask, MapPin, FileText } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar, Receipt, VenetianMask, MapPin, FileText, CalendarDays } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -239,15 +238,21 @@ export default function StudentProfilePage() {
   return (
     <>
     <div className="space-y-6">
-       <div className="flex justify-between items-center">
+       <div className="flex justify-between items-center flex-wrap gap-4">
             <div>
                 <h1 className="text-lg font-semibold md:text-2xl">Fiche d'Information de l'Élève</h1>
                 <p className="text-muted-foreground">Vue détaillée du profil, des notes et des informations de l'élève.</p>
             </div>
-            <Button onClick={() => router.push(`/dashboard/students/${studentId}/report`)}>
-                <FileText className="mr-2 h-4 w-4" />
-                Voir le bulletin
-            </Button>
+            <div className="flex gap-2">
+                <Button variant="outline" onClick={() => router.push(`/dashboard/students/${studentId}/timetable`)}>
+                    <CalendarDays className="mr-2 h-4 w-4" />
+                    Voir l'emploi du temps
+                </Button>
+                <Button onClick={() => router.push(`/dashboard/students/${studentId}/report`)}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Voir le bulletin
+                </Button>
+            </div>
         </div>
         <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-1 flex flex-col gap-6">

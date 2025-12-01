@@ -1,0 +1,93 @@
+'use client';
+
+import { notFound, useParams } from 'next/navigation';
+import { useMemo } from 'react';
+import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { doc, collection, query, where } from 'firebase/firestore';
+import { PrintableTimetable } from '@/components/printable-timetable';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface Student {
+  name: string;
+  class?: string;
+  classId: string;
+}
+
+interface TimetableEntry {
+  id: string;
+  classId: string;
+  teacherId: string;
+  subject: string;
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface Teacher {
+  id: string;
+  name: string;
+}
+
+export default function StudentTimetablePage() {
+  const params = useParams();
+  const studentId = params.studentId as string;
+  const firestore = useFirestore();
+  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+
+  // --- Data Fetching ---
+  const studentRef = useMemoFirebase(() => 
+    (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
+  , [firestore, schoolId, studentId]);
+
+  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const student = studentData;
+  const classId = student?.classId;
+
+  const timetableQuery = useMemoFirebase(() =>
+    (schoolId && classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
+  , [firestore, schoolId, classId]);
+
+  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+
+  const { data: timetableData, loading: timetableLoading } = useCollection<TimetableEntry>(timetableQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher>(teachersQuery);
+
+  const timetableEntries = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() })) || [], [timetableData]);
+  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
+
+  const isLoading = schoolLoading || studentLoading || timetableLoading || teachersLoading;
+
+  if (isLoading) {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-[70vh] w-full" />
+        </div>
+    );
+  }
+
+  if (!student) {
+    notFound();
+  }
+
+  const schoolInfo = {
+      name: schoolName || 'Votre École',
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-lg font-semibold md:text-2xl">Emploi du Temps de {student.name}</h1>
+        <p className="text-muted-foreground">Classe: {student.class}. Cliquez sur le bouton ci-dessous pour imprimer.</p>
+      </div>
+      <PrintableTimetable 
+        student={student}
+        school={schoolInfo}
+        timetableEntries={timetableEntries}
+        teachers={teachers}
+      />
+    </div>
+  );
+}

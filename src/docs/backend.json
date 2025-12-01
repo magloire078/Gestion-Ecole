@@ -196,9 +196,12 @@
         "properties": {
             "classId": { "type": "string", "description": "L'ID de la classe." },
             "teacherId": { "type": "string", "description": "L'ID de l'enseignant." },
-            "subject": { "type": "string", "description": "La matière enseignée." }
+            "subject": { "type": "string", "description": "La matière enseignée." },
+            "day": { "type": "string", "enum": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"], "description": "Le jour de la semaine." },
+            "startTime": { "type": "string", "description": "L'heure de début (HH:MM)." },
+            "endTime": { "type": "string", "description": "L'heure de fin (HH:MM)." }
         },
-        "required": ["classId", "teacherId", "subject"]
+        "required": ["classId", "teacherId", "subject", "day", "startTime", "endTime"]
     }
   },
   "auth": {
