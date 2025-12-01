@@ -126,11 +126,6 @@ export default function StudentsPage() {
   const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const [feedbackText, setFeedbackText] = useState('');
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const { toast } = useToast();
-
   // Edit Student State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -152,33 +147,6 @@ export default function StudentsPage() {
       });
     }
   }, [editingStudent]);
-
-  const handleAnalyzeFeedback = async () => {
-    if (!feedbackText.trim()) return;
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
-    try {
-      const result = await analyzeAndSummarizeFeedback({ feedbackText });
-      setAnalysisResult({
-          sentiment: result.sentiment as Sentiment,
-          summary: result.summary,
-          keyImprovementAreas: result.keyImprovementAreas,
-      });
-      toast({
-        title: "Analyse terminée",
-        description: "Le feedback a été analysé avec succès.",
-      });
-    } catch (error) {
-      console.error("Failed to analyze feedback:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur d'analyse",
-        description: "Impossible de générer l'analyse du feedback.",
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
   
   const handleOpenEditDialog = (student: Student) => {
     setEditingStudent(student);
@@ -258,6 +226,7 @@ export default function StudentsPage() {
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   const isLoading = schoolLoading || studentsLoading || classesLoading;
+  const { toast } = useToast();
 
   return (
     <>
