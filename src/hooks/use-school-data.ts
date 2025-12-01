@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, writeBatch, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -39,6 +39,7 @@ export function useSchoolData() {
         if (!user) {
             setLoading(false);
             setSchoolData(null);
+            setSchoolId(undefined);
             return;
         }
 
@@ -46,13 +47,13 @@ export function useSchoolData() {
         const unsubscribeUser = onSnapshot(userRootRef, (userDocSnap) => {
             if (userDocSnap.exists()) {
                 const userSchoolId = userDocSnap.data()?.schoolId;
-                if (userSchoolId) {
-                    setSchoolId(userSchoolId);
-                } else {
-                    setLoading(false);
+                setSchoolId(userSchoolId);
+                if (!userSchoolId) {
+                     setLoading(false);
                 }
             } else {
                 setLoading(false);
+                setSchoolId(undefined);
             }
         }, (error) => {
             console.error("Error fetching user root doc:", error);
@@ -66,6 +67,8 @@ export function useSchoolData() {
     useEffect(() => {
         if (!schoolId) {
             if (!userLoading) setLoading(false);
+             setSchoolData(null);
+             document.title = DEFAULT_TITLE;
             return;
         }
         
@@ -92,46 +95,31 @@ export function useSchoolData() {
     }, [schoolId, firestore, userLoading]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
-        if (!schoolId || !user) {
-            throw new Error("ID de l'école ou utilisateur non disponible. Impossible de mettre à jour.");
+        if (!schoolId) {
+            throw new Error("ID de l'école non disponible. Impossible de mettre à jour.");
         }
         
-        // Optimistically update the local state
-        setSchoolData(prev => prev ? { ...prev, ...data } : data);
-
-        const batch = writeBatch(firestore);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         
-        const updatePayload: Partial<SchoolData> = {};
-        if(data.name !== undefined) updatePayload.name = data.name;
-        if(data.directorName !== undefined) updatePayload.directorName = data.directorName;
-        if(data.matricule !== undefined) updatePayload.matricule = data.matricule;
-        if(data.directorPhone !== undefined) updatePayload.directorPhone = data.directorPhone;
-        if(data.subscription !== undefined) updatePayload.subscription = data.subscription;
-
-        batch.update(schoolDocRef, updatePayload);
-        
-        if (data.directorName) {
-            const userInSchoolRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
-            batch.update(userInSchoolRef, { displayName: data.directorName });
-        }
-        
         try {
-            await batch.commit();
+            await updateDoc(schoolDocRef, data);
         } catch (serverError) {
             const permissionError = new FirestorePermissionError({ 
-                path: `BATCH WRITE on /ecoles/${schoolId}`, 
+                path: schoolDocRef.path, 
                 operation: 'update', 
                 requestResourceData: data 
             });
             errorEmitter.emit('permission-error', permissionError);
             throw permissionError;
         }
-    }, [schoolId, user, firestore]);
+    }, [schoolId, firestore]);
 
     return { 
         schoolId, 
         schoolData,
+        schoolName: schoolData?.name,
+        directorName: schoolData?.directorName,
+        subscription: schoolData?.subscription,
         loading, 
         updateSchoolData 
     };

@@ -33,7 +33,7 @@ export function UserNav() {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
-  const { directorName, loading: schoolDataLoading } = useSchoolData();
+  const { schoolData, loading: schoolDataLoading } = useSchoolData();
 
   const handleLogout = async () => {
     try {
@@ -60,7 +60,7 @@ export function UserNav() {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
-  const displayName = directorName || 'Utilisateur';
+  const displayName = schoolData?.directorName || user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
   return (
