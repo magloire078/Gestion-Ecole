@@ -9,7 +9,21 @@ import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDetails }) {
     const isMounted = useHydrationFix();
-    
+    const [displayDate, setDisplayDate] = useState({ period: '', payment: '' });
+
+    useEffect(() => {
+        if (isMounted && payslipDetails?.employeeInfo?.paymentDate) {
+            const payslipDateObject = parseISO(payslipDetails.employeeInfo.paymentDate);
+            if (isValid(payslipDateObject)) {
+                const lastDay = lastDayOfMonth(payslipDateObject);
+                setDisplayDate({
+                    period: lastDay.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }),
+                    payment: new Date(payslipDetails.employeeInfo.paymentDate!).toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                });
+            }
+        }
+    }, [isMounted, payslipDetails]);
+
     if (!isMounted || !payslipDetails) {
         return null; // Don't render on server or before hydration
     }
@@ -17,10 +31,6 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationLogos } = payslipDetails;
     const fullName = `${employeeInfo.lastName || ''} ${employeeInfo.firstName || ''}`.trim() || employeeInfo.name;
     const qrCodeValue = `${fullName} | ${employeeInfo.matricule} | ${employeeInfo.departmentId}`;
-
-    const payslipDate = isValid(parseISO(payslipDetails.employeeInfo.paymentDate || '')) ? lastDayOfMonth(parseISO(payslipDetails.employeeInfo.paymentDate || '')) : new Date();
-    const periodDisplay = format(payslipDate, "MMMM yyyy", { locale: fr });
-    const paymentDateDisplay = format(new Date(payslipDetails.employeeInfo.paymentDate!), "EEEE dd MMMM yyyy", { locale: fr });
     
     const formatCurrency = (value: number) => {
         if (value === 0) return '0';
@@ -50,8 +60,8 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
             </header>
 
             <main>
-                <div className="text-center my-2 p-1 bg-gray-200 font-bold rounded-md text-sm">
-                    BULLETIN DE PAIE : Période de {periodDisplay}
+                <div className="text-center my-2 p-1 bg-gray-200 font-bold rounded-md text-sm capitalize">
+                    BULLETIN DE PAIE : Période de {displayDate.period}
                 </div>
 
                 {/* Employee Info */}
@@ -174,7 +184,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                         <div className="col-span-4 flex flex-col justify-center items-center p-1">
                             <div className="text-center pb-1">
                                 <p className="font-bold">Payé à {employeeInfo.paymentLocation} le</p>
-                                <p className="capitalize text-xs">{paymentDateDisplay}</p>
+                                <p className="capitalize text-xs">{displayDate.payment}</p>
                                 <div className="h-20"></div>
                                 <p className="border-t border-gray-400 pt-1 opacity-50">Signature</p>
                             </div>
@@ -197,5 +207,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
+
+    
 
     
