@@ -185,9 +185,14 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
 
             {/* Footer */}
             <footer className="pt-2 mt-auto">
-                 <div className="leading-tight text-center">
+                <div className="leading-tight text-center border-t border-gray-400 pt-1">
                     <p className="font-bold">{organizationLogos.organizationName}</p>
-                 </div>
+                    <p>{(organizationLogos as any).address}</p>
+                    <p>
+                        {(organizationLogos as any).phone && <span>Tél: {(organizationLogos as any).phone}</span>}
+                        {(organizationLogos as any).website && <span> | Site: {(organizationLogos as any).website}</span>}
+                    </p>
+                </div>
             </footer>
         </div>
     );

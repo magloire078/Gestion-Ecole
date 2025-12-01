@@ -36,6 +36,9 @@
             "directorPhone": { "type": "string", "description": "Le numéro de téléphone du directeur." },
             "schoolCode": { "type": "string", "description": "Un code lisible par l'homme pour rejoindre l'école." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date de création de l'école." },
+            "address": { "type": "string", "description": "Adresse de l'école." },
+            "phone": { "type": "string", "description": "Numéro de téléphone de l'école." },
+            "website": { "type": "string", "description": "Site web de l'école." },
             "subscription": {
                 "type": "object",
                 "description": "Détails de l'abonnement de l'école.",
@@ -285,5 +288,3 @@
     }
   }
 }
-
-    
