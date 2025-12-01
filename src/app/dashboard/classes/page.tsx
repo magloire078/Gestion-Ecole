@@ -31,7 +31,6 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,6 +41,22 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { schoolClasses, schoolCycles, higherEdFiliere } from '@/lib/data';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+// Define Zod schema for validation
+const classSchema = z.object({
+  cycle: z.string().min(1, { message: "Le cycle est requis." }),
+  name: z.string().min(1, { message: "Le nom de la classe est requis." }),
+  filiere: z.string().optional(),
+  building: z.string().min(1, { message: "Le bâtiment est requis." }),
+  mainTeacherId: z.string().min(1, { message: "Le professeur principal est requis." }),
+  studentCount: z.coerce.number().min(0, { message: "Le nombre d'élèves doit être un nombre positif." }),
+});
+
+type ClassFormValues = z.infer<typeof classSchema>;
 
 // Define TypeScript interfaces based on backend.json
 interface Teacher {
@@ -89,19 +104,10 @@ export default function ClassesPage() {
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
   
   // --- UI State ---
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
   
-  // Form states
-  const [formClassName, setFormClassName] = useState("");
-  const [formTeacherId, setFormTeacherId] = useState("");
-  const [formStudentCount, setFormStudentCount] = useState("");
-  const [formBuilding, setFormBuilding] = useState("");
-  const [formCycleName, setFormCycleName] = useState("");
-  const [formFiliere, setFormFiliere] = useState("");
-
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [classToDelete, setClassToDelete] = useState<Class | null>(null);
 
@@ -112,87 +118,93 @@ export default function ClassesPage() {
 
   const { toast } = useToast();
   
+  const form = useForm<ClassFormValues>({
+    resolver: zodResolver(classSchema),
+    defaultValues: {
+      cycle: '',
+      name: '',
+      filiere: '',
+      building: '',
+      mainTeacherId: '',
+      studentCount: 0,
+    },
+  });
+
+  const watchedCycle = form.watch('cycle');
+
+  useEffect(() => {
+    if (isFormOpen) {
+      if (editingClass) {
+        form.reset({
+          cycle: editingClass.cycle,
+          name: editingClass.name,
+          filiere: editingClass.filiere || '',
+          building: editingClass.building,
+          mainTeacherId: editingClass.mainTeacherId,
+          studentCount: editingClass.studentCount,
+        });
+      } else {
+        form.reset({
+          cycle: '',
+          name: '',
+          filiere: '',
+          building: '',
+          mainTeacherId: '',
+          studentCount: 0,
+        });
+      }
+    }
+  }, [isFormOpen, editingClass, form]);
+  
   const getMainTeacher = (teacherId?: string) => {
     if (!teacherId) return null;
     return teachers.find(t => t.id === teacherId);
   };
-
-  const resetAddDialog = () => {
-    setFormClassName("");
-    setFormTeacherId("");
-    setFormStudentCount("");
-    setFormBuilding("");
-    setFormCycleName("");
-    setFormFiliere("");
-  }
   
   const getClassDocRef = (classId: string) => doc(firestore, `ecoles/${schoolId}/classes/${classId}`);
 
   // --- CRUD Operations ---
-  const handleAddClass = () => {
-    if (!schoolId || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycleName) {
-        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
+  const handleClassSubmit = (values: ClassFormValues) => {
+    if (!schoolId) {
+        toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
         return;
     }
     
-    const newClassData: Omit<Class, 'id'> = {
-        name: formClassName,
-        mainTeacherId: formTeacherId,
-        studentCount: parseInt(formStudentCount, 10),
-        building: formBuilding,
-        cycle: formCycleName,
-        filiere: formCycleName === "Enseignement Supérieur" ? formFiliere : "",
+    const classData = {
+        ...values,
+        filiere: values.cycle === "Enseignement Supérieur" ? values.filiere : "",
     };
 
-    const classCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
-    addDoc(classCollectionRef, newClassData)
-    .then(() => {
-      toast({ title: "Classe ajoutée", description: `La classe ${formClassName} a été créée avec succès.` });
-      resetAddDialog();
-      setIsAddDialogOpen(false);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: classCollectionRef.path, operation: 'create', requestResourceData: newClassData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+    if(editingClass) {
+        // Update
+        const classDocRef = getClassDocRef(editingClass.id);
+        setDoc(classDocRef, classData, { merge: true })
+        .then(() => {
+            toast({ title: "Classe modifiée", description: `Les informations de la classe ${values.name} ont été mises à jour.` });
+            setIsFormOpen(false);
+            setEditingClass(null);
+        }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: classDocRef.path, operation: 'update', requestResourceData: classData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    } else {
+        // Create
+        const classCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
+        addDoc(classCollectionRef, classData)
+        .then(() => {
+            toast({ title: "Classe ajoutée", description: `La classe ${values.name} a été créée avec succès.` });
+            setIsFormOpen(false);
+        }).catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({ path: classCollectionRef.path, operation: 'create', requestResourceData: classData });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+    }
   };
   
-  const handleOpenEditDialog = (cls: Class) => {
+  const handleOpenFormDialog = (cls: Class | null) => {
     setEditingClass(cls);
-    setFormClassName(cls.name);
-    setFormTeacherId(cls.mainTeacherId);
-    setFormStudentCount(String(cls.studentCount));
-    setFormBuilding(cls.building);
-    setFormCycleName(cls.cycle);
-    setFormFiliere(cls.filiere || "");
-    setIsEditDialogOpen(true);
+    setIsFormOpen(true);
   };
-
-  const handleEditClass = () => {
-    if (!schoolId || !editingClass || !formClassName || !formTeacherId || !formStudentCount || !formBuilding || !formCycleName) {
-       toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis." });
-      return;
-    }
-    
-    const classDocRef = getClassDocRef(editingClass.id);
-    const updatedData: Omit<Class, 'id'> = {
-      name: formClassName,
-      mainTeacherId: formTeacherId,
-      studentCount: parseInt(formStudentCount, 10),
-      building: formBuilding,
-      cycle: formCycleName,
-      filiere: formCycleName === "Enseignement Supérieur" ? formFiliere : "",
-    };
-    
-    setDoc(classDocRef, updatedData, { merge: true })
-    .then(() => {
-        toast({ title: "Classe modifiée", description: `Les informations de la classe ${formClassName} ont été mises à jour.` });
-        setIsEditDialogOpen(false);
-        setEditingClass(null);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: classDocRef.path, operation: 'update', requestResourceData: updatedData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  }
 
   const handleOpenDeleteDialog = (cls: Class) => {
     setClassToDelete(cls);
@@ -232,7 +244,7 @@ export default function ClassesPage() {
         const docRef = await addDoc(teacherCollectionRef, newTeacherData);
         toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
         setIsAddTeacherDialogOpen(false);
-        setFormTeacherId(docRef.id); // auto-select the newly created teacher
+        form.setValue('mainTeacherId', docRef.id);
         return { value: docRef.id, label: newTeacherName };
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({ path: teacherCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
@@ -265,8 +277,128 @@ export default function ClassesPage() {
 
   const teacherOptions = teachers.map(t => ({ value: t.id, label: t.name }));
   const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
-  const classOptionsForCycle = formCycleName ? schoolClasses.filter(c => c.cycle === formCycleName).map(c => ({ value: c.name, label: c.name })) : [];
+  const classOptionsForCycle = watchedCycle ? schoolClasses.filter(c => c.cycle === watchedCycle).map(c => ({ value: c.name, label: c.name })) : [];
   const filiereOptions = higherEdFiliere.map(f => ({ value: f, label: f }));
+  
+  const renderFormContent = () => (
+    <Form {...form}>
+      <form id="class-form" onSubmit={form.handleSubmit(handleClassSubmit)} className="grid gap-4 py-4">
+        <FormField
+            control={form.control}
+            name="cycle"
+            render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+                <FormLabel className="text-right">Cycle</FormLabel>
+                <FormControl className="col-span-3">
+                    <Combobox
+                        placeholder="Sélectionner un cycle"
+                        searchPlaceholder="Chercher un cycle..."
+                        options={cycleOptions}
+                        value={field.value}
+                        onValueChange={(value) => {
+                            const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
+                            field.onChange(cycleOption ? cycleOption.value : '');
+                            form.setValue('name', ''); // Reset class name when cycle changes
+                            form.setValue('filiere', '');
+                        }}
+                    />
+                </FormControl>
+                <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+            )}
+        />
+        {watchedCycle === "Enseignement Supérieur" && (
+            <FormField
+                control={form.control}
+                name="filiere"
+                render={({ field }) => (
+                <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Filière</FormLabel>
+                    <FormControl className="col-span-3">
+                        <Combobox
+                            placeholder="Sélectionner une filière"
+                            searchPlaceholder="Chercher une filière..."
+                            options={filiereOptions}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                        />
+                    </FormControl>
+                </FormItem>
+                )}
+            />
+        )}
+        <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+                <FormLabel className="text-right">Classe</FormLabel>
+                <FormControl className="col-span-3">
+                    <Combobox
+                        placeholder={watchedCycle ? "Sélectionner une classe" : "Sélectionnez un cycle d'abord"}
+                        searchPlaceholder="Chercher une classe..."
+                        options={classOptionsForCycle}
+                        value={field.value}
+                        onValueChange={(value) => {
+                            const classOption = classOptionsForCycle.find(c => c.value.toLowerCase() === value.toLowerCase());
+                            field.onChange(classOption ? classOption.value : '');
+                        }}
+                    />
+                </FormControl>
+                 <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+            )}
+        />
+        <FormField
+            control={form.control}
+            name="building"
+            render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+                <FormLabel className="text-right">Bâtiment</FormLabel>
+                <FormControl className="col-span-3">
+                    <Input placeholder="Ex: Bâtiment A" {...field} />
+                </FormControl>
+                 <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+            )}
+        />
+         <FormField
+            control={form.control}
+            name="mainTeacherId"
+            render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+                <FormLabel className="text-right">Prof. Principal</FormLabel>
+                <FormControl className="col-span-3">
+                    <Combobox
+                        placeholder="Sélectionner un enseignant"
+                        searchPlaceholder="Chercher ou créer..."
+                        options={teacherOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        onCreate={handleOpenAddTeacherDialog}
+                    />
+                </FormControl>
+                 <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+            )}
+        />
+         <FormField
+            control={form.control}
+            name="studentCount"
+            render={({ field }) => (
+            <FormItem className="grid grid-cols-4 items-center gap-4">
+                <FormLabel className="text-right">Nb. Élèves</FormLabel>
+                <FormControl className="col-span-3">
+                    <Input type="number" placeholder="Ex: 25" {...field} />
+                </FormControl>
+                 <FormMessage className="col-start-2 col-span-3" />
+            </FormItem>
+            )}
+        />
+      </form>
+    </Form>
+  );
+
 
   return (
     <>
@@ -277,90 +409,25 @@ export default function ClassesPage() {
             <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={isAddDialogOpen} onOpenChange={(isOpen) => {
-              if(!isOpen) resetAddDialog();
-              setIsAddDialogOpen(isOpen);
-            }}>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button onClick={() => handleOpenFormDialog(null)}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
-                  <DialogTitle>Ajouter une Nouvelle Classe</DialogTitle>
+                  <DialogTitle>{editingClass ? "Modifier la Classe" : "Ajouter une Nouvelle Classe"}</DialogTitle>
                   <DialogDescription>
-                    Renseignez les informations de la nouvelle classe.
+                    {editingClass ? `Renseignez les nouvelles informations de la classe ${editingClass.name}.` : "Renseignez les informations de la nouvelle classe."}
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="cycle" className="text-right">Cycle</Label>
-                    <Combobox
-                        className="col-span-3"
-                        placeholder="Sélectionner un cycle"
-                        searchPlaceholder="Chercher un cycle..."
-                        options={cycleOptions}
-                        value={formCycleName}
-                        onValueChange={value => {
-                            const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
-                            setFormCycleName(cycleOption ? cycleOption.value : '');
-                            setFormClassName(''); // Reset class name when cycle changes
-                            setFormFiliere('');
-                        }}
-                    />
-                  </div>
-                  {formCycleName === "Enseignement Supérieur" && (
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="filiere" className="text-right">Filière</Label>
-                         <Combobox
-                            className="col-span-3"
-                            placeholder="Sélectionner une filière"
-                            searchPlaceholder="Chercher une filière..."
-                            options={filiereOptions}
-                            value={formFiliere}
-                            onValueChange={setFormFiliere}
-                        />
-                    </div>
-                  )}
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">Classe</Label>
-                    <Combobox
-                        className="col-span-3"
-                        placeholder={formCycleName ? "Sélectionner une classe" : "Sélectionnez un cycle d'abord"}
-                        searchPlaceholder="Chercher une classe..."
-                        options={classOptionsForCycle}
-                        value={formClassName}
-                        onValueChange={(value) => {
-                            const classOption = classOptionsForCycle.find(c => c.value.toLowerCase() === value.toLowerCase());
-                            setFormClassName(classOption ? classOption.value : '');
-                        }}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="building" className="text-right">Bâtiment</Label>
-                    <Input id="building" value={formBuilding} onChange={(e) => setFormBuilding(e.target.value)} className="col-span-3" placeholder="Ex: Bâtiment A" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="teacher" className="text-right">Prof. Principal</Label>
-                    <Combobox
-                        className="col-span-3"
-                        placeholder="Sélectionner un enseignant"
-                        searchPlaceholder="Chercher ou créer..."
-                        options={teacherOptions}
-                        value={formTeacherId}
-                        onValueChange={setFormTeacherId}
-                        onCreate={handleOpenAddTeacherDialog}
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="students" className="text-right">Nb. Élèves</Label>
-                    <Input id="students" type="number" value={formStudentCount} onChange={(e) => setFormStudentCount(e.target.value)} className="col-span-3" placeholder="Ex: 25"/>
-                  </div>
-                </div>
+                {renderFormContent()}
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Annuler</Button>
-                  <Button onClick={handleAddClass}>Ajouter la classe</Button>
+                  <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                  <Button type="submit" form="class-form" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -385,7 +452,7 @@ export default function ClassesPage() {
                                     <DropdownMenu>
                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => handleOpenEditDialog(cls)}>Modifier</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleOpenFormDialog(cls)}>Modifier</DropdownMenuItem>
                                         <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(cls)}>Supprimer</DropdownMenuItem>
                                     </DropdownMenuContent>
                                     </DropdownMenu>
@@ -412,85 +479,6 @@ export default function ClassesPage() {
         </Tabs>
         
       </div>
-      
-      {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Modifier la Classe</DialogTitle>
-            <DialogDescription>Mettez à jour les informations de la classe <strong>{editingClass?.name}</strong>.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-cycle" className="text-right">Cycle</Label>
-              <Combobox
-                    className="col-span-3"
-                    placeholder="Sélectionner un cycle"
-                    searchPlaceholder="Chercher un cycle..."
-                    options={cycleOptions}
-                    value={formCycleName}
-                    onValueChange={value => {
-                        const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
-                        setFormCycleName(cycleOption ? cycleOption.value : '');
-                        setFormClassName(''); // Reset class name when cycle changes
-                        setFormFiliere('');
-                    }}
-                />
-            </div>
-             {formCycleName === "Enseignement Supérieur" && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="filiere" className="text-right">Filière</Label>
-                        <Combobox
-                        className="col-span-3"
-                        placeholder="Sélectionner une filière"
-                        searchPlaceholder="Chercher une filière..."
-                        options={filiereOptions}
-                        value={formFiliere}
-                        onValueChange={setFormFiliere}
-                    />
-                </div>
-            )}
-             <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="edit-name" className="text-right">Classe</Label>
-                <Combobox
-                    className="col-span-3"
-                    placeholder={formCycleName ? "Sélectionner une classe" : "Sélectionnez un cycle d'abord"}
-                    searchPlaceholder="Chercher une classe..."
-                    options={classOptionsForCycle}
-                    value={formClassName}
-                     onValueChange={(value) => {
-                        const classOption = classOptionsForCycle.find(c => c.value.toLowerCase() === value.toLowerCase());
-                        setFormClassName(classOption ? classOption.value : '');
-                    }}
-                />
-             </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-building" className="text-right">Bâtiment</Label>
-              <Input id="edit-building" value={formBuilding} onChange={(e) => setFormBuilding(e.target.value)} className="col-span-3" />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-teacher" className="text-right">Prof. Principal</Label>
-               <Combobox
-                    className="col-span-3"
-                    placeholder="Sélectionner un enseignant"
-                    searchPlaceholder="Chercher un enseignant..."
-                    options={teacherOptions}
-                    value={formTeacherId}
-                    onValueChange={setFormTeacherId}
-                    onCreate={handleOpenAddTeacherDialog}
-                />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="edit-students" className="text-right">Nb. Élèves</Label>
-              <Input id="edit-students" type="number" value={formStudentCount} onChange={(e) => setFormStudentCount(e.target.value)} className="col-span-3"/>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleEditClass}>Enregistrer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
        {/* Add Teacher Dialog (modal over a modal) */}
        <Dialog open={isAddTeacherDialogOpen} onOpenChange={setIsAddTeacherDialogOpen}>
@@ -503,15 +491,15 @@ export default function ClassesPage() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="new-teacher-name" className="text-right">Nom</Label>
+                        <FormLabel htmlFor="new-teacher-name" className="text-right">Nom</FormLabel>
                         <Input id="new-teacher-name" value={newTeacherName} onChange={e => setNewTeacherName(e.target.value)} className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="new-teacher-subject" className="text-right">Matière principale</Label>
+                        <FormLabel htmlFor="new-teacher-subject" className="text-right">Matière principale</FormLabel>
                         <Input id="new-teacher-subject" value={newTeacherSubject} onChange={(e) => setNewTeacherSubject(e.target.value)} className="col-span-3" placeholder="Ex: Mathématiques" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="new-teacher-email" className="text-right">Email</Label>
+                        <FormLabel htmlFor="new-teacher-email" className="text-right">Email</FormLabel>
                         <Input id="new-teacher-email" type="email" value={newTeacherEmail} onChange={(e) => setNewTeacherEmail(e.target.value)} className="col-span-3" placeholder="Ex: prof@ecole.com" />
                     </div>
                 </div>
@@ -538,3 +526,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
