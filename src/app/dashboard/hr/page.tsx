@@ -98,7 +98,7 @@ interface StaffMember extends Employe {
 function HRContent() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
-  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolName, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
   // --- Firestore Data Hooks ---
@@ -211,7 +211,6 @@ function HRContent() {
     
     const dataToSave = { 
         ...values,
-        poste: values.role,
         matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
         status: editingStaff?.status || 'Actif',
     };
@@ -260,7 +259,11 @@ function HRContent() {
     try {
         const payslipDate = new Date().toISOString();
         const orgSettings: OrganizationSettings = {
-            organizationName: schoolName
+            organizationName: schoolData?.name,
+            address: schoolData?.address,
+            phone: schoolData?.phone,
+            website: schoolData?.website,
+            cnpsEmployeur: "123456-T" // Example data, should be from settings
         };
         const details = await getPayslipDetails(staffMember, payslipDate, orgSettings);
         setPayslipDetails(details);
