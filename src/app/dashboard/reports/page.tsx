@@ -54,9 +54,13 @@ import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
-import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
 
 // --- Interfaces ---
 interface Student {
@@ -80,6 +84,17 @@ interface GradeEntry {
   grade: number;
   coefficient: number;
 }
+
+// --- Zod Schema for Validation ---
+const gradeSchema = z.object({
+    studentId: z.string().min(1, { message: "Veuillez sélectionner un élève." }),
+    type: z.enum(['Interrogation', 'Devoir']),
+    date: z.string().min(1, { message: "La date est requise." }),
+    grade: z.coerce.number().min(0, "La note ne peut pas être négative.").max(20, "La note ne peut pas dépasser 20."),
+    coefficient: z.coerce.number().min(0.25, "Le coefficient doit être d'au moins 0.25."),
+});
+type GradeFormValues = z.infer<typeof gradeSchema>;
+
 
 export default function GradeEntryPage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
@@ -110,15 +125,16 @@ export default function GradeEntryPage() {
   const [editingGrade, setEditingGrade] = useState<GradeEntry | null>(null);
   const [gradeToDelete, setGradeToDelete] = useState<GradeEntry | null>(null);
 
-  const [gradeForm, setGradeForm] = useState({ 
-    studentId: '', 
-    type: 'Devoir' as 'Interrogation' | 'Devoir', 
-    grade: '', 
-    coefficient: '1', 
-    date: format(new Date(), 'yyyy-MM-dd') 
+  const form = useForm<GradeFormValues>({
+    resolver: zodResolver(gradeSchema),
+    defaultValues: {
+      studentId: '',
+      type: 'Devoir',
+      date: format(new Date(), 'yyyy-MM-dd'),
+      grade: 0,
+      coefficient: 1,
+    }
   });
-  
-  const [isSaving, setIsSaving] = useState(false);
 
   // --- Effects ---
   useEffect(() => {
@@ -158,24 +174,26 @@ export default function GradeEntryPage() {
   }, [selectedSubject, studentsInClass, schoolId, firestore]);
   
   useEffect(() => {
-    if (isFormOpen && editingGrade) {
-        setGradeForm({
-            studentId: editingGrade.studentId,
-            type: editingGrade.type,
-            grade: String(editingGrade.grade),
-            coefficient: String(editingGrade.coefficient),
-            date: editingGrade.date,
-        });
-    } else {
-        setGradeForm({
-            studentId: '',
-            type: 'Devoir',
-            grade: '',
-            coefficient: '1',
-            date: format(new Date(), 'yyyy-MM-dd'),
-        });
+    if (isFormOpen) {
+        if (editingGrade) {
+            form.reset({
+                studentId: editingGrade.studentId,
+                type: editingGrade.type,
+                grade: editingGrade.grade,
+                coefficient: editingGrade.coefficient,
+                date: editingGrade.date,
+            });
+        } else {
+            form.reset({
+                studentId: '',
+                type: 'Devoir',
+                date: format(new Date(), 'yyyy-MM-dd'),
+                grade: 0,
+                coefficient: 1,
+            });
+        }
     }
-  }, [isFormOpen, editingGrade]);
+  }, [isFormOpen, editingGrade, form]);
 
 
   const handleOpenFormDialog = (grade: GradeEntry | null) => {
@@ -183,30 +201,18 @@ export default function GradeEntryPage() {
     setIsFormOpen(true);
   };
   
-  const handleSubmitGrade = async () => {
-    if (!schoolId || !selectedSubject || !gradeForm.studentId || !gradeForm.grade || !gradeForm.coefficient) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez remplir tous les champs obligatoires.' });
-      return;
-    }
-    const gradeValue = parseFloat(gradeForm.grade);
-    const coeffValue = parseFloat(gradeForm.coefficient);
-
-    if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 20) {
-      toast({ variant: 'destructive', title: 'Note invalide', description: 'La note doit être un nombre entre 0 et 20.' });
-      return;
-    }
-    if (isNaN(coeffValue) || coeffValue <= 0) {
-      toast({ variant: 'destructive', title: 'Coefficient invalide', description: 'Le coefficient doit être un nombre positif.' });
+  const handleSubmitGrade = async (values: GradeFormValues) => {
+    if (!schoolId || !selectedSubject) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner une classe et une matière.' });
       return;
     }
     
-    setIsSaving(true);
     const gradeData = {
       subject: selectedSubject,
-      type: gradeForm.type,
-      date: gradeForm.date,
-      grade: gradeValue,
-      coefficient: coeffValue,
+      type: values.type,
+      date: values.date,
+      grade: values.grade,
+      coefficient: values.coefficient,
     };
     
     try {
@@ -218,10 +224,10 @@ export default function GradeEntryPage() {
             setAllGradesForSubject(prev => prev.map(g => g.id === editingGrade.id ? { ...g, ...gradeData } : g));
         } else {
             // Create
-            const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${gradeForm.studentId}/notes`);
+            const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${values.studentId}/notes`);
             const newDocRef = await addDoc(gradesCollectionRef, gradeData);
             
-            const student = studentsInClass.find(s => s.id === gradeForm.studentId);
+            const student = studentsInClass.find(s => s.id === values.studentId);
             const parentName = student?.parent1Name || 'Parent';
 
             toast({ 
@@ -229,20 +235,18 @@ export default function GradeEntryPage() {
                 description: `La note a été enregistrée et une notification a été envoyée à ${parentName}.`
             });
             
-            setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: gradeForm.studentId, studentName: student?.name || '' }, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: values.studentId, studentName: student?.name || '' }, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         }
       setIsFormOpen(false);
     } catch(error) {
       const operation = editingGrade ? 'update' : 'create';
-      const studentIdForPath = editingGrade ? editingGrade.studentId : gradeForm.studentId;
+      const studentIdForPath = editingGrade ? editingGrade.studentId : values.studentId;
       const path = editingGrade 
         ? `ecoles/${schoolId}/eleves/${studentIdForPath}/notes/${editingGrade.id}`
         : `ecoles/${schoolId}/eleves/${studentIdForPath}/notes`;
 
       const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: gradeData });
       errorEmitter.emit('permission-error', permissionError);
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -394,43 +398,89 @@ export default function GradeEntryPage() {
                 <DialogTitle>{editingGrade ? 'Modifier' : 'Ajouter'} une note</DialogTitle>
                 <DialogDescription>Matière: {selectedSubject}</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="grade-student" className="text-right">Élève</Label>
-                    <Select onValueChange={(v) => setGradeForm(f => ({...f, studentId: v}))} value={gradeForm.studentId} disabled={!!editingGrade}>
-                        <SelectTrigger className="col-span-3"><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger>
-                        <SelectContent>
-                            {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="grade-type" className="text-right">Type</Label>
-                    <Select onValueChange={(v) => setGradeForm(f => ({...f, type: v as any}))} value={gradeForm.type}>
-                        <SelectTrigger className="col-span-3"><SelectValue/></SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="Devoir">Devoir</SelectItem>
-                            <SelectItem value="Interrogation">Interrogation</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="grade-date" className="text-right">Date</Label>
-                    <Input id="grade-date" type="date" value={gradeForm.date} onChange={(e) => setGradeForm(f => ({...f, date: e.target.value}))} className="col-span-3" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="grade-value" className="text-right">Note /20</Label>
-                    <Input id="grade-value" type="number" value={gradeForm.grade} onChange={(e) => setGradeForm(f => ({...f, grade: e.target.value}))} className="col-span-3" placeholder="Ex: 15.5" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="grade-coeff" className="text-right">Coefficient</Label>
-                    <Input id="grade-coeff" type="number" value={gradeForm.coefficient} onChange={(e) => setGradeForm(f => ({...f, coefficient: e.target.value}))} className="col-span-3" placeholder="Ex: 2" />
-                </div>
-            </div>
+            <Form {...form}>
+              <form id="grade-form" onSubmit={form.handleSubmit(handleSubmitGrade)} className="grid gap-4 py-4">
+                <FormField
+                  control={form.control}
+                  name="studentId"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Élève</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingGrade}>
+                          <FormControl className="col-span-3">
+                            <SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                              {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                           <FormControl className="col-span-3">
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                              <SelectItem value="Devoir">Devoir</SelectItem>
+                              <SelectItem value="Interrogation">Interrogation</SelectItem>
+                          </SelectContent>
+                        </Select>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Date</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="grade"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Note /20</FormLabel>
+                       <FormControl className="col-span-3">
+                        <Input type="number" placeholder="Ex: 15.5" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="coefficient"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Coefficient</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input type="number" placeholder="Ex: 2" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                <Button onClick={handleSubmitGrade} disabled={isSaving}>
-                    {isSaving ? 'Enregistrement...' : 'Enregistrer'}
+                <Button type="submit" form="grade-form" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
                 </Button>
             </DialogFooter>
         </DialogContent>
@@ -453,3 +503,5 @@ export default function GradeEntryPage() {
     </>
   );
 }
+
+    
