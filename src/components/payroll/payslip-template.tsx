@@ -12,8 +12,8 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
     }
 
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationLogos } = payslipDetails;
-    const fullName = `${employeeInfo.lastName || ''} ${employeeInfo.firstName || ''}`.trim() || employeeInfo.name;
-    const qrCodeValue = `${fullName} | ${employeeInfo.matricule} | ${employeeInfo.departmentId}`;
+    const fullName = employeeInfo.name;
+    const qrCodeValue = `${fullName} | ${employeeInfo.matricule} | ${employeeInfo.role}`;
     
     const payslipDateObject = parseISO(payslipDetails.employeeInfo.paymentDate);
     const displayDate = {
@@ -69,7 +69,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                             <p><span className="font-bold inline-block w-[140px]">SITUATION MATRIMONIALE</span>: <span className="pl-1">{employeeInfo.situationMatrimoniale}</span></p>
                             <p><span className="font-bold inline-block w-[140px]">BANQUE</span>: <span className="pl-1">{employeeInfo.banque}</span></p>
                             <p><span className="font-bold inline-block w-[140px]">NUMERO DE COMPTE</span>: <span className="pl-1">{employeeInfo.numeroCompteComplet || employeeInfo.numeroCompte}</span></p>
-                            <p><span className="font-bold inline-block w-[140px]">SERVICE</span>: <span className="pl-1">{employeeInfo.departmentId}</span></p>
+                            <p><span className="font-bold inline-block w-[140px]">SERVICE</span>: <span className="pl-1">{employeeInfo.role}</span></p>
                             <p><span className="font-bold inline-block w-[140px]">DATE DE CONGE</span>: <span className="pl-1">__/__/____</span></p>
                             <p><span className="font-bold inline-block w-[140px]">ENFANT(S)</span>: <span className="pl-1">{employeeInfo.enfants}</span></p>
                         </div>
@@ -89,11 +89,11 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                     </thead>
                     <tbody className="text-center">
                         <tr>
-                            <td className="p-1 border-r border-gray-400">{employeeInfo.poste}</td>
+                            <td className="p-1 border-r border-gray-400">{employeeInfo.role}</td>
                             <td className="p-1 border-r border-gray-400">{employeeInfo.categorie}</td>
                             <td className="p-1 border-r border-gray-400">{employeeInfo.anciennete}</td>
                             <td className="p-1 border-r border-gray-400">{employeeInfo.parts}</td>
-                            <td className="p-1">{employeeInfo.dateEmbauche}</td>
+                            <td className="p-1">{employeeInfo.hireDate}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -187,10 +187,10 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
             <footer className="pt-2 mt-auto">
                 <div className="leading-tight text-center border-t border-gray-400 pt-1">
                     <p className="font-bold">{organizationLogos.organizationName}</p>
-                    <p>{(organizationLogos as any).address}</p>
+                    <p>{organizationLogos.address}</p>
                     <p>
-                        {(organizationLogos as any).phone && <span>Tél: {(organizationLogos as any).phone}</span>}
-                        {(organizationLogos as any).website && <span> | Site: {(organizationLogos as any).website}</span>}
+                        {organizationLogos.phone && <span>Tél: {organizationLogos.phone}</span>}
+                        {organizationLogos.website && <span> | Site: {organizationLogos.website}</span>}
                     </p>
                 </div>
             </footer>

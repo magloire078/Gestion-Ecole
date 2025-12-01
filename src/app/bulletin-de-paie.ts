@@ -20,23 +20,18 @@ export type OrganizationSettings = {
 
 export type Employe = {
   id: string;
-  matricule: string;
   name: string;
-  lastName?: string;
-  firstName?: string;
-  poste: string; 
-  departmentId?: string;
-  status: 'Actif' | 'En congé' | 'Licencié' | 'Retraité' | 'Décédé';
-  photoUrl: string;
+  matricule?: string;
+  role: string; 
+  status: 'Actif' | 'Inactif';
   
   // Personal Info
   email?: string;
-  Date_Naissance?: string;
   situationMatrimoniale?: string;
   enfants?: number;
 
   // Professional Info
-  dateEmbauche?: string;
+  hireDate?: string;
   
   // Payroll Info
   baseSalary?: number;
@@ -135,7 +130,7 @@ function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text
 export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings): Promise<PayslipDetails> {
     const { baseSalary = 0, ...otherFields } = employee;
     
-    const seniorityInfo = calculateSeniority(employee.dateEmbauche || '', payslipDate);
+    const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);
     
     let primeAnciennete = 0;
     if (seniorityInfo.years >= 2) {
@@ -230,15 +225,14 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     const numeroCompteComplet = [employee.CB, employee.CG, employee.numeroCompte, employee.Cle_RIB].filter(Boolean).join(' ');
 
-    const formattedDateEmbauche = employee.dateEmbauche && isValid(parseISO(employee.dateEmbauche)) 
-        ? format(parseISO(employee.dateEmbauche), 'dd MMMM yyyy', { locale: fr })
+    const formattedDateEmbauche = employee.hireDate && isValid(parseISO(employee.hireDate)) 
+        ? format(parseISO(employee.hireDate), 'dd MMMM yyyy', { locale: fr })
         : 'N/A';
 
     const employeeInfoWithStaticData: Employe & { numeroCompteComplet?: string } = {
         ...employee,
-        poste: employee.poste || (employee as any).role, // fallback to role
-        dateEmbauche: formattedDateEmbauche,
-        departmentId: employee.departmentId || 'Non spécifié',
+        role: employee.role,
+        hireDate: formattedDateEmbauche,
         anciennete: seniorityInfo.text,
         categorie: employee.categorie || 'Catégorie',
         cnpsEmployeur: organizationLogos.cnpsEmployeur,
