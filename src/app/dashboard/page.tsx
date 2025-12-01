@@ -7,13 +7,12 @@ import { Users, BookUser, BookOpen, Landmark, UserPlus, TrendingUp, TrendingDown
 import { PerformanceChart } from '@/components/performance-chart';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, doc, getDoc, collectionGroup } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, collectionGroup, where } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { AccountingTransaction } from '@/lib/data';
-import { useRouter } from 'next/navigation';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface Book {
@@ -44,49 +43,10 @@ type Activity = {
     date: Date;
 };
 
-function AuthProtectionLoader() {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg font-semibold">Chargement...</p>
-          <p className="text-muted-foreground">Vérification de votre compte et de votre école.</p>
-        </div>
-      </div>
-    );
-}
-
 export default function DashboardPage() {
   const isMounted = useHydrationFix();
-  const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
-  const router = useRouter();
-  const [authStatus, setAuthStatus] = useState<'loading' | 'onboarding' | 'authenticated' | 'unauthenticated'>('loading');
-
   const { schoolId, loading: schoolLoading } = useSchoolData();
-
-  useEffect(() => {
-    if (userLoading) return;
-
-    if (!user) {
-      setAuthStatus('unauthenticated');
-      router.push('/login');
-      return;
-    }
-
-    const userDocRef = doc(firestore, 'utilisateurs', user.uid);
-    getDoc(userDocRef).then(docSnap => {
-      if (docSnap.exists()) {
-        setAuthStatus('authenticated');
-      } else {
-        setAuthStatus('onboarding');
-        router.push('/onboarding');
-      }
-    }).catch(error => {
-      console.error("Error checking onboarding status:", error);
-      setAuthStatus('onboarding');
-      router.push('/onboarding');
-    });
-  }, [user, userLoading, router, firestore]);
 
   // --- Data for Stats Cards ---
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
@@ -95,9 +55,8 @@ export default function DashboardPage() {
   const libraryQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/bibliotheque`) : null, [firestore, schoolId]);
   const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`)) : null, [firestore, schoolId]);
 
-
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection(classesQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const { data: libraryData, loading: libraryLoading } = useCollection(libraryQuery);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
@@ -112,15 +71,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function fetchAllGrades() {
-      if (!schoolId) {
+      if (!schoolId || !firestore) {
         setAllGrades([]);
         setGradesLoading(false);
         return;
       }
       
       setGradesLoading(true);
-      const schoolRef = doc(firestore, "ecoles", schoolId);
-      const gradesQuery = query(collectionGroup(firestore, 'notes'), where('__name__', '>=', schoolRef.path + '/'), where('__name__', '<', schoolRef.path + '0'));
+      
+      // Correctly create a reference to the school's path for the query
+      const schoolPath = `ecoles/${schoolId}`;
+      const gradesQuery = query(collectionGroup(firestore, 'notes'), where('__name__', '>=', `${schoolPath}/`), where('__name__', '<', `${schoolPath}0`));
 
       try {
         const querySnapshot = await getDocs(gradesQuery);
@@ -194,7 +155,6 @@ export default function DashboardPage() {
   
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
-
   const stats = [
     { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, color: 'text-sky-500', loading: schoolLoading || studentsLoading },
     { title: 'Enseignants', value: teachersData?.length ?? 0, icon: BookUser, color: 'text-emerald-500', loading: schoolLoading || teachersLoading },
@@ -204,10 +164,6 @@ export default function DashboardPage() {
   
   const overallLoading = schoolLoading || studentsLoading || teachersLoading || classesLoading || libraryLoading || transactionsLoading;
   const activityLoading = recentStudentsLoading || recentBooksLoading;
-
-  if (authStatus !== 'authenticated') {
-    return <AuthProtectionLoader />;
-  }
 
   return (
     <div className="space-y-6">

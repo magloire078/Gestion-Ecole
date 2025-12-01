@@ -12,12 +12,14 @@ export const useAuthProtection = () => {
 
     useEffect(() => {
         if (userLoading) {
-            return; // Attendre la fin du chargement de l'utilisateur
+            return; // Wait for user loading to finish
         }
 
         if (!user) {
             router.push('/login');
         } else {
+            // This is where you might check for onboarding status if needed
+            // For now, if there's a user, we assume they are authenticated.
             setIsLoading(false);
         }
     }, [user, userLoading, router]);

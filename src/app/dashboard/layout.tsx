@@ -8,17 +8,66 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useUser, useFirestore } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { doc, getDoc } from 'firebase/firestore';
 
+function AuthProtectionLoader() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center">
+      <div className="text-center">
+        <p className="text-lg font-semibold">Chargement...</p>
+        <p className="text-muted-foreground">
+          Vérification de votre compte et de votre école.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading, AuthProtectionLoader } = useAuthProtection();
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const [authStatus, setAuthStatus] = useState<
+    'loading' | 'onboarding' | 'authenticated'
+  >('loading');
 
-  if (isLoading) {
+  useEffect(() => {
+    if (userLoading) {
+      return;
+    }
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    // Check if user has completed onboarding
+    const userRootRef = doc(firestore, 'utilisateurs', user.uid);
+    getDoc(userRootRef)
+      .then((docSnap) => {
+        if (docSnap.exists() && docSnap.data()?.schoolId) {
+          setAuthStatus('authenticated');
+        } else {
+          setAuthStatus('onboarding');
+          router.push('/onboarding');
+        }
+      })
+      .catch((error) => {
+        console.error("Erreur lors de la vérification de l'onboarding:", error);
+        // Redirect to onboarding in case of error as a fallback
+        setAuthStatus('onboarding');
+        router.push('/onboarding');
+      });
+  }, [user, userLoading, firestore, router]);
+
+  if (authStatus !== 'authenticated') {
     return <AuthProtectionLoader />;
   }
 
