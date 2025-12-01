@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -37,7 +38,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
@@ -54,7 +54,7 @@ import { format } from "date-fns";
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Combobox } from "@/components/ui/combobox";
 import { schoolCycles } from "@/lib/data";
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -68,8 +68,16 @@ const feeSchema = z.object({
   installments: z.string().min(1, { message: "Les modalités de paiement sont requises." }),
   details: z.string().optional(),
 });
-
 type FeeFormValues = z.infer<typeof feeSchema>;
+
+const paymentSchema = z.object({
+  paymentDate: z.string().min(1, "La date est requise."),
+  paymentDescription: z.string().min(1, "La description est requise."),
+  paymentAmount: z.coerce.number().positive("Le montant doit être un nombre positif."),
+  payerName: z.string().min(1, "Le nom du payeur est requis."),
+  payerContact: z.string().optional(),
+});
+type PaymentFormValues = z.infer<typeof paymentSchema>;
 
 
 const getImageHintForGrade = (grade: string): string => {
@@ -109,12 +117,6 @@ export default function FeesPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [isManageFeeDialogOpen, setIsManageFeeDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  
-  const [paymentAmount, setPaymentAmount] = useState('');
-  const [paymentDate, setPaymentDate] = useState('');
-  const [paymentDescription, setPaymentDescription] = useState('');
-  const [payerName, setPayerName] = useState('');
-  const [payerContact, setPayerContact] = useState('');
 
   // --- Receipt State ---
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
@@ -129,7 +131,7 @@ export default function FeesPage() {
 
   const { toast } = useToast();
   
-    const form = useForm<FeeFormValues>({
+    const feeForm = useForm<FeeFormValues>({
         resolver: zodResolver(feeSchema),
         defaultValues: {
             grade: '',
@@ -139,33 +141,46 @@ export default function FeesPage() {
         },
     });
 
+    const paymentForm = useForm<PaymentFormValues>({
+        resolver: zodResolver(paymentSchema),
+        defaultValues: {
+            paymentDate: format(new Date(), 'yyyy-MM-dd'),
+            paymentDescription: '',
+            paymentAmount: 0,
+            payerName: '',
+            payerContact: '',
+        }
+    });
+
   useEffect(() => {
     if (isFeeGridDialogOpen && editingFee) {
-        form.reset({
+        feeForm.reset({
             grade: editingFee.grade,
             amount: editingFee.amount,
             installments: editingFee.installments,
             details: editingFee.details || '',
         });
     } else {
-        form.reset({
+        feeForm.reset({
             grade: '',
             amount: '',
             installments: '',
             details: '',
         });
     }
-  }, [isFeeGridDialogOpen, editingFee, form]);
+  }, [isFeeGridDialogOpen, editingFee, feeForm]);
   
   useEffect(() => {
-    if (selectedStudent) {
-        setPaymentAmount('');
-        setPaymentDescription(`Scolarité - ${selectedStudent.name}`);
-        setPaymentDate(format(new Date(), 'yyyy-MM-dd'));
-        setPayerName(selectedStudent.parent1Name || '');
-        setPayerContact(selectedStudent.parent1Contact || '');
+    if (selectedStudent && isManageFeeDialogOpen) {
+        paymentForm.reset({
+            paymentAmount: undefined,
+            paymentDescription: `Scolarité - ${selectedStudent.name}`,
+            paymentDate: format(new Date(), 'yyyy-MM-dd'),
+            payerName: selectedStudent.parent1Name || '',
+            payerContact: selectedStudent.parent1Contact || '',
+        });
     }
-  }, [selectedStudent]);
+  }, [selectedStudent, isManageFeeDialogOpen, paymentForm]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -185,26 +200,17 @@ export default function FeesPage() {
     setIsManageFeeDialogOpen(true);
   };
   
-  const handleSaveChanges = async () => {
-    if (!selectedStudent || !schoolId || !paymentAmount || !paymentDate || !payerName) {
+  const handleSaveChanges = async (values: PaymentFormValues) => {
+    if (!selectedStudent || !schoolId) {
         toast({
             variant: "destructive",
             title: "Erreur",
-            description: "Veuillez entrer un montant, une date et le nom du payeur."
+            description: "Étudiant ou école non sélectionné."
         });
         return;
     }
 
-    const amountPaid = parseFloat(paymentAmount);
-    if (isNaN(amountPaid) || amountPaid <= 0) {
-        toast({
-            variant: "destructive",
-            title: "Montant invalide",
-            description: "Le montant du paiement doit être un nombre positif."
-        });
-        return;
-    }
-    
+    const amountPaid = values.paymentAmount;
     const newAmountDue = selectedStudent.amountDue - amountPaid;
     const newStatus: TuitionStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
     
@@ -222,8 +228,8 @@ export default function FeesPage() {
     const accountingColRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
     const newTransactionRef = doc(accountingColRef);
     const accountingData = {
-        date: paymentDate,
-        description: paymentDescription || `Paiement scolarité pour ${selectedStudent.name}`,
+        date: values.paymentDate,
+        description: values.paymentDescription || `Paiement scolarité pour ${selectedStudent.name}`,
         category: 'Scolarité',
         type: 'Revenu' as 'Revenu' | 'Dépense',
         amount: amountPaid,
@@ -233,12 +239,12 @@ export default function FeesPage() {
     // 3. Create payment history entry
     const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}/paiements`));
     const paymentHistoryData = {
-        date: paymentDate,
+        date: values.paymentDate,
         amount: amountPaid,
-        description: paymentDescription,
+        description: values.paymentDescription,
         accountingTransactionId: newTransactionRef.id,
-        payerName: payerName,
-        payerContact: payerContact,
+        payerName: values.payerName,
+        payerContact: values.payerContact,
     };
     batch.set(paymentHistoryRef, paymentHistoryData);
     
@@ -256,12 +262,12 @@ export default function FeesPage() {
             studentName: selectedStudent.name,
             studentMatricule: selectedStudent.matricule || 'N/A',
             className: selectedStudent.class,
-            date: new Date(paymentDate),
-            description: paymentDescription,
+            date: new Date(values.paymentDate),
+            description: values.paymentDescription,
             amountPaid: amountPaid,
             amountDue: newAmountDue,
-            payerName: payerName,
-            payerContact: payerContact,
+            payerName: values.payerName,
+            payerContact: values.payerContact,
         });
 
         setIsManageFeeDialogOpen(false);
@@ -526,72 +532,79 @@ export default function FeesPage() {
               Le solde actuel est de <strong>{formatCurrency(selectedStudent?.amountDue || 0)}</strong>.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="payment-date" className="text-right">
-                Date
-              </Label>
-              <Input
-                id="payment-date"
-                type="date"
-                value={paymentDate}
-                onChange={(e) => setPaymentDate(e.target.value)}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="payment-description" className="text-right">
-                Description
-              </Label>
-              <Input
-                id="payment-description"
-                value={paymentDescription}
-                onChange={(e) => setPaymentDescription(e.target.value)}
-                className="col-span-3"
-                placeholder="Ex: Paiement 1ère tranche"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="payment-amount" className="text-right">
-                Montant Payé
-              </Label>
-              <Input
-                id="payment-amount"
-                type="number"
-                value={paymentAmount}
-                onChange={(e) => setPaymentAmount(e.target.value)}
-                className="col-span-3"
-                placeholder="Ex: 50000"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="payer-name" className="text-right">
-                Payé par
-              </Label>
-              <Input
-                id="payer-name"
-                value={payerName}
-                onChange={(e) => setPayerName(e.target.value)}
-                className="col-span-3"
-                placeholder="Nom de la personne qui paie"
-              />
-            </div>
-             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="payer-contact" className="text-right">
-                Contact
-              </Label>
-              <Input
-                id="payer-contact"
-                value={payerContact}
-                onChange={(e) => setPayerContact(e.target.value)}
-                className="col-span-3"
-                placeholder="Contact du payeur (optionnel)"
-              />
-            </div>
-          </div>
+            <Form {...paymentForm}>
+                <form id="payment-form" onSubmit={paymentForm.handleSubmit(handleSaveChanges)} className="grid gap-4 py-4">
+                    <FormField
+                        control={paymentForm.control}
+                        name="paymentDate"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-4 items-center gap-4">
+                                <FormLabel className="text-right">Date</FormLabel>
+                                <FormControl className="col-span-3">
+                                    <Input type="date" {...field} />
+                                </FormControl>
+                                <FormMessage className="col-start-2 col-span-3" />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={paymentForm.control}
+                        name="paymentDescription"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-4 items-center gap-4">
+                                <FormLabel className="text-right">Description</FormLabel>
+                                <FormControl className="col-span-3">
+                                    <Input placeholder="Ex: Paiement 1ère tranche" {...field} />
+                                </FormControl>
+                                <FormMessage className="col-start-2 col-span-3" />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={paymentForm.control}
+                        name="paymentAmount"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-4 items-center gap-4">
+                                <FormLabel className="text-right">Montant Payé</FormLabel>
+                                <FormControl className="col-span-3">
+                                    <Input type="number" placeholder="Ex: 50000" {...field} />
+                                </FormControl>
+                                <FormMessage className="col-start-2 col-span-3" />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={paymentForm.control}
+                        name="payerName"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-4 items-center gap-4">
+                                <FormLabel className="text-right">Payé par</FormLabel>
+                                <FormControl className="col-span-3">
+                                    <Input placeholder="Nom de la personne qui paie" {...field} />
+                                </FormControl>
+                                <FormMessage className="col-start-2 col-span-3" />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={paymentForm.control}
+                        name="payerContact"
+                        render={({ field }) => (
+                            <FormItem className="grid grid-cols-4 items-center gap-4">
+                                <FormLabel className="text-right">Contact</FormLabel>
+                                <FormControl className="col-span-3">
+                                    <Input placeholder="Contact du payeur (optionnel)" {...field} />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </form>
+            </Form>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsManageFeeDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleSaveChanges}>Enregistrer le Paiement</Button>
+            <Button type="submit" form="payment-form" disabled={paymentForm.formState.isSubmitting}>
+                {paymentForm.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer le Paiement'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -603,10 +616,10 @@ export default function FeesPage() {
                 <DialogTitle>{editingFee ? 'Modifier la' : 'Nouvelle'} Grille Tarifaire</DialogTitle>
                 <DialogDescription>Entrez les détails de la grille.</DialogDescription>
             </DialogHeader>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onFeeFormSubmit)} className="grid gap-4 py-4">
+            <Form {...feeForm}>
+                <form onSubmit={feeForm.handleSubmit(onFeeFormSubmit)} className="grid gap-4 py-4">
                     <FormField
-                      control={form.control}
+                      control={feeForm.control}
                       name="grade"
                       render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-center gap-4">
@@ -625,7 +638,7 @@ export default function FeesPage() {
                       )}
                     />
                      <FormField
-                      control={form.control}
+                      control={feeForm.control}
                       name="amount"
                       render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-center gap-4">
@@ -638,7 +651,7 @@ export default function FeesPage() {
                       )}
                     />
                     <FormField
-                      control={form.control}
+                      control={feeForm.control}
                       name="installments"
                       render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-center gap-4">
@@ -651,7 +664,7 @@ export default function FeesPage() {
                       )}
                     />
                      <FormField
-                      control={form.control}
+                      control={feeForm.control}
                       name="details"
                       render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-start gap-4">
@@ -664,8 +677,8 @@ export default function FeesPage() {
                     />
                      <DialogFooter>
                         <Button type="button" variant="outline" onClick={() => setIsFeeGridDialogOpen(false)}>Annuler</Button>
-                        <Button type="submit" disabled={form.formState.isSubmitting}>
-                          {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                        <Button type="submit" disabled={feeForm.formState.isSubmitting}>
+                          {feeForm.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
                         </Button>
                     </DialogFooter>
                 </form>
