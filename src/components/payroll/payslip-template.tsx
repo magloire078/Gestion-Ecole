@@ -30,7 +30,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
             <header className="flex justify-between items-start pb-2 px-2 mb-2">
                 <div className="flex-1 text-center flex flex-col justify-center items-center h-full">
                     <div className='font-bold text-sm leading-tight'>
-                        <p className="whitespace-nowrap">{organizationSettings.organizationName}</p>
+                        <p className="whitespace-nowrap">{organizationSettings.name}</p>
                     </div>
                      {organizationSettings.mainLogoUrl && <img src={organizationSettings.mainLogoUrl} alt="Logo Principal" className="max-h-20 max-w-full h-auto w-auto mt-1" />}
                 </div>
@@ -181,7 +181,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
             {/* Footer */}
             <footer className="pt-2 mt-auto">
                 <div className="leading-tight text-center border-t border-gray-400 pt-1">
-                    <p className="font-bold">{organizationSettings.organizationName}</p>
+                    <p className="font-bold">{organizationSettings.name}</p>
                     <p>{organizationSettings.address}</p>
                     <p>
                         {organizationSettings.phone && <span>Tél: {organizationSettings.phone}</span>}
@@ -192,3 +192,5 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
         </div>
     );
 }
+
+    
