@@ -42,7 +42,6 @@ export type Employe = {
   baseSalary?: number;
   
   // Earnings & Deductions
-  primeAnciennete?: number;
   indemniteTransportImposable?: number;
   indemniteResponsabilite?: number;
   indemniteLogement?: number;
@@ -263,5 +262,3 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         organizationLogos
     };
 }
-
-    
