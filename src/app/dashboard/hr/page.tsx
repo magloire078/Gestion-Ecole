@@ -93,14 +93,6 @@ type StaffFormValues = z.infer<typeof staffSchema>;
 
 interface StaffMember extends Employe {
   id: string;
-  name: string;
-  role: string;
-  email?: string;
-  phone?: string;
-  baseSalary?: number;
-  hireDate: string;
-  poste: string;
-  matricule: string;
 }
 
 function HRContent() {
@@ -267,7 +259,6 @@ function HRContent() {
     
     try {
         const payslipDate = new Date().toISOString();
-        // @ts-ignore
         const details = await getPayslipDetails(staffMember, payslipDate);
         setPayslipDetails(details);
     } catch(e) {
@@ -540,5 +531,3 @@ export default function HRPage() {
     
     return <HRContent />;
 }
-
-    
