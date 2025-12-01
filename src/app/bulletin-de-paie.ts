@@ -183,7 +183,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     const baseCalculITS = brutImposable * 0.8; // Abattement de 20%
     
     // Calcul de l'ITS
-    const its = baseCalculITS * 0.012; // Taux de 1.2% après abattement de 20% (équivalent à 1.5% sur 80% du brut)
+    const its = baseCalculITS * 0.015;
 
     // Calcul de la Contribution Nationale (CN)
     let cn = 0;
@@ -200,13 +200,13 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
     
     const getIGRFromTranche = (revenu: number) => {
         if (revenu <= 25000) return 0;
-        if (revenu <= 46250) return (revenu * 10/110) - 2273;
-        if (revenu <= 73750) return (revenu * 15/115) - 4443;
-        if (revenu <= 121250) return (revenu * 20/120) - 8104;
-        if (revenu <= 203750) return (revenu * 25/125) - 14167;
-        if (revenu <= 346250) return (revenu * 35/135) - 34537;
-        if (revenu <= 843750) return (revenu * 45/145) - 69162;
-        return (revenu * 60/160) - 195703;
+        if (revenu <= 46250) return (revenu * 0.10) - 2500;
+        if (revenu <= 73750) return (revenu * 0.15) - 4812.5;
+        if (revenu <= 121250) return (revenu * 0.20) - 8500;
+        if (revenu <= 203750) return (revenu * 0.25) - 14562.5;
+        if (revenu <= 346250) return (revenu * 0.35) - 35062.5;
+        if (revenu <= 843750) return (revenu * 0.45) - 69687.5;
+        return (revenu * 0.60) - 196250;
     }
     const igr = getIGRFromTranche(Q) * parts;
 
