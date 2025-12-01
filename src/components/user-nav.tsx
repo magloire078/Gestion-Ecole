@@ -56,11 +56,11 @@ export function UserNav() {
 
   const isLoading = userLoading || schoolDataLoading;
 
-  if (isLoading || !isMounted) {
+  if (!isMounted || isLoading) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
-  const displayName = schoolData?.directorName || user?.displayName || 'Utilisateur';
+  const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
   return (
