@@ -51,7 +51,7 @@ import { fr } from "date-fns/locale";
 import { PayslipTemplate } from '@/components/payroll/payslip-template';
 import { useSubscription } from '@/hooks/use-subscription';
 import Link from "next/link";
-import { getPayslipDetails, type Employe, type PayslipDetails } from '@/app/bulletin-de-paie';
+import { getPayslipDetails, type Employe, type PayslipDetails, type OrganizationSettings } from '@/app/bulletin-de-paie';
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -98,7 +98,7 @@ interface StaffMember extends Employe {
 function HRContent() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
   // --- Firestore Data Hooks ---
@@ -259,7 +259,10 @@ function HRContent() {
     
     try {
         const payslipDate = new Date().toISOString();
-        const details = await getPayslipDetails(staffMember, payslipDate);
+        const orgSettings: OrganizationSettings = {
+            organizationName: schoolName
+        };
+        const details = await getPayslipDetails(staffMember, payslipDate, orgSettings);
         setPayslipDetails(details);
     } catch(e) {
         console.error(e);
@@ -531,5 +534,3 @@ export default function HRPage() {
     
     return <HRContent />;
 }
-
-    

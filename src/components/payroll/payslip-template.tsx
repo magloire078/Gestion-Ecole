@@ -121,11 +121,13 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                                     <td className="pr-1 text-right font-mono border-l border-gray-400">{formatCurrency(totals.brutImposable)}</td>
                                     <td className="border-l border-gray-400"></td>
                                 </tr>
-                                <tr>
-                                    <td className="pl-1 h-[21px]">{totals.transportNonImposable.label}</td>
-                                    <td className="pr-1 text-right font-mono border-l border-gray-400">{formatCurrency(totals.transportNonImposable.amount)}</td>
-                                    <td className="border-l border-gray-400"></td>
-                                </tr>
+                                {totals.transportNonImposable.amount > 0 && (
+                                    <tr>
+                                        <td className="pl-1 h-[21px]">{totals.transportNonImposable.label}</td>
+                                        <td className="pr-1 text-right font-mono border-l border-gray-400">{formatCurrency(totals.transportNonImposable.amount)}</td>
+                                        <td className="border-l border-gray-400"></td>
+                                    </tr>
+                                )}
                                 
                                  {deductions.map(item => (
                                     <tr key={item.label}>
@@ -183,18 +185,10 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
 
             {/* Footer */}
             <footer className="pt-2 mt-auto">
-                <div className="flex justify-between items-end">
-                    <div></div>
-                    <div className="leading-tight text-center">
-                        <p className="font-bold">{organizationLogos.organizationName}</p>
-                        <p>Yamoussoukro, Riviera - BP 201 Yamoussoukro | Tél : (225) 30 64 06 60 | Fax : (+255) 30 64 06 63</p>
-                        <p>www.cnrct.ci - Email : info@cnrct.ci</p>
-                    </div>
-                    <div><p className="page-number"></p></div>
+                 <div className="leading-tight text-center">
+                    <p className="font-bold">{organizationLogos.organizationName}</p>
                  </div>
             </footer>
         </div>
     );
 }
-
-    

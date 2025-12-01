@@ -8,10 +8,10 @@ import { numberToWords } from "french-numbers-to-words";
 // ====================================================================================
 
 export type OrganizationSettings = {
-    organizationName: string;
-    mainLogoUrl: string;
-    secondaryLogoUrl: string;
-    faviconUrl: string;
+    organizationName?: string;
+    mainLogoUrl?: string;
+    secondaryLogoUrl?: string;
+    faviconUrl?: string;
     cnpsEmployeur?: string;
 };
 
@@ -21,7 +21,7 @@ export type Employe = {
   name: string;
   lastName?: string;
   firstName?: string;
-  poste: string; // Utilise 'role' de l'entité 'staff'
+  poste: string; 
   departmentId?: string;
   status: 'Actif' | 'En congé' | 'Licencié' | 'Retraité' | 'Décédé';
   photoUrl: string;
@@ -130,7 +130,7 @@ function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text
     };
 }
 
-export async function getPayslipDetails(employee: Employe, payslipDate: string): Promise<PayslipDetails> {
+export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings): Promise<PayslipDetails> {
     const { baseSalary = 0, ...otherFields } = employee;
     
     const seniorityInfo = calculateSeniority(employee.dateEmbauche || '', payslipDate);
@@ -186,11 +186,11 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
     ];
     
     const organizationLogos: OrganizationSettings = {
-        organizationName: "VOTRE ORGANISATION",
-        mainLogoUrl: "https://cnrct.ci/wp-content/uploads/2018/03/logo_chambre.png",
+        organizationName: organizationSettings.organizationName || "VOTRE ORGANISATION",
+        mainLogoUrl: organizationSettings.mainLogoUrl || "https://cnrct.ci/wp-content/uploads/2018/03/logo_chambre.png",
         secondaryLogoUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg/512px-Coat_of_arms_of_C%C3%B4te_d%27Ivoire_%281997-2001_variant%29.svg.png",
         faviconUrl: '',
-        cnpsEmployeur: "320491",
+        cnpsEmployeur: organizationSettings.cnpsEmployeur || "320491",
     };
     
     const numeroCompteComplet = [employee.CB, employee.CG, employee.numeroCompte, employee.Cle_RIB].filter(Boolean).join(' ');
@@ -201,7 +201,7 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
 
     const employeeInfoWithStaticData: Employe & { numeroCompteComplet?: string } = {
         ...employee,
-        poste: employee.poste || employee.role, // fallback to role
+        poste: employee.poste || (employee as any).role, // fallback to role
         dateEmbauche: formattedDateEmbauche,
         departmentId: employee.departmentId || 'Non spécifié',
         anciennete: seniorityInfo.text,
@@ -227,5 +227,3 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string):
         organizationLogos
     };
 }
-
-    
