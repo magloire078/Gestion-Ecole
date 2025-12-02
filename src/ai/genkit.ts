@@ -6,7 +6,7 @@
  * This file initializes and a new Genkit instance that is used throughout the application.
  */
 
-import {genkit} from 'genkit';
+import {genkit} from '@genkit-ai/core';
 import {googleAI} from '@genkit-ai/google-genai';
 
 /**

@@ -8,7 +8,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import {z} from '@genkit-ai/core';
 
 // Input Schema
 export const GenerateTeacherRecommendationsInputSchema = z.object({

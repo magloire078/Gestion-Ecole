@@ -1,6 +1,6 @@
 'use server';
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
+import {z} from '@genkit-ai/core';
 
 export const AnalyzeAndSummarizeFeedbackInputSchema = z.object({
   feedbackText: z.string().describe('The feedback text to analyze.'),
