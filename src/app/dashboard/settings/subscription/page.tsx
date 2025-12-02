@@ -3,48 +3,45 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Zap } from "lucide-react";
+import { CheckCircle, Zap, AlertCircle } from "lucide-react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function SubscriptionPage() {
     const { schoolName, loading: schoolLoading } = useSchoolData();
     const { subscription, updateSubscription, loading: subscriptionLoading } = useSubscription();
     const { toast } = useToast();
     const isLoading = schoolLoading || subscriptionLoading;
+    const [error, setError] = useState<string | null>(null);
 
     const handleUpgrade = async () => {
+        setError(null);
         try {
             await updateSubscription({ plan: 'Pro', status: 'active' });
             toast({
                 title: 'Mise à niveau réussie !',
                 description: 'Votre école a maintenant accès à toutes les fonctionnalités Pro.',
             });
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Erreur de mise à niveau',
-                description: 'Une erreur est survenue. Veuillez réessayer.',
-            });
+        } catch (err) {
+            setError('Une erreur est survenue. Veuillez réessayer.');
         }
     };
 
     const handleDowngrade = async () => {
+        setError(null);
         try {
             await updateSubscription({ plan: 'Essentiel', status: 'active' });
             toast({
                 title: 'Modification enregistrée',
                 description: 'Votre abonnement a été changé pour le plan Essentiel.',
             });
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: 'Erreur',
-                description: 'Une erreur est survenue. Veuillez réessayer.',
-            });
+        } catch (err) {
+             setError('Une erreur est survenue. Veuillez réessayer.');
         }
     };
 
@@ -63,6 +60,7 @@ export default function SubscriptionPage() {
             isCurrent: subscription?.plan === "Essentiel",
             action: handleDowngrade,
             actionLabel: "Votre Plan Actuel",
+            buttonDisabled: subscription?.plan === "Essentiel",
         },
         {
             name: "Pro",
@@ -78,6 +76,7 @@ export default function SubscriptionPage() {
             isCurrent: subscription?.plan === "Pro",
             action: handleUpgrade,
             actionLabel: "Passer au Plan Pro",
+            buttonDisabled: subscription?.plan === "Pro",
         }
     ];
 
@@ -112,7 +111,7 @@ export default function SubscriptionPage() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <span>{plan.name}</span>
-                                {plan.isCurrent && <Badge variant="default" className="text-xs">Plan</Badge>}
+                                {plan.isCurrent && <Badge variant="default" className="text-xs">Plan Actuel</Badge>}
                             </CardTitle>
                             <CardDescription>{plan.description}</CardDescription>
                         </CardHeader>
@@ -130,14 +129,23 @@ export default function SubscriptionPage() {
                              </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" onClick={plan.action} disabled={plan.isCurrent}>
+                            <Button className="w-full" onClick={plan.action} disabled={plan.buttonDisabled}>
                                 {plan.name === 'Pro' && !plan.isCurrent && <Zap className="mr-2 h-4 w-4" />}
-                                {plan.actionLabel}
+                                {plan.isCurrent ? "Votre Plan Actuel" : "Passer au Plan Pro"}
                             </Button>
                         </CardFooter>
                     </Card>
                 ))}
             </div>
+            {error && (
+                <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Erreur de mise à niveau</AlertTitle>
+                    <AlertDescription>
+                        {error}
+                    </AlertDescription>
+                </Alert>
+            )}
         </div>
     )
 }
