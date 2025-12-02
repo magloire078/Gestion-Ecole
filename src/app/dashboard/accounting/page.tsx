@@ -58,7 +58,6 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AccountingCharts } from "./charts";
 import type { AccountingTransaction } from '@/lib/data';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -312,8 +311,6 @@ export default function AccountingPage() {
             Suivez les revenus, les dépenses et la santé financière de votre école.
           </p>
         </div>
-        
-        <AccountingCharts transactions={transactions} />
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
@@ -409,5 +406,3 @@ export default function AccountingPage() {
     </>
   );
 }
-
-    

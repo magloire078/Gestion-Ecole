@@ -14,6 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { AccountingTransaction } from '@/lib/data';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { AccountingCharts } from './accounting/charts';
 
 interface Book {
     id: string;
@@ -221,8 +222,10 @@ export default function DashboardPage() {
                 </CardContent>
             </Card>
         </div>
+        
+        { transactions.length > 0 && <AccountingCharts transactions={transactions} /> }
 
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
           <PerformanceChart grades={allGrades} loading={gradesLoading} />
           <Card className="col-span-1 lg:col-span-3">
               <CardHeader>
