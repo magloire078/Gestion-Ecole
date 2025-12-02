@@ -136,6 +136,7 @@ export type payment = {
     accountingTransactionId: string;
     payerName: string;
     payerContact: string;
+    method: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
 };
 
 export type libraryBook = {

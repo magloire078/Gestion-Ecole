@@ -58,6 +58,7 @@ interface PaymentHistoryEntry {
     accountingTransactionId: string;
     payerName: string;
     payerContact?: string;
+    method?: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
 }
 
 interface Teacher {
@@ -201,6 +202,7 @@ export default function StudentProfilePage() {
         amountDue: amountDueAtTimeOfPayment,
         payerName: payment.payerName,
         payerContact: payment.payerContact,
+        paymentMethod: payment.method,
     };
     setReceiptToView(receipt);
     setIsReceiptOpen(true);
@@ -423,6 +425,7 @@ export default function StudentProfilePage() {
                                 <TableRow>
                                     <TableHead>Date</TableHead>
                                     <TableHead>Description</TableHead>
+                                    <TableHead>Mode</TableHead>
                                     <TableHead className="text-right">Montant</TableHead>
                                     <TableHead className="text-right">Action</TableHead>
                                 </TableRow>
@@ -433,6 +436,7 @@ export default function StudentProfilePage() {
                                         <TableRow key={payment.id}>
                                             <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
                                             <TableCell>{payment.description}</TableCell>
+                                            <TableCell>{payment.method}</TableCell>
                                             <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
@@ -443,7 +447,7 @@ export default function StudentProfilePage() {
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={4} className="text-center h-24">Aucun paiement enregistré.</TableCell>
+                                        <TableCell colSpan={5} className="text-center h-24">Aucun paiement enregistré.</TableCell>
                                     </TableRow>
                                 )}
                             </TableBody>

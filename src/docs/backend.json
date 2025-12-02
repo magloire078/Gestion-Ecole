@@ -197,9 +197,10 @@
         "description": { "type": "string", "description": "Description du paiement (ex: 1ère tranche)." },
         "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." },
         "payerName": { "type": "string", "description": "Le nom de la personne qui a effectué le paiement." },
-        "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." }
+        "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." },
+        "method": { "type": "string", "enum": ["Espèces", "Chèque", "Virement Bancaire", "Paiement Mobile"], "description": "Le mode de paiement utilisé." }
       },
-      "required": ["date", "amount", "description", "accountingTransactionId", "payerName"]
+      "required": ["date", "amount", "description", "accountingTransactionId", "payerName", "method"]
     },
     "libraryBook": {
         "title": "Livre de Bibliothèque",

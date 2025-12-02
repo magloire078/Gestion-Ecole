@@ -76,6 +76,7 @@ const paymentSchema = z.object({
   paymentAmount: z.coerce.number().positive("Le montant doit être un nombre positif."),
   payerName: z.string().min(1, "Le nom du payeur est requis."),
   payerContact: z.string().optional(),
+  paymentMethod: z.string().min(1, "Le mode de paiement est requis."),
 });
 type PaymentFormValues = z.infer<typeof paymentSchema>;
 
@@ -152,6 +153,7 @@ export default function FeesPage() {
             paymentAmount: 0,
             payerName: '',
             payerContact: '',
+            paymentMethod: 'Espèces',
         }
     });
 
@@ -181,6 +183,7 @@ export default function FeesPage() {
             paymentDate: format(new Date(), 'yyyy-MM-dd'),
             payerName: selectedStudent.parent1Name || '',
             payerContact: selectedStudent.parent1Contact || '',
+            paymentMethod: 'Espèces',
         });
     }
   }, [selectedStudent, isManageFeeDialogOpen, paymentForm]);
@@ -248,6 +251,7 @@ export default function FeesPage() {
         accountingTransactionId: newTransactionRef.id,
         payerName: values.payerName,
         payerContact: values.payerContact,
+        method: values.paymentMethod,
     };
     batch.set(paymentHistoryRef, paymentHistoryData);
     
@@ -271,6 +275,7 @@ export default function FeesPage() {
             amountDue: newAmountDue,
             payerName: values.payerName,
             payerContact: values.payerContact,
+            paymentMethod: values.paymentMethod,
         });
 
         setIsManageFeeDialogOpen(false);
@@ -588,6 +593,29 @@ export default function FeesPage() {
                                 <FormMessage className="col-start-2 col-span-3" />
                             </FormItem>
                         )}
+                    />
+                     <FormField
+                      control={paymentForm.control}
+                      name="paymentMethod"
+                      render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                          <FormLabel className="text-right">Mode</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl className="col-span-3">
+                              <SelectTrigger>
+                                <SelectValue placeholder="Mode de paiement" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Espèces">Espèces</SelectItem>
+                              <SelectItem value="Chèque">Chèque</SelectItem>
+                              <SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem>
+                              <SelectItem value="Paiement Mobile">Paiement Mobile</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
+                      )}
                     />
                      <FormField
                         control={paymentForm.control}

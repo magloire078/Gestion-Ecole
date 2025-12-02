@@ -20,6 +20,7 @@ export interface ReceiptData {
   amountDue: number;
   payerName: string;
   payerContact?: string;
+  paymentMethod?: string;
 }
 
 interface TuitionReceiptProps {
@@ -101,12 +102,14 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
                     <thead className="bg-muted">
                         <tr>
                             <th className="p-2 text-left font-semibold">Description</th>
+                            <th className="p-2 text-center font-semibold">Mode de paiement</th>
                             <th className="p-2 text-right font-semibold">Montant Payé</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td className="p-2 border-b">{receiptData.description}</td>
+                            <td className="p-2 border-b text-center">{receiptData.paymentMethod}</td>
                             <td className="p-2 border-b text-right font-mono">{formatCurrency(receiptData.amountPaid)}</td>
                         </tr>
                     </tbody>
@@ -141,5 +144,3 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
     </div>
   );
 };
-
-    
