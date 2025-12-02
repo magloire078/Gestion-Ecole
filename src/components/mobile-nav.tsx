@@ -52,15 +52,17 @@ const financialLinks = [
 ];
 
 const settingsLinks = [
+    { href: '/dashboard/settings', label: 'Général', icon: FolderCog },
     { href: '/dashboard/settings/subscription', label: 'Abonnement', icon: Wallet },
 ]
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
+    const isActive = href === '/dashboard/settings' ? pathname === href : pathname.startsWith(href);
     return (
         <Link
             href={href}
-            className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname.startsWith(href) && "text-foreground font-semibold")}
+            className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", isActive && "text-foreground font-semibold")}
         >
             <Icon className="h-5 w-5" />
             {label}
@@ -76,6 +78,9 @@ export function MobileNav() {
   
   const isLinkActive = (links: {href: string, pro?: boolean}[]) => links.some(link => {
       if (link.pro && !isProPlan) return false;
+      if (link.href === '/dashboard/settings') {
+          return pathname === link.href;
+      }
       return pathname.startsWith(link.href)
   });
 
@@ -85,7 +90,7 @@ export function MobileNav() {
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
-    if (pathname.startsWith('/dashboard/settings')) openValues.push('settings');
+    if (isLinkActive(settingsLinks)) openValues.push('settings');
     return openValues;
   }
 
@@ -148,13 +153,6 @@ export function MobileNav() {
                        <span className='flex items-center gap-3'><Settings className="h-5 w-5" />Paramètres</span>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
-                        <Link
-                          href="/dashboard/settings"
-                          className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname === '/dashboard/settings' && "font-semibold text-foreground")}
-                        >
-                          <FolderCog className="h-5 w-5" />
-                          Général
-                        </Link>
                        {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
                     </AccordionContent>
                 </AccordionItem>

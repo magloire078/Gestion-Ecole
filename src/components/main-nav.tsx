@@ -61,10 +61,11 @@ const settingsLinks = [
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
+    const isActive = href === '/dashboard/settings' ? pathname === href : pathname.startsWith(href);
     return (
         <Link
             href={href}
-            className={cn(navClass, pathname.startsWith(href) && activeClass)}
+            className={cn(navClass, isActive && activeClass)}
         >
             <Icon className="h-4 w-4" />
             {label}
@@ -80,6 +81,10 @@ export function MainNav() {
   
   const isLinkActive = (links: {href: string, pro?: boolean}[]) => links.some(link => {
       if (link.pro && !isProPlan) return false;
+      // Handle exact match for settings root
+      if (link.href === '/dashboard/settings') {
+          return pathname === link.href;
+      }
       return pathname.startsWith(link.href)
   });
 
@@ -89,7 +94,7 @@ export function MainNav() {
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
-    if (pathname.startsWith('/dashboard/settings')) openValues.push('settings');
+    if (isLinkActive(settingsLinks)) openValues.push('settings');
     return openValues;
   }
 
