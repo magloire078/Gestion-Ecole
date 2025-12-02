@@ -36,7 +36,7 @@ const mySchoolLinks = [
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
-const administrativeLinks = [
+const inscription1Links = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
   { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser },
 ];
@@ -78,7 +78,7 @@ export function MainNav() {
   const getDefaultOpenValues = () => {
     const openValues = [];
     if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
-    if (isLinkActive(administrativeLinks)) openValues.push('administration');
+    if (isLinkActive(inscription1Links)) openValues.push('inscription-1');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
     if (pathname.startsWith('/dashboard/settings')) openValues.push('settings');
@@ -106,12 +106,12 @@ export function MainNav() {
             </AccordionContent>
           </AccordionItem>
           
-          <AccordionItem value="administration" className="border-b-0">
+          <AccordionItem value="inscription-1" className="border-b-0">
             <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                <span className='flex items-center gap-3'><FolderCog className="h-4 w-4" /> Administration</span>
+                <span className='flex items-center gap-3'><UserPlus className="h-4 w-4" /> Inscription 1</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
-              {administrativeLinks.map(item => <NavLink key={item.href} {...item} />)}
+              {inscription1Links.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
 
