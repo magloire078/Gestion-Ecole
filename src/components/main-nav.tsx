@@ -11,7 +11,7 @@ import {
     FileText, 
     Landmark, 
     UserPlus, 
-    ClipboardUser, 
+    ClipboardUser,
     GraduationCap, 
     School, 
     FolderCog, 
