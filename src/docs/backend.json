@@ -31,6 +31,7 @@
         "properties": {
             "name": { "type": "string", "description": "Le nom de l'établissement." },
             "matricule": { "type": "string", "description": "Le numéro matricule de l'établissement." },
+            "cnpsEmployeur": { "type": "string", "description": "Le numéro d'immatriculation CNPS de l'école." },
             "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
             "directorName": { "type": "string", "description": "Le nom du directeur de l'école." },
             "directorPhone": { "type": "string", "description": "Le numéro de téléphone du directeur." },
@@ -39,6 +40,7 @@
             "address": { "type": "string", "description": "Adresse de l'école." },
             "phone": { "type": "string", "description": "Numéro de téléphone de l'école." },
             "website": { "type": "string", "description": "Site web de l'école." },
+            "mainLogoUrl": { "type": "string", "format": "uri", "description": "URL du logo principal de l'école." },
             "subscription": {
                 "type": "object",
                 "description": "Détails de l'abonnement de l'école.",

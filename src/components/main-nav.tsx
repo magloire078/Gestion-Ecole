@@ -24,7 +24,8 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
+} from "@/components/ui/accordion";
+import { useSubscription } from '@/hooks/use-subscription';
 
 
 const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary text-sm";
@@ -39,7 +40,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser },
+  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser, pro: true },
 ];
 
 const pedagogicalLinks = [
@@ -73,6 +74,9 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MainNav() {
   const pathname = usePathname();
+  const { subscription } = useSubscription();
+
+  const isProPlan = subscription?.plan === 'Pro';
   
   const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
 
@@ -112,7 +116,10 @@ export function MainNav() {
                 <span className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
-              {administrationLinks.map(item => <NavLink key={item.href} {...item} />)}
+              {administrationLinks.map(item => {
+                if (item.pro && !isProPlan) return null;
+                return <NavLink key={item.href} {...item} />
+              })}
             </AccordionContent>
           </AccordionItem>
 

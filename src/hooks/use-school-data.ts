@@ -20,6 +20,7 @@ interface SchoolData extends DocumentData {
     directorPhone?: string;
     schoolCode?: string;
     matricule?: string;
+    mainLogoUrl?: string;
     subscription?: Subscription;
 }
 
@@ -120,6 +121,7 @@ export function useSchoolData() {
         schoolName: schoolData?.name,
         directorName: schoolData?.directorName,
         subscription: schoolData?.subscription,
+        mainLogoUrl: schoolData?.mainLogoUrl,
         loading, 
         updateSchoolData 
     };

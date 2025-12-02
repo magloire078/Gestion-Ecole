@@ -26,6 +26,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { useSubscription } from '@/hooks/use-subscription';
 
 
 const mySchoolLinks = [
@@ -37,7 +38,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser },
+  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser, pro: true },
 ];
 
 const pedagogicalLinks = [
@@ -70,6 +71,9 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { subscription } = useSubscription();
+  const isProPlan = subscription?.plan === 'Pro';
+  
   const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
 
   const getDefaultOpenValues = () => {
@@ -111,7 +115,10 @@ export function MobileNav() {
                        <span className='flex items-center gap-3'><Briefcase className="h-5 w-5" />Administration</span>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
-                        {administrationLinks.map(item => <NavLink key={item.href} {...item} />)}
+                        {administrationLinks.map(item => {
+                          if (item.pro && !isProPlan) return null;
+                          return <NavLink key={item.href} {...item} />
+                        })}
                     </AccordionContent>
                 </AccordionItem>
              
