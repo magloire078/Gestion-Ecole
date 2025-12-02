@@ -78,7 +78,10 @@ export function MainNav() {
 
   const isProPlan = subscription?.plan === 'Pro';
   
-  const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
+  const isLinkActive = (links: {href: string, pro?: boolean}[]) => links.some(link => {
+      if (link.pro && !isProPlan) return false;
+      return pathname.startsWith(link.href)
+  });
 
   const getDefaultOpenValues = () => {
     const openValues = [];

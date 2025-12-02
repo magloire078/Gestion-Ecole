@@ -17,7 +17,7 @@ export type user_root = {
 export type school = {
     name: string;
     matricule: string;
-    cnpsEmployeur?: string;
+    cnpsEmployeur: string;
     directorId: string;
     directorName: string;
     directorPhone: string;
@@ -26,7 +26,7 @@ export type school = {
     address: string;
     phone: string;
     website: string;
-    mainLogoUrl?: string;
+    mainLogoUrl: string;
     subscription: {
         plan: "Essentiel" | "Pro";
         status: "active" | "trialing" | "past_due" | "canceled";
