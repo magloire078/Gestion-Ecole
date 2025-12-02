@@ -69,7 +69,7 @@ export default function RegistrationPage() {
     resolver: zodResolver(registrationSchema),
     defaultValues: {
         name: '',
-        matricule: `E-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+        matricule: '',
         dateOfBirth: '',
         placeOfBirth: '',
         gender: '',
