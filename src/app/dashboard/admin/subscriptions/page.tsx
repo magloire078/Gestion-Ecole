@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useToast } from "@/hooks/use-toast";
+
 
 interface School {
     id: string;
@@ -22,13 +24,14 @@ interface School {
     };
 }
 
-// IMPORTANT : Remplacez cette valeur par votre propre UID administrateur Firebase
-const ADMIN_UID = "VOTRE_UID_ADMIN_ICI"; 
+// UID de l'administrateur principal de la plateforme
+const ADMIN_UID = "5H3lZic8t7dBa127LclkKrHW03M2"; 
 
 export default function AdminSubscriptionsPage() {
     const { user, loading: userLoading } = useUser();
     const router = useRouter();
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const schoolsQuery = useMemoFirebase(() => query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc')), [firestore]);
     const { data: schoolsData, loading: schoolsLoading } = useCollection(schoolsQuery);
@@ -44,7 +47,7 @@ export default function AdminSubscriptionsPage() {
             });
             router.push('/dashboard');
         }
-    }, [user, userLoading, router]);
+    }, [user, userLoading, router, toast]);
 
     const isLoading = userLoading || schoolsLoading;
 

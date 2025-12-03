@@ -26,8 +26,8 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "./ui/skeleton";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
-// IMPORTANT : Remplacez cette valeur par votre propre UID administrateur Firebase
-const ADMIN_UID = "VOTRE_UID_ADMIN_ICI"; 
+// UID de l'administrateur principal de la plateforme
+const ADMIN_UID = "5H3lZic8t7dBa127LclkKrHW03M2"; 
 
 export function UserNav() {
   const isMounted = useHydrationFix();
