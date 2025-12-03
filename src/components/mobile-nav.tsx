@@ -1,3 +1,4 @@
+
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -16,7 +17,8 @@ import {
     FolderCog, 
     GraduationCap, 
     BookOpen,
-    Briefcase
+    Briefcase,
+    CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -102,7 +104,7 @@ export function MobileNav() {
              <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
                 <AccordionItem value="my-school" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                       <span className='flex items-center gap-3'><School className="h-5 w-5" />Mon École</span>
+                       <div className='flex items-center gap-3'><School className="h-5 w-5" />Mon École</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -111,7 +113,7 @@ export function MobileNav() {
 
                 <AccordionItem value="administration" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                       <span className='flex items-center gap-3'><Briefcase className="h-5 w-5" />Administration</span>
+                       <div className='flex items-center gap-3'><Briefcase className="h-5 w-5" />Administration</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {administrationLinks.map(item => {
@@ -123,7 +125,7 @@ export function MobileNav() {
              
                 <AccordionItem value="pedagogy" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                        <span className='flex items-center gap-3'><GraduationCap className="h-5 w-5" />Pédagogie</span>
+                        <div className='flex items-center gap-3'><GraduationCap className="h-5 w-5" />Pédagogie</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -132,7 +134,7 @@ export function MobileNav() {
                 
                 <AccordionItem value="finance" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                        <span className='flex items-center gap-3'><Landmark className="h-5 w-5" />Finance</span>
+                        <div className='flex items-center gap-3'><Landmark className="h-5 w-5" />Finance</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -142,10 +144,17 @@ export function MobileNav() {
             
             <Link
                 href="/dashboard/settings"
-                className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname.startsWith('/dashboard/settings') && "text-foreground font-semibold")}
+                className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname === '/dashboard/settings' && "text-foreground font-semibold")}
             >
                 <Settings className="h-5 w-5" />
                 Paramètres
+            </Link>
+            <Link
+                href="/dashboard/settings/subscription"
+                className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname === '/dashboard/settings/subscription' && "text-foreground font-semibold")}
+            >
+                <CreditCard className="h-5 w-5" />
+                Abonnement
             </Link>
         </nav>
     </div>
