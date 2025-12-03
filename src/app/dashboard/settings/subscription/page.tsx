@@ -21,19 +21,23 @@ export default function SubscriptionPage() {
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
 
-    const handleDowngrade = async () => {
+    const handlePlanChange = async (newPlan: 'Essentiel' | 'Pro') => {
         setError(null);
         try {
-            await updateSubscription({ plan: 'Essentiel', status: 'active' });
+            await updateSubscription({ plan: newPlan, status: 'active' });
             toast({
-                title: 'Modification enregistrée',
-                description: 'Votre abonnement a été changé pour le plan Essentiel.',
+                title: 'Abonnement mis à jour',
+                description: `Votre abonnement est maintenant sur le plan ${newPlan}.`,
             });
         } catch (err) {
-             setError('Une erreur est survenue. Veuillez réessayer.');
+             setError('Une erreur est survenue lors du changement de plan. Veuillez réessayer.');
         }
     };
-
+    
+    const isCurrentPlan = (planName: 'Essentiel' | 'Pro') => {
+        return subscription?.plan === planName;
+    };
+    
     const plans = [
         {
             name: "Essentiel",
@@ -46,10 +50,6 @@ export default function SubscriptionPage() {
                 "Gestion de la scolarité",
                 "Comptabilité de base",
             ],
-            isCurrent: subscription?.plan === "Essentiel",
-            action: handleDowngrade,
-            actionLabel: "Revenir au plan Essentiel",
-            buttonDisabled: subscription?.plan === "Essentiel",
         },
         {
             name: "Pro",
@@ -62,10 +62,6 @@ export default function SubscriptionPage() {
                 "Fonctionnalités IA (appréciations, etc.)",
                 "Support prioritaire",
             ],
-            isCurrent: subscription?.plan === "Pro",
-            action: () => {}, // L'action est maintenant gérée par le lien
-            actionLabel: "Passer au Plan Pro",
-            buttonDisabled: subscription?.plan === "Pro",
         }
     ];
 
@@ -94,45 +90,66 @@ export default function SubscriptionPage() {
                     Consultez et gérez votre formule d'abonnement pour <strong>{schoolName}</strong>.
                 </p>
             </div>
+            
+            <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Gestion Manuelle</AlertTitle>
+                <AlertDescription>
+                    Après avoir effectué un paiement pour le plan Pro, utilisez le bouton "Passer au Plan Pro" pour activer manuellement les fonctionnalités.
+                </AlertDescription>
+            </Alert>
+            
             <div className="grid gap-8 md:grid-cols-2">
-                {plans.map(plan => (
-                    <Card key={plan.name} className={cn("flex flex-col", plan.isCurrent ? "border-primary" : "")}>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <span>{plan.name}</span>
-                                {plan.isCurrent && <Badge variant="default" className="text-xs">Plan Actuel</Badge>}
-                            </CardTitle>
-                            <CardDescription>{plan.description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4 flex-1">
-                             <div className="text-3xl font-bold">
-                                {plan.price}
-                             </div>
-                             <ul className="space-y-2 text-sm text-muted-foreground">
-                                {plan.features.map(feature => (
-                                    <li key={feature} className="flex items-start gap-2">
-                                        <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                                        <span>{feature}</span>
-                                    </li>
-                                ))}
-                             </ul>
-                        </CardContent>
-                        <CardFooter>
-                           {plan.name === 'Pro' ? (
-                                <Button asChild className="w-full" disabled={plan.buttonDisabled}>
-                                    <Link href="/dashboard/settings/subscription/payment">
-                                        <Zap className="mr-2 h-4 w-4" />
-                                        {plan.isCurrent ? "Votre Plan Actuel" : "Passer au Plan Pro"}
-                                    </Link>
-                                </Button>
-                            ) : (
-                                <Button className="w-full" onClick={plan.action} disabled={plan.buttonDisabled}>
-                                    {plan.isCurrent ? "Votre Plan Actuel" : "Revenir au plan Essentiel"}
-                                </Button>
-                            )}
-                        </CardFooter>
-                    </Card>
-                ))}
+                {plans.map(plan => {
+                    const current = isCurrentPlan(plan.name as 'Essentiel' | 'Pro');
+                    return (
+                        <Card key={plan.name} className={cn("flex flex-col", current ? "border-primary" : "")}>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <span>{plan.name}</span>
+                                    {current && <Badge variant="default" className="text-xs">Plan Actuel</Badge>}
+                                </CardTitle>
+                                <CardDescription>{plan.description}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4 flex-1">
+                                 <div className="text-3xl font-bold">
+                                    {plan.price}
+                                 </div>
+                                 <ul className="space-y-2 text-sm text-muted-foreground">
+                                    {plan.features.map(feature => (
+                                        <li key={feature} className="flex items-start gap-2">
+                                            <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
+                                            <span>{feature}</span>
+                                        </li>
+                                    ))}
+                                 </ul>
+                            </CardContent>
+                            <CardFooter>
+                               {current ? (
+                                    <Button className="w-full" disabled>Votre Plan Actuel</Button>
+                                ) : (
+                                    plan.name === 'Pro' ? (
+                                        <div className="w-full space-y-2">
+                                            <Button className="w-full" onClick={() => handlePlanChange('Pro')}>
+                                                <Zap className="mr-2 h-4 w-4" />
+                                                Activer le Plan Pro
+                                            </Button>
+                                             <Button variant="outline" asChild className="w-full">
+                                                <Link href="/dashboard/settings/subscription/payment">
+                                                    Voir les options de paiement
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <Button className="w-full" onClick={() => handlePlanChange('Essentiel')}>
+                                            Revenir au plan Essentiel
+                                        </Button>
+                                    )
+                                )}
+                            </CardFooter>
+                        </Card>
+                    )
+                })}
             </div>
             {error && (
                 <Alert variant="destructive">
