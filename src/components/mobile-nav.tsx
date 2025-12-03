@@ -51,14 +51,9 @@ const financialLinks = [
   { href: '/dashboard/accounting', label: 'Comptabilité', icon: Landmark },
 ];
 
-const settingsLinks = [
-    { href: '/dashboard/settings', label: 'Général', icon: FolderCog },
-    { href: '/dashboard/settings/subscription', label: 'Abonnement', icon: Wallet },
-]
-
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
-    const isActive = href === '/dashboard/settings' ? pathname === href : pathname.startsWith(href);
+    const isActive = pathname.startsWith(href);
     return (
         <Link
             href={href}
@@ -78,9 +73,6 @@ export function MobileNav() {
   
   const isLinkActive = (links: {href: string, pro?: boolean}[]) => links.some(link => {
       if (link.pro && !isProPlan) return false;
-      if (link.href === '/dashboard/settings') {
-          return pathname === link.href;
-      }
       return pathname.startsWith(link.href)
   });
 
@@ -90,7 +82,6 @@ export function MobileNav() {
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
-    if (isLinkActive(settingsLinks)) openValues.push('settings');
     return openValues;
   }
 
@@ -147,16 +138,15 @@ export function MobileNav() {
                         {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
                     </AccordionContent>
                 </AccordionItem>
-                
-                <AccordionItem value="settings" className="border-b-0">
-                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                       <span className='flex items-center gap-3'><Settings className="h-5 w-5" />Paramètres</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="pl-6 pt-2 space-y-4">
-                       {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
-                    </AccordionContent>
-                </AccordionItem>
             </Accordion>
+            
+            <Link
+                href="/dashboard/settings"
+                className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname.startsWith('/dashboard/settings') && "text-foreground font-semibold")}
+            >
+                <Settings className="h-5 w-5" />
+                Paramètres
+            </Link>
         </nav>
     </div>
   );

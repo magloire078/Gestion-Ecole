@@ -53,15 +53,9 @@ const financialLinks = [
   { href: '/dashboard/accounting', label: 'Comptabilité', icon: Landmark },
 ];
 
-const settingsLinks = [
-    { href: '/dashboard/settings', label: 'Général', icon: FolderCog },
-    { href: '/dashboard/settings/subscription', label: 'Abonnement', icon: Wallet },
-]
-
-
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
-    const isActive = href === '/dashboard/settings' ? pathname === href : pathname.startsWith(href);
+    const isActive = pathname.startsWith(href);
     return (
         <Link
             href={href}
@@ -81,10 +75,6 @@ export function MainNav() {
   
   const isLinkActive = (links: {href: string, pro?: boolean}[]) => links.some(link => {
       if (link.pro && !isProPlan) return false;
-      // Handle exact match for settings root
-      if (link.href === '/dashboard/settings') {
-          return pathname === link.href;
-      }
       return pathname.startsWith(link.href)
   });
 
@@ -94,7 +84,6 @@ export function MainNav() {
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
-    if (isLinkActive(settingsLinks)) openValues.push('settings');
     return openValues;
   }
 
@@ -111,8 +100,8 @@ export function MainNav() {
         
         <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
           <AccordionItem value="my-school" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
-                <School className="h-4 w-4" /> Mon École
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+                <span className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
               {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -120,8 +109,8 @@ export function MainNav() {
           </AccordionItem>
           
           <AccordionItem value="administration" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
-                <Briefcase className="h-4 w-4" /> Administration
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+                <span className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
               {administrationLinks.map(item => {
@@ -132,8 +121,8 @@ export function MainNav() {
           </AccordionItem>
 
           <AccordionItem value="pedagogy" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
-                 <GraduationCap className="h-4 w-4" />Pédagogie
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+                 <span className='flex items-center gap-3'><GraduationCap className="h-4 w-4" />Pédagogie</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
                {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -141,23 +130,24 @@ export function MainNav() {
           </AccordionItem>
           
            <AccordionItem value="finance" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
-                 <Landmark className="h-4 w-4" />Finance
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+                 <span className='flex items-center gap-3'><Landmark className="h-4 w-4" />Finance</span>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
                {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
-          
-           <AccordionItem value="settings" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
-                 <Settings className="h-4 w-4" />Paramètres
-            </AccordionTrigger>
-            <AccordionContent className="pl-4 pt-1 space-y-1">
-               {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
-            </AccordionContent>
-          </AccordionItem>
         </Accordion>
+      </div>
+
+       <div className='space-y-1'>
+          <Link
+            href="/dashboard/settings"
+            className={cn(navClass, pathname.startsWith('/dashboard/settings') && activeClass)}
+            >
+            <Settings className="h-4 w-4" />
+            Paramètres
+          </Link>
       </div>
     </nav>
   );
