@@ -95,7 +95,7 @@ export function MobileNav() {
         <nav className="grid gap-2 text-lg font-medium p-6 flex-1 overflow-y-auto">
             <Link
                 href="/dashboard"
-                className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname === '/dashboard' && "text-foreground font-semibold")}
+                className={cn("flex items-center gap-4 px-2.5 py-2 text-muted-foreground hover:text-foreground font-semibold", pathname === '/dashboard' && "text-foreground")}
             >
                 <LayoutDashboard className="h-5 w-5" />
                 Tableau de Bord
@@ -144,14 +144,14 @@ export function MobileNav() {
             
             <Link
                 href="/dashboard/settings"
-                className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname === '/dashboard/settings' && "text-foreground font-semibold")}
+                className={cn("flex items-center gap-4 px-2.5 py-2 text-muted-foreground hover:text-foreground font-semibold", pathname.startsWith('/dashboard/settings') && !pathname.includes('subscription') && "text-foreground")}
             >
                 <Settings className="h-5 w-5" />
                 Paramètres
             </Link>
             <Link
                 href="/dashboard/settings/subscription"
-                className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", pathname === '/dashboard/settings/subscription' && "text-foreground font-semibold")}
+                className={cn("flex items-center gap-4 px-2.5 py-2 text-muted-foreground hover:text-foreground font-semibold", pathname === '/dashboard/settings/subscription' && "text-foreground")}
             >
                 <CreditCard className="h-5 w-5" />
                 Abonnement

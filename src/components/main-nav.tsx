@@ -94,7 +94,10 @@ export function MainNav() {
       <div className='flex-1 space-y-1'>
         <Link
           href="/dashboard"
-          className={cn(navClass, pathname === '/dashboard' && activeClass)}
+          className={cn(
+            "flex items-center gap-3 rounded-lg px-3 py-[10px] text-muted-foreground transition-all hover:text-primary text-sm font-semibold",
+            pathname === '/dashboard' && "text-primary"
+          )}
         >
           <LayoutDashboard className="h-4 w-4" />
           Tableau de Bord
@@ -145,7 +148,7 @@ export function MainNav() {
        <div className='space-y-1'>
           <Link
             href="/dashboard/settings"
-            className={cn(navClass, pathname === '/dashboard/settings' && activeClass)}
+            className={cn(navClass, pathname.startsWith('/dashboard/settings') && !pathname.includes('subscription') && activeClass)}
             >
             <Settings className="h-4 w-4" />
             Paramètres
