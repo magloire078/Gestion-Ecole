@@ -17,7 +17,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, ShieldCheck } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -25,6 +25,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "./ui/skeleton";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
+
+const ADMIN_UID = "REPLACE_WITH_YOUR_ADMIN_UID"; // Remplacez ceci par votre UID Firebase
 
 export function UserNav() {
   const isMounted = useHydrationFix();
@@ -62,6 +64,7 @@ export function UserNav() {
   
   const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+  const isAdmin = user?.uid === ADMIN_UID;
 
   return (
     <DropdownMenu>
@@ -106,6 +109,17 @@ export function UserNav() {
             </DropdownMenuPortal>
           </DropdownMenuSub>
         </DropdownMenuGroup>
+        {isAdmin && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/admin/subscriptions')}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <span>Admin Abonnements</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+          </>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           Se déconnecter
