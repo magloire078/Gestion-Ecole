@@ -95,7 +95,7 @@ export default function SubscriptionPage() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Gestion Manuelle des Abonnements</AlertTitle>
                 <AlertDescription>
-                    Pour passer au plan Pro, veuillez contacter notre support commercial. Une fois le paiement confirmé, vous pourrez activer le plan Pro sur cette page.
+                    Puisque les paiements sont gérés manuellement, vous pouvez changer de plan ici après confirmation du paiement auprès de notre service commercial.
                 </AlertDescription>
             </Alert>
             
@@ -124,27 +124,18 @@ export default function SubscriptionPage() {
                                     ))}
                                  </ul>
                             </CardContent>
-                            <CardFooter>
-                               {current ? (
-                                   plan.name === 'Pro' ? (
-                                       <Button className="w-full" variant="outline" onClick={() => handlePlanChange('Essentiel')}>
-                                           Revenir au Plan Essentiel
-                                       </Button>
-                                   ) : (
-                                       <Button className="w-full" disabled>Votre Plan Actuel</Button>
-                                   )
+                             <CardFooter>
+                                {current ? (
+                                    <Button className="w-full" disabled>Votre Plan Actuel</Button>
                                 ) : (
-                                    plan.name === 'Pro' ? (
-                                        <Button className="w-full" onClick={() => handlePlanChange('Pro')}>
-                                            <Zap className="mr-2 h-4 w-4" />
-                                            Activer le Plan Pro
-                                        </Button>
-                                    ) : (
-                                        // This case shouldn't be very common (downgrading from a plan you are not on)
-                                        <Button className="w-full" variant="secondary" onClick={() => handlePlanChange('Essentiel')}>
-                                            Passer à Essentiel
-                                        </Button>
-                                    )
+                                    <Button 
+                                        className="w-full" 
+                                        variant={plan.name === 'Pro' ? 'default' : 'secondary'}
+                                        onClick={() => handlePlanChange(plan.name as 'Essentiel' | 'Pro')}
+                                    >
+                                        {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
+                                        Passer au Plan {plan.name}
+                                    </Button>
                                 )}
                             </CardFooter>
                         </Card>
