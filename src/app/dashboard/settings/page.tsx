@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -10,11 +9,13 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy } from "lucide-react";
+import { Copy, AlertCircle } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
 
 const settingsSchema = z.object({
   name: z.string().min(1, { message: "Le nom de l'école est requis." }),
@@ -38,6 +39,7 @@ export default function SettingsPage() {
     loading, 
     updateSchoolData 
   } = useSchoolData();
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -71,6 +73,7 @@ export default function SettingsPage() {
   }, [schoolData, form]);
 
   const handleSaveChanges = async (values: SettingsFormValues) => {
+    setError(null);
     try {
       await updateSchoolData({
         name: values.name,
@@ -88,11 +91,7 @@ export default function SettingsPage() {
         description: "Les informations de l'école ont été mises à jour.",
       });
     } catch (error) {
-       toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: "Impossible d'enregistrer les paramètres. Vérifiez vos permissions.",
-      });
+       setError("Impossible d'enregistrer les paramètres. Vérifiez vos permissions.");
     }
   };
 
@@ -150,6 +149,17 @@ export default function SettingsPage() {
           Gérez les paramètres de votre compte et de votre école.
         </p>
       </div>
+
+       {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSaveChanges)}>
@@ -316,5 +326,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
