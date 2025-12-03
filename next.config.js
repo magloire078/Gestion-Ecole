@@ -56,6 +56,10 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "images.seeklogo.com",
+      },
+      {
+        protocol: "https",
+        hostname: "www.pigroup360.com",
       }
     ],
   },

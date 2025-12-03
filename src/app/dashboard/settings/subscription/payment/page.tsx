@@ -51,7 +51,7 @@ export default function PaymentPage() {
             name: "MTN Mobile Money",
             description: "Payez via votre portefeuille MTN.",
             onClick: () => handleUnavailablePayment("MTN Mobile Money"),
-            logo: "https://i.ibb.co/Ld2sY8w/mtn-momo.png",
+            logo: "https://www.pigroup360.com/wp-content/uploads/2020/09/mtn-mobile-money-logo.jpg",
             actionText: "Payer avec MTN MoMo",
         },
         {
