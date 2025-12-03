@@ -16,6 +16,7 @@ interface Subscription {
 
 interface SchoolData extends DocumentData {
     name?: string;
+    directorId?: string;
     directorName?: string;
     directorPhone?: string;
     schoolCode?: string;
@@ -96,24 +97,29 @@ export function useSchoolData() {
     }, [schoolId, firestore, userLoading]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
-        if (!schoolId) {
-            throw new Error("ID de l'école non disponible. Impossible de mettre à jour.");
+        if (!schoolId || !schoolData) {
+            throw new Error("ID de l'école ou données non disponibles. Impossible de mettre à jour.");
         }
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         
+        const dataToUpdate = {
+            ...data,
+            directorId: schoolData.directorId, // Ensure directorId is always present in the update
+        };
+
         try {
-            await updateDoc(schoolDocRef, data);
+            await updateDoc(schoolDocRef, dataToUpdate);
         } catch (serverError) {
             const permissionError = new FirestorePermissionError({ 
                 path: schoolDocRef.path, 
                 operation: 'update', 
-                requestResourceData: data 
+                requestResourceData: dataToUpdate 
             });
             errorEmitter.emit('permission-error', permissionError);
             throw permissionError;
         }
-    }, [schoolId, firestore]);
+    }, [schoolId, firestore, schoolData]);
 
     return { 
         schoolId, 
