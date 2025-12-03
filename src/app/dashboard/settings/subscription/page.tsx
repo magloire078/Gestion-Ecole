@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from 'next/link';
+import { cn } from "@/lib/utils";
 
 export default function SubscriptionPage() {
     const { schoolName, loading: schoolLoading } = useSchoolData();
@@ -19,18 +21,7 @@ export default function SubscriptionPage() {
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
 
-    const handleUpgrade = async () => {
-        setError(null);
-        try {
-            await updateSubscription({ plan: 'Pro', status: 'active' });
-            toast({
-                title: 'Mise à niveau réussie !',
-                description: 'Votre école a maintenant accès à toutes les fonctionnalités Pro.',
-            });
-        } catch (err) {
-            setError('Une erreur est survenue. Veuillez réessayer.');
-        }
-    };
+    const wavePaymentLink = "https://pay.wave.com/m/M_ci_2Td7SafrFP8R/c/ci/";
 
     const handleDowngrade = async () => {
         setError(null);
@@ -59,7 +50,7 @@ export default function SubscriptionPage() {
             ],
             isCurrent: subscription?.plan === "Essentiel",
             action: handleDowngrade,
-            actionLabel: "Votre Plan Actuel",
+            actionLabel: "Revenir au plan Essentiel",
             buttonDisabled: subscription?.plan === "Essentiel",
         },
         {
@@ -74,7 +65,7 @@ export default function SubscriptionPage() {
                 "Support prioritaire",
             ],
             isCurrent: subscription?.plan === "Pro",
-            action: handleUpgrade,
+            action: () => {}, // L'action est maintenant gérée par le lien
             actionLabel: "Passer au Plan Pro",
             buttonDisabled: subscription?.plan === "Pro",
         }
@@ -129,10 +120,18 @@ export default function SubscriptionPage() {
                              </ul>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full" onClick={plan.action} disabled={plan.buttonDisabled}>
-                                {plan.name === 'Pro' && !plan.isCurrent && <Zap className="mr-2 h-4 w-4" />}
-                                {plan.isCurrent ? "Votre Plan Actuel" : "Passer au Plan Pro"}
-                            </Button>
+                           {plan.name === 'Pro' ? (
+                                <Button asChild className="w-full" disabled={plan.buttonDisabled}>
+                                    <Link href={wavePaymentLink} target="_blank" rel="noopener noreferrer">
+                                        <Zap className="mr-2 h-4 w-4" />
+                                        {plan.isCurrent ? "Votre Plan Actuel" : "Passer au Plan Pro"}
+                                    </Link>
+                                </Button>
+                            ) : (
+                                <Button className="w-full" onClick={plan.action} disabled={plan.buttonDisabled}>
+                                    {plan.isCurrent ? "Votre Plan Actuel" : "Revenir au plan Essentiel"}
+                                </Button>
+                            )}
                         </CardFooter>
                     </Card>
                 ))}
@@ -140,7 +139,7 @@ export default function SubscriptionPage() {
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Erreur de mise à niveau</AlertTitle>
+                    <AlertTitle>Erreur</AlertTitle>
                     <AlertDescription>
                         {error}
                     </AlertDescription>
