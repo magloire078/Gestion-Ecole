@@ -19,7 +19,7 @@ const paymentMethods = [
     {
         name: "Orange Money",
         description: "Utilisez Orange Money pour un paiement rapide.",
-        logo: "https://i.ibb.co/6yqGvY9/Orange-Money-logo-2016-svg.png",
+        logo: "https://images.seeklogo.com/logo-png/44/1/orange-money-logo-png_seeklogo-440383.png",
         link: "#", // Replace with actual Orange Money link
         actionText: "Payer avec Orange Money"
     },
