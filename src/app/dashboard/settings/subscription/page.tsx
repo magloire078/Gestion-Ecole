@@ -21,8 +21,6 @@ export default function SubscriptionPage() {
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
 
-    const wavePaymentLink = "https://pay.wave.com/m/M_ci_2Td7SafrFP8R/c/ci/";
-
     const handleDowngrade = async () => {
         setError(null);
         try {
@@ -98,7 +96,7 @@ export default function SubscriptionPage() {
             </div>
             <div className="grid gap-8 md:grid-cols-2">
                 {plans.map(plan => (
-                    <Card key={plan.name} className={plan.isCurrent ? "border-primary" : ""}>
+                    <Card key={plan.name} className={cn("flex flex-col", plan.isCurrent ? "border-primary" : "")}>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                                 <span>{plan.name}</span>
@@ -106,7 +104,7 @@ export default function SubscriptionPage() {
                             </CardTitle>
                             <CardDescription>{plan.description}</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-4 flex-1">
                              <div className="text-3xl font-bold">
                                 {plan.price}
                              </div>
@@ -122,7 +120,7 @@ export default function SubscriptionPage() {
                         <CardFooter>
                            {plan.name === 'Pro' ? (
                                 <Button asChild className="w-full" disabled={plan.buttonDisabled}>
-                                    <Link href={wavePaymentLink} target="_blank" rel="noopener noreferrer">
+                                    <Link href="/dashboard/settings/subscription/payment">
                                         <Zap className="mr-2 h-4 w-4" />
                                         {plan.isCurrent ? "Votre Plan Actuel" : "Passer au Plan Pro"}
                                     </Link>
