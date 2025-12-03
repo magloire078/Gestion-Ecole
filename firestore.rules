@@ -94,6 +94,12 @@ service cloud.firestore {
             allow read, list, create, update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
 
+        match /messagerie/{messageId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow create: if isUserInSchool(schoolId);
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
+        }
+
         // --- Generic Rules for other subcollections ---
         // This rule applies to collections NOT explicitly matched above
         match /{otherCollections}/{docId} {

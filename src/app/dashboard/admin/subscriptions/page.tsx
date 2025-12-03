@@ -22,7 +22,8 @@ interface School {
     };
 }
 
-const ADMIN_UID = "REPLACE_WITH_YOUR_ADMIN_UID"; // Remplacez ceci par votre UID Firebase
+// IMPORTANT : Remplacez cette valeur par votre propre UID administrateur Firebase
+const ADMIN_UID = "VOTRE_UID_ADMIN_ICI"; 
 
 export default function AdminSubscriptionsPage() {
     const { user, loading: userLoading } = useUser();
@@ -35,14 +36,19 @@ export default function AdminSubscriptionsPage() {
     const schools: School[] = schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [];
 
     useEffect(() => {
-        if (!userLoading && user?.uid !== ADMIN_UID) {
+        if (!userLoading && (!user || user.uid !== ADMIN_UID)) {
+            toast({
+                variant: 'destructive',
+                title: 'Accès non autorisé',
+                description: "Vous n'avez pas les droits pour accéder à cette page."
+            });
             router.push('/dashboard');
         }
     }, [user, userLoading, router]);
 
     const isLoading = userLoading || schoolsLoading;
 
-    if (isLoading) {
+    if (isLoading || !user || user.uid !== ADMIN_UID) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-1/2" />
@@ -58,10 +64,6 @@ export default function AdminSubscriptionsPage() {
             </div>
         );
     }
-    
-    if (user?.uid !== ADMIN_UID) {
-        return null; // ou une page "accès non autorisé"
-    }
 
     const getPlanBadgeVariant = (plan: string) => {
         switch (plan) {
@@ -69,6 +71,19 @@ export default function AdminSubscriptionsPage() {
                 return 'default';
             case 'Essentiel':
                 return 'secondary';
+            default:
+                return 'outline';
+        }
+    };
+
+    const getStatusBadgeVariant = (status: string) => {
+        switch (status) {
+            case 'active':
+            case 'trialing':
+                return 'secondary';
+            case 'past_due':
+            case 'canceled':
+                return 'destructive';
             default:
                 return 'outline';
         }
@@ -114,7 +129,7 @@ export default function AdminSubscriptionsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                             <Badge variant={school.subscription?.status === 'active' ? 'secondary' : 'destructive'}>
+                                             <Badge variant={getStatusBadgeVariant(school.subscription?.status)}>
                                                 {school.subscription?.status || 'N/A'}
                                             </Badge>
                                         </TableCell>
