@@ -18,7 +18,8 @@ import {
     GraduationCap, 
     BookOpen,
     Briefcase,
-    CreditCard
+    CreditCard,
+    Send
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -41,6 +42,7 @@ const mySchoolLinks = [
 const administrationLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
   { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser, pro: true },
+  { href: '/dashboard/messaging', label: 'Messagerie', icon: Send },
 ];
 
 const pedagogicalLinks = [

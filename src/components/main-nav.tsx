@@ -19,6 +19,7 @@ import {
     BookOpen,
     Briefcase,
     CreditCard,
+    Send,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -43,6 +44,7 @@ const mySchoolLinks = [
 const administrationLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
   { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser, pro: true },
+  { href: '/dashboard/messaging', label: 'Messagerie', icon: Send },
 ];
 
 const pedagogicalLinks = [
@@ -82,6 +84,7 @@ export function MainNav() {
 
   const getDefaultOpenValues = () => {
     const openValues = [];
+    if (pathname === '/dashboard') return [];
     if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
@@ -92,19 +95,19 @@ export function MainNav() {
   return (
     <nav className="flex flex-col justify-between flex-1 p-2 font-medium">
       <div className='flex-1 space-y-1'>
-        <Link
+         <Link
           href="/dashboard"
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary text-sm font-semibold",
             pathname === '/dashboard' && "bg-muted text-primary"
           )}
         >
-          <LayoutDashboard className="h-4 w-4" />Tableau de Bord
+            <div className='flex items-center gap-3'><LayoutDashboard className="h-4 w-4" />Tableau de Bord</div>
         </Link>
         
         <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
           <AccordionItem value="my-school" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(mySchoolLinks) && "text-primary")}>
                 <div className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -113,7 +116,7 @@ export function MainNav() {
           </AccordionItem>
           
           <AccordionItem value="administration" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(administrationLinks) && "text-primary")}>
                 <div className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -125,7 +128,7 @@ export function MainNav() {
           </AccordionItem>
 
           <AccordionItem value="pedagogy" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(pedagogicalLinks) && "text-primary")}>
                  <div className='flex items-center gap-3'><GraduationCap className="h-4 w-4" />Pédagogie</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -134,7 +137,7 @@ export function MainNav() {
           </AccordionItem>
           
            <AccordionItem value="finance" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
+            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(financialLinks) && "text-primary")}>
                  <div className='flex items-center gap-3'><Landmark className="h-4 w-4" />Finance</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
