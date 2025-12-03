@@ -111,8 +111,8 @@ export function MainNav() {
         
         <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
           <AccordionItem value="my-school" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                <span className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</span>
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
+                <School className="h-4 w-4" /> Mon École
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
               {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -120,8 +120,8 @@ export function MainNav() {
           </AccordionItem>
           
           <AccordionItem value="administration" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                <span className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</span>
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
+                <Briefcase className="h-4 w-4" /> Administration
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
               {administrationLinks.map(item => {
@@ -132,8 +132,8 @@ export function MainNav() {
           </AccordionItem>
 
           <AccordionItem value="pedagogy" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                 <span className='flex items-center gap-3'><GraduationCap className="h-4 w-4" />Pédagogie</span>
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
+                 <GraduationCap className="h-4 w-4" />Pédagogie
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
                {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -141,8 +141,8 @@ export function MainNav() {
           </AccordionItem>
           
            <AccordionItem value="finance" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                 <span className='flex items-center gap-3'><Landmark className="h-4 w-4" />Finance</span>
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
+                 <Landmark className="h-4 w-4" />Finance
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
                {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
@@ -150,8 +150,8 @@ export function MainNav() {
           </AccordionItem>
           
            <AccordionItem value="settings" className="border-b-0">
-            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary">
-                 <span className='flex items-center gap-3'><Settings className="h-4 w-4" />Paramètres</span>
+            <AccordionTrigger className="py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary gap-3">
+                 <Settings className="h-4 w-4" />Paramètres
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
                {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
