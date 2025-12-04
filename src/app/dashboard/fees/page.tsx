@@ -74,7 +74,8 @@ const paymentSchema = z.object({
   paymentDate: z.string().min(1, "La date est requise."),
   paymentDescription: z.string().min(1, "La description est requise."),
   paymentAmount: z.coerce.number().positive("Le montant doit être un nombre positif."),
-  payerName: z.string().min(1, "Le nom du payeur est requis."),
+  payerFirstName: z.string().min(1, "Le prénom du payeur est requis."),
+  payerLastName: z.string().min(1, "Le nom de famille du payeur est requis."),
   payerContact: z.string().optional(),
   paymentMethod: z.string().min(1, "Le mode de paiement est requis."),
 });
@@ -113,7 +114,7 @@ export default function FeesPage() {
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
-  const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+  const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data(), name: `${d.data().firstName} ${d.data().lastName}` } as Student)) || [], [studentsData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   // Student payment tracking state
@@ -151,7 +152,8 @@ export default function FeesPage() {
             paymentDate: format(new Date(), 'yyyy-MM-dd'),
             paymentDescription: '',
             paymentAmount: 0,
-            payerName: '',
+            payerFirstName: '',
+            payerLastName: '',
             payerContact: '',
             paymentMethod: 'Espèces',
         }
@@ -181,7 +183,8 @@ export default function FeesPage() {
             paymentAmount: undefined,
             paymentDescription: `Scolarité - ${selectedStudent.name}`,
             paymentDate: format(new Date(), 'yyyy-MM-dd'),
-            payerName: selectedStudent.parent1Name || '',
+            payerFirstName: selectedStudent.parent1FirstName || '',
+            payerLastName: selectedStudent.parent1LastName || '',
             payerContact: selectedStudent.parent1Contact || '',
             paymentMethod: 'Espèces',
         });
@@ -249,7 +252,8 @@ export default function FeesPage() {
         amount: amountPaid,
         description: values.paymentDescription,
         accountingTransactionId: newTransactionRef.id,
-        payerName: values.payerName,
+        payerFirstName: values.payerFirstName,
+        payerLastName: values.payerLastName,
         payerContact: values.payerContact,
         method: values.paymentMethod,
     };
@@ -273,7 +277,7 @@ export default function FeesPage() {
             description: values.paymentDescription,
             amountPaid: amountPaid,
             amountDue: newAmountDue,
-            payerName: values.payerName,
+            payerName: `${values.payerFirstName} ${values.payerLastName}`,
             payerContact: values.payerContact,
             paymentMethod: values.paymentMethod,
         });
@@ -617,26 +621,41 @@ export default function FeesPage() {
                         </FormItem>
                       )}
                     />
-                     <FormField
-                        control={paymentForm.control}
-                        name="payerName"
-                        render={({ field }) => (
-                            <FormItem className="grid grid-cols-4 items-center gap-4">
-                                <FormLabel className="text-right">Payé par</FormLabel>
-                                <FormControl className="col-span-3">
-                                    <Input placeholder="Nom de la personne qui paie" {...field} />
-                                </FormControl>
-                                <FormMessage className="col-start-2 col-span-3" />
-                            </FormItem>
-                        )}
-                    />
+                     <div className="grid grid-cols-2 gap-4">
+                         <FormField
+                            control={paymentForm.control}
+                            name="payerFirstName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Prénom du Payeur</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Prénom" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={paymentForm.control}
+                            name="payerLastName"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nom du Payeur</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Nom" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                    </div>
                     <FormField
                         control={paymentForm.control}
                         name="payerContact"
                         render={({ field }) => (
-                            <FormItem className="grid grid-cols-4 items-center gap-4">
-                                <FormLabel className="text-right">Contact</FormLabel>
-                                <FormControl className="col-span-3">
+                            <FormItem>
+                                <FormLabel>Contact du Payeur (Optionnel)</FormLabel>
+                                <FormControl>
                                     <Input placeholder="Contact du payeur (optionnel)" {...field} />
                                 </FormControl>
                             </FormItem>
@@ -737,7 +756,7 @@ export default function FeesPage() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Reçu de Paiement</DialogTitle>
-            <DialogDescription>Le paiement a été enregistré avec succès. Vous pouvez imprimer ce reçu.</DialogDescription>
+            <DialogDescription>Aperçu du reçu. Vous pouvez l'imprimer.</DialogDescription>
           </DialogHeader>
           {receiptData && <TuitionReceipt receiptData={receiptData} />}
         </DialogContent>

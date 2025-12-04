@@ -24,7 +24,8 @@ import { cn } from '@/lib/utils';
 
 interface Student {
   matricule?: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   photoUrl?: string;
   status: 'Actif' | 'En attente' | 'Radié';
   class: string;
@@ -35,12 +36,12 @@ interface Student {
   gender: 'Masculin' | 'Féminin';
   address: string;
   previousSchool: string;
-  parent1Name: string;
+  parent1FirstName: string;
+  parent1LastName: string;
   parent1Contact: string;
-  parent2Name: string;
-  parent2Contact: string;
-  guardianName?: string;
-  guardianContact?: string;
+  parent2FirstName?: string;
+  parent2LastName?: string;
+  parent2Contact?: string;
   feedback: string;
   tuitionStatus: 'Soldé' | 'En retard' | 'Partiel';
   amountDue: number;
@@ -61,14 +62,16 @@ interface PaymentHistoryEntry {
     amount: number;
     description: string;
     accountingTransactionId: string;
-    payerName: string;
+    payerFirstName: string;
+    payerLastName: string;
     payerContact?: string;
     method?: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
 }
 
 interface Teacher {
   id: string;
-  name: string;
+  firstName: string;
+  lastName: string;
 }
 
 interface Class {
@@ -137,6 +140,7 @@ export default function StudentProfilePage() {
   , [firestore, schoolId, studentId]);
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
   const student = studentData;
+  const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
 
   // --- Teacher and Class Data (Loaded separately) ---
   const [mainTeacher, setMainTeacher] = useState<Teacher | null>(null);
@@ -211,14 +215,14 @@ export default function StudentProfilePage() {
 
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
-        studentName: student.name,
+        studentName: studentFullName,
         studentMatricule: student.matricule || "N/A",
         className: student.class,
         date: new Date(payment.date),
         description: payment.description,
         amountPaid: payment.amount,
         amountDue: amountDueAtTimeOfPayment - payment.amount,
-        payerName: payment.payerName,
+        payerName: `${payment.payerFirstName} ${payment.payerLastName}`,
         payerContact: payment.payerContact,
         paymentMethod: payment.method,
     };
@@ -252,7 +256,7 @@ export default function StudentProfilePage() {
     notFound();
   }
   
-  const fallback = student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+  const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
 
   return (
@@ -279,11 +283,11 @@ export default function StudentProfilePage() {
                  <Card>
                     <CardHeader className="flex-row items-center gap-4 pb-4">
                         <Avatar className="h-16 w-16">
-                            <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={student.name} data-ai-hint="person face" />
+                            <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
                             <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div>
-                             <CardTitle className="text-2xl">{student.name}</CardTitle>
+                             <CardTitle className="text-2xl">{studentFullName}</CardTitle>
                              <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
                              <Badge className={cn("mt-2 border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                         </div>
@@ -308,7 +312,7 @@ export default function StudentProfilePage() {
                         </div>
                         <div className="flex items-center">
                             <User className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Prof. Principal: <strong>{mainTeacher?.name || 'N/A'}</strong></span>
+                            <span>Prof. Principal: <strong>{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}`: 'N/A'}</strong></span>
                         </div>
                         <div className="flex items-center">
                             <Building className="mr-3 h-5 w-5 text-muted-foreground" />
@@ -325,28 +329,17 @@ export default function StudentProfilePage() {
                         <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /><span>Contacts des Parents</span></CardTitle>
                     </CardHeader>
                      <CardContent className="space-y-3 text-sm">
-                        <div className="font-medium">{student.parent1Name}</div>
+                        <div className="font-medium">{student.parent1FirstName} {student.parent1LastName}</div>
                         <a href={`tel:${student.parent1Contact}`} className="text-muted-foreground hover:text-primary">{student.parent1Contact}</a>
-                        {student.parent2Name && (
+                        {student.parent2FirstName && student.parent2LastName && (
                             <>
                                 <Separator className="my-3"/>
-                                <div className="font-medium">{student.parent2Name}</div>
+                                <div className="font-medium">{student.parent2FirstName} {student.parent2LastName}</div>
                                 <a href={`tel:${student.parent2Contact}`} className="text-muted-foreground hover:text-primary">{student.parent2Contact}</a>
                             </>
                         )}
                     </CardContent>
                 </Card>
-                 {student.guardianName && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /><span>Contact du Tuteur</span></CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 text-sm">
-                             <div className="font-medium">{student.guardianName}</div>
-                            <a href={`tel:${student.guardianContact}`} className="text-muted-foreground hover:text-primary">{student.guardianContact}</a>
-                        </CardContent>
-                    </Card>
-                )}
             </div>
             <div className="lg:col-span-2 flex flex-col gap-6">
                  <Card>
