@@ -5,7 +5,7 @@ import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { BookUser, Mail, Book, Bot, Phone } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { generateTeacherRecommendations, GenerateTeacherRecommendationsInput } from '@/ai/flows/generate-teacher-recommendations';
 import { useToast } from "@/hooks/use-toast";
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,7 @@ export default function TeacherProfilePage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const params = useParams();
   const teacherId = params.teacherId as string;
-  const { schoolId, schoolName, directorFirstName, directorLastName, loading: schoolDataLoading } = useSchoolData();
+  const { schoolId, schoolName, schoolData, loading: schoolDataLoading } = useSchoolData();
   const firestore = useFirestore();
 
   const teacherRef = useMemoFirebase(() => 
@@ -40,7 +40,15 @@ export default function TeacherProfilePage() {
   const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);
   const teacher = teacherData as Teacher | null;
   const fullName = teacher ? `${teacher.firstName} ${teacher.lastName}` : '';
-  const directorFullName = directorFirstName && directorLastName ? `${directorFirstName} ${directorLastName}` : 'Le Directeur/La Directrice';
+  
+  const [directorFullName, setDirectorFullName] = useState('Le Directeur/La Directrice');
+
+  useEffect(() => {
+    if (schoolData?.directorFirstName && schoolData?.directorLastName) {
+      setDirectorFullName(`${schoolData.directorFirstName} ${schoolData.directorLastName}`);
+    }
+  }, [schoolData]);
+
 
   const classRef = useMemoFirebase(() =>
     (schoolId && teacher?.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${teacher.classId}`) : null
