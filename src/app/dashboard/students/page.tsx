@@ -394,7 +394,7 @@ export default function StudentsPage() {
                           </TableCell>
                           <TableCell>{student.class}</TableCell>
                           <TableCell>{isMounted ? getAge(student.dateOfBirth) : <Skeleton className="h-5 w-16"/>}</TableCell>
-                          <TableCell>{student.gender}</TableCell>
+                          <TableCell>{student.gender?.charAt(0)}</TableCell>
                           <TableCell className="text-center">
                             <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                           </TableCell>
@@ -626,6 +626,7 @@ export default function StudentsPage() {
     </>
   );
 }
+
 
 
 
