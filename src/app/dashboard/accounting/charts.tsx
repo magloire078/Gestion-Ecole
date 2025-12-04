@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Pie, PieChart, Cell, Sector } from 'recharts';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Pie, PieChart, Cell } from 'recharts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemo } from 'react';
 import { group, sum } from 'd3-array';
@@ -187,3 +188,5 @@ export function AccountingCharts({ transactions }: AccountingChartsProps) {
     </div>
   );
 }
+
+    

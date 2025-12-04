@@ -97,7 +97,8 @@ service cloud.firestore {
         
         match /messagerie/{messageId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow write: if isSchoolDirector(schoolId, request.auth.uid);
+            allow create: if isUserInSchool(schoolId);
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
 
         // --- Generic Rules for other subcollections ---
@@ -109,3 +110,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

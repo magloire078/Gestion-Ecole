@@ -5,9 +5,9 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookUser, BookOpen, Landmark, UserPlus, TrendingUp, TrendingDown, Scale } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, collectionGroup, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, collectionGroup } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -15,6 +15,7 @@ import { fr } from 'date-fns/locale';
 import type { AccountingTransaction } from '@/lib/data';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { AccountingCharts } from './accounting/charts';
+import { sum } from 'd3-array';
 
 interface Book {
     id: string;
@@ -146,10 +147,13 @@ export default function DashboardPage() {
   }, [recentStudentsData, recentBooksData]);
 
   const { totalRevenue, totalExpenses, netBalance } = useMemo(() => {
-    const totalRevenue = transactions.filter(t => t.type === 'Revenu').reduce((sum, t) => sum + t.amount, 0);
-    const totalExpenses = transactions.filter(t => t.type === 'Dépense').reduce((sum, t) => sum + t.amount, 0);
-    const netBalance = totalRevenue - totalExpenses;
-    return { totalRevenue, totalExpenses, netBalance };
+    const revenue = sum(transactions.filter(t => t.type === 'Revenu'), d => d.amount);
+    const expense = sum(transactions.filter(t => t.type === 'Dépense'), d => d.amount);
+    return {
+      totalRevenue: revenue,
+      totalExpenses: expense,
+      netBalance: revenue - expense,
+    };
   }, [transactions]);
   
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
@@ -270,3 +274,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
