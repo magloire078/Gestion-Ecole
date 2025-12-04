@@ -19,7 +19,8 @@ export type school = {
     matricule: string;
     cnpsEmployeur: string;
     directorId: string;
-    directorName: string;
+    directorFirstName: string;
+    directorLastName: string;
     directorPhone: string;
     schoolCode: string;
     createdAt: string;
@@ -34,7 +35,8 @@ export type school = {
 };
 
 export type teacher = {
-    name: string;
+    firstName: string;
+    lastName: string;
     subject: string;
     email: string;
     phone?: string;
@@ -43,7 +45,8 @@ export type teacher = {
 
 export type staff = {
     id?: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     role: string;
     hireDate: string;
     email?: string;
@@ -93,7 +96,8 @@ export type fee = {
 
 export type student = {
     matricule: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     photoUrl: string;
     status: "Actif" | "En attente" | "Radié";
     class: string;
@@ -103,9 +107,11 @@ export type student = {
     placeOfBirth: string;
     gender: "Masculin" | "Féminin";
     address: string;
-    parent1Name: string;
+    parent1FirstName: string;
+    parent1LastName: string;
     parent1Contact: string;
-    parent2Name: string;
+    parent2FirstName: string;
+    parent2LastName: string;
     parent2Contact: string;
     previousSchool: string;
     tuitionStatus: "Soldé" | "En retard" | "Partiel";
@@ -136,9 +142,10 @@ export type payment = {
     amount: number;
     description: string;
     accountingTransactionId: string;
-    payerName: string;
-    payerContact: string;
+    payerFirstName: string;
+    payerLastName: string;
     method: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
+    payerContact?: string;
 };
 
 export type libraryBook = {

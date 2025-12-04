@@ -28,7 +28,8 @@ interface Class {
 
 const registrationSchema = z.object({
   // Step 1
-  name: z.string().min(1, { message: "Le nom complet est requis." }),
+  lastName: z.string().min(1, { message: "Le nom de famille est requis." }),
+  firstName: z.string().min(1, { message: "Le prénom est requis." }),
   matricule: z.string().min(1, { message: "Le numéro matricule est requis." }),
   dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
   placeOfBirth: z.string().min(1, { message: "Le lieu de naissance est requis." }),
@@ -41,17 +42,19 @@ const registrationSchema = z.object({
   status: z.enum(['Actif', 'En attente'], { required_error: "Le statut est requis." }),
 
   // Step 3
-  parent1Name: z.string().min(1, { message: "Le nom du parent 1 est requis." }),
+  parent1LastName: z.string().min(1, { message: "Le nom du parent 1 est requis." }),
+  parent1FirstName: z.string().min(1, { message: "Le prénom du parent 1 est requis." }),
   parent1Contact: z.string().min(1, { message: "Le contact du parent 1 est requis." }),
-  parent2Name: z.string().optional(),
+  parent2LastName: z.string().optional(),
+  parent2FirstName: z.string().optional(),
   parent2Contact: z.string().optional(),
 });
 
 type RegistrationFormValues = z.infer<typeof registrationSchema>;
 
-const step1Fields: (keyof RegistrationFormValues)[] = ['name', 'matricule', 'dateOfBirth', 'placeOfBirth', 'gender', 'address'];
+const step1Fields: (keyof RegistrationFormValues)[] = ['lastName', 'firstName', 'matricule', 'dateOfBirth', 'placeOfBirth', 'gender', 'address'];
 const step2Fields: (keyof RegistrationFormValues)[] = ['previousSchool', 'classId', 'status'];
-const step3Fields: (keyof RegistrationFormValues)[] = ['parent1Name', 'parent1Contact', 'parent2Name', 'parent2Contact'];
+const step3Fields: (keyof RegistrationFormValues)[] = ['parent1LastName', 'parent1FirstName', 'parent1Contact', 'parent2LastName', 'parent2FirstName', 'parent2Contact'];
 
 
 export default function RegistrationPage() {
@@ -69,7 +72,8 @@ export default function RegistrationPage() {
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-        name: '',
+        lastName: '',
+        firstName: '',
         matricule: '',
         dateOfBirth: '',
         placeOfBirth: '',
@@ -78,9 +82,11 @@ export default function RegistrationPage() {
         previousSchool: '',
         classId: '',
         status: 'Actif',
-        parent1Name: '',
+        parent1LastName: '',
+        parent1FirstName: '',
         parent1Contact: '',
-        parent2Name: '',
+        parent2LastName: '',
+        parent2FirstName: '',
         parent2Contact: '',
     }
   });
@@ -115,7 +121,9 @@ export default function RegistrationPage() {
 
     const studentData = {
       matricule: values.matricule,
-      name: values.name,
+      lastName: values.lastName,
+      firstName: values.firstName,
+      name: `${values.firstName} ${values.lastName}`,
       dateOfBirth: values.dateOfBirth,
       placeOfBirth: values.placeOfBirth,
       gender: values.gender,
@@ -126,9 +134,13 @@ export default function RegistrationPage() {
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
       cycle: studentCycle,
-      parent1Name: values.parent1Name,
+      parent1LastName: values.parent1LastName,
+      parent1FirstName: values.parent1FirstName,
+      parent1Name: `${values.parent1FirstName} ${values.parent1LastName}`,
       parent1Contact: values.parent1Contact,
-      parent2Name: values.parent2Name,
+      parent2LastName: values.parent2LastName,
+      parent2FirstName: values.parent2FirstName,
+      parent2Name: values.parent2FirstName && values.parent2LastName ? `${values.parent2FirstName} ${values.parent2LastName}` : '',
       parent2Contact: values.parent2Contact,
       amountDue: 0, 
       tuitionStatus: 'Partiel' as const,
@@ -141,7 +153,7 @@ export default function RegistrationPage() {
     .then((docRef) => {
         toast({
             title: "Inscription réussie",
-            description: `${values.name} a été inscrit(e) avec succès.`,
+            description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
         });
         router.push(`/dashboard/students`);
     }).catch(async (serverError) => {
@@ -175,9 +187,10 @@ export default function RegistrationPage() {
                 <div className="space-y-4 animate-in fade-in-50">
                   <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5"/>Informations de l'Élève</div>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom complet de l'élève</FormLabel><FormControl><Input placeholder="Ex: Adama Gueye" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
+                   <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <div className="grid sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="placeOfBirth" render={({ field }) => (<FormItem><FormLabel>Lieu de naissance</FormLabel><FormControl><Input placeholder="Ex: Dakar" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -206,16 +219,18 @@ export default function RegistrationPage() {
                   <div className="p-4 border rounded-lg space-y-4">
                       <h4 className="font-medium">Parent 1</h4>
                       <div className="grid sm:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="parent1Name" render={({ field }) => (<FormItem><FormLabel>Nom complet</FormLabel><FormControl><Input placeholder="Nom du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="parent1Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="parent1LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="parent1FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       </div>
+                      <FormField control={form.control} name="parent1Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                   <div className="p-4 border rounded-lg space-y-4">
                       <h4 className="font-medium">Parent 2 (optionnel)</h4>
                       <div className="grid sm:grid-cols-2 gap-4">
-                         <FormField control={form.control} name="parent2Name" render={({ field }) => (<FormItem><FormLabel>Nom complet</FormLabel><FormControl><Input placeholder="Nom du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                         <FormField control={form.control} name="parent2Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                         <FormField control={form.control} name="parent2LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                         <FormField control={form.control} name="parent2FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       </div>
+                      <FormField control={form.control} name="parent2Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
               )}
