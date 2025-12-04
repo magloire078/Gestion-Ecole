@@ -44,33 +44,23 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
       return { timeSlots: [], days: [], timetableGrid: {} };
     }
 
-    const uniqueTimeSlots = [...new Set(timetableEntries.flatMap(e => [e.startTime, e.endTime]))]
-      .sort((a, b) => a.localeCompare(b));
-    
-    const generatedTimeSlots: string[] = [];
-    if (uniqueTimeSlots.length > 1) {
-        for (let i = 0; i < uniqueTimeSlots.length - 1; i++) {
-            generatedTimeSlots.push(`${uniqueTimeSlots[i]} - ${uniqueTimeSlots[i+1]}`);
-        }
-    }
-
+    const uniqueStartTimes = [...new Set(timetableEntries.map(e => e.startTime))].sort((a,b) => a.localeCompare(b));
 
     const orderedDays: ('Lundi'|'Mardi'|'Mercredi'|'Jeudi'|'Vendredi'|'Samedi')[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     
-    const grid: Record<string, Record<string, { subject: string; teacher: string }>> = {};
+    const grid: Record<string, Record<string, { subject: string; teacher: string; endTime: string }>> = {};
 
-    orderedDays.forEach(day => {
-      grid[day] = {};
+    uniqueStartTimes.forEach(time => {
+        grid[time] = {};
     });
 
     timetableEntries.forEach(entry => {
       const teacherName = teachers.find(t => t.id === entry.teacherId)?.name || 'N/A';
-      const timeSlot = `${entry.startTime} - ${entry.endTime}`;
-      if (!grid[entry.day]) grid[entry.day] = {};
-      grid[entry.day][timeSlot] = { subject: entry.subject, teacher: teacherName };
+      if (!grid[entry.startTime]) grid[entry.startTime] = {};
+      grid[entry.startTime][entry.day] = { subject: entry.subject, teacher: teacherName, endTime: entry.endTime };
     });
 
-    return { timeSlots: generatedTimeSlots, days: orderedDays, timetableGrid: grid };
+    return { timeSlots: uniqueStartTimes, days: orderedDays, timetableGrid: grid };
 
   }, [timetableEntries, teachers]);
 
@@ -138,14 +128,14 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
             <TableBody>
               {timeSlots.map((slot) => (
                 <TableRow key={slot}>
-                  <TableCell className="font-semibold border">{slot}</TableCell>
+                  <TableCell className="font-semibold border text-center align-middle">{slot} - {timetableEntries.find(e => e.startTime === slot)?.endTime}</TableCell>
                   {days.map(day => {
-                    const entry = timetableGrid[day]?.[slot];
+                    const entry = timetableGrid[slot]?.[day];
                     return (
-                      <TableCell key={day} className="border">
+                      <TableCell key={day} className="border p-1 align-top h-24">
                         {entry ? (
-                          <div>
-                            <p className="font-bold">{entry.subject}</p>
+                          <div className="bg-primary/10 p-2 rounded-lg h-full flex flex-col justify-center">
+                            <p className="font-bold text-primary">{entry.subject}</p>
                             <p className="text-xs text-muted-foreground">{entry.teacher}</p>
                           </div>
                         ) : ''}

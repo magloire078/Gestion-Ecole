@@ -17,8 +17,13 @@ interface Student {
 interface School {
     name: string;
     directorName?: string;
+    address?: string;
+    phone?: string;
+    website?: string;
+    mainLogoUrl?: string;
 }
 interface Grade {
+  id: string;
   subject: string;
   grade: number;
   coefficient: number;
@@ -34,7 +39,7 @@ export default function StudentReportPage() {
   const params = useParams();
   const studentId = params.studentId as string;
   const firestore = useFirestore();
-  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+  const { schoolData, loading: schoolLoading } = useSchoolData();
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => 
@@ -73,8 +78,12 @@ export default function StudentReportPage() {
   }
 
   const schoolInfo = {
-      name: schoolName || 'Votre École',
-      // Add more school details if available from useSchoolData
+      name: schoolData?.name || 'Votre École',
+      directorName: schoolData?.directorName,
+      address: schoolData?.address,
+      phone: schoolData?.phone,
+      website: schoolData?.website,
+      mainLogoUrl: schoolData?.mainLogoUrl,
   };
 
   return (

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Bot, Printer } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { useToast } from '@/hooks/use-toast';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 // --- Interfaces ---
 interface Student {
@@ -22,6 +23,7 @@ interface School {
   address?: string; // Supposons que ces champs peuvent exister
   phone?: string;
   website?: string;
+  mainLogoUrl?: string;
 }
 
 interface Grade {
@@ -68,6 +70,7 @@ interface ReportCardProps {
 export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades, teachers }) => {
     const { toast } = useToast();
     const printRef = React.useRef<HTMLDivElement>(null);
+    const { directorName } = useSchoolData();
 
     const [councilComment, setCouncilComment] = useState("Excellent trimestre pour Rafael. Au delà de ses très bons résultats homogènes, Rafael fait preuve d'une maturité et d'une autonomie très favorables à la poursuite de sa réussite académique. Bravo!");
     const [isGeneratingComment, setIsGeneratingComment] = useState(false);
@@ -100,8 +103,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 appreciation: `Trimestre solide en ${subject}.`
             });
 
-            totalPoints += studentAverage;
-            totalCoeffs += 1;
+            totalPoints += studentAverage * studentTotalCoeffs;
+            totalCoeffs += studentTotalCoeffs;
         });
 
         reports.sort((a,b) => b.average - a.average);
@@ -178,12 +181,15 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         <div ref={printRef}>
             {/* Header */}
             <div className="flex justify-between items-start pb-4 border-b-2 border-primary mb-6">
-                <div>
-                    <h2 className="text-xl font-bold">{school.name || "Nom de l'école"}</h2>
-                    <p className="text-xs text-muted-foreground">{school.address || "Adresse de l'école"}</p>
-                    <p className="text-xs text-muted-foreground">
-                        Tél: {school.phone || "N/A"} - Site: {school.website || "N/A"}
-                    </p>
+                <div className="flex items-center gap-4">
+                     {school.mainLogoUrl && <img src={school.mainLogoUrl} alt={school.name} className="h-16 w-16 object-contain" />}
+                    <div>
+                        <h2 className="text-xl font-bold">{school.name || "Nom de l'école"}</h2>
+                        <p className="text-xs text-muted-foreground">{school.address || "Adresse de l'école"}</p>
+                        <p className="text-xs text-muted-foreground">
+                            Tél: {school.phone || "N/A"} - Site: {school.website || "N/A"}
+                        </p>
+                    </div>
                 </div>
                 <div className="flex-shrink-0">
                     <Avatar className="h-16 w-16">
@@ -201,7 +207,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
             {/* Student Info */}
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-6 text-sm">
-                <div><span className="font-semibold">Nom :</span> {student.name}</div>
+                <div><span className="font-semibold">Nom & Prénoms :</span> {student.name}</div>
                 <div><span className="font-semibold">Matricule :</span> {student.matricule || 'N/A'}</div>
                 <div><span className="font-semibold">Classe :</span> {student.class || 'N/A'}</div>
             </div>
@@ -212,6 +218,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     <TableHeader>
                         <TableRow className="bg-muted">
                             <TableHead className="font-bold">Matières</TableHead>
+                            <TableHead className="text-center font-bold">Coeff.</TableHead>
                             <TableHead className="text-center font-bold">Moy /20</TableHead>
                             <TableHead className="text-center font-bold hidden sm:table-cell">Min</TableHead>
                             <TableHead className="text-center font-bold hidden sm:table-cell">Max</TableHead>
@@ -220,19 +227,23 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {subjectReports.map((report) => (
-                        <TableRow key={report.subject}>
-                            <TableCell>
-                                <p className="font-semibold">{report.subject}</p>
-                                <p className="text-xs text-muted-foreground">{report.teacherName}</p>
-                            </TableCell>
-                            <TableCell className="text-center font-mono">{report.average.toFixed(2)}</TableCell>
-                            <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMin.toFixed(2)}</TableCell>
-                            <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMax.toFixed(2)}</TableCell>
-                            <TableCell className="text-center font-mono hidden sm:table-cell">{report.classAverage.toFixed(2)}</TableCell>
-                            <TableCell className="text-xs">{report.appreciation}</TableCell>
-                        </TableRow>
-                        ))}
+                        {subjectReports.map((report) => {
+                            const totalCoeffs = grades.filter(g => g.subject === report.subject).reduce((sum, g) => sum + g.coefficient, 0);
+                            return (
+                                <TableRow key={report.subject}>
+                                    <TableCell>
+                                        <p className="font-semibold">{report.subject}</p>
+                                        <p className="text-xs text-muted-foreground">{report.teacherName}</p>
+                                    </TableCell>
+                                    <TableCell className="text-center font-mono">{totalCoeffs}</TableCell>
+                                    <TableCell className="text-center font-mono font-bold">{report.average.toFixed(2)}</TableCell>
+                                    <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMin.toFixed(2)}</TableCell>
+                                    <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMax.toFixed(2)}</TableCell>
+                                    <TableCell className="text-center font-mono hidden sm:table-cell">{report.classAverage.toFixed(2)}</TableCell>
+                                    <TableCell className="text-xs italic">{report.appreciation}</TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </Table>
             </div>
@@ -264,6 +275,21 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                         </Button>
                     </div>
                     <p className="italic text-xs">{councilComment}</p>
+                </div>
+            </div>
+             {/* Footer with signatures */}
+             <div className="mt-16 flex justify-between items-end text-center text-xs">
+                <div>
+                    <p className="font-bold">Le Professeur Principal</p>
+                    <div className="mt-12 border-t border-dashed w-40 mx-auto"></div>
+                </div>
+                 <div>
+                    <p>Fait à {school.address ? school.address.split(',')[0] : 'Abidjan'}, le {new Date().toLocaleDateString('fr-FR')}</p>
+                </div>
+                <div>
+                    <p className="font-bold">Le Directeur</p>
+                     <div className="mt-12 border-t border-dashed w-40 mx-auto"></div>
+                     <p>{directorName || school.directorName}</p>
                 </div>
             </div>
         </div>

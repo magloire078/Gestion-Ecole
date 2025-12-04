@@ -19,7 +19,7 @@ interface TimetableEntry {
   classId: string;
   teacherId: string;
   subject: string;
-  day: string;
+  day: 'Lundi' | 'Mardi' | 'Mercredi' | 'Jeudi' | 'Vendredi' | 'Samedi';
   startTime: string;
   endTime: string;
 }

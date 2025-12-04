@@ -84,7 +84,7 @@ const calculateAverages = (grades: GradeEntry[]) => {
         gradesBySubject[g.subject].totalCoeffs += g.coefficient;
     });
     
-    const averages: Record<string, number> = {};
+    const averages: Record<string, {average: number, totalCoeffs: number}> = {};
     let totalPoints = 0;
     let totalCoeffs = 0;
 
@@ -92,7 +92,7 @@ const calculateAverages = (grades: GradeEntry[]) => {
         const { totalPoints: subjectTotalPoints, totalCoeffs: subjectTotalCoeffs } = gradesBySubject[subject];
         if (subjectTotalCoeffs > 0) {
             const average = subjectTotalPoints / subjectTotalCoeffs;
-            averages[subject] = average;
+            averages[subject] = { average, totalCoeffs: subjectTotalCoeffs };
             totalPoints += subjectTotalPoints;
             totalCoeffs += subjectTotalCoeffs;
         }
@@ -189,7 +189,7 @@ export default function StudentProfilePage() {
     const currentPaymentIndex = paymentHistory.findIndex(p => p.id === payment.id);
     const paymentsUpToThisOne = paymentHistory.slice(currentPaymentIndex);
     const totalPaidSinceThisPayment = paymentsUpToThisOne.reduce((sum, p) => sum + p.amount, 0);
-    const amountDueAtTimeOfPayment = student.amountDue + totalPaidSinceThisPayment - payment.amount;
+    const amountDueAtTimeOfPayment = student.amountDue + totalPaidSinceThisPayment;
 
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
@@ -199,7 +199,7 @@ export default function StudentProfilePage() {
         date: new Date(payment.date),
         description: payment.description,
         amountPaid: payment.amount,
-        amountDue: amountDueAtTimeOfPayment,
+        amountDue: amountDueAtTimeOfPayment - payment.amount,
         payerName: payment.payerName,
         payerContact: payment.payerContact,
         paymentMethod: payment.method,
@@ -345,22 +345,23 @@ export default function StudentProfilePage() {
                     </CardHeader>
                     <CardContent>
                         <Table>
-                            <TableHeader><TableRow><TableHead>Matière</TableHead><TableHead className="text-right">Moyenne</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Matière</TableHead><TableHead className="text-right">Coeff.</TableHead><TableHead className="text-right">Moyenne</TableHead></TableRow></TableHeader>
                             <TableBody>
                                 {allSubjects.map((subject) => {
-                                    const average = subjectAverages[subject];
+                                    const subjectData = subjectAverages[subject];
+                                    if(!subjectData) return null; // Don't show subjects with no grades
+                                    
                                     const subjectGrades = grades.filter(g => g.subject === subject);
-
-                                    if(subjectGrades.length === 0) return null; // Don't show subjects with no grades
 
                                     return (
                                         <React.Fragment key={subject}>
                                             <TableRow>
                                                 <TableCell className="font-medium">{subject}</TableCell>
-                                                <TableCell className="text-right font-mono text-lg">{average !== undefined ? average.toFixed(2) : 'N/A'}</TableCell>
+                                                <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
+                                                <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell colSpan={2} className="p-0">
+                                                <TableCell colSpan={3} className="p-0">
                                                     <div className="px-4 py-2 bg-muted/50">
                                                         <Table>
                                                             <TableHeader>
@@ -389,7 +390,7 @@ export default function StudentProfilePage() {
                                     );
                                 })}
                                  {grades.length === 0 && (
-                                    <TableRow><TableCell colSpan={2} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
                                 )}
                             </TableBody>
                         </Table>
