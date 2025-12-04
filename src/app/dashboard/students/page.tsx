@@ -316,7 +316,7 @@ export default function StudentsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>N°</TableHead>
-                        <TableHead>Nom</TableHead>
+                        <TableHead>Élève</TableHead>
                         <TableHead>Classe</TableHead>
                         <TableHead>Âge</TableHead>
                         <TableHead>Sexe</TableHead>
@@ -592,4 +592,5 @@ export default function StudentsPage() {
     </>
   );
 }
+
 
