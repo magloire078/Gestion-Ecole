@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -314,6 +315,7 @@ export default function StudentsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead>N°</TableHead>
                         <TableHead>Nom</TableHead>
                         <TableHead>Classe</TableHead>
                         <TableHead>Âge</TableHead>
@@ -327,6 +329,7 @@ export default function StudentsPage() {
                       {isLoading ? (
                         [...Array(5)].map((_, i) => (
                           <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-8"/></TableCell>
                             <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-1"><Skeleton className="h-4 w-32"/><Skeleton className="h-3 w-24"/></div></div></TableCell>
                             <TableCell><Skeleton className="h-5 w-16"/></TableCell>
                             <TableCell><Skeleton className="h-5 w-16"/></TableCell>
@@ -339,6 +342,7 @@ export default function StudentsPage() {
                       ) : students.length > 0 ? (
                         students.map((student, index) => (
                         <TableRow key={student.id}>
+                          <TableCell className="font-medium">{index + 1}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10">
@@ -589,4 +593,3 @@ export default function StudentsPage() {
   );
 }
 
-    
