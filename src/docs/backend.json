@@ -227,6 +227,33 @@
             "endTime": { "type": "string", "description": "L'heure de fin (HH:MM)." }
         },
         "required": ["classId", "teacherId", "subject", "day", "startTime", "endTime"]
+    },
+    "message": {
+        "title": "Message",
+        "description": "Un message ou une annonce envoyé(e) via la messagerie interne.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string", "description": "Le titre ou l'objet du message." },
+            "content": { "type": "string", "description": "Le corps du message." },
+            "senderId": { "type": "string", "description": "L'UID de l'expéditeur." },
+            "senderName": { "type": "string", "description": "Le nom de l'expéditeur." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'envoi du message." },
+            "recipients": {
+                "type": "object",
+                "description": "Définit les destinataires du message.",
+                "properties": {
+                    "all": { "type": "boolean", "description": "Envoyer à toute l'école (parents, enseignants, personnel)." },
+                    "teachers": { "type": "boolean", "description": "Envoyer à tous les enseignants." },
+                    "staff": { "type": "boolean", "description": "Envoyer à tout le personnel non-enseignant." },
+                    "classes": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "Une liste d'IDs de classes spécifiques à cibler."
+                    }
+                }
+            }
+        },
+        "required": ["title", "content", "senderId", "senderName", "createdAt", "recipients"]
     }
   },
   "auth": {
@@ -288,6 +315,10 @@
     "/ecoles/{schoolId}/emploi_du_temps/{entryId}": {
         "schema": { "$ref": "#/entities/timetableEntry" },
         "description": "Stocke les entrées de l'emploi du temps pour une école."
+    },
+    "/ecoles/{schoolId}/messagerie/{messageId}": {
+        "schema": { "$ref": "#/entities/message" },
+        "description": "Stocke les messages et annonces envoyés via la messagerie interne."
     }
   }
 }
