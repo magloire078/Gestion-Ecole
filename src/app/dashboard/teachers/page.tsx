@@ -53,7 +53,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Class, teacher as Teacher } from '@/lib/data-types';
+import type { class_type as Class, teacher as Teacher } from '@/lib/data-types';
 
 // Define Zod schema for validation
 const teacherSchema = z.object({

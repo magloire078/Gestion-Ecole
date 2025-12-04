@@ -211,7 +211,6 @@ export default function StudentsPage() {
     const updatedData = {
       firstName: values.firstName,
       lastName: values.lastName,
-      name: `${values.firstName} ${values.lastName}`,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
       cycle: selectedClassInfo?.cycle || editingStudent.cycle,
@@ -626,6 +625,7 @@ export default function StudentsPage() {
     </>
   );
 }
+
 
 
 

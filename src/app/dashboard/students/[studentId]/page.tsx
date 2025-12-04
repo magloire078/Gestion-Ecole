@@ -21,6 +21,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { teacher as Teacher, class_type as Class } from '@/lib/data-types';
 
 interface Student {
   matricule?: string;
@@ -68,18 +69,6 @@ interface PaymentHistoryEntry {
     method?: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
 }
 
-interface Teacher {
-  id: string;
-  firstName: string;
-  lastName: string;
-}
-
-interface Class {
-  id: string;
-  name: string;
-  mainTeacherId: string;
-  cycle: string;
-}
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
