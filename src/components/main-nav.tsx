@@ -1,4 +1,3 @@
-
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -108,12 +107,13 @@ export function MainNav() {
             pathname === '/dashboard' && "bg-muted text-primary"
           )}
         >
-            <div className='flex items-center gap-3'><LayoutDashboard className="h-4 w-4" />Tableau de Bord</div>
+            <LayoutDashboard className="h-4 w-4" />
+            Tableau de Bord
         </Link>
         
         <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
           <AccordionItem value="my-school" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(mySchoolLinks) && "text-primary")}>
+            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(mySchoolLinks) && "text-primary")}>
                 <div className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -122,7 +122,7 @@ export function MainNav() {
           </AccordionItem>
           
           <AccordionItem value="administration" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(administrationLinks) && "text-primary")}>
+            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(administrationLinks) && "text-primary")}>
                 <div className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -134,7 +134,7 @@ export function MainNav() {
           </AccordionItem>
 
           <AccordionItem value="pedagogy" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(pedagogicalLinks) && "text-primary")}>
+            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(pedagogicalLinks) && "text-primary")}>
                  <div className='flex items-center gap-3'><GraduationCap className="h-4 w-4" />Pédagogie</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -143,7 +143,7 @@ export function MainNav() {
           </AccordionItem>
           
            <AccordionItem value="finance" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(financialLinks) && "text-primary")}>
+            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(financialLinks) && "text-primary")}>
                  <div className='flex items-center gap-3'><Landmark className="h-4 w-4" />Finance</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -152,7 +152,7 @@ export function MainNav() {
           </AccordionItem>
 
           <AccordionItem value="configuration" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(settingsLinks) && "text-primary")}>
+            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(settingsLinks) && "text-primary")}>
                  <div className='flex items-center gap-3'><FolderCog className="h-4 w-4" />Configuration</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
