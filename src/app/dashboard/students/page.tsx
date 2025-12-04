@@ -67,12 +67,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 interface Student {
   id: string;
   matricule?: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   photoUrl?: string;
   status: 'Actif' | 'En attente' | 'Radié';
   class: string;
@@ -83,7 +85,8 @@ interface Student {
   tuitionStatus: TuitionStatus;
   amountDue: number;
   dateOfBirth: string;
-  parent1Name?: string;
+  parent1FirstName?: string;
+  parent1LastName?: string;
   parent1Contact?: string;
 }
 
@@ -96,7 +99,8 @@ interface Class {
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
 const studentSchema = z.object({
-    name: z.string().min(1, { message: "Le nom est requis." }),
+    firstName: z.string().min(1, { message: "Le prénom est requis." }),
+    lastName: z.string().min(1, { message: "Le nom est requis." }),
     classId: z.string().min(1, { message: "La classe est requise." }),
     dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
     amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
@@ -150,7 +154,8 @@ export default function StudentsPage() {
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-        name: '',
+        firstName: '',
+        lastName: '',
         classId: '',
         dateOfBirth: '',
         amountDue: 0,
@@ -163,7 +168,8 @@ export default function StudentsPage() {
   useEffect(() => {
     if(isEditDialogOpen && editingStudent) {
       form.reset({
-        name: editingStudent.name,
+        firstName: editingStudent.firstName,
+        lastName: editingStudent.lastName,
         classId: editingStudent.classId,
         feedback: editingStudent.feedback,
         amountDue: editingStudent.amountDue,
@@ -192,7 +198,9 @@ export default function StudentsPage() {
     const selectedClassInfo = classes.find(c => c.id === values.classId);
     
     const updatedData = {
-      name: values.name,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      name: `${values.firstName} ${values.lastName}`,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
       cycle: selectedClassInfo?.cycle || editingStudent.cycle,
@@ -205,7 +213,7 @@ export default function StudentsPage() {
     
     setDoc(studentDocRef, updatedData, { merge: true })
     .then(() => {
-        toast({ title: "Élève modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
+        toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         setIsEditDialogOpen(false);
         setEditingStudent(null);
     }).catch(async (serverError) => {
@@ -225,7 +233,7 @@ export default function StudentsPage() {
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToDelete.id}`);
     deleteDoc(studentDocRef)
     .then(() => {
-        toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.name} a été supprimé(e).` });
+        toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
         setIsDeleteDialogOpen(false);
         setStudentToDelete(null);
     }).catch(async (serverError) => {
@@ -334,12 +342,12 @@ export default function StudentsPage() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10">
-                                    <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${student.id}/100`} alt={student.name} data-ai-hint="person face" />
-                                    <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()}</AvatarFallback>
+                                    <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${student.id}/100`} alt={`${student.firstName} ${student.lastName}`} data-ai-hint="person face" />
+                                    <AvatarFallback>{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <Link href={`/dashboard/students/${student.id}`} className="font-medium hover:underline text-primary">
-                                        {student.name}
+                                        {student.firstName} {student.lastName}
                                     </Link>
                                     <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id.substring(0,8)}</div>
                                 </div>
@@ -400,34 +408,49 @@ export default function StudentsPage() {
           <DialogHeader>
             <DialogTitle>Modifier l'Élève</DialogTitle>
             <DialogDescription>
-                Mettez à jour les informations de <strong>{editingStudent?.name}</strong>.
+                Mettez à jour les informations de <strong>{editingStudent?.firstName} {editingStudent?.lastName}</strong>.
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
             <form id="edit-student-form" onSubmit={form.handleSubmit(handleEditStudent)} className="grid gap-4 py-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Nom</FormLabel>
-                    <FormControl className="col-span-3">
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage className="col-start-2 col-span-3" />
-                  </FormItem>
-                )}
-              />
+               <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Nom</FormLabel>
+                        <FormControl>
+                        <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Prénom</FormLabel>
+                        <FormControl>
+                        <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+              </div>
               <FormField
                 control={form.control}
                 name="dateOfBirth"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Date de naiss.</FormLabel>
-                    <FormControl className="col-span-3">
+                  <FormItem>
+                    <FormLabel>Date de naissance</FormLabel>
+                    <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
-                    <FormMessage className="col-start-2 col-span-3" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -435,10 +458,10 @@ export default function StudentsPage() {
                 control={form.control}
                 name="classId"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Classe</FormLabel>
+                  <FormItem>
+                    <FormLabel>Classe</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl className="col-span-3">
+                      <FormControl>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -447,7 +470,7 @@ export default function StudentsPage() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <FormMessage className="col-start-2 col-span-3" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -455,10 +478,10 @@ export default function StudentsPage() {
                 control={form.control}
                 name="status"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Statut Élève</FormLabel>
+                  <FormItem>
+                    <FormLabel>Statut Élève</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                       <FormControl className="col-span-3">
+                       <FormControl>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -474,12 +497,12 @@ export default function StudentsPage() {
                 control={form.control}
                 name="amountDue"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Solde (CFA)</FormLabel>
-                    <FormControl className="col-span-3">
+                  <FormItem>
+                    <FormLabel>Solde (CFA)</FormLabel>
+                    <FormControl>
                       <Input type="number" {...field} />
                     </FormControl>
-                    <FormMessage className="col-start-2 col-span-3" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -487,10 +510,10 @@ export default function StudentsPage() {
                 control={form.control}
                 name="tuitionStatus"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Statut Paiement</FormLabel>
+                  <FormItem>
+                    <FormLabel>Statut Paiement</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
-                       <FormControl className="col-span-3">
+                       <FormControl>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -506,9 +529,9 @@ export default function StudentsPage() {
                 control={form.control}
                 name="feedback"
                 render={({ field }) => (
-                  <FormItem className="grid grid-cols-4 items-start gap-4">
-                    <FormLabel className="text-right pt-2">Appréciation</FormLabel>
-                    <div className="col-span-3 space-y-2">
+                  <FormItem>
+                    <FormLabel>Appréciation</FormLabel>
+                    <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <FormControl>
                                 <Textarea {...field} />
@@ -553,7 +576,7 @@ export default function StudentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. L'élève <strong>{studentToDelete?.name}</strong> sera définitivement supprimé(e).
+              Cette action est irréversible. L'élève <strong>{studentToDelete?.firstName} {studentToDelete?.lastName}</strong> sera définitivement supprimé(e).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -565,3 +588,5 @@ export default function StudentsPage() {
     </>
   );
 }
+
+    
