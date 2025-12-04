@@ -21,28 +21,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { teacher as Teacher, class_type as Class, student as Student } from '@/lib/data-types';
-
-interface GradeEntry {
-    id: string;
-    subject: string;
-    type: 'Interrogation' | 'Devoir';
-    date: string;
-    grade: number;
-    coefficient: number;
-}
-
-interface PaymentHistoryEntry {
-    id: string;
-    date: string;
-    amount: number;
-    description: string;
-    accountingTransactionId: string;
-    payerFirstName: string;
-    payerLastName: string;
-    payerContact?: string;
-    method?: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
-}
+import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as PaymentHistoryEntry } from '@/lib/data-types';
 
 
 const getStatusBadgeVariant = (status: Student['status']) => {
@@ -159,16 +138,16 @@ export default function StudentProfilePage() {
   , [firestore, schoolId, studentId]);
 
   const { data: gradesData, loading: gradesLoading } = useCollection<GradeEntry>(gradesQuery);
-  const { data: paymentsData, loading: paymentsLoading } = useCollection<PaymentHistoryEntry>(paymentsQuery);
+  const { data: paymentsData, loading: paymentsLoading } = useCollection<PaymentHistoryEntry & { id: string }>(paymentsQuery);
   
   const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
-  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() })) || [], [paymentsData]);
+  const paymentHistory: (PaymentHistoryEntry & { id: string })[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() })) || [], [paymentsData]);
 
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
   const isLoading = schoolLoading || studentLoading || classTeacherLoading || gradesLoading || paymentsLoading;
   
-  const handleViewReceipt = (payment: PaymentHistoryEntry) => {
+  const handleViewReceipt = (payment: PaymentHistoryEntry & { id: string }) => {
     if (!student) return;
     
     // Calculate the amount due *at the time of this payment*
@@ -447,4 +426,3 @@ export default function StudentProfilePage() {
   );
 }
 
-    

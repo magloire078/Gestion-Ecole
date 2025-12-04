@@ -42,6 +42,7 @@ export type teacher = {
     email: string;
     phone?: string;
     classId?: string;
+    name?: string;
 };
 
 export type staff = {
