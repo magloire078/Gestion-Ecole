@@ -55,6 +55,11 @@ const financialLinks = [
   { href: '/dashboard/accounting', label: 'Comptabilité', icon: Landmark },
 ];
 
+const settingsLinks = [
+  { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
+  { href: '/dashboard/settings/subscription', label: 'Abonnement', icon: CreditCard },
+];
+
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
     const isActive = pathname.startsWith(href);
@@ -86,6 +91,7 @@ export function MobileNav() {
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
+    if (isLinkActive(settingsLinks)) openValues.push('configuration');
     return openValues;
   }
 
@@ -142,22 +148,16 @@ export function MobileNav() {
                         {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
                     </AccordionContent>
                 </AccordionItem>
+
+                <AccordionItem value="configuration" className="border-b-0">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                        <div className='flex items-center gap-3'><FolderCog className="h-5 w-5" />Configuration</div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pl-6 pt-2 space-y-4">
+                        {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
+                    </AccordionContent>
+                </AccordionItem>
             </Accordion>
-            
-             <Link
-                href="/dashboard/settings"
-                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary font-semibold", pathname.startsWith('/dashboard/settings') && !pathname.includes('subscription') && "text-primary bg-muted")}
-            >
-                <Settings className="h-5 w-5" />
-                Paramètres
-            </Link>
-             <Link
-                href="/dashboard/settings/subscription"
-                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary font-semibold", pathname === '/dashboard/settings/subscription' && "text-primary bg-muted")}
-            >
-                <CreditCard className="h-5 w-5" />
-                Abonnement
-            </Link>
         </nav>
     </div>
   );

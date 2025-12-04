@@ -57,6 +57,11 @@ const financialLinks = [
   { href: '/dashboard/accounting', label: 'Comptabilité', icon: Landmark },
 ];
 
+const settingsLinks = [
+  { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
+  { href: '/dashboard/settings/subscription', label: 'Abonnement', icon: CreditCard },
+];
+
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
     const isActive = pathname.startsWith(href);
@@ -89,11 +94,12 @@ export function MainNav() {
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
+    if (isLinkActive(settingsLinks)) openValues.push('configuration');
     return openValues;
   }
 
   return (
-    <nav className="flex flex-col justify-between flex-1 p-2 font-medium">
+    <nav className="flex flex-col flex-1 p-2 font-medium">
       <div className='flex-1 space-y-1'>
          <Link
           href="/dashboard"
@@ -144,24 +150,17 @@ export function MainNav() {
                {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
-        </Accordion>
-      </div>
 
-       <div className='space-y-1'>
-          <Link
-            href="/dashboard/settings"
-            className={cn(navClass, pathname.startsWith('/dashboard/settings') && !pathname.includes('subscription') && activeClass)}
-            >
-            <Settings className="h-4 w-4" />
-            Paramètres
-          </Link>
-           <Link
-            href="/dashboard/settings/subscription"
-            className={cn(navClass, pathname === '/dashboard/settings/subscription' && activeClass)}
-            >
-            <CreditCard className="h-4 w-4" />
-            Abonnement
-          </Link>
+          <AccordionItem value="configuration" className="border-b-0">
+            <AccordionTrigger className={cn("py-2 hover:no-underline hover:text-primary text-sm font-semibold text-muted-foreground [&[data-state=open]>svg]:text-primary", isLinkActive(settingsLinks) && "text-primary")}>
+                 <div className='flex items-center gap-3'><FolderCog className="h-4 w-4" />Configuration</div>
+            </AccordionTrigger>
+            <AccordionContent className="pl-4 pt-1 space-y-1">
+               {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
+            </AccordionContent>
+          </AccordionItem>
+
+        </Accordion>
       </div>
     </nav>
   );
