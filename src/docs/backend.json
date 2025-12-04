@@ -33,7 +33,8 @@
             "matricule": { "type": "string", "description": "Le numéro matricule de l'établissement." },
             "cnpsEmployeur": { "type": "string", "description": "Le numéro d'immatriculation CNPS de l'école." },
             "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
-            "directorName": { "type": "string", "description": "Le nom du directeur de l'école." },
+            "directorFirstName": { "type": "string", "description": "Le prénom du directeur de l'école." },
+            "directorLastName": { "type": "string", "description": "Le nom de famille du directeur de l'école." },
             "directorPhone": { "type": "string", "description": "Le numéro de téléphone du directeur." },
             "schoolCode": { "type": "string", "description": "Un code lisible par l'homme pour rejoindre l'école." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date de création de l'école." },
@@ -50,27 +51,29 @@
                 }
             }
         },
-        "required": ["name", "directorId", "directorName", "schoolCode"]
+        "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
     },
     "teacher": {
       "title": "Enseignant",
       "description": "Un enseignant de l'école.",
       "type": "object",
       "properties": {
-        "name": { "type": "string", "description": "Le nom complet de l'enseignant." },
+        "firstName": { "type": "string", "description": "Le prénom de l'enseignant." },
+        "lastName": { "type": "string", "description": "Le nom de famille de l'enseignant." },
         "subject": { "type": "string", "description": "La matière principale enseignée par l'enseignant." },
         "email": { "type": "string", "format": "email", "description": "L'adresse e-mail de l'enseignant." },
         "phone": { "type": "string", "description": "Le numéro de téléphone de l'enseignant." },
         "classId": { "type": "string", "description": "L'identifiant de la classe principale supervisée par l'enseignant." }
       },
-      "required": ["name", "subject", "email"]
+      "required": ["firstName", "lastName", "subject", "email"]
     },
     "staff": {
       "title": "Membre du Personnel",
       "description": "Un membre du personnel de l'école (hors enseignants).",
       "type": "object",
       "properties": {
-        "name": { "type": "string", "description": "Le nom complet du membre du personnel." },
+        "firstName": { "type": "string", "description": "Le prénom du membre du personnel." },
+        "lastName": { "type": "string", "description": "Le nom de famille du membre du personnel." },
         "role": { "type": "string", "description": "Le poste ou la fonction (ex: Comptable, Secrétaire)." },
         "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." },
         "email": { "type": "string", "format": "email", "description": "L'adresse e-mail." },
@@ -96,7 +99,7 @@
         "Cle_RIB": { "type": "string", "description": "Clé RIB." },
         "CNPS": { "type": "boolean", "description": "L'employé est-il soumis aux cotisations CNPS ?" }
       },
-      "required": ["name", "role", "hireDate", "baseSalary"]
+      "required": ["firstName", "lastName", "role", "hireDate", "baseSalary"]
     },
     "class": {
       "title": "Classe",
@@ -140,17 +143,22 @@
         "type": "object",
         "properties": {
             "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève." },
-            "name": { "type": "string", "description": "Le nom complet de l'élève." },
+            "firstName": { "type": "string", "description": "Le prénom de l'élève." },
+            "lastName": { "type": "string", "description": "Le nom de famille de l'élève." },
+            "photoUrl": { "type": "string", "format": "uri", "description": "URL de la photo de profil de l'élève." },
+            "status": { "type": "string", "enum": ["Actif", "En attente", "Radié"], "description": "Statut actuel de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe de l'élève." },
             "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
             "cycle": { "type": "string", "description": "Le cycle d'enseignement de l'élève." },
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
-            "gender": { "type": "string", "description": "Le sexe de l'élève (Masculin, Féminin)." },
+            "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
             "address": { "type": "string", "description": "L'adresse de l'élève." },
-            "parent1Name": { "type": "string", "description": "Le nom du premier parent/tuteur." },
+            "parent1FirstName": { "type": "string", "description": "Le prénom du premier parent/tuteur." },
+            "parent1LastName": { "type": "string", "description": "Le nom de famille du premier parent/tuteur." },
             "parent1Contact": { "type": "string", "description": "Le contact téléphonique du premier parent/tuteur." },
-            "parent2Name": { "type": "string", "description": "Le nom du deuxième parent/tuteur (optionnel)." },
+            "parent2FirstName": { "type": "string", "description": "Le prénom du deuxième parent/tuteur (optionnel)." },
+            "parent2LastName": { "type": "string", "description": "Le nom de famille du deuxième parent/tuteur (optionnel)." },
             "parent2Contact": { "type": "string", "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)." },
             "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
             "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
@@ -158,7 +166,7 @@
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
-        "required": ["name", "matricule", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
+        "required": ["firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact"]
     },
     "gradeEntry": {
         "title": "Note",
@@ -196,11 +204,12 @@
         "amount": { "type": "number", "description": "Le montant payé." },
         "description": { "type": "string", "description": "Description du paiement (ex: 1ère tranche)." },
         "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." },
-        "payerName": { "type": "string", "description": "Le nom de la personne qui a effectué le paiement." },
+        "payerFirstName": { "type": "string", "description": "Le prénom de la personne qui a effectué le paiement." },
+        "payerLastName": { "type": "string", "description": "Le nom de la personne qui a effectué le paiement." },
         "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." },
         "method": { "type": "string", "enum": ["Espèces", "Chèque", "Virement Bancaire", "Paiement Mobile"], "description": "Le mode de paiement utilisé." }
       },
-      "required": ["date", "amount", "description", "accountingTransactionId", "payerName", "method"]
+      "required": ["date", "amount", "description", "accountingTransactionId", "payerFirstName", "payerLastName", "method"]
     },
     "libraryBook": {
         "title": "Livre de Bibliothèque",

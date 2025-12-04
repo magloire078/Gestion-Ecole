@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, Mail, Phone, BadgeDollarSign, Calendar, FileText, Lock } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText, Lock } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -70,7 +70,8 @@ import {
 
 
 const staffSchema = z.object({
-  name: z.string().min(1, { message: "Le nom est requis." }),
+  firstName: z.string().min(1, { message: "Le prénom est requis." }),
+  lastName: z.string().min(1, { message: "Le nom est requis." }),
   role: z.string().min(1, { message: "Le rôle est requis." }),
   email: z.string().email({ message: "L'adresse email est invalide." }).optional().or(z.literal('')),
   phone: z.string().optional(),
@@ -99,12 +100,12 @@ const staffSchema = z.object({
 type StaffFormValues = z.infer<typeof staffSchema>;
 
 // The StaffMember for the UI is now equivalent to the Employe type for payroll logic
-type StaffMember = Employe;
+type StaffMember = Employe & { id: string };
 
 function HRContent() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
-  const { schoolId, schoolName, schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
   // --- Firestore Data Hooks ---
@@ -125,7 +126,8 @@ function HRContent() {
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffSchema),
     defaultValues: {
-      name: '',
+      firstName: '',
+      lastName: '',
       role: '',
       email: '',
       phone: '',
@@ -155,7 +157,8 @@ function HRContent() {
     if (isFormOpen) {
       if (editingStaff) {
         form.reset({
-          name: editingStaff.name || '',
+          firstName: editingStaff.firstName || '',
+          lastName: editingStaff.lastName || '',
           role: editingStaff.role || '',
           email: editingStaff.email || '',
           phone: editingStaff.phone || '',
@@ -181,7 +184,8 @@ function HRContent() {
         });
       } else {
         form.reset({
-          name: '',
+          firstName: '',
+          lastName: '',
           role: '',
           email: '',
           phone: '',
@@ -215,7 +219,7 @@ function HRContent() {
       return;
     }
     
-    const dataToSave = { 
+    const dataToSave: Omit<Employe, 'id'> = { 
         ...values,
         matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
         status: editingStaff?.status || 'Actif',
@@ -225,11 +229,11 @@ function HRContent() {
         if (editingStaff) {
             const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
             await setDoc(staffDocRef, dataToSave, { merge: true });
-            toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
+            toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         } else {
             const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
             await addDoc(staffCollectionRef, dataToSave);
-            toast({ title: "Membre du personnel ajouté", description: `${values.name} a été ajouté(e) à la liste du personnel.` });
+            toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) à la liste du personnel.` });
         }
         setIsFormOpen(false);
         setEditingStaff(null);
@@ -246,7 +250,7 @@ function HRContent() {
     const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffToDelete.id}`);
     deleteDoc(staffDocRef)
       .then(() => {
-        toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.name} a été retiré(e) de la liste.` });
+        toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
         setIsDeleteDialogOpen(false);
         setStaffToDelete(null);
       }).catch(async (serverError) => {
@@ -329,17 +333,18 @@ function HRContent() {
                         ))
                     ) : staff.length > 0 ? (
                         staff.map((member) => {
-                            const fallback = member.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                            const fullName = `${member.firstName} ${member.lastName}`;
+                            const fallback = `${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase();
                             return (
                                 <TableRow key={member.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <Avatar className="h-9 w-9">
-                                                <AvatarImage src={`https://picsum.photos/seed/${member.id}/100`} alt={member.name} data-ai-hint="person face" />
+                                                <AvatarImage src={`https://picsum.photos/seed/${member.id}/100`} alt={fullName} data-ai-hint="person face" />
                                                 <AvatarFallback>{fallback}</AvatarFallback>
                                             </Avatar>
                                             <div>
-                                                <p className="font-medium">{member.name}</p>
+                                                <p className="font-medium">{fullName}</p>
                                                 <p className="text-xs text-muted-foreground">{member.email}</p>
                                             </div>
                                         </div>
@@ -382,7 +387,7 @@ function HRContent() {
             <DialogHeader>
               <DialogTitle>{editingStaff ? "Modifier un Membre" : "Ajouter un Membre du Personnel"}</DialogTitle>
               <DialogDescription>
-                {editingStaff ? `Mettez à jour les informations de ${editingStaff.name}.` : "Renseignez les informations du nouveau membre."}
+                {editingStaff ? `Mettez à jour les informations de ${editingStaff.firstName} ${editingStaff.lastName}.` : "Renseignez les informations du nouveau membre."}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -396,7 +401,10 @@ function HRContent() {
                         </TabsList>
                         <div className="py-6 max-h-[60vh] overflow-y-auto px-1">
                             <TabsContent value="general" className="space-y-4">
-                               <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom complet" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom de famille" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
                                 <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><FormControl><Input placeholder="Ex: Comptable" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <div className="grid grid-cols-2 gap-4">
                                   <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemple.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -460,7 +468,7 @@ function HRContent() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.name}</strong> sera définitivement supprimé.
+              Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.firstName} {staffToDelete?.lastName}</strong> sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -476,7 +484,7 @@ function HRContent() {
             <DialogHeader>
               <DialogTitle>Bulletin de paie</DialogTitle>
               <DialogDescription>
-                Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.name || "..."}.
+                Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.firstName} {payslipDetails?.employeeInfo.lastName || "..."}.
               </DialogDescription>
             </DialogHeader>
             {isGeneratingPayslip ? (
@@ -543,4 +551,3 @@ export default function HRPage() {
     
     return <HRContent />;
 }
-
