@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -18,16 +19,20 @@ import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface Student {
   matricule?: string;
   name: string;
+  photoUrl?: string;
+  status: 'Actif' | 'En attente' | 'Radié';
   class: string;
   classId: string;
   cycle?: string;
   dateOfBirth: string;
   placeOfBirth: string;
-  gender: string;
+  gender: 'Masculin' | 'Féminin';
   address: string;
   previousSchool: string;
   parent1Name: string;
@@ -72,6 +77,19 @@ interface Class {
   mainTeacherId: string;
   cycle: string;
 }
+
+const getStatusBadgeVariant = (status: Student['status']) => {
+    switch (status) {
+        case 'Actif':
+            return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+        case 'Radié':
+            return 'bg-destructive/80 text-destructive-foreground';
+        case 'En attente':
+            return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
+        default:
+            return 'bg-secondary text-secondary-foreground';
+    }
+};
 
 const calculateAverages = (grades: GradeEntry[]) => {
     const gradesBySubject: Record<string, { totalPoints: number; totalCoeffs: number }> = {};
@@ -261,12 +279,13 @@ export default function StudentProfilePage() {
                  <Card>
                     <CardHeader className="flex-row items-center gap-4 pb-4">
                         <Avatar className="h-16 w-16">
-                            <AvatarImage src={`https://picsum.photos/seed/${studentId}/100/100`} alt={student.name} data-ai-hint="person face" />
+                            <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={student.name} data-ai-hint="person face" />
                             <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div>
                              <CardTitle className="text-2xl">{student.name}</CardTitle>
                              <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
+                             <Badge className={cn("mt-2 border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">

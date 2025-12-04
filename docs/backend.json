@@ -141,12 +141,14 @@
         "properties": {
             "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève." },
             "name": { "type": "string", "description": "Le nom complet de l'élève." },
+            "photoUrl": { "type": "string", "format": "uri", "description": "URL de la photo de profil de l'élève." },
+            "status": { "type": "string", "enum": ["Actif", "En attente", "Radié"], "description": "Statut actuel de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe de l'élève." },
             "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
             "cycle": { "type": "string", "description": "Le cycle d'enseignement de l'élève." },
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
-            "gender": { "type": "string", "description": "Le sexe de l'élève (Masculin, Féminin)." },
+            "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
             "address": { "type": "string", "description": "L'adresse de l'élève." },
             "parent1Name": { "type": "string", "description": "Le nom du premier parent/tuteur." },
             "parent1Contact": { "type": "string", "description": "Le contact téléphonique du premier parent/tuteur." },
@@ -158,7 +160,7 @@
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
-        "required": ["name", "matricule", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "parent1Name", "parent1Contact"]
+        "required": ["name", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1Name", "parent1Contact"]
     },
     "gradeEntry": {
         "title": "Note",
@@ -197,9 +199,10 @@
         "description": { "type": "string", "description": "Description du paiement (ex: 1ère tranche)." },
         "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." },
         "payerName": { "type": "string", "description": "Le nom de la personne qui a effectué le paiement." },
-        "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." }
+        "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." },
+        "method": { "type": "string", "enum": ["Espèces", "Chèque", "Virement Bancaire", "Paiement Mobile"], "description": "Le mode de paiement utilisé." }
       },
-      "required": ["date", "amount", "description", "accountingTransactionId", "payerName"]
+      "required": ["date", "amount", "description", "accountingTransactionId", "payerName", "method"]
     },
     "libraryBook": {
         "title": "Livre de Bibliothèque",

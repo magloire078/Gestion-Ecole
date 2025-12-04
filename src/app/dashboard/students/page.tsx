@@ -65,15 +65,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 
 interface Student {
   id: string;
   matricule?: string;
   name: string;
+  photoUrl?: string;
+  status: 'Actif' | 'En attente' | 'Radié';
   class: string;
   classId: string;
   cycle: string;
+  gender: 'Masculin' | 'Féminin';
   feedback: string;
   tuitionStatus: TuitionStatus;
   amountDue: number;
@@ -96,11 +101,24 @@ const studentSchema = z.object({
     dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
     amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
     tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
+    status: z.enum(['Actif', 'En attente', 'Radié']),
     feedback: z.string().optional(),
 });
 
 type StudentFormValues = z.infer<typeof studentSchema>;
 
+const getStatusBadgeVariant = (status: Student['status']) => {
+    switch (status) {
+        case 'Actif':
+            return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+        case 'Radié':
+            return 'bg-destructive/80 text-destructive-foreground';
+        case 'En attente':
+            return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
+        default:
+            return 'bg-secondary text-secondary-foreground';
+    }
+};
 
 export default function StudentsPage() {
   const isMounted = useHydrationFix();
@@ -137,6 +155,7 @@ export default function StudentsPage() {
         dateOfBirth: '',
         amountDue: 0,
         tuitionStatus: 'Partiel',
+        status: 'Actif',
         feedback: '',
     }
   });
@@ -149,6 +168,7 @@ export default function StudentsPage() {
         feedback: editingStudent.feedback,
         amountDue: editingStudent.amountDue,
         tuitionStatus: editingStudent.tuitionStatus,
+        status: editingStudent.status || 'Actif',
         dateOfBirth: editingStudent.dateOfBirth,
       });
     } else {
@@ -179,6 +199,7 @@ export default function StudentsPage() {
       feedback: values.feedback || '',
       amountDue: values.amountDue,
       tuitionStatus: values.tuitionStatus,
+      status: values.status,
       dateOfBirth: values.dateOfBirth,
     };
     
@@ -285,13 +306,12 @@ export default function StudentsPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[50px]">N°</TableHead>
-                        <TableHead>Matricule</TableHead>
                         <TableHead>Nom</TableHead>
                         <TableHead>Classe</TableHead>
                         <TableHead>Âge</TableHead>
-                        <TableHead className="text-right">Solde Scolarité</TableHead>
-                        <TableHead className="text-center">Statut Paiement</TableHead>
+                        <TableHead>Sexe</TableHead>
+                        <TableHead className="text-center">Statut</TableHead>
+                        <TableHead className="text-center">Paiement</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -299,30 +319,37 @@ export default function StudentsPage() {
                       {isLoading ? (
                         [...Array(5)].map((_, i) => (
                           <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-8"/></TableCell>
-                            <TableCell><Skeleton className="h-5 w-24"/></TableCell>
-                            <TableCell><Skeleton className="h-5 w-32"/></TableCell>
+                            <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-1"><Skeleton className="h-4 w-32"/><Skeleton className="h-3 w-24"/></div></div></TableCell>
                             <TableCell><Skeleton className="h-5 w-16"/></TableCell>
                             <TableCell><Skeleton className="h-5 w-16"/></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-5 w-12 mx-auto"/></TableCell>
+                            <TableCell><Skeleton className="h-5 w-16"/></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-6 w-16 mx-auto"/></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-6 w-16 mx-auto"/></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto"/></TableCell>
                           </TableRow>
                         ))
                       ) : students.length > 0 ? (
                         students.map((student, index) => (
                         <TableRow key={student.id}>
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell className="font-mono text-xs">{student.matricule || student.id.substring(0,8)}</TableCell>
-                          <TableCell className="font-medium">
-                            <Link href={`/dashboard/students/${student.id}`} className="hover:underline text-primary">
-                                {student.name}
-                            </Link>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${student.id}/100`} alt={student.name} data-ai-hint="person face" />
+                                    <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <Link href={`/dashboard/students/${student.id}`} className="font-medium hover:underline text-primary">
+                                        {student.name}
+                                    </Link>
+                                    <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id.substring(0,8)}</div>
+                                </div>
+                            </div>
                           </TableCell>
                           <TableCell>{student.class}</TableCell>
                           <TableCell>{isMounted ? getAge(student.dateOfBirth) : <Skeleton className="h-5 w-16"/>}</TableCell>
-                          <TableCell className="text-right font-mono">
-                              {student.amountDue > 0 ? formatCurrency(student.amountDue) : '-'}
+                          <TableCell>{student.gender}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                           </TableCell>
                           <TableCell className="text-center">
                               <TuitionStatusBadge status={student.tuitionStatus} />
@@ -424,6 +451,25 @@ export default function StudentsPage() {
                   </FormItem>
                 )}
               />
+               <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Statut Élève</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                       <FormControl className="col-span-3">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Actif">Actif</SelectItem>
+                        <SelectItem value="En attente">En attente</SelectItem>
+                        <SelectItem value="Radié">Radié</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="amountDue"
@@ -442,7 +488,7 @@ export default function StudentsPage() {
                 name="tuitionStatus"
                 render={({ field }) => (
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Statut</FormLabel>
+                    <FormLabel className="text-right">Statut Paiement</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                        <FormControl className="col-span-3">
                         <SelectTrigger><SelectValue /></SelectTrigger>

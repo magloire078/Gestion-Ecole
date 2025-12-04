@@ -94,12 +94,14 @@ export type fee = {
 export type student = {
     matricule: string;
     name: string;
+    photoUrl: string;
+    status: "Actif" | "En attente" | "Radié";
     class: string;
     classId: string;
     cycle: string;
     dateOfBirth: string;
     placeOfBirth: string;
-    gender: string;
+    gender: "Masculin" | "Féminin";
     address: string;
     parent1Name: string;
     parent1Contact: string;

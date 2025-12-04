@@ -32,12 +32,13 @@ const registrationSchema = z.object({
   matricule: z.string().min(1, { message: "Le numéro matricule est requis." }),
   dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
   placeOfBirth: z.string().min(1, { message: "Le lieu de naissance est requis." }),
-  gender: z.string().min(1, { message: "Le sexe est requis." }),
+  gender: z.enum(['Masculin', 'Féminin'], { required_error: "Le sexe est requis." }),
   address: z.string().optional(),
   
   // Step 2
   previousSchool: z.string().optional(),
   classId: z.string().min(1, { message: "La classe souhaitée est requise." }),
+  status: z.enum(['Actif', 'En attente'], { required_error: "Le statut est requis." }),
 
   // Step 3
   parent1Name: z.string().min(1, { message: "Le nom du parent 1 est requis." }),
@@ -49,7 +50,7 @@ const registrationSchema = z.object({
 type RegistrationFormValues = z.infer<typeof registrationSchema>;
 
 const step1Fields: (keyof RegistrationFormValues)[] = ['name', 'matricule', 'dateOfBirth', 'placeOfBirth', 'gender', 'address'];
-const step2Fields: (keyof RegistrationFormValues)[] = ['previousSchool', 'classId'];
+const step2Fields: (keyof RegistrationFormValues)[] = ['previousSchool', 'classId', 'status'];
 const step3Fields: (keyof RegistrationFormValues)[] = ['parent1Name', 'parent1Contact', 'parent2Name', 'parent2Contact'];
 
 
@@ -72,10 +73,11 @@ export default function RegistrationPage() {
         matricule: '',
         dateOfBirth: '',
         placeOfBirth: '',
-        gender: '',
+        gender: undefined,
         address: '',
         previousSchool: '',
         classId: '',
+        status: 'Actif',
         parent1Name: '',
         parent1Contact: '',
         parent2Name: '',
@@ -119,6 +121,8 @@ export default function RegistrationPage() {
       gender: values.gender,
       address: values.address,
       previousSchool: values.previousSchool,
+      photoUrl: `https://picsum.photos/seed/${values.matricule}/200`,
+      status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
       cycle: studentCycle,
@@ -189,7 +193,10 @@ export default function RegistrationPage() {
                 <div className="space-y-4 animate-in fade-in-50">
                   <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations Scolaires</div>
                   <FormField control={form.control} name="previousSchool" render={({ field }) => (<FormItem><FormLabel>Ancien établissement (si applicable)</FormLabel><FormControl><Input placeholder="Ex: Lycée Lamine Gueye" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe souhaitée</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe souhaitée</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut de l'inscription</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un statut" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif / Inscrit</SelectItem><SelectItem value="En attente">En attente / Pré-inscrit</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                  </div>
                 </div>
               )}
               
