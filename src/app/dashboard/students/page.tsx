@@ -318,7 +318,7 @@ export default function StudentsPage() {
               <p className="text-muted-foreground">Consultez et gérez les élèves inscrits.</p>
             </div>
             <Button onClick={() => router.push('/dashboard/registration')}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Élève
+                <PlusCircle className="mr-2 h-4 w-4" /> Nouvelle Inscription
             </Button>
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 print:hidden">
@@ -625,6 +625,7 @@ export default function StudentsPage() {
     </>
   );
 }
+
 
 
 
