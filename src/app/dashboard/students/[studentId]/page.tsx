@@ -21,32 +21,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { teacher as Teacher, class_type as Class } from '@/lib/data-types';
-
-interface Student {
-  matricule?: string;
-  firstName: string;
-  lastName: string;
-  photoUrl?: string;
-  status: 'Actif' | 'En attente' | 'Radié';
-  class: string;
-  classId: string;
-  cycle?: string;
-  dateOfBirth: string;
-  placeOfBirth: string;
-  gender: 'Masculin' | 'Féminin';
-  address: string;
-  previousSchool: string;
-  parent1FirstName: string;
-  parent1LastName: string;
-  parent1Contact: string;
-  parent2FirstName?: string;
-  parent2LastName?: string;
-  parent2Contact?: string;
-  feedback: string;
-  tuitionStatus: 'Soldé' | 'En retard' | 'Partiel';
-  amountDue: number;
-}
+import type { teacher as Teacher, class_type as Class, student as Student } from '@/lib/data-types';
 
 interface GradeEntry {
     id: string;
@@ -200,7 +175,7 @@ export default function StudentProfilePage() {
     const currentPaymentIndex = paymentHistory.findIndex(p => p.id === payment.id);
     const paymentsUpToThisOne = paymentHistory.slice(currentPaymentIndex);
     const totalPaidSinceThisPayment = paymentsUpToThisOne.reduce((sum, p) => sum + p.amount, 0);
-    const amountDueAtTimeOfPayment = student.amountDue + totalPaidSinceThisPayment;
+    const amountDueAtTimeOfPayment = (student.amountDue ?? 0) + totalPaidSinceThisPayment;
 
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
@@ -403,11 +378,11 @@ export default function StudentProfilePage() {
                         <CardContent className="space-y-4">
                             <div className="flex justify-between items-center text-lg">
                             <span className="text-muted-foreground">Statut</span>
-                            <TuitionStatusBadge status={student.tuitionStatus} />
+                            <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} />
                             </div>
                             <div className="flex justify-between items-center text-lg">
                             <span className="text-muted-foreground">Solde dû</span>
-                            <span className="font-bold text-primary">{student.amountDue > 0 ? `${student.amountDue.toLocaleString('fr-FR')} CFA` : '-'}</span>
+                            <span className="font-bold text-primary">{(student.amountDue ?? 0) > 0 ? `${(student.amountDue ?? 0).toLocaleString('fr-FR')} CFA` : '-'}</span>
                             </div>
                         </CardContent>
                     </Card>
