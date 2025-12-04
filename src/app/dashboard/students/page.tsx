@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal, Eye, MessageSquare } from "lucide-react";
+import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal, Eye, MessageSquare, Search, Printer, Upload, Download } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -130,6 +130,7 @@ export default function StudentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { toast } = useToast();
 
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
@@ -137,8 +138,17 @@ export default function StudentsPage() {
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
-  const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+  const allStudents: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const students = useMemo(() => {
+    return allStudents.filter(student =>
+        `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [allStudents, searchTerm]);
+
 
   // Edit Student State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -284,7 +294,6 @@ export default function StudentsPage() {
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   const isLoading = schoolLoading || studentsLoading || classesLoading;
-  const { toast } = useToast();
   
   const renderSentiment = (sentiment: string) => {
     const sentimentLower = sentiment.toLowerCase();
@@ -296,12 +305,15 @@ export default function StudentsPage() {
     }
     return <span className="flex items-center gap-1 text-gray-600"><Meh className="h-4 w-4" /> Neutre</span>
   };
+  
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <>
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-3 space-y-6">
-          <div className="flex justify-between items-center gap-4">
+      <div className="space-y-6 print:space-y-0" id="students-page">
+        <div className="flex justify-between items-center gap-4 print:hidden">
             <div>
               <h1 className="text-lg font-semibold md:text-2xl">Liste des Élèves ({students.length})</h1>
               <p className="text-muted-foreground">Consultez et gérez les élèves inscrits.</p>
@@ -309,20 +321,43 @@ export default function StudentsPage() {
             <Button onClick={() => router.push('/dashboard/registration')}>
                 <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Élève
             </Button>
-          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row items-center gap-2 print:hidden">
+            <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Chercher par nom ou matricule..."
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+            <div className="flex gap-2 ml-auto">
+                <Button variant="outline" onClick={() => toast({title: "Bientôt disponible", description: "L'importation de données sera bientôt disponible."})}>
+                    <Upload className="mr-2 h-4 w-4" /> Importer
+                </Button>
+                <Button variant="outline" onClick={() => toast({title: "Bientôt disponible", description: "L'exportation de données sera bientôt disponible."})}>
+                    <Download className="mr-2 h-4 w-4" /> Exporter
+                </Button>
+                 <Button variant="outline" onClick={handlePrint}>
+                    <Printer className="mr-2 h-4 w-4" /> Imprimer
+                </Button>
+            </div>
+        </div>
           <Card>
               <CardContent className="p-0">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>N°</TableHead>
+                        <TableHead className="w-[50px]">N°</TableHead>
                         <TableHead>Élève</TableHead>
                         <TableHead>Classe</TableHead>
                         <TableHead>Âge</TableHead>
                         <TableHead>Sexe</TableHead>
                         <TableHead className="text-center">Statut</TableHead>
                         <TableHead className="text-center">Paiement</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        <TableHead className="text-right print:hidden">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -366,7 +401,7 @@ export default function StudentsPage() {
                           <TableCell className="text-center">
                               <TuitionStatusBadge status={student.tuitionStatus} />
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right print:hidden">
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
@@ -393,14 +428,13 @@ export default function StudentsPage() {
                       ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={8} className="h-24 text-center">Aucun élève inscrit pour le moment.</TableCell>
+                          <TableCell colSpan={8} className="h-24 text-center">Aucun élève trouvé.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
               </CardContent>
           </Card>
-        </div>
       </div>
       
       {/* Edit Dialog */}
@@ -592,5 +626,6 @@ export default function StudentsPage() {
     </>
   );
 }
+
 
 

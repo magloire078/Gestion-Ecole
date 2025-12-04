@@ -70,3 +70,22 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@media print {
+  .print\:hidden {
+    display: none;
+  }
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  #students-page > div:first-child,
+  #students-page > div:nth-child(2) {
+    display: none;
+  }
+  .print\:space-y-0 {
+    --tw-space-y-reverse: 0;
+    margin-top: calc(0px * calc(1 - var(--tw-space-y-reverse)));
+    margin-bottom: calc(0px * var(--tw-space-y-reverse));
+  }
+}
