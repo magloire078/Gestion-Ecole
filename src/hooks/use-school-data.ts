@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, collection } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -79,13 +79,28 @@ export function useSchoolData() {
         const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as SchoolData;
-                setSchoolData(data);
-                document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
+                
+                // Fetch all users in the school to get the role
+                const usersCollectionRef = collection(firestore, `ecoles/${schoolId}/utilisateurs`);
+                onSnapshot(usersCollectionRef, (usersSnapshot) => {
+                    const usersData: any = {};
+                    usersSnapshot.forEach(userDoc => {
+                        usersData[userDoc.id] = userDoc.data();
+                    });
+                    setSchoolData({ ...data, utilisateurs: usersData });
+                    document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching school users:", error);
+                     setSchoolData(data); // Set school data even if users fail to load
+                     setLoading(false);
+                });
+
             } else {
                 setSchoolData(null);
                 document.title = DEFAULT_TITLE;
+                setLoading(false);
             }
-            setLoading(false);
         }, (error) => {
              const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
              errorEmitter.emit('permission-error', permissionError);

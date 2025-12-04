@@ -66,6 +66,8 @@ export function UserNav() {
   const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   const isAdmin = user?.uid === ADMIN_UID;
+  const userRole = (schoolData?.utilisateurs as any)?.[user?.uid || '']?.role;
+
 
   return (
     <DropdownMenu>
@@ -84,6 +86,7 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
             </p>
+             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
