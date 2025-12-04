@@ -141,7 +141,7 @@ export default function TeacherProfilePage() {
                         </Avatar>
                         <div>
                              <CardTitle className="text-2xl">{teacher.name}</CardTitle>
-                             <CardDescription>ID Enseignant: {teacherId}</CardDescription>
+                             <CardDescription>ID Enseignant: {teacherId.substring(0,10)}...</CardDescription>
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
@@ -184,7 +184,7 @@ export default function TeacherProfilePage() {
                                 onChange={(e) => setTeacherSkills(e.target.value)}
                             />
                         </div>
-                         <Button onClick={handleGenerateRecommendation} disabled={isGenerating} className="w-full bg-accent hover:bg-accent/90">
+                         <Button onClick={handleGenerateRecommendation} disabled={isGenerating} className="w-full">
                           <Bot className="mr-2 h-4 w-4" />
                           {isGenerating ? 'Génération en cours...' : 'Générer la Lettre avec l\'IA'}
                         </Button>
