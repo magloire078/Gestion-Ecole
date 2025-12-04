@@ -81,8 +81,8 @@ export default function StudentProfilePage() {
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
-  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
-  const student = studentData;
+  const { data: studentDocData, loading: studentLoading } = useDoc(studentRef);
+  const student: Student | null = studentDocData ? studentDocData as Student : null;
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
 
   // --- Teacher and Class Data (Loaded separately) ---
@@ -137,11 +137,11 @@ export default function StudentProfilePage() {
     (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc')) : null
   , [firestore, schoolId, studentId]);
 
-  const { data: gradesData, loading: gradesLoading } = useCollection<GradeEntry>(gradesQuery);
-  const { data: paymentsData, loading: paymentsLoading } = useCollection<PaymentHistoryEntry & { id: string }>(paymentsQuery);
+  const { data: gradesDocData, loading: gradesLoading } = useCollection(gradesQuery);
+  const { data: paymentsDocData, loading: paymentsLoading } = useCollection(paymentsQuery);
   
-  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
-  const paymentHistory: (PaymentHistoryEntry & { id: string })[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() })) || [], [paymentsData]);
+  const grades: GradeEntry[] = useMemo(() => gradesDocData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesDocData]);
+  const paymentHistory: (PaymentHistoryEntry & { id: string })[] = useMemo(() => paymentsDocData?.map(d => ({ id: d.id, ...d.data() } as (PaymentHistoryEntry & {id: string}))) || [], [paymentsDocData]);
 
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
@@ -426,3 +426,4 @@ export default function StudentProfilePage() {
   );
 }
 
+    
