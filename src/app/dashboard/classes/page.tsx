@@ -45,6 +45,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import type { teacher as Teacher, class_type as Class } from '@/lib/data-types';
 
 // Define Zod schema for validation
 const classSchema = z.object({
@@ -59,23 +60,12 @@ const classSchema = z.object({
 type ClassFormValues = z.infer<typeof classSchema>;
 
 // Define TypeScript interfaces based on backend.json
-interface Teacher {
+interface TeacherWithId extends Teacher {
   id: string;
-  name: string;
-  subject: string;
-  email: string;
-  phone?: string;
-  classId?: string;
 }
 
-interface Class {
+interface ClassWithId extends Class {
   id: string;
-  name: string;
-  studentCount: number;
-  mainTeacherId: string;
-  building: string;
-  cycle: string;
-  filiere?: string;
 }
 
 // Using a static type for cycles for reliability
@@ -100,19 +90,20 @@ export default function ClassesPage() {
   // Use the static, reliable list of cycles from data.ts
   const cycles: Cycle[] = useMemo(() => schoolCycles.sort((a,b) => a.order - b.order), []);
 
-  const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
-  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const teachers: TeacherWithId[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as TeacherWithId)) || [], [teachersData]);
+  const classes: ClassWithId[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as ClassWithId)) || [], [classesData]);
   
   // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
   
-  const [editingClass, setEditingClass] = useState<Class | null>(null);
-  const [classToDelete, setClassToDelete] = useState<Class | null>(null);
+  const [editingClass, setEditingClass] = useState<ClassWithId | null>(null);
+  const [classToDelete, setClassToDelete] = useState<ClassWithId | null>(null);
 
   // Add teacher dialog state
-  const [newTeacherName, setNewTeacherName] = useState("");
+  const [newTeacherFirstName, setNewTeacherFirstName] = useState("");
+  const [newTeacherLastName, setNewTeacherLastName] = useState("");
   const [newTeacherEmail, setNewTeacherEmail] = useState("");
   const [newTeacherSubject, setNewTeacherSubject] = useState("");
 
@@ -201,12 +192,12 @@ export default function ClassesPage() {
     }
   };
   
-  const handleOpenFormDialog = (cls: Class | null) => {
+  const handleOpenFormDialog = (cls: ClassWithId | null) => {
     setEditingClass(cls);
     setIsFormOpen(true);
   };
 
-  const handleOpenDeleteDialog = (cls: Class) => {
+  const handleOpenDeleteDialog = (cls: ClassWithId) => {
     setClassToDelete(cls);
     setIsDeleteDialogOpen(true);
   };
@@ -227,25 +218,32 @@ export default function ClassesPage() {
   }
   
   const handleOpenAddTeacherDialog = async (teacherName: string) => {
-    setNewTeacherName(teacherName);
+    const nameParts = teacherName.split(' ');
+    setNewTeacherFirstName(nameParts[0] || '');
+    setNewTeacherLastName(nameParts.slice(1).join(' ') || '');
     setNewTeacherEmail("");
     setNewTeacherSubject("");
     setIsAddTeacherDialogOpen(true);
   }
 
   const handleCreateTeacher = async () => {
-    if (!schoolId || !newTeacherName || !newTeacherSubject || !newTeacherEmail) {
-        toast({ variant: "destructive", title: "Erreur", description: "Le nom, la matière et l'email sont requis." });
+    if (!schoolId || !newTeacherFirstName || !newTeacherLastName || !newTeacherSubject || !newTeacherEmail) {
+        toast({ variant: "destructive", title: "Erreur", description: "Tous les champs sont requis pour créer un enseignant." });
         return null;
     }
-    const newTeacherData = { name: newTeacherName, subject: newTeacherSubject, email: newTeacherEmail };
+    const newTeacherData = { 
+        firstName: newTeacherFirstName, 
+        lastName: newTeacherLastName, 
+        subject: newTeacherSubject, 
+        email: newTeacherEmail 
+    };
     const teacherCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
     try {
         const docRef = await addDoc(teacherCollectionRef, newTeacherData);
-        toast({ title: "Enseignant ajouté", description: `${newTeacherName} a été ajouté(e).` });
+        toast({ title: "Enseignant ajouté", description: `${newTeacherFirstName} ${newTeacherLastName} a été ajouté(e).` });
         setIsAddTeacherDialogOpen(false);
         form.setValue('mainTeacherId', docRef.id);
-        return { value: docRef.id, label: newTeacherName };
+        return { value: docRef.id, label: `${newTeacherFirstName} ${newTeacherLastName}` };
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({ path: teacherCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
         errorEmitter.emit('permission-error', permissionError);
@@ -275,7 +273,7 @@ export default function ClassesPage() {
     );
   }
 
-  const teacherOptions = teachers.map(t => ({ value: t.id, label: t.name }));
+  const teacherOptions = teachers.map(t => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }));
   const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
   const classOptionsForCycle = watchedCycle ? schoolClasses.filter(c => c.cycle === watchedCycle).map(c => ({ value: c.name, label: c.name })) : [];
   const filiereOptions = higherEdFiliere.map(f => ({ value: f, label: f }));
@@ -444,6 +442,7 @@ export default function ClassesPage() {
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {classes.filter(c => c.cycle === cycle.name).map((cls) => {
                             const mainTeacher = getMainTeacher(cls.mainTeacherId);
+                            const teacherName = mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}` : 'Non assigné';
                             return (
                             <Card key={cls.id} className="flex flex-col">
                                 <CardHeader>
@@ -462,7 +461,7 @@ export default function ClassesPage() {
                                 <CardContent className="space-y-3 flex-1">
                                     {cls.filiere && <div className="flex items-center text-sm text-muted-foreground"><BookCopy className="mr-2 h-4 w-4 flex-shrink-0" /><span>Filière: {cls.filiere}</span></div>}
                                     <div className="flex items-center text-sm text-muted-foreground"><Building className="mr-2 h-4 w-4 flex-shrink-0" /><span>Bâtiment: {cls.building}</span></div>
-                                    <div className="flex items-center text-sm text-muted-foreground"><User className="mr-2 h-4 w-4 flex-shrink-0" /><span>Prof. principal: {mainTeacher?.name || 'Non assigné'}</span></div>
+                                    <div className="flex items-center text-sm text-muted-foreground"><User className="mr-2 h-4 w-4 flex-shrink-0" /><span>Prof. principal: {teacherName}</span></div>
                                     <div className="flex items-center text-sm text-muted-foreground"><Users className="mr-2 h-4 w-4 flex-shrink-0" /><span>{cls.studentCount} élèves</span></div>
                                 </CardContent>
                             </Card>
@@ -486,13 +485,17 @@ export default function ClassesPage() {
                 <DialogHeader>
                     <DialogTitle>Ajouter un nouvel enseignant</DialogTitle>
                     <DialogDescription>
-                        L'enseignant "{newTeacherName}" n'a pas été trouvé. Veuillez fournir les détails requis.
+                        L'enseignant n'a pas été trouvé. Veuillez fournir les détails requis.
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel htmlFor="new-teacher-name" className="text-right">Nom</FormLabel>
-                        <Input id="new-teacher-name" value={newTeacherName} onChange={e => setNewTeacherName(e.target.value)} className="col-span-3" />
+                        <FormLabel htmlFor="new-teacher-firstname" className="text-right">Prénom</FormLabel>
+                        <Input id="new-teacher-firstname" value={newTeacherFirstName} onChange={e => setNewTeacherFirstName(e.target.value)} className="col-span-3" />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                        <FormLabel htmlFor="new-teacher-lastname" className="text-right">Nom</FormLabel>
+                        <Input id="new-teacher-lastname" value={newTeacherLastName} onChange={e => setNewTeacherLastName(e.target.value)} className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
                         <FormLabel htmlFor="new-teacher-subject" className="text-right">Matière principale</FormLabel>
@@ -526,5 +529,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    

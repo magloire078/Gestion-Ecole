@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -15,15 +16,7 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
-import type { Class } from '@/lib/data';
-
-interface Teacher {
-  name: string;
-  subject: string;
-  email: string;
-  phone?: string;
-  classId?: string;
-}
+import type { Class, teacher as Teacher } from '@/lib/data-types';
 
 const mockStudentPerformanceData: Record<string, string> = {
   'Mathématiques': 'Les résultats des élèves en mathématiques montrent une nette amélioration ce semestre, avec une moyenne de classe en hausse de 15%. 80% des élèves ont obtenu une note supérieure à la moyenne. Les points faibles restent la géométrie dans l\'espace.',
@@ -37,7 +30,7 @@ export default function TeacherProfilePage() {
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const params = useParams();
   const teacherId = params.teacherId as string;
-  const { schoolId, schoolName, directorName, loading: schoolDataLoading } = useSchoolData();
+  const { schoolId, schoolName, directorFirstName, directorLastName, loading: schoolDataLoading } = useSchoolData();
   const firestore = useFirestore();
 
   const teacherRef = useMemoFirebase(() => 
@@ -46,6 +39,8 @@ export default function TeacherProfilePage() {
 
   const { data: teacherData, loading: teacherLoading } = useDoc(teacherRef);
   const teacher = teacherData as Teacher | null;
+  const fullName = teacher ? `${teacher.firstName} ${teacher.lastName}` : '';
+  const directorFullName = directorFirstName && directorLastName ? `${directorFirstName} ${directorLastName}` : 'Le Directeur/La Directrice';
 
   const classRef = useMemoFirebase(() =>
     (schoolId && teacher?.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${teacher.classId}`) : null
@@ -68,10 +63,10 @@ export default function TeacherProfilePage() {
       const skillsArray = teacherSkills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0);
       
       const input: GenerateTeacherRecommendationsInput = {
-        teacherName: teacher.name,
+        teacherName: fullName,
         className: mainClass?.name || 'N/A',
         studentPerformanceData: mockStudentPerformanceData[teacher.subject] || "Aucune donnée de performance disponible.",
-        directorName: directorName || 'Le Directeur/La Directrice', 
+        directorName: directorFullName, 
         schoolName: schoolName || 'GèreEcole',
         teacherSkills: skillsArray.length > 0 ? skillsArray : ['Excellente communication', 'Pédagogie adaptée', 'Gestion de classe efficace'],
       };
@@ -80,7 +75,7 @@ export default function TeacherProfilePage() {
       setRecommendation(result.recommendationLetterDraft);
        toast({
         title: "Lettre de recommandation générée",
-        description: `La lettre pour ${teacher.name} est prête.`,
+        description: `La lettre pour ${fullName} est prête.`,
       });
     } catch (error) {
       console.error("Failed to generate recommendation:", error);
@@ -123,7 +118,7 @@ export default function TeacherProfilePage() {
     notFound();
   }
   
-  const fallback = teacher.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+  const fallback = `${teacher.firstName?.[0] || ''}${teacher.lastName?.[0] || ''}`.toUpperCase();
 
   return (
     <div className="space-y-6">
@@ -136,11 +131,11 @@ export default function TeacherProfilePage() {
                  <Card>
                     <CardHeader className="flex-row items-center gap-4">
                         <Avatar className="h-16 w-16">
-                            <AvatarImage src={`https://picsum.photos/seed/${teacherId}/100`} alt={teacher.name} data-ai-hint="person face" />
+                            <AvatarImage src={`https://picsum.photos/seed/${teacherId}/100`} alt={fullName} data-ai-hint="person face" />
                             <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div>
-                             <CardTitle className="text-2xl">{teacher.name}</CardTitle>
+                             <CardTitle className="text-2xl">{fullName}</CardTitle>
                              <CardDescription>ID Enseignant: {teacherId.substring(0,10)}...</CardDescription>
                         </div>
                     </CardHeader>

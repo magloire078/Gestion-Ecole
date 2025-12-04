@@ -53,11 +53,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Class } from '@/lib/data';
+import type { Class, teacher as Teacher } from '@/lib/data-types';
 
 // Define Zod schema for validation
 const teacherSchema = z.object({
-  name: z.string().min(1, { message: "Le nom est requis." }),
+  firstName: z.string().min(1, { message: "Le prénom est requis." }),
+  lastName: z.string().min(1, { message: "Le nom est requis." }),
   subject: z.string().min(1, { message: "La matière est requise." }),
   email: z.string().email({ message: "L'adresse email est invalide." }),
   phone: z.string().optional(),
@@ -66,8 +67,8 @@ const teacherSchema = z.object({
 
 type TeacherFormValues = z.infer<typeof teacherSchema>;
 
-// Define TypeScript interface based on backend.json, including the ID
-interface Teacher extends TeacherFormValues {
+// Extend the imported Teacher type to include the ID
+interface TeacherWithId extends Teacher {
   id: string;
 }
 
@@ -84,7 +85,7 @@ export default function TeachersPage() {
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
-  const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
+  const teachers: TeacherWithId[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as TeacherWithId)) || [], [teachersData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   // --- UI State ---
@@ -92,14 +93,15 @@ export default function TeachersPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // State for EDITING/DELETING a teacher
-  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
-  const [teacherToDelete, setTeacherToDelete] = useState<Teacher | null>(null);
+  const [editingTeacher, setEditingTeacher] = useState<TeacherWithId | null>(null);
+  const [teacherToDelete, setTeacherToDelete] = useState<TeacherWithId | null>(null);
   
   // --- React Hook Form ---
   const form = useForm<TeacherFormValues>({
     resolver: zodResolver(teacherSchema),
     defaultValues: {
-      name: '',
+      firstName: '',
+      lastName: '',
       subject: '',
       email: '',
       phone: '',
@@ -111,7 +113,8 @@ export default function TeachersPage() {
   useEffect(() => {
     if (isFormOpen && editingTeacher) {
       form.reset({
-          name: editingTeacher.name,
+          firstName: editingTeacher.firstName,
+          lastName: editingTeacher.lastName,
           subject: editingTeacher.subject,
           email: editingTeacher.email,
           phone: editingTeacher.phone || '',
@@ -119,7 +122,8 @@ export default function TeachersPage() {
       });
     } else {
       form.reset({
-        name: '',
+        firstName: '',
+        lastName: '',
         subject: '',
         email: '',
         phone: '',
@@ -163,7 +167,7 @@ export default function TeachersPage() {
                 }
             }
             await batch.commit();
-            toast({ title: "Enseignant modifié", description: `Les informations de ${values.name} ont été mises à jour.` });
+            toast({ title: "Enseignant modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         } else {
             // --- CREATE ---
             const newTeacherRef = doc(collection(firestore, `ecoles/${schoolId}/enseignants`));
@@ -175,7 +179,7 @@ export default function TeachersPage() {
                 batch.update(classRef, { mainTeacherId: newTeacherRef.id });
             }
             await batch.commit();
-            toast({ title: "Enseignant ajouté", description: `${values.name} a été ajouté(e).` });
+            toast({ title: "Enseignant ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e).` });
         }
         setIsFormOpen(false);
         setEditingTeacher(null);
@@ -202,7 +206,7 @@ export default function TeachersPage() {
 
     batch.commit()
       .then(() => {
-        toast({ title: "Enseignant supprimé", description: `${teacherToDelete.name} a été retiré(e).` });
+        toast({ title: "Enseignant supprimé", description: `${teacherToDelete.firstName} ${teacherToDelete.lastName} a été retiré(e).` });
         setIsDeleteDialogOpen(false);
         setTeacherToDelete(null);
       }).catch(async (serverError) => {
@@ -212,12 +216,12 @@ export default function TeachersPage() {
   };
 
   // --- Dialog Triggers ---
-  const handleOpenFormDialog = (teacher: Teacher | null) => {
+  const handleOpenFormDialog = (teacher: TeacherWithId | null) => {
     setEditingTeacher(teacher);
     setIsFormOpen(true);
   };
   
-  const handleOpenDeleteDialog = (teacher: Teacher) => {
+  const handleOpenDeleteDialog = (teacher: TeacherWithId) => {
     setTeacherToDelete(teacher);
     setIsDeleteDialogOpen(true);
   };
@@ -249,19 +253,20 @@ export default function TeachersPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {teachers.map((teacher) => {
-              const fallback = teacher.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+              const fullName = `${teacher.firstName} ${teacher.lastName}`;
+              const fallback = `${teacher.firstName?.[0] || ''}${teacher.lastName?.[0] || ''}`.toUpperCase();
               return (
                 <Card key={teacher.id} className="flex flex-col">
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
                           <Avatar className="h-12 w-12">
-                              <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100`} alt={teacher.name} data-ai-hint="person face" />
+                              <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100`} alt={fullName} data-ai-hint="person face" />
                               <AvatarFallback>{fallback}</AvatarFallback>
                           </Avatar>
                           <div>
                               <Link href={`/dashboard/teachers/${teacher.id}`} className="hover:underline">
-                                  <CardTitle>{teacher.name}</CardTitle>
+                                  <CardTitle>{fullName}</CardTitle>
                               </Link>
                               <CardDescription>{teacher.subject}</CardDescription>
                           </div>
@@ -307,19 +312,32 @@ export default function TeachersPage() {
             <DialogHeader>
               <DialogTitle>{editingTeacher ? "Modifier l'Enseignant" : "Ajouter un Nouvel Enseignant"}</DialogTitle>
               <DialogDescription>
-                {editingTeacher ? `Mettez à jour les informations de ${editingTeacher.name}.` : "Renseignez les informations du nouvel enseignant."}
+                {editingTeacher ? `Mettez à jour les informations de ${editingTeacher.firstName} ${editingTeacher.lastName}.` : "Renseignez les informations du nouvel enseignant."}
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
                 <FormField
                   control={form.control}
-                  name="name"
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem className="grid grid-cols-4 items-center gap-4">
+                      <FormLabel className="text-right">Prénom</FormLabel>
+                      <FormControl className="col-span-3">
+                        <Input placeholder="Ex: Marie" {...field} />
+                      </FormControl>
+                      <FormMessage className="col-start-2 col-span-3" />
+                    </FormItem>
+                  )}
+                />
+                 <FormField
+                  control={form.control}
+                  name="lastName"
                   render={({ field }) => (
                     <FormItem className="grid grid-cols-4 items-center gap-4">
                       <FormLabel className="text-right">Nom</FormLabel>
                       <FormControl className="col-span-3">
-                        <Input placeholder="Ex: Marie Curie" {...field} />
+                        <Input placeholder="Ex: Curie" {...field} />
                       </FormControl>
                       <FormMessage className="col-start-2 col-span-3" />
                     </FormItem>
@@ -404,7 +422,7 @@ export default function TeachersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. L'enseignant <strong>{teacherToDelete?.name}</strong> sera définitivement supprimé.
+              Cette action est irréversible. L'enseignant <strong>{teacherToDelete?.firstName} {teacherToDelete?.lastName}</strong> sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
