@@ -10,7 +10,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
-import type { Teacher, Class } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -58,6 +57,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import type { class_type as Class, teacher as Teacher } from '@/lib/data-types';
 
 const timetableSchema = z.object({
   classId: z.string().min(1, { message: "La classe est requise." }),
@@ -101,8 +101,8 @@ export default function TimetablePage() {
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
   const timetable: TimetableEntry[] = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() } as TimetableEntry)) || [], [timetableData]);
-  const teachers: Teacher[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher)) || [], [teachersData]);
-  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const teachers: (Teacher & {id: string})[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher & {id: string})) || [], [teachersData]);
+  const classes: (Class & {id: string})[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [classesData]);
 
   // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -154,7 +154,7 @@ export default function TimetablePage() {
       return {
         ...entry,
         className: classInfo?.name || 'N/A',
-        teacherName: teacherInfo?.name || 'N/A',
+        teacherName: teacherInfo ? `${teacherInfo.firstName} ${teacherInfo.lastName}` : 'N/A',
       };
     });
   }, [timetable, classes, teachers]);
@@ -233,7 +233,7 @@ export default function TimetablePage() {
                     <SelectTrigger><SelectValue placeholder="Sélectionner une classe" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {classes.map((cls: Class) => (<SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>))}
+                    {classes.map((cls) => (<SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>))}
                   </SelectContent>
                 </Select>
                 <FormMessage className="col-start-2 col-span-3" />
@@ -251,7 +251,7 @@ export default function TimetablePage() {
                     <SelectTrigger><SelectValue placeholder="Sélectionner un enseignant" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {teachers.map((teacher: Teacher) => (<SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>))}
+                    {teachers.map((teacher) => (<SelectItem key={teacher.id} value={teacher.id}>{`${teacher.firstName} ${teacher.lastName}`}</SelectItem>))}
                   </SelectContent>
                 </Select>
                 <FormMessage className="col-start-2 col-span-3" />

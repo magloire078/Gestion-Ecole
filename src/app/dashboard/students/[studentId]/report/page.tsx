@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -7,33 +8,14 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query } from 'firebase/firestore';
 import { ReportCard } from '@/components/report-card';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { teacher as Teacher, student as Student } from '@/lib/data-types';
 
-// Interfaces for data shapes
-interface Student {
-  name: string;
-  matricule?: string;
-  class?: string;
-}
-interface School {
-    name: string;
-    directorName?: string;
-    address?: string;
-    phone?: string;
-    website?: string;
-    mainLogoUrl?: string;
-}
 interface Grade {
   id: string;
   subject: string;
   grade: number;
   coefficient: number;
 }
-interface Teacher {
-    id: string;
-    name: string;
-    subject: string;
-}
-
 
 export default function StudentReportPage() {
   const params = useParams();
@@ -55,7 +37,7 @@ export default function StudentReportPage() {
 
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection<Grade>(gradesQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher>(teachersQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(Teacher & { id: string }>(teachersQuery);
 
   const student = studentData;
   const grades = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
@@ -86,14 +68,19 @@ export default function StudentReportPage() {
       mainLogoUrl: schoolData?.mainLogoUrl,
   };
 
+  const reportStudent = {
+      ...student,
+      name: `${student.firstName} ${student.lastName}`
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Bulletin de {student.name}</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">Bulletin de {reportStudent.name}</h1>
         <p className="text-muted-foreground">Aperçu des résultats scolaires de l'élève pour le trimestre en cours.</p>
       </div>
       <ReportCard 
-        student={student}
+        student={reportStudent}
         school={schoolInfo}
         grades={grades}
         teachers={teachers}
@@ -101,3 +88,5 @@ export default function StudentReportPage() {
     </div>
   );
 }
+
+    

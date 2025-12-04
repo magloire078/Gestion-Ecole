@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo } from 'react';
@@ -5,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import type { teacher as Teacher } from '@/lib/data-types';
 
 interface Student {
   name: string;
@@ -24,16 +26,11 @@ interface TimetableEntry {
   endTime: string;   // "HH:MM"
 }
 
-interface Teacher {
-  id: string;
-  name: string;
-}
-
 interface PrintableTimetableProps {
   student: Student;
   school: School;
   timetableEntries: TimetableEntry[];
-  teachers: Teacher[];
+  teachers: (Teacher & { id: string })[];
 }
 
 export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student, school, timetableEntries, teachers }) => {
@@ -55,7 +52,8 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
     });
 
     timetableEntries.forEach(entry => {
-      const teacherName = teachers.find(t => t.id === entry.teacherId)?.name || 'N/A';
+      const teacherInfo = teachers.find(t => t.id === entry.teacherId);
+      const teacherName = teacherInfo ? `${teacherInfo.firstName} ${teacherInfo.lastName}` : 'N/A';
       if (!grid[entry.startTime]) grid[entry.startTime] = {};
       grid[entry.startTime][entry.day] = { subject: entry.subject, teacher: teacherName, endTime: entry.endTime };
     });
@@ -157,3 +155,5 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
     </Card>
   );
 };
+
+    

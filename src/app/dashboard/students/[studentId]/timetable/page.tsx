@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -7,12 +8,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { PrintableTimetable } from '@/components/printable-timetable';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface Student {
-  name: string;
-  class?: string;
-  classId: string;
-}
+import type { teacher as Teacher, student as Student } from '@/lib/data-types';
 
 interface TimetableEntry {
   id: string;
@@ -22,11 +18,6 @@ interface TimetableEntry {
   day: 'Lundi' | 'Mardi' | 'Mercredi' | 'Jeudi' | 'Vendredi' | 'Samedi';
   startTime: string;
   endTime: string;
-}
-
-interface Teacher {
-  id: string;
-  name: string;
 }
 
 export default function StudentTimetablePage() {
@@ -51,7 +42,7 @@ export default function StudentTimetablePage() {
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
 
   const { data: timetableData, loading: timetableLoading } = useCollection<TimetableEntry>(timetableQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher>(teachersQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher & { id: string }>(teachersQuery);
 
   const timetableEntries = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() })) || [], [timetableData]);
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
@@ -75,15 +66,20 @@ export default function StudentTimetablePage() {
   const schoolInfo = {
       name: schoolName || 'Votre École',
   };
+  
+  const timetableStudent = {
+      ...student,
+      name: `${student.firstName} ${student.lastName}`
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Emploi du Temps de {student.name}</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">Emploi du Temps de {timetableStudent.name}</h1>
         <p className="text-muted-foreground">Classe: {student.class}. Cliquez sur le bouton ci-dessous pour imprimer.</p>
       </div>
       <PrintableTimetable 
-        student={student}
+        student={timetableStudent}
         school={schoolInfo}
         timetableEntries={timetableEntries}
         teachers={teachers}
@@ -91,3 +87,5 @@ export default function StudentTimetablePage() {
     </div>
   );
 }
+
+    

@@ -17,13 +17,13 @@ export type user_root = {
 
 export type school = {
     name: string;
-    matricule?: string;
-    cnpsEmployeur?: string;
     directorId: string;
     directorFirstName: string;
     directorLastName: string;
-    directorPhone?: string;
     schoolCode: string;
+    matricule?: string;
+    cnpsEmployeur?: string;
+    directorPhone?: string;
     createdAt?: string;
     address?: string;
     phone?: string;
@@ -177,3 +177,5 @@ export type message = {
         classes?: string[];
     };
 };
+
+    

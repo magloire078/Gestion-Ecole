@@ -39,10 +39,9 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -74,7 +73,6 @@ interface TeacherWithId extends Teacher {
 
 export default function TeachersPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
@@ -434,3 +432,5 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    

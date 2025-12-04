@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -9,6 +10,7 @@ import { Bot, Printer } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
+import type { teacher as Teacher } from '@/lib/data-types';
 
 // --- Interfaces ---
 interface Student {
@@ -30,12 +32,6 @@ interface Grade {
   subject: string;
   grade: number;
   coefficient: number;
-}
-
-interface Teacher {
-    id: string;
-    name: string;
-    subject: string;
 }
 
 interface SubjectReport {
@@ -64,7 +60,7 @@ interface ReportCardProps {
   student: Student;
   school: School;
   grades: Grade[];
-  teachers: Teacher[]; // Liste de tous les enseignants
+  teachers: (Teacher & { id: string })[]; // Liste de tous les enseignants
 }
 
 export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades, teachers }) => {
@@ -94,7 +90,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
             reports.push({
                 subject,
-                teacherName: teacher?.name || 'N/A',
+                teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'N/A',
                 average: studentAverage,
                 // Mock data for class stats as we don't have them yet
                 classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
@@ -303,3 +299,5 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     </Card>
   );
 };
+
+    
