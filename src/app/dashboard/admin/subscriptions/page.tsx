@@ -53,7 +53,7 @@ export default function AdminSubscriptionsPage() {
 
     const isLoading = userLoading || schoolsLoading;
 
-    if (isLoading || !user || user.uid !== ADMIN_UID) {
+    if (!isMounted || isLoading || !user || user.uid !== ADMIN_UID) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-1/2" />

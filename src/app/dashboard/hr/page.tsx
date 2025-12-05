@@ -351,7 +351,7 @@ function HRContent() {
                                     </TableCell>
                                     <TableCell>{member.role}</TableCell>
                                     <TableCell className="font-mono">{member.baseSalary ? `${member.baseSalary.toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
-                                    <TableCell>{member.hireDate && isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : member.hireDate}</TableCell>
+                                    <TableCell>{isMounted && member.hireDate && isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">
                                             <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(member)}>
