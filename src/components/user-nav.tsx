@@ -86,7 +86,7 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
             </p>
-             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
+             {isMounted && userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
