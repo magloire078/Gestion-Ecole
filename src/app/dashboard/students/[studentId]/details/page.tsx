@@ -13,7 +13,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, orderBy, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -384,7 +384,7 @@ export default function StudentProfilePage() {
                                         {paymentHistory.length > 0 ? (
                                             paymentHistory.map(payment => (
                                                 <TableRow key={payment.id}>
-                                                    <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
+                                                    <TableCell>{isMounted ? format(new Date(payment.date), 'd MMMM yyyy', {locale: fr}) : <Skeleton className="h-5 w-24"/>}</TableCell>
                                                     <TableCell>{payment.description}</TableCell>
                                                     <TableCell>{payment.method}</TableCell>
                                                     <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
@@ -415,7 +415,7 @@ export default function StudentProfilePage() {
                             <CardContent className="space-y-3 text-sm">
                                  <div className="flex items-center">
                                     <Cake className="mr-3 h-5 w-5 text-muted-foreground" />
-                                    <span>Né(e) le <strong>{student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'}</strong> à <strong>{student.placeOfBirth}</strong></span>
+                                    <span>Né(e) le <strong>{isMounted && student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : <Skeleton className="h-4 w-32 inline-block"/>}</strong> à <strong>{student.placeOfBirth}</strong></span>
                                 </div>
                                 <div className="flex items-center">
                                     <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />

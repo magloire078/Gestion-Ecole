@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -11,6 +10,7 @@ import { generateReportCardComment } from '@/ai/flows/generate-report-card-comme
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { teacher as Teacher } from '@/lib/data-types';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 // --- Interfaces ---
 interface Student {
@@ -64,6 +64,7 @@ interface ReportCardProps {
 }
 
 export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades, teachers }) => {
+    const isMounted = useHydrationFix();
     const { toast } = useToast();
     const printRef = React.useRef<HTMLDivElement>(null);
     const { directorName } = useSchoolData();
@@ -198,7 +199,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
             {/* Title */}
             <div className="text-center mb-6">
                 <h1 className="text-2xl font-bold tracking-tight">BULLETIN DE NOTES DU 1ER TRIMESTRE</h1>
-                <p className="text-muted-foreground">Année scolaire: {new Date().getFullYear() - 1}-{new Date().getFullYear()}</p>
+                <p className="text-muted-foreground">Année scolaire: {isMounted ? `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`: '...'}</p>
             </div>
 
             {/* Student Info */}
@@ -280,7 +281,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     <div className="mt-12 border-t border-dashed w-40 mx-auto"></div>
                 </div>
                  <div>
-                    <p>Fait à {school.address ? school.address.split(',')[0] : 'Abidjan'}, le {new Date().toLocaleDateString('fr-FR')}</p>
+                    <p>Fait à {school.address ? school.address.split(',')[0] : 'Abidjan'}, le {isMounted ? new Date().toLocaleDateString('fr-FR') : '...'}</p>
                 </div>
                 <div>
                     <p className="font-bold">Le Directeur</p>
@@ -299,5 +300,3 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     </Card>
   );
 };
-
-    
