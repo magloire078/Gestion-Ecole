@@ -16,7 +16,9 @@ interface Subscription {
 interface SchoolData extends DocumentData {
     name?: string;
     directorId?: string;
-    directorName?: string;
+    directorFirstName?: string;
+    directorLastName?: string;
+    directorName?: string; // Legacy
     directorPhone?: string;
     schoolCode?: string;
     matricule?: string;

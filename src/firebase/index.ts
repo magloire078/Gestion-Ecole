@@ -3,6 +3,7 @@ import * as React from 'react';
 import {initializeApp, getApp, getApps, FirebaseApp} from 'firebase/app';
 import {getAuth, Auth} from 'firebase/auth';
 import {getFirestore, Firestore} from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from "firebase/storage";
 import {firebaseConfig} from './config';
 export * from './provider';
 export * from './client-provider';
@@ -13,6 +14,7 @@ export * from './firestore/use-collection';
 let app: FirebaseApp;
 let auth: Auth;
 let firestore: Firestore;
+let storage: FirebaseStorage;
 
 function initializeFirebase() {
   if (typeof window !== 'undefined') {
@@ -20,12 +22,14 @@ function initializeFirebase() {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       firestore = getFirestore(app);
+      storage = getStorage(app);
     } else {
       app = getApp();
       auth = getAuth(app);
       firestore = getFirestore(app);
+      storage = getStorage(app);
     }
-    return {app, auth, firestore};
+    return {app, auth, firestore, storage};
   }
   
   throw new Error("Cannot initialize firebase on the server.");
@@ -35,8 +39,8 @@ export function getFirebase() {
     if (typeof window === "undefined") {
         return null;
     }
-    const { app, auth, firestore } = initializeFirebase();
-    return { app, auth, firestore };
+    const { app, auth, firestore, storage } = initializeFirebase();
+    return { app, auth, firestore, storage };
 }
 
 export function useMemoFirebase<T>(

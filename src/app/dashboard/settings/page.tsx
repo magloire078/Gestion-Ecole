@@ -9,19 +9,21 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, AlertCircle } from "lucide-react";
+import { Copy, AlertCircle, Upload } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { ImageUploader } from "@/components/image-uploader";
 
 
 const settingsSchema = z.object({
   name: z.string().min(1, { message: "Le nom de l'école est requis." }),
   matricule: z.string().optional(),
   cnpsEmployeur: z.string().optional(),
-  directorName: z.string().min(1, { message: "Le nom du directeur est requis." }),
+  directorFirstName: z.string().min(1, "Le prénom du directeur est requis."),
+  directorLastName: z.string().min(1, "Le nom du directeur est requis."),
   directorPhone: z.string().optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
@@ -40,12 +42,14 @@ export default function SettingsPage() {
     updateSchoolData 
   } = useSchoolData();
   const [error, setError] = useState<string | null>(null);
+  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       name: "",
-      directorName: "",
+      directorFirstName: "",
+      directorLastName: "",
       matricule: "",
       cnpsEmployeur: "",
       directorPhone: "",
@@ -60,7 +64,8 @@ export default function SettingsPage() {
     if (schoolData) {
       form.reset({
         name: schoolData.name || "",
-        directorName: schoolData.directorName || "",
+        directorFirstName: schoolData.directorFirstName || "",
+        directorLastName: schoolData.directorLastName || "",
         matricule: schoolData.matricule || "",
         cnpsEmployeur: schoolData.cnpsEmployeur || "",
         directorPhone: schoolData.directorPhone || "",
@@ -75,16 +80,11 @@ export default function SettingsPage() {
   const handleSaveChanges = async (values: SettingsFormValues) => {
     setError(null);
     try {
+      // Consolidate director name for compatibility if needed, though schema is split now
+      const directorName = `${values.directorFirstName} ${values.directorLastName}`.trim();
       await updateSchoolData({
-        name: values.name,
-        directorName: values.directorName,
-        matricule: values.matricule,
-        cnpsEmployeur: values.cnpsEmployeur,
-        directorPhone: values.directorPhone,
-        address: values.address,
-        phone: values.phone,
-        website: values.website,
-        mainLogoUrl: values.mainLogoUrl,
+        ...values,
+        directorName: directorName, // Keep this for legacy components if any
       });
       toast({
         title: "Paramètres enregistrés",
@@ -94,6 +94,13 @@ export default function SettingsPage() {
        setError("Impossible d'enregistrer les paramètres. Vérifiez vos permissions.");
     }
   };
+  
+  const handleLogoUploadComplete = (url: string) => {
+      form.setValue('mainLogoUrl', url);
+      // Automatically submit the form to save the new URL
+      form.handleSubmit(handleSaveChanges)();
+      setIsUploaderOpen(false);
+  }
 
   const handleCopyCode = () => {
     if (schoolData?.schoolCode) {
@@ -168,97 +175,36 @@ export default function SettingsPage() {
               <CardDescription>Modifiez les détails de votre établissement et consultez son code.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input placeholder="Nom de votre école" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              
               <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom de l'École</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nom de votre école" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
                 control={form.control}
                 name="mainLogoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL du Logo de l'École</FormLabel>
-                    <FormControl>
-                      <Input type="url" placeholder="https://example.com/logo.png" {...field} />
-                    </FormControl>
+                    <FormLabel>Logo de l'École</FormLabel>
+                    <div className="flex items-center gap-2">
+                         <FormControl>
+                            <Input type="url" placeholder="https://example.com/logo.png" {...field} />
+                        </FormControl>
+                        <ImageUploader 
+                            onUploadComplete={handleLogoUploadComplete}
+                            storagePath={`ecoles/${schoolData?.schoolCode || 'logos'}/`}
+                        >
+                            <Button type="button" variant="outline"><Upload className="mr-2 h-4 w-4"/> Télécharger</Button>
+                        </ImageUploader>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="matricule"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Matricule de l'Établissement</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: 0123/ETAB/2024" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="cnpsEmployeur"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>N° CNPS Employeur</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Adresse de l'École</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ex: 123, Avenue de l'Indépendance" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Téléphone de l'École</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="Numéro de téléphone général" {...field} />
-                    </FormControl>
-                     <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="website"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Site Web de l'École</FormLabel>
-                    <FormControl>
-                      <Input type="url" placeholder="https://www.mon-ecole.com" {...field} />
-                    </FormControl>
-                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+
+              <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Matricule de l'Établissement</FormLabel><FormControl><Input placeholder="Ex: 0123/ETAB/2024" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="cnpsEmployeur" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employeur</FormLabel><FormControl><Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse de l'École</FormLabel><FormControl><Input placeholder="Ex: 123, Avenue de l'Indépendance" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone de l'École</FormLabel><FormControl><Input type="tel" placeholder="Numéro de téléphone général" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+              <FormField control={form.control} name="website" render={({ field }) => (<FormItem><FormLabel>Site Web de l'École</FormLabel><FormControl><Input type="url" placeholder="https://www.mon-ecole.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+               
                {schoolData?.schoolCode && (
                 <div className="space-y-2">
                   <Label htmlFor="school-code">Code d'Invitation</Label>
@@ -272,32 +218,13 @@ export default function SettingsPage() {
                   <p className="text-xs text-muted-foreground">Partagez ce code avec les enseignants pour leur permettre de rejoindre votre école.</p>
                 </div>
                )}
-              <FormField
-                control={form.control}
-                name="directorName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nom du Directeur</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nom du directeur ou de la directrice" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="directorPhone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Téléphone du Directeur</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="Numéro de téléphone" {...field} />
-                    </FormControl>
-                     <FormMessage />
-                  </FormItem>
-                )}
-              />
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField control={form.control} name="directorFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Directeur</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                  <FormField control={form.control} name="directorLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Directeur</FormLabel><FormControl><Input placeholder="Nom" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+              </div>
+              <FormField control={form.control} name="directorPhone" render={({ field }) => (<FormItem><FormLabel>Téléphone du Directeur</FormLabel><FormControl><Input type="tel" placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+            
             </CardContent>
             <CardFooter className="border-t px-6 py-4">
               <Button type="submit" disabled={form.formState.isSubmitting}>
