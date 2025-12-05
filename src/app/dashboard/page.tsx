@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
@@ -207,7 +206,7 @@ export default function DashboardPage() {
             </Card>
         </div>
         
-        { transactions.length > 0 && <AccountingCharts transactions={transactions} /> }
+        { !overallLoading && transactions.length > 0 && <AccountingCharts transactions={transactions} /> }
 
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7">
           <PerformanceChart grades={allGrades} loading={gradesLoading} />
