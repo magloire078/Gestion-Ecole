@@ -91,7 +91,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
             reports.push({
                 subject,
-                teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'N/A',
+                teacherName: teacher ? `${"'" + 'teacher.firstName'} ${"'" + 'teacher.lastName'}` : 'N/A',
                 average: studentAverage,
                 // Mock data for class stats as we don't have them yet
                 classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
@@ -134,7 +134,19 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     };
     
     const handlePrint = () => {
-        const printContent = printRef.current?.innerHTML;
+        const printContent = printRef.current;
+        if (!printContent) return;
+
+        const printWindow = window.open('', '', 'height=800,width=800');
+        if (!printWindow) {
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ouvrir la fenêtre d'impression. Veuillez autoriser les pop-ups." });
+            return;
+        }
+
+        const stylesheets = Array.from(document.styleSheets)
+            .map(sheet => sheet.href ? `<link rel="stylesheet" href="${sheet.href}">` : '')
+            .join('');
+
         const pageStyles = `
             @media print {
                 body {
@@ -144,31 +156,32 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 .no-print {
                     display: none !important;
                 }
-                 .report-card {
+                .report-card {
                     border: none;
                     box-shadow: none;
                 }
             }
         `;
-
-        if (printContent) {
-            const printWindow = window.open('', '', 'height=800,width=800');
-            if (printWindow) {
-                printWindow.document.write('<html><head><title>Bulletin de Notes</title>');
-                printWindow.document.write('<link rel="stylesheet" href="/_next/static/css/app/layout.css" type="text/css" media="print">');
-                printWindow.document.write(`<style>${pageStyles}</style>`);
-                printWindow.document.write('</head><body>');
-                printWindow.document.write(printContent);
-                printWindow.document.write('</body></html>');
-                printWindow.document.close();
-                printWindow.focus();
-                
-                setTimeout(() => {
-                    printWindow.print();
-                    printWindow.close();
-                }, 250);
-            }
-        }
+        
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Bulletin de Notes</title>
+                    ${stylesheets}
+                    <style>${pageStyles}</style>
+                </head>
+                <body>
+                    ${printContent.innerHTML}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+        }, 500); // Un léger délai pour s'assurer que les styles sont chargés
     };
 
 
