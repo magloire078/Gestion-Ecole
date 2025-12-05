@@ -12,7 +12,7 @@ export default function StudentSheetPage() {
   const params = useParams();
   const studentId = params.studentId as string;
   const firestore = useFirestore();
-  const { schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
 
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
