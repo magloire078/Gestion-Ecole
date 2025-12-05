@@ -356,7 +356,7 @@ export default function StudentsPage() {
                                     <AvatarFallback>{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <p className="font-medium">{student.firstName} {student.lastName}</p>
+                                    <p className="font-medium">{student.firstName} ${student.lastName}</p>
                                     <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id.substring(0,8)}</div>
                                 </div>
                             </div>
