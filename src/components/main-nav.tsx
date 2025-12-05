@@ -61,7 +61,7 @@ const settingsLinks = [
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
-    const isActive = pathname.startsWith(href);
+    const isActive = pathname === href;
     return (
         <Link
             href={href}
