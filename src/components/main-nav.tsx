@@ -77,14 +77,8 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MainNav() {
   const pathname = usePathname();
-  const { subscription } = useSubscription();
-
-  const isProPlan = subscription?.plan === 'Pro';
   
-  const isLinkActive = (links: {href: string, pro?: boolean}[]) => links.some(link => {
-      if (link.pro && !isProPlan) return false;
-      return pathname.startsWith(link.href)
-  });
+  const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
 
   const getDefaultOpenValues = () => {
     const openValues = [];
@@ -126,10 +120,7 @@ export function MainNav() {
                 <div className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</div>
             </AccordionTrigger>
             <AccordionContent className="pl-4 pt-1 space-y-1">
-              {administrationLinks.map(item => {
-                if (item.pro && !isProPlan) return null;
-                return <NavLink key={item.href} {...item} />
-              })}
+              {administrationLinks.map(item => <NavLink key={item.href} {...item} />)}
             </AccordionContent>
           </AccordionItem>
 
