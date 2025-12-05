@@ -31,7 +31,7 @@ const ADMIN_UID = "5H3lZic8t7dBa127LclkKrHW03M2";
 
 export function UserNav() {
   const isMounted = useHydrationFix();
-  const { setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
   const auth = useAuth();
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
@@ -94,8 +94,7 @@ export function UserNav() {
           <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Profil & Paramètres</DropdownMenuItem>
            <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               <span className="ml-2">Thème</span>
             </DropdownMenuSubTrigger>
             <DropdownMenuPortal>
