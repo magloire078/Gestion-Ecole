@@ -5,10 +5,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   GoogleAuthProvider,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
+  sendSignInLinkToEmail,
+  isSignInWithEmailLink,
+  signInWithEmailLink,
   signInWithPopup,
-  updateProfile,
 } from 'firebase/auth';
 import { useAuth, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -55,18 +55,47 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
+const actionCodeSettings = {
+  url: 'http://localhost:9002/login', // URL to redirect back to
+  handleCodeInApp: true,
+};
+
 
 export default function LoginPage() {
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
   const auth = useAuth();
   const { user, loading } = useUser();
   const { toast } = useToast();
+
+  // Effect to handle the magic link sign-in on component mount
+  useEffect(() => {
+    if (auth && isSignInWithEmailLink(auth, window.location.href)) {
+      setIsProcessing(true);
+      let emailFromStorage = window.localStorage.getItem('emailForSignIn');
+      if (!emailFromStorage) {
+        // User opened the link on a different device. To prevent session fixation
+        // attacks, ask the user to provide the email again.
+        emailFromStorage = window.prompt('Veuillez fournir votre email pour la confirmation');
+      }
+      
+      if (emailFromStorage) {
+        signInWithEmailLink(auth, emailFromStorage, window.location.href)
+          .then((result) => {
+            window.localStorage.removeItem('emailForSignIn');
+            toast({ title: 'Connexion réussie', description: 'Vous êtes maintenant connecté(e).' });
+            router.push('/dashboard');
+          })
+          .catch((error) => {
+            toast({ variant: 'destructive', title: 'Erreur de connexion', description: 'Le lien est peut-être invalide ou a expiré.' });
+            setIsProcessing(false);
+          });
+      } else {
+        setIsProcessing(false);
+      }
+    }
+  }, [auth, router, toast]);
 
   useEffect(() => {
     if (!loading && user) {
@@ -75,59 +104,36 @@ export default function LoginPage() {
   }, [user, loading, router]);
 
 
-  if (loading || user) {
+  if (loading || user || isProcessing) {
       return (
         <div className="flex h-screen w-full items-center justify-center">
             <div className="text-center">
-                <p className="text-lg font-semibold">Chargement...</p>
-                <p className="text-muted-foreground">Vérification de l'authentification.</p>
+                <p className="text-lg font-semibold">{isProcessing ? 'Validation en cours...' : 'Chargement...'}</p>
+                <p className="text-muted-foreground">{isProcessing ? 'Vérification du lien de connexion.' : 'Vérification de l\'authentification.'}</p>
             </div>
         </div>
       );
   }
   
-  const handleAuthAction = async () => {
-      setIsProcessing(true);
-      if (isSignUp) {
-        // Sign Up
-        if (!name || !email || !password || !confirmPassword) {
-            toast({ variant: 'destructive', title: 'Champs requis', description: 'Veuillez remplir tous les champs.' });
-            setIsProcessing(false);
-            return;
-        }
-        if (password !== confirmPassword) {
-            toast({ variant: 'destructive', title: 'Erreur de mot de passe', description: 'Les mots de passe ne correspondent pas.' });
-            setIsProcessing(false);
-            return;
-        }
-        try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await updateProfile(userCredential.user, { displayName: name });
-            toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès.' });
-            router.push('/dashboard');
-        } catch (error: any) {
-            const description = error.code === 'auth/email-already-in-use' ? 'Cet email est déjà utilisé.' : 'Une erreur est survenue.';
-            toast({ variant: 'destructive', title: 'Erreur d\'inscription', description });
-        } finally {
-            setIsProcessing(false);
-        }
-      } else {
-        // Sign In
-        if (!email || !password) {
-            toast({ variant: 'destructive', title: 'Champs requis', description: 'Veuillez renseigner votre email et votre mot de passe.' });
-            setIsProcessing(false);
-            return;
-        }
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            toast({ title: 'Connexion réussie', description: 'Vous allez être redirigé vers le tableau de bord.' });
-            router.push('/dashboard');
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: 'Erreur de connexion', description: 'Email ou mot de passe incorrect.' });
-        } finally {
-            setIsProcessing(false);
-        }
-      }
+  const handleMagicLinkSignIn = async () => {
+    if (!email) {
+      toast({ variant: 'destructive', title: 'Email requis', description: 'Veuillez saisir votre adresse e-mail.' });
+      return;
+    }
+    setIsProcessing(true);
+    try {
+      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+      window.localStorage.setItem('emailForSignIn', email);
+      toast({
+        title: 'Lien de connexion envoyé',
+        description: 'Veuillez consulter votre boîte de réception pour vous connecter.',
+      });
+      setEmail('');
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: "Erreur d'envoi", description: "Une erreur est survenue. Veuillez réessayer." });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
 
@@ -159,25 +165,12 @@ export default function LoginPage() {
             <div className="mb-4 flex justify-center">
                  <Logo />
             </div>
-          <CardTitle className="text-2xl">{isSignUp ? 'Créer un compte' : 'Connexion'}</CardTitle>
+          <CardTitle className="text-2xl">Accès à votre espace</CardTitle>
           <CardDescription>
-            {isSignUp ? 'Remplissez les informations pour vous inscrire.' : 'Accédez à votre tableau de bord de gestion scolaire.'}
+            Connectez-vous sans mot de passe ou utilisez votre compte Google.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          {isSignUp && (
-            <div className="grid gap-2">
-                <Label htmlFor="name">Nom complet</Label>
-                <Input
-                id="name"
-                placeholder="Ex: Jean Dupont"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={isProcessing}
-                />
-            </div>
-          )}
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -190,34 +183,10 @@ export default function LoginPage() {
               disabled={isProcessing}
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Mot de passe</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isProcessing}
-            />
-          </div>
-          {isSignUp && (
-            <div className="grid gap-2">
-                <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
-                <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                disabled={isProcessing}
-                />
-            </div>
-           )}
         </CardContent>
         <CardFooter className="flex-col gap-4">
-          <Button className="w-full" onClick={handleAuthAction} disabled={isProcessing}>
-            {isProcessing ? 'Traitement...' : (isSignUp ? 'Créer un compte' : 'Se connecter')}
+          <Button className="w-full" onClick={handleMagicLinkSignIn} disabled={isProcessing}>
+            {isProcessing ? 'Envoi en cours...' : 'Recevoir un lien de connexion'}
           </Button>
           <div className="relative w-full">
               <Separator />
@@ -226,9 +195,6 @@ export default function LoginPage() {
            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
             <GoogleIcon className="mr-2 h-4 w-4" />
             Continuer avec Google
-          </Button>
-           <Button variant="link" size="sm" onClick={() => setIsSignUp(!isSignUp)} className="text-xs">
-            {isSignUp ? 'Vous avez déjà un compte ? Se connecter' : 'Pas encore de compte ? Créer un compte'}
           </Button>
         </CardFooter>
       </Card>
