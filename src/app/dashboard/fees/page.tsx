@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Student, Fee, Class } from "@/lib/data";
+import type { student as Student, fee as Fee, class_type as Class } from "@/lib/data-types";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -181,7 +181,7 @@ export default function FeesPage() {
     if (selectedStudent && isManageFeeDialogOpen) {
         paymentForm.reset({
             paymentAmount: undefined,
-            paymentDescription: `Scolarité - ${selectedStudent.name}`,
+            paymentDescription: `Scolarité - ${selectedStudent.firstName} ${selectedStudent.lastName}`,
             paymentDate: format(new Date(), 'yyyy-MM-dd'),
             payerFirstName: selectedStudent.parent1FirstName || '',
             payerLastName: selectedStudent.parent1LastName || '',
@@ -220,7 +220,7 @@ export default function FeesPage() {
     }
 
     const amountPaid = values.paymentAmount;
-    const newAmountDue = selectedStudent.amountDue - amountPaid;
+    const newAmountDue = (selectedStudent.amountDue || 0) - amountPaid;
     const newStatus: TuitionStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
     
     const batch = writeBatch(firestore);
@@ -238,7 +238,7 @@ export default function FeesPage() {
     const newTransactionRef = doc(accountingColRef);
     const accountingData = {
         date: values.paymentDate,
-        description: values.paymentDescription || `Paiement scolarité pour ${selectedStudent.name}`,
+        description: values.paymentDescription || `Paiement scolarité pour ${selectedStudent.firstName} ${selectedStudent.lastName}`,
         category: 'Scolarité',
         type: 'Revenu' as 'Revenu' | 'Dépense',
         amount: amountPaid,
@@ -264,13 +264,13 @@ export default function FeesPage() {
         
         toast({
             title: "Paiement enregistré",
-            description: `Le paiement de ${amountPaid.toLocaleString('fr-FR')} CFA pour ${selectedStudent.name} a été enregistré.`
+            description: `Le paiement de ${amountPaid.toLocaleString('fr-FR')} CFA pour ${selectedStudent.firstName} ${selectedStudent.lastName} a été enregistré.`
         });
         
         // Prepare and show receipt
         setReceiptData({
             schoolName: schoolName || 'Votre École',
-            studentName: selectedStudent.name,
+            studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
             studentMatricule: selectedStudent.matricule || 'N/A',
             className: selectedStudent.class,
             date: new Date(values.paymentDate),
@@ -511,15 +511,15 @@ export default function FeesPage() {
                         <TableRow key={student.id}>
                             <TableCell className="font-medium">
                                 <Link href={`/dashboard/students/${student.id}`} className="hover:underline text-primary">
-                                    {student.name}
+                                    {student.firstName} {student.lastName}
                                 </Link>
                             </TableCell>
                             <TableCell>{student.class}</TableCell>
                             <TableCell className="text-center">
-                                <TuitionStatusBadge status={student.tuitionStatus} />
+                                <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                            {student.amountDue > 0 ? formatCurrency(student.amountDue) : '-'}
+                            {(student.amountDue || 0) > 0 ? formatCurrency(student.amountDue || 0) : '-'}
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
@@ -552,7 +552,7 @@ export default function FeesPage() {
      <Dialog open={isManageFeeDialogOpen} onOpenChange={setIsManageFeeDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Enregistrer un paiement pour {selectedStudent?.name}</DialogTitle>
+            <DialogTitle>Enregistrer un paiement pour {selectedStudent?.firstName} {selectedStudent?.lastName}</DialogTitle>
             <DialogDescription>
               Le solde actuel est de <strong>{formatCurrency(selectedStudent?.amountDue || 0)}</strong>.
             </DialogDescription>

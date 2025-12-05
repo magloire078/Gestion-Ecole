@@ -12,30 +12,10 @@ import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { AccountingTransaction } from '@/lib/data';
+import type { accountingTransaction as AccountingTransaction, book as Book, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { AccountingCharts } from './accounting/charts';
 import { sum } from 'd3-array';
-
-interface Book {
-    id: string;
-    title: string;
-    quantity: number;
-    createdAt?: { seconds: number, nanoseconds: number };
-}
-
-interface Student {
-    id: string;
-    name: string;
-    class: string;
-    createdAt?: { seconds: number, nanoseconds: number };
-}
-
-interface GradeEntry {
-  subject: string;
-  grade: number;
-  coefficient: number;
-}
 
 type Activity = {
     id: string;
@@ -122,7 +102,7 @@ export default function DashboardPage() {
             type: 'student',
             icon: UserPlus,
             description: (
-                <>Nouvel élève, <strong>{student.name}</strong>, ajouté à la classe <strong>{student.class}</strong>.</>
+                <>Nouvel élève, <strong>{student.firstName} {student.lastName}</strong>, ajouté à la classe <strong>{student.class}</strong>.</>
             ),
             date: createdAt,
         });
@@ -274,5 +254,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

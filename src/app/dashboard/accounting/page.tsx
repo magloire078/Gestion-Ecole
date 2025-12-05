@@ -58,7 +58,7 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AccountingTransaction } from '@/lib/data';
+import type { accountingTransaction as AccountingTransaction } from '@/lib/data-types';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
