@@ -20,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment } from '@/lib/data-types';
 
@@ -302,7 +302,13 @@ export default function StudentProfilePage() {
                             </CardHeader>
                             <CardContent>
                                 <Table>
-                                    <TableHeader><TableRow><TableHead>Matière</TableHead><TableHead className="text-right">Coeff.</TableHead><TableHead className="text-right">Moyenne</TableHead></TableRow></TableHeader>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>Matière</TableHead>
+                                        <TableHead className="text-right">Coeff.</TableHead>
+                                        <TableHead className="text-right">Moyenne</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
                                     <TableBody>
                                         {allSubjects.map((subject) => {
                                             const subjectData = subjectAverages[subject];
@@ -317,34 +323,13 @@ export default function StudentProfilePage() {
                                                         <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
                                                         <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
                                                     </TableRow>
-                                                    {subjectGrades.length > 0 && (
-                                                    <TableRow>
-                                                        <TableCell colSpan={3} className="p-0">
-                                                            <div className="px-4 py-2 bg-muted/50">
-                                                                <Table>
-                                                                    <TableHeader>
-                                                                        <TableRow>
-                                                                            <TableHead className="h-8 text-xs">Date</TableHead>
-                                                                            <TableHead className="h-8 text-xs">Type</TableHead>
-                                                                            <TableHead className="h-8 text-xs text-right">Note</TableHead>
-                                                                            <TableHead className="h-8 text-xs text-right">Coeff.</TableHead>
-                                                                        </TableRow>
-                                                                    </TableHeader>
-                                                                    <TableBody>
-                                                                        {subjectGrades.map(grade => (
-                                                                            <TableRow key={grade.id} className="bg-muted/50">
-                                                                                <TableCell className="py-1 text-xs">{format(new Date(grade.date), 'd MMM', { locale: fr })}</TableCell>
-                                                                                <TableCell className="py-1 text-xs">{grade.type}</TableCell>
-                                                                                <TableCell className="py-1 text-xs text-right">{grade.grade}/20</TableCell>
-                                                                                <TableCell className="py-1 text-xs text-right">x{grade.coefficient}</TableCell>
-                                                                            </TableRow>
-                                                                        ))}
-                                                                    </TableBody>
-                                                                </Table>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                    )}
+                                                    {subjectGrades.length > 0 && subjectGrades.map(grade => (
+                                                        <TableRow key={grade.id} className="bg-muted/50">
+                                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{format(new Date(grade.date), 'd MMM', { locale: fr })} - {grade.type}</TableCell>
+                                                            <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
+                                                            <TableCell className="py-1 text-xs text-right text-muted-foreground">{grade.grade}/20</TableCell>
+                                                        </TableRow>
+                                                    ))}
                                                 </React.Fragment>
                                             );
                                         })}
@@ -483,3 +468,5 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
+    
