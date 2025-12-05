@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo } from 'react';
@@ -155,5 +154,3 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
     </Card>
   );
 };
-
-    
