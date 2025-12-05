@@ -41,7 +41,8 @@ service cloud.firestore {
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
-        allow update: if isSchoolDirector(schoolId, request.auth.uid);
+        // Allow the director to update their school's info, but NOT change the directorId field.
+        allow update: if isSchoolDirector(schoolId, request.auth.uid) && request.resource.data.directorId == resource.data.directorId;
         allow delete: if false;
         
         // --- Collection Group Queries ---
@@ -54,8 +55,8 @@ service cloud.firestore {
         // --- Subcollections with Specific Rules ---
 
         match /utilisateurs/{userId} {
-            // Allow users to create their own doc, or directors to manage users
-            allow create: if isUserInSchool(schoolId) && (isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid));
+            // Allow users to create their own doc during onboarding, or directors to manage users
+            allow create: if isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid);
             // Allow directors to update any user, and users to update their own profile
             allow update: if isSchoolDirector(schoolId, request.auth.uid) || isCreatingOwnDocument(userId);
             allow read, list: if isUserInSchool(schoolId);
@@ -89,11 +90,15 @@ service cloud.firestore {
         match /classes/{classId} {
             allow read, list, write: if isUserInSchool(schoolId);
         }
+        
+        match /emploi_du_temps/{entryId} {
+            allow read, list, write: if isUserInSchool(schoolId);
+        }
 
         match /personnel/{staffId} {
             allow read, list, create, update, delete: if isSchoolDirector(schoolId, request.auth.uid);
         }
-
+        
         match /messagerie/{messageId} {
             allow read, list: if isUserInSchool(schoolId);
             allow create: if isUserInSchool(schoolId);
