@@ -65,28 +65,30 @@ function PaymentPageContent() {
 
         handlePayment();
 
-    }, [plan, price, description, user, schoolId, userLoading, schoolLoading]);
+    }, [plan, price, description, user, schoolId, userLoading, schoolLoading, router]);
 
 
     if (status === 'loading') {
         return (
-            <Card className="w-full max-w-md">
-                <CardHeader>
-                    <Skeleton className="h-6 w-3/4" />
-                    <Skeleton className="h-4 w-1/2 mt-2" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                    <Skeleton className="h-8 w-full" />
-                </CardContent>
-            </Card>
+             <div className="flex items-center justify-center pt-20">
+                <Card className="w-full max-w-md">
+                    <CardHeader>
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-1/2 mt-2" />
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-8 w-full" />
+                        <Skeleton className="h-8 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
         );
     }
     
     if (status === 'error') {
          return (
-             <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
+             <div className="flex items-start justify-center pt-20">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <CardTitle>Erreur de Paiement</CardTitle>
@@ -97,7 +99,7 @@ function PaymentPageContent() {
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle>Échec de la transaction</AlertTitle>
                             <AlertDescription>
-                                {errorMessage || "Une erreur inconnue est survenue."}
+                                {errorMessage || "Impossible de générer le lien de paiement. Veuillez contacter le support."}
                             </AlertDescription>
                         </Alert>
                     </CardContent>
@@ -110,7 +112,7 @@ function PaymentPageContent() {
     }
 
     return (
-        <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
+        <div className="flex items-start justify-center pt-20">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>Redirection vers le paiement</CardTitle>
@@ -132,7 +134,7 @@ function PaymentPageContent() {
 export default function PaymentPage() {
     return (
         <Suspense fallback={
-            <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
+             <div className="flex items-start justify-center pt-20">
                 <Skeleton className="h-96 w-full max-w-md" />
             </div>
         }>
