@@ -317,6 +317,7 @@ export default function StudentProfilePage() {
                                                         <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
                                                         <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
                                                     </TableRow>
+                                                    {subjectGrades.length > 0 && (
                                                     <TableRow>
                                                         <TableCell colSpan={3} className="p-0">
                                                             <div className="px-4 py-2 bg-muted/50">
@@ -343,6 +344,7 @@ export default function StudentProfilePage() {
                                                             </div>
                                                         </TableCell>
                                                     </TableRow>
+                                                    )}
                                                 </React.Fragment>
                                             );
                                         })}
