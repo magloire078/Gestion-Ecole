@@ -9,17 +9,17 @@ import {
     Settings, 
     CalendarClock, 
     FileText, 
-    Landmark, 
     UserPlus, 
     ClipboardUser, 
+    GraduationCap, 
     School, 
     FolderCog, 
-    GraduationCap, 
     BookOpen,
     Briefcase,
     CreditCard,
     Send,
     Wallet,
+    Landmark,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -34,7 +34,7 @@ import { useSubscription } from '@/hooks/use-subscription';
 
 const mySchoolLinks = [
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
-  { href: '/dashboard/classes', label: 'Classes', icon: Landmark },
+  { href: '/dashboard/classes', label: 'Classes', icon: School },
   { href: '/dashboard/teachers', label: 'Professeurs', icon: BookUser },
   { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
 ];
@@ -134,7 +134,7 @@ export function MobileNav() {
                 
                 <AccordionItem value="finance" className="border-b-0">
                     <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
-                        <div className='flex items-center gap-3'><Landmark className="h-5 w-5" />Finance</div>
+                        <div className='flex items-center gap-3'><Wallet className="h-5 w-5" />Finance</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
                         {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
