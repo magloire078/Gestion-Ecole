@@ -351,7 +351,7 @@ export default function StudentsPage() {
                           <TableCell className="font-medium">{index + 1}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
+                                <Avatar className="h-10 w-10 print:hidden">
                                     <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${student.id}/100`} alt={`${student.firstName} ${student.lastName}`} data-ai-hint="person face" />
                                     <AvatarFallback>{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</AvatarFallback>
                                 </Avatar>
