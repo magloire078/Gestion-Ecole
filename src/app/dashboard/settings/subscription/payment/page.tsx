@@ -86,51 +86,57 @@ function PaymentPageContent() {
     
     if (status === 'error') {
          return (
-             <Card className="w-full max-w-md">
-                <CardHeader>
-                    <CardTitle>Erreur de Paiement</CardTitle>
-                    <CardDescription>Une erreur est survenue.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Échec de la transaction</AlertTitle>
-                        <AlertDescription>
-                            {errorMessage || "Une erreur inconnue est survenue."}
-                        </AlertDescription>
-                    </Alert>
-                </CardContent>
-                 <CardFooter>
-                    <Button onClick={() => router.back()} className="w-full">Retour</Button>
-                </CardFooter>
-            </Card>
+             <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
+                <Card className="w-full max-w-md">
+                    <CardHeader>
+                        <CardTitle>Erreur de Paiement</CardTitle>
+                        <CardDescription>Une erreur est survenue.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Échec de la transaction</AlertTitle>
+                            <AlertDescription>
+                                {errorMessage || "Une erreur inconnue est survenue."}
+                            </AlertDescription>
+                        </Alert>
+                    </CardContent>
+                    <CardFooter>
+                        <Button onClick={() => router.back()} className="w-full">Retour</Button>
+                    </CardFooter>
+                </Card>
+             </div>
          )
     }
 
     return (
-        <Card className="w-full max-w-md">
-            <CardHeader>
-                <CardTitle>Redirection vers le paiement</CardTitle>
-                <CardDescription>Veuillez patienter pendant que nous vous redirigeons vers notre partenaire de paiement sécurisé.</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center space-y-4 p-10">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-muted-foreground">Préparation de votre transaction...</p>
-                 <div className="text-center text-sm">
-                    <p><strong>Plan:</strong> {plan}</p>
-                    <p><strong>Montant:</strong> {parseInt(price || '0').toLocaleString('fr-FR')} CFA</p>
-                </div>
-            </CardContent>
-        </Card>
+        <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
+            <Card className="w-full max-w-md">
+                <CardHeader>
+                    <CardTitle>Redirection vers le paiement</CardTitle>
+                    <CardDescription>Veuillez patienter pendant que nous vous redirigeons vers notre partenaire de paiement sécurisé.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center space-y-4 p-10">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <p className="text-muted-foreground">Préparation de votre transaction...</p>
+                    <div className="text-center text-sm">
+                        <p><strong>Plan:</strong> {plan}</p>
+                        <p><strong>Montant:</strong> {parseInt(price || '0').toLocaleString('fr-FR')} CFA</p>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
 
 export default function PaymentPage() {
     return (
-        <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
-            <Suspense fallback={<Skeleton className="h-96 w-full max-w-md" />}>
-                <PaymentPageContent />
-            </Suspense>
-        </div>
+        <Suspense fallback={
+            <div className="flex min-h-[calc(100vh-8rem)] items-center justify-center p-4">
+                <Skeleton className="h-96 w-full max-w-md" />
+            </div>
+        }>
+            <PaymentPageContent />
+        </Suspense>
     )
 }
