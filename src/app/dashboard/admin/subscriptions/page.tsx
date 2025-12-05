@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -136,7 +135,7 @@ export default function AdminSubscriptionsPage() {
                                         <TableCell>
                                              <Badge variant={getStatusBadgeVariant(school.subscription?.status)}>
                                                 {school.subscription?.status || 'N/A'}
-                                            </Badge>
+                                             </Badge>
                                         </TableCell>
                                     </TableRow>
                                 ))
