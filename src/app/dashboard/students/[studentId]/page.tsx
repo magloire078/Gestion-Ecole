@@ -1,4 +1,3 @@
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -14,7 +13,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, orderBy, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -23,6 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment } from '@/lib/data-types';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -73,6 +73,7 @@ interface PaymentHistoryEntry extends Payment {
 
 
 export default function StudentProfilePage() {
+  const isMounted = useHydrationFix();
   const params = useParams();
   const router = useRouter();
   const studentId = params.studentId as string;
@@ -325,7 +326,7 @@ export default function StudentProfilePage() {
                                                     </TableRow>
                                                     {subjectGrades.length > 0 && subjectGrades.map(grade => (
                                                         <TableRow key={grade.id} className="bg-muted/50">
-                                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{format(new Date(grade.date), 'd MMM', { locale: fr })} - {grade.type}</TableCell>
+                                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{isMounted ? format(new Date(grade.date), 'd MMM', { locale: fr }) : '...' } - {grade.type}</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">{grade.grade}/20</TableCell>
                                                         </TableRow>
@@ -468,5 +469,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    
