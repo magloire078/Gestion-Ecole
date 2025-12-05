@@ -60,6 +60,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 
 // --- Interfaces ---
@@ -97,6 +98,7 @@ type GradeFormValues = z.infer<typeof gradeSchema>;
 
 
 export default function GradeEntryPage() {
+  const isMounted = useHydrationFix();
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -360,7 +362,7 @@ export default function GradeEntryPage() {
                     allGradesForSubject.map(grade => (
                       <TableRow key={grade.id}>
                         <TableCell className="font-medium">{grade.studentName}</TableCell>
-                        <TableCell>{format(new Date(grade.date), 'd MMM yyyy', { locale: fr })}</TableCell>
+                        <TableCell>{isMounted ? format(new Date(grade.date), 'd MMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}</TableCell>
                         <TableCell>{grade.type}</TableCell>
                         <TableCell className="font-mono">{grade.grade}</TableCell>
                         <TableCell className="font-mono">{grade.coefficient}</TableCell>
@@ -503,3 +505,5 @@ export default function GradeEntryPage() {
     </>
   );
 }
+
+    
