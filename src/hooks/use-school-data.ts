@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -28,7 +27,7 @@ interface SchoolData extends DocumentData {
 export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
-    const [schoolId, setSchoolId] = useState<string | undefined>(undefined);
+    const [schoolId, setSchoolId] = useState<string | null>(null);
     const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -40,25 +39,22 @@ export function useSchoolData() {
 
         if (!user) {
             setLoading(false);
+            setSchoolId(null);
             setSchoolData(null);
-            setSchoolId(undefined);
             return;
         }
 
         const userRootRef = doc(firestore, 'utilisateurs', user.uid);
         const unsubscribeUser = onSnapshot(userRootRef, (userDocSnap) => {
             if (userDocSnap.exists()) {
-                const userSchoolId = userDocSnap.data()?.schoolId;
-                setSchoolId(userSchoolId);
-                if (!userSchoolId) {
-                     setLoading(false);
-                }
+                setSchoolId(userDocSnap.data()?.schoolId || null);
             } else {
+                setSchoolId(null); // User has no school yet
                 setLoading(false);
-                setSchoolId(undefined);
             }
         }, (error) => {
             console.error("Error fetching user root doc:", error);
+            setSchoolId(null);
             setLoading(false);
         });
         
@@ -67,60 +63,49 @@ export function useSchoolData() {
     }, [user, userLoading, firestore]);
 
     useEffect(() => {
-        if (!schoolId) {
-            if (!userLoading) setLoading(false);
-             setSchoolData(null);
-             document.title = DEFAULT_TITLE;
+        if (schoolId === null) { // Explicitly check for null which means user has no school
+            setSchoolData(null);
+            setLoading(false);
+            document.title = DEFAULT_TITLE;
+            return;
+        }
+
+        if (!schoolId) { // Undefined, still waiting for user doc
             return;
         }
         
-        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as SchoolData;
-                
-                // Fetch all users in the school to get the role
-                const usersCollectionRef = collection(firestore, `ecoles/${schoolId}/utilisateurs`);
-                onSnapshot(usersCollectionRef, (usersSnapshot) => {
-                    const usersData: any = {};
-                    usersSnapshot.forEach(userDoc => {
-                        usersData[userDoc.id] = userDoc.data();
-                    });
-                    setSchoolData({ ...data, utilisateurs: usersData });
-                    document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
-                    setLoading(false);
-                }, (error) => {
-                    console.error("Error fetching school users:", error);
-                     setSchoolData(data); // Set school data even if users fail to load
-                     setLoading(false);
-                });
-
+                setSchoolData(data);
+                document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
                 document.title = DEFAULT_TITLE;
-                setLoading(false);
             }
+            setLoading(false); // Final loading state set here
         }, (error) => {
              const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
              errorEmitter.emit('permission-error', permissionError);
+             setSchoolData(null);
              setLoading(false);
         });
 
         return () => unsubscribeSchool();
         
-    }, [schoolId, firestore, userLoading]);
+    }, [schoolId, firestore]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
-        if (!schoolId || !schoolData) {
-            throw new Error("ID de l'école ou données non disponibles. Impossible de mettre à jour.");
+        if (!schoolId) {
+            throw new Error("ID de l'école non disponible. Impossible de mettre à jour.");
         }
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         
         const dataToUpdate = {
             ...data,
-            directorId: schoolData.directorId, // Ensure directorId is always present in the update
+            directorId: schoolData?.directorId, // Ensure directorId is always present in the update
         };
 
         try {
