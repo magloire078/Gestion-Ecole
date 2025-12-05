@@ -1,4 +1,3 @@
-
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -37,13 +36,16 @@ export default function StudentReportPage() {
 
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection<Grade>(gradesQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection(Teacher & { id: string }>(teachersQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher & { id: string }>(teachersQuery);
 
   const student = studentData;
   const grades = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
 
   const isLoading = schoolLoading || studentLoading || gradesLoading || teachersLoading;
+  
+  // Correction: get schoolId from useSchoolData hook
+  const { schoolId } = useSchoolData();
 
   if (isLoading) {
     return (
@@ -88,5 +90,3 @@ export default function StudentReportPage() {
     </div>
   );
 }
-
-    
