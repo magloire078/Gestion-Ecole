@@ -5,8 +5,11 @@ import React from 'react';
 import { isValid, parseISO, lastDayOfMonth, format } from "date-fns";
 import { fr } from "date-fns/locale";
 import type { PayslipDetails } from '@/app/bulletin-de-paie';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDetails }) {
+    const isMounted = useHydrationFix();
+
     if (!payslipDetails) {
         return null; 
     }
@@ -48,7 +51,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
 
             <main>
                 <div className="text-center my-2 p-1 bg-gray-200 font-bold rounded-md text-sm capitalize">
-                    BULLETIN DE PAIE : Période de {displayDate.period}
+                    BULLETIN DE PAIE : Période de {isMounted ? displayDate.period : '...'}
                 </div>
 
                 {/* Employee Info */}
@@ -170,7 +173,7 @@ export function PayslipTemplate({ payslipDetails }: { payslipDetails: PayslipDet
                         <div className="col-span-4 flex flex-col justify-center items-center p-1">
                             <div className="text-center pb-1">
                                 <p className="font-bold">Payé à {employeeInfo.paymentLocation} le</p>
-                                <p className="capitalize text-xs">{displayDate.payment}</p>
+                                <p className="capitalize text-xs">{isMounted ? displayDate.payment : '...'}</p>
                                 <div className="h-20"></div>
                                 <p className="border-t border-gray-400 pt-1 opacity-50">Signature</p>
                             </div>
