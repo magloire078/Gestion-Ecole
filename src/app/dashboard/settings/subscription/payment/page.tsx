@@ -88,7 +88,7 @@ function PaymentPageContent() {
     
     if (status === 'error') {
          return (
-             <div className="flex items-start justify-center pt-20">
+             <div className="flex items-center justify-center h-full">
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <CardTitle>Erreur de Paiement</CardTitle>
@@ -112,7 +112,7 @@ function PaymentPageContent() {
     }
 
     return (
-        <div className="flex items-start justify-center pt-20">
+        <div className="flex items-center justify-center h-full">
             <Card className="w-full max-w-md">
                 <CardHeader>
                     <CardTitle>Redirection vers le paiement</CardTitle>
