@@ -69,7 +69,7 @@ import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { student as Student, class_type as Class, tuitionStatus as TuitionStatus } from "@/lib/data-types";
+import type { student as Student, class_type as Class } from "@/lib/data-types";
 
 const studentSchema = z.object({
     firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -379,7 +379,7 @@ export default function StudentsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild>
-                                      <Link href={`/dashboard/student-profile/${student.id}`} className="flex items-center cursor-pointer">
+                                      <Link href={`/dashboard/students/${student.id}`} className="flex items-center cursor-pointer">
                                         <Eye className="mr-2 h-4 w-4" />
                                         Voir la fiche
                                       </Link>
