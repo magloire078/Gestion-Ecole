@@ -5,7 +5,7 @@ import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Shield, Hash, Calendar, Receipt, VenetianMask, MapPin, FileText, CalendarDays } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -17,12 +17,12 @@ import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as PaymentHistoryEntry } from '@/lib/data-types';
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment } from '@/lib/data-types';
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -62,10 +62,15 @@ const calculateAverages = (grades: GradeEntry[]) => {
         }
     }
     
-    const generalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : null;
+    const generalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
 
     return { subjectAverages: averages, generalAverage };
 };
+
+interface PaymentHistoryEntry extends Payment {
+    id: string;
+}
+
 
 export default function StudentProfilePage() {
   const params = useParams();
@@ -81,8 +86,8 @@ export default function StudentProfilePage() {
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
-  const { data: studentDoc, loading: studentLoading } = useDoc<Student>(studentRef);
-  const student: Student | null = studentDoc ? studentDoc as Student : null;
+  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const student: Student | null = studentData ? { id: studentId, ...studentData } as Student & {id: string} : null;
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
 
   // --- Teacher and Class Data (Loaded separately) ---
@@ -112,10 +117,10 @@ export default function StudentProfilePage() {
                     if (teacherSnap.exists()) {
                         setMainTeacher({ id: teacherSnap.id, ...teacherSnap.data() } as Teacher);
                     } else {
-                        setMainTeacher(null); // Teacher not found or deleted
+                        setMainTeacher(null);
                     }
                 } else {
-                  setMainTeacher(null); // No main teacher assigned
+                  setMainTeacher(null);
                 }
             }
         } catch (error) {
@@ -138,19 +143,18 @@ export default function StudentProfilePage() {
   , [firestore, schoolId, studentId]);
 
   const { data: gradesData, loading: gradesLoading } = useCollection<GradeEntry>(gradesQuery);
-  const { data: paymentsData, loading: paymentsLoading } = useCollection<PaymentHistoryEntry & {id: string}>(paymentsQuery);
+  const { data: paymentsData, loading: paymentsLoading } = useCollection<Payment>(paymentsQuery);
   
   const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
-  const paymentHistory: (PaymentHistoryEntry & { id: string })[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() } as (PaymentHistoryEntry & {id: string}))) || [], [paymentsData]);
+  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentsData]);
 
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
   const isLoading = schoolLoading || studentLoading || classTeacherLoading || gradesLoading || paymentsLoading;
   
-  const handleViewReceipt = (payment: PaymentHistoryEntry & { id: string }) => {
+  const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
     
-    // Calculate the amount due *at the time of this payment*
     const currentPaymentIndex = paymentHistory.findIndex(p => p.id === payment.id);
     const paymentsUpToThisOne = paymentHistory.slice(currentPaymentIndex);
     const totalPaidSinceThisPayment = paymentsUpToThisOne.reduce((sum, p) => sum + p.amount, 0);
@@ -221,7 +225,10 @@ export default function StudentProfilePage() {
                 </Button>
             </div>
         </div>
-        <div className="grid gap-6 lg:grid-cols-3">
+
+        <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
+
+            {/* Left Column */}
             <div className="lg:col-span-1 flex flex-col gap-6">
                  <Card>
                     <CardHeader className="flex-row items-center gap-4 pb-4">
@@ -236,19 +243,6 @@ export default function StudentProfilePage() {
                         </div>
                     </CardHeader>
                     <CardContent className="space-y-3 text-sm">
-                         <div className="flex items-center">
-                            <Cake className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Né(e) le <strong>{student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'}</strong> à <strong>{student.placeOfBirth}</strong></span>
-                        </div>
-                        <div className="flex items-center">
-                            <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Sexe: <strong>{student.gender || 'N/A'}</strong></span>
-                        </div>
-                        <div className="flex items-start">
-                            <MapPin className="mr-3 h-5 w-5 text-muted-foreground flex-shrink-0" />
-                            <span>Adresse: <strong>{student.address || 'N/A'}</strong></span>
-                        </div>
-                        <Separator />
                         <div className="flex items-center">
                             <BookUser className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Classe: <strong>{student.class}</strong></span>
@@ -257,13 +251,9 @@ export default function StudentProfilePage() {
                             <User className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Prof. Principal: <strong>{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}`: 'N/A'}</strong></span>
                         </div>
-                        <div className="flex items-center">
+                         <div className="flex items-center">
                             <Building className="mr-3 h-5 w-5 text-muted-foreground" />
                             <span>Cycle: <strong>{studentClass?.cycle || student.cycle || 'N/A'}</strong></span>
-                        </div>
-                        <div className="flex items-center">
-                            <School className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Ancien Etab.: <strong>{student.previousSchool || 'N/A'}</strong></span>
                         </div>
                     </CardContent>
                 </Card>
@@ -284,132 +274,198 @@ export default function StudentProfilePage() {
                     </CardContent>
                 </Card>
             </div>
-            <div className="lg:col-span-2 flex flex-col gap-6">
-                 <Card>
-                    <CardHeader>
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <CardTitle>Résultats Scolaires</CardTitle>
-                                <CardDescription>Notes et moyenne générale de l'élève.</CardDescription>
-                            </div>
-                             <div className="text-right">
-                                <p className="text-sm text-muted-foreground">Moyenne Générale</p>
-                                <p className="text-3xl font-bold text-primary">{generalAverage !== null ? generalAverage.toFixed(2) : 'N/A'}</p>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader><TableRow><TableHead>Matière</TableHead><TableHead className="text-right">Coeff.</TableHead><TableHead className="text-right">Moyenne</TableHead></TableRow></TableHeader>
-                            <TableBody>
-                                {allSubjects.map((subject) => {
-                                    const subjectData = subjectAverages[subject];
-                                    if(!subjectData) return null; // Don't show subjects with no grades
-                                    
-                                    const subjectGrades = grades.filter(g => g.subject === subject);
 
-                                    return (
-                                        <React.Fragment key={subject}>
-                                            <TableRow>
-                                                <TableCell className="font-medium">{subject}</TableCell>
-                                                <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
-                                                <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell colSpan={3} className="p-0">
-                                                    <div className="px-4 py-2 bg-muted/50">
-                                                        <Table>
-                                                            <TableHeader>
-                                                                <TableRow>
-                                                                    <TableHead className="h-8 text-xs">Date</TableHead>
-                                                                    <TableHead className="h-8 text-xs">Type</TableHead>
-                                                                    <TableHead className="h-8 text-xs text-right">Note</TableHead>
-                                                                    <TableHead className="h-8 text-xs text-right">Coeff.</TableHead>
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {subjectGrades.map(grade => (
-                                                                    <TableRow key={grade.id} className="bg-muted/50">
-                                                                        <TableCell className="py-1 text-xs">{format(new Date(grade.date), 'd MMM', { locale: fr })}</TableCell>
-                                                                        <TableCell className="py-1 text-xs">{grade.type}</TableCell>
-                                                                        <TableCell className="py-1 text-xs text-right">{grade.grade}/20</TableCell>
-                                                                        <TableCell className="py-1 text-xs text-right">x{grade.coefficient}</TableCell>
-                                                                    </TableRow>
-                                                                ))}
-                                                            </TableBody>
-                                                        </Table>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        </React.Fragment>
-                                    );
-                                })}
-                                 {grades.length === 0 && (
-                                    <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /><span>Scolarité</span></CardTitle></CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between items-center text-lg">
-                            <span className="text-muted-foreground">Statut</span>
-                            <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} />
-                            </div>
-                            <div className="flex justify-between items-center text-lg">
-                            <span className="text-muted-foreground">Solde dû</span>
-                            <span className="font-bold text-primary">{(student.amountDue ?? 0) > 0 ? `${(student.amountDue ?? 0).toLocaleString('fr-FR')} CFA` : '-'}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /><span>Appréciations</span></CardTitle></CardHeader>
-                        <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucune appréciation pour le moment."}"</p></CardContent>
-                    </Card>
-                </div>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Historique des Paiements</CardTitle>
-                        <CardDescription>Liste de tous les versements de scolarité effectués.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Date</TableHead>
-                                    <TableHead>Description</TableHead>
-                                    <TableHead>Mode</TableHead>
-                                    <TableHead className="text-right">Montant</TableHead>
-                                    <TableHead className="text-right">Action</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {paymentHistory.length > 0 ? (
-                                    paymentHistory.map(payment => (
-                                        <TableRow key={payment.id}>
-                                            <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
-                                            <TableCell>{payment.description}</TableCell>
-                                            <TableCell>{payment.method}</TableCell>
-                                            <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
-                                                    <Receipt className="mr-2 h-3 w-3" /> Reçu
-                                                </Button>
-                                            </TableCell>
+            {/* Right Column */}
+            <div className="lg:col-span-3 flex flex-col gap-6">
+                <Tabs defaultValue="grades">
+                    <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="grades">Résultats</TabsTrigger>
+                        <TabsTrigger value="payments">Paiements</TabsTrigger>
+                        <TabsTrigger value="info">Informations</TabsTrigger>
+                        <TabsTrigger value="documents">Documents</TabsTrigger>
+                    </TabsList>
+                    
+                    {/* Grades Tab */}
+                    <TabsContent value="grades" className="space-y-4">
+                         <Card>
+                            <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <CardTitle>Résultats Scolaires</CardTitle>
+                                        <CardDescription>Notes et moyenne générale de l'élève.</CardDescription>
+                                    </div>
+                                     <div className="text-right">
+                                        <p className="text-sm text-muted-foreground">Moyenne Générale</p>
+                                        <p className="text-3xl font-bold text-primary">{generalAverage !== null ? generalAverage.toFixed(2) : 'N/A'}</p>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader><TableRow><TableHead>Matière</TableHead><TableHead className="text-right">Coeff.</TableHead><TableHead className="text-right">Moyenne</TableHead></TableRow></TableHeader>
+                                    <TableBody>
+                                        {allSubjects.map((subject) => {
+                                            const subjectData = subjectAverages[subject];
+                                            if(!subjectData) return null;
+                                            
+                                            const subjectGrades = grades.filter(g => g.subject === subject);
+
+                                            return (
+                                                <React.Fragment key={subject}>
+                                                    <TableRow>
+                                                        <TableCell className="font-medium">{subject}</TableCell>
+                                                        <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
+                                                        <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow>
+                                                        <TableCell colSpan={3} className="p-0">
+                                                            <div className="px-4 py-2 bg-muted/50">
+                                                                <Table>
+                                                                    <TableHeader>
+                                                                        <TableRow>
+                                                                            <TableHead className="h-8 text-xs">Date</TableHead>
+                                                                            <TableHead className="h-8 text-xs">Type</TableHead>
+                                                                            <TableHead className="h-8 text-xs text-right">Note</TableHead>
+                                                                            <TableHead className="h-8 text-xs text-right">Coeff.</TableHead>
+                                                                        </TableRow>
+                                                                    </TableHeader>
+                                                                    <TableBody>
+                                                                        {subjectGrades.map(grade => (
+                                                                            <TableRow key={grade.id} className="bg-muted/50">
+                                                                                <TableCell className="py-1 text-xs">{format(new Date(grade.date), 'd MMM', { locale: fr })}</TableCell>
+                                                                                <TableCell className="py-1 text-xs">{grade.type}</TableCell>
+                                                                                <TableCell className="py-1 text-xs text-right">{grade.grade}/20</TableCell>
+                                                                                <TableCell className="py-1 text-xs text-right">x{grade.coefficient}</TableCell>
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                </React.Fragment>
+                                            );
+                                        })}
+                                         {grades.length === 0 && (
+                                            <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    
+                    {/* Payments Tab */}
+                     <TabsContent value="payments" className="space-y-4">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Card>
+                                <CardHeader><CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /><span>Scolarité</span></CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div className="flex justify-between items-center text-lg">
+                                    <span className="text-muted-foreground">Statut</span>
+                                    <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} />
+                                    </div>
+                                    <div className="flex justify-between items-center text-lg">
+                                    <span className="text-muted-foreground">Solde dû</span>
+                                    <span className="font-bold text-primary">{(student.amountDue ?? 0) > 0 ? `${(student.amountDue ?? 0).toLocaleString('fr-FR')} CFA` : '-'}</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                             <Card>
+                                <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /><span>Appréciations</span></CardTitle></CardHeader>
+                                <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucune appréciation pour le moment."}"</p></CardContent>
+                            </Card>
+                        </div>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Historique des Paiements</CardTitle>
+                                <CardDescription>Liste de tous les versements de scolarité effectués.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Description</TableHead>
+                                            <TableHead>Mode</TableHead>
+                                            <TableHead className="text-right">Montant</TableHead>
+                                            <TableHead className="text-right">Action</TableHead>
                                         </TableRow>
-                                    ))
-                                ) : (
-                                    <TableRow>
-                                        <TableCell colSpan={5} className="text-center h-24">Aucun paiement enregistré.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
-                </Card>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {paymentHistory.length > 0 ? (
+                                            paymentHistory.map(payment => (
+                                                <TableRow key={payment.id}>
+                                                    <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
+                                                    <TableCell>{payment.description}</TableCell>
+                                                    <TableCell>{payment.method}</TableCell>
+                                                    <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
+                                                    <TableCell className="text-right">
+                                                        <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
+                                                            <Receipt className="mr-2 h-3 w-3" /> Reçu
+                                                        </Button>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        ) : (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center h-24">Aucun paiement enregistré.</TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                    
+                    {/* Info Tab */}
+                    <TabsContent value="info">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Informations Administratives</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm">
+                                 <div className="flex items-center">
+                                    <Cake className="mr-3 h-5 w-5 text-muted-foreground" />
+                                    <span>Né(e) le <strong>{student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'}</strong> à <strong>{student.placeOfBirth}</strong></span>
+                                </div>
+                                <div className="flex items-center">
+                                    <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />
+                                    <span>Sexe: <strong>{student.gender || 'N/A'}</strong></span>
+                                </div>
+                                <div className="flex items-start">
+                                    <MapPin className="mr-3 h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                    <span>Adresse: <strong>{student.address || 'N/A'}</strong></span>
+                                </div>
+                                <Separator />
+                                <div className="flex items-center">
+                                    <School className="mr-3 h-5 w-5 text-muted-foreground" />
+                                    <span>Ancien Etab.: <strong>{student.previousSchool || 'N/A'}</strong></span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    {/* Documents Tab */}
+                    <TabsContent value="documents">
+                         <Card>
+                            <CardHeader>
+                                <CardTitle>Documents</CardTitle>
+                                <CardDescription>Générez et consultez les documents de l'élève.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <Button onClick={() => router.push(`/dashboard/students/${studentId}/report`)} className="w-full justify-start">
+                                    <FileText className="mr-2 h-4 w-4" />
+                                    Générer le Bulletin de Notes
+                                </Button>
+                                <Button onClick={() => router.push(`/dashboard/students/${studentId}/timetable`)} className="w-full justify-start">
+                                    <CalendarDays className="mr-2 h-4 w-4" />
+                                    Voir l'Emploi du Temps
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
     </div>
