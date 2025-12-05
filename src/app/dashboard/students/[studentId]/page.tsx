@@ -4,7 +4,7 @@ import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -216,9 +216,9 @@ export default function StudentProfilePage() {
                 <p className="text-muted-foreground">Vue détaillée du profil, des notes et des informations de l'élève.</p>
             </div>
             <div className="flex gap-2">
-                <Button variant="outline" onClick={() => router.push(`/dashboard/students/${studentId}/timetable`)}>
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    Voir l'emploi du temps
+                 <Button variant="outline" onClick={() => router.push(`/dashboard/students/${studentId}/sheet`)}>
+                    <FileSignature className="mr-2 h-4 w-4" />
+                    Fiche de renseignements
                 </Button>
                 <Button onClick={() => router.push(`/dashboard/students/${studentId}/report`)}>
                     <FileText className="mr-2 h-4 w-4" />
@@ -449,6 +449,10 @@ export default function StudentProfilePage() {
                                 <Button onClick={() => router.push(`/dashboard/students/${studentId}/timetable`)} className="w-full justify-start">
                                     <CalendarDays className="mr-2 h-4 w-4" />
                                     Voir l'Emploi du Temps
+                                </Button>
+                                <Button onClick={() => router.push(`/dashboard/students/${studentId}/sheet`)} className="w-full justify-start">
+                                    <FileSignature className="mr-2 h-4 w-4" />
+                                    Générer la Fiche de Renseignements
                                 </Button>
                             </CardContent>
                         </Card>
