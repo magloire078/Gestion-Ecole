@@ -66,6 +66,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { PayslipPreview } from '@/components/payroll/payslip-template';
 
 
 const staffSchema = z.object({
@@ -479,22 +480,24 @@ function HRContent() {
 
       <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
         <DialogContent className="max-w-4xl p-0">
-          <div className="p-6">
-            <DialogHeader>
+            <DialogHeader className="p-6 pb-0">
               <DialogTitle>Bulletin de paie</DialogTitle>
               <DialogDescription>
                 Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.firstName} {payslipDetails?.employeeInfo.lastName || "..."}.
               </DialogDescription>
             </DialogHeader>
-            {isGeneratingPayslip ? (
-                <div className="flex items-center justify-center h-96">
-                    <p>Génération du bulletin de paie...</p>
-                </div>
-            ) : (
-                 <div className="flex items-center justify-center h-96">
-                    <p className="text-muted-foreground">La prévisualisation du bulletin n'est pas disponible pour le moment.</p>
-                </div>
-            )}
+            <div className="p-6 pt-2">
+              {isGeneratingPayslip ? (
+                  <div className="flex items-center justify-center h-96">
+                      <p>Génération du bulletin de paie...</p>
+                  </div>
+              ) : payslipDetails ? (
+                  <PayslipPreview details={payslipDetails} />
+              ) : (
+                  <div className="flex items-center justify-center h-96">
+                      <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
+                  </div>
+              )}
             </div>
         </DialogContent>
       </Dialog>
