@@ -12,24 +12,24 @@ import { useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 export default function SubscriptionPage() {
+    const router = useRouter();
     const { schoolName, loading: schoolLoading } = useSchoolData();
-    const { subscription, updateSubscription, loading: subscriptionLoading } = useSubscription();
+    const { subscription, loading: subscriptionLoading } = useSubscription();
     const { toast } = useToast();
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
 
-    const handlePlanChange = async (newPlan: 'Essentiel' | 'Pro') => {
-        setError(null);
-        try {
-            await updateSubscription({ plan: newPlan, status: 'active' });
-            toast({
-                title: 'Abonnement mis à jour',
-                description: `Votre abonnement est maintenant sur le plan ${newPlan}.`,
-            });
-        } catch (err) {
-             setError('Une erreur est survenue lors du changement de plan. Veuillez réessayer.');
+    const handleChoosePlan = (planName: 'Essentiel' | 'Pro', price: number) => {
+        if (planName === 'Pro') {
+             const transactionDetails = new URLSearchParams({
+                plan: planName,
+                price: price.toString(),
+                description: `Abonnement ${planName} pour ${schoolName}`,
+            }).toString();
+            router.push(`/dashboard/settings/subscription/payment?${transactionDetails}`);
         }
     };
     
@@ -40,6 +40,7 @@ export default function SubscriptionPage() {
     const plans = [
         {
             name: "Essentiel",
+            priceNumber: 0,
             price: "Gratuit",
             description: "Idéal pour les petites écoles qui débutent.",
             features: [
@@ -52,6 +53,7 @@ export default function SubscriptionPage() {
         },
         {
             name: "Pro",
+            priceNumber: 49900,
             price: "49 900 CFA / mois",
             description: "Pour les écoles en croissance avec des besoins avancés.",
             features: [
@@ -90,14 +92,6 @@ export default function SubscriptionPage() {
                 </p>
             </div>
             
-             <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Gestion Manuelle des Abonnements</AlertTitle>
-                <AlertDescription>
-                    Puisque les paiements sont gérés manuellement, vous pouvez changer de plan ici après confirmation du paiement auprès de notre service commercial.
-                </AlertDescription>
-            </Alert>
-            
             <div className="grid gap-8 md:grid-cols-2">
                 {plans.map(plan => {
                     const current = isCurrentPlan(plan.name as 'Essentiel' | 'Pro');
@@ -130,7 +124,7 @@ export default function SubscriptionPage() {
                                     <Button 
                                         className="w-full" 
                                         variant={plan.name === 'Pro' ? 'default' : 'secondary'}
-                                        onClick={() => handlePlanChange(plan.name as 'Essentiel' | 'Pro')}
+                                        onClick={() => handleChoosePlan(plan.name as 'Essentiel' | 'Pro', plan.priceNumber)}
                                     >
                                         {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
                                         Passer au Plan {plan.name}
