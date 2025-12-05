@@ -9,7 +9,7 @@ import {
     CalendarClock, 
     FileText, 
     UserPlus, 
-    ClipboardUser, 
+    ClipboardList, 
     GraduationCap, 
     School, 
     FolderCog, 
@@ -38,7 +38,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser },
+  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardList },
   { href: '/dashboard/messaging', label: 'Messagerie', icon: Send },
 ];
 
