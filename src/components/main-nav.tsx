@@ -27,8 +27,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useSubscription } from '@/hooks/use-subscription';
-
 
 const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary text-sm";
 const activeClass = "bg-muted text-primary";
@@ -42,7 +40,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser, pro: true },
+  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser },
   { href: '/dashboard/messaging', label: 'Messagerie', icon: Send },
 ];
 

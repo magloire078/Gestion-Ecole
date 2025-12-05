@@ -29,8 +29,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { useSubscription } from '@/hooks/use-subscription';
-
 
 const mySchoolLinks = [
   { href: '/dashboard/students', label: 'Élèves', icon: Users },
@@ -41,7 +39,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser, pro: true },
+  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardUser },
   { href: '/dashboard/messaging', label: 'Messagerie', icon: Send },
 ];
 
