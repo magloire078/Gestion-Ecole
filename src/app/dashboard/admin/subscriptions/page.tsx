@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 
 interface School {
@@ -28,6 +29,7 @@ interface School {
 const ADMIN_UID = "5H3lZic8t7dBa127LclkKrHW03M2"; 
 
 export default function AdminSubscriptionsPage() {
+    const isMounted = useHydrationFix();
     const { user, loading: userLoading } = useUser();
     const router = useRouter();
     const firestore = useFirestore();
@@ -124,7 +126,7 @@ export default function AdminSubscriptionsPage() {
                                     <TableRow key={school.id}>
                                         <TableCell className="font-medium">{school.name}</TableCell>
                                         <TableCell>
-                                            {school.createdAt ? format(new Date(school.createdAt.seconds * 1000), 'd MMMM yyyy', { locale: fr }) : 'N/A'}
+                                            {isMounted && school.createdAt ? format(new Date(school.createdAt.seconds * 1000), 'd MMMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={getPlanBadgeVariant(school.subscription?.plan)}>
