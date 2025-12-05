@@ -48,7 +48,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { isValid, parseISO, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { PayslipTemplate } from '@/components/payroll/payslip-template';
 import { useSubscription } from '@/hooks/use-subscription';
 import Link from "next/link";
 import { getPayslipDetails, type PayslipDetails } from '@/app/bulletin-de-paie';
@@ -491,13 +490,9 @@ function HRContent() {
                 <div className="flex items-center justify-center h-96">
                     <p>Génération du bulletin de paie...</p>
                 </div>
-            ) : isMounted && payslipDetails ? (
-                <div className="mt-4 max-h-[70vh] overflow-y-auto">
-                    <PayslipTemplate payslipDetails={payslipDetails} />
-                </div>
             ) : (
                  <div className="flex items-center justify-center h-96">
-                    <p className="text-red-500">Impossible de charger le bulletin de paie.</p>
+                    <p className="text-muted-foreground">La prévisualisation du bulletin n'est pas disponible pour le moment.</p>
                 </div>
             )}
             </div>
