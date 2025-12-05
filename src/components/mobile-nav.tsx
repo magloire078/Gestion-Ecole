@@ -6,7 +6,6 @@ import {
     LayoutDashboard, 
     Users, 
     BookUser, 
-    Wallet, 
     Settings, 
     CalendarClock, 
     FileText, 
@@ -19,7 +18,8 @@ import {
     BookOpen,
     Briefcase,
     CreditCard,
-    Send
+    Send,
+    Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
