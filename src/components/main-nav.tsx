@@ -7,7 +7,6 @@ import {
     BookUser, 
     Settings, 
     CalendarClock, 
-    FileText, 
     UserPlus, 
     ClipboardUser,
     GraduationCap, 
@@ -19,6 +18,7 @@ import {
     Send,
     Wallet,
     Landmark,
+    FileText
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
