@@ -356,9 +356,7 @@ export default function StudentsPage() {
                                     <AvatarFallback>{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <Link href={`/dashboard/students/${student.id}`} className="font-medium hover:underline text-primary">
-                                        {student.firstName} {student.lastName}
-                                    </Link>
+                                    <p className="font-medium">{student.firstName} {student.lastName}</p>
                                     <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id.substring(0,8)}</div>
                                 </div>
                             </div>
@@ -381,10 +379,10 @@ export default function StudentsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard/students/${student.id}`} className="flex items-center cursor-pointer">
-                                      <Eye className="mr-2 h-4 w-4" />
-                                      Voir la fiche
-                                    </Link>
+                                      <Link href={`/dashboard/student-profile/${student.id}`} className="flex items-center cursor-pointer">
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Voir la fiche
+                                      </Link>
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
                                   <DropdownMenuSeparator />
