@@ -12,7 +12,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { accountingTransaction as AccountingTransaction, book as Book, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
+import type { accountingTransaction as AccountingTransaction, libraryBook as Book, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { AccountingCharts } from './accounting/charts';
 import { sum } from 'd3-array';
@@ -237,7 +237,7 @@ export default function DashboardPage() {
                                 <div className="text-sm">
                                     <p className="text-muted-foreground">{activity.description}</p>
                                     <p className="text-xs text-muted-foreground/70">
-                                        {isMounted && `il y a ${formatDistanceToNow(activity.date, { locale: fr, addSuffix: false })}`}
+                                        {isMounted ? `il y a ${formatDistanceToNow(activity.date, { locale: fr, addSuffix: false })}` : '...'}
                                     </p>
                                 </div>
                             </div>
