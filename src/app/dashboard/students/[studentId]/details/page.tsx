@@ -326,7 +326,7 @@ export default function StudentProfilePage() {
                                                     </TableRow>
                                                     {subjectGrades.length > 0 && subjectGrades.map(grade => (
                                                         <TableRow key={grade.id} className="bg-muted/50">
-                                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{isMounted ? format(new Date(grade.date), 'd MMM', { locale: fr }) : '...' } - {grade.type}</TableCell>
+                                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{isMounted ? format(new Date(grade.date), 'd MMM', { locale: fr }) : '...' }</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">{grade.grade}/20</TableCell>
                                                         </TableRow>
