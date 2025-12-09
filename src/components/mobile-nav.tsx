@@ -30,31 +30,31 @@ import {
 } from "@/components/ui/accordion"
 
 const mySchoolLinks = [
-  { href: '/dashboard/students', label: 'Élèves', icon: Users },
+  { href: '/dashboard/eleves', label: 'Élèves', icon: Users },
   { href: '/dashboard/classes', label: 'Classes', icon: School },
-  { href: '/dashboard/teachers', label: 'Professeurs', icon: BookUser },
-  { href: '/dashboard/timetable', label: 'Emploi du temps', icon: CalendarClock },
+  { href: '/dashboard/enseignants', label: 'Professeurs', icon: BookUser },
+  { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
 const administrationLinks = [
-  { href: '/dashboard/registration', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardList },
-  { href: '/dashboard/messaging', label: 'Messagerie', icon: Send },
+  { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus },
+  { href: '/dashboard/rh', label: 'RH / Personnel', icon: ClipboardList },
+  { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send },
 ];
 
 const pedagogicalLinks = [
-    { href: '/dashboard/reports', label: 'Saisie des Notes', icon: FileText },
-    { href: '/dashboard/library', label: 'Bibliothèque', icon: BookOpen },
+    { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText },
+    { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
 ];
 
 const financialLinks = [
-  { href: '/dashboard/fees', label: 'Scolarité', icon: Wallet },
-  { href: '/dashboard/accounting', label: 'Comptabilité', icon: Landmark },
+  { href: '/dashboard/scolarite', label: 'Scolarité', icon: Wallet },
+  { href: '/dashboard/comptabilite', label: 'Comptabilité', icon: Landmark },
 ];
 
 const settingsLinks = [
-  { href: '/dashboard/settings', label: 'Paramètres', icon: Settings },
-  { href: '/dashboard/settings/subscription', label: 'Abonnement', icon: CreditCard },
+  { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
+  { href: '/dashboard/parametres/abonnement', label: 'Abonnement', icon: CreditCard },
 ];
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {

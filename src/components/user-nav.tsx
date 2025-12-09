@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -91,7 +90,7 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>Profil & Paramètres</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>Profil & Paramètres</DropdownMenuItem>
            <DropdownMenuSub>
             <DropdownMenuSubTrigger>
               {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
@@ -116,7 +115,7 @@ export function UserNav() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push('/dashboard/admin/subscriptions')}>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/admin/abonnements')}>
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 <span>Admin Abonnements</span>
               </DropdownMenuItem>
