@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Pie, PieChart, Cell } from 'recharts';
@@ -189,5 +188,3 @@ export function AccountingCharts({ transactions }: AccountingChartsProps) {
     </div>
   );
 }
-
-    

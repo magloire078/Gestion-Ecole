@@ -14,7 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { accountingTransaction as AccountingTransaction, libraryBook as Book, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
-import { AccountingCharts } from './comptabilite/charts';
+import { AccountingCharts } from '@/app/dashboard/comptabilite/charts';
 import { sum } from 'd3-array';
 
 type Activity = {
