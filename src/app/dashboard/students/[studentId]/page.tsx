@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -193,10 +194,6 @@ export default function StudentProfilePage() {
   if (isLoading) {
     return (
         <div className="space-y-6">
-            <div>
-                <Skeleton className="h-8 w-96 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-            </div>
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-1 flex flex-col gap-6">
                     <Skeleton className="h-56 w-full" />
