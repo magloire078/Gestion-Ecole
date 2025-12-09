@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -12,7 +10,7 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy, getDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, getDoc, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
@@ -22,7 +20,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
@@ -89,28 +86,81 @@ export default function StudentProfilePage() {
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
-  const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  
+  // --- Enhanced data fetching for related documents ---
+  const [relatedData, setRelatedData] = useState<{
+      mainTeacher: Teacher | null;
+      studentClass: Class | null;
+      grades: GradeEntry[];
+      paymentHistory: PaymentHistoryEntry[];
+  }>({ mainTeacher: null, studentClass: null, grades: [], paymentHistory: [] });
 
-  // --- Related Data ---
-  const gradesQuery = useMemoFirebase(() => schoolId && studentId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc')) : null, [schoolId, studentId]);
-  const paymentsQuery = useMemoFirebase(() => schoolId && studentId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, studentId]);
-  
-  const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
-  const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
-  
-  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
-  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
+  const [relatedLoading, setRelatedLoading] = useState(true);
 
-  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
-  const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
-  
-  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/enseignants/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
-  const { data: mainTeacher, loading: teacherLoading } = useDoc<Teacher>(teacherRef);
-  
+  useEffect(() => {
+      if (studentLoading || !studentData || !schoolId || !firestore) {
+          if (!studentLoading) setRelatedLoading(false);
+          return;
+      };
+
+      const fetchData = async () => {
+          setRelatedLoading(true);
+          
+          let fetchedClass: Class | null = null;
+          let fetchedTeacher: Teacher | null = null;
+          let fetchedGrades: GradeEntry[] = [];
+          let fetchedPayments: PaymentHistoryEntry[] = [];
+
+          try {
+              // Fetch class and teacher
+              if (studentData.classId) {
+                  const classRef = doc(firestore, `ecoles/${schoolId}/classes/${studentData.classId}`);
+                  const classSnap = await getDoc(classRef);
+                  if (classSnap.exists()) {
+                      fetchedClass = { id: classSnap.id, ...classSnap.data() } as Class;
+                      if (fetchedClass.mainTeacherId) {
+                          const teacherRef = doc(firestore, `ecoles/${schoolId}/enseignants/${fetchedClass.mainTeacherId}`);
+                          const teacherSnap = await getDoc(teacherRef);
+                          if (teacherSnap.exists()) {
+                              fetchedTeacher = { id: teacherSnap.id, ...teacherSnap.data() } as Teacher;
+                          }
+                      }
+                  }
+              }
+
+              // Fetch grades and payments in parallel
+              const gradesQuery = query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc'));
+              const paymentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc'));
+              
+              const [gradesSnapshot, paymentsSnapshot] = await Promise.all([getDocs(gradesQuery), getDocs(paymentsQuery)]);
+              
+              fetchedGrades = gradesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as GradeEntry));
+              fetchedPayments = paymentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry));
+
+          } catch (error) {
+              console.error("Error fetching related student data:", error);
+          } finally {
+              setRelatedData({
+                  mainTeacher: fetchedTeacher,
+                  studentClass: fetchedClass,
+                  grades: fetchedGrades,
+                  paymentHistory: fetchedPayments,
+              });
+              setRelatedLoading(false);
+          }
+      };
+
+      fetchData();
+  }, [studentData, studentId, schoolId, firestore, studentLoading]);
+
+
+  const { mainTeacher, studentClass, grades, paymentHistory } = relatedData;
+  const student = studentData;
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading;
+  const isLoading = schoolLoading || studentLoading || relatedLoading;
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
@@ -249,8 +299,12 @@ export default function StudentProfilePage() {
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {Object.keys(subjectAverages).length > 0 ? Object.entries(subjectAverages).map(([subject, subjectData]) => {
+                                        {allSubjects.map((subject) => {
+                                            const subjectData = subjectAverages[subject];
+                                            if(!subjectData) return null;
+                                            
                                             const subjectGrades = grades.filter(g => g.subject === subject);
+
                                             return (
                                                 <React.Fragment key={subject}>
                                                     <TableRow>
@@ -258,7 +312,7 @@ export default function StudentProfilePage() {
                                                         <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
                                                         <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
                                                     </TableRow>
-                                                    {subjectGrades.map(grade => (
+                                                    {subjectGrades.length > 0 && subjectGrades.map(grade => (
                                                         <TableRow key={grade.id} className="bg-muted/50">
                                                             <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{isMounted ? format(new Date(grade.date), 'd MMM', { locale: fr }) : '...' }</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
@@ -267,7 +321,8 @@ export default function StudentProfilePage() {
                                                     ))}
                                                 </React.Fragment>
                                             );
-                                        }) : (
+                                        })}
+                                         {grades.length === 0 && (
                                             <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
                                         )}
                                     </TableBody>
@@ -406,4 +461,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
