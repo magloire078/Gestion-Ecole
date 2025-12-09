@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -14,6 +15,10 @@ interface Grade {
   subject: string;
   grade: number;
   coefficient: number;
+}
+
+interface StudentWithClass extends Student {
+    classId?: string;
 }
 
 export default function StudentReportPage() {
@@ -34,7 +39,7 @@ export default function StudentReportPage() {
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
 
 
-  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection<Grade>(gradesQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection<Teacher & { id: string }>(teachersQuery);
 

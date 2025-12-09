@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,20 +10,21 @@ import { Bot, Printer } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
-import type { teacher as Teacher } from '@/lib/data-types';
+import type { teacher as Teacher, student as Student, class_type as Class } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
 
 // --- Interfaces ---
-interface Student {
-  name: string;
-  matricule?: string;
-  class?: string;
+interface StudentWithClass extends Student {
+  classId?: string;
 }
 
 interface School {
   name: string;
   directorName?: string;
-  address?: string; // Supposons que ces champs peuvent exister
+  address?: string; 
   phone?: string;
   website?: string;
   mainLogoUrl?: string;
@@ -58,7 +59,7 @@ const getMention = (average: number): string => {
 
 // --- ReportCard Component Props ---
 interface ReportCardProps {
-  student: Student;
+  student: StudentWithClass;
   school: School;
   grades: Grade[];
   teachers: (Teacher & { id: string })[]; // Liste de tous les enseignants
@@ -68,10 +69,23 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     const isMounted = useHydrationFix();
     const { toast } = useToast();
     const printRef = React.useRef<HTMLDivElement>(null);
-    const { directorName } = useSchoolData();
+    const { schoolId, directorName } = useSchoolData();
+    const firestore = useFirestore();
 
-    const [councilComment, setCouncilComment] = useState("Excellent trimestre pour Rafael. Au delà de ses très bons résultats homogènes, Rafael fait preuve d'une maturité et d'une autonomie très favorables à la poursuite de sa réussite académique. Bravo!");
+    const [councilComment, setCouncilComment] = useState("Excellent trimestre. Élève sérieux et motivé qui a fourni un travail de qualité. Les résultats sont très satisfaisants. Félicitations du conseil de classe.");
     const [isGeneratingComment, setIsGeneratingComment] = useState(false);
+
+    // Fetch the student's class to get the mainTeacherId
+    const classRef = useMemoFirebase(() =>
+        (schoolId && student.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null
+    , [firestore, schoolId, student.classId]);
+    const { data: classData } = useDoc<Class>(classRef);
+
+    // Get the main teacher for the class
+    const mainTeacher = useMemo(() => {
+        if (!classData?.mainTeacherId || !teachers) return null;
+        return teachers.find(t => t.id === classData.mainTeacherId) || null;
+    }, [classData, teachers]);
 
     const { subjectReports, generalAverage } = useMemo(() => {
         const reports: SubjectReport[] = [];
@@ -79,6 +93,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         let totalCoeffs = 0;
 
         const subjects = [...new Set(grades.map(g => g.subject))];
+        const studentCycle = student.cycle;
+        const isPrimaryOrMaternelle = studentCycle === "Maternelle" || studentCycle === "Enseignement Primaire";
 
         subjects.forEach(subject => {
             const subjectGrades = grades.filter(g => g.subject === subject);
@@ -88,11 +104,22 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
             const studentTotalCoeffs = subjectGrades.reduce((acc, g) => acc + g.coefficient, 0);
             const studentAverage = studentTotalCoeffs > 0 ? studentTotalPoints / studentTotalCoeffs : 0;
             
-            const teacher = teachers.find(t => t.subject === subject);
-
+            let teacherName = 'N/A';
+            if (isPrimaryOrMaternelle && mainTeacher) {
+                teacherName = `${mainTeacher.firstName} ${mainTeacher.lastName}`;
+            } else {
+                const subjectTeacher = teachers.find(t => t.subject === subject);
+                if (subjectTeacher) {
+                    teacherName = `${subjectTeacher.firstName} ${subjectTeacher.lastName}`;
+                } else if (mainTeacher) {
+                    // Fallback to main teacher if no subject teacher is found
+                    teacherName = `${mainTeacher.firstName} ${mainTeacher.lastName}`;
+                }
+            }
+            
             reports.push({
                 subject,
-                teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'N/A',
+                teacherName: teacherName,
                 average: studentAverage,
                 // Mock data for class stats as we don't have them yet
                 classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
@@ -110,7 +137,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         const finalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
 
         return { subjectReports: reports, generalAverage: finalAverage };
-    }, [grades, teachers]);
+    }, [grades, teachers, mainTeacher, student.cycle]);
 
     const handleGenerateComment = async () => {
         setIsGeneratingComment(true);
@@ -164,18 +191,18 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
             }
         `;
         
-        printWindow.document.write(`
+        printWindow.document.write(\`
             <html>
                 <head>
                     <title>Bulletin de Notes</title>
-                    ${stylesheets}
-                    <style>${pageStyles}</style>
+                    \${stylesheets}
+                    <style>\${pageStyles}</style>
                 </head>
                 <body>
-                    ${printContent.innerHTML}
+                    \${printContent.innerHTML}
                 </body>
             </html>
-        `);
+        \`);
         printWindow.document.close();
         printWindow.focus();
         
@@ -293,6 +320,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 <div>
                     <p className="font-bold">Le Professeur Principal</p>
                     <div className="mt-12 border-t border-dashed w-40 mx-auto"></div>
+                    <p>{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}` : ''}</p>
                 </div>
                  <div>
                     <p>Fait à {school.address ? school.address.split(',')[0] : 'Abidjan'}, le {isMounted ? new Date().toLocaleDateString('fr-FR') : '...'}</p>
