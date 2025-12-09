@@ -371,19 +371,19 @@ export default function StudentsPage() {
                               <TuitionStatusBadge status={student.tuitionStatus} />
                           </TableCell>
                           <TableCell className="text-right print:hidden">
+                            <div className="flex justify-end gap-2">
+                              <Button asChild variant="outline" size="sm">
+                                <Link href={`/dashboard/dossiers-eleves/${student.id}`}>
+                                  <Eye className="mr-2 h-3 w-3" /> Voir
+                                </Link>
+                              </Button>
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
+                                  <Button variant="ghost" size="icon" className="h-9 w-9">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem asChild>
-                                      <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="flex items-center cursor-pointer">
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        Voir la fiche
-                                      </Link>
-                                  </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
@@ -394,6 +394,7 @@ export default function StudentsPage() {
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))
@@ -597,3 +598,4 @@ export default function StudentsPage() {
     </>
   );
 }
+
