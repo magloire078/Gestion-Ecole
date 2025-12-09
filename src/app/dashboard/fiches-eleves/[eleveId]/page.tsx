@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -10,7 +11,7 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy, getDoc, getDocs } from 'firebase/firestore';
+import { doc, collection, query, orderBy, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
@@ -23,6 +24,8 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { ImageUploader } from '@/components/image-uploader';
+import { useToast } from '@/hooks/use-toast';
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -78,15 +81,17 @@ export default function StudentProfilePage() {
   const router = useRouter();
   const studentId = params.eleveId as string;
   
-  // DEBUG: Logging as per user suggestion
+  // DEBUG: Ajoutez ce logging
   console.log('Params:', params);
   console.log('Student ID from params:', studentId);
   
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
-
-  // DEBUG: Check schoolId
+  
+  // DEBUG: Vérifiez schoolId
   console.log('School ID:', schoolId);
+  
+  const { toast } = useToast();
 
   const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -117,10 +122,24 @@ export default function StudentProfilePage() {
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
   const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading;
-  
+
   if (!studentId) {
-      return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
+    return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
   }
+
+  const handlePhotoUploadComplete = async (url: string) => {
+    if (!studentRef) {
+        toast({ variant: 'destructive', title: "Erreur", description: "Référence de l'élève non trouvée." });
+        return;
+    }
+    try {
+        await updateDoc(studentRef, { photoUrl: url });
+        toast({ title: 'Photo de profil mise à jour !' });
+    } catch (error) {
+        console.error("Erreur lors de la mise à jour de la photo de profil:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la photo de profil.' });
+    }
+  };
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
@@ -165,8 +184,7 @@ export default function StudentProfilePage() {
     );
   }
 
-  if (!student && !isLoading) {
-    // We add !isLoading here to prevent flashing notFound() before data is loaded
+  if (!student) {
     notFound();
   }
   
@@ -182,10 +200,15 @@ export default function StudentProfilePage() {
             <div className="lg:col-span-1 flex flex-col gap-6">
                  <Card>
                     <CardHeader className="flex-row items-center gap-4 pb-4">
-                        <Avatar className="h-16 w-16">
-                            <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
-                            <AvatarFallback>{fallback}</AvatarFallback>
-                        </Avatar>
+                        <ImageUploader 
+                            onUploadComplete={handlePhotoUploadComplete}
+                            storagePath={`ecoles/${schoolId}/eleves/${studentId}/avatars/`}
+                        >
+                            <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
+                                <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
+                                <AvatarFallback>{fallback}</AvatarFallback>
+                            </Avatar>
+                        </ImageUploader>
                         <div>
                              <CardTitle className="text-2xl">{studentFullName}</CardTitle>
                              <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
@@ -212,7 +235,7 @@ export default function StudentProfilePage() {
                         <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /><span>Contacts des Parents</span></CardTitle>
                     </CardHeader>
                      <CardContent className="space-y-3 text-sm">
-                        <div className="font-medium">{student.parent1FirstName} {student.parent1LastName}</div>
+                        <div className="font-medium">{student.parent1FirstName} ${student.parent1LastName}</div>
                         <a href={`tel:${student.parent1Contact}`} className="text-muted-foreground hover:text-primary">{student.parent1Contact}</a>
                         {student.parent2FirstName && student.parent2LastName && (
                             <>
