@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -26,10 +25,9 @@ export default function StudentReportPage() {
   const params = useParams();
   const studentId = params.eleveId as string;
   const firestore = useFirestore();
-  const { schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolData, loading: schoolLoading, schoolId } = useSchoolData();
 
   // --- Data Fetching ---
-  const { schoolId } = useSchoolData();
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
@@ -50,7 +48,7 @@ export default function StudentReportPage() {
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
 
   const isLoading = schoolLoading || studentLoading || gradesLoading || teachersLoading;
-
+  
   if (isLoading) {
     return (
         <div className="space-y-4">
@@ -95,3 +93,4 @@ export default function StudentReportPage() {
   );
 }
 
+    

@@ -81,15 +81,8 @@ export default function StudentProfilePage() {
   const router = useRouter();
   const studentId = params.eleveId as string;
   
-  // DEBUG: Ajoutez ce logging
-  console.log('URL Params:', params);
-  console.log('Student ID from params:', studentId);
-  
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
-  
-  // DEBUG: Vérifiez schoolId
-  console.log('School ID:', schoolId);
   
   const { toast } = useToast();
 
