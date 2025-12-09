@@ -379,7 +379,7 @@ export default function StudentsPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem asChild>
-                                      <Link href={`/dashboard/students/${student.id}`} className="flex items-center cursor-pointer">
+                                      <Link href={`/dashboard/eleves/${student.id}`} className="flex items-center cursor-pointer">
                                         <Eye className="mr-2 h-4 w-4" />
                                         Voir la fiche
                                       </Link>
@@ -597,3 +597,4 @@ export default function StudentsPage() {
     </>
   );
 }
+

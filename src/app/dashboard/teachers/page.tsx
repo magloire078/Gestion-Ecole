@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -262,7 +263,7 @@ export default function TeachersPage() {
                               <AvatarFallback>{fallback}</AvatarFallback>
                           </Avatar>
                           <div>
-                              <Link href={`/dashboard/teachers/${teacher.id}`} className="hover:underline">
+                              <Link href={`/dashboard/enseignants/${teacher.id}`} className="hover:underline">
                                   <CardTitle>{fullName}</CardTitle>
                               </Link>
                               <CardDescription>{teacher.subject}</CardDescription>

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -303,12 +304,8 @@ export default function StudentProfilePage() {
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {allSubjects.map((subject) => {
-                                            const subjectData = subjectAverages[subject];
-                                            if(!subjectData) return null;
-                                            
+                                        {Object.keys(subjectAverages).length > 0 ? Object.entries(subjectAverages).map(([subject, subjectData]) => {
                                             const subjectGrades = grades.filter(g => g.subject === subject);
-
                                             return (
                                                 <React.Fragment key={subject}>
                                                     <TableRow>
@@ -316,7 +313,7 @@ export default function StudentProfilePage() {
                                                         <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
                                                         <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
                                                     </TableRow>
-                                                    {subjectGrades.length > 0 && subjectGrades.map(grade => (
+                                                    {subjectGrades.map(grade => (
                                                         <TableRow key={grade.id} className="bg-muted/50">
                                                             <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{isMounted ? format(new Date(grade.date), 'd MMM', { locale: fr }) : '...' }</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
@@ -325,8 +322,7 @@ export default function StudentProfilePage() {
                                                     ))}
                                                 </React.Fragment>
                                             );
-                                        })}
-                                         {grades.length === 0 && (
+                                        }) : (
                                             <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
                                         )}
                                     </TableBody>
@@ -465,3 +461,4 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
