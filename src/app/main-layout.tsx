@@ -4,7 +4,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
 import { ReactNode } from "react";
-import { FirebaseClientProvider, getFirebase } from "@/firebase";
+import { FirebaseClientProvider } from "@/firebase";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
 export function MainLayout({
@@ -13,10 +13,9 @@ export function MainLayout({
   children: ReactNode;
 }>) {
   
-  const firebaseContext = getFirebase();
   const isMounted = useHydrationFix();
 
-  if (!isMounted || !firebaseContext) {
+  if (!isMounted) {
      return (
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <div className="text-center">
@@ -27,7 +26,7 @@ export function MainLayout({
   }
 
   return (
-    <FirebaseClientProvider value={firebaseContext}>
+    <FirebaseClientProvider>
       <ThemeProvider
           attribute="class"
           defaultTheme="system"

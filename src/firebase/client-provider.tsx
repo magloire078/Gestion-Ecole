@@ -2,16 +2,21 @@
 
 import {ReactNode, useMemo} from 'react';
 import {FirebaseProvider, FirebaseContextValue} from './provider';
+import { getFirebase } from '.';
 
 interface FirebaseClientProviderProps {
   children: ReactNode;
-  value: FirebaseContextValue
 }
 
 export function FirebaseClientProvider({
   children,
-  value,
 }: FirebaseClientProviderProps) {
-  const memoizedValue = useMemo(() => value, [value]);
-  return <FirebaseProvider value={memoizedValue}>{children}</FirebaseProvider>;
+  const firebaseContext = useMemo(() => getFirebase(), []);
+
+  if (!firebaseContext) {
+    // This can happen during server-side rendering, return null or a loader.
+    return null;
+  }
+
+  return <FirebaseProvider value={firebaseContext}>{children}</FirebaseProvider>;
 }

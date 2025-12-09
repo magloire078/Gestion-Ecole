@@ -32,15 +32,11 @@ function initializeFirebase() {
     return {app, auth, firestore, storage};
   }
   
-  throw new Error("Cannot initialize firebase on the server.");
+  return null;
 }
 
 export function getFirebase() {
-    if (typeof window === "undefined") {
-        return null;
-    }
-    const { app, auth, firestore, storage } = initializeFirebase();
-    return { app, auth, firestore, storage };
+    return initializeFirebase();
 }
 
 export function useMemoFirebase<T>(
