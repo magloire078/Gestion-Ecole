@@ -80,8 +80,17 @@ export default function StudentProfilePage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params.eleveId as string;
+  
+  // DEBUG: Ajoutez ce logging
+  console.log('URL Params:', params);
+  console.log('Student ID from params:', studentId);
+  
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+  
+  // DEBUG: Vérifiez schoolId
+  console.log('School ID:', schoolId);
+  
   const { toast } = useToast();
 
   const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
@@ -114,7 +123,11 @@ export default function StudentProfilePage() {
   
   const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading;
 
-    const handlePhotoUploadComplete = async (url: string) => {
+  if (!studentId) {
+    return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
+  }
+
+  const handlePhotoUploadComplete = async (url: string) => {
     if (!studentRef) {
         toast({ variant: 'destructive', title: "Erreur", description: "Référence de l'élève non trouvée." });
         return;
@@ -222,7 +235,7 @@ export default function StudentProfilePage() {
                         <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /><span>Contacts des Parents</span></CardTitle>
                     </CardHeader>
                      <CardContent className="space-y-3 text-sm">
-                        <div className="font-medium">{student.parent1FirstName} {student.parent1LastName}</div>
+                        <div className="font-medium">{student.parent1FirstName} ${student.parent1LastName}</div>
                         <a href={`tel:${student.parent1Contact}`} className="text-muted-foreground hover:text-primary">{student.parent1Contact}</a>
                         {student.parent2FirstName && student.parent2LastName && (
                             <>
