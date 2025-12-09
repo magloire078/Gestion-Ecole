@@ -262,7 +262,7 @@ export default function TeachersPage() {
                               <AvatarFallback>{fallback}</AvatarFallback>
                           </Avatar>
                           <div>
-                              <Link href={`/dashboard/enseignants/${teacher.id}`} className="hover:underline">
+                              <Link href={`/dashboard/profils-enseignants/${teacher.id}`} className="hover:underline">
                                   <CardTitle>{fullName}</CardTitle>
                               </Link>
                               <CardDescription>{teacher.subject}</CardDescription>

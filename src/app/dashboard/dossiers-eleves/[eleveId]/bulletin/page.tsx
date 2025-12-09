@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -26,7 +24,7 @@ export default function StudentReportPage() {
   const params = useParams();
   const studentId = params.eleveId as string;
   const firestore = useFirestore();
-  const { schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolData, loading: schoolLoading, schoolId } = useSchoolData();
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => 
@@ -50,8 +48,6 @@ export default function StudentReportPage() {
 
   const isLoading = schoolLoading || studentLoading || gradesLoading || teachersLoading;
   
-  const { schoolId } = useSchoolData();
-
   if (isLoading) {
     return (
         <div className="space-y-4">
@@ -68,7 +64,7 @@ export default function StudentReportPage() {
 
   const schoolInfo = {
       name: schoolData?.name || 'Votre École',
-      directorName: schoolData?.directorName,
+      directorName: schoolData?.directorFirstName + ' ' + schoolData?.directorLastName,
       address: schoolData?.address,
       phone: schoolData?.phone,
       website: schoolData?.website,
@@ -95,4 +91,3 @@ export default function StudentReportPage() {
     </div>
   );
 }
-
