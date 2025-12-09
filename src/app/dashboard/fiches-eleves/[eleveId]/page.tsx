@@ -1,4 +1,3 @@
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -11,7 +10,7 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy, getDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, getDoc, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
@@ -78,8 +77,16 @@ export default function StudentProfilePage() {
   const params = useParams();
   const router = useRouter();
   const studentId = params.eleveId as string;
+  
+  // DEBUG: Logging as per user suggestion
+  console.log('Params:', params);
+  console.log('Student ID from params:', studentId);
+  
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+
+  // DEBUG: Check schoolId
+  console.log('School ID:', schoolId);
 
   const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -110,6 +117,10 @@ export default function StudentProfilePage() {
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
   const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading;
+  
+  if (!studentId) {
+      return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
+  }
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
@@ -154,7 +165,8 @@ export default function StudentProfilePage() {
     );
   }
 
-  if (!student) {
+  if (!student && !isLoading) {
+    // We add !isLoading here to prevent flashing notFound() before data is loaded
     notFound();
   }
   
@@ -405,5 +417,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    
