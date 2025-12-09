@@ -7,7 +7,7 @@ import { MainLayout } from './main-layout';
 const ptSans = PT_Sans({
   subsets: ['latin'],
   weight: ['400', '700'],
-  variable: '--font-pt-sans',
+  variable: '--font-sans',
 });
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
-      <body className={`${ptSans.variable} font-body antialiased`}>
+      <body className={`${ptSans.variable} font-sans antialiased`}>
         <MainLayout>{children}</MainLayout>
       </body>
     </html>
