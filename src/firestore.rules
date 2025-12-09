@@ -90,6 +90,10 @@ service cloud.firestore {
         match /classes/{classId} {
             allow read, list, write: if isUserInSchool(schoolId);
         }
+        
+        match /emploi_du_temps/{entryId} {
+            allow read, list, create, update, delete: if isUserInSchool(schoolId);
+        }
 
         match /personnel/{staffId} {
             allow read, list, create, update, delete: if isSchoolDirector(schoolId, request.auth.uid);

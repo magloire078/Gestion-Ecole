@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -10,7 +11,7 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy, getDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy, getDoc, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
@@ -88,70 +89,82 @@ export default function StudentProfilePage() {
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
-  const student: Student | null = studentData ? { id: studentId, ...studentData } as Student & {id: string} : null;
-  const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
+  
+  // --- Enhanced data fetching for related documents ---
+  const [relatedData, setRelatedData] = useState<{
+      student: (Student & {id: string}) | null;
+      mainTeacher: Teacher | null;
+      studentClass: Class | null;
+      grades: GradeEntry[];
+      paymentHistory: PaymentHistoryEntry[];
+  }>({ student: null, mainTeacher: null, studentClass: null, grades: [], paymentHistory: [] });
 
-  // --- Teacher and Class Data (Loaded separately) ---
-  const [mainTeacher, setMainTeacher] = useState<Teacher | null>(null);
-  const [studentClass, setStudentClass] = useState<Class | null>(null);
-  const [classTeacherLoading, setClassTeacherLoading] = useState(true);
+  const [relatedLoading, setRelatedLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchClassAndTeacher() {
-        if (!firestore || !schoolId || !student?.classId) {
-            setClassTeacherLoading(false);
-            return;
-        }
+      if (!studentData || !schoolId || !firestore) {
+          if (!studentLoading) setRelatedLoading(false);
+          return;
+      };
 
-        setClassTeacherLoading(true);
-        try {
-            const classRef = doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`);
-            const classSnap = await getDoc(classRef);
-            
-            if (classSnap.exists()) {
-                const classData = { id: classSnap.id, ...classSnap.data() } as Class;
-                setStudentClass(classData);
-                
-                if (classData.mainTeacherId) {
-                    const teacherRef = doc(firestore, `ecoles/${schoolId}/enseignants/${classData.mainTeacherId}`);
-                    const teacherSnap = await getDoc(teacherRef);
-                    if (teacherSnap.exists()) {
-                        setMainTeacher({ id: teacherSnap.id, ...teacherSnap.data() } as Teacher);
-                    } else {
-                        setMainTeacher(null);
-                    }
-                } else {
-                  setMainTeacher(null);
-                }
-            }
-        } catch (error) {
-            console.error("Error fetching class and teacher details:", error);
-        } finally {
-            setClassTeacherLoading(false);
-        }
-    }
-    fetchClassAndTeacher();
-  }, [firestore, schoolId, student?.classId]);
+      const fetchData = async () => {
+          setRelatedLoading(true);
+          const studentWithId = { id: studentId, ...studentData } as Student & {id: string};
+          
+          let fetchedClass: Class | null = null;
+          let fetchedTeacher: Teacher | null = null;
+          let fetchedGrades: GradeEntry[] = [];
+          let fetchedPayments: PaymentHistoryEntry[] = [];
+
+          try {
+              // Fetch class and teacher
+              if (studentWithId.classId) {
+                  const classRef = doc(firestore, `ecoles/${schoolId}/classes/${studentWithId.classId}`);
+                  const classSnap = await getDoc(classRef);
+                  if (classSnap.exists()) {
+                      fetchedClass = { id: classSnap.id, ...classSnap.data() } as Class;
+                      if (fetchedClass.mainTeacherId) {
+                          const teacherRef = doc(firestore, `ecoles/${schoolId}/enseignants/${fetchedClass.mainTeacherId}`);
+                          const teacherSnap = await getDoc(teacherRef);
+                          if (teacherSnap.exists()) {
+                              fetchedTeacher = { id: teacherSnap.id, ...teacherSnap.data() } as Teacher;
+                          }
+                      }
+                  }
+              }
+
+              // Fetch grades and payments in parallel
+              const gradesQuery = query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc'));
+              const paymentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc'));
+              
+              const [gradesSnapshot, paymentsSnapshot] = await Promise.all([getDocs(gradesQuery), getDocs(paymentsQuery)]);
+              
+              fetchedGrades = gradesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as GradeEntry));
+              fetchedPayments = paymentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry));
+
+          } catch (error) {
+              console.error("Error fetching related student data:", error);
+          } finally {
+              setRelatedData({
+                  student: studentWithId,
+                  mainTeacher: fetchedTeacher,
+                  studentClass: fetchedClass,
+                  grades: fetchedGrades,
+                  paymentHistory: fetchedPayments,
+              });
+              setRelatedLoading(false);
+          }
+      };
+
+      fetchData();
+  }, [studentData, studentId, schoolId, firestore, studentLoading]);
 
 
-  // --- Grades and Payments ---
-  const gradesQuery = useMemoFirebase(() =>
-    (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc')) : null
-  , [firestore, schoolId, studentId]);
-
-  const paymentsQuery = useMemoFirebase(() =>
-    (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc')) : null
-  , [firestore, schoolId, studentId]);
-
-  const { data: gradesData, loading: gradesLoading } = useCollection<GradeEntry>(gradesQuery);
-  const { data: paymentsData, loading: paymentsLoading } = useCollection<Payment>(paymentsQuery);
-  
-  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
-  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentsData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentsData]);
-
+  const { student, mainTeacher, studentClass, grades, paymentHistory } = relatedData;
+  const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || classTeacherLoading || gradesLoading || paymentsLoading;
+  const isLoading = schoolLoading || studentLoading || relatedLoading;
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useMemo, useState } from 'react';
@@ -91,7 +92,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
             reports.push({
                 subject,
-                teacherName: teacher ? `${"'" + 'teacher.firstName'} ${"'" + 'teacher.lastName'}` : 'N/A',
+                teacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : 'N/A',
                 average: studentAverage,
                 // Mock data for class stats as we don't have them yet
                 classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
