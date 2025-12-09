@@ -373,7 +373,7 @@ export default function StudentsPage() {
                           <TableCell className="text-right print:hidden">
                             <div className="flex justify-end gap-2">
                               <Button asChild variant="outline" size="sm">
-                                <Link href={`/dashboard/students/${student.id}`}>
+                                <Link href={`/dashboard/eleves/${student.id}`}>
                                   <Eye className="mr-2 h-3 w-3" /> Voir
                                 </Link>
                               </Button>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -58,7 +59,7 @@ const teacherSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
   lastName: z.string().min(1, { message: "Le nom est requis." }),
   subject: z.string().min(1, { message: "La matière est requise." }),
-  email: z.string().email({ message: "L\'adresse email est invalide." }),
+  email: z.string().email({ message: "L'adresse email est invalide." }),
   phone: z.string().optional(),
   classId: z.string().optional(),
 });
@@ -262,7 +263,7 @@ export default function TeachersPage() {
                               <AvatarFallback>{fallback}</AvatarFallback>
                           </Avatar>
                           <div>
-                              <Link href={`/dashboard/teachers/${teacher.id}`} className="hover:underline">
+                              <Link href={`/dashboard/enseignants/${teacher.id}`} className="hover:underline">
                                   <CardTitle>{fullName}</CardTitle>
                               </Link>
                               <CardDescription>{teacher.subject}</CardDescription>
