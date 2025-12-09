@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service firebase.storage {
@@ -10,7 +11,7 @@ service firebase.storage {
 
     // Match any file in the `ecoles` directory
     match /ecoles/{schoolId}/{allPaths=**} {
-      // Allow read access to anyone (e.g., for public logos)
+      // Allow read access to anyone (e.g., for public logos or student photos)
       allow read;
       
       // Allow write access (create, update, delete) only to users who are part of that specific school
@@ -23,3 +24,5 @@ service firebase.storage {
     }
   }
 }
+
+    

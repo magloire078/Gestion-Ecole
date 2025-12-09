@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -12,7 +11,7 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy, getDoc, getDocs } from 'firebase/firestore';
+import { doc, collection, query, orderBy, getDoc, getDocs, updateDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
 import { format } from 'date-fns';
@@ -25,6 +24,8 @@ import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { ImageUploader } from '@/components/image-uploader';
+import { useToast } from '@/hooks/use-toast';
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -81,6 +82,7 @@ export default function StudentProfilePage() {
   const studentId = params.eleveId as string;
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+  const { toast } = useToast();
 
   const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
@@ -89,83 +91,42 @@ export default function StudentProfilePage() {
   const studentRef = useMemoFirebase(() => 
     (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
   , [firestore, schoolId, studentId]);
-  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
+
+  // --- Related Data ---
+  const gradesQuery = useMemoFirebase(() => schoolId && studentId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc')) : null, [schoolId, studentId]);
+  const paymentsQuery = useMemoFirebase(() => schoolId && studentId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, studentId]);
   
-  // --- Enhanced data fetching for related documents ---
-  const [relatedData, setRelatedData] = useState<{
-      student: (Student & {id: string}) | null;
-      mainTeacher: Teacher | null;
-      studentClass: Class | null;
-      grades: GradeEntry[];
-      paymentHistory: PaymentHistoryEntry[];
-  }>({ student: null, mainTeacher: null, studentClass: null, grades: [], paymentHistory: [] });
+  const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
+  const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
+  
+  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
+  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
 
-  const [relatedLoading, setRelatedLoading] = useState(true);
-
-  useEffect(() => {
-      if (!studentData || !schoolId || !firestore) {
-          if (!studentLoading) setRelatedLoading(false);
-          return;
-      };
-
-      const fetchData = async () => {
-          setRelatedLoading(true);
-          const studentWithId = { id: studentId, ...studentData } as Student & {id: string};
-          
-          let fetchedClass: Class | null = null;
-          let fetchedTeacher: Teacher | null = null;
-          let fetchedGrades: GradeEntry[] = [];
-          let fetchedPayments: PaymentHistoryEntry[] = [];
-
-          try {
-              // Fetch class and teacher
-              if (studentWithId.classId) {
-                  const classRef = doc(firestore, `ecoles/${schoolId}/classes/${studentWithId.classId}`);
-                  const classSnap = await getDoc(classRef);
-                  if (classSnap.exists()) {
-                      fetchedClass = { id: classSnap.id, ...classSnap.data() } as Class;
-                      if (fetchedClass.mainTeacherId) {
-                          const teacherRef = doc(firestore, `ecoles/${schoolId}/enseignants/${fetchedClass.mainTeacherId}`);
-                          const teacherSnap = await getDoc(teacherRef);
-                          if (teacherSnap.exists()) {
-                              fetchedTeacher = { id: teacherSnap.id, ...teacherSnap.data() } as Teacher;
-                          }
-                      }
-                  }
-              }
-
-              // Fetch grades and payments in parallel
-              const gradesQuery = query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc'));
-              const paymentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc'));
-              
-              const [gradesSnapshot, paymentsSnapshot] = await Promise.all([getDocs(gradesQuery), getDocs(paymentsQuery)]);
-              
-              fetchedGrades = gradesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as GradeEntry));
-              fetchedPayments = paymentsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry));
-
-          } catch (error) {
-              console.error("Error fetching related student data:", error);
-          } finally {
-              setRelatedData({
-                  student: studentWithId,
-                  mainTeacher: fetchedTeacher,
-                  studentClass: fetchedClass,
-                  grades: fetchedGrades,
-                  paymentHistory: fetchedPayments,
-              });
-              setRelatedLoading(false);
-          }
-      };
-
-      fetchData();
-  }, [studentData, studentId, schoolId, firestore, studentLoading]);
-
-
-  const { student, mainTeacher, studentClass, grades, paymentHistory } = relatedData;
+  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
+  const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
+  
+  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/enseignants/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
+  const { data: mainTeacher, loading: teacherLoading } = useDoc<Teacher>(teacherRef);
+  
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || relatedLoading;
+  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading;
+
+    const handlePhotoUploadComplete = async (url: string) => {
+    if (!studentRef) {
+        toast({ variant: 'destructive', title: "Erreur", description: "Référence de l'élève non trouvée." });
+        return;
+    }
+    try {
+        await updateDoc(studentRef, { photoUrl: url });
+        toast({ title: 'Photo de profil mise à jour !' });
+    } catch (error) {
+        console.error("Erreur lors de la mise à jour de la photo de profil:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la photo de profil.' });
+    }
+  };
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
@@ -226,10 +187,15 @@ export default function StudentProfilePage() {
             <div className="lg:col-span-1 flex flex-col gap-6">
                  <Card>
                     <CardHeader className="flex-row items-center gap-4 pb-4">
-                        <Avatar className="h-16 w-16">
-                            <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
-                            <AvatarFallback>{fallback}</AvatarFallback>
-                        </Avatar>
+                        <ImageUploader 
+                            onUploadComplete={handlePhotoUploadComplete}
+                            storagePath={`ecoles/${schoolId}/eleves/${studentId}/avatars/`}
+                        >
+                            <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
+                                <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
+                                <AvatarFallback>{fallback}</AvatarFallback>
+                            </Avatar>
+                        </ImageUploader>
                         <div>
                              <CardTitle className="text-2xl">{studentFullName}</CardTitle>
                              <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
@@ -261,7 +227,7 @@ export default function StudentProfilePage() {
                         {student.parent2FirstName && student.parent2LastName && (
                             <>
                                 <Separator className="my-3"/>
-                                <div className="font-medium">{student.parent2FirstName} {student.parent2LastName}</div>
+                                <div className="font-medium">{student.parent2FirstName} ${student.parent2LastName}</div>
                                 <a href={`tel:${student.parent2Contact}`} className="text-muted-foreground hover:text-primary">{student.parent2Contact}</a>
                             </>
                         )}
@@ -462,3 +428,4 @@ export default function StudentProfilePage() {
   );
 }
 
+    
