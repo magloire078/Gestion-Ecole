@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -100,7 +101,7 @@ export default function StudentProfilePage() {
   const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
 
   const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
-  const { data: studentClass, loading: classLoading } = useDoc<Class>(studentClass);
+  const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
   
   const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/enseignants/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Teacher>(teacherRef);
@@ -404,5 +405,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    
