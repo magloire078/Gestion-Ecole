@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { FileSignature, FileText } from 'lucide-react';
+import { FileSignature, FileText, CalendarDays } from 'lucide-react';
 
 export default function StudentDetailLayout({
   children,
@@ -16,23 +17,15 @@ export default function StudentDetailLayout({
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-4">
-        <div>
-          <h1 className="text-lg font-semibold md:text-2xl">Fiche d'Information de l'Élève</h1>
-          <p className="text-muted-foreground">Vue détaillée du profil, des notes et des informations de l'élève.</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => router.push(`/dashboard/eleves/${params.eleveId}/fiche`)}>
-            <FileSignature className="mr-2 h-4 w-4" />
-            Fiche de renseignements
-          </Button>
-          <Button onClick={() => router.push(`/dashboard/eleves/${params.eleveId}/bulletin`)}>
-            <FileText className="mr-2 h-4 w-4" />
-            Voir le bulletin
-          </Button>
-        </div>
-      </div>
+      {/* This layout is now part of the new route, but the content is being moved.
+          The parent layout will handle the main structure. We keep this file
+          to ensure all related student pages share a common sub-layout if needed in the future,
+          but for now, the main actions are on the page itself.
+      */}
       {children}
     </div>
   );
 }
+
+
+
