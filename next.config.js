@@ -9,6 +9,7 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Adding a comment to force cache invalidation.
   images: {
     remotePatterns: [
       {
@@ -71,5 +72,3 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
-
-    
