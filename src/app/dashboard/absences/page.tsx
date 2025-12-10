@@ -81,7 +81,7 @@ export default function AbsencesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  // Data Fetching
+  // --- Data Fetching ---
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
@@ -93,24 +93,34 @@ export default function AbsencesPage() {
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const todayAbsencesQuery = useMemoFirebase(() =>
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), where('date', '==', today)) : null
-  , [firestore, schoolId, today]);
-  const { data: todayAbsencesData, loading: todayAbsencesLoading } = useCollection(todayAbsencesQuery);
-  const todayAbsences = useMemo(() => todayAbsencesData?.map(d => d.data() as Absence) || [], [todayAbsencesData]);
-  
   const allAbsencesQuery = useMemoFirebase(() =>
     schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc')) : null
   , [firestore, schoolId]);
   const { data: allAbsencesData, loading: allAbsencesLoading } = useCollection(allAbsencesQuery);
-  const allAbsences: (Absence & {id: string})[] = useMemo(() => allAbsencesData?.map(d => ({ id: d.id, ...d.data() } as Absence & {id: string})) || [], [allAbsencesData]);
+
+  // --- Derived Data ---
+  const { todayAbsences, historicAbsences } = useMemo(() => {
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const absences = allAbsencesData?.map(d => ({ id: d.id, ...d.data() } as Absence & {id: string})) || [];
+    
+    const todayList: (Absence & { id: string })[] = [];
+    const historyList: (Absence & { id: string })[] = [];
+
+    for (const absence of absences) {
+        historyList.push(absence);
+        if (absence.date === today) {
+            todayList.push(absence);
+        }
+    }
+    return { todayAbsences: todayList, historicAbsences: historyList };
+  }, [allAbsencesData]);
 
 
   const studentsWithAbsenceStatus = useMemo<StudentWithAbsence[]>(() => {
+      const absentStudentIds = new Set(todayAbsences.map(absence => absence.studentId));
       return studentsInClass.map(student => ({
           ...student,
-          isAbsentToday: todayAbsences.some(absence => absence.studentId === student.id)
+          isAbsentToday: absentStudentIds.has(student.id)
       }));
   }, [studentsInClass, todayAbsences]);
 
@@ -169,7 +179,7 @@ export default function AbsencesPage() {
   if (isAuthLoading) return <AuthProtectionLoader />;
 
   const isLoading = schoolLoading || classesLoading;
-  const isDataLoading = studentsLoading || todayAbsencesLoading || allAbsencesLoading;
+  const isDataLoading = studentsLoading || allAbsencesLoading;
 
   return (
     <>
@@ -284,8 +294,8 @@ export default function AbsencesPage() {
                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                           </TableRow>
                         ))
-                      ) : allAbsences.length > 0 ? (
-                        allAbsences.map(absence => (
+                      ) : historicAbsences.length > 0 ? (
+                        historicAbsences.map(absence => (
                           <TableRow key={absence.id}>
                             <TableCell>{isMounted ? format(new Date(absence.date), 'd MMM yyyy', { locale: fr }) : '...'}</TableCell>
                             <TableCell>{absence.studentName}</TableCell>
