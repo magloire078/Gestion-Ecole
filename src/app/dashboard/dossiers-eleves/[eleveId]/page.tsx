@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -99,7 +100,7 @@ export default function StudentProfilePage() {
   const isMounted = useHydrationFix();
   const params = useParams();
   const router = useRouter();
-  const studentId = params.eleveId as string;
+  const eleveId = params.eleveId as string;
   
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
@@ -116,13 +117,13 @@ export default function StudentProfilePage() {
 
   // --- Student Data ---
   const studentRef = useMemoFirebase(() => 
-    (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
-  , [firestore, schoolId, studentId]);
+    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+  , [firestore, schoolId, eleveId]);
   const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
 
   // --- Related Data ---
-  const gradesQuery = useMemoFirebase(() => schoolId && studentId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`), orderBy('date', 'desc')) : null, [schoolId, studentId]);
-  const paymentsQuery = useMemoFirebase(() => schoolId && studentId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, studentId]);
+  const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
+  const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
@@ -174,7 +175,7 @@ export default function StudentProfilePage() {
     setAnalysisResult(null);
   }, [student, isEditDialogOpen, form]);
 
-  if (!studentId) {
+  if (!eleveId) {
     return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
   }
 
@@ -319,10 +320,10 @@ export default function StudentProfilePage() {
                     <CardHeader className="flex-row items-center gap-4 pb-4">
                         <ImageUploader 
                             onUploadComplete={handlePhotoUploadComplete}
-                            storagePath={`ecoles/${schoolId}/eleves/${studentId}/avatars/`}
+                            storagePath={`ecoles/${schoolId}/eleves/${eleveId}/avatars/`}
                         >
                             <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
-                                <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${studentId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
+                                <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${eleveId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                         </ImageUploader>
@@ -526,15 +527,15 @@ export default function StudentProfilePage() {
                                 <CardDescription>Générez et consultez les documents de l'élève.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${studentId}/bulletin`)} className="w-full justify-start">
+                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/bulletin`)} className="w-full justify-start">
                                     <FileText className="mr-2 h-4 w-4" />
                                     Générer le Bulletin de Notes
                                 </Button>
-                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${studentId}/emploi-du-temps`)} className="w-full justify-start">
+                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/emploi-du-temps`)} className="w-full justify-start">
                                     <CalendarDays className="mr-2 h-4 w-4" />
                                     Voir l'Emploi du Temps
                                 </Button>
-                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${studentId}/fiche`)} className="w-full justify-start">
+                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)} className="w-full justify-start">
                                     <FileSignature className="mr-2 h-4 w-4" />
                                     Générer la Fiche de Renseignements
                                 </Button>
