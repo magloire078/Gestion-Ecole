@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -127,22 +126,25 @@ export default function LibraryPage() {
     if (editingBook) {
         const bookDocRef = getBookDocRef(editingBook.id);
         setDoc(bookDocRef, bookData, { merge: true })
+        .then(() => {
+          toast({ title: "Livre modifié", description: `Les informations pour "${values.title}" ont été mises à jour.` });
+          setIsFormOpen(false);
+        })
         .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({ path: bookDocRef.path, operation: 'update', requestResourceData: bookData });
             errorEmitter.emit('permission-error', permissionError);
         });
-        toast({ title: "Livre modifié", description: `Les informations pour "${values.title}" ont été mises à jour.` });
-        setIsFormOpen(false);
-
     } else {
         const booksCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
         addDoc(booksCollectionRef, bookData)
+        .then(() => {
+            toast({ title: "Livre ajouté", description: `"${values.title}" a été ajouté à la bibliothèque.` });
+            setIsFormOpen(false);
+        })
         .catch(async (serverError) => {
             const permissionError = new FirestorePermissionError({ path: booksCollectionRef.path, operation: 'create', requestResourceData: bookData });
             errorEmitter.emit('permission-error', permissionError);
         });
-        toast({ title: "Livre ajouté", description: `"${values.title}" a été ajouté à la bibliothèque.` });
-        setIsFormOpen(false);
     }
   };
 
@@ -161,13 +163,15 @@ export default function LibraryPage() {
     if (!schoolId || !bookToDelete) return;
     const bookDocRef = getBookDocRef(bookToDelete.id);
     deleteDoc(bookDocRef)
+    .then(() => {
+        toast({ title: "Livre supprimé", description: `"${bookToDelete.title}" a été retiré de la bibliothèque.` });
+        setIsDeleteDialogOpen(false);
+        setBookToDelete(null);
+    })
     .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({ path: bookDocRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
     });
-    toast({ title: "Livre supprimé", description: `"${bookToDelete.title}" a été retiré de la bibliothèque.` });
-    setIsDeleteDialogOpen(false);
-    setBookToDelete(null);
   };
   
   const isLoading = schoolLoading || booksLoading;
@@ -317,5 +321,3 @@ export default function LibraryPage() {
     </>
   );
 }
-
-    
