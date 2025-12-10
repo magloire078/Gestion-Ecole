@@ -9,7 +9,7 @@ export type user = {
     displayName: string;
     photoURL: string;
     schoolId: string;
-    role: "admin" | "directeur" | "enseignant" | "personnel";
+    role: "directeur" | "enseignant" | "personnel";
 };
 
 export type user_root = {
@@ -114,14 +114,14 @@ export type student = {
     parent1FirstName: string;
     parent1LastName: string;
     parent1Contact: string;
+    tuitionStatus: "Soldé" | "En retard" | "Partiel";
+    amountDue: number;
     photoUrl?: string;
     address?: string;
     parent2FirstName?: string;
     parent2LastName?: string;
     parent2Contact?: string;
     previousSchool?: string;
-    tuitionStatus: "Soldé" | "En retard" | "Partiel";
-    amountDue: number;
     feedback?: string;
     createdAt?: { seconds: number, nanoseconds: number };
     name?: string;
