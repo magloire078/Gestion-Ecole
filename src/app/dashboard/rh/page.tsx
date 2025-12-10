@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -12,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, FileText, Lock } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -49,8 +47,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { isValid, parseISO, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useSubscription } from '@/hooks/use-subscription';
-import Link from "next/link";
 import { getPayslipDetails, type PayslipDetails } from '@/app/bulletin-de-paie';
 import type { staff as Employe, school as OrganizationSettings } from '@/lib/data-types';
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
@@ -103,7 +99,7 @@ type StaffFormValues = z.infer<typeof staffSchema>;
 // The StaffMember for the UI is now equivalent to the Employe type for payroll logic
 type StaffMember = Employe & { id: string };
 
-function HRContent() {
+export default function HRPage() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -504,49 +500,4 @@ function HRContent() {
       </Dialog>
     </>
   );
-}
-
-export default function HRPage() {
-    const { subscription, loading: subscriptionLoading } = useSubscription();
-
-    const isLoading = subscriptionLoading;
-
-    if (isLoading) {
-        return (
-            <div className="flex h-[calc(100vh-100px)] w-full items-center justify-center">
-                <div className="text-center">
-                    <p className="text-lg font-semibold">Chargement...</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (subscription?.plan !== 'Pro') {
-        return (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <Card className="max-w-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-center gap-2">
-                            <Lock className="h-6 w-6 text-primary" />
-                            Fonctionnalité du Plan Pro
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">
-                            La gestion des ressources humaines et de la paie est une fonctionnalité avancée. Pour y accéder, veuillez mettre à niveau votre abonnement.
-                        </p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button asChild className="w-full">
-                            <Link href="/dashboard/parametres/abonnement">
-                                Mettre à niveau vers le Plan Pro
-                            </Link>
-                        </Button>
-                    </CardFooter>
-                </Card>
-            </div>
-        );
-    }
-    
-    return <HRContent />;
 }
