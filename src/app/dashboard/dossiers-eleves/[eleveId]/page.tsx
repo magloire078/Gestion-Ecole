@@ -308,9 +308,11 @@ export default function StudentProfilePage() {
   return (
     <>
     <div className="space-y-6">
-        <div className="flex justify-between items-center">
-            <div />
-            <Button onClick={() => setIsEditDialogOpen(true)} variant="outline"><Pencil className="mr-2 h-4 w-4" /> Modifier la fiche</Button>
+        <div className="flex flex-wrap justify-end items-center gap-2">
+            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/bulletin`)}><FileText className="mr-2 h-4 w-4" />Bulletin</Button>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/emploi-du-temps`)}><CalendarDays className="mr-2 h-4 w-4" />Emploi du Temps</Button>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)}><FileSignature className="mr-2 h-4 w-4" />Fiche</Button>
+            <Button onClick={() => setIsEditDialogOpen(true)}><Pencil className="mr-2 h-4 w-4" /> Modifier</Button>
         </div>
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
 
@@ -369,11 +371,10 @@ export default function StudentProfilePage() {
             {/* Right Column */}
             <div className="lg:col-span-3 flex flex-col gap-6">
                 <Tabs defaultValue="grades">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="grades">Résultats</TabsTrigger>
                         <TabsTrigger value="payments">Paiements</TabsTrigger>
                         <TabsTrigger value="info">Informations</TabsTrigger>
-                        <TabsTrigger value="documents">Documents</TabsTrigger>
                     </TabsList>
                     
                     {/* Grades Tab */}
@@ -515,30 +516,6 @@ export default function StudentProfilePage() {
                                     <School className="mr-3 h-5 w-5 text-muted-foreground" />
                                     <span>Ancien Etab.: <strong>{student.previousSchool || 'N/A'}</strong></span>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Documents Tab */}
-                    <TabsContent value="documents">
-                         <Card>
-                            <CardHeader>
-                                <CardTitle>Documents</CardTitle>
-                                <CardDescription>Générez et consultez les documents de l'élève.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/bulletin`)} className="w-full justify-start">
-                                    <FileText className="mr-2 h-4 w-4" />
-                                    Générer le Bulletin de Notes
-                                </Button>
-                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/emploi-du-temps`)} className="w-full justify-start">
-                                    <CalendarDays className="mr-2 h-4 w-4" />
-                                    Voir l'Emploi du Temps
-                                </Button>
-                                <Button onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)} className="w-full justify-start">
-                                    <FileSignature className="mr-2 h-4 w-4" />
-                                    Générer la Fiche de Renseignements
-                                </Button>
                             </CardContent>
                         </Card>
                     </TabsContent>
