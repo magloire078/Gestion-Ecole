@@ -52,8 +52,9 @@ const pedagogicalLinks = [
 ];
 
 const financialLinks = [
-  { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: Wallet },
-  { href: '/dashboard/paiements', label: 'Suivi des Paiements', icon: Landmark },
+  { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: CreditCard },
+  { href: '/dashboard/paiements', label: 'Suivi des Paiements', icon: Wallet },
+  { href: '/dashboard/comptabilite', label: 'Comptabilité', icon: Landmark },
 ];
 
 const settingsLinks = [
