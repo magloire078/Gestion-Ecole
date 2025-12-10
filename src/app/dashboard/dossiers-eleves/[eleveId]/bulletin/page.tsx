@@ -23,18 +23,18 @@ interface StudentWithClass extends Student {
 
 export default function StudentReportPage() {
   const params = useParams();
-  const studentId = params.eleveId as string;
+  const eleveId = params.eleveId as string;
   const firestore = useFirestore();
   const { schoolData, loading: schoolLoading, schoolId } = useSchoolData();
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => 
-    (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
-  , [firestore, schoolId, studentId]);
+    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+  , [firestore, schoolId, eleveId]);
 
   const gradesQuery = useMemoFirebase(() =>
-    (schoolId && studentId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`)) : null
-  , [firestore, schoolId, studentId]);
+    (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`)) : null
+  , [firestore, schoolId, eleveId]);
   
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
 

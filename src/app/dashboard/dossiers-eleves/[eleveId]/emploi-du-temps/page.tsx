@@ -22,14 +22,14 @@ interface TimetableEntry {
 
 export default function StudentTimetablePage() {
   const params = useParams();
-  const studentId = params.eleveId as string;
+  const eleveId = params.eleveId as string;
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => 
-    (schoolId && studentId) ? doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) : null
-  , [firestore, schoolId, studentId]);
+    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+  , [firestore, schoolId, eleveId]);
 
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
   const student = studentData;
