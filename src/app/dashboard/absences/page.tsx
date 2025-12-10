@@ -36,7 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { UserX } from 'lucide-react';
@@ -44,6 +44,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -51,6 +52,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
 import type { class_type as Class, student as Student, absence as Absence } from '@/lib/data-types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface StudentWithAbsence extends Student {
     isAbsentToday?: boolean;
@@ -66,6 +70,7 @@ const absenceSchema = z.object({
 type AbsenceFormValues = z.infer<typeof absenceSchema>;
 
 export default function AbsencesPage() {
+  const isMounted = useHydrationFix();
   const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -89,11 +94,18 @@ export default function AbsencesPage() {
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   
   const today = format(new Date(), 'yyyy-MM-dd');
-  const absencesQuery = useMemoFirebase(() =>
+  const todayAbsencesQuery = useMemoFirebase(() =>
     schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), where('date', '==', today)) : null
   , [firestore, schoolId, today]);
-  const { data: todayAbsencesData, loading: absencesLoading } = useCollection(absencesQuery);
+  const { data: todayAbsencesData, loading: todayAbsencesLoading } = useCollection(todayAbsencesQuery);
   const todayAbsences = useMemo(() => todayAbsencesData?.map(d => d.data() as Absence) || [], [todayAbsencesData]);
+  
+  const allAbsencesQuery = useMemoFirebase(() =>
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc')) : null
+  , [firestore, schoolId]);
+  const { data: allAbsencesData, loading: allAbsencesLoading } = useCollection(allAbsencesQuery);
+  const allAbsences: (Absence & {id: string})[] = useMemo(() => allAbsencesData?.map(d => ({ id: d.id, ...d.data() } as Absence & {id: string})) || [], [allAbsencesData]);
+
 
   const studentsWithAbsenceStatus = useMemo<StudentWithAbsence[]>(() => {
       return studentsInClass.map(student => ({
@@ -157,7 +169,7 @@ export default function AbsencesPage() {
   if (isAuthLoading) return <AuthProtectionLoader />;
 
   const isLoading = schoolLoading || classesLoading;
-  const isDataLoading = studentsLoading || absencesLoading;
+  const isDataLoading = studentsLoading || todayAbsencesLoading || allAbsencesLoading;
 
   return (
     <>
@@ -165,7 +177,7 @@ export default function AbsencesPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-lg font-semibold md:text-2xl">Gestion des Absences</h1>
-            <p className="text-muted-foreground">Enregistrez les absences des élèves par classe.</p>
+            <p className="text-muted-foreground">Enregistrez et consultez les absences des élèves.</p>
           </div>
           <div className="w-full md:w-auto">
             <Select onValueChange={setSelectedClassId} disabled={isLoading}>
@@ -179,62 +191,124 @@ export default function AbsencesPage() {
           </div>
         </div>
 
-        {selectedClassId ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Liste des Élèves - {classes.find(c => c.id === selectedClassId)?.name}</CardTitle>
-              <CardDescription>Cliquez sur un élève pour enregistrer une absence pour aujourd'hui.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nom de l'Élève</TableHead>
-                    <TableHead className="text-center">Statut du Jour</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isDataLoading ? (
-                    [...Array(5)].map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-40" /></TableCell>
-                        <TableCell className="text-center"><Skeleton className="h-5 w-20 mx-auto" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto" /></TableCell>
+        <Tabs defaultValue="today" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="today">Saisie du jour</TabsTrigger>
+            <TabsTrigger value="history">Historique des absences</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="today">
+             {selectedClassId ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Liste des Élèves - {classes.find(c => c.id === selectedClassId)?.name}</CardTitle>
+                  <CardDescription>Cliquez sur un élève pour enregistrer une absence pour aujourd'hui.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Nom de l'Élève</TableHead>
+                        <TableHead className="text-center">Statut du Jour</TableHead>
+                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
-                    ))
-                  ) : studentsWithAbsenceStatus.length > 0 ? (
-                    studentsWithAbsenceStatus.map(student => (
-                      <TableRow key={student.id}>
-                        <TableCell className="font-medium">{student.firstName} {student.lastName}</TableCell>
-                        <TableCell className="text-center">
-                          {student.isAbsentToday ? (
-                            <span className="text-destructive font-semibold">Absent(e)</span>
-                          ) : (
-                            <span className="text-emerald-600">Présent(e)</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm" onClick={() => handleOpenForm(student)} disabled={student.isAbsentToday}>
-                            <UserX className="mr-2 h-4 w-4" /> Marquer Absent(e)
-                          </Button>
-                        </TableCell>
+                    </TableHeader>
+                    <TableBody>
+                      {isDataLoading ? (
+                        [...Array(5)].map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-5 w-20 mx-auto" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto" /></TableCell>
+                          </TableRow>
+                        ))
+                      ) : studentsWithAbsenceStatus.length > 0 ? (
+                        studentsWithAbsenceStatus.map(student => (
+                          <TableRow key={student.id}>
+                            <TableCell className="font-medium">{student.firstName} {student.lastName}</TableCell>
+                            <TableCell className="text-center">
+                              {student.isAbsentToday ? (
+                                <span className="text-destructive font-semibold">Absent(e)</span>
+                              ) : (
+                                <span className="text-emerald-600">Présent(e)</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button variant="outline" size="sm" onClick={() => handleOpenForm(student)} disabled={student.isAbsentToday}>
+                                <UserX className="mr-2 h-4 w-4" /> Marquer Absent(e)
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center h-24">Aucun élève trouvé dans cette classe.</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="flex items-center justify-center h-64">
+                <p className="text-muted-foreground">Veuillez sélectionner une classe pour voir les élèves.</p>
+              </Card>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="history">
+            <Card>
+              <CardHeader>
+                  <CardTitle>Historique des Absences</CardTitle>
+                  <CardDescription>Liste de toutes les absences enregistrées.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                   <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Élève</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Motif</TableHead>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={3} className="text-center h-24">Aucun élève trouvé dans cette classe.</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Veuillez sélectionner une classe pour voir les élèves.</p>
-          </Card>
-        )}
+                    </TableHeader>
+                    <TableBody>
+                       {isDataLoading ? (
+                        [...Array(5)].map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-40" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                            <TableCell><Skeleton className="h-6 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                          </TableRow>
+                        ))
+                      ) : allAbsences.length > 0 ? (
+                        allAbsences.map(absence => (
+                          <TableRow key={absence.id}>
+                            <TableCell>{isMounted ? format(new Date(absence.date), 'd MMM yyyy', { locale: fr }) : '...'}</TableCell>
+                            <TableCell>{absence.studentName}</TableCell>
+                            <TableCell>{absence.type}</TableCell>
+                            <TableCell>
+                                <Badge variant={absence.justified ? 'secondary' : 'destructive'}>
+                                    {absence.justified ? 'Justifiée' : 'Non justifiée'}
+                                </Badge>
+                            </TableCell>
+                            <TableCell>{absence.reason}</TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                           <TableCell colSpan={5} className="text-center h-24">Aucune absence enregistrée pour le moment.</TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -285,5 +359,3 @@ export default function AbsencesPage() {
     </>
   );
 }
-
-    
