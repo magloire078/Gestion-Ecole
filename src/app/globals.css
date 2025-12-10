@@ -22,13 +22,13 @@ body {
     --muted-foreground: 220 9% 45%;
     --accent: 215 28% 95%; /* Lighter blue for accents */
     --accent-foreground: 215 30% 30%;
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 349 83% 60%; /* error-red */
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 89%;
     --input: 220 13% 89%;
     --ring: 217 91% 60%;
     --radius: 0.75rem; /* Larger radius for modern look */
-    --chart-1: 217 91% 60%;
+    --chart-1: 217 91% 60%; /* primary-blue */
     --chart-2: 154 59% 51%; /* success-green */
     --chart-3: 39 91% 55%; /* warning-orange */
     --chart-4: 262 79% 66%; /* primary-purple */
@@ -49,7 +49,7 @@ body {
     --muted-foreground: 220 9% 65%;
     --accent: 220 20% 20%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 349 83% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 20% 20%;
     --input: 220 20% 20%;

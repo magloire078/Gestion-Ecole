@@ -3,7 +3,7 @@
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, Landmark, BookOpen, UserPlus, TrendingUp, TrendingDown, FileText, CalendarClock, MessageSquare } from 'lucide-react';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -17,6 +17,8 @@ import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { TrendingUp } from 'lucide-react';
+
 
 type Activity = {
     id: string;
@@ -126,10 +128,10 @@ export default function DashboardPage() {
   }, [recentStudentsData, recentMessagesData]);
 
   const stats = [
-    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, loading: studentsLoading, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50' },
-    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: BookUser, loading: teachersLoading, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50' },
-    { title: 'Classes', value: classesData?.length ?? 0, icon: Landmark, loading: classesLoading, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/50' },
-    { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, loading: libraryLoading, color: 'text-violet-600', bgColor: 'bg-violet-100 dark:bg-violet-900/50' }
+    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, loading: studentsLoading, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50', href: '/dashboard/dossiers-eleves' },
+    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: BookUser, loading: teachersLoading, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50', href: '/dashboard/enseignants' },
+    { title: 'Classes', value: classesData?.length ?? 0, icon: School, loading: classesLoading, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/50', href: '/dashboard/classes' },
+    { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, loading: libraryLoading, color: 'text-violet-600', bgColor: 'bg-violet-100 dark:bg-violet-900/50', href: '/dashboard/bibliotheque' }
   ];
   
   const activityLoading = recentStudentsLoading || recentMessagesLoading;
@@ -141,28 +143,30 @@ export default function DashboardPage() {
       </div>
       <AnnouncementBanner />
       
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.title} className="shadow-sm border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-              <div className={cn("p-2 rounded-lg", stat.bgColor)}>
-                <stat.icon className={cn("h-5 w-5", stat.color)} />
-              </div>
-            </CardHeader>
-            <CardContent>
-              {stat.loading ? (
-                <Skeleton className="h-8 w-1/2" />
-              ) : (
-                <div className="text-3xl font-bold">{stat.value}</div>
-              )}
-               <div className="flex items-center mt-1">
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-                <span className="text-green-600 text-xs">+2%</span>
-                <span className="text-gray-500 text-xs ml-1">vs mois dernier</span>
-              </div>
-            </CardContent>
-          </Card>
+            <Link href={stat.href} key={stat.title}>
+                <Card className="shadow-sm border-border/50 hover:shadow-md hover:-translate-y-1 transition-transform duration-300 ease-in-out">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
+                        <div className={cn("p-3 rounded-xl", stat.bgColor)}>
+                            <stat.icon className={cn("h-6 w-6", stat.color)} />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                    {stat.loading ? (
+                        <Skeleton className="h-8 w-1/2 mt-2" />
+                    ) : (
+                        <div className="text-3xl font-bold mt-2">{stat.value}</div>
+                    )}
+                    <div className="flex items-center mt-2 text-xs text-muted-foreground">
+                        <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
+                        <span className="text-emerald-600 mr-1">+2%</span>
+                        <span>vs mois dernier</span>
+                    </div>
+                    </CardContent>
+                </Card>
+            </Link>
         ))}
       </div>
         
@@ -217,25 +221,25 @@ export default function DashboardPage() {
                     <CardTitle>Actions Rapides</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                  <Button variant="outline" asChild className="h-20 flex-col gap-1">
+                  <Button variant="outline" asChild className="h-20 flex-col gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20">
                     <Link href="/dashboard/inscription">
                       <UserPlus className="h-6 w-6 text-blue-600" />
                       <span className="text-xs font-medium">Nouvel Élève</span>
                     </Link>
                   </Button>
-                  <Button variant="outline" asChild className="h-20 flex-col gap-1">
+                  <Button variant="outline" asChild className="h-20 flex-col gap-1 hover:bg-emerald-50 dark:hover:bg-emerald-900/20">
                     <Link href="/dashboard/notes">
                       <FileText className="h-6 w-6 text-emerald-600" />
                       <span className="text-xs font-medium">Saisir Notes</span>
                     </Link>
                   </Button>
-                  <Button variant="outline" asChild className="h-20 flex-col gap-1">
+                  <Button variant="outline" asChild className="h-20 flex-col gap-1 hover:bg-violet-50 dark:hover:bg-violet-900/20">
                     <Link href="/dashboard/messagerie">
                       <MessageSquare className="h-6 w-6 text-violet-600" />
                       <span className="text-xs font-medium">Message</span>
                     </Link>
                   </Button>
-                  <Button variant="outline" asChild className="h-20 flex-col gap-1">
+                  <Button variant="outline" asChild className="h-20 flex-col gap-1 hover:bg-amber-50 dark:hover:bg-amber-900/20">
                     <Link href="/dashboard/emploi-du-temps">
                       <CalendarClock className="h-6 w-6 text-amber-600" />
                       <span className="text-xs font-medium">Emploi du temps</span>
