@@ -73,7 +73,10 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     const firestore = useFirestore();
 
     const [councilComment, setCouncilComment] = useState("Excellent trimestre. Élève sérieux et motivé qui a fourni un travail de qualité. Les résultats sont très satisfaisants. Félicitations du conseil de classe.");
-    const [isGeneratingComment, setIsGeneratingComment] = useState(false);
+    const [isGeneratingCouncilComment, setIsGeneratingCouncilComment] = useState(false);
+    
+    const [subjectAppreciations, setSubjectAppreciations] = useState<Record<string, {text: string, isGenerating: boolean}>>({});
+
 
     // Fetch the student's class to get the mainTeacherId
     const classRef = useMemoFirebase(() =>
@@ -125,7 +128,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
                 classMax: studentAverage < 19 ? studentAverage + 1.2 : 20,
                 classAverage: studentAverage < 19.5 ? studentAverage + 0.5 : 20,
-                appreciation: `Trimestre solide en ${subject}.`
+                appreciation: subjectAppreciations[subject]?.text || `Trimestre solide en ${subject}.`
             });
 
             totalPoints += studentAverage * studentTotalCoeffs;
@@ -137,27 +140,45 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         const finalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
 
         return { subjectReports: reports, generalAverage: finalAverage };
-    }, [grades, teachers, mainTeacher, student.cycle]);
+    }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);
 
-    const handleGenerateComment = async () => {
-        setIsGeneratingComment(true);
+    const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
+        const isCouncilComment = !subject;
+
+        if (isCouncilComment) {
+            setIsGeneratingCouncilComment(true);
+        } else {
+             setSubjectAppreciations(prev => ({...prev, [subject!]: { text: '', isGenerating: true }}));
+        }
+
         try {
-            const gradesSummary = subjectReports
-                .map(r => `${r.subject}: ${r.average.toFixed(2)}/20`)
-                .join(', ');
+            const gradesSummary = subject 
+                ? `Moyenne en ${subject}: ${average?.toFixed(2)}/20`
+                : subjectReports.map(r => `${r.subject}: ${r.average.toFixed(2)}/20`).join(', ');
 
             const result = await generateReportCardComment({
                 studentName: student.name,
                 grades: gradesSummary,
-                teacherName: "Le Conseil de Classe",
+                teacherName: teacherName || "Le Conseil de Classe",
             });
-            setCouncilComment(result.comment);
-            toast({ title: "Appréciation générée", description: "L'appréciation du conseil de classe a été mise à jour." });
+            
+            if (isCouncilComment) {
+                setCouncilComment(result.comment);
+                toast({ title: "Appréciation générée", description: "L'appréciation du conseil de classe a été mise à jour." });
+            } else {
+                setSubjectAppreciations(prev => ({...prev, [subject!]: { text: result.comment, isGenerating: false }}));
+                toast({ title: `Appréciation pour ${subject} générée` });
+            }
+
         } catch (error) {
             console.error(error);
             toast({ variant: "destructive", title: "Erreur", description: "Impossible de générer l'appréciation." });
         } finally {
-            setIsGeneratingComment(false);
+             if (isCouncilComment) {
+                setIsGeneratingCouncilComment(false);
+            } else {
+                setSubjectAppreciations(prev => ({...prev, [subject!]: { ...prev[subject!], isGenerating: false }}));
+            }
         }
     };
     
@@ -267,6 +288,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     <TableBody>
                         {subjectReports.map((report) => {
                             const totalCoeffs = grades.filter(g => g.subject === report.subject).reduce((sum, g) => sum + g.coefficient, 0);
+                            const isGenerating = subjectAppreciations[report.subject]?.isGenerating;
                             return (
                                 <TableRow key={report.subject}>
                                     <TableCell>
@@ -278,7 +300,20 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                                     <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMin.toFixed(2)}</TableCell>
                                     <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMax.toFixed(2)}</TableCell>
                                     <TableCell className="text-center font-mono hidden sm:table-cell">{report.classAverage.toFixed(2)}</TableCell>
-                                    <TableCell className="text-xs italic">{report.appreciation}</TableCell>
+                                    <TableCell className="text-xs italic">
+                                        <div className="flex items-start gap-1">
+                                            <span className="flex-1">{report.appreciation}</span>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-5 w-5 no-print"
+                                                onClick={() => handleGenerateComment(report.subject, report.teacherName, report.average)}
+                                                disabled={isGenerating}
+                                            >
+                                                <Bot className="h-3 w-3" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             );
                         })}
@@ -307,9 +342,9 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                  <div className="md:col-span-2 p-3 bg-muted rounded-md">
                     <div className="flex justify-between items-start">
                         <p className="font-bold mb-1">Appréciations du conseil de classe</p>
-                        <Button variant="ghost" size="sm" onClick={handleGenerateComment} disabled={isGeneratingComment} className="no-print">
+                        <Button variant="ghost" size="sm" onClick={() => handleGenerateComment()} disabled={isGeneratingCouncilComment} className="no-print">
                              <Bot className="mr-2 h-4 w-4" />
-                            {isGeneratingComment ? "Génération..." : "Générer"}
+                            {isGeneratingCouncilComment ? "Génération..." : "Générer"}
                         </Button>
                     </div>
                     <p className="italic text-xs">{councilComment}</p>
