@@ -312,7 +312,7 @@ export default function PaymentsPage() {
                                 />
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                {formatCurrency(student.amountDue)}
+                                {formatCurrency(student.amountDue || 0)}
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
