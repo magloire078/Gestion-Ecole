@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,7 +22,6 @@ import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "./ui/skeleton";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
@@ -32,7 +32,6 @@ export function UserNav() {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const { toast } = useToast();
-  const { schoolData, loading: schoolDataLoading } = useSchoolData();
 
   const handleLogout = async () => {
     try {
@@ -53,7 +52,7 @@ export function UserNav() {
     }
   };
 
-  const isLoading = userLoading || schoolDataLoading;
+  const isLoading = userLoading;
 
   if (!isMounted || isLoading) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
@@ -61,8 +60,10 @@ export function UserNav() {
   
   const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-  const isAdmin = user?.customClaims?.role === 'admin';
-  const userRole = isAdmin ? 'admin' : (schoolData?.utilisateurs as any)?.[user?.uid || '']?.role;
+  
+  // The role now comes from the user's profile, fetched by the useUser hook
+  const userRole = user?.profile?.role;
+  const isAdmin = userRole === 'admin';
 
 
   return (
@@ -82,7 +83,7 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
             </p>
-             {isMounted && userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
+             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
