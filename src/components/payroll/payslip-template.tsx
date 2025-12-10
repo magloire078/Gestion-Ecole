@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -204,4 +205,3 @@ export function PayslipPreview({ details }: { details: PayslipDetails }) {
     </div>
   );
 }
-

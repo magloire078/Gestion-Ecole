@@ -537,7 +537,7 @@ export default function HRPage() {
                     </CardContent>
                     <CardFooter>
                         <Button asChild className="w-full">
-                            <Link href="/dashboard/parametres/abonnement">
+                            <Link href="/dashboard/settings/subscription">
                                 Mettre à niveau vers le Plan Pro
                             </Link>
                         </Button>
