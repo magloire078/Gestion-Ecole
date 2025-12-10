@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -61,6 +60,15 @@ service cloud.firestore {
         match /{path=**}/eleves/{studentId} {
             allow get, list: if isUserInSchool(schoolId);
         }
+        
+        match /absences/{absenceId} {
+            // Any authenticated user of the school can create an absence record.
+            allow create: if isUserInSchool(schoolId);
+            // All school members can read absence data.
+            allow read, list: if isUserInSchool(schoolId);
+            // Only directors and admins can modify or delete absence records.
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+        }
 
         // --- Subcollections with Specific Rules ---
 
@@ -99,15 +107,6 @@ service cloud.firestore {
             match /paiements/{paymentId} {
                 // Only authorized staff (admin, director, accountant...) can create/read payments.
                 allow read, list, create: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel';
-                allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
-            }
-
-            match /absences/{absenceId} {
-                // Any authenticated user of the school can create an absence record.
-                allow create: if isUserInSchool(schoolId);
-                // All school members can read absence data.
-                allow read, list: if isUserInSchool(schoolId);
-                // Only directors and admins can modify or delete absence records.
                 allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
             }
         }
