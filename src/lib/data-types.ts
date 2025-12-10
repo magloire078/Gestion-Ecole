@@ -8,7 +8,7 @@ export type user = {
     displayName: string;
     photoURL: string;
     schoolId: string;
-    role: "directeur" | "enseignant" | "personnel";
+    role: "admin" | "directeur" | "enseignant" | "personnel";
 };
 
 export type user_root = {

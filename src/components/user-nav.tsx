@@ -25,9 +25,6 @@ import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "./ui/skeleton";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
-// UID de l'administrateur principal de la plateforme
-const ADMIN_UID = "5H3lZic8t7dBa127LclkKrHW03M2"; 
-
 export function UserNav() {
   const isMounted = useHydrationFix();
   const { theme, setTheme } = useTheme();
@@ -64,8 +61,8 @@ export function UserNav() {
   
   const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-  const isAdmin = user?.uid === ADMIN_UID;
-  const userRole = (schoolData?.utilisateurs as any)?.[user?.uid || '']?.role;
+  const isAdmin = user?.customClaims?.role === 'admin';
+  const userRole = isAdmin ? 'admin' : (schoolData?.utilisateurs as any)?.[user?.uid || '']?.role;
 
 
   return (

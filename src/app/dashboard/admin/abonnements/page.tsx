@@ -24,8 +24,6 @@ interface School {
     };
 }
 
-// UID de l'administrateur principal de la plateforme
-const ADMIN_UID = "5H3lZic8t7dBa127LclkKrHW03M2"; 
 
 export default function AdminSubscriptionsPage() {
     const isMounted = useHydrationFix();
@@ -40,7 +38,7 @@ export default function AdminSubscriptionsPage() {
     const schools: School[] = schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [];
 
     useEffect(() => {
-        if (!userLoading && (!user || user.uid !== ADMIN_UID)) {
+        if (!userLoading && (!user || user.customClaims?.role !== 'admin')) {
             toast({
                 variant: 'destructive',
                 title: 'Accès non autorisé',
@@ -52,7 +50,7 @@ export default function AdminSubscriptionsPage() {
 
     const isLoading = userLoading || schoolsLoading;
 
-    if (!isMounted || isLoading || !user || user.uid !== ADMIN_UID) {
+    if (!isMounted || isLoading || !user || user.customClaims?.role !== 'admin') {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-1/2" />

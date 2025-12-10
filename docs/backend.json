@@ -11,7 +11,7 @@
         "displayName": { "type": "string", "description": "Le nom d'affichage de l'utilisateur." },
         "photoURL": { "type": "string", "format": "uri", "description": "L'URL de la photo de profil de l'utilisateur." },
         "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
-        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel"], "description": "Le rôle de l'utilisateur dans l'école." }
+        "role": { "type": "string", "enum": ["admin", "directeur", "enseignant", "personnel"], "description": "Le rôle de l'utilisateur dans l'application." }
       },
       "required": ["uid", "email", "schoolId", "role"]
     },
@@ -331,5 +331,3 @@
     }
   }
 }
-
-    
