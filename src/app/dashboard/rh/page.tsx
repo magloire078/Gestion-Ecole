@@ -163,7 +163,7 @@ function HRContent() {
           email: editingStaff.email || '',
           phone: editingStaff.phone || '',
           baseSalary: editingStaff.baseSalary || 0,
-          hireDate: editingStaff.hireDate ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+          hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
           situationMatrimoniale: editingStaff.situationMatrimoniale || 'Célibataire',
           enfants: editingStaff.enfants || 0,
           categorie: editingStaff.categorie || '',
@@ -537,7 +537,7 @@ export default function HRPage() {
                     </CardContent>
                     <CardFooter>
                         <Button asChild className="w-full">
-                            <Link href="/dashboard/settings/subscription">
+                            <Link href="/dashboard/parametres/abonnement">
                                 Mettre à niveau vers le Plan Pro
                             </Link>
                         </Button>

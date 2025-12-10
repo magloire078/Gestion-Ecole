@@ -39,7 +39,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                          <Image src={organizationSettings.secondaryLogoUrl} alt="Emblème National" width={60} height={60} className="object-contain ml-auto" />
                     )}
                     <p className="font-bold mt-2">BULLETIN DE PAIE</p>
-                    <p>Période du 01 au {new Date(employeeInfo.paymentDate).getDate()} {new Date(employeeInfo.paymentDate).toLocaleString('fr-FR', { month: 'long', year: 'numeric' })}</p>
+                    <p>Période du 01 au {new Date(employeeInfo.paymentDate).toLocaleDateString('fr-FR', { day: '2-digit' })} {new Date(employeeInfo.paymentDate).toLocaleString('fr-FR', { month: 'long', year: 'numeric' })}</p>
                 </div>
             </header>
 
