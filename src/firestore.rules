@@ -8,21 +8,23 @@ service cloud.firestore {
     function isUserAuthenticated() {
       return request.auth != null;
     }
+    
+    function isUserAdmin() {
+      // Check for the admin custom claim on the user's token.
+      // This is more secure and efficient than checking the database.
+      return request.auth.token.admin == true;
+    }
 
     function getUserSchoolId(userId) {
       return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
     }
     
-    function getUserRoleFromSchool(schoolId, userId) {
-        return get(/databases/$(database)/documents/ecoles/$(schoolId)/utilisateurs/$(userId)).data.role;
-    }
-    
-    function isUserAdmin(schoolId, userId) {
-        return isUserInSchool(schoolId) && getUserRoleFromSchool(schoolId, userId) == 'admin';
-    }
-
     function isUserInSchool(schoolId) {
       return isUserAuthenticated() && getUserSchoolId(request.auth.uid) == schoolId;
+    }
+    
+    function getUserRoleFromSchool(schoolId, userId) {
+        return get(/databases/$(database)/documents/ecoles/$(schoolId)/utilisateurs/$(userId)).data.role;
     }
     
     function isSchoolDirector(schoolId, userId) {
@@ -43,9 +45,8 @@ service cloud.firestore {
 
     match /utilisateurs/{userId} {
       allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-      allow get: if isUserAuthenticated() && (isCreatingOwnDocument(userId) || isUserAdmin(getUserSchoolId(request.auth.uid), request.auth.uid));
-      allow list: if isUserAdmin(getUserSchoolId(request.auth.uid), request.auth.uid);
-      allow update, delete: if isUserAdmin(getUserSchoolId(request.auth.uid), request.auth.uid);
+      allow get: if isUserAuthenticated() && (isCreatingOwnDocument(userId) || isUserAdmin());
+      allow list, update, delete: if isUserAdmin();
     }
     
     match /ecoles/{schoolId} {
@@ -53,12 +54,12 @@ service cloud.firestore {
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
         // The school director or an admin can update the school's information.
-        allow update: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
-        allow delete: if isUserAdmin(schoolId, request.auth.uid); // Only an admin can delete a school.
+        allow update: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
+        allow delete: if isUserAdmin(); // Only an admin can delete a school.
         
         match /absences/{absenceId} {
             // Any authorized staff member can manage absences.
-            allow read, write, list: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel');
+            allow read, write, list: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel');
         }
 
         // --- Subcollections with Specific Rules ---
@@ -66,30 +67,31 @@ service cloud.firestore {
         match /utilisateurs/{userId} {
             // A user can create their own profile in a school (onboarding)
             // A director or admin can create users.
-            allow create: if isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow create: if isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
             
             // A director or admin can modify any profile.
             // A user can modify their own profile, but NOT their role.
-            allow update: if (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid)) || (isCreatingOwnDocument(userId) && isNotChangingRole(request, resource));
+            allow update: if (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin()) || (isCreatingOwnDocument(userId) && isNotChangingRole(request, resource));
 
             // Reading user list is restricted to admins and directors for privacy.
-            allow get, list: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow get, list: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
 
             // Only a director or admin can remove a user from the school.
-            allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
         match /enseignants/{teacherId} {
             allow read, list: if isUserInSchool(schoolId);
             // Only directors and admins can manage teachers.
-            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
         match /eleves/{studentId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow create, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
             // Any authenticated member of the school can update a student record.
             allow update: if isUserInSchool(schoolId);
+            // Only director or admin can create or delete a student
+            allow create, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
 
             match /notes/{gradeId} {
                 // Any staff member of the school (teacher, admin, director) can read and write grades.
@@ -97,42 +99,51 @@ service cloud.firestore {
             }
             
             match /paiements/{paymentId} {
-                // Authorized staff can create/read payments.
-                allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
-                allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+                // Authorized staff (admin, director, personnel, teacher) can create/read payments.
+                allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
+                allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
             }
         }
         
         match /comptabilite/{transactionId} {
-             // Authorized staff can manage accounting.
-            allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
-            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+             // Authorized staff (admin, director, personnel, teacher) can manage accounting.
+            allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
         match /classes/{classId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         
         match /emploi_du_temps/{entryId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
         match /personnel/{staffId} {
-            allow read, list, create, update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow read, list, create, update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         
         match /messagerie/{messageId} {
             allow read, list: if isUserInSchool(schoolId);
             allow create: if isUserInSchool(schoolId); // Any member of the school can send a message
-            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
-        // --- Generic Rules for other subcollections ---
-        match /{otherCollections}/{docId} {
+        match /bibliotheque/{bookId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
+        }
+        
+        match /frais_scolarite/{feeId} {
+             allow read, list: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
+        }
+        
+         match /cycles/{cycleId} {
+             allow read, list: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
     }
   }
