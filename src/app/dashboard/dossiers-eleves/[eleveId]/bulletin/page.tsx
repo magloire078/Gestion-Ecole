@@ -65,7 +65,7 @@ export default function StudentReportPage() {
 
   const schoolInfo = {
       name: schoolData?.name || 'Votre École',
-      directorName: schoolData?.directorFirstName + ' ' + schoolData?.directorLastName,
+      directorName: (schoolData?.directorFirstName || '') + ' ' + (schoolData?.directorLastName || ''),
       address: schoolData?.address,
       phone: schoolData?.phone,
       website: schoolData?.website,

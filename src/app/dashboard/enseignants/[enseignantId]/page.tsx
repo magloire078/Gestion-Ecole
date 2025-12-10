@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -15,7 +16,7 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
-import type { Class, teacher as Teacher } from '@/lib/data-types';
+import type { class_type as Class, teacher as Teacher } from '@/lib/data-types';
 
 const mockStudentPerformanceData: Record<string, string> = {
   'Mathématiques': 'Les résultats des élèves en mathématiques montrent une nette amélioration ce semestre, avec une moyenne de classe en hausse de 15%. 80% des élèves ont obtenu une note supérieure à la moyenne. Les points faibles restent la géométrie dans l\'espace.',
