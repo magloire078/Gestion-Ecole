@@ -10,12 +10,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Bot, Smile, Meh, Frown, MoreHorizontal, Eye, MessageSquare, Search, Printer, Upload, Download } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download } from "lucide-react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -42,17 +40,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, deleteDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,28 +51,11 @@ import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { differenceInYears, differenceInMonths, addYears } from "date-fns";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { student as Student, class_type as Class } from "@/lib/data-types";
-
-const studentSchema = z.object({
-    firstName: z.string().min(1, { message: "Le prénom est requis." }),
-    lastName: z.string().min(1, { message: "Le nom est requis." }),
-    classId: z.string().min(1, { message: "La classe est requise." }),
-    dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
-    amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
-    tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
-    status: z.enum(['Actif', 'En attente', 'Radié']),
-    feedback: z.string().optional(),
-});
-
-type StudentFormValues = z.infer<typeof studentSchema>;
+import { StudentEditForm } from "@/components/student-edit-form";
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -129,78 +103,10 @@ export default function StudentsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
   
-    // AI Analysis State
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeAndSummarizeFeedbackOutput | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
-  const form = useForm<StudentFormValues>({
-    resolver: zodResolver(studentSchema),
-    defaultValues: {
-        firstName: '',
-        lastName: '',
-        classId: '',
-        dateOfBirth: '',
-        amountDue: 0,
-        tuitionStatus: 'Partiel',
-        status: 'Actif',
-        feedback: '',
-    }
-  });
-
-  useEffect(() => {
-    if(isEditDialogOpen && editingStudent) {
-      form.reset({
-        firstName: editingStudent.firstName,
-        lastName: editingStudent.lastName,
-        classId: editingStudent.classId,
-        feedback: editingStudent.feedback || '',
-        amountDue: editingStudent.amountDue || 0,
-        tuitionStatus: editingStudent.tuitionStatus || 'Partiel',
-        status: editingStudent.status || 'Actif',
-        dateOfBirth: editingStudent.dateOfBirth,
-      });
-    } else {
-        form.reset();
-    }
-    setAnalysisResult(null); // Clear analysis when dialog opens/closes
-  }, [editingStudent, isEditDialogOpen, form]);
   
   const handleOpenEditDialog = (student: Student) => {
     setEditingStudent(student);
     setIsEditDialogOpen(true);
-  };
-
-  const handleEditStudent = (values: StudentFormValues) => {
-    if (!schoolId || !editingStudent) {
-      toast({ variant: "destructive", title: "Erreur", description: "Impossible de modifier l'élève." });
-      return;
-    }
-    
-    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingStudent.id}`);
-    const selectedClassInfo = classes.find(c => c.id === values.classId);
-    
-    const updatedData = {
-      firstName: values.firstName,
-      lastName: values.lastName,
-      classId: values.classId,
-      class: selectedClassInfo?.name || 'N/A',
-      cycle: selectedClassInfo?.cycle || editingStudent.cycle,
-      feedback: values.feedback || '',
-      amountDue: values.amountDue,
-      tuitionStatus: values.tuitionStatus,
-      status: values.status,
-      dateOfBirth: values.dateOfBirth,
-    };
-    
-    setDoc(studentDocRef, updatedData, { merge: true })
-    .then(() => {
-        toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
-        setIsEditDialogOpen(false);
-        setEditingStudent(null);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: studentDocRef.path, operation: 'update', requestResourceData: updatedData });
-        errorEmitter.emit('permission-error', permissionError);
-    });
   };
 
   const handleOpenDeleteDialog = (student: Student) => {
@@ -223,25 +129,6 @@ export default function StudentsPage() {
     });
   }
   
-  const handleAnalyzeFeedback = async () => {
-    const feedbackText = form.getValues('feedback');
-    if (!feedbackText) {
-        toast({ variant: 'destructive', title: "Aucun texte", description: "Le champ d'appréciation est vide."});
-        return;
-    }
-    setIsAnalyzing(true);
-    setAnalysisResult(null);
-    try {
-        const result = await analyzeAndSummarizeFeedback({ feedbackText });
-        setAnalysisResult(result);
-    } catch (error) {
-        console.error("AI analysis failed:", error);
-        toast({ variant: 'destructive', title: "Erreur d'analyse", description: "L'analyse par IA a échoué."});
-    } finally {
-        setIsAnalyzing(false);
-    }
-  };
-  
   const getAge = (dateOfBirth: string | undefined) => {
     if (!dateOfBirth) return 'N/A';
     try {
@@ -261,20 +148,7 @@ export default function StudentsPage() {
     }
   }
 
-  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
-
   const isLoading = schoolLoading || studentsLoading || classesLoading;
-  
-  const renderSentiment = (sentiment: string) => {
-    const sentimentLower = sentiment.toLowerCase();
-    if (sentimentLower === 'positif') {
-        return <span className="flex items-center gap-1 text-emerald-600"><Smile className="h-4 w-4" /> Positif</span>
-    }
-    if (sentimentLower === 'négatif') {
-        return <span className="flex items-center gap-1 text-red-600"><Frown className="h-4 w-4" /> Négatif</span>
-    }
-    return <span className="flex items-center gap-1 text-gray-600"><Meh className="h-4 w-4" /> Neutre</span>
-  };
   
   const handlePrint = () => {
     window.print();
@@ -421,160 +295,18 @@ export default function StudentsPage() {
                 Mettez à jour les informations de <strong>{editingStudent?.firstName} {editingStudent?.lastName}</strong>.
             </DialogDescription>
           </DialogHeader>
-          <Form {...form}>
-            <form id="edit-student-form" onSubmit={form.handleSubmit(handleEditStudent)} className="grid gap-4 py-4">
-               <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Nom</FormLabel>
-                        <FormControl>
-                        <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Prénom</FormLabel>
-                        <FormControl>
-                        <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="dateOfBirth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date de naissance</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="classId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Classe</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {classes.map((opt) => (
-                          <SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Statut Élève</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                       <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Actif">Actif</SelectItem>
-                        <SelectItem value="En attente">En attente</SelectItem>
-                        <SelectItem value="Radié">Radié</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="amountDue"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Solde (CFA)</FormLabel>
-                    <FormControl>
-                      <Input type="number" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="tuitionStatus"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Statut Paiement</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                       <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Soldé">Soldé</SelectItem>
-                        <SelectItem value="En retard">En retard</SelectItem>
-                        <SelectItem value="Partiel">Partiel</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="feedback"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Appréciation</FormLabel>
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                            <FormControl>
-                                <Textarea {...field} />
-                            </FormControl>
-                            <Button type="button" variant="outline" size="icon" onClick={handleAnalyzeFeedback} disabled={isAnalyzing}>
-                                <Bot className="h-4 w-4" />
-                            </Button>
-                        </div>
-                        {isAnalyzing && <p className="text-xs text-muted-foreground">Analyse en cours...</p>}
-                        {analysisResult && (
-                             <Card className="bg-muted/50 text-xs">
-                                <CardHeader className="p-3">
-                                    <CardTitle className="text-sm flex justify-between items-center">
-                                        <span>Analyse IA</span>
-                                        {renderSentiment(analysisResult.sentiment)}
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="p-3 pt-0">
-                                    <p><strong>Résumé:</strong> {analysisResult.summary}</p>
-                                    <p className="mt-2"><strong>Points d'amélioration:</strong> {analysisResult.keyImprovementAreas}</p>
-                                </CardContent>
-                            </Card>
-                        )}
-                    </div>
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
+          {editingStudent && schoolId && (
+            <StudentEditForm 
+              student={editingStudent} 
+              classes={classes} 
+              schoolId={schoolId} 
+              onFormSubmit={() => setIsEditDialogOpen(false)} 
+            />
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button type="submit" form="edit-student-form" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+            <Button type="submit" form={`edit-student-form-${editingStudent?.id}`}>
+              Enregistrer
             </Button>
           </DialogFooter>
         </DialogContent>
