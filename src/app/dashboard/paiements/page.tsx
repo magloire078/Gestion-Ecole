@@ -40,6 +40,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { generatePaymentReminder } from '@/ai/flows/generate-payment-reminder';
+import { Label } from "@/components/ui/label";
 
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
