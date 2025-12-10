@@ -11,7 +11,7 @@
         "displayName": { "type": "string", "description": "Le nom d'affichage de l'utilisateur." },
         "photoURL": { "type": "string", "format": "uri", "description": "L'URL de la photo de profil de l'utilisateur." },
         "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
-        "role": { "type": "string", "enum": ["admin", "directeur", "enseignant", "personnel"], "description": "Le rôle de l'utilisateur dans l'application." }
+        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel"], "description": "Le rôle de l'utilisateur dans l'école." }
       },
       "required": ["uid", "email", "schoolId", "role"]
     },
@@ -161,12 +161,15 @@
             "parent2LastName": { "type": "string", "description": "Le nom de famille du deuxième parent/tuteur (optionnel)." },
             "parent2Contact": { "type": "string", "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)." },
             "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
-            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
+            "tuitionFee": { "type": "number", "description": "Le montant total de la scolarité pour la classe de l'élève." },
+            "discountAmount": { "type": "number", "description": "Le montant de la remise ou de la bourse accordée." },
+            "discountReason": { "type": "string", "description": "La raison de la remise." },
             "amountDue": { "type": "number", "description": "Le montant restant à payer." },
+            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
-        "required": ["firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact"]
+        "required": ["firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
     },
     "gradeEntry": {
         "title": "Note",
