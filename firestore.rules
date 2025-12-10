@@ -39,6 +39,13 @@ service cloud.firestore {
         return request.resource.data.role == resource.data.role;
     }
 
+    // New helper function to check if only tuition fields are being updated
+    function isUpdatingOnlyTuition(request) {
+        let allowedKeys = ['amountDue', 'tuitionStatus'];
+        // Ensure that every key in the request data is in the list of allowed keys.
+        return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
 
     // --- Root Collections ---
 
@@ -64,9 +71,7 @@ service cloud.firestore {
         
         match /absences/{absenceId} {
             // Any authorized staff member can manage absences.
-            allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel');
-            // Only directors and admins can modify or delete absence records.
-            allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow read, write, list: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel');
         }
 
         // --- Subcollections with Specific Rules ---
@@ -95,8 +100,12 @@ service cloud.firestore {
 
         match /eleves/{studentId} {
             allow read, list: if isUserInSchool(schoolId);
-            // Only directors and admins can create, update, or delete students.
-            allow create, update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            // Admins/Directors can create/delete or update any field
+            allow create, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            // Allow update if user is Director/Admin OR if they are authorized staff updating only tuition info
+            allow update: if (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid)) ||
+                           (isUserInSchool(schoolId) && (getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel') && isUpdatingOnlyTuition(request));
+
 
             match /notes/{gradeId} {
                 // Any staff member of the school (teacher, admin, director) can read and write grades.
