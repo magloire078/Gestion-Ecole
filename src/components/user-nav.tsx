@@ -61,9 +61,9 @@ export function UserNav() {
   const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  // The role now comes from the user's profile, fetched by the useUser hook
+  // The role now comes from the user's custom claims, which are secure.
+  const isAdmin = user?.customClaims?.role === 'admin';
   const userRole = user?.profile?.role;
-  const isAdmin = userRole === 'admin';
 
 
   return (
@@ -83,7 +83,7 @@ export function UserNav() {
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
             </p>
-             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
+             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{isAdmin ? 'Admin' : userRole}</p>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
