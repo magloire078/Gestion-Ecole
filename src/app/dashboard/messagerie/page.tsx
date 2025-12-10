@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -87,6 +86,8 @@ export default function MessagingPage() {
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [viewedMessage, setViewedMessage] = useState<Message | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<MessageFormValues>({
@@ -129,6 +130,11 @@ export default function MessagingPage() {
         const permissionError = new FirestorePermissionError({ path: messagesCollectionRef.path, operation: 'create', requestResourceData: messageData });
         errorEmitter.emit('permission-error', permissionError);
     });
+  };
+
+  const handleViewMessage = (message: Message) => {
+    setViewedMessage(message);
+    setIsViewOpen(true);
   };
 
   const getRecipientSummary = (recipients: MessageFormValues['recipients']) => {
@@ -313,8 +319,8 @@ export default function MessagingPage() {
                     ))
                 ) : messages.length > 0 ? (
                     messages.map((message) => (
-                    <TableRow key={message.id}>
-                        <TableCell>{message.createdAt ? format(new Date(message.createdAt.seconds * 1000), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                    <TableRow key={message.id} className="cursor-pointer" onClick={() => handleViewMessage(message)}>
+                        <TableCell>{message.createdAt ? format(new Date(message.createdAt.seconds * 1000), 'd MMM yyyy, HH:mm', { locale: fr }) : 'N/A'}</TableCell>
                         <TableCell className="font-medium">{message.title}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{getRecipientSummary(message.recipients)}</TableCell>
                         <TableCell>{message.senderName}</TableCell>
@@ -330,7 +336,28 @@ export default function MessagingPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* View Message Dialog */}
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{viewedMessage?.title}</DialogTitle>
+            <DialogDescription>
+              Envoyé par {viewedMessage?.senderName} le {viewedMessage?.createdAt ? format(new Date(viewedMessage.createdAt.seconds * 1000), 'd MMMM yyyy à HH:mm', { locale: fr }) : ''}
+              <br />
+              À : {viewedMessage ? getRecipientSummary(viewedMessage.recipients) : ''}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 whitespace-pre-wrap text-sm">
+            {viewedMessage?.content}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewOpen(false)}>Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
 
+    
