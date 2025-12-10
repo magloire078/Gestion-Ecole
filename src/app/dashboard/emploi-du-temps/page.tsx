@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -10,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
@@ -92,6 +91,8 @@ export default function TimetablePage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
+  const [selectedClassId, setSelectedClassId] = useState<string>('all');
+
   // --- Firestore Data Hooks ---
   const timetableQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/emploi_du_temps`) : null, [firestore, schoolId]);
   const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
@@ -137,7 +138,7 @@ export default function TimetablePage() {
         });
       } else {
         form.reset({
-          classId: "",
+          classId: selectedClassId !== 'all' ? selectedClassId : '',
           teacherId: "",
           subject: "",
           day: "Lundi",
@@ -146,19 +147,35 @@ export default function TimetablePage() {
         });
       }
     }
-  }, [isFormOpen, editingEntry, form]);
+  }, [isFormOpen, editingEntry, form, selectedClassId]);
 
-  const timetableDetails = useMemo(() => {
-    return timetable.map(entry => {
-      const classInfo = classes.find(c => c.id === entry.classId);
-      const teacherInfo = teachers.find(t => t.id === entry.teacherId);
-      return {
-        ...entry,
-        className: classInfo?.name || 'N/A',
-        teacherName: teacherInfo ? `${teacherInfo.firstName} ${teacherInfo.lastName}` : 'N/A',
-      };
+  const { timetableGrid, allTimeSlots } = useMemo(() => {
+    const grid: { [time: string]: { [day: string]: TimetableEntry[] } } = {};
+    const filteredEntries = timetable.filter(entry => selectedClassId === 'all' || entry.classId === selectedClassId);
+
+    const uniqueTimes = new Set<string>();
+    filteredEntries.forEach(entry => {
+        uniqueTimes.add(entry.startTime);
     });
-  }, [timetable, classes, teachers]);
+
+    const sortedTimes = Array.from(uniqueTimes).sort();
+
+    sortedTimes.forEach(time => {
+        grid[time] = {};
+        daysOfWeek.forEach(day => {
+            grid[time][day] = [];
+        });
+    });
+
+    filteredEntries.forEach(entry => {
+        if (grid[entry.startTime] && grid[entry.startTime][entry.day]) {
+            grid[entry.startTime][entry.day].push(entry);
+        }
+    });
+
+    return { timetableGrid: grid, allTimeSlots: sortedTimes };
+}, [timetable, selectedClassId]);
+
 
   const getEntryDocRef = (entryId: string) => doc(firestore, `ecoles/${schoolId}/emploi_du_temps/${entryId}`);
 
@@ -169,7 +186,6 @@ export default function TimetablePage() {
     }
 
     if (editingEntry) {
-        // Edit
         const entryDocRef = getEntryDocRef(editingEntry.id);
         setDoc(entryDocRef, values, { merge: true })
         .then(() => {
@@ -180,7 +196,6 @@ export default function TimetablePage() {
             errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-        // Add
         const timetableCollectionRef = collection(firestore, `ecoles/${schoolId}/emploi_du_temps`);
         addDoc(timetableCollectionRef, values)
         .then(() => {
@@ -193,8 +208,22 @@ export default function TimetablePage() {
     }
   };
   
-  const handleOpenFormDialog = (entry: TimetableEntry | null) => {
-    setEditingEntry(entry);
+  const handleOpenFormDialog = (entry: TimetableEntry | null, day?: string, time?: string) => {
+    if (entry) {
+        setEditingEntry(entry);
+    } else if(day && time) {
+        setEditingEntry(null);
+        form.reset({
+            classId: selectedClassId !== 'all' ? selectedClassId : '',
+            day: day as TimetableFormValues['day'],
+            startTime: time,
+            endTime: timeSlots[timeSlots.indexOf(time) + 1] || time,
+            teacherId: '',
+            subject: ''
+        })
+    } else {
+        setEditingEntry(null);
+    }
     setIsFormOpen(true);
   };
 
@@ -333,88 +362,102 @@ export default function TimetablePage() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-lg font-semibold md:text-2xl">Emploi du Temps</h1>
-            <p className="text-muted-foreground">Consultez et gérez les attributions des enseignants par classe et par matière.</p>
+            <p className="text-muted-foreground">Vue hebdomadaire des cours par classe.</p>
           </div>
-           <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
-               if(!isOpen) setEditingEntry(null);
-               setIsFormOpen(isOpen);
-           }}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleOpenFormDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Entrée</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{editingEntry ? "Modifier" : "Ajouter à"} l'Emploi du Temps</DialogTitle>
-                <DialogDescription>
-                  {editingEntry ? "Mettez à jour les informations de cette entrée." : "Sélectionnez une classe, un enseignant et une matière."}
-                </DialogDescription>
-              </DialogHeader>
-              {renderForm()}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                <Button type="submit" form="timetable-form" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <div className="flex w-full sm:w-auto gap-2">
+            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Filtrer par classe" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Toutes les classes</SelectItem>
+                    {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+            </Select>
+            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if(!isOpen) setEditingEntry(null); setIsFormOpen(isOpen); }}>
+              <DialogTrigger asChild>
+                <Button onClick={() => handleOpenFormDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>{editingEntry ? "Modifier" : "Ajouter à"} l'Emploi du Temps</DialogTitle>
+                </DialogHeader>
+                {renderForm()}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                  <Button type="submit" form="timetable-form" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
         <Card>
           <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Classe</TableHead>
-                    <TableHead>Jour</TableHead>
-                    <TableHead>Heure</TableHead>
-                    <TableHead>Matière</TableHead>
-                    <TableHead>Enseignant</TableHead>
-                    <TableHead className="w-[50px] text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                {isLoading ? (
-                    [...Array(5)].map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+              <div className="overflow-x-auto">
+                <Table className="min-w-full border-collapse">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-24 border text-center font-semibold">Heure</TableHead>
+                            {daysOfWeek.map(day => (
+                                <TableHead key={day} className="border text-center font-semibold">{day}</TableHead>
+                            ))}
                         </TableRow>
-                    ))
-                ) : timetableDetails.length > 0 ? (
-                  timetableDetails
-                  .sort((a,b) => `${a.className}-${daysOfWeek.indexOf(a.day)}-${a.startTime}`.localeCompare(`${b.className}-${daysOfWeek.indexOf(b.day)}-${b.startTime}`))
-                  .map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell className="font-medium">{entry.className}</TableCell>
-                      <TableCell>{entry.day}</TableCell>
-                      <TableCell className="font-mono">{entry.startTime} - {entry.endTime}</TableCell>
-                      <TableCell>{entry.subject}</TableCell>
-                      <TableCell>{entry.teacherName}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenFormDialog(entry)}>Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(entry)}>Supprimer</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">Aucune entrée dans l'emploi du temps.</TableCell>
-                    </TableRow>
-                )}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? [...Array(5)].map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell className="border p-2 text-center"><Skeleton className="h-6 w-16 mx-auto" /></TableCell>
+                                {daysOfWeek.map(day => (
+                                    <TableCell key={day} className="border p-2"><Skeleton className="h-16 w-full" /></TableCell>
+                                ))}
+                            </TableRow>
+                        )) : allTimeSlots.map(time => (
+                            <TableRow key={time}>
+                                <TableCell className="border p-2 text-center align-middle font-mono text-sm">{time}</TableCell>
+                                {daysOfWeek.map(day => (
+                                    <TableCell key={day} className="border p-1 align-top h-24 w-40 relative group">
+                                        {timetableGrid[time]?.[day]?.map(entry => {
+                                            const teacher = teachers.find(t => t.id === entry.teacherId);
+                                            const classInfo = classes.find(c => c.id === entry.classId);
+                                            return (
+                                                <div key={entry.id} className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg text-xs mb-1 relative">
+                                                    <p className="font-bold text-blue-800 dark:text-blue-300">{entry.subject}</p>
+                                                    <p className="text-muted-foreground">{teacher ? `${teacher.firstName[0]}. ${teacher.lastName}` : 'N/A'}</p>
+                                                    {selectedClassId === 'all' && <p className="text-blue-600 dark:text-blue-400 font-semibold">{classInfo?.name}</p>}
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100">
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent>
+                                                            <DropdownMenuItem onClick={() => handleOpenFormDialog(entry)}>Modifier</DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(entry)}>Supprimer</DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            );
+                                        })}
+                                        <Button variant="ghost" size="icon" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100" onClick={() => handleOpenFormDialog(null, day, time)}>
+                                            <PlusCircle className="h-5 w-5 text-muted-foreground" />
+                                        </Button>
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                 {!isLoading && allTimeSlots.length === 0 && (
+                    <div className="text-center text-muted-foreground py-10">
+                        {selectedClassId !== 'all' ? 'Aucun cours programmé pour cette classe.' : 'Aucun cours programmé. Commencez par ajouter une entrée.'}
+                    </div>
+                 )}
+              </div>
           </CardContent>
         </Card>
       </div>
@@ -435,5 +478,3 @@ export default function TimetablePage() {
     </>
   );
 }
-
-    
