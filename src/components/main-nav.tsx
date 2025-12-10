@@ -42,7 +42,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardList },
+  { href: '/dashboard/rh', label: 'RH / Personnel', icon: ClipboardList },
   { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send },
 ];
 
