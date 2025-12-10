@@ -511,7 +511,7 @@ export default function FeesPage() {
                         filteredStudents.map((student) => (
                         <TableRow key={student.id}>
                             <TableCell className="font-medium">
-                                <Link href={`/dashboard/eleves/${student.id}`} className="hover:underline text-primary">
+                                <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline text-primary">
                                     {student.firstName} {student.lastName}
                                 </Link>
                             </TableCell>

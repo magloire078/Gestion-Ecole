@@ -20,12 +20,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { schoolClasses } from '@/lib/data';
-
-interface Class {
-  id: string;
-  name: string;
-  cycle: string;
-}
+import type { class_type as Class } from '@/lib/data-types';
 
 const registrationSchema = z.object({
   // Step 1
@@ -256,4 +251,3 @@ export default function RegistrationPage() {
     </div>
   );
 }
-

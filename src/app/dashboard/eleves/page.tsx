@@ -154,9 +154,9 @@ export default function StudentsPage() {
         firstName: editingStudent.firstName,
         lastName: editingStudent.lastName,
         classId: editingStudent.classId,
-        feedback: editingStudent.feedback,
-        amountDue: editingStudent.amountDue,
-        tuitionStatus: editingStudent.tuitionStatus,
+        feedback: editingStudent.feedback || '',
+        amountDue: editingStudent.amountDue || 0,
+        tuitionStatus: editingStudent.tuitionStatus || 'Partiel',
         status: editingStudent.status || 'Actif',
         dateOfBirth: editingStudent.dateOfBirth,
       });
@@ -356,7 +356,9 @@ export default function StudentsPage() {
                                     <AvatarFallback>{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>
-                                    <p className="font-medium">{student.firstName} ${student.lastName}</p>
+                                    <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
+                                        <p className="font-medium">{student.firstName} {student.lastName}</p>
+                                    </Link>
                                     <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id.substring(0,8)}</div>
                                 </div>
                             </div>
@@ -368,15 +370,10 @@ export default function StudentsPage() {
                             <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                           </TableCell>
                           <TableCell className="text-center">
-                              <TuitionStatusBadge status={student.tuitionStatus} />
+                              <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
                           </TableCell>
                           <TableCell className="text-right print:hidden">
                             <div className="flex justify-end gap-2">
-                              <Button asChild variant="outline" size="sm">
-                                <Link href={`/dashboard/dossiers-eleves/${student.id}`}>
-                                  <Eye className="mr-2 h-3 w-3" /> Voir
-                                </Link>
-                              </Button>
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-9 w-9">
@@ -384,6 +381,10 @@ export default function StudentsPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
+                                   <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}`)}>
+                                        <Eye className="mr-2 h-4 w-4" />
+                                        Voir le dossier
+                                    </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem 
