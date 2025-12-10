@@ -96,36 +96,35 @@ export default function StudentProfilePage() {
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
-
-  // --- Student Data ---
-  const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
-  , [firestore, schoolId, eleveId]);
-  const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
-
-  // --- Related Data ---
+  // --- Data Fetching ---
+  const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
   const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
   const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   
+  const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
-  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  
-  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
-  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
-  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
-  
+
   const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/enseignants/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Teacher>(teacherRef);
   
+  // This query is for the edit form, to be able to switch classes.
+  const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
+
+
+  // --- Data Memoization ---
+  const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
+  const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
+  const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);
+
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || classesLoading;
+  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading;
 
   if (!eleveId) {
     return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
@@ -452,7 +451,7 @@ export default function StudentProfilePage() {
             {student && schoolId && (
               <StudentEditForm 
                 student={student} 
-                classes={classes} 
+                classes={allSchoolClasses} 
                 schoolId={schoolId} 
                 onFormSubmit={() => setIsEditDialogOpen(false)} 
               />
@@ -478,5 +477,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    
