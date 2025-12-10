@@ -112,7 +112,10 @@ export default function PaymentsPage() {
   }, [students, selectedClass, selectedStatus]);
 
   const totalDue = useMemo(() => {
-    return filteredStudents.reduce((acc, student) => acc + (student.amountDue || 0), 0);
+    return filteredStudents.reduce((acc, student) => {
+        const due = student.amountDue || 0;
+        return acc + (due > 0 ? due : 0);
+    }, 0);
   }, [filteredStudents]);
   
   const handleOpenManageDialog = (student: Student) => {
@@ -297,7 +300,7 @@ export default function PaymentsPage() {
                                 <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                            {(student.amountDue || 0) > 0 ? formatCurrency(student.amountDue || 0) : '-'}
+                                {(student.amountDue !== null && student.amountDue !== undefined) ? formatCurrency(student.amountDue) : '-'}
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
