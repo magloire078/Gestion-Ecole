@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -65,6 +64,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { AccountingCharts } from './charts';
 
 const transactionSchema = z.object({
     description: z.string().min(1, { message: "La description est requise." }),
@@ -312,6 +312,8 @@ export default function AccountingPage() {
             Suivez les revenus, les dépenses et la santé financière de votre école.
           </p>
         </div>
+
+        { !isLoading && transactions.length > 0 && <AccountingCharts transactions={transactions} /> }
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
