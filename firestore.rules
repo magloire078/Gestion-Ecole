@@ -79,9 +79,9 @@ service cloud.firestore {
         }
 
         match /eleves/{studentId} {
-            allow read, list, create, update: if isUserInSchool(schoolId);
-            // Seuls directeurs et admins peuvent supprimer des élèves.
-            allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            allow read, list: if isUserInSchool(schoolId);
+            // Seuls directeurs et admins peuvent créer, modifier ou supprimer des élèves.
+            allow create, update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
 
             match /notes/{gradeId} {
                 allow read, write: if isUserInSchool(schoolId);
