@@ -55,6 +55,7 @@ import type { class_type as Class, student as Student, absence as Absence } from
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { cn } from '@/lib/utils';
 
 interface StudentWithAbsence extends Student {
     isAbsentToday?: boolean;
@@ -220,7 +221,6 @@ export default function AbsencesPage() {
                       <TableRow>
                         <TableHead>Nom de l'Élève</TableHead>
                         <TableHead className="text-center">Statut du Jour</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -229,30 +229,31 @@ export default function AbsencesPage() {
                           <TableRow key={i}>
                             <TableCell><Skeleton className="h-5 w-40" /></TableCell>
                             <TableCell className="text-center"><Skeleton className="h-5 w-20 mx-auto" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto" /></TableCell>
                           </TableRow>
                         ))
                       ) : studentsWithAbsenceStatus.length > 0 ? (
                         studentsWithAbsenceStatus.map(student => (
-                          <TableRow key={student.id}>
+                          <TableRow 
+                            key={student.id} 
+                            onClick={() => !student.isAbsentToday && handleOpenForm(student)}
+                            className={cn(
+                                !student.isAbsentToday && 'cursor-pointer hover:bg-muted/50',
+                                student.isAbsentToday && 'bg-red-50/50 dark:bg-red-900/20 text-muted-foreground'
+                            )}
+                          >
                             <TableCell className="font-medium">{student.firstName} {student.lastName}</TableCell>
                             <TableCell className="text-center">
                               {student.isAbsentToday ? (
-                                <span className="text-destructive font-semibold">Absent(e)</span>
+                                <Badge variant="destructive">Absent(e)</Badge>
                               ) : (
-                                <span className="text-emerald-600">Présent(e)</span>
+                                <Badge variant="secondary">Présent(e)</Badge>
                               )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Button variant="outline" size="sm" onClick={() => handleOpenForm(student)} disabled={student.isAbsentToday}>
-                                <UserX className="mr-2 h-4 w-4" /> Marquer Absent(e)
-                              </Button>
                             </TableCell>
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center h-24">Aucun élève trouvé dans cette classe.</TableCell>
+                          <TableCell colSpan={2} className="text-center h-24">Aucun élève trouvé dans cette classe.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
