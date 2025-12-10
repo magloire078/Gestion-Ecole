@@ -1,11 +1,10 @@
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Bot } from 'lucide-react';
+import { User, BookUser, Building, Wallet, MessageSquare, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Bot, Smile, Frown, Meh } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -33,6 +32,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from '@/components/ui/textarea';
 import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const studentSchema = z.object({
     firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -244,7 +245,8 @@ export default function StudentProfilePage() {
         toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         setIsEditDialogOpen(false);
     }).catch(async (serverError) => {
-        // Error handling is now centralized in the hook
+        const permissionError = new FirestorePermissionError({ path: studentDocRef.path, operation: 'update', requestResourceData: updatedData });
+        errorEmitter.emit('permission-error', permissionError);
     });
   };
 
@@ -412,7 +414,7 @@ export default function StudentProfilePage() {
                                                         <TableRow key={grade.id} className="bg-muted/50">
                                                             <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{isMounted ? format(new Date(grade.date), 'd MMM', { locale: fr }) : '...' }</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
-                                                            <TableCell className="py-1 text-xs text-right text-muted-foreground">{grade.grade}/20</TableCell>
+                                                            <TableCell className="py-1 text-xs text-right text-muted-foreground">{grade.grade}/20}</TableCell>
                                                         </TableRow>
                                                     ))}
                                                 </React.Fragment>
@@ -442,8 +444,8 @@ export default function StudentProfilePage() {
                                     </div>
                                 </CardContent>
                             </Card>
-                             <Card>
-                                <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /><span>Appréciations</span></CardTitle></Header>
+                            <Card>
+                                <CardHeader><CardTitle className="flex items-center gap-2"><MessageSquare className="h-5 w-5" /><span>Appréciations</span></CardTitle></CardHeader>
                                 <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucune appréciation pour le moment."}"</p></CardContent>
                             </Card>
                         </div>
@@ -637,3 +639,4 @@ export default function StudentProfilePage() {
     </>
   );
 }
+    
