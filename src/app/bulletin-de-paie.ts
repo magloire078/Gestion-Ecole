@@ -179,19 +179,16 @@ export async function getPayslipDetails(employee: Employe, payslipDate: string, 
         for (const tranche of tranches) {
             if (revenuRestant <= 0) break;
 
-            const montantTranche = Math.min(revenuRestant, tranche.limite - limitePrecedente);
-            impot += montantTranche * tranche.taux;
-            revenuRestant -= montantTranche;
+            const montantDansTranche = Math.min(tranche.limite - limitePrecedente, revenuRestant);
+            impot += montantDansTranche * tranche.taux;
+            revenuRestant -= montantDansTranche;
             limitePrecedente = tranche.limite;
         }
 
         return impot;
     };
-    let igr = 0;
-    if (Q > 0) {
-      igr = Math.round(getIGRFromTranche(Q) * parts);
-    }
-
+    
+    const igr = Math.max(0, Math.round(getIGRFromTranche(Q) * parts));
 
     
     const deductions: PayslipDeduction[] = [
