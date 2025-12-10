@@ -1,4 +1,3 @@
-
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -39,7 +38,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardList },
+  { href: '/dashboard/rh', label: 'RH / Personnel', icon: ClipboardList },
   { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send },
 ];
 
@@ -49,7 +48,7 @@ const pedagogicalLinks = [
 ];
 
 const financialLinks = [
-  { href: '/dashboard/scolarite', label: 'Scolarité', icon: Wallet },
+  { href: '/dashboard/fees', label: 'Scolarité', icon: Wallet },
   { href: '/dashboard/comptabilite', label: 'Comptabilité', icon: Landmark },
 ];
 
