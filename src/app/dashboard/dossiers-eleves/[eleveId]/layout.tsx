@@ -15,11 +15,6 @@ export default function StudentDetailLayout({
 }) {
   const router = useRouter();
 
-  // --- DEBUGGING STEP ---
-  // This log will appear on the SERVER console (your terminal)
-  console.log('--- LAYOUT PARAMS (SERVER) ---', params);
-  // ----------------------
-
   return (
     <div className="space-y-6">
       {/* This layout is now part of the new route, but the content is being moved.

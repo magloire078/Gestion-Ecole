@@ -228,12 +228,12 @@ export default function StudentProfilePage() {
                         <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /><span>Contacts des Parents</span></CardTitle>
                     </CardHeader>
                      <CardContent className="space-y-3 text-sm">
-                        <div className="font-medium">{student.parent1FirstName} ${student.parent1LastName}</div>
+                        <div className="font-medium">{student.parent1FirstName} {student.parent1LastName}</div>
                         <a href={`tel:${student.parent1Contact}`} className="text-muted-foreground hover:text-primary">{student.parent1Contact}</a>
                         {student.parent2FirstName && student.parent2LastName && (
                             <>
                                 <Separator className="my-3"/>
-                                <div className="font-medium">{student.parent2FirstName} ${student.parent2LastName}</div>
+                                <div className="font-medium">{student.parent2FirstName} {student.parent2LastName}</div>
                                 <a href={`tel:${student.parent2Contact}`} className="text-muted-foreground hover:text-primary">{student.parent2Contact}</a>
                             </>
                         )}
