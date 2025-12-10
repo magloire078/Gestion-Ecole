@@ -148,7 +148,7 @@ export default function RegistrationPage() {
             title: "Inscription réussie",
             description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
         });
-        router.push(`/dashboard/eleves`);
+        router.push(`/dashboard/dossiers-eleves`);
     }).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({ path: studentsCollectionRef.path, operation: 'create', requestResourceData: studentData });
         errorEmitter.emit('permission-error', permissionError);
