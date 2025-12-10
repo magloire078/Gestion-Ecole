@@ -716,7 +716,7 @@ export default function FeesPage() {
                       )}
                     />
                     <FormField
-                      control={feeForm.control}
+                      control={form.control}
                       name="installments"
                       render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-center gap-4">
@@ -729,7 +729,7 @@ export default function FeesPage() {
                       )}
                     />
                      <FormField
-                      control={feeForm.control}
+                      control={form.control}
                       name="details"
                       render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-start gap-4">
