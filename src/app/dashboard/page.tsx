@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
@@ -15,6 +16,7 @@ import type { libraryBook as Book, student as Student, gradeEntry as GradeEntry 
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { cn } from '@/lib/utils';
 
 type Activity = {
     id: string;
@@ -124,10 +126,10 @@ export default function DashboardPage() {
   }, [recentStudentsData, recentMessagesData]);
 
   const stats = [
-    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50' },
-    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: BookUser, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50' },
-    { title: 'Classes', value: classesData?.length ?? 0, icon: Landmark, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/50' },
-    { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, color: 'text-violet-600', bgColor: 'bg-violet-100 dark:bg-violet-900/50' }
+    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, loading: studentsLoading, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50' },
+    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: BookUser, loading: teachersLoading, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50' },
+    { title: 'Classes', value: classesData?.length ?? 0, icon: Landmark, loading: classesLoading, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/50' },
+    { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, loading: libraryLoading, color: 'text-violet-600', bgColor: 'bg-violet-100 dark:bg-violet-900/50' }
   ];
   
   const activityLoading = recentStudentsLoading || recentMessagesLoading;
@@ -135,7 +137,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
        <div className="flex items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Tableau de Bord</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tableau de Bord</h1>
       </div>
       <AnnouncementBanner />
       
