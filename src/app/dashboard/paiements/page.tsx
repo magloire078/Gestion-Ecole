@@ -131,7 +131,8 @@ export default function PaymentsPage() {
     }
 
     const amountPaid = values.paymentAmount;
-    const newAmountDue = (selectedStudent.amountDue || 0) - amountPaid;
+    // Ensure amountDue doesn't go below zero
+    const newAmountDue = Math.max(0, (selectedStudent.amountDue || 0) - amountPaid);
     const newStatus: TuitionStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
     
     const batch = writeBatch(firestore);
