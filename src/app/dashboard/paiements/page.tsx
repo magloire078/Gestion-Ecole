@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { student as Student, class_type as Class } from "@/lib/data-types";
+import type { student as Student, class_type as Class, fee as Fee } from "@/lib/data-types";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -59,12 +59,16 @@ export default function PaymentsPage() {
 
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
   
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   
   const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data(), name: `${d.data().firstName} ${d.data().lastName}` } as Student)) || [], [studentsData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+
 
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -212,13 +216,18 @@ export default function PaymentsPage() {
   };
 
 
-  const isLoading = schoolDataLoading || studentsLoading || classesLoading;
+  const isLoading = schoolDataLoading || studentsLoading || classesLoading || feesLoading;
 
 
   const formatCurrency = (value: number | string) => {
     const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9]/g, '')) : value;
     if (isNaN(num)) return value.toString();
     return `${num.toLocaleString('fr-FR')} CFA`;
+  };
+
+  const getTuitionAmountForStudent = (student: Student) => {
+    const fee = fees.find(f => f.grade === student.class);
+    return fee ? parseFloat(fee.amount) : null;
   };
 
 
@@ -282,7 +291,7 @@ export default function PaymentsPage() {
                            <TableRow key={i}>
                                <TableCell><Skeleton className="h-5 w-24"/></TableCell>
                                <TableCell><Skeleton className="h-5 w-16"/></TableCell>
-                               <TableCell className="text-center"><Skeleton className="h-6 w-16 mx-auto"/></TableCell>
+                               <TableCell className="text-center"><Skeleton className="h-6 w-24 mx-auto"/></TableCell>
                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
                                <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto"/></TableCell>
                            </TableRow>
@@ -297,10 +306,13 @@ export default function PaymentsPage() {
                             </TableCell>
                             <TableCell>{student.class}</TableCell>
                             <TableCell className="text-center">
-                                <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
+                                <TuitionStatusBadge 
+                                    status={student.tuitionStatus || 'Partiel'} 
+                                    amount={getTuitionAmountForStudent(student)}
+                                />
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                {(student.amountDue !== null && student.amountDue !== undefined) ? formatCurrency(student.amountDue) : '-'}
+                                {formatCurrency(student.amountDue)}
                             </TableCell>
                             <TableCell className="text-right">
                                 <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
