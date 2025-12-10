@@ -8,31 +8,31 @@ body {
 
 @layer base {
   :root {
-    --background: 220 20% 97%; /* gray-50 */
+    --background: 240 10% 99%;
     --foreground: 220 9% 10%;
     --card: 0 0% 100%;
     --card-foreground: 220 9% 10%;
     --popover: 0 0% 100%;
     --popover-foreground: 220 9% 10%;
-    --primary: 217 91% 60%; /* primary-blue: #3b82f6 */
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 98%;
     --secondary: 220 13% 91%;
     --secondary-foreground: 220 9% 10%;
     --muted: 220 13% 91%;
     --muted-foreground: 220 9% 45%;
-    --accent: 215 28% 95%; /* Lighter blue for accents */
-    --accent-foreground: 215 30% 30%;
-    --destructive: 349 83% 60%; /* error-red */
+    --accent: 220 13% 96%;
+    --accent-foreground: 220 9% 10%;
+    --destructive: 349 83% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 89%;
     --input: 220 13% 89%;
-    --ring: 217 91% 60%;
-    --radius: 0.75rem; /* Larger radius for modern look */
-    --chart-1: 217 91% 60%; /* primary-blue */
-    --chart-2: 154 59% 51%; /* success-green */
-    --chart-3: 39 91% 55%; /* warning-orange */
-    --chart-4: 262 79% 66%; /* primary-purple */
-    --chart-5: 349 83% 60%; /* error-red */
+    --ring: 221 83% 53%;
+    --radius: 0.75rem;
+    --chart-1: 217 91% 60%;
+    --chart-2: 154 59% 51%;
+    --chart-3: 39 91% 55%;
+    --chart-4: 262 79% 66%;
+    --chart-5: 349 83% 60%;
   }
   .dark {
     --background: 220 20% 10%;
