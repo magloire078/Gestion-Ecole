@@ -38,7 +38,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/rh', label: 'RH / Personnel', icon: ClipboardList },
+  { href: '/dashboard/hr', label: 'RH / Personnel', icon: ClipboardList },
   { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send },
 ];
 
@@ -63,7 +63,7 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
     return (
         <Link
             href={href}
-            className={cn("flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground", isActive && "text-foreground font-semibold")}
+            className={cn("flex items-center gap-4 px-2.5 text-gray-300 hover:text-white", isActive && "text-white font-semibold")}
         >
             <Icon className="h-5 w-5" />
             {label}
@@ -79,6 +79,7 @@ export function MobileNav() {
 
   const getDefaultOpenValues = () => {
     const openValues = [];
+    if (pathname === '/dashboard') return [];
     if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
     if (isLinkActive(administrationLinks)) openValues.push('administration');
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
@@ -89,13 +90,13 @@ export function MobileNav() {
 
   return (
     <div className='flex flex-col h-full'>
-        <div className="flex h-[60px] items-center p-6 border-b">
+        <div className="flex h-[60px] items-center p-6 border-b border-gray-700">
             <Logo />
         </div>
-        <nav className="grid gap-2 text-lg font-medium p-6 flex-1 overflow-y-auto">
+        <nav className="grid gap-2 text-lg font-medium p-4 flex-1 overflow-y-auto">
             <Link
                 href="/dashboard"
-                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary font-semibold", pathname === '/dashboard' && "text-primary bg-muted")}
+                className={cn("flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:text-white font-semibold", pathname === '/dashboard' && "text-white bg-gray-700/80")}
             >
                 <LayoutDashboard className="h-5 w-5" />
                 Tableau de Bord
@@ -103,7 +104,7 @@ export function MobileNav() {
 
              <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
                 <AccordionItem value="my-school" className="border-b-0">
-                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-white text-lg font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400">
                        <div className='flex items-center gap-3'><School className="h-5 w-5" />Mon École</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
@@ -112,7 +113,7 @@ export function MobileNav() {
                 </AccordionItem>
 
                 <AccordionItem value="administration" className="border-b-0">
-                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-white text-lg font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400">
                        <div className='flex items-center gap-3'><Briefcase className="h-5 w-5" />Administration</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
@@ -121,7 +122,7 @@ export function MobileNav() {
                 </AccordionItem>
              
                 <AccordionItem value="pedagogy" className="border-b-0">
-                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-white text-lg font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400">
                         <div className='flex items-center gap-3'><GraduationCap className="h-5 w-5" />Pédagogie</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
@@ -130,7 +131,7 @@ export function MobileNav() {
                 </AccordionItem>
                 
                 <AccordionItem value="finance" className="border-b-0">
-                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-white text-lg font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400">
                         <div className='flex items-center gap-3'><Wallet className="h-5 w-5" />Finance</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
@@ -139,7 +140,7 @@ export function MobileNav() {
                 </AccordionItem>
 
                 <AccordionItem value="configuration" className="border-b-0">
-                    <AccordionTrigger className="py-2 hover:no-underline hover:text-foreground text-lg font-semibold text-muted-foreground [&[data-state=open]>svg]:text-foreground">
+                    <AccordionTrigger className="py-2 hover:no-underline hover:text-white text-lg font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400">
                         <div className='flex items-center gap-3'><FolderCog className="h-5 w-5" />Configuration</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-6 pt-2 space-y-4">
