@@ -3,21 +3,20 @@
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare } from 'lucide-react';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, collectionGroup,getCountFromServer } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, collectionGroup,getCountFromServer, where, sum } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { libraryBook as Book, student as Student, gradeEntry as GradeEntry, message as Message } from '@/lib/data-types';
+import type { libraryBook as Book, student as Student, gradeEntry as GradeEntry, message as Message, accountingTransaction as Transaction } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { TrendingUp } from 'lucide-react';
 
 type Activity = {
     id: string;
@@ -39,6 +38,8 @@ export default function DashboardPage() {
       teachers: 0,
       classes: 0,
       books: 0,
+      tuitionPaid: 0,
+      tuitionDue: 0,
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -68,21 +69,28 @@ export default function DashboardPage() {
             const teachersCol = collection(firestore, `ecoles/${schoolId}/enseignants`);
             const classesCol = collection(firestore, `ecoles/${schoolId}/classes`);
             const libraryCol = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
+            const accountingCol = collection(firestore, `ecoles/${schoolId}/comptabilite`);
             
-            const [studentsSnapshot, teachersSnapshot, classesSnapshot, librarySnapshot] = await Promise.all([
+            const [studentsSnapshot, teachersSnapshot, classesSnapshot, librarySnapshot, tuitionPaidSnapshot, tuitionDueSnapshot] = await Promise.all([
                 getCountFromServer(studentsCol),
                 getCountFromServer(teachersCol),
                 getCountFromServer(classesCol),
-                getDocs(libraryCol)
+                getDocs(libraryCol),
+                getDocs(query(accountingCol, where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'))),
+                getDocs(query(studentsCol, where('amountDue', '>', 0))),
             ]);
 
             const totalBooks = librarySnapshot.docs.reduce((sum, doc) => sum + (doc.data().quantity || 0), 0);
+            const totalTuitionPaid = tuitionPaidSnapshot.docs.reduce((sum, doc) => sum + doc.data().amount, 0);
+            const totalTuitionDue = tuitionDueSnapshot.docs.reduce((sum, doc) => sum + doc.data().amountDue, 0);
 
             setStats({
                 students: studentsSnapshot.data().count,
                 teachers: teachersSnapshot.data().count,
                 classes: classesSnapshot.data().count,
                 books: totalBooks,
+                tuitionPaid: totalTuitionPaid,
+                tuitionDue: totalTuitionDue,
             });
 
         } catch (error) {
@@ -166,6 +174,15 @@ export default function DashboardPage() {
 
   }, [schoolId, firestore, schoolLoading]);
 
+  const formatCurrency = (value: number) => {
+    if (value > 1000000) {
+        return `${(value / 1000000).toFixed(1)}M CFA`;
+    }
+    if (value > 1000) {
+        return `${Math.round(value / 1000)}K CFA`;
+    }
+    return `${value} CFA`;
+  }
 
   const statsCards = [
     { title: 'Élèves', value: stats.students, icon: Users, loading: statsLoading, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50', href: '/dashboard/dossiers-eleves' },
@@ -254,6 +271,32 @@ export default function DashboardPage() {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
+             <Card>
+                <CardHeader>
+                    <CardTitle>Finances Scolarité</CardTitle>
+                    <CardDescription>Vue d'ensemble des frais de scolarité.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg">
+                        <div className="p-3 rounded-full bg-emerald-100 dark:bg-emerald-800/50 mr-4">
+                            <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-300" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-emerald-800 dark:text-emerald-400">Total Versé</p>
+                            {statsLoading ? <Skeleton className="h-6 w-24" /> : <p className="text-xl font-bold text-emerald-700 dark:text-emerald-200">{formatCurrency(stats.tuitionPaid)}</p>}
+                        </div>
+                    </div>
+                    <div className="flex items-center p-4 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
+                         <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-800/50 mr-4">
+                            <TrendingDown className="h-6 w-6 text-amber-600 dark:text-amber-300" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-amber-800 dark:text-amber-400">Total Dû</p>
+                            {statsLoading ? <Skeleton className="h-6 w-24" /> : <p className="text-xl font-bold text-amber-700 dark:text-amber-200">{formatCurrency(stats.tuitionDue)}</p>}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
              <Card>
                 <CardHeader>
                     <CardTitle>Actions Rapides</CardTitle>

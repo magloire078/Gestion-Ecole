@@ -23,8 +23,9 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Pencil } from "lucide-react";
+import { Pencil, MessageSquare, Bot } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, doc, writeBatch } from "firebase/firestore";
@@ -38,6 +39,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { generatePaymentReminder } from '@/ai/flows/generate-payment-reminder';
 
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
@@ -78,6 +80,10 @@ export default function PaymentsPage() {
   const [isReceiptDialogOpen, setIsReceiptDialogOpen] = useState(false);
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
   
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
+  
   const { toast } = useToast();
 
     const paymentForm = useForm<PaymentFormValues>({
@@ -116,10 +122,7 @@ export default function PaymentsPage() {
   }, [students, selectedClass, selectedStatus]);
 
   const totalDue = useMemo(() => {
-    return filteredStudents.reduce((acc, student) => {
-        const due = student.amountDue || 0;
-        return acc + (due > 0 ? due : 0);
-    }, 0);
+    return filteredStudents.reduce((acc, student) => acc + (student.amountDue || 0), 0);
   }, [filteredStudents]);
   
   const handleOpenManageDialog = (student: Student) => {
@@ -138,13 +141,11 @@ export default function PaymentsPage() {
     }
 
     const amountPaid = values.paymentAmount;
-    // Ensure amountDue doesn't go below zero
     const newAmountDue = Math.max(0, (selectedStudent.amountDue || 0) - amountPaid);
     const newStatus: TuitionStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
     
     const batch = writeBatch(firestore);
 
-    // 1. Update student's tuition info
     const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}`);
     const studentUpdateData = {
       amountDue: newAmountDue,
@@ -152,7 +153,6 @@ export default function PaymentsPage() {
     };
     batch.update(studentRef, studentUpdateData);
 
-    // 2. Create accounting transaction
     const accountingColRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
     const newTransactionRef = doc(accountingColRef);
     const accountingData = {
@@ -164,7 +164,6 @@ export default function PaymentsPage() {
     };
     batch.set(newTransactionRef, accountingData);
     
-    // 3. Create payment history entry
     const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}/paiements`));
     const paymentHistoryData = {
         date: values.paymentDate,
@@ -186,7 +185,6 @@ export default function PaymentsPage() {
             description: `Le paiement de ${amountPaid.toLocaleString('fr-FR')} CFA pour ${selectedStudent.firstName} ${selectedStudent.lastName} a été enregistré.`
         });
         
-        // Prepare and show receipt
         setReceiptData({
             schoolName: schoolName || 'Votre École',
             studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
@@ -213,6 +211,38 @@ export default function PaymentsPage() {
         });
         errorEmitter.emit('permission-error', permissionError);
     }
+  };
+
+  const handleOpenReminderDialog = async (student: Student) => {
+    setSelectedStudent(student);
+    setIsReminderOpen(true);
+    setIsGeneratingReminder(true);
+    setReminderMessage('');
+    try {
+        const result = await generatePaymentReminder({
+            studentName: `${student.firstName} ${student.lastName}`,
+            parentName: `${student.parent1FirstName} ${student.parent1LastName}`,
+            amountDue: student.amountDue || 0,
+        });
+        setReminderMessage(result.reminderMessage);
+    } catch (error) {
+        console.error("Failed to generate reminder:", error);
+        setReminderMessage("Bonjour [Nom du Parent],\n\nCeci est un rappel amical concernant le solde de la scolarité de [Nom de l'Élève] qui s'élève à [Montant Dû] CFA. Nous vous remercions de bien vouloir procéder au règlement.\n\nCordialement,\nLa direction");
+        toast({ variant: "destructive", title: "Erreur IA", description: "Impossible de générer le message. Un modèle par défaut est utilisé." });
+    } finally {
+        setIsGeneratingReminder(false);
+    }
+  };
+
+  const handleSendReminder = () => {
+    if (!selectedStudent) return;
+    toast({
+        title: "Rappel envoyé (Simulation)",
+        description: `Un message de rappel a été envoyé aux parents de ${selectedStudent.firstName} ${selectedStudent.lastName}.`,
+    });
+    setIsReminderOpen(false);
+    setReminderMessage('');
+    setSelectedStudent(null);
   };
 
 
@@ -315,9 +345,16 @@ export default function PaymentsPage() {
                                 {formatCurrency(student.amountDue || 0)}
                             </TableCell>
                             <TableCell className="text-right">
+                               <div className="flex justify-end gap-2">
+                                {(student.amountDue || 0) > 0 && (
+                                    <Button variant="outline" size="sm" onClick={() => handleOpenReminderDialog(student)}>
+                                        <MessageSquare className="mr-2 h-3 w-3" /> Rappel
+                                    </Button>
+                                )}
                                 <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
                                 <Pencil className="mr-2 h-3 w-3" /> Gérer
                                 </Button>
+                               </div>
                             </TableCell>
                         </TableRow>
                         ))
@@ -473,6 +510,40 @@ export default function PaymentsPage() {
             <DialogDescription>Aperçu du reçu. Vous pouvez l'imprimer.</DialogDescription>
           </DialogHeader>
           {receiptData && <TuitionReceipt receiptData={receiptData} />}
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Reminder Dialog --- */}
+      <Dialog open={isReminderOpen} onOpenChange={setIsReminderOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Envoyer un rappel de paiement</DialogTitle>
+                <DialogDescription>
+                    Message de rappel pour <strong>{selectedStudent?.parent1FirstName} {selectedStudent?.parent1LastName}</strong>, parent de {selectedStudent?.firstName} {selectedStudent?.lastName}.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+                <Label htmlFor="reminder-message">Message</Label>
+                {isGeneratingReminder ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Bot className="h-4 w-4 animate-spin" />
+                        <span>Génération du message par l'IA...</span>
+                    </div>
+                ) : (
+                    <Textarea
+                        id="reminder-message"
+                        value={reminderMessage}
+                        onChange={(e) => setReminderMessage(e.target.value)}
+                        rows={6}
+                    />
+                )}
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsReminderOpen(false)}>Annuler</Button>
+                <Button onClick={handleSendReminder} disabled={isGeneratingReminder}>
+                    {isGeneratingReminder ? 'Veuillez patienter' : 'Envoyer le rappel'}
+                </Button>
+            </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
