@@ -114,14 +114,17 @@ export type student = {
     parent1FirstName: string;
     parent1LastName: string;
     parent1Contact: string;
-    tuitionStatus: "Soldé" | "En retard" | "Partiel";
+    tuitionFee: number;
     amountDue: number;
+    tuitionStatus: "Soldé" | "En retard" | "Partiel";
     photoUrl?: string;
     address?: string;
     parent2FirstName?: string;
     parent2LastName?: string;
     parent2Contact?: string;
     previousSchool?: string;
+    discountAmount?: number;
+    discountReason?: string;
     feedback?: string;
     createdAt?: { seconds: number, nanoseconds: number };
     name?: string;
@@ -201,3 +204,5 @@ export type absence = {
     reason?: string;
     recordedBy: string;
 };
+
+    

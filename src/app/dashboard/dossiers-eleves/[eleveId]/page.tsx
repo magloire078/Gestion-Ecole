@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil } from 'lucide-react';
+import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Percent, Sparkles, Tag } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -74,6 +75,11 @@ interface PaymentHistoryEntry extends Payment {
     id: string;
 }
 
+const formatCurrency = (value: number | undefined) => {
+    if (value === undefined) return 'N/A';
+    return `${value.toLocaleString('fr-FR')} CFA`;
+};
+
 
 export default function StudentProfilePage() {
   const isMounted = useHydrationFix();
@@ -101,17 +107,14 @@ export default function StudentProfilePage() {
   const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
   const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
   
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   
   const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
   const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
-  const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
 
   const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
@@ -122,13 +125,7 @@ export default function StudentProfilePage() {
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || classesLoading || feesLoading;
-
-  const getTuitionAmountForStudent = (student: Student) => {
-    const fee = fees.find(f => f.grade === student.class);
-    return fee ? parseFloat(fee.amount) : null;
-  };
-
+  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || classesLoading;
 
   if (!eleveId) {
     return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
@@ -328,19 +325,44 @@ export default function StudentProfilePage() {
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Card>
                                 <CardHeader><CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /><span>Scolarité</span></CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="flex justify-between items-center text-lg">
-                                    <span className="text-muted-foreground">Statut</span>
-                                    <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} amount={getTuitionAmountForStudent(student)}/>
+                                <CardContent className="space-y-3 text-sm">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground">Frais de scolarité:</span>
+                                        <span className="font-semibold">{formatCurrency(student.tuitionFee)}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground">Remise:</span>
+                                        <span className="font-semibold text-emerald-600">{`-${formatCurrency(student.discountAmount)}`}</span>
+                                    </div>
+                                    <Separator />
+                                     <div className="flex justify-between items-center font-bold">
+                                        <span>Total à payer:</span>
+                                        <span>{formatCurrency((student.tuitionFee || 0) - (student.discountAmount || 0))}</span>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground">Statut:</span>
+                                        <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} amount={student.tuitionFee}/>
                                     </div>
                                     <div className="flex justify-between items-center text-lg">
-                                    <span className="text-muted-foreground">Solde dû</span>
-                                    <span className="font-bold text-primary">{formatCurrency(student.amountDue ?? 0)}</span>
+                                        <span className="font-bold">Solde dû:</span>
+                                        <span className="font-bold text-primary">{formatCurrency(student.amountDue)}</span>
                                     </div>
+                                     {(student.discountAmount ?? 0) > 0 && (
+                                        <Card className="bg-muted/50 p-3 text-xs">
+                                            <CardDescription className="flex items-start gap-2">
+                                                <Tag className="h-4 w-4 mt-0.5 shrink-0" />
+                                                <div>
+                                                    <strong>Motif de la remise:</strong>
+                                                    <p>{student.discountReason || 'Non spécifié'}</p>
+                                                </div>
+                                            </CardDescription>
+                                        </Card>
+                                    )}
                                 </CardContent>
                             </Card>
                              <Card>
-                                <CardHeader><CardTitle>Appréciations</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-amber-500" /><span>Appréciations</span></CardTitle></CardHeader>
                                 <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucune appréciation pour le moment."}"</p></CardContent>
                             </Card>
                         </div>
@@ -456,3 +478,5 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
+    

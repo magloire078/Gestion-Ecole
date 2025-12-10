@@ -20,7 +20,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { schoolClasses } from '@/lib/data';
-import type { class_type as Class } from '@/lib/data-types';
+import type { class_type as Class, fee as Fee } from '@/lib/data-types';
 
 const registrationSchema = z.object({
   // Step 1
@@ -64,6 +64,10 @@ export default function RegistrationPage() {
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
+  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
+  const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
 
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -114,6 +118,10 @@ export default function RegistrationPage() {
     const selectedClassInfo = classes.find(c => c.id === values.classId);
     const schoolClassInfo = schoolClasses.find(sc => sc.name === selectedClassInfo?.name);
     const studentCycle = schoolClassInfo?.cycle || selectedClassInfo?.cycle || 'N/A';
+    
+    const feeInfo = fees.find(f => f.grade === selectedClassInfo?.name);
+    const tuitionFee = feeInfo ? parseFloat(feeInfo.amount) : 0;
+
 
     const studentData = {
       matricule: values.matricule,
@@ -135,8 +143,11 @@ export default function RegistrationPage() {
       parent2LastName: values.parent2LastName,
       parent2FirstName: values.parent2FirstName,
       parent2Contact: values.parent2Contact,
-      amountDue: 0, 
-      tuitionStatus: 'Partiel' as const,
+      tuitionFee: tuitionFee,
+      discountAmount: 0,
+      discountReason: '',
+      amountDue: tuitionFee, 
+      tuitionStatus: tuitionFee > 0 ? 'Partiel' : 'Soldé' as const,
       feedback: '',
       createdAt: serverTimestamp(),
     };
@@ -155,7 +166,7 @@ export default function RegistrationPage() {
     })
   };
 
-  if (schoolDataLoading) {
+  if (schoolDataLoading || feesLoading) {
     return <div>Chargement...</div>;
   }
   
@@ -251,3 +262,5 @@ export default function RegistrationPage() {
     </div>
   );
 }
+
+    

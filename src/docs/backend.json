@@ -161,12 +161,15 @@
             "parent2LastName": { "type": "string", "description": "Le nom de famille du deuxième parent/tuteur (optionnel)." },
             "parent2Contact": { "type": "string", "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)." },
             "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
-            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
+            "tuitionFee": { "type": "number", "description": "Le montant total de la scolarité pour la classe de l'élève." },
+            "discountAmount": { "type": "number", "description": "Le montant de la remise ou de la bourse accordée." },
+            "discountReason": { "type": "string", "description": "La raison de la remise." },
             "amountDue": { "type": "number", "description": "Le montant restant à payer." },
+            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
-        "required": ["firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact"]
+        "required": ["firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
     },
     "gradeEntry": {
         "title": "Note",
@@ -263,6 +266,22 @@
             }
         },
         "required": ["title", "content", "senderId", "senderName", "createdAt", "recipients"]
+    },
+    "absence": {
+        "title": "Absence",
+        "description": "Une absence enregistrée pour un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string", "description": "L'identifiant de l'élève absent." },
+            "studentName": { "type": "string", "description": "Le nom complet de l'élève." },
+            "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
+            "date": { "type": "string", "format": "date", "description": "La date de l'absence." },
+            "type": { "type": "string", "enum": ["Journée entière", "Matin", "Après-midi"], "description": "Le type d'absence." },
+            "justified": { "type": "boolean", "description": "Indique si l'absence est justifiée." },
+            "reason": { "type": "string", "description": "Le motif de l'absence (si justifiée)." },
+            "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." }
+        },
+        "required": ["studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
     }
   },
   "auth": {
@@ -313,6 +332,10 @@
         "schema": { "$ref": "#/entities/payment" },
         "description": "Stocke l'historique des paiements de scolarité pour un élève."
     },
+    "/ecoles/{schoolId}/absences/{absenceId}": {
+        "schema": { "$ref": "#/entities/absence" },
+        "description": "Stocke l'historique des absences pour une école."
+    },
     "/ecoles/{schoolId}/comptabilite/{transactionId}": {
         "schema": { "$ref": "#/entities/accountingTransaction" },
         "description": "Stocke les transactions comptables pour une école."
@@ -331,3 +354,5 @@
     }
   }
 }
+
+    

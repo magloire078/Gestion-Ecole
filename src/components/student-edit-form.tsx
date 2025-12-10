@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -24,6 +25,9 @@ const studentSchema = z.object({
   lastName: z.string().min(1, { message: "Le nom est requis." }),
   classId: z.string().min(1, { message: "La classe est requise." }),
   dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
+  tuitionFee: z.coerce.number().min(0, "Les frais de scolarité doivent être positifs."),
+  discountAmount: z.coerce.number().min(0, "La remise doit être un nombre positif."),
+  discountReason: z.string().optional(),
   amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
   tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
   status: z.enum(['Actif', 'En attente', 'Radié']),
@@ -48,47 +52,48 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      classId: '',
-      dateOfBirth: '',
-      amountDue: 0,
-      tuitionStatus: 'Partiel',
-      status: 'Actif',
-      feedback: '',
+      firstName: student.firstName || '',
+      lastName: student.lastName || '',
+      classId: student.classId || '',
+      dateOfBirth: student.dateOfBirth || '',
+      tuitionFee: student.tuitionFee || 0,
+      discountAmount: student.discountAmount || 0,
+      discountReason: student.discountReason || '',
+      amountDue: student.amountDue || 0,
+      tuitionStatus: student.tuitionStatus || 'Partiel',
+      status: student.status || 'Actif',
+      feedback: student.feedback || '',
     },
   });
+  
+  const watchedTuitionFee = useWatch({ control: form.control, name: 'tuitionFee' });
+  const watchedDiscountAmount = useWatch({ control: form.control, name: 'discountAmount' });
 
   useEffect(() => {
-    if (student) {
-      form.reset({
-        firstName: student.firstName,
-        lastName: student.lastName,
-        classId: student.classId,
-        dateOfBirth: student.dateOfBirth,
-        amountDue: student.amountDue,
-        tuitionStatus: student.tuitionStatus,
-        status: student.status || 'Actif',
-        feedback: student.feedback || '',
-      });
-    }
-  }, [student, form]);
+    const netAmount = (watchedTuitionFee || 0) - (watchedDiscountAmount || 0);
+    form.setValue('amountDue', Math.max(0, netAmount));
+  }, [watchedTuitionFee, watchedDiscountAmount, form]);
+
 
   const handleEditStudent = (values: StudentFormValues) => {
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
     const selectedClassInfo = classes.find(c => c.id === values.classId);
 
     const updatedData = {
-      firstName: values.firstName,
-      lastName: values.lastName,
-      classId: values.classId,
-      class: selectedClassInfo?.name || student.class,
-      cycle: selectedClassInfo?.cycle || student.cycle,
-      dateOfBirth: values.dateOfBirth,
-      amountDue: values.amountDue,
-      tuitionStatus: values.tuitionStatus,
-      status: values.status,
-      feedback: values.feedback || '',
+        ...student, // Start with existing student data to not lose fields not in the form
+        firstName: values.firstName,
+        lastName: values.lastName,
+        classId: values.classId,
+        class: selectedClassInfo?.name || student.class,
+        cycle: selectedClassInfo?.cycle || student.cycle,
+        dateOfBirth: values.dateOfBirth,
+        tuitionFee: values.tuitionFee,
+        discountAmount: values.discountAmount,
+        discountReason: values.discountReason,
+        amountDue: values.amountDue,
+        tuitionStatus: values.tuitionStatus,
+        status: values.status,
+        feedback: values.feedback || '',
     };
 
     setDoc(studentDocRef, updatedData, { merge: true })
@@ -157,17 +162,28 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
           )}
         />
         <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut Élève</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif</SelectItem><SelectItem value="En attente">En attente</SelectItem><SelectItem value="Radié">Radié</SelectItem></SelectContent></Select></FormItem>)} />
-        <FormField control={form.control} name="amountDue" render={({ field }) => (<FormItem><FormLabel>Solde (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField
-          control={form.control}
-          name="tuitionStatus"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Statut Paiement</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Soldé">Soldé</SelectItem><SelectItem value="En retard">En retard</SelectItem><SelectItem value="Partiel">Partiel</SelectItem></SelectContent></Select>
-            </FormItem>
-          )}
-        />
+        
+        <div className="p-4 border rounded-lg space-y-4 mt-4">
+            <h4 className="font-medium text-sm">Gestion de la Scolarité</h4>
+            <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField
+                control={form.control}
+                name="amountDue"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Solde dû (calculé)</FormLabel>
+                        <FormControl>
+                            <Input type="number" {...field} readOnly className="bg-muted" />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+            <FormField control={form.control} name="tuitionStatus" render={({ field }) => (<FormItem><FormLabel>Statut Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Soldé">Soldé</SelectItem><SelectItem value="En retard">En retard</SelectItem><SelectItem value="Partiel">Partiel</SelectItem></SelectContent></Select></FormItem>)} />
+        </div>
+
         <FormField
           control={form.control}
           name="feedback"
@@ -202,3 +218,5 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
     </Form>
   );
 }
+
+    
