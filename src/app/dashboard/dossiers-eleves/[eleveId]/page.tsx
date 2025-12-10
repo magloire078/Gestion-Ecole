@@ -21,7 +21,7 @@ import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment } from '@/lib/data-types';
+import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment, fee as Fee } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
@@ -101,14 +101,17 @@ export default function StudentProfilePage() {
   const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
   const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
   
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   
   const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
   const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
 
   const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
@@ -119,7 +122,12 @@ export default function StudentProfilePage() {
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || classesLoading;
+  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || classesLoading || feesLoading;
+
+  const getTuitionAmountForStudent = (student: Student) => {
+    const fee = fees.find(f => f.grade === student.class);
+    return fee ? parseFloat(fee.amount) : null;
+  };
 
 
   if (!eleveId) {
@@ -323,11 +331,11 @@ export default function StudentProfilePage() {
                                 <CardContent className="space-y-4">
                                     <div className="flex justify-between items-center text-lg">
                                     <span className="text-muted-foreground">Statut</span>
-                                    <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} />
+                                    <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} amount={getTuitionAmountForStudent(student)}/>
                                     </div>
                                     <div className="flex justify-between items-center text-lg">
                                     <span className="text-muted-foreground">Solde dû</span>
-                                    <span className="font-bold text-primary">{(student.amountDue ?? 0) > 0 ? `${(student.amountDue ?? 0).toLocaleString('fr-FR')} CFA` : '-'}</span>
+                                    <span className="font-bold text-primary">{formatCurrency(student.amountDue ?? 0)}</span>
                                     </div>
                                 </CardContent>
                             </Card>
