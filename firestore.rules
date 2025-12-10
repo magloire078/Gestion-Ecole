@@ -104,15 +104,15 @@ service cloud.firestore {
             }
             
             match /paiements/{paymentId} {
-                // Only authorized staff (admin, director, accountant...) can create/read payments.
-                allow read, list, create: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel';
+                // Authorized staff (admin, director, personnel, teacher) can create/read payments.
+                allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
                 allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
             }
         }
         
         match /comptabilite/{transactionId} {
-             // Only authorized staff (admin, director, accountant...) can manage accounting.
-            allow read, list, create: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel';
+             // Authorized staff (admin, director, personnel, teacher) can manage accounting.
+            allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
             allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
         }
 
@@ -144,5 +144,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
