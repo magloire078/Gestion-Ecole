@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -45,9 +44,9 @@ export function PerformanceChart({ grades, loading }: PerformanceChartProps) {
 
 
   return (
-    <Card className="col-span-1 lg:col-span-4">
+    <Card className="shadow-sm border-border/50">
       <CardHeader>
-        <CardTitle>Aperçu des performances</CardTitle>
+        <CardTitle>Performance des Classes</CardTitle>
         <CardDescription>Moyenne générale par matière pour l'ensemble de l'école.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -60,7 +59,7 @@ export function PerformanceChart({ grades, loading }: PerformanceChartProps) {
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={performanceData}>
                         <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="subject" />
+                        <XAxis dataKey="subject" tick={{fontSize: 12}} />
                         <YAxis domain={[0, 20]} />
                         <Tooltip 
                             contentStyle={{
@@ -69,7 +68,6 @@ export function PerformanceChart({ grades, loading }: PerformanceChartProps) {
                                 borderRadius: "var(--radius)",
                             }}
                         />
-                        <Legend />
                         <Bar dataKey="Moyenne" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ResponsiveContainer>
