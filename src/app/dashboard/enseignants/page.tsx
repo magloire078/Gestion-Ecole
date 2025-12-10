@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -9,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, MoreHorizontal, Mail, BookUser, Phone } from "lucide-react";
 import { 
   DropdownMenu, 
@@ -242,73 +244,70 @@ export default function TeachersPage() {
             </Button>
         </div>
         
-        <div className="border rounded-lg w-full">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Matière</TableHead>
-                <TableHead>Classe Principale</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(5)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full" /><div className="space-y-1"><Skeleton className="h-4 w-32"/><Skeleton className="h-3 w-24"/></div></div></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-28" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : teachers.length > 0 ? (
-                teachers.map((teacher) => {
-                  const fullName = `${teacher.firstName} ${teacher.lastName}`;
-                  const fallback = `${teacher.firstName?.[0] || ''}${teacher.lastName?.[0] || ''}`.toUpperCase();
-                  return (
-                    <TableRow key={teacher.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100`} alt={fullName} data-ai-hint="person face" />
-                            <AvatarFallback>{fallback}</AvatarFallback>
+        {isLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-44 w-full" />)}
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {teachers.map((teacher) => {
+              const fullName = `${teacher.firstName} ${teacher.lastName}`;
+              const fallback = `${teacher.firstName?.[0] || ''}${teacher.lastName?.[0] || ''}`.toUpperCase();
+              return (
+                <Card key={teacher.id} className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                              <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/100`} alt={fullName} data-ai-hint="person face" />
+                              <AvatarFallback>{fallback}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <Link href={`/dashboard/enseignants/${teacher.id}`} className="font-medium hover:underline">{fullName}</Link>
-                            <div className="text-xs text-muted-foreground">{teacher.email}</div>
+                              <Link href={`/dashboard/enseignants/${teacher.id}`} className="hover:underline">
+                                  <CardTitle>{fullName}</CardTitle>
+                              </Link>
+                              <CardDescription>{teacher.subject}</CardDescription>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{teacher.subject}</TableCell>
-                      <TableCell>{getClassName(teacher.classId)}</TableCell>
-                      <TableCell>{teacher.phone || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
+                      </div>
+                       <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="shrink-0">
+                          <Button variant="ghost" size="icon" className="shrink-0">
                               <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                          </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenFormDialog(teacher)}>Modifier</DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(teacher)}>Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">Aucun enseignant trouvé.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
+                     <div className="flex items-center">
+                          <Mail className="mr-2 h-4 w-4" />
+                          <a href={`mailto:${teacher.email}`} className="truncate hover:underline">{teacher.email}</a>
+                     </div>
+                      {teacher.phone && (
+                          <div className="flex items-center">
+                              <Phone className="mr-2 h-4 w-4" />
+                              <a href={`tel:${teacher.phone}`} className="truncate hover:underline">{teacher.phone}</a>
+                          </div>
+                      )}
+                     <div className="flex items-center">
+                          <BookUser className="mr-2 h-4 w-4" />
+                          <span>Classe principale: <strong>{getClassName(teacher.classId)}</strong></span>
+                     </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+        { !isLoading && teachers.length === 0 && (
+             <Card className="flex items-center justify-center h-48">
+                <p className="text-muted-foreground">Aucun enseignant trouvé.</p>
+            </Card>
+        )}
       </div>
       
        <Dialog open={isFormOpen} onOpenChange={(isOpen) => { setIsFormOpen(isOpen); if (!isOpen) setEditingTeacher(null); }}>
