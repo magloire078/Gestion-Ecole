@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -91,7 +92,7 @@ export default function PaymentsPage() {
   useEffect(() => {
     if (selectedStudent && isManageFeeDialogOpen) {
         paymentForm.reset({
-            paymentAmount: undefined,
+            paymentAmount: 0,
             paymentDescription: `Scolarité - ${selectedStudent.firstName} ${selectedStudent.lastName}`,
             paymentDate: format(new Date(), 'yyyy-MM-dd'),
             payerFirstName: selectedStudent.parent1FirstName || '',
