@@ -34,7 +34,7 @@ export function useCollection<T>(query: Query<T> | null) {
     const unsubscribe = onSnapshot(query, (snapshot) => {
       setData(snapshot.docs);
       setLoading(false);
-    }, async (error) => {
+    }, async (serverError) => {
         const permissionError = new FirestorePermissionError({
             path: (query as any)._query.path.segments.join('/'),
             operation: 'list',
@@ -71,5 +71,3 @@ export function useCollection<T>(query: Query<T> | null) {
 
   return {data, loading, add };
 }
-
-    
