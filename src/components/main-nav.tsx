@@ -18,7 +18,8 @@ import {
     Send,
     Wallet,
     Landmark,
-    FileText
+    FileText,
+    UserX
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -48,6 +49,7 @@ const administrationLinks = [
 
 const pedagogicalLinks = [
     { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText },
+    { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX },
     { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen },
 ];
 

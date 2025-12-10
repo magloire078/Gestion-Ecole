@@ -190,3 +190,14 @@ export type message = {
         classes?: string[];
     };
 };
+
+export type absence = {
+    studentId: string;
+    studentName: string;
+    classId: string;
+    date: string;
+    type: "Journée entière" | "Matin" | "Après-midi";
+    justified: boolean;
+    reason?: string;
+    recordedBy: string;
+};

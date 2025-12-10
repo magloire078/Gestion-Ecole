@@ -18,7 +18,6 @@ service cloud.firestore {
     }
     
     function isUserAdmin(schoolId, userId) {
-        // Un admin est défini par son rôle DANS le document utilisateur de son école.
         return isUserInSchool(schoolId) && getUserRoleFromSchool(schoolId, userId) == 'admin';
     }
 
@@ -36,7 +35,7 @@ service cloud.firestore {
     
     // --- Incoming Data Validation ---
     function isNotChangingRole(request, resource) {
-        // Un utilisateur ne peut pas changer son propre rôle.
+        // A user cannot change their own role.
         return request.resource.data.role == resource.data.role;
     }
 
@@ -47,17 +46,16 @@ service cloud.firestore {
       allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
       allow get: if isUserAuthenticated() && (isCreatingOwnDocument(userId) || isUserAdmin(getUserSchoolId(request.auth.uid), request.auth.uid));
       allow list: if isUserAdmin(getUserSchoolId(request.auth.uid), request.auth.uid);
-      allow update: if isUserAdmin(getUserSchoolId(request.auth.uid), request.auth.uid); // Seuls les admins peuvent changer le rôle/schoolId d'un utilisateur ici.
-      allow delete: if false;
+      allow update, delete: if isUserAdmin(getUserSchoolId(request.auth.uid), request.auth.uid);
     }
     
     match /ecoles/{schoolId} {
         allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
         allow get: if isUserInSchool(schoolId);
         allow list: if isUserAuthenticated();
-        // Le directeur de l'école ou un admin peut mettre à jour les infos de l'école.
+        // The school director or an admin can update the school's information.
         allow update: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
-        allow delete: if isUserAdmin(schoolId, request.auth.uid); // Seul un admin peut supprimer une école.
+        allow delete: if isUserAdmin(schoolId, request.auth.uid); // Only an admin can delete a school.
         
         // --- Collection Group Queries ---
         match /{path=**}/eleves/{studentId} {
@@ -67,47 +65,55 @@ service cloud.firestore {
         // --- Subcollections with Specific Rules ---
 
         match /utilisateurs/{userId} {
-            // Un utilisateur peut créer son propre profil dans une école (onboarding)
-            // Un directeur ou admin peut créer des utilisateurs.
+            // A user can create their own profile in a school (onboarding)
+            // A director or admin can create users.
             allow create: if isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
             
-            // Un directeur ou admin peut modifier n'importe quel profil.
-            // Un utilisateur peut modifier son propre profil, mais PAS son rôle.
+            // A director or admin can modify any profile.
+            // A user can modify their own profile, but NOT their role.
             allow update: if (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid)) || (isCreatingOwnDocument(userId) && isNotChangingRole(request, resource));
 
-            // Tout utilisateur de l'école peut lire la liste des utilisateurs pour certaines fonctionnalités (ex: messagerie)
-            // Mais la lecture sensible doit être contrôlée côté client.
-            allow read, list: if isUserInSchool(schoolId);
+            // Reading user list is restricted to admins and directors for privacy.
+            allow get, list: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
 
-            // Seul un directeur ou un admin peut supprimer un utilisateur de l'école.
+            // Only a director or admin can remove a user from the school.
             allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
         }
 
         match /enseignants/{teacherId} {
             allow read, list: if isUserInSchool(schoolId);
-            // Seuls directeurs et admins peuvent gérer les enseignants.
+            // Only directors and admins can manage teachers.
             allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
         }
 
         match /eleves/{studentId} {
             allow read, list: if isUserInSchool(schoolId);
-            // Seuls directeurs et admins peuvent créer, modifier ou supprimer des élèves.
+            // Only directors and admins can create, update, or delete students.
             allow create, update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
 
             match /notes/{gradeId} {
-                // Tout membre du personnel de l'école (enseignant, admin, directeur) peut lire et écrire les notes
+                // Any staff member of the school (teacher, admin, director) can read and write grades.
                 allow read, write: if isUserInSchool(schoolId);
             }
             
             match /paiements/{paymentId} {
-                // Seul le personnel autorisé (admin, directeur, comptable...) peut créer/lire les paiements
+                // Only authorized staff (admin, director, accountant...) can create/read payments.
                 allow read, list, create: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel';
+                allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
+            }
+
+            match /absences/{absenceId} {
+                // Any authenticated user of the school can create an absence record.
+                allow create: if isUserInSchool(schoolId);
+                // All school members can read absence data.
+                allow read, list: if isUserInSchool(schoolId);
+                // Only directors and admins can modify or delete absence records.
                 allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
             }
         }
         
         match /comptabilite/{transactionId} {
-             // Seul le personnel autorisé (admin, directeur, comptable...) peut gérer la compta
+             // Only authorized staff (admin, director, accountant...) can manage accounting.
             allow read, list, create: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel';
             allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
         }
@@ -128,7 +134,7 @@ service cloud.firestore {
         
         match /messagerie/{messageId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow create: if isUserInSchool(schoolId); // Tout membre de l'école peut envoyer un message
+            allow create: if isUserInSchool(schoolId); // Any member of the school can send a message
             allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
         }
 
