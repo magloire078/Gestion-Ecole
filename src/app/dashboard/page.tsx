@@ -5,25 +5,25 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, collectionGroup } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, collectionGroup,getCountFromServer } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { libraryBook as Book, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
+import type { libraryBook as Book, student as Student, gradeEntry as GradeEntry, message as Message } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { TrendingUp } from 'lucide-react';
 
-
 type Activity = {
     id: string;
-    type: 'student' | 'book';
+    type: 'student' | 'book' | 'message';
     icon: React.ComponentType<{ className?: string }>;
+    color: string;
     description: React.ReactNode;
     date: Date;
 };
@@ -31,110 +31,148 @@ type Activity = {
 export default function DashboardPage() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
-  const { schoolData, loading: schoolLoading } = useSchoolData();
-  const schoolId = schoolData?.id;
+  const { schoolId, loading: schoolLoading } = useSchoolData();
 
-  // --- Data for Stats Cards ---
-  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const libraryQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/bibliotheque`) : null, [firestore, schoolId]);
-
-  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
-  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const { data: libraryData, loading: libraryLoading } = useCollection(libraryQuery);
-  
-  const books: Book[] = useMemo(() => libraryData?.map(d => ({ id: d.id, ...d.data() } as Book)) || [], [libraryData]);
+  // --- State for Stats Cards ---
+  const [stats, setStats] = useState({
+      students: 0,
+      teachers: 0,
+      classes: 0,
+      books: 0,
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   // --- Data for Performance Chart ---
   const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
   const [gradesLoading, setGradesLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchAllGrades() {
-      if (!schoolId || !firestore) {
-        setAllGrades([]);
-        setGradesLoading(false);
-        return;
-      }
-      
-      setGradesLoading(true);
-      
-      const gradesQuery = query(collectionGroup(firestore, 'notes'));
-
-      try {
-        const querySnapshot = await getDocs(gradesQuery);
-        const grades = querySnapshot.docs.filter(doc => doc.ref.path.startsWith(`ecoles/${schoolId}/`)).map(doc => doc.data() as GradeEntry);
-        setAllGrades(grades);
-      } catch (error) {
-        console.error("Erreur lors de la récupération des notes (collection group):", error);
-        setAllGrades([]);
-      } finally {
-        setGradesLoading(false);
-      }
-    }
-    
-    fetchAllGrades();
-
-  }, [schoolId, firestore]);
-
   // --- Data for Recent Activity ---
-  const recentStudentsQuery = useMemoFirebase(() => 
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)) : null
-  , [firestore, schoolId]);
-  const recentMessagesQuery = useMemoFirebase(() => 
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(2)) : null
-  , [firestore, schoolId]);
+  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
-  const { data: recentStudentsData, loading: recentStudentsLoading } = useCollection(recentStudentsQuery);
-  const { data: recentMessagesData, loading: recentMessagesLoading } = useCollection(recentMessagesQuery);
-  
-  const recentActivity = useMemo(() => {
-    const activities: any[] = [];
+  useEffect(() => {
+    if (!schoolId) {
+        if (!schoolLoading) {
+            setStatsLoading(false);
+            setGradesLoading(false);
+            setActivityLoading(false);
+        }
+        return;
+    };
 
-    recentStudentsData?.forEach(doc => {
-        const student = doc.data() as Student;
-        const createdAt = student.createdAt ? new Date(student.createdAt.seconds * 1000) : new Date();
-        activities.push({
-            id: doc.id,
-            type: 'student',
-            icon: UserPlus,
-            color: 'bg-blue-100 dark:bg-blue-900/50',
-            description: (
-                <>Nouvel élève, <strong>{student.firstName} {student.lastName}</strong>, ajouté.</>
-            ),
-            date: createdAt,
-        });
-    });
+    // --- Fetch Stats ---
+    const fetchStats = async () => {
+        setStatsLoading(true);
+        try {
+            const studentsCol = collection(firestore, `ecoles/${schoolId}/eleves`);
+            const teachersCol = collection(firestore, `ecoles/${schoolId}/enseignants`);
+            const classesCol = collection(firestore, `ecoles/${schoolId}/classes`);
+            const libraryCol = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
+            
+            const [studentsSnapshot, teachersSnapshot, classesSnapshot, librarySnapshot] = await Promise.all([
+                getCountFromServer(studentsCol),
+                getCountFromServer(teachersCol),
+                getCountFromServer(classesCol),
+                getDocs(libraryCol)
+            ]);
 
-    recentMessagesData?.forEach(doc => {
-        const message = doc.data();
-         const createdAt = message.createdAt ? new Date(message.createdAt.seconds * 1000) : new Date();
-        activities.push({
-            id: doc.id,
-            type: 'message',
-            icon: MessageSquare,
-            color: 'bg-green-100 dark:bg-green-900/50',
-            description: (
-                 <>Message <strong>"{message.title}"</strong> envoyé par <strong>{message.senderName}</strong>.</>
-            ),
-            date: createdAt,
-        });
-    });
+            const totalBooks = librarySnapshot.docs.reduce((sum, doc) => sum + (doc.data().quantity || 0), 0);
 
-    return activities.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+            setStats({
+                students: studentsSnapshot.data().count,
+                teachers: teachersSnapshot.data().count,
+                classes: classesSnapshot.data().count,
+                books: totalBooks,
+            });
 
-  }, [recentStudentsData, recentMessagesData]);
+        } catch (error) {
+            console.error("Error fetching stats:", error);
+        } finally {
+            setStatsLoading(false);
+        }
+    };
+    
+    // --- Fetch Grades ---
+    const fetchAllGrades = async () => {
+      setGradesLoading(true);
+      const grades: GradeEntry[] = [];
+      try {
+          const studentsSnapshot = await getDocs(collection(firestore, `ecoles/${schoolId}/eleves`));
+          for (const studentDoc of studentsSnapshot.docs) {
+              const notesSnapshot = await getDocs(collection(firestore, `ecoles/${schoolId}/eleves/${studentDoc.id}/notes`));
+              notesSnapshot.forEach(noteDoc => {
+                  grades.push(noteDoc.data() as GradeEntry);
+              });
+          }
+          setAllGrades(grades);
+      } catch (error) {
+          console.error("Erreur lors de la récupération de toutes les notes:", error);
+      } finally {
+          setGradesLoading(false);
+      }
+    };
 
-  const stats = [
-    { title: 'Élèves', value: studentsData?.length ?? 0, icon: Users, loading: studentsLoading, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50', href: '/dashboard/dossiers-eleves' },
-    { title: 'Enseignants', value: teachersData?.length ?? 0, icon: BookUser, loading: teachersLoading, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50', href: '/dashboard/enseignants' },
-    { title: 'Classes', value: classesData?.length ?? 0, icon: School, loading: classesLoading, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/50', href: '/dashboard/classes' },
-    { title: 'Livres', value: books.reduce((sum, book) => sum + (book.quantity || 0), 0), icon: BookOpen, loading: libraryLoading, color: 'text-violet-600', bgColor: 'bg-violet-100 dark:bg-violet-900/50', href: '/dashboard/bibliotheque' }
+    // --- Fetch Recent Activity ---
+    const fetchRecentActivity = async () => {
+        setActivityLoading(true);
+        const activities: Activity[] = [];
+        try {
+            const recentStudentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3));
+            const recentMessagesQuery = query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(2));
+            
+            const [studentsSnapshot, messagesSnapshot] = await Promise.all([
+                getDocs(recentStudentsQuery),
+                getDocs(recentMessagesQuery),
+            ]);
+
+            studentsSnapshot.forEach(doc => {
+                const student = doc.data() as Student;
+                const createdAt = student.createdAt ? new Date(student.createdAt.seconds * 1000) : new Date();
+                activities.push({
+                    id: doc.id,
+                    type: 'student',
+                    icon: UserPlus,
+                    color: 'bg-blue-100 dark:bg-blue-900/50',
+                    description: <>Nouvel élève, <strong>{student.firstName} {student.lastName}</strong>, ajouté.</>,
+                    date: createdAt,
+                });
+            });
+
+            messagesSnapshot.forEach(doc => {
+                const message = doc.data() as Message;
+                const createdAt = message.createdAt ? new Date(message.createdAt.seconds * 1000) : new Date();
+                activities.push({
+                    id: doc.id,
+                    type: 'message',
+                    icon: MessageSquare,
+                    color: 'bg-green-100 dark:bg-green-900/50',
+                    description: <>Message <strong>"{message.title}"</strong> envoyé par <strong>{message.senderName}</strong>.</>,
+                    date: createdAt,
+                });
+            });
+            
+            setRecentActivity(activities.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5));
+
+        } catch (error) {
+            console.error("Error fetching recent activity:", error);
+        } finally {
+            setActivityLoading(false);
+        }
+    };
+    
+    fetchStats();
+    fetchAllGrades();
+    fetchRecentActivity();
+
+  }, [schoolId, firestore, schoolLoading]);
+
+
+  const statsCards = [
+    { title: 'Élèves', value: stats.students, icon: Users, loading: statsLoading, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50', href: '/dashboard/dossiers-eleves' },
+    { title: 'Enseignants', value: stats.teachers, icon: BookUser, loading: statsLoading, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50', href: '/dashboard/enseignants' },
+    { title: 'Classes', value: stats.classes, icon: School, loading: statsLoading, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/50', href: '/dashboard/classes' },
+    { title: 'Livres', value: stats.books, icon: BookOpen, loading: statsLoading, color: 'text-violet-600', bgColor: 'bg-violet-100 dark:bg-violet-900/50', href: '/dashboard/bibliotheque' }
   ];
-  
-  const activityLoading = recentStudentsLoading || recentMessagesLoading;
 
   return (
     <div className="space-y-6">
@@ -144,7 +182,7 @@ export default function DashboardPage() {
       <AnnouncementBanner />
       
        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
+        {statsCards.map((stat) => (
             <Link href={stat.href} key={stat.title}>
                 <Card className="shadow-sm border-border/50 hover:shadow-md hover:-translate-y-1 transition-transform duration-300 ease-in-out">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
