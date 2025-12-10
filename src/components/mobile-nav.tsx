@@ -53,13 +53,13 @@ const financialLinks = [
 ];
 
 const settingsLinks = [
-  { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings },
+  { href: '/dashboard/parametres', label: 'Paramètres généraux', icon: Settings },
   { href: '/dashboard/parametres/abonnement', label: 'Abonnement', icon: CreditCard },
 ];
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
-    const isActive = pathname.startsWith(href);
+    const isActive = pathname.startsWith(href) && (href !== '/dashboard/parametres' || pathname === '/dashboard/parametres');
     return (
         <Link
             href={href}
