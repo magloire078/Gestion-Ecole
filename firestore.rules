@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -62,10 +63,8 @@ service cloud.firestore {
         }
         
         match /absences/{absenceId} {
-            // Any authenticated user of the school can create an absence record.
-            allow create: if isUserInSchool(schoolId);
-            // All school members can read absence data.
-            allow read, list: if isUserInSchool(schoolId);
+            // Any authorized staff member can manage absences.
+            allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid) || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel');
             // Only directors and admins can modify or delete absence records.
             allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin(schoolId, request.auth.uid);
         }
@@ -145,3 +144,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

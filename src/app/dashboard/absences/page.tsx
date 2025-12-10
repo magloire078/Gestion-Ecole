@@ -36,10 +36,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, doc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, UserX } from 'lucide-react';
+import { UserX } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { useAuthProtection } from '@/hooks/use-auth-protection';
@@ -136,21 +136,22 @@ export default function AbsencesPage() {
       createdAt: serverTimestamp(),
     };
     
-    try {
-        await addDoc(collection(firestore, `ecoles/${schoolId}/absences`), absenceData);
+    const absenceCollectionRef = collection(firestore, `ecoles/${schoolId}/absences`);
+    addDoc(absenceCollectionRef, absenceData)
+    .then(() => {
         toast({
             title: "Absence enregistrée",
             description: `L'absence de ${selectedStudent.firstName} a été enregistrée.`,
         });
         setIsFormOpen(false);
-    } catch(error) {
+    }).catch(error => {
         const permissionError = new FirestorePermissionError({
-            path: `ecoles/${schoolId}/absences`,
+            path: absenceCollectionRef.path,
             operation: 'create',
             requestResourceData: absenceData,
         });
         errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   };
 
   if (isAuthLoading) return <AuthProtectionLoader />;
@@ -284,3 +285,5 @@ export default function AbsencesPage() {
     </>
   );
 }
+
+    

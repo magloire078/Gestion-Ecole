@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "user": {
@@ -330,7 +331,7 @@
     },
     "/ecoles/{schoolId}/absences/{absenceId}": {
         "schema": { "$ref": "#/entities/absence" },
-        "description": "Stocke l'historique des absences pour un élève ou un membre du personnel."
+        "description": "Stocke l'historique des absences pour une école."
     },
     "/ecoles/{schoolId}/comptabilite/{transactionId}": {
         "schema": { "$ref": "#/entities/accountingTransaction" },
@@ -350,3 +351,5 @@
     }
   }
 }
+
+    
