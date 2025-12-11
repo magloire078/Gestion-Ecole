@@ -323,7 +323,6 @@ export default function ClassesPage() {
 
   const teacherOptions = teachers.map(t => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }));
   const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
-  const classOptionsForCycle = watchedCycle ? schoolClasses.filter(c => c.cycle === watchedCycle).map(c => ({ value: c.name, label: c.name })) : [];
   const filiereOptions = higherEdFiliere.map(f => ({ value: f, label: f }));
   
   const renderFormContent = () => (
@@ -377,22 +376,13 @@ export default function ClassesPage() {
             control={form.control}
             name="name"
             render={({ field }) => (
-            <FormItem>
-                <FormLabel>Classe</FormLabel>
-                <FormControl>
-                    <Combobox
-                        placeholder={watchedCycle ? "Sélectionner une classe" : "Sélectionnez un cycle d'abord"}
-                        searchPlaceholder="Chercher une classe..."
-                        options={classOptionsForCycle}
-                        value={field.value}
-                        onValueChange={(value) => {
-                            const classOption = classOptionsForCycle.find(c => c.value.toLowerCase() === value.toLowerCase());
-                            field.onChange(classOption ? classOption.value : '');
-                        }}
-                    />
-                </FormControl>
-                 <FormMessage />
-            </FormItem>
+                <FormItem>
+                    <FormLabel>Nom de la Classe</FormLabel>
+                    <FormControl>
+                        <Input placeholder="Ex: CM2 A, Terminale D, etc." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
             )}
         />
         <FormField
@@ -613,3 +603,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
