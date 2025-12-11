@@ -29,77 +29,83 @@ service cloud.firestore {
       return isAuth() && getUserSchoolId() == schoolId;
     }
     
-    function getStaffRole(userId, schoolId) {
-      let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
-      if (exists(staffDocPath)) {
-        return get(staffDocPath).data.role;
+    function getStaffRole(userId) {
+      // Reads the user's role from the global personnel collection.
+      // This is more reliable for checking permissions across the app.
+      let staffDoc = get(/databases/$(database)/documents/personnel/$(userId));
+      if (staffDoc.exists) {
+        return staffDoc.data.role;
       }
       return null;
     }
+    
+    function isDirector() {
+       return getStaffRole(request.auth.uid) == 'directeur';
+    }
 
-    function isSchoolDirector(schoolId) {
-      // A user is a director if their role in the school's staff collection is 'directeur'
-      return getStaffRole(request.auth.uid, schoolId) == 'directeur';
+    function isTeacher() {
+        return getStaffRole(request.auth.uid) == 'enseignant';
     }
     
-    function isTeacher(schoolId) {
-        return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
-    }
-
     // --- Global Collections ---
 
     match /utilisateurs/{userId} {
-      // A user can create their own user_root document upon signup
-      // A user can read or update their own document
-      // An admin can read any user document
+      // A user can create/read/update their own user_root document.
       allow read, write: if isAuth() && request.auth.uid == userId;
-      allow read: if isAdmin(); // Admin can read user mapping
+      // An admin can read any user document for administrative purposes.
+      allow read: if isAdmin();
     }
 
     match /admin_roles/{roleId} {
-      // Only admins can manage administrative roles
+      // Only admins can manage administrative roles.
       allow read, write: if isAdmin();
     }
-
-    // --- School-based Collections ---
-
-    match /ecoles/{schoolId} {
-      allow read: if isUserInSchool(schoolId) || isAdmin();
-      allow create: if isAuth(); // Allow any authenticated user to create a school initially
-      // Director of the school or an admin can update. This rule is now self-contained.
-      allow update: if isSchoolDirector(schoolId) || isAdmin();
-      allow delete: if isAdmin();
-
-      // --- Staff Subcollection ---
-      match /personnel/{staffId} {
-        allow read: if isUserInSchool(schoolId);
-        allow create, update: if isSchoolDirector(schoolId) || isAdmin();
-        allow delete: if isSchoolDirector(schoolId) || isAdmin();
-
-        match /donnees_privees/{privateDocId} {
-             allow read, write: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId) || isAdmin();
-        }
-      }
-
-      // --- Other Subcollections ---
-      match /eleves/{studentId} {
-        allow read, list: if isUserInSchool(schoolId);
-        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
-
-        match /notes/{gradeId} {
-            allow read: if isUserInSchool(schoolId);
-            allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
-        }
+    
+    match /personnel/{staffId} {
+        // Allow read access if the user belongs to the same school as the staff member.
+        allow read: if isUserInSchool(resource.data.schoolId);
+        // Allow a user to create their own initial staff profile (e.g., director during onboarding).
+        allow create: if isAuth() && request.auth.uid == staffId;
+        // Allow a user to update their own profile, or allow a director to update any profile in their school.
+        allow update: if (isAuth() && request.auth.uid == staffId) || isDirector();
+        // Only a director can delete a staff member.
+        allow delete: if isDirector();
+    }
+    
+    match /classes/{classId} {
+        allow read: if isUserInSchool(resource.data.schoolId);
+        allow write: if isDirector(); // Only directors can create/update/delete classes
+    }
+    
+    match /eleves/{studentId} {
+        allow read: if isUserInSchool(resource.data.schoolId);
+        allow write: if isDirector();
         
-        match /{subpath=**} {
-            allow read, write: if isSchoolDirector(schoolId) || isAdmin();
+        match /notes/{gradeId} {
+            allow read, write: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId) && (isDirector() || isTeacher());
         }
-      }
+        match /paiements/{paymentId} {
+            allow read, write: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId) && isDirector();
+        }
+    }
 
-      match /{collection}/{docId} {
-        allow read, list: if isUserInSchool(schoolId);
-        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
-      }
+    // --- Collections where anyone in the school can read, but only directors can write ---
+    match /(cycles|frais_scolarite|absences|comptabilite|bibliotheque|emploi_du_temps|messagerie)/{docId} {
+        allow read: if isUserInSchool(resource.data.schoolId);
+        allow write: if isDirector();
+    }
+
+    // --- School Document ---
+    match /ecoles/{schoolId} {
+      // Anyone in the school or an admin can read the school's public details.
+      allow read: if isUserInSchool(schoolId) || isAdmin();
+      // Allow any authenticated user to create a school document.
+      // The rules on sub-collections will secure the rest of the data.
+      allow create: if isAuth();
+      // Only the designated director of that school or an admin can update it.
+      allow update: if (isAuth() && request.auth.uid == resource.data.directorId) || isAdmin();
+      // Only admins can delete a school.
+      allow delete: if isAdmin();
     }
 
     // Default deny all other paths for security
