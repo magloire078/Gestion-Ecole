@@ -46,7 +46,7 @@ service cloud.firestore {
     match /utilisateurs/{userId} {
       allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
       allow get: if isUserAuthenticated() && (isCreatingOwnDocument(userId) || isUserAdmin());
-      allow list, update, delete: if isUserAdmin();
+      allow update, delete: if isUserAdmin();
     }
     
     match /ecoles/{schoolId} {
@@ -55,7 +55,8 @@ service cloud.firestore {
         allow list: if isUserAuthenticated();
         // The school director or an admin can update the school's information.
         allow update: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-        allow delete: if isUserAdmin(); // Only an admin can delete a school.
+        // Admin can delete a school (document only, subcollections have their own rules if needed)
+        allow delete: if isUserAdmin();
         
         match /absences/{absenceId} {
             // Any authorized staff member can manage absences.
@@ -117,7 +118,9 @@ service cloud.firestore {
         }
 
         match /personnel/{staffId} {
+            // Any authenticated member of the school can see the staff list.
             allow read, list: if isUserInSchool(schoolId);
+            // Only a director or admin can add, modify, or remove staff members.
             allow create, update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         
