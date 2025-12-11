@@ -160,10 +160,12 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Se connecter</TabsTrigger>
-                <TabsTrigger value="signup">Créer un compte</TabsTrigger>
-            </TabsList>
+            <div className="px-6">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="login">Se connecter</TabsTrigger>
+                    <TabsTrigger value="signup">Créer un compte</TabsTrigger>
+                </TabsList>
+            </div>
             <TabsContent value="login">
                 <CardContent className="grid gap-4 pt-4">
                     <div className="grid gap-2">
@@ -175,9 +177,17 @@ export default function LoginPage() {
                         <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isProcessing} />
                     </div>
                 </CardContent>
-                <CardFooter>
+                <CardFooter className="flex flex-col gap-4">
                     <Button className="w-full" onClick={handleEmailPasswordSignIn} disabled={isProcessing}>
                         {isProcessing ? 'Connexion...' : 'Se connecter'}
+                    </Button>
+                    <div className="relative w-full">
+                        <Separator />
+                        <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
+                    </div>
+                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
+                        <GoogleIcon className="mr-2 h-4 w-4" />
+                        Continuer avec Google
                     </Button>
                 </CardFooter>
             </TabsContent>
@@ -203,20 +213,7 @@ export default function LoginPage() {
                 </CardFooter>
             </TabsContent>
         </Tabs>
-        
-        <div className="px-6 pb-6">
-            <div className="relative">
-                <Separator />
-                <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
-            </div>
-            <Button variant="outline" className="w-full mt-4" onClick={handleGoogleSignIn} disabled={isProcessing}>
-                <GoogleIcon className="mr-2 h-4 w-4" />
-                Continuer avec Google
-            </Button>
-        </div>
       </Card>
     </div>
   );
 }
-
-    
