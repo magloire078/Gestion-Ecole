@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -178,7 +179,7 @@ export default function ClassesPage() {
     } else {
         // Create
         const classCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
-        addDoc(classCollectionRef, classData)
+        addDoc(classCollectionRef, {...classData, studentCount: 0})
         .then(() => {
             toast({ title: "Classe ajoutée", description: `La classe ${values.name} a été créée avec succès.` });
             setIsFormOpen(false);
@@ -454,11 +455,10 @@ export default function ClassesPage() {
                                     </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
-                                <CardDescription>ID: {cls.id.substring(0, 10)}...</CardDescription>
+                                <CardDescription>{cls.filiere ? `Filière ${cls.filiere}` : `Bâtiment ${cls.building}`}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-3 flex-1">
-                                    {cls.filiere && <div className="flex items-center text-sm text-muted-foreground"><BookCopy className="mr-2 h-4 w-4 flex-shrink-0" /><span>Filière: {cls.filiere}</span></div>}
-                                    <div className="flex items-center text-sm text-muted-foreground"><Building className="mr-2 h-4 w-4 flex-shrink-0" /><span>Bâtiment: {cls.building}</span></div>
+                                    <div className="flex items-center text-sm text-muted-foreground"><Users className="mr-2 h-4 w-4 flex-shrink-0" /><span>{cls.studentCount || 0} élève(s)</span></div>
                                     <div className="flex items-center text-sm text-muted-foreground"><User className="mr-2 h-4 w-4 flex-shrink-0" /><span>Prof. principal: {teacherName}</span></div>
                                 </CardContent>
                             </Card>

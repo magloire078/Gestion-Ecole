@@ -110,7 +110,8 @@
         "filiere": { "type": "string", "description": "La filière pour les classes de l'enseignement supérieur." },
         "mainTeacherId": { "type": "string", "description": "L'identifiant de l'enseignant principal de la classe." },
         "building": { "type": "string", "description": "Le bâtiment où se trouve la classe." },
-        "cycle": { "type": "string", "enum": ["Maternelle", "Enseignement Primaire", "Enseignement Secondaire - Premier cycle", "Enseignement Secondaire - Deuxième cycle", "Enseignement Supérieur"], "description": "Le cycle d'enseignement." }
+        "cycle": { "type": "string", "enum": ["Maternelle", "Enseignement Primaire", "Enseignement Secondaire - Premier cycle", "Enseignement Secondaire - Deuxième cycle", "Enseignement Supérieur"], "description": "Le cycle d'enseignement." },
+        "studentCount": { "type": "number", "description": "Le nombre d'élèves dans la classe." }
       },
       "required": ["name", "mainTeacherId", "building", "cycle"]
     },

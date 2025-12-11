@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, writeBatch, doc, increment } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
@@ -103,7 +103,7 @@ export default function RegistrationPage() {
   }
   const handlePrevStep = () => setStep(s => Math.max(s - 1, 1));
   
-  const onSubmit = (values: RegistrationFormValues) => {
+  const onSubmit = async (values: RegistrationFormValues) => {
     if (!schoolId) {
       toast({
         variant: "destructive",
@@ -151,19 +151,34 @@ export default function RegistrationPage() {
       feedback: '',
       createdAt: serverTimestamp(),
     };
+    
+    const batch = writeBatch(firestore);
+    
+    // 1. Create the new student document
+    const newStudentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves`));
+    batch.set(newStudentRef, studentData);
 
-    const studentsCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves`);
-    addDoc(studentsCollectionRef, studentData)
-    .then((docRef) => {
+    // 2. Atomically increment the student count on the class document
+    if (selectedClassInfo) {
+        const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id);
+        batch.update(classRef, { studentCount: increment(1) });
+    }
+
+    try {
+        await batch.commit();
         toast({
             title: "Inscription réussie",
             description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
         });
         router.push(`/dashboard/dossiers-eleves`);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: studentsCollectionRef.path, operation: 'create', requestResourceData: studentData });
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `BATCH WRITE on /eleves and /classes`,
+            operation: 'create',
+            requestResourceData: studentData,
+        });
         errorEmitter.emit('permission-error', permissionError);
-    })
+    }
   };
 
   if (schoolDataLoading || feesLoading) {
@@ -262,5 +277,3 @@ export default function RegistrationPage() {
     </div>
   );
 }
-
-    
