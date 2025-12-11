@@ -20,6 +20,7 @@ import {
     Wallet,
     Landmark,
     UserX,
+    Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -58,6 +59,7 @@ const financialLinks = [
 const settingsLinks = [
   { href: '/dashboard/parametres', label: 'Paramètres généraux', icon: Settings },
   { href: '/dashboard/parametres/abonnement', label: 'Abonnement', icon: CreditCard },
+  { href: '/dashboard/parametres/donnees', label: 'Données Brutes', icon: Database },
 ];
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
