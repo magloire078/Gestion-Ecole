@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -10,7 +11,7 @@ import { Bot, Printer } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
-import type { teacher as Teacher, student as Student, class_type as Class } from '@/lib/data-types';
+import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -62,7 +63,7 @@ interface ReportCardProps {
   student: StudentWithClass;
   school: School;
   grades: Grade[];
-  teachers: (Teacher & { id: string })[]; // Liste de tous les enseignants
+  teachers: (Staff & { id: string })[]; // Liste de tous les enseignants
 }
 
 export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades, teachers }) => {

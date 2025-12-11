@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import React, { useMemo, useRef } from 'react';
@@ -5,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import type { teacher as Teacher } from '@/lib/data-types';
+import type { staff as Staff } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface Student {
@@ -30,7 +32,7 @@ interface PrintableTimetableProps {
   student: Student;
   school: School;
   timetableEntries: TimetableEntry[];
-  teachers: (Teacher & { id: string })[];
+  teachers: (Staff & { id: string })[];
 }
 
 export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student, school, timetableEntries, teachers }) => {

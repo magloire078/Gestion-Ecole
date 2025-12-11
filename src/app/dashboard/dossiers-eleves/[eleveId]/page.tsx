@@ -22,7 +22,7 @@ import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { teacher as Teacher, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment, fee as Fee } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment, fee as Fee } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
@@ -109,8 +109,8 @@ export default function StudentProfilePage() {
   const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/enseignants/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
-  const { data: mainTeacher, loading: teacherLoading } = useDoc<Teacher>(teacherRef);
+  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
+  const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
   // This query is for the edit form, to be able to switch classes.
   const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);

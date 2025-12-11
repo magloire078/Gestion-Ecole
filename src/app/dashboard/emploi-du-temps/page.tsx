@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -48,7 +49,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -57,7 +58,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { class_type as Class, teacher as Teacher } from '@/lib/data-types';
+import type { class_type as Class, staff as Staff } from '@/lib/data-types';
 
 const timetableSchema = z.object({
   classId: z.string().min(1, { message: "La classe est requise." }),
@@ -95,15 +96,15 @@ export default function TimetablePage() {
 
   // --- Firestore Data Hooks ---
   const timetableQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/emploi_du_temps`) : null, [firestore, schoolId]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
   const timetable: TimetableEntry[] = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() } as TimetableEntry)) || [], [timetableData]);
-  const teachers: (Teacher & {id: string})[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Teacher & {id: string})) || [], [teachersData]);
+  const teachers: (Staff & {id: string})[] = useMemo(() => personnelData?.map(d => ({ id: d.id, ...d.data() } as Staff & {id: string})) || [], [personnelData]);
   const classes: (Class & {id: string})[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [classesData]);
 
   // --- UI State ---
@@ -251,7 +252,7 @@ export default function TimetablePage() {
     });
   };
 
-  const isLoading = schoolLoading || timetableLoading || teachersLoading || classesLoading;
+  const isLoading = schoolLoading || timetableLoading || personnelLoading || classesLoading;
   
   const renderForm = () => (
       <Form {...form}>

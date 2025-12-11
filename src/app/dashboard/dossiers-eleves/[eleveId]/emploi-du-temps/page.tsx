@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -8,7 +9,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { PrintableTimetable } from '@/components/printable-timetable';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { teacher as Teacher, student as Student } from '@/lib/data-types';
+import type { staff as Staff, student as Student } from '@/lib/data-types';
 
 interface TimetableEntry {
   id: string;
@@ -39,10 +40,10 @@ export default function StudentTimetablePage() {
     (schoolId && classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
   , [firestore, schoolId, classId]);
 
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
 
   const { data: timetableData, loading: timetableLoading } = useCollection<TimetableEntry>(timetableQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher & { id: string }>(teachersQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection<Staff & { id: string }>(teachersQuery);
 
   const timetableEntries = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() })) || [], [timetableData]);
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);

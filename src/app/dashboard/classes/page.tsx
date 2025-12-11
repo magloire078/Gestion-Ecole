@@ -46,7 +46,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { teacher as Teacher, class_type as Class } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class } from '@/lib/data-types';
 
 // Define Zod schema for validation
 const classSchema = z.object({
@@ -60,7 +60,7 @@ const classSchema = z.object({
 type ClassFormValues = z.infer<typeof classSchema>;
 
 // Define TypeScript interfaces based on backend.json
-interface TeacherWithId extends Teacher {
+interface StaffWithId extends Staff {
   id: string;
 }
 
@@ -81,16 +81,16 @@ export default function ClassesPage() {
 
 
   // --- Firestore Data Hooks ---
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   
-  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
   // Use the static, reliable list of cycles from data.ts
   const cycles: Cycle[] = useMemo(() => schoolCycles.sort((a,b) => a.order - b.order), []);
 
-  const teachers: TeacherWithId[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as TeacherWithId)) || [], [teachersData]);
+  const teachers: StaffWithId[] = useMemo(() => personnelData?.map(d => ({ id: d.id, ...d.data() } as StaffWithId)) || [], [personnelData]);
   const classes: ClassWithId[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as ClassWithId)) || [], [classesData]);
   
   // --- UI State ---
@@ -246,24 +246,27 @@ export default function ClassesPage() {
     const newTeacherData = { 
         firstName: newTeacherFirstName, 
         lastName: newTeacherLastName, 
+        role: 'Enseignant',
         subject: newTeacherSubject, 
-        email: newTeacherEmail 
+        email: newTeacherEmail,
+        hireDate: new Date().toISOString().split('T')[0],
+        baseSalary: 0,
     };
-    const teacherCollectionRef = collection(firestore, `ecoles/${schoolId}/enseignants`);
+    const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
     try {
-        const docRef = await addDoc(teacherCollectionRef, newTeacherData);
+        const docRef = await addDoc(staffCollectionRef, newTeacherData);
         toast({ title: "Enseignant ajouté", description: `${newTeacherFirstName} ${newTeacherLastName} a été ajouté(e).` });
         setIsAddTeacherDialogOpen(false);
         form.setValue('mainTeacherId', docRef.id);
         return { value: docRef.id, label: `${newTeacherFirstName} ${newTeacherLastName}` };
     } catch(serverError) {
-        const permissionError = new FirestorePermissionError({ path: teacherCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
+        const permissionError = new FirestorePermissionError({ path: staffCollectionRef.path, operation: 'create', requestResourceData: newTeacherData });
         errorEmitter.emit('permission-error', permissionError);
         return null;
     }
   }
 
-  const isLoading = schoolDataLoading || classesLoading || teachersLoading;
+  const isLoading = schoolDataLoading || classesLoading || personnelLoading;
   
   if (isLoading && !cycles.length) {
     return (

@@ -1,14 +1,15 @@
 
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
 import { useMemo } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query } from 'firebase/firestore';
+import { doc, collection, query, where } from 'firebase/firestore';
 import { ReportCard } from '@/components/report-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { teacher as Teacher, student as Student } from '@/lib/data-types';
+import type { staff as Staff, student as Student } from '@/lib/data-types';
 
 interface Grade {
   id: string;
@@ -36,12 +37,12 @@ export default function StudentReportPage() {
     (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`)) : null
   , [firestore, schoolId, eleveId]);
   
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
 
 
   const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection<Grade>(gradesQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection<Teacher & { id: string }>(teachersQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection<Staff & { id: string }>(teachersQuery);
 
   const student = studentData;
   const grades = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
