@@ -9,93 +9,111 @@ service cloud.firestore {
     }
     
     function isAdmin() {
+      // In a real application, you would set this custom claim on the user's token
+      // For now, we'll assume it's a boolean flag on the token
       return request.auth.token.admin == true;
     }
 
     function getUserSchoolId() {
-      let userDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
-      return userDoc.exists ? userDoc.data.schoolId : null;
+      // Path to the user's document in the global /users collection
+      let userDocPath = /databases/$(database)/documents/utilisateurs/$(request.auth.uid);
+      
+      // Check if the document exists before accessing data
+      if (exists(userDocPath)) {
+        return get(userDocPath).data.schoolId;
+      }
+      return null;
     }
     
     function isUserInSchool(schoolId) {
+      // Ensures the user is authenticated and their schoolId matches the requested one
       return isAuth() && getUserSchoolId() == schoolId;
     }
     
-    // The user is the director of the school being written to.
-    function isSchoolDirector() {
-      return request.auth.uid == request.resource.data.directorId;
+    function isSchoolDirector(schoolId) {
+        // The director's UID is stored directly on the school document
+        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+        return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
+    }
+    
+    function getStaffRole(userId, schoolId) {
+      let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
+      if (exists(staffDocPath)) {
+        return get(staffDocPath).data.role;
+      }
+      return null;
+    }
+    
+    function isTeacher(schoolId) {
+        return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
     }
 
-    // --- Special function for school creation ---
-    function isSchoolCreation() {
-      return isAuth() &&
-             request.resource.data.directorId == request.auth.uid &&
-             !exists(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
+    // --- Global Collections ---
+
+    match /utilisateurs/{userId} {
+      // A user can create their own user_root document upon signup
+      // A user can read or update their own document
+      // An admin can read any user document
+      allow read, write: if isAuth() && request.auth.uid == userId;
+      allow read: if isAdmin(); // Admin can read user mapping
     }
-    
-    // === ROOT COLLECTIONS ===
-    
+
     match /admin_roles/{roleId} {
+      // Only admins can manage administrative roles
       allow read, write: if isAdmin();
     }
 
-    match /utilisateurs/{userId} {
-      allow create: if isAuth() && userId == request.auth.uid;
-      allow read, update: if isAuth() && userId == request.auth.uid || isAdmin();
-      allow delete: if isAdmin();
-    }
-    
+    // --- School-based Collections ---
+
     match /ecoles/{schoolId} {
-      allow create: if isSchoolCreation() || isAdmin();
       allow read: if isUserInSchool(schoolId) || isAdmin();
-      allow update: if (isAuth() && isSchoolDirector()) || isAdmin();
+      allow create: if isAuth(); // Allow any authenticated user to create a school initially
+      allow update: if isSchoolDirector(schoolId) || isAdmin();
       allow delete: if isAdmin();
-      
-        // --- SUB-COLLECTIONS ---
-      
-        // Allow a director to create their own staff profile during school creation
-        match /personnel/{staffId} {
-            allow create: if (isSchoolCreation() && staffId == request.auth.uid && request.resource.data.role == 'directeur') || (isUserInSchool(schoolId) && isSchoolDirector()) || isAdmin();
-            allow read: if isUserInSchool(schoolId) || (isAuth() && staffId == request.auth.uid);
-            allow update: if (isUserInSchool(schoolId) && isSchoolDirector()) || (isAuth() && staffId == request.auth.uid) || isAdmin();
-            allow delete: if (isUserInSchool(schoolId) && isSchoolDirector()) || isAdmin();
-            
-            match /donnees_privees/{privateDocId} {
-                allow read, write: if (isAuth() && (isSchoolDirector() || request.auth.uid == staffId)) || isAdmin();
-            }
+
+      // --- Staff Subcollection ---
+      match /personnel/{staffId} {
+        // Any user within the school can read public staff profiles
+        allow read: if isUserInSchool(schoolId);
+        // Only the school director or an admin can create, update, or delete staff
+        allow create, update: if isSchoolDirector(schoolId) || isAdmin();
+        allow delete: if isSchoolDirector(schoolId) || isAdmin();
+
+        // --- Staff Private Data ---
+        match /donnees_privees/{privateDocId} {
+             // Only the director, the staff member themselves, or an admin can access private data
+             allow read, write: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId) || isAdmin();
         }
+      }
 
-        match /classes/{classId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow create, update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
-        }
+      // --- Other Subcollections ---
+      match /eleves/{studentId} {
+        // Any user in the school can view student lists and profiles
+        allow read, list: if isUserInSchool(schoolId);
+        // Only director or admin can manage student records
+        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
 
-        match /eleves/{studentId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow create, update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
-
-            match /notes/{gradeId} {
-                allow read, write: if isUserInSchool(schoolId);
-            }
-            match /paiements/{paymentId} {
-                allow read, write: if isUserInSchool(schoolId);
-            }
+        // Teachers can manage grades for students in their school
+        match /notes/{gradeId} {
+            allow read: if isUserInSchool(schoolId);
+            allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
         }
         
-        match /cycles/{cycleId} {
-             allow create: if isSchoolCreation() || isAdmin();
-             allow read, list: if isUserInSchool(schoolId);
-             allow update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
+        // Other student subcollections can be managed by director/admin
+        match /{subpath=**} {
+            allow read, write: if isSchoolDirector(schoolId) || isAdmin();
         }
+      }
 
-        // Default rule for other subcollections
-        match /{subCollection}/{docId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow create, update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
-        }
+      // Default rule for all other subcollections under a school
+      // (e.g., classes, absences, comptabilite, etc.)
+      match /{collection}/{docId} {
+        allow read, list: if isUserInSchool(schoolId);
+        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
     }
 
-    // Catch-all to deny everything else
+    // Default deny all other paths for security
     match /{path=**} {
       allow read, write: if false;
     }
