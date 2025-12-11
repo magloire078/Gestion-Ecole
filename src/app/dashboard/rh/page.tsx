@@ -41,8 +41,9 @@ import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,8 +74,9 @@ const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
   lastName: z.string().min(1, { message: "Le nom est requis." }),
   role: z.string().min(1, { message: "Le rôle est requis." }),
-  email: z.string().email({ message: "L'adresse email est invalide." }).optional().or(z.literal('')),
+  email: z.string().email({ message: "L'adresse email est invalide." }),
   phone: z.string().optional(),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères.").optional(),
   baseSalary: z.coerce.number().min(0, { message: 'Le salaire doit être positif.' }),
   hireDate: z.string().min(1, { message: "La date d'embauche est requise." }),
   // --- Teacher-specific fields ---
@@ -101,6 +103,11 @@ const staffSchema = z.object({
 }).refine(data => data.role !== 'Enseignant' || (data.role === 'Enseignant' && data.subject), {
   message: "La matière principale est requise pour un enseignant.",
   path: ["subject"],
+}).refine(data => {
+    // Make password required only when creating a new user
+    // This logic assumes `editingStaff` state is available or can be inferred.
+    // For simplicity, we can't do that here, so we will require it conditionally in the submit handler.
+    return true;
 });
 
 
@@ -112,6 +119,7 @@ type StaffMember = Employe & { id: string };
 export default function HRPage() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
+  const auth = useAuth();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
@@ -137,32 +145,7 @@ export default function HRPage() {
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffSchema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
-      role: '',
-      email: '',
-      phone: '',
-      baseSalary: 0,
-      hireDate: format(new Date(), 'yyyy-MM-dd'),
-      subject: '',
-      classId: '',
-      situationMatrimoniale: 'Célibataire',
-      enfants: 0,
-      categorie: '',
-      cnpsEmploye: '',
-      CNPS: true,
-      indemniteTransportImposable: 0,
-      indemniteResponsabilite: 0,
-      indemniteLogement: 0,
-      indemniteSujetion: 0,
-      indemniteCommunication: 0,
-      indemniteRepresentation: 0,
-      transportNonImposable: 0,
-      banque: '',
-      CB: '',
-      CG: '',
-      numeroCompte: '',
-      Cle_RIB: '',
+      firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
     },
   });
 
@@ -171,12 +154,13 @@ export default function HRPage() {
   useEffect(() => {
     if (isFormOpen) {
       const defaultValues: StaffFormValues = {
-        firstName: '', lastName: '', role: '', email: '', phone: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+        firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
       };
 
       if (editingStaff) {
           form.reset({
             ...defaultValues,
+            password: '', // Never pre-fill password
             firstName: editingStaff.firstName || '',
             lastName: editingStaff.lastName || '',
             role: editingStaff.role || '',
@@ -216,36 +200,57 @@ export default function HRPage() {
       return;
     }
     
-    const dataToSave: Omit<Employe, 'id'> = { 
-        ...values,
+    // Omit password from the data to be saved to Firestore
+    const { password, ...firestoreData } = values;
+    
+    const dataToSave: Omit<Employe, 'id' | 'uid'> = {
+        ...firestoreData,
         schoolId,
-        uid: editingStaff?.uid || '', // Should be properly assigned from auth
         matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
         status: editingStaff?.status || 'Actif',
     };
 
     try {
         if (editingStaff) {
+            // --- UPDATE ---
             const staffDocRef = doc(firestore, `personnel/${editingStaff.id}`);
+            // Note: We don't update auth email/password here for simplicity,
+            // which should be a separate, secure process.
             await setDoc(staffDocRef, dataToSave, { merge: true });
             toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         } else {
-            const staffCollectionRef = collection(firestore, `personnel`);
-            await addDoc(staffCollectionRef, dataToSave);
-            toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) à la liste du personnel.` });
+            // --- CREATE ---
+            if (!password) {
+                 form.setError("password", { type: "manual", message: "Le mot de passe est requis pour un nouvel utilisateur." });
+                 return;
+            }
+            // 1. Create Firebase Auth user
+            const userCredential = await createUserWithEmailAndPassword(auth, values.email, password);
+            const newUid = userCredential.user.uid;
+
+            // 2. Save profile to Firestore
+            const staffDocRef = doc(firestore, `personnel/${newUid}`);
+            await setDoc(staffDocRef, { ...dataToSave, uid: newUid });
+            toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) et peut maintenant se connecter.` });
         }
         setIsFormOpen(false);
         setEditingStaff(null);
-    } catch (error) {
-        const operation = editingStaff ? 'update' : 'create';
-        const path = `personnel/${editingStaff?.id || ''}`;
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
+    } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+            form.setError("email", { type: "manual", message: "Cette adresse e-mail est déjà utilisée." });
+        } else {
+             const operation = editingStaff ? 'update' : 'create';
+            const path = `personnel/${editingStaff?.id || ''}`;
+            const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
+            errorEmitter.emit('permission-error', permissionError);
+        }
     }
   };
   
   const handleDelete = () => {
     if (!schoolId || !staffToDelete) return;
+    // Note: This only deletes the Firestore record. Deleting the Firebase Auth user
+    // should be handled separately, typically in a Cloud Function for security.
     const staffDocRef = doc(firestore, `personnel/${staffToDelete.id}`);
     deleteDoc(staffDocRef)
       .then(() => {
@@ -416,8 +421,11 @@ export default function HRPage() {
                                 )}
                                 <div className="grid grid-cols-2 gap-4">
                                   <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemple.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                  <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />
+                                   {!editingStaff && (
+                                    <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Mot de Passe</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                   )}
                                 </div>
+                                 <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />
                                 <FormField control={form.control} name="hireDate" render={({ field }) => (<FormItem><FormLabel>Date d'embauche</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </TabsContent>
                             <TabsContent value="payroll" className="space-y-4">
@@ -476,7 +484,7 @@ export default function HRPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.firstName} {staffToDelete?.lastName}</strong> sera définitivement supprimé.
+              Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.firstName} {staffToDelete?.lastName}</strong> sera définitivement supprimé. Son compte utilisateur ne sera pas supprimé mais il n'aura plus accès à l'école.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
