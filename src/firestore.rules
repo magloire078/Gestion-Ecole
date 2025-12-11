@@ -90,10 +90,8 @@ service cloud.firestore {
 
         match /eleves/{studentId} {
             allow read, list: if isUserInSchool(schoolId);
-            // Any authenticated member of the school can update a student record.
-            allow update: if isUserInSchool(schoolId);
-            // Only director or admin can create or delete a student
-            allow create, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
+            // Any authenticated member of the school can manage student records.
+            allow write: if isUserInSchool(schoolId);
 
             match /notes/{gradeId} {
                 // Any staff member of the school (teacher, admin, director) can read and write grades.
