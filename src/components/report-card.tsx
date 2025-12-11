@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -10,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Bot, Printer } from 'lucide-react';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { useToast } from '@/hooks/use-toast';
-import { useSchoolData } from '@/hooks/use-school-data';
 import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -70,7 +68,6 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     const isMounted = useHydrationFix();
     const { toast } = useToast();
     const printRef = React.useRef<HTMLDivElement>(null);
-    const { schoolId, directorName } = useSchoolData();
     const firestore = useFirestore();
 
     const [councilComment, setCouncilComment] = useState("Excellent trimestre. Élève sérieux et motivé qui a fourni un travail de qualité. Les résultats sont très satisfaisants. Félicitations du conseil de classe.");
@@ -81,8 +78,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
     // Fetch the student's class to get the mainTeacherId
     const classRef = useMemoFirebase(() =>
-        (schoolId && student.classId) ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null
-    , [firestore, schoolId, student.classId]);
+        (student.classId) ? doc(firestore, `ecoles/${(window as any).schoolId}/classes/${student.classId}`) : null
+    , [firestore, student.classId]);
     const { data: classData } = useDoc<Class>(classRef);
 
     // Get the main teacher for the class
@@ -364,7 +361,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 <div>
                     <p className="font-bold">Le Directeur</p>
                      <div className="mt-12 border-t border-dashed w-40 mx-auto"></div>
-                     <p>{directorName || school.directorName}</p>
+                     <p>{school.directorName}</p>
                 </div>
             </div>
         </div>
