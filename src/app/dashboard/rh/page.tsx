@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -41,8 +40,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, useAuth, useDoc } from "@/firebase";
+import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch, query, where, getDoc } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -50,8 +49,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { isValid, parseISO, format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { getPayslipDetails, type PayslipDetails } from '@/app/bulletin-de-paie';
-import type { staff as Employe, school as OrganizationSettings } from '@/lib/data-types';
+import { getPayslipDetails, type PayslipDetails, type Employe as FullEmploye } from '@/app/bulletin-de-paie';
+import type { staff as StaffPublic, staff_private as StaffPrivate, school as OrganizationSettings } from '@/lib/data-types';
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -103,18 +102,10 @@ const staffSchema = z.object({
 }).refine(data => data.role !== 'Enseignant' || (data.role === 'Enseignant' && data.subject), {
   message: "La matière principale est requise pour un enseignant.",
   path: ["subject"],
-}).refine(data => {
-    // Make password required only when creating a new user
-    // This logic assumes `editingStaff` state is available or can be inferred.
-    // For simplicity, we can't do that here, so we will require it conditionally in the submit handler.
-    return true;
 });
 
-
 type StaffFormValues = z.infer<typeof staffSchema>;
-
-// The StaffMember for the UI is now equivalent to the Employe type for payroll logic
-type StaffMember = Employe & { id: string };
+type StaffMember = StaffPublic & { id: string };
 
 export default function HRPage() {
   const isMounted = useHydrationFix();
@@ -123,16 +114,14 @@ export default function HRPage() {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
-  // --- Firestore Data Hooks ---
-  const staffQuery = useMemoFirebase(() => schoolId ? collection(firestore, `personnel`) : null, [firestore, schoolId]);
+  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
-  const staff: StaffMember[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)).filter(s => s.schoolId === schoolId) || [], [staffData, schoolId]);
+  const staff: StaffMember[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [], [staffData]);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)).filter(c => c.schoolId === schoolId) || [], [classesData, schoolId]);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isPayslipOpen, setIsPayslipOpen] = useState(false);
@@ -141,7 +130,7 @@ export default function HRPage() {
   const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
   const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
   const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
-  
+
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffSchema),
     defaultValues: {
@@ -152,47 +141,26 @@ export default function HRPage() {
   const watchedRole = form.watch('role');
 
   useEffect(() => {
-    if (isFormOpen) {
-      const defaultValues: StaffFormValues = {
-        firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
-      };
-
-      if (editingStaff) {
-          form.reset({
-            ...defaultValues,
-            password: '', // Never pre-fill password
-            firstName: editingStaff.firstName || '',
-            lastName: editingStaff.lastName || '',
-            role: editingStaff.role || '',
-            email: editingStaff.email || '',
-            phone: editingStaff.phone || '',
-            baseSalary: editingStaff.baseSalary || 0,
-            hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-            subject: editingStaff.subject || '',
-            classId: editingStaff.classId || '',
-            situationMatrimoniale: editingStaff.situationMatrimoniale || 'Célibataire',
-            enfants: editingStaff.enfants || 0,
-            categorie: editingStaff.categorie || '',
-            cnpsEmploye: editingStaff.cnpsEmploye || '',
-            CNPS: editingStaff.CNPS ?? true,
-            indemniteTransportImposable: editingStaff.indemniteTransportImposable || 0,
-            indemniteResponsabilite: editingStaff.indemniteResponsabilite || 0,
-            indemniteLogement: editingStaff.indemniteLogement || 0,
-            indemniteSujetion: editingStaff.indemniteSujetion || 0,
-            indemniteCommunication: editingStaff.indemniteCommunication || 0,
-            indemniteRepresentation: editingStaff.indemniteRepresentation || 0,
-            transportNonImposable: editingStaff.transportNonImposable || 0,
-            banque: editingStaff.banque || '',
-            CB: editingStaff.CB || '',
-            CG: editingStaff.CG || '',
-            numeroCompte: editingStaff.numeroCompte || '',
-            Cle_RIB: editingStaff.Cle_RIB || '',
-          });
-      } else {
-        form.reset(defaultValues);
-      }
+    async function loadPrivateData() {
+        if (isFormOpen && editingStaff && schoolId) {
+            const privateDataRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}/donnees_privees/payroll`);
+            const docSnap = await getDoc(privateDataRef);
+            const privateData = docSnap.exists() ? docSnap.data() as StaffPrivate : {};
+            form.reset({
+                ...editingStaff,
+                password: '',
+                baseSalary: privateData.baseSalary || 0,
+                hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+                ...privateData,
+            });
+        } else {
+            form.reset({
+                firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+            });
+        }
     }
-  }, [isFormOpen, editingStaff, form]);
+    loadPrivateData();
+  }, [isFormOpen, editingStaff, schoolId, firestore, form]);
 
   const handleSubmit = async (values: StaffFormValues) => {
     if (!schoolId) {
@@ -200,37 +168,40 @@ export default function HRPage() {
       return;
     }
     
-    // Omit password from the data to be saved to Firestore
-    const { password, ...firestoreData } = values;
+    const { password, ...formData } = values;
+    const { baseSalary, situationMatrimoniale, enfants, categorie, cnpsEmploye, CNPS, indemniteTransportImposable, indemniteResponsabilite, indemniteLogement, indemniteSujetion, indemniteCommunication, indemniteRepresentation, transportNonImposable, banque, CB, CG, numeroCompte, Cle_RIB, ...publicData } = formData;
     
-    const dataToSave: Omit<Employe, 'id' | 'uid'> = {
-        ...firestoreData,
+    const privateData: StaffPrivate = { baseSalary, situationMatrimoniale, enfants, categorie, cnpsEmploye, CNPS, indemniteTransportImposable, indemniteResponsabilite, indemniteLogement, indemniteSujetion, indemniteCommunication, indemniteRepresentation, transportNonImposable, banque, CB, CG, numeroCompte, Cle_RIB };
+    
+    const dataToSave: Omit<StaffPublic, 'id' | 'uid'> = {
+        ...publicData,
         schoolId,
         matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
         status: editingStaff?.status || 'Actif',
     };
 
     try {
+        const batch = writeBatch(firestore);
         if (editingStaff) {
-            // --- UPDATE ---
-            const staffDocRef = doc(firestore, `personnel/${editingStaff.id}`);
-            // Note: We don't update auth email/password here for simplicity,
-            // which should be a separate, secure process.
-            await setDoc(staffDocRef, dataToSave, { merge: true });
+            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
+            const privateDataRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}/donnees_privees/payroll`);
+            batch.set(staffDocRef, dataToSave, { merge: true });
+            batch.set(privateDataRef, privateData, { merge: true });
+            await batch.commit();
             toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         } else {
-            // --- CREATE ---
             if (!password) {
                  form.setError("password", { type: "manual", message: "Le mot de passe est requis pour un nouvel utilisateur." });
                  return;
             }
-            // 1. Create Firebase Auth user
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, password);
             const newUid = userCredential.user.uid;
-
-            // 2. Save profile to Firestore
-            const staffDocRef = doc(firestore, `personnel/${newUid}`);
-            await setDoc(staffDocRef, { ...dataToSave, uid: newUid });
+            
+            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}`);
+            const privateDataRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}/donnees_privees/payroll`);
+            batch.set(staffDocRef, { ...dataToSave, uid: newUid });
+            batch.set(privateDataRef, privateData);
+            await batch.commit();
             toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) et peut maintenant se connecter.` });
         }
         setIsFormOpen(false);
@@ -239,8 +210,8 @@ export default function HRPage() {
         if (error.code === 'auth/email-already-in-use') {
             form.setError("email", { type: "manual", message: "Cette adresse e-mail est déjà utilisée." });
         } else {
-             const operation = editingStaff ? 'update' : 'create';
-            const path = `personnel/${editingStaff?.id || ''}`;
+            const operation = editingStaff ? 'update' : 'create';
+            const path = `ecoles/${schoolId}/personnel/${editingStaff?.id || ''}`;
             const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
             errorEmitter.emit('permission-error', permissionError);
         }
@@ -249,9 +220,7 @@ export default function HRPage() {
   
   const handleDelete = () => {
     if (!schoolId || !staffToDelete) return;
-    // Note: This only deletes the Firestore record. Deleting the Firebase Auth user
-    // should be handled separately, typically in a Cloud Function for security.
-    const staffDocRef = doc(firestore, `personnel/${staffToDelete.id}`);
+    const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffToDelete.id}`);
     deleteDoc(staffDocRef)
       .then(() => {
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
@@ -264,22 +233,26 @@ export default function HRPage() {
   };
   
   const handleGeneratePayslip = async (staffMember: StaffMember) => {
-    if (!isMounted || !schoolData) return;
+    if (!isMounted || !schoolData || !schoolId) return;
 
     setIsGeneratingPayslip(true);
     setPayslipDetails(null);
     setIsPayslipOpen(true);
     
     try {
+        const privateDataRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffMember.id}/donnees_privees/payroll`);
+        const privateDataSnap = await getDoc(privateDataRef);
+        const privateData = privateDataSnap.exists() ? privateDataSnap.data() as StaffPrivate : { baseSalary: 0 };
+        
         const payslipDate = new Date().toISOString();
-        const details = await getPayslipDetails(staffMember, payslipDate, schoolData as OrganizationSettings);
+        const details = await getPayslipDetails(staffMember, privateData, payslipDate, schoolData as OrganizationSettings);
         setPayslipDetails(details);
     } catch(e) {
         console.error(e);
         toast({
             variant: "destructive",
             title: "Erreur de génération",
-            description: "Impossible de calculer le bulletin de paie.",
+            description: "Impossible de calculer le bulletin de paie. Vérifiez que toutes les données de paie sont renseignées.",
         });
         setIsPayslipOpen(false);
     } finally {
@@ -357,7 +330,7 @@ export default function HRPage() {
                                         <p className="font-medium">{member.role}</p>
                                         {member.role === 'Enseignant' && <p className="text-xs text-muted-foreground">{member.subject}</p>}
                                     </TableCell>
-                                    <TableCell className="font-mono">{member.baseSalary ? `${member.baseSalary.toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
+                                    <TableCell className="font-mono">{member.baseSalary ? `${(member.baseSalary || 0).toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
                                     <TableCell>{isMounted && member.hireDate && isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex gap-2 justify-end">

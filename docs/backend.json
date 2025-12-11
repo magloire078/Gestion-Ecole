@@ -71,8 +71,8 @@
       "required": ["name", "level", "permissions"]
     },
     "staff": {
-      "title": "Membre du Personnel",
-      "description": "Un membre du personnel de l'école (enseignant ou non-enseignant). Représente aussi le profil utilisateur.",
+      "title": "Membre du Personnel (Public)",
+      "description": "Informations publiques d'un membre du personnel de l'école.",
       "type": "object",
       "properties": {
         "uid": { "type": "string", "description": "L'identifiant unique de l'utilisateur (Firebase Auth UID)." },
@@ -89,27 +89,35 @@
         "matricule": { "type": "string", "description": "Matricule interne de l'employé." },
         "status": { "type": "string", "enum": ["Actif", "Inactif"], "description": "Statut de l'employé." },
         "subject": { "type": "string", "description": "La matière principale enseignée (si enseignant)." },
-        "classId": { "type": "string", "description": "L'identifiant de la classe principale supervisée (si enseignant)." },
-        "situationMatrimoniale": { "type": "string", "enum": ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf(ve)"], "description": "Situation matrimoniale." },
-        "enfants": { "type": "number", "description": "Nombre d'enfants à charge." },
-        "categorie": { "type": "string", "description": "Catégorie professionnelle." },
-        "cnpsEmploye": { "type": "string", "description": "Numéro CNPS de l'employé." },
-        "baseSalary": { "type": "number", "description": "Le salaire de base mensuel." },
-        "indemniteTransportImposable": { "type": "number", "description": "Indemnité de transport imposable." },
-        "indemniteResponsabilite": { "type": "number", "description": "Indemnité de responsabilité." },
-        "indemniteLogement": { "type": "number", "description": "Indemnité de logement." },
-        "indemniteSujetion": { "type": "number", "description": "Indemnité de sujétion." },
-        "indemniteCommunication": { "type": "number", "description": "Indemnité de communication." },
-        "indemniteRepresentation": { "type": "number", "description": "Indemnité de représentation." },
-        "transportNonImposable": { "type": "number", "description": "Transport non imposable." },
-        "banque": { "type": "string", "description": "Nom de la banque." },
-        "numeroCompte": { "type": "string", "description": "Numéro de compte bancaire (sans code banque/guichet/clé)." },
-        "CB": { "type": "string", "description": "Code Banque du RIB." },
-        "CG": { "type": "string", "description": "Code Guichet du RIB." },
-        "Cle_RIB": { "type": "string", "description": "Clé RIB." },
-        "CNPS": { "type": "boolean", "description": "L'employé est-il soumis aux cotisations CNPS ?" }
+        "classId": { "type": "string", "description": "L'identifiant de la classe principale supervisée (si enseignant)." }
       },
-      "required": ["uid", "email", "schoolId", "role", "firstName", "lastName", "hireDate", "baseSalary"]
+      "required": ["uid", "email", "schoolId", "role", "firstName", "lastName", "hireDate"]
+    },
+    "staff_private": {
+        "title": "Données Privées du Personnel",
+        "description": "Informations de paie et personnelles sensibles d'un membre du personnel.",
+        "type": "object",
+        "properties": {
+          "situationMatrimoniale": { "type": "string", "enum": ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf(ve)"], "description": "Situation matrimoniale." },
+          "enfants": { "type": "number", "description": "Nombre d'enfants à charge." },
+          "categorie": { "type": "string", "description": "Catégorie professionnelle." },
+          "cnpsEmploye": { "type": "string", "description": "Numéro CNPS de l'employé." },
+          "baseSalary": { "type": "number", "description": "Le salaire de base mensuel." },
+          "indemniteTransportImposable": { "type": "number", "description": "Indemnité de transport imposable." },
+          "indemniteResponsabilite": { "type": "number", "description": "Indemnité de responsabilité." },
+          "indemniteLogement": { "type": "number", "description": "Indemnité de logement." },
+          "indemniteSujetion": { "type": "number", "description": "Indemnité de sujétion." },
+          "indemniteCommunication": { "type": "number", "description": "Indemnité de communication." },
+          "indemniteRepresentation": { "type": "number", "description": "Indemnité de représentation." },
+          "transportNonImposable": { "type": "number", "description": "Transport non imposable." },
+          "banque": { "type": "string", "description": "Nom de la banque." },
+          "numeroCompte": { "type": "string", "description": "Numéro de compte bancaire (sans code banque/guichet/clé)." },
+          "CB": { "type": "string", "description": "Code Banque du RIB." },
+          "CG": { "type": "string", "description": "Code Guichet du RIB." },
+          "Cle_RIB": { "type": "string", "description": "Clé RIB." },
+          "CNPS": { "type": "boolean", "description": "L'employé est-il soumis aux cotisations CNPS ?" }
+        },
+        "required": ["baseSalary"]
     },
     "class": {
       "title": "Classe",
@@ -314,51 +322,55 @@
       "schema": { "$ref": "#/entities/school" },
       "description": "Stocke les informations générales sur un établissement."
     },
-    "/personnel/{staffId}": {
+    "/ecoles/{schoolId}/personnel/{staffId}": {
       "schema": { "$ref": "#/entities/staff" },
-      "description": "Stocke les profils du personnel (enseignants et non-enseignants) qui sont aussi les utilisateurs de l'application."
+      "description": "Stocke les profils publics du personnel pour une école donnée."
     },
-    "/classes/{classId}": {
+     "/ecoles/{schoolId}/personnel/{staffId}/donnees_privees/payroll": {
+      "schema": { "$ref": "#/entities/staff_private" },
+      "description": "Stocke les informations de paie privées d'un membre du personnel."
+    },
+    "/ecoles/{schoolId}/classes/{classId}": {
       "schema": { "$ref": "#/entities/class" },
       "description": "Stocke les informations des classes pour une école."
     },
-    "/cycles/{cycleId}": {
+    "/ecoles/{schoolId}/cycles/{cycleId}": {
         "schema": { "$ref": "#/entities/cycle" },
         "description": "Stocke la liste des cycles d'enseignement pour une école."
     },
-    "/frais_scolarite/{feeId}": {
+    "/ecoles/{schoolId}/frais_scolarite/{feeId}": {
         "schema": { "$ref": "#/entities/fee" },
         "description": "Stocke la structure des frais de scolarité pour l'école."
     },
-    "/eleves/{studentId}": {
+    "/ecoles/{schoolId}/eleves/{studentId}": {
         "schema": { "$ref": "#/entities/student" },
         "description": "Stocke les profils des élèves pour une école."
     },
-    "/eleves/{studentId}/notes/{gradeId}": {
+    "/ecoles/{schoolId}/eleves/{studentId}/notes/{gradeId}": {
         "schema": { "$ref": "#/entities/gradeEntry" },
         "description": "Stocke les notes individuelles d'un élève."
     },
-     "/eleves/{studentId}/paiements/{paymentId}": {
+     "/ecoles/{schoolId}/eleves/{studentId}/paiements/{paymentId}": {
         "schema": { "$ref": "#/entities/payment" },
         "description": "Stocke l'historique des paiements de scolarité pour un élève."
     },
-    "/absences/{absenceId}": {
+    "/ecoles/{schoolId}/absences/{absenceId}": {
         "schema": { "$ref": "#/entities/absence" },
         "description": "Stocke l'historique des absences pour une école."
     },
-    "/comptabilite/{transactionId}": {
+    "/ecoles/{schoolId}/comptabilite/{transactionId}": {
         "schema": { "$ref": "#/entities/accountingTransaction" },
         "description": "Stocke les transactions comptables pour une école."
     },
-    "/bibliotheque/{bookId}": {
+    "/ecoles/{schoolId}/bibliotheque/{bookId}": {
         "schema": { "$ref": "#/entities/libraryBook" },
         "description": "Stocke les livres de la bibliothèque pour une école."
     },
-    "/emploi_du_temps/{entryId}": {
+    "/ecoles/{schoolId}/emploi_du_temps/{entryId}": {
         "schema": { "$ref": "#/entities/timetableEntry" },
         "description": "Stocke les entrées de l'emploi du temps pour une école."
     },
-    "/messagerie/{messageId}": {
+    "/ecoles/{schoolId}/messagerie/{messageId}": {
         "schema": { "$ref": "#/entities/message" },
         "description": "Stocke les messages et annonces envoyés via la messagerie interne."
     },

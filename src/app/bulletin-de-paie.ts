@@ -3,11 +3,14 @@ import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenc
 import { fr } from "date-fns/locale";
 import { numberToWords } from "french-numbers-to-words";
 import placeholderImages from '@/lib/placeholder-images.json';
-import type { staff as Employe, school as OrganizationSettings } from '@/lib/data-types';
+import type { staff as EmployePublic, staff_private as EmployePrive, school as OrganizationSettings } from '@/lib/data-types';
 
 // ====================================================================================
-// 1. DATA TYPES (now imported)
+// 1. DATA TYPES 
 // ====================================================================================
+
+// The full employee object is a combination of public and private data
+export type Employe = EmployePublic & EmployePrive;
 
 export type PayslipEarning = {
     label: string;
@@ -102,7 +105,16 @@ function calculateParts(situation: Employe['situationMatrimoniale'], enfants: nu
 // 3. PAYSLIP CALCULATION LOGIC
 // ====================================================================================
 
-export async function getPayslipDetails(employee: Employe, payslipDate: string, organizationSettings: OrganizationSettings): Promise<PayslipDetails> {
+export async function getPayslipDetails(
+    employeePublicData: EmployePublic, 
+    employeePrivateData: EmployePrive, 
+    payslipDate: string, 
+    organizationSettings: OrganizationSettings
+): Promise<PayslipDetails> {
+    
+    // Merge public and private data into a single employee object
+    const employee: Employe = { ...employeePublicData, ...employeePrivateData };
+
     const { baseSalary = 0, ...otherFields } = employee;
     
     const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);

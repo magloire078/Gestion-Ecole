@@ -57,7 +57,6 @@ export type staff = {
     firstName: string;
     lastName: string;
     hireDate: string;
-    baseSalary: number;
     displayName?: string;
     photoURL?: string;
     phone?: string;
@@ -65,6 +64,9 @@ export type staff = {
     status?: "Actif" | "Inactif";
     subject?: string;
     classId?: string;
+    id?: string;
+    adminRole?: string;
+    baseSalary?: number;
     situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
     enfants?: number;
     categorie?: string;
@@ -82,9 +84,29 @@ export type staff = {
     CG?: string;
     Cle_RIB?: string;
     CNPS?: boolean;
-    id?: string;
-    adminRole?: string;
 };
+
+export type staff_private = {
+    baseSalary: number;
+    situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
+    enfants?: number;
+    categorie?: string;
+    cnpsEmploye?: string;
+    indemniteTransportImposable?: number;
+    indemniteResponsabilite?: number;
+    indemniteLogement?: number;
+    indemniteSujetion?: number;
+    indemniteCommunication?: number;
+    indemniteRepresentation?: number;
+    transportNonImposable?: number;
+    banque?: string;
+    numeroCompte?: string;
+    CB?: string;
+    CG?: string;
+    Cle_RIB?: string;
+    CNPS?: boolean;
+};
+
 
 export type class_type = {
     schoolId: string;
