@@ -157,6 +157,8 @@ export default function TimetablePage() {
     filteredEntries.forEach(entry => {
         uniqueTimes.add(entry.startTime);
     });
+    // Ensure all base time slots are present
+    timeSlots.forEach(slot => uniqueTimes.add(slot));
 
     const sortedTimes = Array.from(uniqueTimes).sort();
 
@@ -213,11 +215,13 @@ export default function TimetablePage() {
         setEditingEntry(entry);
     } else if(day && time) {
         setEditingEntry(null);
+        const timeIndex = timeSlots.indexOf(time);
+        const endTime = timeIndex !== -1 && timeIndex < timeSlots.length -1 ? timeSlots[timeIndex+1] : time;
         form.reset({
             classId: selectedClassId !== 'all' ? selectedClassId : '',
             day: day as TimetableFormValues['day'],
             startTime: time,
-            endTime: timeSlots[timeSlots.indexOf(time) + 1] || time,
+            endTime: endTime,
             teacherId: '',
             subject: ''
         })
