@@ -92,6 +92,7 @@ export type class_type = {
     mainTeacherId: string;
     building: string;
     cycle: "Maternelle" | "Enseignement Primaire" | "Enseignement Secondaire - Premier cycle" | "Enseignement Secondaire - Deuxième cycle" | "Enseignement Supérieur";
+    grade: string;
     studentCount?: number;
     filiere?: string;
     id?: string;

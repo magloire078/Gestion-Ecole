@@ -52,6 +52,7 @@ import { Separator } from "@/components/ui/separator";
 // Define Zod schema for validation
 const classSchema = z.object({
   cycle: z.string().min(1, { message: "Le cycle est requis." }),
+  grade: z.string().min(1, { message: "Le niveau est requis." }),
   name: z.string().min(1, { message: "Le nom de la classe est requis." }),
   filiere: z.string().optional(),
   building: z.string().min(1, { message: "Le bâtiment est requis." }),
@@ -118,6 +119,7 @@ export default function ClassesPage() {
     resolver: zodResolver(classSchema),
     defaultValues: {
       cycle: '',
+      grade: '',
       name: '',
       filiere: '',
       building: '',
@@ -135,6 +137,7 @@ export default function ClassesPage() {
         // NOTE: Editing fees is handled in the fees page, so we don't pre-fill them here.
         form.reset({
           cycle: editingClass.cycle,
+          grade: editingClass.grade,
           name: editingClass.name,
           filiere: editingClass.filiere || '',
           building: editingClass.building,
@@ -145,6 +148,7 @@ export default function ClassesPage() {
       } else {
         form.reset({
           cycle: '',
+          grade: '',
           name: '',
           filiere: '',
           building: '',
@@ -173,6 +177,7 @@ export default function ClassesPage() {
     const classData = {
         schoolId,
         cycle: values.cycle,
+        grade: values.grade,
         name: values.name,
         filiere: values.cycle === "Enseignement Supérieur" ? values.filiere : "",
         building: values.building,
@@ -182,7 +187,7 @@ export default function ClassesPage() {
     
     const feeData = {
         schoolId,
-        grade: values.name,
+        grade: values.grade, // Use grade for the fee link
         amount: values.amount,
         installments: values.installments,
         details: `Frais pour la classe ${values.name}`,
@@ -323,6 +328,9 @@ export default function ClassesPage() {
 
   const teacherOptions = teachers.map(t => ({ value: t.id, label: `${t.firstName} ${t.lastName}` }));
   const cycleOptions = cycles.map(c => ({ value: c.name, label: c.name }));
+  const gradeOptions = schoolClasses
+    .filter(c => c.cycle === watchedCycle)
+    .map(c => ({ value: c.name, label: c.name }));
   const filiereOptions = higherEdFiliere.map(f => ({ value: f, label: f }));
   
   const renderFormContent = () => (
@@ -343,7 +351,8 @@ export default function ClassesPage() {
                         onValueChange={(value) => {
                             const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
                             field.onChange(cycleOption ? cycleOption.value : '');
-                            form.setValue('name', ''); // Reset class name when cycle changes
+                            form.setValue('grade', ''); // Reset grade when cycle changes
+                            form.setValue('name', '');
                             form.setValue('filiere', '');
                         }}
                     />
@@ -352,6 +361,33 @@ export default function ClassesPage() {
             </FormItem>
             )}
         />
+        
+        {watchedCycle && (
+          <FormField
+            control={form.control}
+            name="grade"
+            render={({ field }) => (
+            <FormItem>
+                <FormLabel>Niveau</FormLabel>
+                <FormControl>
+                    <Combobox
+                        placeholder="Sélectionner un niveau"
+                        searchPlaceholder="Chercher un niveau..."
+                        options={gradeOptions}
+                        value={field.value}
+                        onValueChange={(value) => {
+                            field.onChange(value);
+                            form.setValue('name', value);
+                        }}
+                    />
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+            )}
+          />
+        )}
+
+
         {watchedCycle === "Enseignement Supérieur" && (
             <FormField
                 control={form.control}
@@ -377,7 +413,7 @@ export default function ClassesPage() {
             name="name"
             render={({ field }) => (
                 <FormItem>
-                    <FormLabel>Nom de la Classe</FormLabel>
+                    <FormLabel>Nom Complet de la Classe</FormLabel>
                     <FormControl>
                         <Input placeholder="Ex: CM2 A, Terminale D, etc." {...field} />
                     </FormControl>
@@ -514,7 +550,7 @@ export default function ClassesPage() {
                                     </DropdownMenuContent>
                                     </DropdownMenu>
                                 </div>
-                                <CardDescription>{cls.filiere ? `Filière ${cls.filiere}` : `Bâtiment ${cls.building}`}</CardDescription>
+                                <CardDescription>{cls.grade} {cls.filiere ? ` / ${cls.filiere}` : ''}</CardDescription>
                                 </CardHeader>
                                 <CardContent className="space-y-3 flex-1">
                                     <div className="flex items-center text-sm text-muted-foreground"><Users className="mr-2 h-4 w-4 flex-shrink-0" /><span>{cls.studentCount || 0} élève(s)</span></div>
