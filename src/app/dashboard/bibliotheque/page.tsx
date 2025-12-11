@@ -43,7 +43,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -74,7 +74,7 @@ export default function LibraryPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
   
-  const booksQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/bibliotheque`) : null, [firestore, schoolId]);
+  const booksQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
   const books: LibraryBook[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook)) || [], [booksData]);
 
@@ -112,7 +112,7 @@ export default function LibraryPage() {
   }, [isFormOpen, editingBook, form]);
 
 
-  const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
+  const getBookDocRef = (bookId: string) => doc(firestore, `bibliotheque/${bookId}`);
 
   const handleBookSubmit = (values: BookFormValues) => {
     if (!schoolId) {
@@ -122,6 +122,7 @@ export default function LibraryPage() {
     
     const bookData = {
       ...values,
+      schoolId,
       createdAt: serverTimestamp(),
     };
 
@@ -137,7 +138,7 @@ export default function LibraryPage() {
             errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-        const booksCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
+        const booksCollectionRef = collection(firestore, `bibliotheque`);
         addDoc(booksCollectionRef, bookData)
         .then(() => {
             toast({ title: "Livre ajouté", description: `"${values.title}" a été ajouté à la bibliothèque.` });

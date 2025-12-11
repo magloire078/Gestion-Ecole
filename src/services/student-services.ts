@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, updateDoc, Firestore } from "firebase/firestore";
@@ -22,7 +23,7 @@ export const updateStudentPhoto = async (
         throw new Error("L'ID de l'école et de l'élève sont requis.");
     }
     
-    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
+    const studentRef = doc(firestore, `eleves/${studentId}`);
     const dataToUpdate = { photoUrl };
 
     try {

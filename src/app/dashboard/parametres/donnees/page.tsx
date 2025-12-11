@@ -23,9 +23,9 @@ export default function DataIntegrityPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
-  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const staffQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/personnel`) : null, [firestore, schoolId]);
+  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, 'eleves'), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, 'classes'), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, 'personnel'), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -36,7 +36,7 @@ export default function DataIntegrityPage() {
   const staff: StaffWithId[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffWithId)) || [], [staffData]);
   
   const classIds = useMemo(() => new Set(classes.map(c => c.id)), [classes]);
-  const teacherIds = useMemo(() => new Set(staff.filter(s => s.role === 'Enseignant').map(t => t.id)), [staff]);
+  const teacherIds = useMemo(() => new Set(staff.filter(s => s.role === 'enseignant').map(t => t.id)), [staff]);
 
   const isLoading = schoolLoading || studentsLoading || classesLoading || staffLoading;
 
@@ -159,7 +159,7 @@ export default function DataIntegrityPage() {
                                       <TableCell>{member.role}</TableCell>
                                       <TableCell className="font-mono text-xs">{member.classId || 'N/A'}</TableCell>
                                       <TableCell>
-                                          {member.role !== 'Enseignant' ? (
+                                          {member.role !== 'enseignant' ? (
                                               <Badge variant="outline">Non applicable</Badge>
                                           ) : member.classId && classIds.has(member.classId) ? (
                                              <Badge variant="secondary" className="text-emerald-600 border-emerald-600/20"><CheckCircle className="mr-2 h-4 w-4" />Valide</Badge>

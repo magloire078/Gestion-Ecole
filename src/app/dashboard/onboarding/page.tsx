@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useAuth } from "@/firebase";
-import { doc, writeBatch, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, writeBatch, collection, query, where, getDocs, serverTimestamp, addDoc } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -69,7 +70,7 @@ export default function OnboardingPage() {
       }
     };
     
-    const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
+    const staffProfileRef = doc(firestore, `personnel/${user.uid}`);
     const staffProfileData = {
         uid: user.uid,
         email: user.email,
@@ -94,8 +95,8 @@ export default function OnboardingPage() {
         batch.set(rootUserRef, rootUserData);
         
         schoolCycles.forEach(cycle => {
-            const cycleRef = doc(collection(firestore, `ecoles/${schoolId}/cycles`));
-            batch.set(cycleRef, cycle);
+            const cycleRef = doc(collection(firestore, `cycles`));
+            batch.set(cycleRef, {...cycle, schoolId});
         });
         
         await batch.commit();
@@ -111,7 +112,7 @@ export default function OnboardingPage() {
         window.location.href = '/dashboard';
 
     } catch (error: any) {
-        const path = `[BATCH WRITE] /ecoles/${schoolId}, user data, cycles`;
+        const path = `[BATCH WRITE] /ecoles, /personnel, /utilisateurs, /cycles`;
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'write',
@@ -154,7 +155,7 @@ export default function OnboardingPage() {
 
 
         const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
-        const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
+        const staffProfileRef = doc(firestore, `personnel/${user.uid}`);
         
         const rootUserData = { schoolId: schoolId };
         const staffProfileData = {
@@ -186,7 +187,7 @@ export default function OnboardingPage() {
 
     } catch(error: any) {
          const permissionError = new FirestorePermissionError({
-            path: `/utilisateurs/${user.uid} and /ecoles/{schoolId}/personnel/${user.uid}`,
+            path: `/utilisateurs/${user.uid} and /personnel/${user.uid}`,
             operation: 'write',
             requestResourceData: { schoolCode },
         });

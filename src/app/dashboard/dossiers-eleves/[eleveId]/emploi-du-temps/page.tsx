@@ -29,7 +29,7 @@ export default function StudentTimetablePage() {
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+    (schoolId && eleveId) ? doc(firestore, `eleves/${eleveId}`) : null
   , [firestore, schoolId, eleveId]);
 
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
@@ -37,10 +37,10 @@ export default function StudentTimetablePage() {
   const classId = student?.classId;
 
   const timetableQuery = useMemoFirebase(() =>
-    (schoolId && classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
+    (schoolId && classId) ? query(collection(firestore, `emploi_du_temps`), where('schoolId', '==', schoolId), where('classId', '==', classId)) : null
   , [firestore, schoolId, classId]);
 
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
 
   const { data: timetableData, loading: timetableLoading } = useCollection<TimetableEntry>(timetableQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection<Staff & { id: string }>(teachersQuery);

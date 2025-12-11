@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, serverTimestamp, writeBatch, doc, increment } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
@@ -61,11 +61,11 @@ export default function RegistrationPage() {
 
   const [step, setStep] = useState(1);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `frais_scolarite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
 
@@ -124,6 +124,7 @@ export default function RegistrationPage() {
 
 
     const studentData = {
+      schoolId,
       matricule: values.matricule,
       lastName: values.lastName,
       firstName: values.firstName,
@@ -155,12 +156,12 @@ export default function RegistrationPage() {
     const batch = writeBatch(firestore);
     
     // 1. Create the new student document
-    const newStudentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves`));
+    const newStudentRef = doc(collection(firestore, `eleves`));
     batch.set(newStudentRef, studentData);
 
     // 2. Atomically increment the student count on the class document
     if (selectedClassInfo) {
-        const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id);
+        const classRef = doc(firestore, `classes`, selectedClassInfo.id);
         batch.update(classRef, { studentCount: increment(1) });
     }
 

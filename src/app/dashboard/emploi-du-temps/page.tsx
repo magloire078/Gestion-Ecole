@@ -95,9 +95,9 @@ export default function TimetablePage() {
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
 
   // --- Firestore Data Hooks ---
-  const timetableQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/emploi_du_temps`) : null, [firestore, schoolId]);
-  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const timetableQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `emploi_du_temps`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
@@ -180,32 +180,33 @@ export default function TimetablePage() {
 }, [timetable, selectedClassId]);
 
 
-  const getEntryDocRef = (entryId: string) => doc(firestore, `ecoles/${schoolId}/emploi_du_temps/${entryId}`);
+  const getEntryDocRef = (entryId: string) => doc(firestore, `emploi_du_temps/${entryId}`);
 
   const handleSubmitEntry = (values: TimetableFormValues) => {
     if (!schoolId) {
       toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
       return;
     }
+    const dataWithSchoolId = { ...values, schoolId };
 
     if (editingEntry) {
         const entryDocRef = getEntryDocRef(editingEntry.id);
-        setDoc(entryDocRef, values, { merge: true })
+        setDoc(entryDocRef, dataWithSchoolId, { merge: true })
         .then(() => {
             toast({ title: "Entrée modifiée", description: "L'entrée de l'emploi du temps a été mise à jour." });
             setIsFormOpen(false);
         }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: entryDocRef.path, operation: 'update', requestResourceData: values });
+            const permissionError = new FirestorePermissionError({ path: entryDocRef.path, operation: 'update', requestResourceData: dataWithSchoolId });
             errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-        const timetableCollectionRef = collection(firestore, `ecoles/${schoolId}/emploi_du_temps`);
-        addDoc(timetableCollectionRef, values)
+        const timetableCollectionRef = collection(firestore, `emploi_du_temps`);
+        addDoc(timetableCollectionRef, dataWithSchoolId)
         .then(() => {
             toast({ title: "Entrée ajoutée", description: "La nouvelle entrée a été ajoutée à l'emploi du temps." });
             setIsFormOpen(false);
         }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: timetableCollectionRef.path, operation: 'create', requestResourceData: values });
+            const permissionError = new FirestorePermissionError({ path: timetableCollectionRef.path, operation: 'create', requestResourceData: dataWithSchoolId });
             errorEmitter.emit('permission-error', permissionError);
         });
     }

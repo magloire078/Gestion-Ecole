@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, getDoc } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -57,6 +57,8 @@ export function useSchoolData() {
             }
         }, (error) => {
             console.error("Error fetching user root doc:", error);
+            // This is a critical error, maybe show an error page or try to recover.
+            // For now, we'll assume the user is not onboarded if this fails.
             setSchoolId(null);
             setLoading(false);
         });
@@ -106,9 +108,13 @@ export function useSchoolData() {
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         
+        const schoolSnap = await getDoc(schoolDocRef);
+        if (!schoolSnap.exists()) {
+            throw new Error("Document de l'école non trouvé.");
+        }
+
         const dataToUpdate = {
             ...data,
-            directorId: schoolData?.directorId, // Ensure directorId is always present in the update
         };
 
         try {
@@ -122,7 +128,7 @@ export function useSchoolData() {
             errorEmitter.emit('permission-error', permissionError);
             throw permissionError;
         }
-    }, [schoolId, firestore, schoolData]);
+    }, [schoolId, firestore]);
 
     return { 
         schoolId, 

@@ -35,7 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, serverTimestamp, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -77,11 +77,11 @@ export default function MessagingPage() {
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
-  const messagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy("createdAt", "desc")) : null, [firestore, schoolId]);
+  const messagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `messagerie`), where('schoolId', '==', schoolId), orderBy("createdAt", "desc")) : null, [firestore, schoolId]);
   const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
   const messages: Message[] = useMemo(() => messagesData?.map(d => ({ id: d.id, ...d.data() } as Message)) || [], [messagesData]);
   
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
@@ -116,12 +116,13 @@ export default function MessagingPage() {
 
     const messageData = {
         ...values,
+        schoolId,
         senderId: user.uid,
         senderName: user.displayName,
         createdAt: serverTimestamp(),
     };
 
-    const messagesCollectionRef = collection(firestore, `ecoles/${schoolId}/messagerie`);
+    const messagesCollectionRef = collection(firestore, `messagerie`);
     addDoc(messagesCollectionRef, messageData)
     .then(() => {
         toast({ title: "Message envoyé", description: `Votre message a bien été envoyé.` });

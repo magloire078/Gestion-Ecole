@@ -6,7 +6,7 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { teacher as Teacher } from '@/lib/data-types';
+import type { staff as Teacher } from '@/lib/data-types';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 
 export default function TeacherSheetPage() {
@@ -16,7 +16,7 @@ export default function TeacherSheetPage() {
   const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
 
   const teacherRef = useMemoFirebase(() => 
-    (schoolId && teacherId) ? doc(firestore, `ecoles/${schoolId}/enseignants/${teacherId}`) : null
+    (schoolId && teacherId) ? doc(firestore, `personnel/${teacherId}`) : null
   , [firestore, schoolId, teacherId]);
 
   const { data: teacherData, loading: teacherLoading } = useDoc<Teacher>(teacherRef);
@@ -33,7 +33,7 @@ export default function TeacherSheetPage() {
     );
   }
 
-  if (!teacherData) {
+  if (!teacherData || teacherData.schoolId !== schoolId) {
     notFound();
   }
   

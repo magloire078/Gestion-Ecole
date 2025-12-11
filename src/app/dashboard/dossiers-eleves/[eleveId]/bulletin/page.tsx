@@ -30,14 +30,14 @@ export default function StudentReportPage() {
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+    (schoolId && eleveId) ? doc(firestore, `eleves/${eleveId}`) : null
   , [firestore, schoolId, eleveId]);
 
   const gradesQuery = useMemoFirebase(() =>
-    (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`)) : null
+    (schoolId && eleveId) ? query(collection(firestore, `eleves/${eleveId}/notes`)) : null
   , [firestore, schoolId, eleveId]);
   
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
 
 
   const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);

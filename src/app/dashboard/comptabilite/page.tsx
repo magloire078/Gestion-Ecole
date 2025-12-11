@@ -53,7 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -80,7 +80,7 @@ export default function AccountingPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
-  const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), orderBy("date", "desc")) : null, [firestore, schoolId]);
+  const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `comptabilite`), where('schoolId', '==', schoolId), orderBy("date", "desc")) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
   const transactions: AccountingTransaction[] = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction)) || [], [transactionsData]);
 
@@ -136,13 +136,14 @@ export default function AccountingPage() {
   }, [watchedType, form]);
 
 
-  const getTransactionDocRef = (transactionId: string) => doc(firestore, `ecoles/${schoolId}/comptabilite/${transactionId}`);
+  const getTransactionDocRef = (transactionId: string) => doc(firestore, `comptabilite/${transactionId}`);
   
   const handleTransactionSubmit = (values: TransactionFormValues) => {
     if (!schoolId) return;
 
     const transactionData = {
         ...values,
+        schoolId,
         date: format(new Date(values.date), "yyyy-MM-dd"),
     };
 
@@ -157,7 +158,7 @@ export default function AccountingPage() {
             errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-        const transactionCollectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+        const transactionCollectionRef = collection(firestore, `comptabilite`);
         addDoc(transactionCollectionRef, transactionData)
         .then(() => {
             toast({ title: "Transaction ajoutée", description: `La transaction a été enregistrée.` });
