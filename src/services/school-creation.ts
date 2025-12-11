@@ -1,3 +1,4 @@
+
 'use client';
 import { 
   collection, 
@@ -21,7 +22,8 @@ interface SchoolData {
     currency: string;
     template: string;
     directorId: string;
-    directorName: string;
+    directorFirstName: string;
+    directorLastName: string;
     directorEmail: string;
 }
 
@@ -56,8 +58,8 @@ export class SchoolCreationService {
       website: '', // Can be added later
       schoolCode: schoolCode,
       directorId: userId,
-      directorFirstName: schoolData.directorName.split(' ')[0],
-      directorLastName: schoolData.directorName.split(' ').slice(1).join(' '),
+      directorFirstName: schoolData.directorFirstName,
+      directorLastName: schoolData.directorLastName,
       directorPhone: '', // Can be added later
       createdAt: serverTimestamp(),
       subscription: {
@@ -71,15 +73,17 @@ export class SchoolCreationService {
     batch.set(userRef, { schoolId });
 
     // 3. Create a staff profile for the director
-    const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, userId);
+    const staffRef = doc(this.db, `personnel`, userId);
     batch.set(staffRef, {
         uid: userId,
         schoolId: schoolId,
         role: 'directeur',
-        firstName: schoolData.directorName.split(' ')[0],
-        lastName: schoolData.directorName.split(' ').slice(1).join(' '),
+        firstName: schoolData.directorFirstName,
+        lastName: schoolData.directorLastName,
+        displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
         email: schoolData.directorEmail,
         hireDate: format(new Date(), 'yyyy-MM-dd'),
+        baseSalary: 0, // Default base salary
     });
     
     // 4. Create default structure from template
