@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -115,13 +116,13 @@ export default function HRPage() {
   const { toast } = useToast();
 
   // --- Firestore Data Hooks ---
-  const staffQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/personnel`) : null, [firestore, schoolId]);
+  const staffQuery = useMemoFirebase(() => schoolId ? collection(firestore, `personnel`) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
-  const staff: StaffMember[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [], [staffData]);
+  const staff: StaffMember[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)).filter(s => s.schoolId === schoolId) || [], [staffData, schoolId]);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `classes`) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)).filter(c => c.schoolId === schoolId) || [], [classesData, schoolId]);
 
   // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -217,17 +218,19 @@ export default function HRPage() {
     
     const dataToSave: Omit<Employe, 'id'> = { 
         ...values,
+        schoolId,
+        uid: editingStaff?.uid || '', // Should be properly assigned from auth
         matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
         status: editingStaff?.status || 'Actif',
     };
 
     try {
         if (editingStaff) {
-            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
+            const staffDocRef = doc(firestore, `personnel/${editingStaff.id}`);
             await setDoc(staffDocRef, dataToSave, { merge: true });
             toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         } else {
-            const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
+            const staffCollectionRef = collection(firestore, `personnel`);
             await addDoc(staffCollectionRef, dataToSave);
             toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) à la liste du personnel.` });
         }
@@ -235,7 +238,7 @@ export default function HRPage() {
         setEditingStaff(null);
     } catch (error) {
         const operation = editingStaff ? 'update' : 'create';
-        const path = `ecoles/${schoolId}/personnel/${editingStaff?.id || ''}`;
+        const path = `personnel/${editingStaff?.id || ''}`;
         const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
         errorEmitter.emit('permission-error', permissionError);
     }
@@ -243,7 +246,7 @@ export default function HRPage() {
   
   const handleDelete = () => {
     if (!schoolId || !staffToDelete) return;
-    const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffToDelete.id}`);
+    const staffDocRef = doc(firestore, `personnel/${staffToDelete.id}`);
     deleteDoc(staffDocRef)
       .then(() => {
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
@@ -408,7 +411,7 @@ export default function HRPage() {
                                 {watchedRole === 'Enseignant' && (
                                     <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
                                         <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{allSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                        <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                                        <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
                                     </div>
                                 )}
                                 <div className="grid grid-cols-2 gap-4">

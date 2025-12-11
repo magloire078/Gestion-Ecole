@@ -132,22 +132,20 @@ export default function StudentsPage() {
         batch.update(classDocRef, { studentCount: increment(-1) });
     }
 
-    batch.commit()
-      .then(() => {
+    try {
+        await batch.commit();
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
-      })
-      .catch((serverError) => {
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({
             path: `[BATCH] /eleves/${studentToDelete.id} & /classes/${studentToDelete.classId}`,
             operation: 'write',
             requestResourceData: { studentDeletePath: studentDocRef.path, classUpdatePath: studentToDelete.classId ? `/classes/${studentToDelete.classId}` : 'N/A' }
         });
         errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
+    } finally {
         setIsDeleteDialogOpen(false);
         setStudentToDelete(null);
-      });
+    }
   }
   
   const getAge = (dateOfBirth: string | undefined) => {

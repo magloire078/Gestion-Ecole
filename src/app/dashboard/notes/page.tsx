@@ -105,12 +105,12 @@ export default function GradeEntryPage() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   // --- Data Fetching ---
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const studentsQuery = useMemoFirebase(() =>
-    schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', selectedClassId)) : null
+    schoolId && selectedClassId ? query(collection(firestore, `eleves`), where('schoolId', '==', schoolId), where('classId', '==', selectedClassId)) : null
   , [firestore, schoolId, selectedClassId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
@@ -151,7 +151,7 @@ export default function GradeEntryPage() {
       
       const allGrades: GradeEntry[] = [];
       for (const student of studentsInClass) {
-        const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/notes`);
+        const gradesCollectionRef = collection(firestore, `eleves/${student.id}/notes`);
         const q = query(gradesCollectionRef, where('subject', '==', selectedSubject));
         const querySnapshot = await getDocs(q);
         querySnapshot.forEach(doc => {
@@ -217,13 +217,13 @@ export default function GradeEntryPage() {
     try {
         if (editingGrade) {
             // Update
-            const gradeRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingGrade.studentId}/notes/${editingGrade.id}`);
+            const gradeRef = doc(firestore, `eleves/${editingGrade.studentId}/notes/${editingGrade.id}`);
             await setDoc(gradeRef, gradeData);
             toast({ title: 'Note modifiée', description: `La note a été mise à jour.` });
             setAllGradesForSubject(prev => prev.map(g => g.id === editingGrade.id ? { ...g, ...gradeData, studentId: editingGrade.studentId } : g));
         } else {
             // Create
-            const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${values.studentId}`);
+            const studentRef = doc(firestore, `eleves/${values.studentId}`);
             const studentSnap = await getDoc(studentRef);
 
             if (!studentSnap.exists()) {
@@ -232,7 +232,7 @@ export default function GradeEntryPage() {
             }
 
             const student = studentSnap.data() as Student;
-            const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${values.studentId}/notes`);
+            const gradesCollectionRef = collection(firestore, `eleves/${values.studentId}/notes`);
             const newDocRef = await addDoc(gradesCollectionRef, gradeData);
             
             toast({ 
@@ -246,8 +246,8 @@ export default function GradeEntryPage() {
       const operation = editingGrade ? 'update' : 'create';
       const studentIdForPath = editingGrade ? editingGrade.studentId : values.studentId;
       const path = editingGrade 
-        ? `ecoles/${schoolId}/eleves/${studentIdForPath}/notes/${editingGrade.id}`
-        : `ecoles/${schoolId}/eleves/${studentIdForPath}/notes`;
+        ? `eleves/${studentIdForPath}/notes/${editingGrade.id}`
+        : `eleves/${studentIdForPath}/notes`;
 
       const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: gradeData });
       errorEmitter.emit('permission-error', permissionError);
@@ -262,7 +262,7 @@ export default function GradeEntryPage() {
   const handleDeleteGrade = async () => {
     if (!schoolId || !gradeToDelete) return;
     try {
-        const gradeRef = doc(firestore, `ecoles/${schoolId}/eleves/${gradeToDelete.studentId}/notes/${gradeToDelete.id}`);
+        const gradeRef = doc(firestore, `eleves/${gradeToDelete.studentId}/notes/${gradeToDelete.id}`);
         await deleteDoc(gradeRef);
         toast({ title: 'Note supprimée', description: 'La note a été supprimée.' });
         setAllGradesForSubject(prev => prev.filter(g => g.id !== gradeToDelete.id));
@@ -270,7 +270,7 @@ export default function GradeEntryPage() {
         setGradeToDelete(null);
     } catch(error) {
          const permissionError = new FirestorePermissionError({ 
-             path: `ecoles/${schoolId}/eleves/${gradeToDelete.studentId}/notes/${gradeToDelete.id}`, 
+             path: `eleves/${gradeToDelete.studentId}/notes/${gradeToDelete.id}`, 
              operation: 'delete' 
         });
         errorEmitter.emit('permission-error', permissionError);
@@ -503,5 +503,3 @@ export default function GradeEntryPage() {
     </>
   );
 }
-
-    

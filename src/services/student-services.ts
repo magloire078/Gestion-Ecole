@@ -8,19 +8,17 @@ import { FirestorePermissionError } from "@/firebase/errors";
 /**
  * Met à jour l'URL de la photo d'un élève dans Firestore.
  * @param firestore - L'instance de Firestore.
- * @param schoolId - L'ID de l'école.
  * @param studentId - L'ID de l'élève.
  * @param photoUrl - La nouvelle URL de la photo.
  */
 export const updateStudentPhoto = async (
     firestore: Firestore,
-    schoolId: string,
     studentId: string,
     photoUrl: string
 ): Promise<void> => {
     
-    if (!schoolId || !studentId) {
-        throw new Error("L'ID de l'école et de l'élève sont requis.");
+    if (!studentId) {
+        throw new Error("L'ID de l'élève est requis.");
     }
     
     const studentRef = doc(firestore, `eleves/${studentId}`);
