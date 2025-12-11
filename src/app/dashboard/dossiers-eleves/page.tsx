@@ -55,7 +55,7 @@ import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { student as Student, class_type as Class } from "@/lib/data-types";
+import type { student as Student, class_type as Class, fee as Fee } from "@/lib/data-types";
 import { StudentEditForm } from "@/components/student-edit-form";
 
 const getStatusBadgeVariant = (status: Student['status']) => {
@@ -80,12 +80,16 @@ export default function StudentsPage() {
 
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   
   const allStudents: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+
 
   const [searchTerm, setSearchTerm] = useState("");
   const students = useMemo(() => {
@@ -166,7 +170,7 @@ export default function StudentsPage() {
     }
   }
 
-  const isLoading = schoolLoading || studentsLoading || classesLoading;
+  const isLoading = schoolLoading || studentsLoading || classesLoading || feesLoading;
   
   const handlePrint = () => {
     window.print();
@@ -316,7 +320,8 @@ export default function StudentsPage() {
           {editingStudent && schoolId && (
             <StudentEditForm 
               student={editingStudent} 
-              classes={classes} 
+              classes={classes}
+              fees={fees}
               schoolId={schoolId} 
               onFormSubmit={() => setIsEditDialogOpen(false)} 
             />

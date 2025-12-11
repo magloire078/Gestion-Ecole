@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -18,7 +17,7 @@ import { doc, writeBatch, increment } from 'firebase/firestore';
 import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import type { student as Student, class_type as Class } from '@/lib/data-types';
+import type { student as Student, class_type as Class, fee as Fee } from '@/lib/data-types';
 
 const studentSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -39,11 +38,12 @@ type StudentFormValues = z.infer<typeof studentSchema>;
 interface StudentEditFormProps {
   student: Student;
   classes: Class[];
+  fees: Fee[]; // Ajout des frais
   schoolId: string;
   onFormSubmit: () => void;
 }
 
-export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: StudentEditFormProps) {
+export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit }: StudentEditFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [analysisResult, setAnalysisResult] = useState<AnalyzeAndSummarizeFeedbackOutput | null>(null);
@@ -68,11 +68,31 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
   
   const watchedTuitionFee = useWatch({ control: form.control, name: 'tuitionFee' });
   const watchedDiscountAmount = useWatch({ control: form.control, name: 'discountAmount' });
+  const watchedClassId = useWatch({ control: form.control, name: 'classId' });
 
+  // Effet pour mettre à jour les frais de scolarité et le solde dû lors du changement de classe
   useEffect(() => {
-    const netAmount = (watchedTuitionFee || 0) - (watchedDiscountAmount || 0);
-    form.setValue('amountDue', Math.max(0, netAmount));
-  }, [watchedTuitionFee, watchedDiscountAmount, form]);
+    if (watchedClassId === student.classId) {
+        // Si la classe n'a pas changé, on recalcule juste le solde dû
+        const netAmount = (watchedTuitionFee || 0) - (watchedDiscountAmount || 0);
+        form.setValue('amountDue', Math.max(0, netAmount));
+        return;
+    };
+    
+    const newClass = classes.find(c => c.id === watchedClassId);
+    if (!newClass) return;
+
+    const feeForNewClass = fees.find(f => f.grade === newClass.name);
+    const newTuitionFee = feeForNewClass ? parseFloat(feeForNewClass.amount) : 0;
+    
+    // Mettre à jour les champs du formulaire
+    form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
+    // Réinitialiser la remise lors du changement de classe, car elle pourrait ne plus être applicable
+    form.setValue('discountAmount', 0, { shouldValidate: true }); 
+    const netAmount = newTuitionFee - (form.getValues('discountAmount') || 0);
+    form.setValue('amountDue', Math.max(0, netAmount), { shouldValidate: true });
+
+  }, [watchedClassId, watchedTuitionFee, watchedDiscountAmount, form, classes, fees, student.classId]);
 
 
   const handleEditStudent = async (values: StudentFormValues) => {
@@ -119,7 +139,7 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
 
     try {
         await batch.commit();
-        toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
+        toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}` });
         onFormSubmit();
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({ 
@@ -189,7 +209,7 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
         
         <div className="p-4 border rounded-lg space-y-4 mt-4">
             <h4 className="font-medium text-sm">Gestion de la Scolarité</h4>
-            <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly={watchedClassId !== student.classId} className={watchedClassId !== student.classId ? "bg-muted" : ""} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
              <FormField
