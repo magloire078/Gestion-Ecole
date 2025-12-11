@@ -80,18 +80,9 @@ service cloud.firestore {
             allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
-        match /enseignants/{teacherId} {
-            allow read, list: if isUserInSchool(schoolId);
-            // Any authenticated member of the school can add or update a teacher.
-            allow create, update: if isUserInSchool(schoolId);
-            // Only a director or admin can delete a teacher.
-            allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-        }
-
         match /eleves/{studentId} {
-            allow read, list: if isUserInSchool(schoolId);
-            // Any authenticated member of the school can manage student records.
-            allow write: if isUserInSchool(schoolId);
+            allow read, list, create, update: if isUserInSchool(schoolId);
+            allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
 
             match /notes/{gradeId} {
                 // Any staff member of the school (teacher, admin, director) can read and write grades.

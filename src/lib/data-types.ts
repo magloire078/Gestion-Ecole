@@ -36,16 +36,6 @@ export type school = {
     };
 };
 
-export type teacher = {
-    id: string;
-    firstName: string;
-    lastName: string;
-    subject: string;
-    email: string;
-    phone?: string;
-    classId?: string;
-};
-
 export type staff = {
     id?: string;
     firstName: string;
@@ -57,6 +47,8 @@ export type staff = {
     phone?: string;
     matricule?: string;
     status?: "Actif" | "Inactif";
+    subject?: string;
+    classId?: string;
     situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
     enfants?: number;
     categorie?: string;

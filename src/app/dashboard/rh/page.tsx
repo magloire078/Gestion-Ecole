@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -10,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, FileText } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText, BookUser } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -64,7 +65,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { PayslipPreview } from '@/components/payroll/payslip-template';
-
+import { allSubjects } from '@/lib/data';
+import type { class_type as Class } from '@/lib/data-types';
 
 const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -74,7 +76,10 @@ const staffSchema = z.object({
   phone: z.string().optional(),
   baseSalary: z.coerce.number().min(0, { message: 'Le salaire doit être positif.' }),
   hireDate: z.string().min(1, { message: "La date d'embauche est requise." }),
-  // Payroll fields
+  // --- Teacher-specific fields ---
+  subject: z.string().optional(),
+  classId: z.string().optional(),
+  // --- Payroll fields ---
   situationMatrimoniale: z.string().optional(),
   enfants: z.coerce.number().min(0).optional(),
   categorie: z.string().optional(),
@@ -92,7 +97,11 @@ const staffSchema = z.object({
   CG: z.string().optional(),
   numeroCompte: z.string().optional(),
   Cle_RIB: z.string().optional(),
+}).refine(data => data.role !== 'Enseignant' || (data.role === 'Enseignant' && data.subject), {
+  message: "La matière principale est requise pour un enseignant.",
+  path: ["subject"],
 });
+
 
 type StaffFormValues = z.infer<typeof staffSchema>;
 
@@ -109,6 +118,10 @@ export default function HRPage() {
   const staffQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/personnel`) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   const staff: StaffMember[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [], [staffData]);
+
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -130,6 +143,8 @@ export default function HRPage() {
       phone: '',
       baseSalary: 0,
       hireDate: format(new Date(), 'yyyy-MM-dd'),
+      subject: '',
+      classId: '',
       situationMatrimoniale: 'Célibataire',
       enfants: 0,
       categorie: '',
@@ -150,62 +165,46 @@ export default function HRPage() {
     },
   });
 
+  const watchedRole = form.watch('role');
+
   useEffect(() => {
     if (isFormOpen) {
+      const defaultValues: StaffFormValues = {
+        firstName: '', lastName: '', role: '', email: '', phone: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+      };
+
       if (editingStaff) {
-        form.reset({
-          firstName: editingStaff.firstName || '',
-          lastName: editingStaff.lastName || '',
-          role: editingStaff.role || '',
-          email: editingStaff.email || '',
-          phone: editingStaff.phone || '',
-          baseSalary: editingStaff.baseSalary || 0,
-          hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
-          situationMatrimoniale: editingStaff.situationMatrimoniale || 'Célibataire',
-          enfants: editingStaff.enfants || 0,
-          categorie: editingStaff.categorie || '',
-          cnpsEmploye: editingStaff.cnpsEmploye || '',
-          CNPS: editingStaff.CNPS ?? true,
-          indemniteTransportImposable: editingStaff.indemniteTransportImposable || 0,
-          indemniteResponsabilite: editingStaff.indemniteResponsabilite || 0,
-          indemniteLogement: editingStaff.indemniteLogement || 0,
-          indemniteSujetion: editingStaff.indemniteSujetion || 0,
-          indemniteCommunication: editingStaff.indemniteCommunication || 0,
-          indemniteRepresentation: editingStaff.indemniteRepresentation || 0,
-          transportNonImposable: editingStaff.transportNonImposable || 0,
-          banque: editingStaff.banque || '',
-          CB: editingStaff.CB || '',
-          CG: editingStaff.CG || '',
-          numeroCompte: editingStaff.numeroCompte || '',
-          Cle_RIB: editingStaff.Cle_RIB || '',
-        });
+          form.reset({
+            ...defaultValues,
+            firstName: editingStaff.firstName || '',
+            lastName: editingStaff.lastName || '',
+            role: editingStaff.role || '',
+            email: editingStaff.email || '',
+            phone: editingStaff.phone || '',
+            baseSalary: editingStaff.baseSalary || 0,
+            hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+            subject: editingStaff.subject || '',
+            classId: editingStaff.classId || '',
+            situationMatrimoniale: editingStaff.situationMatrimoniale || 'Célibataire',
+            enfants: editingStaff.enfants || 0,
+            categorie: editingStaff.categorie || '',
+            cnpsEmploye: editingStaff.cnpsEmploye || '',
+            CNPS: editingStaff.CNPS ?? true,
+            indemniteTransportImposable: editingStaff.indemniteTransportImposable || 0,
+            indemniteResponsabilite: editingStaff.indemniteResponsabilite || 0,
+            indemniteLogement: editingStaff.indemniteLogement || 0,
+            indemniteSujetion: editingStaff.indemniteSujetion || 0,
+            indemniteCommunication: editingStaff.indemniteCommunication || 0,
+            indemniteRepresentation: editingStaff.indemniteRepresentation || 0,
+            transportNonImposable: editingStaff.transportNonImposable || 0,
+            banque: editingStaff.banque || '',
+            CB: editingStaff.CB || '',
+            CG: editingStaff.CG || '',
+            numeroCompte: editingStaff.numeroCompte || '',
+            Cle_RIB: editingStaff.Cle_RIB || '',
+          });
       } else {
-        form.reset({
-          firstName: '',
-          lastName: '',
-          role: '',
-          email: '',
-          phone: '',
-          baseSalary: 0,
-          hireDate: format(new Date(), 'yyyy-MM-dd'),
-          situationMatrimoniale: 'Célibataire',
-          enfants: 0,
-          categorie: '',
-          cnpsEmploye: '',
-          CNPS: true,
-          indemniteTransportImposable: 0,
-          indemniteResponsabilite: 0,
-          indemniteLogement: 0,
-          indemniteSujetion: 0,
-          indemniteCommunication: 0,
-          indemniteRepresentation: 0,
-          transportNonImposable: 0,
-          banque: '',
-          CB: '',
-          CG: '',
-          numeroCompte: '',
-          Cle_RIB: '',
-        });
+        form.reset(defaultValues);
       }
     }
   }, [isFormOpen, editingStaff, form]);
@@ -290,7 +289,7 @@ export default function HRPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const isLoading = schoolLoading || staffLoading;
+  const isLoading = schoolLoading || staffLoading || classesLoading;
 
   return (
     <>
@@ -298,7 +297,7 @@ export default function HRPage() {
         <div className="flex justify-between items-center">
           <div>
               <h1 className="text-lg font-semibold md:text-2xl">Ressources Humaines</h1>
-              <p className="text-muted-foreground">Gérez le personnel administratif et de service de votre école.</p>
+              <p className="text-muted-foreground">Gérez le personnel (enseignant et non-enseignant) de votre école.</p>
           </div>
             <Button onClick={() => handleOpenFormDialog(null)}>
               <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Membre
@@ -311,7 +310,7 @@ export default function HRPage() {
                     <TableHeader>
                         <TableRow>
                             <TableHead>Nom</TableHead>
-                            <TableHead>Rôle</TableHead>
+                            <TableHead>Rôle / Matière</TableHead>
                             <TableHead>Salaire de Base</TableHead>
                             <TableHead>Embauché le</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
@@ -346,7 +345,10 @@ export default function HRPage() {
                                             </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell>{member.role}</TableCell>
+                                    <TableCell>
+                                        <p className="font-medium">{member.role}</p>
+                                        {member.role === 'Enseignant' && <p className="text-xs text-muted-foreground">{member.subject}</p>}
+                                    </TableCell>
                                     <TableCell className="font-mono">{member.baseSalary ? `${member.baseSalary.toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
                                     <TableCell>{isMounted && member.hireDate && isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}</TableCell>
                                     <TableCell className="text-right">
@@ -402,7 +404,13 @@ export default function HRPage() {
                                     <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom de famille" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                                <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><FormControl><Input placeholder="Ex: Comptable" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><FormControl><Input placeholder="Ex: Comptable, Enseignant" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                {watchedRole === 'Enseignant' && (
+                                    <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
+                                        <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{allSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                                    </div>
+                                )}
                                 <div className="grid grid-cols-2 gap-4">
                                   <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemple.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                   <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />

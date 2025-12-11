@@ -1,3 +1,4 @@
+
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -38,7 +39,6 @@ const activeClass = "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-whi
 const mySchoolLinks = [
   { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users },
   { href: '/dashboard/classes', label: 'Classes', icon: School },
-  { href: '/dashboard/enseignants', label: 'Professeurs', icon: BookUser },
   { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock },
 ];
 
