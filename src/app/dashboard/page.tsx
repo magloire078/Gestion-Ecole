@@ -66,14 +66,15 @@ export default function DashboardPage() {
         setStatsLoading(true);
         try {
             const studentsCol = collection(firestore, `ecoles/${schoolId}/eleves`);
-            const teachersCol = collection(firestore, `ecoles/${schoolId}/enseignants`);
+            const staffCol = collection(firestore, `ecoles/${schoolId}/personnel`);
+            const teachersQuery = query(staffCol, where('role', '==', 'Enseignant'));
             const classesCol = collection(firestore, `ecoles/${schoolId}/classes`);
             const libraryCol = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
             const accountingCol = collection(firestore, `ecoles/${schoolId}/comptabilite`);
             
             const [studentsSnapshot, teachersSnapshot, classesSnapshot, librarySnapshot, tuitionPaidSnapshot, tuitionDueSnapshot] = await Promise.all([
                 getCountFromServer(studentsCol),
-                getCountFromServer(teachersCol),
+                getCountFromServer(teachersQuery),
                 getCountFromServer(classesCol),
                 getDocs(libraryCol),
                 getDocs(query(accountingCol, where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'))),
@@ -186,7 +187,7 @@ export default function DashboardPage() {
 
   const statsCards = [
     { title: 'Élèves', value: stats.students, icon: Users, loading: statsLoading, color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50', href: '/dashboard/dossiers-eleves' },
-    { title: 'Enseignants', value: stats.teachers, icon: BookUser, loading: statsLoading, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50', href: '/dashboard/enseignants' },
+    { title: 'Enseignants', value: stats.teachers, icon: BookUser, loading: statsLoading, color: 'text-emerald-600', bgColor: 'bg-emerald-100 dark:bg-emerald-900/50', href: '/dashboard/rh' },
     { title: 'Classes', value: stats.classes, icon: School, loading: statsLoading, color: 'text-amber-600', bgColor: 'bg-amber-100 dark:bg-amber-900/50', href: '/dashboard/classes' },
     { title: 'Livres', value: stats.books, icon: BookOpen, loading: statsLoading, color: 'text-violet-600', bgColor: 'bg-violet-100 dark:bg-violet-900/50', href: '/dashboard/bibliotheque' }
   ];
@@ -333,3 +334,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
