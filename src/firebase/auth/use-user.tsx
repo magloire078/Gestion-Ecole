@@ -5,7 +5,7 @@ import {useState, useEffect} from 'react';
 import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
 import { doc, onSnapshot } from 'firebase/firestore';
-import type { user as AppUser } from '@/lib/data-types';
+import type { staff as AppUser } from '@/lib/data-types';
 
 // Combine Firebase User with our app-specific user profile data
 export interface User extends FirebaseUser {
@@ -38,7 +38,7 @@ export function useUser() {
 
             // If user has a school, fetch their detailed profile from the school's subcollection
             if (schoolId) {
-                const profileRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${authUser.uid}`);
+                const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
                 const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
                     if (docSnap.exists()) {
                         // Merge the profile into the existing user object
