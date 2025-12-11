@@ -164,14 +164,13 @@
         "description": "Une note individuelle pour un élève dans une matière.",
         "type": "object",
         "properties": {
-            "studentId": { "type": "string", "description": "L'identifiant de l'élève." },
             "subject": { "type": "string", "description": "La matière concernée." },
             "type": { "type": "string", "enum": ["Interrogation", "Devoir"], "description": "Le type d'évaluation." },
             "date": { "type": "string", "format": "date", "description": "La date de l'évaluation." },
             "grade": { "type": "number", "description": "La note obtenue." },
             "coefficient": { "type": "number", "description": "Le coefficient de la note." }
         },
-        "required": ["studentId", "subject", "type", "date", "grade", "coefficient"]
+        "required": ["subject", "type", "date", "grade", "coefficient"]
     },
     "accountingTransaction": {
       "title": "Transaction Comptable",
@@ -338,3 +337,5 @@
     }
   }
 }
+
+    

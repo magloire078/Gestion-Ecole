@@ -47,7 +47,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { allSubjects } from '@/lib/data';
@@ -66,10 +66,8 @@ import { useHydrationFix } from '@/hooks/use-hydration-fix';
 // --- Interfaces ---
 interface Student {
   id: string;
-  name: string;
-  classId: string;
-  parent1Name?: string;
-  parent1Contact?: string;
+  firstName: string;
+  lastName: string;
 }
 interface Class {
   id: string;
@@ -160,7 +158,7 @@ export default function GradeEntryPage() {
           allGrades.push({ 
             id: doc.id,
             studentId: student.id,
-            studentName: student.name,
+            studentName: `${student.firstName} ${student.lastName}`,
             ...doc.data() 
           } as GradeEntry);
         });
@@ -222,21 +220,26 @@ export default function GradeEntryPage() {
             const gradeRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingGrade.studentId}/notes/${editingGrade.id}`);
             await setDoc(gradeRef, gradeData);
             toast({ title: 'Note modifiée', description: `La note a été mise à jour.` });
-            setAllGradesForSubject(prev => prev.map(g => g.id === editingGrade.id ? { ...g, ...gradeData } : g));
+            setAllGradesForSubject(prev => prev.map(g => g.id === editingGrade.id ? { ...g, ...gradeData, studentId: editingGrade.studentId } : g));
         } else {
             // Create
+            const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${values.studentId}`);
+            const studentSnap = await getDoc(studentRef);
+
+            if (!studentSnap.exists()) {
+                toast({ variant: 'destructive', title: 'Erreur', description: "L'élève sélectionné n'a pas été trouvé." });
+                return;
+            }
+
+            const student = studentSnap.data() as Student;
             const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${values.studentId}/notes`);
             const newDocRef = await addDoc(gradesCollectionRef, gradeData);
             
-            const student = studentsInClass.find(s => s.id === values.studentId);
-            const parentName = student?.parent1Name || 'Parent';
-
             toast({ 
                 title: 'Note ajoutée avec succès !', 
-                description: `La note a été enregistrée et une notification a été envoyée à ${parentName}.`
             });
             
-            setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: values.studentId, studentName: student?.name || '' }, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: values.studentId, studentName: `${student.firstName} ${student.lastName}` }, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         }
       setIsFormOpen(false);
     } catch(error) {
@@ -408,7 +411,7 @@ export default function GradeEntryPage() {
                             <SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                              {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                              {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       <FormMessage className="col-start-2 col-span-3" />
@@ -501,3 +504,4 @@ export default function GradeEntryPage() {
   );
 }
 
+    

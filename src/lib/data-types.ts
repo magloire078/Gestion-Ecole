@@ -124,7 +124,6 @@ export type student = {
 
 export type gradeEntry = {
     id: string;
-    studentId: string;
     subject: string;
     type: "Interrogation" | "Devoir";
     date: string;
@@ -196,3 +195,5 @@ export type absence = {
     reason?: string;
     recordedBy: string;
 };
+
+    
