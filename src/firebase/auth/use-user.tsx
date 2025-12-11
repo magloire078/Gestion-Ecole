@@ -27,31 +27,36 @@ export function useUser() {
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             const tokenResult = await authUser.getIdTokenResult();
-            const schoolId = tokenResult.claims.schoolId;
+            const schoolId = tokenResult.claims.schoolId as string | undefined;
 
-            // Create the initial user object with auth data and claims
             const userWithClaims: User = {
                 ...authUser,
                 customClaims: tokenResult.claims
             };
-            setUser(userWithClaims); // Set user early for faster UI response
+            
+            // Set user with claims immediately for faster UI response
+            setUser(userWithClaims); 
 
-            // Fetch the user's profile from the root `personnel` collection
-            const profileRef = doc(firestore, `personnel/${authUser.uid}`);
-            const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    // Merge the profile into the existing user object
-                    setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
-                } else {
-                    // This case can happen during onboarding before the profile is created
-                    setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
-                }
+            // If user has a school, fetch their profile from the corresponding subcollection
+            if (schoolId) {
+                const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
+                const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
+                    } else {
+                         // This case might happen if the profile doc is not yet created.
+                        setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
+                    }
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching user profile from ecoles/{schoolId}/personnel:", error);
+                    setLoading(false);
+                });
+                return () => unsubscribeProfile();
+            } else {
+                 // User is authenticated but has no school (e.g., during onboarding or super admin)
                 setLoading(false);
-            }, (error) => {
-                console.error("Error fetching user profile from /personnel:", error);
-                setLoading(false);
-            });
-            return () => unsubscribeProfile(); // Cleanup profile listener
+            }
             
         } else {
             setUser(null);

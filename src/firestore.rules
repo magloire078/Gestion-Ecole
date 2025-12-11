@@ -2,99 +2,100 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // === HELPER FUNCTIONS ===
-    function isAuth() { return request.auth != null; }
-    function isAdmin() { return request.auth.token.admin == true; }
-    
-    function getUserSchoolId() {
-      let user = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
-      return user.exists ? user.data.schoolId : null;
+
+    // --- Helper Functions ---
+    function isAuth() {
+      return request.auth != null;
     }
     
-    function getStaffSchoolId(staffId) {
-      // Note: This function might need adjustment depending on the final staff collection path.
-      // Assuming a root /personnel collection for this helper.
-      let staff = get(/databases/$(database)/documents/personnel/$(staffId));
-      return staff.exists ? staff.data.schoolId : null;
+    function isAdmin() {
+      return request.auth.token.admin == true;
     }
 
-    // === CRÉATION INITIALE D'ÉCOLE ===
+    function getUserSchoolId() {
+      let userDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
+      return userDoc.exists ? userDoc.data.schoolId : null;
+    }
+    
+    function isUserInSchool(schoolId) {
+      return isAuth() && getUserSchoolId() == schoolId;
+    }
+    
+    function isSchoolDirector(schoolId) {
+      // This rule needs the school document to be passed in resource variable
+      // or to be read directly. For updates, it's in resource.data.
+      let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+      return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
+    }
+
+    // --- Special function for school creation ---
     function isSchoolCreation() {
-      return isAuth() && 
+      return isAuth() &&
              request.resource.data.directorId == request.auth.uid &&
              !exists(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
     }
     
-    // === COLLECTIONS RACINES ===
+    // === ROOT COLLECTIONS ===
     
-    // Collection pour les rôles d'admin
     match /admin_roles/{roleId} {
       allow read, write: if isAdmin();
     }
-    
-    // Collection pour mapper les utilisateurs à leurs écoles
+
     match /utilisateurs/{userId} {
       allow create: if isAuth() && userId == request.auth.uid;
-      allow read, update: if userId == request.auth.uid || isAdmin();
+      allow read, update: if isAuth() && userId == request.auth.uid || isAdmin();
       allow delete: if isAdmin();
     }
     
-    // Collection principale des écoles
     match /ecoles/{schoolId} {
       allow create: if isSchoolCreation() || isAdmin();
-      allow read: if isAuth() && (getUserSchoolId() == schoolId || isAdmin());
+      allow read: if isUserInSchool(schoolId) || isAdmin();
       allow update: if isSchoolDirector(schoolId) || isAdmin();
       allow delete: if isAdmin();
-
-      // === SOUS-COLLECTIONS PAR ÉCOLE ===
       
-      function isUserInSchool() {
-          return isAuth() && getUserSchoolId() == schoolId;
-      }
+        // --- SUB-COLLECTIONS ---
       
-      function isSchoolDirector() {
-          return isAuth() && resource.data.directorId == request.auth.uid;
-      }
-
-      // Personnel de l'école
-      match /personnel/{staffId} {
-        allow read, list: if isUserInSchool();
-        allow create, update, delete: if isSchoolDirector() || isAdmin();
-      }
-
-      // Classes de l'école
-      match /classes/{classId} {
-        allow read, list: if isUserInSchool();
-        allow create, update, delete: if isSchoolDirector() || isAdmin();
-      }
-
-      // Élèves de l'école
-      match /eleves/{studentId} {
-        allow read, list: if isUserInSchool();
-        allow create, update, delete: if isSchoolDirector() || isAdmin();
-
-        // Sous-collections de l'élève
-        match /notes/{gradeId} {
-          allow read, write: if isUserInSchool();
+        // Allow a director to create their own staff profile during school creation
+        match /personnel/{staffId} {
+            allow create: if (isSchoolCreation() && staffId == request.auth.uid && request.resource.data.role == 'directeur') || (isUserInSchool(schoolId) && isSchoolDirector(schoolId)) || isAdmin();
+            allow read: if isUserInSchool(schoolId) || (isAuth() && staffId == request.auth.uid);
+            allow update: if (isUserInSchool(schoolId) && isSchoolDirector(schoolId)) || (isAuth() && staffId == request.auth.uid) || isAdmin();
+            allow delete: if (isUserInSchool(schoolId) && isSchoolDirector(schoolId)) || isAdmin();
         }
-        match /paiements/{paymentId} {
-          allow read, write: if isUserInSchool();
+
+        match /classes/{classId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
         }
-      }
-      
-      // Toutes les autres sous-collections (compta, bibliothèque, etc.)
-      match /{collection}/{docId} {
-          allow read, list: if isUserInSchool();
-          allow create, update, delete: if isSchoolDirector() || isAdmin();
-      }
+
+        match /eleves/{studentId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+
+            match /notes/{gradeId} {
+                allow read, write: if isUserInSchool(schoolId);
+            }
+            match /paiements/{paymentId} {
+                allow read, write: if isUserInSchool(schoolId);
+            }
+        }
+        
+        match /cycles/{cycleId} {
+             allow create: if isSchoolCreation() || isAdmin();
+             allow read, list: if isUserInSchool(schoolId);
+             allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
+        }
+
+        // Default rule for other subcollections
+        match /{subCollection}/{docId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+        }
     }
-    
-    // Règle par défaut pour bloquer tout ce qui n'est pas autorisé explicitement
+
+    // Catch-all to deny everything else
     match /{path=**} {
       allow read, write: if false;
     }
   }
 }
-
-    
