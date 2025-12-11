@@ -104,7 +104,7 @@ export function MobileNav() {
 
   return (
     <div className='flex flex-col h-full'>
-        <div className="flex h-[60px] items-center p-6 border-b border-gray-700">
+        <div className="flex h-[60px] items-center p-6 border-b border-gray-700/50">
             <Logo />
         </div>
         <nav className="grid gap-2 text-lg font-medium p-4 flex-1 overflow-y-auto">
@@ -177,5 +177,3 @@ export function MobileNav() {
     </div>
   );
 }
-
-    

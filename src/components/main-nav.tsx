@@ -22,6 +22,7 @@ import {
     UserX,
     Database,
     Shield,
+    X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -31,6 +32,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useUser } from '@/firebase';
+import { useSubscription } from '@/hooks/use-subscription';
+import { Button } from './ui/button';
 
 const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:text-white text-sm";
 
@@ -87,6 +90,7 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 export function MainNav() {
   const pathname = usePathname();
   const { user } = useUser();
+  const { subscription } = useSubscription();
   const isAdmin = user?.customClaims?.role === 'admin';
   
   const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
@@ -175,8 +179,15 @@ export function MainNav() {
            )}
         </Accordion>
       </div>
+      <div className="mt-auto p-4">
+        {subscription?.status === 'trialing' && (
+          <Button variant="destructive" size="sm" className="w-full">
+            <span className="font-bold">{user?.displayName?.charAt(0) || 'N'}</span>
+            <span className="mx-2 font-semibold">Trial</span>
+            <X className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </nav>
   );
 }
-
-    
