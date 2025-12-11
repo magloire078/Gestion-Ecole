@@ -14,9 +14,61 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from "@/hooks/use-toast";
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import { admin_role as AdminRole } from '@/lib/data-types';
+import type { admin_role as AdminRole } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const permissionsSchema = z.object({
+    manageUsers: z.boolean().default(false),
+    viewUsers: z.boolean().default(false),
+    manageSchools: z.boolean().default(false),
+    viewSchools: z.boolean().default(false),
+    manageClasses: z.boolean().default(false),
+    manageGrades: z.boolean().default(false),
+    manageSystem: z.boolean().default(false),
+    viewAnalytics: z.boolean().default(false),
+    manageSettings: z.boolean().default(false),
+    manageBilling: z.boolean().default(false),
+    manageContent: z.boolean().default(false),
+    viewSupportTickets: z.boolean().default(false),
+    manageSupportTickets: z.boolean().default(false),
+    apiAccess: z.boolean().default(false),
+    exportData: z.boolean().default(false),
+});
+
+const roleSchema = z.object({
+  name: z.string().min(1, { message: "Le nom du rôle est requis." }),
+  description: z.string().min(1, { message: "La description est requise." }),
+  level: z.coerce.number().min(1, "Le niveau doit être d'au moins 1."),
+  permissions: permissionsSchema,
+});
+
+type RoleFormValues = z.infer<typeof roleSchema>;
+
+const allPermissions: {id: keyof z.infer<typeof permissionsSchema>, label: string, group: string}[] = [
+    { id: 'manageUsers', label: 'Gérer les utilisateurs', group: 'Utilisateurs' },
+    { id: 'viewUsers', label: 'Voir les utilisateurs', group: 'Utilisateurs' },
+    { id: 'manageSchools', label: 'Gérer les écoles', group: 'Écoles' },
+    { id: 'viewSchools', label: 'Voir les écoles', group: 'Écoles' },
+    { id: 'manageClasses', label: 'Gérer les classes', group: 'Pédagogie' },
+    { id: 'manageGrades', label: 'Gérer les notes', group: 'Pédagogie' },
+    { id: 'manageBilling', label: 'Gérer la facturation', group: 'Finance' },
+    { id: 'viewAnalytics', label: 'Voir les statistiques', group: 'Analyse' },
+    { id: 'manageContent', label: 'Gérer le contenu', group: 'Contenu' },
+    { id: 'manageSupportTickets', label: 'Gérer les tickets de support', group: 'Support' },
+    { id: 'viewSupportTickets', label: 'Voir les tickets de support', group: 'Support' },
+    { id: 'manageSystem', label: 'Gérer le système', group: 'Système' },
+    { id: 'manageSettings', label: 'Gérer les paramètres', group: 'Système' },
+    { id: 'apiAccess', label: 'Accès API', group: 'Avancé' },
+    { id: 'exportData', label: 'Exporter les données', group: 'Avancé' },
+];
+
+const permissionGroups = ['Utilisateurs', 'Écoles', 'Pédagogie', 'Finance', 'Analyse', 'Contenu', 'Support', 'Système', 'Avancé'];
 
 export default function AdminRolesPage() {
     const { user, loading: userLoading } = useUser();
@@ -26,14 +78,21 @@ export default function AdminRolesPage() {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<AdminRole & { id: string } | null>(null);
-    const [roleName, setRoleName] = useState('');
-    const [roleDescription, setRoleDescription] = useState('');
-    const [roleLevel, setRoleLevel] = useState(3);
 
     const rolesQuery = useMemoFirebase(() => query(collection(firestore, 'admin_roles')), [firestore]);
     const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
     
     const roles: (AdminRole & { id: string })[] = useMemo(() => rolesData?.map(doc => ({ id: doc.id, ...doc.data() } as AdminRole & { id: string })) || [], [rolesData]);
+
+    const form = useForm<RoleFormValues>({
+        resolver: zodResolver(roleSchema),
+        defaultValues: {
+            name: '',
+            description: '',
+            level: 3,
+            permissions: {},
+        }
+    });
 
     useEffect(() => {
         if (!userLoading && (!user || user.customClaims?.role !== 'admin')) {
@@ -46,38 +105,38 @@ export default function AdminRolesPage() {
         }
     }, [user, userLoading, router, toast]);
 
+    useEffect(() => {
+        if (isFormOpen) {
+            form.reset(editingRole ? {
+                ...editingRole,
+                level: editingRole.level || 3,
+                permissions: editingRole.permissions || {},
+            } : {
+                name: '',
+                description: '',
+                level: 3,
+                permissions: {},
+            });
+        }
+    }, [isFormOpen, editingRole, form]);
+
     const handleOpenForm = (role: AdminRole & { id: string } | null) => {
         setEditingRole(role);
-        setRoleName(role?.name || '');
-        setRoleDescription(role?.description || '');
-        setRoleLevel(role?.level || 3);
         setIsFormOpen(true);
     };
 
-    const handleSaveRole = async () => {
-        if (!roleName) {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Le nom du rôle est requis.' });
-            return;
-        }
-
-        const roleData: Omit<AdminRole, 'id'> = {
-            name: roleName,
-            description: roleDescription,
-            level: roleLevel,
-            permissions: editingRole?.permissions || {} // Pour l'instant, on ne modifie pas les permissions ici
-        };
-
+    const handleSaveRole = async (values: RoleFormValues) => {
         if (editingRole) {
             const roleRef = doc(firestore, 'admin_roles', editingRole.id);
-            await setDoc(roleRef, roleData, { merge: true }).catch(e => {
-                 const permissionError = new FirestorePermissionError({ path: roleRef.path, operation: 'update', requestResourceData: roleData });
+            await setDoc(roleRef, values, { merge: true }).catch(e => {
+                 const permissionError = new FirestorePermissionError({ path: roleRef.path, operation: 'update', requestResourceData: values });
                  errorEmitter.emit('permission-error', permissionError);
             });
             toast({ title: 'Rôle modifié' });
         } else {
             const rolesCollectionRef = collection(firestore, `admin_roles`);
-            await addDoc(rolesCollectionRef, roleData).catch(e => {
-                const permissionError = new FirestorePermissionError({ path: rolesCollectionRef.path, operation: 'create', requestResourceData: roleData });
+            await addDoc(rolesCollectionRef, values).catch(e => {
+                const permissionError = new FirestorePermissionError({ path: rolesCollectionRef.path, operation: 'create', requestResourceData: values });
                  errorEmitter.emit('permission-error', permissionError);
             });
             toast({ title: 'Rôle créé' });
@@ -156,24 +215,58 @@ export default function AdminRolesPage() {
             </div>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent>
+                <DialogContent className="sm:max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>{editingRole ? 'Modifier' : 'Nouveau'} Rôle</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                        <Input placeholder="Nom du rôle" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
-                        <Input placeholder="Description" value={roleDescription} onChange={(e) => setRoleDescription(e.target.value)} />
-                        <Input type="number" placeholder="Niveau" value={roleLevel} onChange={(e) => setRoleLevel(Number(e.target.value))} />
-                         <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Permissions</CardTitle>
-                                <CardDescription className="text-xs">La modification des permissions sera bientôt disponible.</CardDescription>
-                            </CardHeader>
-                         </Card>
-                    </div>
+                    <Form {...form}>
+                        <form id="role-form" onSubmit={form.handleSubmit(handleSaveRole)} className="space-y-4 max-h-[70vh] overflow-y-auto px-1 py-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du rôle</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="level" render={({ field }) => (<FormItem><FormLabel>Niveau</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                            
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-base">Permissions</CardTitle>
+                                    <CardDescription className="text-xs">Attribuez les permissions pour ce rôle.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {permissionGroups.map(group => (
+                                        <div key={group}>
+                                            <h4 className="font-semibold text-sm mb-2">{group}</h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 pl-2">
+                                                {allPermissions.filter(p => p.group === group).map(permission => (
+                                                    <FormField
+                                                        key={permission.id}
+                                                        control={form.control}
+                                                        name={`permissions.${permission.id}`}
+                                                        render={({ field }) => (
+                                                            <FormItem className="flex items-center space-x-2">
+                                                                <FormControl>
+                                                                    <Checkbox
+                                                                        checked={field.value}
+                                                                        onCheckedChange={field.onChange}
+                                                                    />
+                                                                </FormControl>
+                                                                <FormLabel className="text-sm font-normal">{permission.label}</FormLabel>
+                                                            </FormItem>
+                                                        )}
+                                                    />
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </CardContent>
+                             </Card>
+                        </form>
+                    </Form>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                        <Button onClick={handleSaveRole}>Enregistrer</Button>
+                        <Button type="submit" form="role-form" disabled={form.formState.isSubmitting}>
+                            {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
