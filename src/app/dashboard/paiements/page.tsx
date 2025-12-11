@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -60,9 +61,9 @@ export default function PaymentsPage() {
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
 
-  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
+  const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `eleves`) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `classes`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `frais_scolarite`) : null, [firestore, schoolId]);
   
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -132,7 +133,7 @@ export default function PaymentsPage() {
   };
   
   const handleSaveChanges = async (values: PaymentFormValues) => {
-    if (!selectedStudent || !schoolId) {
+    if (!selectedStudent || !schoolId || !selectedStudent.id) {
         toast({
             variant: "destructive",
             title: "Erreur",
@@ -147,16 +148,17 @@ export default function PaymentsPage() {
     
     const batch = writeBatch(firestore);
 
-    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}`);
+    const studentRef = doc(firestore, `eleves/${selectedStudent.id}`);
     const studentUpdateData = {
       amountDue: newAmountDue,
       tuitionStatus: newStatus
     };
     batch.update(studentRef, studentUpdateData);
 
-    const accountingColRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+    const accountingColRef = collection(firestore, `comptabilite`);
     const newTransactionRef = doc(accountingColRef);
     const accountingData = {
+        schoolId,
         date: values.paymentDate,
         description: values.paymentDescription || `Paiement scolarité pour ${selectedStudent.firstName} ${selectedStudent.lastName}`,
         category: 'Scolarité',
@@ -165,7 +167,7 @@ export default function PaymentsPage() {
     };
     batch.set(newTransactionRef, accountingData);
     
-    const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolId}/eleves/${selectedStudent.id}/paiements`));
+    const paymentHistoryRef = doc(collection(firestore, `eleves/${selectedStudent.id}/paiements`));
     const paymentHistoryData = {
         date: values.paymentDate,
         amount: amountPaid,
@@ -178,9 +180,8 @@ export default function PaymentsPage() {
     };
     batch.set(paymentHistoryRef, paymentHistoryData);
     
-    try {
-        await batch.commit();
-        
+    batch.commit()
+    .then(() => {
         toast({
             title: "Paiement enregistré",
             description: `Le paiement de ${amountPaid.toLocaleString('fr-FR')} CFA pour ${selectedStudent.firstName} ${selectedStudent.lastName} a été enregistré.`
@@ -203,15 +204,15 @@ export default function PaymentsPage() {
         setIsManageFeeDialogOpen(false);
         setIsReceiptDialogOpen(true);
         setSelectedStudent(null);
-
-    } catch (serverError) {
+    })
+    .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: `BATCH WRITE: student, accounting, payment history`,
+            path: `[BATCH WRITE] /eleves, /comptabilite, /paiements`,
             operation: 'write',
             requestResourceData: { studentUpdate: studentUpdateData, accountingEntry: accountingData, paymentHistory: paymentHistoryData },
         });
         errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   };
 
   const handleOpenReminderDialog = async (student: Student) => {
@@ -286,7 +287,7 @@ export default function PaymentsPage() {
                 <SelectContent>
                     <SelectItem value="all">Toutes les classes</SelectItem>
                     {classes.map(cls => (
-                    <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>
+                    <SelectItem key={cls.id} value={cls.id!}>{cls.name}</SelectItem>
                     ))}
                 </SelectContent>
                 </Select>

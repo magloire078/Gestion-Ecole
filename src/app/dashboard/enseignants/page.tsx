@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -146,49 +147,56 @@ export default function TeachersPage() {
     }
 
     const batch = writeBatch(firestore);
-    const dataToSave = { ...values, schoolId, role: 'enseignant', classId: values.classId === 'none' ? '' : values.classId };
+    const dataToSave: Partial<Teacher> = { ...values, schoolId, role: 'enseignant', classId: values.classId === 'none' ? '' : values.classId };
     
-    try {
-        if (editingTeacher) {
-            // --- UPDATE ---
-            const teacherDocRef = getTeacherDocRef(editingTeacher.id);
-            batch.update(teacherDocRef, dataToSave);
+    if (editingTeacher) {
+        // --- UPDATE ---
+        const teacherDocRef = getTeacherDocRef(editingTeacher.id);
+        batch.update(teacherDocRef, dataToSave);
 
-            // If the classId has changed, update the old and new class documents
-            if (editingTeacher.classId !== dataToSave.classId) {
-                // Remove teacher from old class if it exists
-                if (editingTeacher.classId) {
-                    const oldClassRef = doc(firestore, `classes/${editingTeacher.classId}`);
-                    batch.update(oldClassRef, { mainTeacherId: '' });
-                }
-                // Add teacher to new class if selected
-                if (dataToSave.classId) {
-                    const newClassRef = doc(firestore, `classes/${dataToSave.classId}`);
-                    batch.update(newClassRef, { mainTeacherId: editingTeacher.id });
-                }
+        // If the classId has changed, update the old and new class documents
+        if (editingTeacher.classId !== dataToSave.classId) {
+            // Remove teacher from old class if it exists
+            if (editingTeacher.classId) {
+                const oldClassRef = doc(firestore, `classes/${editingTeacher.classId}`);
+                batch.update(oldClassRef, { mainTeacherId: '' });
             }
-            await batch.commit();
-            toast({ title: "Enseignant modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
-        } else {
-            // --- CREATE ---
-            const newTeacherRef = doc(collection(firestore, `personnel`));
-            batch.set(newTeacherRef, dataToSave);
-            
-            // If a class is assigned, update the class document with the new teacher's ID
+            // Add teacher to new class if selected
             if (dataToSave.classId) {
-                const classRef = doc(firestore, `classes/${dataToSave.classId}`);
-                batch.update(classRef, { mainTeacherId: newTeacherRef.id });
+                const newClassRef = doc(firestore, `classes/${dataToSave.classId}`);
+                batch.update(newClassRef, { mainTeacherId: editingTeacher.id });
             }
-            await batch.commit();
-            toast({ title: "Enseignant ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e).` });
         }
-        setIsFormOpen(false);
-        setEditingTeacher(null);
-    } catch (error: any) {
-        const operation = editingTeacher ? 'update' : 'create';
-        const path = `[BATCH WRITE] /personnel & /classes`;
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
-        errorEmitter.emit('permission-error', permissionError);
+        
+        batch.commit()
+        .then(() => {
+            toast({ title: "Enseignant modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
+            setIsFormOpen(false);
+            setEditingTeacher(null);
+        }).catch((serverError) => {
+            const permissionError = new FirestorePermissionError({ path: `[BATCH] /personnel & /classes`, operation: 'update', requestResourceData: dataToSave });
+            errorEmitter.emit('permission-error', permissionError);
+        });
+
+    } else {
+        // --- CREATE ---
+        const newTeacherRef = doc(collection(firestore, `personnel`));
+        batch.set(newTeacherRef, { ...dataToSave, uid: newTeacherRef.id /* or a real auth UID */ });
+        
+        // If a class is assigned, update the class document with the new teacher's ID
+        if (dataToSave.classId) {
+            const classRef = doc(firestore, `classes/${dataToSave.classId}`);
+            batch.update(classRef, { mainTeacherId: newTeacherRef.id });
+        }
+        
+        batch.commit()
+        .then(() => {
+            toast({ title: "Enseignant ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e).` });
+            setIsFormOpen(false);
+        }).catch((serverError) => {
+            const permissionError = new FirestorePermissionError({ path: `[BATCH] /personnel & /classes`, operation: 'create', requestResourceData: dataToSave });
+            errorEmitter.emit('permission-error', permissionError);
+        });
     }
   };
   
@@ -208,11 +216,13 @@ export default function TeachersPage() {
     batch.commit()
       .then(() => {
         toast({ title: "Enseignant supprimé", description: `${teacherToDelete.firstName} ${teacherToDelete.lastName} a été retiré(e).` });
-        setIsDeleteDialogOpen(false);
-        setTeacherToDelete(null);
       }).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({ path: teacherDocRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
+        setIsDeleteDialogOpen(false);
+        setTeacherToDelete(null);
       });
   };
 
@@ -410,7 +420,7 @@ export default function TeachersPage() {
                         <SelectContent>
                           <SelectItem value="none">Aucune</SelectItem>
                           {classes.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                            <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

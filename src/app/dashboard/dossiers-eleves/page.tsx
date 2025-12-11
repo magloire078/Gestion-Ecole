@@ -120,8 +120,8 @@ export default function StudentsPage() {
   };
 
   const handleDeleteStudent = async () => {
-    if (!schoolId || !studentToDelete) return;
-    
+    if (!schoolId || !studentToDelete || !studentToDelete.id) return;
+
     const batch = writeBatch(firestore);
     const studentDocRef = doc(firestore, `eleves/${studentToDelete.id}`);
     
@@ -132,23 +132,22 @@ export default function StudentsPage() {
         batch.update(classDocRef, { studentCount: increment(-1) });
     }
 
-    try {
-        await batch.commit();
+    batch.commit()
+      .then(() => {
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
-    } catch(serverError) {
+      })
+      .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
-            path: `[BATCH] ${studentDocRef.path} & /classes/${studentToDelete.classId}`,
+            path: `[BATCH] /eleves/${studentToDelete.id} & /classes/${studentToDelete.classId}`,
             operation: 'write',
-            requestResourceData: {
-                studentDeletePath: studentDocRef.path,
-                classUpdatePath: studentToDelete.classId ? `/classes/${studentToDelete.classId}` : 'N/A'
-            }
+            requestResourceData: { studentDeletePath: studentDocRef.path, classUpdatePath: studentToDelete.classId ? `/classes/${studentToDelete.classId}` : 'N/A' }
         });
         errorEmitter.emit('permission-error', permissionError);
-    } finally {
+      })
+      .finally(() => {
         setIsDeleteDialogOpen(false);
         setStudentToDelete(null);
-    }
+      });
   }
   
   const getAge = (dateOfBirth: string | undefined) => {
@@ -254,7 +253,7 @@ export default function StudentsPage() {
                                     <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
                                         <p className="font-medium">{student.firstName} ${student.lastName}</p>
                                     </Link>
-                                    <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id.substring(0,8)}</div>
+                                    <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id?.substring(0,8)}</div>
                                 </div>
                             </div>
                           </TableCell>
