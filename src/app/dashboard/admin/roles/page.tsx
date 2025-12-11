@@ -22,6 +22,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const permissionsSchema = z.object({
     manageUsers: z.boolean().default(false),
@@ -126,22 +127,23 @@ export default function AdminRolesPage() {
     };
 
     const handleSaveRole = async (values: RoleFormValues) => {
-        if (editingRole) {
-            const roleRef = doc(firestore, 'admin_roles', editingRole.id);
-            await setDoc(roleRef, values, { merge: true }).catch(e => {
-                 const permissionError = new FirestorePermissionError({ path: roleRef.path, operation: 'update', requestResourceData: values });
-                 errorEmitter.emit('permission-error', permissionError);
-            });
-            toast({ title: 'Rôle modifié' });
-        } else {
-            const rolesCollectionRef = collection(firestore, `admin_roles`);
-            await addDoc(rolesCollectionRef, values).catch(e => {
-                const permissionError = new FirestorePermissionError({ path: rolesCollectionRef.path, operation: 'create', requestResourceData: values });
-                 errorEmitter.emit('permission-error', permissionError);
-            });
-            toast({ title: 'Rôle créé' });
+        try {
+            if (editingRole) {
+                const roleRef = doc(firestore, 'admin_roles', editingRole.id);
+                await setDoc(roleRef, values, { merge: true });
+                toast({ title: 'Rôle modifié' });
+            } else {
+                const rolesCollectionRef = collection(firestore, `admin_roles`);
+                await addDoc(rolesCollectionRef, values);
+                toast({ title: 'Rôle créé' });
+            }
+            setIsFormOpen(false);
+        } catch (e) {
+            const path = editingRole ? `admin_roles/${editingRole.id}` : 'admin_roles';
+            const operation = editingRole ? 'update' : 'create';
+            const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
+            errorEmitter.emit('permission-error', permissionError);
         }
-        setIsFormOpen(false);
     };
 
     const isLoading = userLoading || rolesLoading;
@@ -227,39 +229,43 @@ export default function AdminRolesPage() {
                                 <FormField control={form.control} name="level" render={({ field }) => (<FormItem><FormLabel>Niveau</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                             
-                             <Card>
+                            <Card>
                                 <CardHeader>
                                     <CardTitle className="text-base">Permissions</CardTitle>
                                     <CardDescription className="text-xs">Attribuez les permissions pour ce rôle.</CardDescription>
                                 </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {permissionGroups.map(group => (
-                                        <div key={group}>
-                                            <h4 className="font-semibold text-sm mb-2">{group}</h4>
-                                            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 pl-2">
-                                                {allPermissions.filter(p => p.group === group).map(permission => (
-                                                    <FormField
-                                                        key={permission.id}
-                                                        control={form.control}
-                                                        name={`permissions.${permission.id}`}
-                                                        render={({ field }) => (
-                                                            <FormItem className="flex items-center space-x-2">
-                                                                <FormControl>
-                                                                    <Checkbox
-                                                                        checked={field.value}
-                                                                        onCheckedChange={field.onChange}
-                                                                    />
-                                                                </FormControl>
-                                                                <FormLabel className="text-sm font-normal">{permission.label}</FormLabel>
-                                                            </FormItem>
-                                                        )}
-                                                    />
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
+                                <CardContent>
+                                    <Accordion type="multiple" className="w-full">
+                                        {permissionGroups.map(group => (
+                                            <AccordionItem value={group} key={group}>
+                                                <AccordionTrigger>{group}</AccordionTrigger>
+                                                <AccordionContent>
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3 pl-2">
+                                                        {allPermissions.filter(p => p.group === group).map(permission => (
+                                                            <FormField
+                                                                key={permission.id}
+                                                                control={form.control}
+                                                                name={`permissions.${permission.id}`}
+                                                                render={({ field }) => (
+                                                                    <FormItem className="flex items-center space-x-2">
+                                                                        <FormControl>
+                                                                            <Checkbox
+                                                                                checked={field.value}
+                                                                                onCheckedChange={field.onChange}
+                                                                            />
+                                                                        </FormControl>
+                                                                        <FormLabel className="text-sm font-normal">{permission.label}</FormLabel>
+                                                                    </FormItem>
+                                                                )}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        ))}
+                                    </Accordion>
                                 </CardContent>
-                             </Card>
+                            </Card>
                         </form>
                     </Form>
                     <DialogFooter>
