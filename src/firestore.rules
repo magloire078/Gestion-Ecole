@@ -10,7 +10,6 @@ service cloud.firestore {
     
     function isAdmin() {
       // In a real application, you would set this custom claim on the user's token
-      // For now, we'll assume it's a boolean flag on the token
       return request.auth.token.admin == true;
     }
 
@@ -32,8 +31,9 @@ service cloud.firestore {
     
     function isSchoolDirector(schoolId) {
         // The director's UID is stored directly on the school document
-        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
-        return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
+        // We check against the existing resource on update/delete and the incoming resource on create.
+        let schoolDoc = resource.data; // resource is the document being written to
+        return schoolDoc.directorId == request.auth.uid;
     }
     
     function getStaffRole(userId, schoolId) {
@@ -68,45 +68,36 @@ service cloud.firestore {
     match /ecoles/{schoolId} {
       allow read: if isUserInSchool(schoolId) || isAdmin();
       allow create: if isAuth(); // Allow any authenticated user to create a school initially
-      allow update: if isSchoolDirector(schoolId) || isAdmin();
+      // Director of the school (by checking the resource being updated) or an admin can update.
+      allow update: if (isAuth() && resource.data.directorId == request.auth.uid) || isAdmin();
       allow delete: if isAdmin();
 
       // --- Staff Subcollection ---
       match /personnel/{staffId} {
-        // Any user within the school can read public staff profiles
         allow read: if isUserInSchool(schoolId);
-        // Only the school director or an admin can create, update, or delete staff
         allow create, update: if isSchoolDirector(schoolId) || isAdmin();
         allow delete: if isSchoolDirector(schoolId) || isAdmin();
 
-        // --- Staff Private Data ---
         match /donnees_privees/{privateDocId} {
-             // Only the director, the staff member themselves, or an admin can access private data
              allow read, write: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId) || isAdmin();
         }
       }
 
       // --- Other Subcollections ---
       match /eleves/{studentId} {
-        // Any user in the school can view student lists and profiles
         allow read, list: if isUserInSchool(schoolId);
-        // Only director or admin can manage student records
         allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
 
-        // Teachers can manage grades for students in their school
         match /notes/{gradeId} {
             allow read: if isUserInSchool(schoolId);
             allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
         }
         
-        // Other student subcollections can be managed by director/admin
         match /{subpath=**} {
             allow read, write: if isSchoolDirector(schoolId) || isAdmin();
         }
       }
 
-      // Default rule for all other subcollections under a school
-      // (e.g., classes, absences, comptabilite, etc.)
       match /{collection}/{docId} {
         allow read, list: if isUserInSchool(schoolId);
         allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
