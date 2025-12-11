@@ -9,22 +9,31 @@ service cloud.firestore {
     }
     
     function isAdmin() {
+      // In a real application, you would set this custom claim on the user's token
       return request.auth.token.admin == true;
     }
 
     function getUserSchoolId() {
-      // Corrected: Use request.auth.uid which is always available for authenticated requests.
-      let userDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
-      return userDoc.exists ? userDoc.data.schoolId : null;
+      // Path to the user's document in the global /users collection
+      let userDocPath = /databases/$(database)/documents/utilisateurs/$(request.auth.uid);
+      
+      // Check if the document exists before accessing data
+      if (exists(userDocPath)) {
+        return get(userDocPath).data.schoolId;
+      }
+      return null;
     }
     
     function isUserInSchool(schoolId) {
+      // Ensures the user is authenticated and their schoolId matches the requested one
       return isAuth() && getUserSchoolId() == schoolId;
     }
     
     function isSchoolDirector(schoolId) {
-      let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
-      return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
+        // Correctly and explicitly get the school document to check the directorId
+        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+        // Check if the document exists and if the requester's UID matches the director's UID
+        return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
     }
     
     function getStaffRole(userId, schoolId) {
@@ -42,11 +51,15 @@ service cloud.firestore {
     // --- Global Collections ---
 
     match /utilisateurs/{userId} {
+      // A user can create their own user_root document upon signup
+      // A user can read or update their own document
+      // An admin can read any user document
       allow read, write: if isAuth() && request.auth.uid == userId;
       allow read: if isAdmin(); // Admin can read user mapping
     }
 
     match /admin_roles/{roleId} {
+      // Only admins can manage administrative roles
       allow read, write: if isAdmin();
     }
 
@@ -55,6 +68,7 @@ service cloud.firestore {
     match /ecoles/{schoolId} {
       allow read: if isUserInSchool(schoolId) || isAdmin();
       allow create: if isAuth(); // Allow any authenticated user to create a school initially
+      // Director of the school or an admin can update. This rule is now self-contained.
       allow update: if isSchoolDirector(schoolId) || isAdmin();
       allow delete: if isAdmin();
 
@@ -64,7 +78,6 @@ service cloud.firestore {
         allow create, update: if isSchoolDirector(schoolId) || isAdmin();
         allow delete: if isSchoolDirector(schoolId) || isAdmin();
 
-        // --- Staff Private Data ---
         match /donnees_privees/{privateDocId} {
              allow read, write: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId) || isAdmin();
         }
@@ -75,13 +88,11 @@ service cloud.firestore {
         allow read, list: if isUserInSchool(schoolId);
         allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
 
-        // Teachers can manage grades for students in their school
         match /notes/{gradeId} {
             allow read: if isUserInSchool(schoolId);
             allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
         }
         
-        // Other student subcollections can be managed by director/admin
         match /{subpath=**} {
             allow read, write: if isSchoolDirector(schoolId) || isAdmin();
         }
@@ -93,7 +104,7 @@ service cloud.firestore {
       }
     }
 
-    // Default deny
+    // Default deny all other paths for security
     match /{path=**} {
       allow read, write: if false;
     }
