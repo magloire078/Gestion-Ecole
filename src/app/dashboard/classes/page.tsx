@@ -36,7 +36,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, limit } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, limit, writeBatch } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,6 +47,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { staff as Staff, class_type as Class } from '@/lib/data-types';
+import { Separator } from "@/components/ui/separator";
 
 // Define Zod schema for validation
 const classSchema = z.object({
@@ -55,6 +56,9 @@ const classSchema = z.object({
   filiere: z.string().optional(),
   building: z.string().min(1, { message: "Le bâtiment est requis." }),
   mainTeacherId: z.string().min(1, { message: "Le professeur principal est requis." }),
+  // Fee fields
+  amount: z.string().min(1, { message: "Le montant est requis." }),
+  installments: z.string().min(1, { message: "Les modalités de paiement sont requises." }),
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
@@ -118,6 +122,8 @@ export default function ClassesPage() {
       filiere: '',
       building: '',
       mainTeacherId: '',
+      amount: '',
+      installments: '',
     },
   });
 
@@ -126,12 +132,15 @@ export default function ClassesPage() {
   useEffect(() => {
     if (isFormOpen) {
       if (editingClass) {
+        // NOTE: Editing fees is handled in the fees page, so we don't pre-fill them here.
         form.reset({
           cycle: editingClass.cycle,
           name: editingClass.name,
           filiere: editingClass.filiere || '',
           building: editingClass.building,
           mainTeacherId: editingClass.mainTeacherId,
+          amount: '', // Reset fee fields for editing to avoid confusion
+          installments: '',
         });
       } else {
         form.reset({
@@ -140,6 +149,8 @@ export default function ClassesPage() {
           filiere: '',
           building: '',
           mainTeacherId: '',
+          amount: '',
+          installments: '',
         });
       }
     }
@@ -153,40 +164,65 @@ export default function ClassesPage() {
   const getClassDocRef = (classId: string) => doc(firestore, `ecoles/${schoolId}/classes/${classId}`);
 
   // --- CRUD Operations ---
-  const handleClassSubmit = (values: ClassFormValues) => {
+  const handleClassSubmit = async (values: ClassFormValues) => {
     if (!schoolId) {
         toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
         return;
     }
     
     const classData = {
-        ...values,
+        cycle: values.cycle,
+        name: values.name,
         filiere: values.cycle === "Enseignement Supérieur" ? values.filiere : "",
+        building: values.building,
+        mainTeacherId: values.mainTeacherId,
+        studentCount: 0,
+    };
+    
+    const feeData = {
+        grade: values.name,
+        amount: values.amount,
+        installments: values.installments,
+        details: `Frais pour la classe ${values.name}`,
     };
 
+    const batch = writeBatch(firestore);
+
     if(editingClass) {
-        // Update
+        // Update class only. Fee editing is separate.
         const classDocRef = getClassDocRef(editingClass.id);
-        setDoc(classDocRef, classData, { merge: true })
-        .then(() => {
+        batch.update(classDocRef, classData);
+        
+        try {
+            await batch.commit();
             toast({ title: "Classe modifiée", description: `Les informations de la classe ${values.name} ont été mises à jour.` });
             setIsFormOpen(false);
             setEditingClass(null);
-        }).catch(async (serverError) => {
+        } catch(serverError) {
             const permissionError = new FirestorePermissionError({ path: classDocRef.path, operation: 'update', requestResourceData: classData });
             errorEmitter.emit('permission-error', permissionError);
-        });
+        }
+
     } else {
-        // Create
-        const classCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
-        addDoc(classCollectionRef, {...classData, studentCount: 0})
-        .then(() => {
-            toast({ title: "Classe ajoutée", description: `La classe ${values.name} a été créée avec succès.` });
+        // Create both class and fee documents
+        const newClassRef = doc(collection(firestore, `ecoles/${schoolId}/classes`));
+        batch.set(newClassRef, classData);
+
+        const newFeeRef = doc(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
+        batch.set(newFeeRef, feeData);
+        
+        try {
+            await batch.commit();
+            toast({ title: "Classe et Frais ajoutés", description: `La classe ${values.name} et sa grille tarifaire ont été créées.` });
             setIsFormOpen(false);
-        }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: classCollectionRef.path, operation: 'create', requestResourceData: classData });
+        } catch(serverError) {
+             const permissionError = new FirestorePermissionError({
+                path: `[BATCH] /classes and /frais_scolarite`,
+                operation: 'create',
+                requestResourceData: { classData, feeData }
+            });
             errorEmitter.emit('permission-error', permissionError);
-        });
+        }
     }
   };
   
@@ -295,14 +331,14 @@ export default function ClassesPage() {
   
   const renderFormContent = () => (
     <Form {...form}>
-      <form id="class-form" onSubmit={form.handleSubmit(handleClassSubmit)} className="grid gap-4 py-4">
+      <form id="class-form" onSubmit={form.handleSubmit(handleClassSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
         <FormField
             control={form.control}
             name="cycle"
             render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-                <FormLabel className="text-right">Cycle</FormLabel>
-                <FormControl className="col-span-3">
+            <FormItem>
+                <FormLabel>Cycle</FormLabel>
+                <FormControl>
                     <Combobox
                         placeholder="Sélectionner un cycle"
                         searchPlaceholder="Chercher un cycle..."
@@ -316,7 +352,7 @@ export default function ClassesPage() {
                         }}
                     />
                 </FormControl>
-                <FormMessage className="col-start-2 col-span-3" />
+                <FormMessage />
             </FormItem>
             )}
         />
@@ -325,9 +361,9 @@ export default function ClassesPage() {
                 control={form.control}
                 name="filiere"
                 render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Filière</FormLabel>
-                    <FormControl className="col-span-3">
+                <FormItem>
+                    <FormLabel>Filière</FormLabel>
+                    <FormControl>
                         <Combobox
                             placeholder="Sélectionner une filière"
                             searchPlaceholder="Chercher une filière..."
@@ -344,9 +380,9 @@ export default function ClassesPage() {
             control={form.control}
             name="name"
             render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-                <FormLabel className="text-right">Classe</FormLabel>
-                <FormControl className="col-span-3">
+            <FormItem>
+                <FormLabel>Classe</FormLabel>
+                <FormControl>
                     <Combobox
                         placeholder={watchedCycle ? "Sélectionner une classe" : "Sélectionnez un cycle d'abord"}
                         searchPlaceholder="Chercher une classe..."
@@ -358,7 +394,7 @@ export default function ClassesPage() {
                         }}
                     />
                 </FormControl>
-                 <FormMessage className="col-start-2 col-span-3" />
+                 <FormMessage />
             </FormItem>
             )}
         />
@@ -366,12 +402,12 @@ export default function ClassesPage() {
             control={form.control}
             name="building"
             render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-                <FormLabel className="text-right">Bâtiment</FormLabel>
-                <FormControl className="col-span-3">
+            <FormItem>
+                <FormLabel>Bâtiment</FormLabel>
+                <FormControl>
                     <Input placeholder="Ex: Bâtiment A" {...field} />
                 </FormControl>
-                 <FormMessage className="col-start-2 col-span-3" />
+                 <FormMessage />
             </FormItem>
             )}
         />
@@ -379,9 +415,9 @@ export default function ClassesPage() {
             control={form.control}
             name="mainTeacherId"
             render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-                <FormLabel className="text-right">Prof. Principal</FormLabel>
-                <FormControl className="col-span-3">
+            <FormItem>
+                <FormLabel>Prof. Principal</FormLabel>
+                <FormControl>
                     <Combobox
                         placeholder="Sélectionner un enseignant"
                         searchPlaceholder="Chercher ou créer..."
@@ -391,10 +427,43 @@ export default function ClassesPage() {
                         onCreate={handleOpenAddTeacherDialog}
                     />
                 </FormControl>
-                 <FormMessage className="col-start-2 col-span-3" />
+                 <FormMessage />
             </FormItem>
             )}
         />
+
+        {!editingClass && (
+            <>
+                <Separator className="my-6" />
+                <h4 className="text-md font-semibold text-primary">Frais de Scolarité Associés</h4>
+                <FormField
+                    control={form.control}
+                    name="amount"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Montant Total (CFA)</FormLabel>
+                        <FormControl>
+                           <Input type="number" placeholder="Ex: 980000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="installments"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Modalités de Paiement</FormLabel>
+                        <FormControl>
+                            <Input placeholder="Ex: 10 tranches mensuelles" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </>
+        )}
       </form>
     </Form>
   );
@@ -415,11 +484,11 @@ export default function ClassesPage() {
                   <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+              <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>{editingClass ? "Modifier la Classe" : "Ajouter une Nouvelle Classe"}</DialogTitle>
                   <DialogDescription>
-                    {editingClass ? `Renseignez les nouvelles informations de la classe ${editingClass.name}.` : "Renseignez les informations de la nouvelle classe."}
+                    {editingClass ? `Renseignez les nouvelles informations de la classe ${editingClass.name}. La modification des frais se fait sur la page dédiée.` : "Renseignez les informations de la nouvelle classe et de sa grille tarifaire."}
                   </DialogDescription>
                 </DialogHeader>
                 {renderFormContent()}
