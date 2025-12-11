@@ -12,6 +12,8 @@ import { useEffect, useState } from 'react';
 import { getCinetPayPaymentLink } from '@/lib/cinetpay';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 
 function PaymentPageContent() {
@@ -126,6 +128,7 @@ function PaymentPageContent() {
                         <p><strong>Plan:</strong> {plan}</p>
                         <p><strong>Montant:</strong> {parseInt(price || '0').toLocaleString('fr-FR')} CFA</p>
                     </div>
+                    <Image src={placeholderImages.cinetpayLogo} alt="CinetPay" width={100} height={40} />
                 </CardContent>
             </Card>
         </div>
