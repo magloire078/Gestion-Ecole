@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser, useFirestore, useAuth } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2, Users, Check, User, Phone, Globe } from "lucide-react";
+import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2, Users, Check, User, Phone, Globe, Loader2, CheckCircle } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -108,6 +108,7 @@ export default function SettingsPage() {
   const { schoolData, loading, updateSchoolData } = useSchoolData();
   const [error, setError] = useState<string | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -132,15 +133,44 @@ export default function SettingsPage() {
     }
   }, [schoolData, form]);
 
-  const handleSaveChanges = async (values: SettingsFormValues) => {
+ const handleSaveChanges = async (values: SettingsFormValues) => {
     setError(null);
-    try {
-      await updateSchoolData(values);
-      toast({ title: "Paramètres enregistrés", description: "Les informations de l'école ont été mises à jour." });
-    } catch (error) {
-       setError("Impossible d'enregistrer les paramètres. Vérifiez vos permissions.");
+
+    if (!form.formState.isDirty) {
+        toast({
+            title: "Aucune modification",
+            description: "Aucun changement à enregistrer.",
+        });
+        return;
     }
-  };
+
+    setIsSaving(true);
+    try {
+        await updateSchoolData(values);
+        form.reset(values); // Réinitialise l'état dirty
+        toast({
+            title: "✅ Paramètres enregistrés",
+            description: "Les informations ont été mises à jour avec succès.",
+            duration: 3000,
+        });
+    } catch (error: any) {
+        let errorMessage = "Impossible d'enregistrer les paramètres. Vérifiez vos permissions.";
+        if (error.code === 'permission-denied') {
+            errorMessage = "Permission refusée. Vérifiez que vous êtes bien directeur de cette école.";
+        } else if (error.code === 'not-found') {
+            errorMessage = "L'école n'existe plus ou a été supprimée.";
+        }
+        setError(errorMessage);
+        toast({
+            variant: "destructive",
+            title: "❌ Erreur de sauvegarde",
+            description: errorMessage,
+            duration: 5000,
+        });
+    } finally {
+        setIsSaving(false);
+    }
+};
   
   const handleLogoUploadComplete = (url: string) => {
       form.setValue('mainLogoUrl', url, { shouldDirty: true });
@@ -278,8 +308,14 @@ export default function SettingsPage() {
                       </TabsContent>
                     </CardContent>
                     <CardFooter className="border-t px-6 py-4">
-                      <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
-                          {form.formState.isSubmitting ? "Enregistrement..." : "Enregistrer les Modifications"}
+                      <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
+                        {isSaving ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sauvegarde...</>
+                        ) : !form.formState.isDirty ? (
+                            <><CheckCircle className="mr-2 h-4 w-4" /> Enregistré</>
+                        ) : (
+                            "Enregistrer les Modifications"
+                        )}
                       </Button>
                     </CardFooter>
                   </Card>

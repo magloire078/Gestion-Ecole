@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -24,6 +24,10 @@ interface SchoolData extends DocumentData {
     matricule?: string;
     mainLogoUrl?: string;
     subscription?: Subscription;
+    // Ajout des champs pour le suivi des mises à jour
+    updatedAt?: any; 
+    updatedBy?: string;
+    updatedByName?: string;
 }
 
 export function useSchoolData() {
@@ -46,23 +50,20 @@ export function useSchoolData() {
             return;
         }
 
-        // The schoolId is now reliably on the custom claims.
         const userSchoolId = user.customClaims?.schoolId || null;
         setSchoolId(userSchoolId);
 
     }, [user, userLoading]);
 
     useEffect(() => {
-        if (schoolId === null) { // Explicitly check for null which means user has no school
+        if (schoolId === null) {
             setSchoolData(null);
             setLoading(false);
             document.title = DEFAULT_TITLE;
             return;
         }
 
-        if (!schoolId) { // Undefined, still waiting for user doc
-            return;
-        }
+        if (!schoolId) return;
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
@@ -74,7 +75,7 @@ export function useSchoolData() {
                 setSchoolData(null);
                 document.title = DEFAULT_TITLE;
             }
-            setLoading(false); // Final loading state set here
+            setLoading(false);
         }, (error) => {
              const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
              errorEmitter.emit('permission-error', permissionError);
@@ -93,27 +94,40 @@ export function useSchoolData() {
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         
-        const schoolSnap = await getDoc(schoolDocRef);
-        if (!schoolSnap.exists()) {
-            throw new Error("Document de l'école non trouvé.");
-        }
+        // Optimistic Update
+        const previousData = { ...schoolData };
+        const optimisticData = { ...schoolData, ...data };
+        setSchoolData(optimisticData);
+
+        const cleanData = Object.fromEntries(
+            Object.entries(data).filter(([_, value]) => value !== undefined)
+        );
 
         const dataToUpdate = {
-            ...data,
+            ...cleanData,
+            updatedAt: serverTimestamp(),
+            updatedBy: user?.uid,
+            updatedByName: user?.displayName || user?.email,
         };
 
         try {
             await updateDoc(schoolDocRef, dataToUpdate);
-        } catch (serverError) {
+            // La mise à jour du state local se fait déjà via le listener onSnapshot
+        } catch (serverError: any) {
+            // Rollback en cas d'erreur
+            setSchoolData(previousData);
+            
             const permissionError = new FirestorePermissionError({ 
                 path: schoolDocRef.path, 
                 operation: 'update', 
                 requestResourceData: dataToUpdate 
             });
             errorEmitter.emit('permission-error', permissionError);
-            throw permissionError;
+            
+            // Propage une erreur plus spécifique pour l'UI
+            throw new Error(serverError.code || 'unknown-error');
         }
-    }, [schoolId, firestore]);
+    }, [schoolId, firestore, user, schoolData]);
 
     return { 
         schoolId, 
