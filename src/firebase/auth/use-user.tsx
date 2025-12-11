@@ -42,26 +42,21 @@ export function useUser() {
             // Set user with claims immediately for faster UI response
             setUser(userWithClaims); 
 
-            // If user has a school, fetch their profile from the corresponding subcollection
-            if (schoolId) {
-                const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
-                const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
-                    } else {
-                         // This case might happen if the profile doc is not yet created.
-                        setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
-                    }
-                    setLoading(false);
-                }, (error) => {
-                    console.error("Error fetching user profile from ecoles/{schoolId}/personnel:", error);
-                    setLoading(false);
-                });
-                return () => unsubscribeProfile();
-            } else {
-                 // User is authenticated but has no school (e.g., during onboarding or super admin)
+            // If user is authenticated, fetch their profile from the global /personnel collection
+            const profileRef = doc(firestore, `personnel/${authUser.uid}`);
+            const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
+                } else {
+                     // This case might happen if the profile doc is not yet created.
+                    setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
+                }
                 setLoading(false);
-            }
+            }, (error) => {
+                console.error("Error fetching user profile from /personnel:", error);
+                setLoading(false);
+            });
+            return () => unsubscribeProfile();
             
         } else {
             setUser(null);

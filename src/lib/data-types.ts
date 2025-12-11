@@ -24,11 +24,11 @@ export type school = {
         plan?: "Essentiel" | "Pro";
         status?: "active" | "trialing" | "past_due" | "canceled";
     };
+    email?: string;
 };
 
 export type admin_role = {
     name: string;
-    description: string;
     level: number;
     permissions: {
         manageUsers?: boolean;
@@ -47,6 +47,7 @@ export type admin_role = {
         apiAccess?: boolean;
         exportData?: boolean;
     };
+    description?: string;
 };
 
 export type staff = {
@@ -57,66 +58,44 @@ export type staff = {
     firstName: string;
     lastName: string;
     hireDate: string;
+    baseSalary: number;
     displayName?: string;
     photoURL?: string;
+    adminRole?: string;
     phone?: string;
     matricule?: string;
     status?: "Actif" | "Inactif";
     subject?: string;
     classId?: string;
+    situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
+    enfants?: number;
+    categorie?: string;
+    cnpsEmploye?: string;
+    indemniteTransportImposable?: number;
+    indemniteResponsabilite?: number;
+    indemniteLogement?: number;
+    indemniteSujetion?: number;
+    indemniteCommunication?: number;
+    indemniteRepresentation?: number;
+    transportNonImposable?: number;
+    banque?: string;
+    numeroCompte?: string;
+    CB?: string;
+    CG?: string;
+    Cle_RIB?: string;
+    CNPS?: boolean;
     id?: string;
-    adminRole?: string;
-    baseSalary?: number;
-    situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
-    enfants?: number;
-    categorie?: string;
-    cnpsEmploye?: string;
-    indemniteTransportImposable?: number;
-    indemniteResponsabilite?: number;
-    indemniteLogement?: number;
-    indemniteSujetion?: number;
-    indemniteCommunication?: number;
-    indemniteRepresentation?: number;
-    transportNonImposable?: number;
-    banque?: string;
-    numeroCompte?: string;
-    CB?: string;
-    CG?: string;
-    Cle_RIB?: string;
-    CNPS?: boolean;
 };
-
-export type staff_private = {
-    baseSalary: number;
-    situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
-    enfants?: number;
-    categorie?: string;
-    cnpsEmploye?: string;
-    indemniteTransportImposable?: number;
-    indemniteResponsabilite?: number;
-    indemniteLogement?: number;
-    indemniteSujetion?: number;
-    indemniteCommunication?: number;
-    indemniteRepresentation?: number;
-    transportNonImposable?: number;
-    banque?: string;
-    numeroCompte?: string;
-    CB?: string;
-    CG?: string;
-    Cle_RIB?: string;
-    CNPS?: boolean;
-};
-
 
 export type class_type = {
     schoolId: string;
     name: string;
+    grade: string;
     mainTeacherId: string;
     building: string;
     cycle: "Maternelle" | "Enseignement Primaire" | "Enseignement Secondaire - Premier cycle" | "Enseignement Secondaire - Deuxième cycle" | "Enseignement Supérieur";
-    grade: string;
-    studentCount?: number;
     filiere?: string;
+    studentCount?: number;
     id?: string;
 };
 
@@ -152,7 +131,6 @@ export type student = {
     tuitionFee: number;
     amountDue: number;
     tuitionStatus: "Soldé" | "En retard" | "Partiel";
-    id?: string;
     photoUrl?: string;
     address?: string;
     parent2FirstName?: string;
@@ -162,20 +140,18 @@ export type student = {
     discountAmount?: number;
     discountReason?: string;
     feedback?: string;
-    createdAt?: {
-        seconds: number;
-        nanoseconds: number;
-    };
+    createdAt?: string;
+    id?: string;
     name?: string;
 };
 
 export type gradeEntry = {
-    id: string;
     subject: string;
     type: "Interrogation" | "Devoir";
     date: string;
     grade: number;
     coefficient: number;
+    id?: string;
 };
 
 export type accountingTransaction = {
@@ -189,7 +165,6 @@ export type accountingTransaction = {
 };
 
 export type payment = {
-    id: string;
     date: string;
     amount: number;
     description: string;
@@ -198,6 +173,7 @@ export type payment = {
     payerLastName: string;
     method: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
     payerContact?: string;
+    id?: string;
 };
 
 export type libraryBook = {
@@ -205,11 +181,8 @@ export type libraryBook = {
     title: string;
     author: string;
     quantity: number;
+    createdAt?: string;
     id?: string;
-    createdAt?: {
-        seconds: number;
-        nanoseconds: number;
-    };
 };
 
 export type timetableEntry = {
@@ -229,10 +202,7 @@ export type message = {
     content: string;
     senderId: string;
     senderName: string;
-    createdAt: {
-        seconds: number;
-        nanoseconds: number;
-    };
+    createdAt: string;
     recipients: {
         all?: boolean;
         teachers?: boolean;
