@@ -82,8 +82,10 @@ service cloud.firestore {
 
         match /enseignants/{teacherId} {
             allow read, list: if isUserInSchool(schoolId);
-            // Only directors and admins can manage teachers.
-            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
+            // Any authenticated member of the school can add or update a teacher.
+            allow create, update: if isUserInSchool(schoolId);
+            // Only a director or admin can delete a teacher.
+            allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
         match /eleves/{studentId} {
@@ -113,7 +115,9 @@ service cloud.firestore {
 
         match /classes/{classId} {
             allow read, list: if isUserInSchool(schoolId);
+            // Any authenticated school member can update a class (e.g., to assign a teacher).
             allow update: if isUserInSchool(schoolId);
+            // Only a director or admin can create or delete a class.
             allow create, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         
