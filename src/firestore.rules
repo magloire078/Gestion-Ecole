@@ -1,9 +1,9 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // ==================== HELPER FUNCTIONS ====================
+    
     function isUserAuthenticated() {
       return request.auth != null;
     }
@@ -31,94 +31,152 @@ service cloud.firestore {
       return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
     }
 
-    // --- Special function for school creation ---
-    function isCreatingFirstSchool() {
-      // Permet à un utilisateur de créer sa première école
-      return isUserAuthenticated() &&
-             !exists(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)) &&
-             request.resource.data.directorId == request.auth.uid;
+    // Fonction spéciale pour la création initiale d'école
+    function isCreatingInitialSchoolSetup() {
+      return isUserAuthenticated() && 
+             request.resource.data.directorId == request.auth.uid &&
+             !exists(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
     }
 
-    // --- Root Collections ---
+    // ==================== ROOT COLLECTIONS ====================
 
+    // Collection: utilisateurs
     match /utilisateurs/{userId} {
-      // Permettre la création du document utilisateur lors de la création d'école
+      // CRÉATION: Permettre à un utilisateur de créer son propre document
+      // lors de la création initiale d'école
       allow create: if 
         isUserAuthenticated() && 
         userId == request.auth.uid && 
-        (isCreatingFirstSchool() || isUserAdmin());
+        (
+          // Soit c'est la création initiale (pas encore de document utilisateur)
+          !exists(/databases/$(database)/documents/utilisateurs/$(userId)) ||
+          // Soit c'est un admin
+          isUserAdmin()
+        );
       
+      // LECTURE: Uniquement son propre document ou admin
       allow get: if 
         isUserAuthenticated() && 
         (userId == request.auth.uid || isUserAdmin());
       
-      allow update, delete: if isUserAdmin();
+      // PAS DE LIST - pour éviter l'énumération
+      allow list: if false;
+      
+      // MISE À JOUR: Uniquement admin
+      allow update: if isUserAdmin();
+      
+      // SUPPRESSION: Uniquement admin
+      allow delete: if isUserAdmin();
     }
     
+    // Collection: ecoles
     match /ecoles/{schoolId} {
-      // Permettre la création d'école pour un utilisateur qui n'en a pas encore
+      // CRÉATION: Permettre à un utilisateur authentifié de créer une école
+      // s'il en est le directeur ET qu'elle n'existe pas déjà
       allow create: if 
         isUserAuthenticated() && 
-        (request.resource.data.directorId == request.auth.uid || isUserAdmin()) &&
+        request.resource.data.directorId == request.auth.uid &&
         !exists(/databases/$(database)/documents/ecoles/$(schoolId));
       
+      // LECTURE: Membres de l'école ou admin
       allow get: if 
         isUserAuthenticated() && 
         (isUserInSchool(schoolId) || isUserAdmin());
       
+      // LISTE: Tous les utilisateurs authentifiés (pour onboarding)
       allow list: if isUserAuthenticated();
       
+      // MISE À JOUR: Directeur de l'école ou admin
       allow update: if 
         (isSchoolDirector(schoolId) || isUserAdmin());
       
+      // SUPPRESSION: Uniquement admin
       allow delete: if isUserAdmin();
     }
 
+    // Collection: personnel
     match /personnel/{staffId} {
-      // Permettre la création automatique du directeur lors de la création d'école
+      // CRÉATION: 
+      // 1. Auto-création comme directeur lors de la création d'école
+      // 2. Directeur créant du personnel dans son école
+      // 3. Admin
       allow create: if 
-        (isUserAuthenticated() && 
-         staffId == request.auth.uid && 
-         request.resource.data.role == 'directeur' &&
-         !exists(/databases/$(database)/documents/personnel/$(staffId))) ||
-        (isUserInSchool(request.resource.data.schoolId) && 
-         isSchoolDirector(request.resource.data.schoolId)) ||
-        isUserAdmin();
+        isUserAuthenticated() && 
+        (
+          // Cas 1: Auto-création comme directeur
+          (staffId == request.auth.uid && 
+           request.resource.data.role == 'directeur' &&
+           !exists(/databases/$(database)/documents/personnel/$(staffId))) ||
+          
+          // Cas 2: Directeur créant du personnel
+          (isSchoolDirector(request.resource.data.schoolId) &&
+           request.resource.data.schoolId == getUserSchoolId(request.auth.uid)) ||
+          
+          // Cas 3: Admin
+          isUserAdmin()
+        );
       
-      allow read, list: if 
+      // LECTURE: Membres de la même école
+      allow read: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId);
       
-      allow update: if 
-        (isUserInSchool(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) && 
-         (isSchoolDirector(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) || 
-          isUserAdmin())) ||
-        (staffId == request.auth.uid);
+      // LISTE: Avec filtre schoolId obligatoire
+      allow list: if 
+        isUserAuthenticated() && 
+        request.query.schoolId != null &&
+        isUserInSchool(request.query.schoolId);
       
+      // MISE À JOUR: 
+      // 1. Directeur de l'école
+      // 2. Admin
+      // 3. Soi-même (mais pas le rôle)
+      allow update: if 
+        isUserAuthenticated() && 
+        (
+          (isSchoolDirector(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) &&
+           request.resource.data.schoolId == get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) ||
+          
+          isUserAdmin() ||
+          
+          (staffId == request.auth.uid &&
+           request.resource.data.role == resource.data.role) // Ne peut pas changer son propre rôle
+        );
+      
+      // SUPPRESSION: Directeur ou admin
       allow delete: if 
-        isUserInSchool(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) && 
+        isUserAuthenticated() && 
         (isSchoolDirector(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) || 
          isUserAdmin());
     }
 
+    // ==================== AUTRES COLLECTIONS ====================
+
+    // Collection: eleves
     match /eleves/{studentId} {
       allow read, list: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
       
       allow create, update: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId);
       
       allow delete: if 
-        isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId) && 
+        isUserAuthenticated() && 
         (isSchoolDirector(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId) || 
          isUserAdmin());
 
+      // Sous-collections
       match /notes/{gradeId} {
         allow read, write: if 
+          isUserAuthenticated() && 
           isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
       }
       
       match /paiements/{paymentId} {
         allow read, list, create: if 
+          isUserAuthenticated() && 
           isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
         
         allow update, delete: if 
@@ -127,13 +185,46 @@ service cloud.firestore {
       }
     }
 
+    // Collection: cycles
+    match /cycles/{cycleId} {
+      // CRÉATION SPÉCIALE: Permettre la création lors du setup initial par l'utilisateur authentifié
+      allow create: if isUserAuthenticated() && request.resource.data.schoolId != null;
+      
+      // LECTURE: Membres de l'école
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(get(/databases/$(database)/documents/cycles/$(cycleId)).data.schoolId);
+      
+      // LISTE: Avec filtre
+      allow list: if 
+        isUserAuthenticated() && 
+        request.query.schoolId != null &&
+        isUserInSchool(request.query.schoolId);
+      
+      // MISE À JOUR: Directeur ou admin
+      allow update: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(get(/databases/$(database)/documents/cycles/$(cycleId)).data.schoolId) || 
+         isUserAdmin());
+      
+      // SUPPRESSION: Directeur ou admin
+      allow delete: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(get(/databases/$(database)/documents/cycles/$(cycleId)).data.schoolId) || 
+         isUserAdmin());
+    }
+
+    // ==================== COLLECTIONS RESTANTES ====================
+
     match /absences/{absenceId} {
       allow read, write, list: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId);
     }
     
     match /comptabilite/{transactionId} {
       allow read, list, create: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId);
       
       allow update, delete: if 
@@ -143,17 +234,21 @@ service cloud.firestore {
 
     match /classes/{classId} {
       allow read, list: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/classes/$(classId)).data.schoolId);
       
       allow update: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId);
       
       allow create: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId) && 
         (isSchoolDirector(request.resource.data.schoolId) || 
          isUserAdmin());
       
       allow delete: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/classes/$(classId)).data.schoolId) && 
         (isSchoolDirector(get(/databases/$(database)/documents/classes/$(classId)).data.schoolId) || 
          isUserAdmin());
@@ -161,9 +256,11 @@ service cloud.firestore {
     
     match /emploi_du_temps/{entryId} {
       allow read, list: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/emploi_du_temps/$(entryId)).data.schoolId);
       
       allow write: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId) && 
         (isSchoolDirector(request.resource.data.schoolId) || 
          isUserAdmin());
@@ -171,12 +268,15 @@ service cloud.firestore {
     
     match /messagerie/{messageId} {
       allow read, list: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/messagerie/$(messageId)).data.schoolId);
       
       allow create: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId);
       
       allow update, delete: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/messagerie/$(messageId)).data.schoolId) && 
         (isSchoolDirector(get(/databases/$(database)/documents/messagerie/$(messageId)).data.schoolId) || 
          isUserAdmin());
@@ -184,9 +284,11 @@ service cloud.firestore {
 
     match /bibliotheque/{bookId} {
       allow read, list: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/bibliotheque/$(bookId)).data.schoolId);
       
       allow write: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId) && 
         (isSchoolDirector(request.resource.data.schoolId) || 
          isUserAdmin());
@@ -194,30 +296,25 @@ service cloud.firestore {
     
     match /frais_scolarite/{feeId} {
       allow read, list: if 
+        isUserAuthenticated() && 
         isUserInSchool(get(/databases/$(database)/documents/frais_scolarite/$(feeId)).data.schoolId);
       
       allow write: if 
+        isUserAuthenticated() && 
         isUserInSchool(request.resource.data.schoolId) && 
         (isSchoolDirector(request.resource.data.schoolId) || 
          isUserAdmin());
     }
     
-    match /cycles/{cycleId} {
-      // Permettre la création initiale des cycles lors de la création d'école
-      allow create: if 
-        isUserAuthenticated() && 
-        (request.resource.data.schoolId != null);
-      
-      allow read, list: if 
-        isUserInSchool(get(/databases/$(database)/documents/cycles/$(cycleId)).data.schoolId);
-      
-      allow update, delete: if 
-        get(/databases/$(database)/documents/ecoles/$(request.resource.data.schoolId)).data.directorId == request.auth.uid || 
-        isUserAdmin();
-    }
-    
     match /admin_roles/{roleId} {
       allow read, write: if isUserAdmin();
+    }
+
+    // ==================== RÈGLE GLOBALE DE SÉCURITÉ ====================
+    
+    // Bloque tout accès non explicitement autorisé
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
