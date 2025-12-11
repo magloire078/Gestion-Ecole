@@ -103,7 +103,7 @@ export default function StudentProfilePage() {
   
   const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
-  const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
+  const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentQuery);
 
   const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
@@ -341,7 +341,7 @@ export default function StudentProfilePage() {
                                     <Separator />
                                     <div className="flex justify-between items-center">
                                         <span className="text-muted-foreground">Statut:</span>
-                                        <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} amount={student.tuitionFee}/>
+                                        <TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'}/>
                                     </div>
                                     <div className="flex justify-between items-center text-lg">
                                         <span className="font-bold">Solde dû:</span>

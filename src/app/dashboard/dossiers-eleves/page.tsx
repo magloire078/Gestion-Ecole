@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -43,7 +44,7 @@ import {
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, deleteDoc } from "firebase/firestore";
+import { collection, doc, writeBatch, increment } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -114,19 +115,31 @@ export default function StudentsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteStudent = () => {
+  const handleDeleteStudent = async () => {
     if (!schoolId || !studentToDelete) return;
+    
+    const batch = writeBatch(firestore);
 
+    // 1. Get a reference to the student document to delete
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToDelete.id}`);
-    deleteDoc(studentDocRef)
-    .then(() => {
+    batch.delete(studentDocRef);
+
+    // 2. If the student was in a class, get a reference to the class and decrement its count
+    if (studentToDelete.classId) {
+        const classDocRef = doc(firestore, `ecoles/${schoolId}/classes/${studentToDelete.classId}`);
+        batch.update(classDocRef, { studentCount: increment(-1) });
+    }
+
+    try {
+        await batch.commit();
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
-        setIsDeleteDialogOpen(false);
-        setStudentToDelete(null);
-    }).catch(async (serverError) => {
+    } catch(serverError) {
         const permissionError = new FirestorePermissionError({ path: studentDocRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
-    });
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setStudentToDelete(null);
+    }
   }
   
   const getAge = (dateOfBirth: string | undefined) => {
@@ -318,7 +331,7 @@ export default function StudentsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. L'élève <strong>{studentToDelete?.firstName} {studentToDelete?.lastName}</strong> sera définitivement supprimé(e).
+              Cette action est irréversible. L'élève <strong>{studentToDelete?.firstName} {studentToDelete?.lastName}</strong> sera définitivement supprimé(e). Les données de sa classe seront mises à jour.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -330,3 +343,4 @@ export default function StudentsPage() {
     </>
   );
 }
+
