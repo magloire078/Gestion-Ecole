@@ -1,3 +1,4 @@
+
 'use client';
 import {createContext, useContext, ReactNode} from 'react';
 import type {FirebaseApp} from 'firebase/app';
