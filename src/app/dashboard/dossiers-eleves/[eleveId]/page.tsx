@@ -27,6 +27,7 @@ import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
 import { StudentEditForm } from '@/components/student-edit-form';
+import { updateStudentPhoto } from '@/services/student-services';
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -131,15 +132,17 @@ export default function StudentProfilePage() {
   }
 
   const handlePhotoUploadComplete = async (url: string) => {
-    if (!studentRef) {
-        toast({ variant: 'destructive', title: "Erreur", description: "Référence de l'élève non trouvée." });
+    if (!schoolId) {
+        toast({ variant: 'destructive', title: "Erreur", description: "ID de l'école non trouvé." });
         return;
     }
     try {
-        await updateDoc(studentRef, { photoUrl: url });
+        await updateStudentPhoto(firestore, schoolId, eleveId, url);
         toast({ title: 'Photo de profil mise à jour !' });
     } catch (error) {
-        console.error("Erreur lors de la mise à jour de la photo de profil:", error);
+        // The error is already emitted as a permission error in the service
+        // and will be caught by the FirebaseErrorListener.
+        // We can show a generic toast here if needed.
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la photo de profil.' });
     }
   };
@@ -347,7 +350,7 @@ export default function StudentProfilePage() {
                                         <span className="font-bold">Solde dû:</span>
                                         <span className="font-bold text-primary">{formatCurrency(student.amountDue)}</span>
                                     </div>
-                                     {(student.discountAmount ?? 0) > 0 && (
+                                     {(student.discountAmount || 0) > 0 && (
                                         <Card className="bg-muted/50 p-3 text-xs">
                                             <CardDescription className="flex items-start gap-2">
                                                 <Tag className="h-4 w-4 mt-0.5 shrink-0" />
