@@ -3,7 +3,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Users, User, Building, MoreHorizontal, BookCopy } from "lucide-react";
+import { PlusCircle, Users, User, Building, MoreHorizontal, BookCopy, AlertTriangle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
@@ -35,7 +35,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query, where, getDocs, limit } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -97,6 +97,7 @@ export default function ClassesPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAddTeacherDialogOpen, setIsAddTeacherDialogOpen] = useState(false);
+  const [isDeleteErrorAlertOpen, setIsDeleteErrorAlertOpen] = useState(false);
   
   const [editingClass, setEditingClass] = useState<ClassWithId | null>(null);
   const [classToDelete, setClassToDelete] = useState<ClassWithId | null>(null);
@@ -197,9 +198,23 @@ export default function ClassesPage() {
     setIsFormOpen(true);
   };
 
-  const handleOpenDeleteDialog = (cls: ClassWithId) => {
+  const handleOpenDeleteDialog = async (cls: ClassWithId) => {
     setClassToDelete(cls);
-    setIsDeleteDialogOpen(true);
+    if (!schoolId) return;
+
+    // Check if any students are in this class
+    const studentsInClassQuery = query(
+      collection(firestore, `ecoles/${schoolId}/eleves`),
+      where('classId', '==', cls.id),
+      limit(1)
+    );
+
+    const studentsSnapshot = await getDocs(studentsInClassQuery);
+    if (!studentsSnapshot.empty) {
+      setIsDeleteErrorAlertOpen(true);
+    } else {
+      setIsDeleteDialogOpen(true);
+    }
   };
 
   const handleDeleteClass = () => {
@@ -524,6 +539,24 @@ export default function ClassesPage() {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteClass} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
           </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Error Alert */}
+      <AlertDialog open={isDeleteErrorAlertOpen} onOpenChange={setIsDeleteErrorAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                    <AlertTriangle className="text-destructive" />
+                    Impossible de supprimer la classe
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette classe ne peut pas être supprimée car elle contient encore des élèves. Veuillez d'abord réaffecter tous les élèves à d'autres classes avant de procéder à la suppression.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogAction onClick={() => setIsDeleteErrorAlertOpen(false)}>Compris</AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
