@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { 
     LayoutDashboard, 
     Users, 
-    BookUser, 
     Settings, 
     CalendarClock, 
     UserPlus, 
@@ -34,7 +33,6 @@ import {
 import { useUser } from '@/firebase';
 
 const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:text-white text-sm";
-const activeClass = "bg-gradient-to-r from-blue-600/20 to-purple-600/20 text-white border-l-4 border-blue-500";
 
 
 const mySchoolLinks = [
@@ -45,7 +43,7 @@ const mySchoolLinks = [
 
 const administrationLinks = [
   { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus },
-  { href: '/dashboard/rh', label: 'RH / Personnel', icon: ClipboardList },
+  { href: '/dashboard/rh', label: 'RH / Personnel', icon: Briefcase },
   { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send },
 ];
 
@@ -56,7 +54,7 @@ const pedagogicalLinks = [
 ];
 
 const financialLinks = [
-  { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: CreditCard },
+  { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: GraduationCap },
   { href: '/dashboard/paiements', label: 'Suivi des Paiements', icon: Wallet },
   { href: '/dashboard/comptabilite', label: 'Comptabilité', icon: Landmark },
 ];
@@ -74,7 +72,7 @@ const adminLinks = [
 
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
-    const isActive = pathname.startsWith(href) && (href !== '/dashboard/parametres' || pathname === '/dashboard/parametres');
+    const isActive = pathname === href || (pathname.startsWith(href) && href !== '/dashboard');
     return (
         <Link
             href={href}
