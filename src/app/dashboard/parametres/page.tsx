@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser, useFirestore, useAuth } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2 } from "lucide-react";
+import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2, Users, Check, User, Phone, Globe } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -30,22 +30,74 @@ import {
 } from "@/components/ui/alert-dialog"
 import { doc, deleteDoc } from 'firebase/firestore';
 import { signOut } from "firebase/auth";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const settingsSchema = z.object({
-  name: z.string().min(1, { message: "Le nom de l'école est requis." }),
-  matricule: z.string().optional(),
-  cnpsEmployeur: z.string().optional(),
-  directorFirstName: z.string().min(1, "Le prénom du directeur est requis."),
-  directorLastName: z.string().min(1, "Le nom du directeur est requis."),
-  directorPhone: z.string().optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  website: z.string().optional(),
-  mainLogoUrl: z.string().url({ message: "Veuillez entrer une URL valide." }).optional().or(z.literal('')),
+  name: z.string().min(3, { message: "Le nom doit contenir au moins 3 caractères" }).max(100, { message: "Le nom ne peut excéder 100 caractères" }),
+  matricule: z.string().optional().or(z.literal('')),
+  cnpsEmployeur: z.string().optional().or(z.literal('')),
+  directorFirstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
+  directorLastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  directorPhone: z.string().optional().or(z.literal('')),
+  address: z.string().max(200).optional(),
+  phone: z.string().optional().or(z.literal('')),
+  website: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
+  mainLogoUrl: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
+  email: z.string().email("Email invalide").optional().or(z.literal('')),
 });
 
+
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+const InvitationCode = ({ code, onCopy }: { code: string; onCopy: () => void }) => {
+  const [copied, setCopied] = useState(false);
+  
+  const handleCopy = () => {
+    onCopy();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  
+  return (
+    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Code d'Invitation
+        </CardTitle>
+        <CardDescription>
+          Partagez ce code avec vos collaborateurs pour leur permettre de rejoindre votre école.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-2">
+          <code className="flex-1 bg-white dark:bg-card px-4 py-3 rounded-md border font-mono text-lg tracking-wider text-center">
+            {code}
+          </code>
+          <Button 
+            variant={copied ? "default" : "outline"} 
+            onClick={handleCopy}
+            className="shrink-0"
+          >
+            {copied ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Copié !
+              </>
+            ) : (
+              <>
+                <Copy className="mr-2 h-4 w-4" />
+                Copier
+              </>
+            )}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 
 export default function SettingsPage() {
   const { toast } = useToast();
@@ -53,28 +105,13 @@ export default function SettingsPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { user } = useUser();
-  const { 
-    schoolData,
-    loading, 
-    updateSchoolData 
-  } = useSchoolData();
+  const { schoolData, loading, updateSchoolData } = useSchoolData();
   const [error, setError] = useState<string | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      name: "",
-      directorFirstName: "",
-      directorLastName: "",
-      matricule: "",
-      cnpsEmployeur: "",
-      directorPhone: "",
-      address: "",
-      phone: "",
-      website: "",
-      mainLogoUrl: "",
-    },
+    defaultValues: { name: "", directorFirstName: "", directorLastName: "", matricule: "", cnpsEmployeur: "", directorPhone: "", address: "", phone: "", website: "", mainLogoUrl: "", email: "" },
   });
 
   useEffect(() => {
@@ -90,6 +127,7 @@ export default function SettingsPage() {
         phone: schoolData.phone || "",
         website: schoolData.website || "",
         mainLogoUrl: schoolData.mainLogoUrl || "",
+        email: schoolData.email || "",
       });
     }
   }, [schoolData, form]);
@@ -98,27 +136,21 @@ export default function SettingsPage() {
     setError(null);
     try {
       await updateSchoolData(values);
-      toast({
-        title: "Paramètres enregistrés",
-        description: "Les informations de l'école ont été mises à jour.",
-      });
+      toast({ title: "Paramètres enregistrés", description: "Les informations de l'école ont été mises à jour." });
     } catch (error) {
        setError("Impossible d'enregistrer les paramètres. Vérifiez vos permissions.");
     }
   };
   
   const handleLogoUploadComplete = (url: string) => {
-      form.setValue('mainLogoUrl', url);
+      form.setValue('mainLogoUrl', url, { shouldDirty: true });
       form.handleSubmit(handleSaveChanges)();
   }
 
   const handleCopyCode = () => {
     if (schoolData?.schoolCode) {
       navigator.clipboard.writeText(schoolData.schoolCode);
-      toast({
-        title: "Code copié !",
-        description: "Le code de l'établissement a été copié dans le presse-papiers.",
-      });
+      toast({ title: "Code copié !", description: "Le code de l'établissement a été copié dans le presse-papiers." });
     }
   };
 
@@ -127,7 +159,6 @@ export default function SettingsPage() {
       toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
       return;
     }
-
     try {
       const userRootRef = doc(firestore, 'utilisateurs', user.uid);
       await deleteDoc(userRootRef);
@@ -140,166 +171,142 @@ export default function SettingsPage() {
     }
   };
   
-  const renderSkeleton = () => (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Paramètres Généraux</h1>
-        <p className="text-muted-foreground">
-          Gérez les paramètres de votre compte et de votre école.
-        </p>
-      </div>
-      {[...Array(3)].map((_, i) => (
-        <Card key={i}>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/4" />
-            <Skeleton className="h-4 w-1/2" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-1/5" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-1/5" />
-              <Skeleton className="h-10 w-full" />
-            </div>
-          </CardContent>
-          <CardFooter className="border-t px-6 py-4">
-            <Skeleton className="h-10 w-48" />
-          </CardFooter>
-        </Card>
-      ))}
-    </div>
-  );
-
   if (loading) {
-      return renderSkeleton();
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-96" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-[70vh] w-full" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <>
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Paramètres Généraux</h1>
-            <p className="text-muted-foreground">
-              Gérez les paramètres de votre compte et de votre école.
-            </p>
+          <h1 className="text-2xl font-bold tracking-tight">Paramètres</h1>
+          <p className="text-muted-foreground">Gérez les informations de votre établissement scolaire.</p>
         </div>
-         <Button variant="outline" onClick={() => router.push('/dashboard/parametres/fiche-etablissement')}>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => router.push('/dashboard/parametres/fiche-etablissement')}>
             <FileSignature className="mr-2 h-4 w-4" />
-            Voir la Fiche de l'Établissement
-        </Button>
+            Fiche établissement
+          </Button>
+        </div>
       </div>
 
        {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Erreur</AlertTitle>
-          <AlertDescription>
-            {error}
-          </AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Card>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSaveChanges)}>
-            <CardHeader>
-              <CardTitle>École</CardTitle>
-              <CardDescription>Modifiez les détails de votre établissement et consultez son code.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input placeholder="Nom de votre école" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              
-              <FormField
-                control={form.control}
-                name="mainLogoUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Logo de l'École</FormLabel>
-                    <div className="flex items-center gap-2">
-                         <FormControl>
-                            <Input type="url" placeholder="https://example.com/logo.png" {...field} />
-                        </FormControl>
-                        <ImageUploader 
-                            onUploadComplete={handleLogoUploadComplete}
-                            storagePath={`ecoles/${schoolData?.schoolCode || 'logos'}/`}
-                        >
-                            <Button type="button" variant="outline"><Upload className="mr-2 h-4 w-4"/> Télécharger</Button>
-                        </ImageUploader>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSaveChanges)}>
+                <Tabs defaultValue="school" className="w-full">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="school">École</TabsTrigger>
+                    <TabsTrigger value="director">Direction</TabsTrigger>
+                    <TabsTrigger value="contact">Contact</TabsTrigger>
+                    <TabsTrigger value="danger">Zone Danger</TabsTrigger>
+                  </TabsList>
+                  
+                  <Card className="mt-6">
+                    <CardContent className="p-6">
+                      <TabsContent value="school" className="space-y-6 mt-0">
+                         <FormField control={form.control} name="mainLogoUrl" render={({ field }) => (
+                            <FormItem>
+                                <div className="flex items-center gap-4">
+                                {field.value && <img src={field.value} alt="Logo" className="w-20 h-20 object-contain border rounded-md p-1" />}
+                                 <div className="space-y-2 flex-1">
+                                    <FormLabel>Logo de l'école</FormLabel>
+                                    <ImageUploader onUploadComplete={handleLogoUploadComplete} storagePath={`ecoles/${schoolData?.schoolCode || 'logos'}/`}>
+                                        <Button type="button" variant="outline"><Upload className="mr-2 h-4 w-4"/> {field.value ? "Changer" : "Télécharger"}</Button>
+                                    </ImageUploader>
+                                 </div>
+                                </div>
+                            </FormItem>
+                         )} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Matricule de l'Établissement</FormLabel><FormControl><Input placeholder="Ex: 0123/ETAB/2024" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="cnpsEmployeur" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employeur</FormLabel><FormControl><Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      </TabsContent>
+                      <TabsContent value="director" className="space-y-6 mt-0">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField control={form.control} name="directorFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Directeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                          <FormField control={form.control} name="directorLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Directeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                        </div>
+                        <FormField control={form.control} name="directorPhone" render={({ field }) => (<FormItem><FormLabel>Téléphone du Directeur</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      </TabsContent>
+                      <TabsContent value="contact" className="space-y-6 mt-0">
+                         <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                         <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone de l'École</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                         <FormField control={form.control} name="website" render={({ field }) => (<FormItem><FormLabel>Site Web</FormLabel><FormControl><Input type="url" placeholder="https://www.mon-ecole.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                         <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email de contact</FormLabel><FormControl><Input type="email" placeholder="contact@ecole.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                      </TabsContent>
+                      <TabsContent value="danger" className="mt-0">
+                        <Alert variant="destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertTitle>Attention</AlertTitle>
+                            <AlertDescription>
+                                Les actions dans cette section sont irréversibles.
+                            </AlertDescription>
+                        </Alert>
+                         <div className="mt-4">
+                           <Button type="button" variant="destructive" onClick={() => setIsResetDialogOpen(true)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Réinitialiser Mon Compte
+                           </Button>
+                           <p className="text-xs text-muted-foreground mt-2">
+                                Dissocie votre compte de l'école et vous déconnecte.
+                           </p>
+                        </div>
+                      </TabsContent>
+                    </CardContent>
+                    <CardFooter className="border-t px-6 py-4">
+                      <Button type="submit" disabled={form.formState.isSubmitting || !form.formState.isDirty}>
+                          {form.formState.isSubmitting ? "Enregistrement..." : "Enregistrer les Modifications"}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                </Tabs>
+              </form>
+            </Form>
+        </div>
+        <div className="space-y-6">
+           <InvitationCode code={schoolData?.schoolCode || '...'} onCopy={handleCopyCode} />
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Mon Profil</CardTitle>
+                    <CardDescription>Vos informations personnelles.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Nom complet</Label>
+                        <Input value={user?.displayName || ''} disabled />
                     </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Matricule de l'Établissement</FormLabel><FormControl><Input placeholder="Ex: 0123/ETAB/2024" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-              <FormField control={form.control} name="cnpsEmployeur" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employeur</FormLabel><FormControl><Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-              <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse de l'École</FormLabel><FormControl><Input placeholder="Ex: 123, Avenue de l'Indépendance" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-              <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone de l'École</FormLabel><FormControl><Input type="tel" placeholder="Numéro de téléphone général" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-              <FormField control={form.control} name="website" render={({ field }) => (<FormItem><FormLabel>Site Web de l'École</FormLabel><FormControl><Input type="url" placeholder="https://www.mon-ecole.com" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-               
-               {schoolData?.schoolCode && (
-                <div className="space-y-2">
-                  <Label htmlFor="school-code">Code d'Invitation</Label>
-                  <div className="flex items-center gap-2">
-                    <Input id="school-code" value={schoolData.schoolCode} readOnly className="bg-muted" />
-                    <Button type="button" variant="outline" size="icon" onClick={handleCopyCode}>
-                      <Copy className="h-4 w-4" />
-                      <span className="sr-only">Copier le code</span>
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">Partagez ce code avec les enseignants pour leur permettre de rejoindre votre école.</p>
-                </div>
-               )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="directorFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Directeur</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                  <FormField control={form.control} name="directorLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Directeur</FormLabel><FormControl><Input placeholder="Nom" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-              </div>
-              <FormField control={form.control} name="directorPhone" render={({ field }) => (<FormItem><FormLabel>Téléphone du Directeur</FormLabel><FormControl><Input type="tel" placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-            
-            </CardContent>
-            <CardFooter className="border-t px-6 py-4">
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Enregistrement..." : "Enregistrer les Modifications"}
-              </Button>
-            </CardFooter>
-          </form>
-        </Form>
-      </Card>
-       <Card>
-        <CardHeader>
-          <CardTitle>Profil</CardTitle>
-          <CardDescription>Les informations de votre profil (non modifiables ici).</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="space-y-2">
-                <Label>Nom</Label>
-                <Input value={user?.displayName || ''} disabled />
-            </div>
-            <div className="space-y-2 mt-4">
-                <Label>Email</Label>
-                <Input value={user?.email || ''} disabled />
-            </div>
-        </CardContent>
-      </Card>
-       <Card>
-        <CardHeader>
-          <CardTitle>Zone de Danger</CardTitle>
-          <CardDescription>Actions irréversibles. Soyez prudent.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button variant="destructive" onClick={() => setIsResetDialogOpen(true)}>
-            <Trash2 className="mr-2 h-4 w-4" />
-            Réinitialiser Mon Compte
-          </Button>
-           <p className="text-xs text-muted-foreground mt-2">
-            Cette action supprimera le lien entre votre compte et cette école. Vous serez déconnecté et pourrez créer une nouvelle école ou en rejoindre une autre.
-           </p>
-        </CardContent>
-      </Card>
+                    <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input value={user?.email || ''} disabled />
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+      </div>
     </div>
      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
         <AlertDialogContent>
