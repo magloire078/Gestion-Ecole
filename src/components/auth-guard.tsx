@@ -33,8 +33,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    // If the user is on an onboarding page, allow access without verification yet.
-    if (pathname.startsWith('/onboarding') || pathname.startsWith('/dashboard/onboarding')) {
+    // If the user is on any onboarding page, allow access without verification yet.
+    if (pathname.startsWith('/dashboard/onboarding')) {
         setIsVerified(true);
         return;
     }
