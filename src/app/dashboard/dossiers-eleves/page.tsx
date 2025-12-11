@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -78,9 +76,9 @@ export default function StudentsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
-  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `eleves`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
-  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `frais_scolarite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -123,12 +121,12 @@ export default function StudentsPage() {
     if (!schoolId || !studentToDelete || !studentToDelete.id) return;
 
     const batch = writeBatch(firestore);
-    const studentDocRef = doc(firestore, `eleves/${studentToDelete.id}`);
+    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToDelete.id}`);
     
     batch.delete(studentDocRef);
 
     if (studentToDelete.classId) {
-        const classDocRef = doc(firestore, `classes/${studentToDelete.classId}`);
+        const classDocRef = doc(firestore, `ecoles/${schoolId}/classes/${studentToDelete.classId}`);
         batch.update(classDocRef, { studentCount: increment(-1) });
     }
 
@@ -137,9 +135,9 @@ export default function StudentsPage() {
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `[BATCH] /eleves/${studentToDelete.id} & /classes/${studentToDelete.classId}`,
+            path: `[BATCH] /ecoles/${schoolId}/eleves/${studentToDelete.id} & /ecoles/${schoolId}/classes/${studentToDelete.classId}`,
             operation: 'write',
-            requestResourceData: { studentDeletePath: studentDocRef.path, classUpdatePath: studentToDelete.classId ? `/classes/${studentToDelete.classId}` : 'N/A' }
+            requestResourceData: { studentDeletePath: studentDocRef.path, classUpdatePath: studentToDelete.classId ? `/ecoles/${schoolId}/classes/${studentToDelete.classId}` : 'N/A' }
         });
         errorEmitter.emit('permission-error', permissionError);
     } finally {

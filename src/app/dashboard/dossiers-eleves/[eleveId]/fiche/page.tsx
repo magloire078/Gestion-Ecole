@@ -1,4 +1,3 @@
-
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -16,7 +15,7 @@ export default function StudentSheetPage() {
   const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
 
   const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `eleves/${eleveId}`) : null
+    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
   , [firestore, schoolId, eleveId]);
 
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);

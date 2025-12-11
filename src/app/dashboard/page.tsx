@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
@@ -72,11 +71,11 @@ const RegularDashboard = () => {
 
             try {
                 // --- Fetch Stats ---
-                const studentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId));
-                const teachersQuery = query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant'));
-                const classesQuery = query(collection(firestore, `classes`), where('schoolId', '==', schoolId));
-                const libraryQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId));
-                const accountingQuery = query(collection(firestore, `comptabilite`), where('schoolId', '==', schoolId));
+                const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
+                const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
+                const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
+                const libraryQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
+                const accountingQuery = query(collection(firestore, `ecoles/${schoolId}/comptabilite`));
                 
                 const [studentsSnapshot, teachersSnapshot, classesSnapshot, librarySnapshot, tuitionPaidSnapshot, studentsWithDue] = await Promise.all([
                     getCountFromServer(studentsQuery),
@@ -105,7 +104,7 @@ const RegularDashboard = () => {
                 const grades: GradeEntry[] = [];
                 const studentDocs = await getDocs(studentsQuery);
                 for (const studentDoc of studentDocs.docs) {
-                    const notesSnapshot = await getDocs(collection(firestore, `eleves/${studentDoc.id}/notes`));
+                    const notesSnapshot = await getDocs(collection(firestore, `ecoles/${schoolId}/eleves/${studentDoc.id}/notes`));
                     notesSnapshot.forEach(noteDoc => {
                         grades.push(noteDoc.data() as GradeEntry);
                     });
@@ -114,8 +113,8 @@ const RegularDashboard = () => {
                 setGradesLoading(false);
 
                 // --- Fetch Recent Activity ---
-                const recentStudentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(3));
-                const recentMessagesQuery = query(collection(firestore, `messagerie`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(2));
+                const recentStudentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3));
+                const recentMessagesQuery = query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(2));
                 
                 const [studentsActivitySnapshot, messagesActivitySnapshot] = await Promise.all([
                     getDocs(recentStudentsQuery),

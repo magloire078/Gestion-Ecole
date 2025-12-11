@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc, updateDoc, Firestore } from "firebase/firestore";
@@ -13,15 +12,16 @@ import { FirestorePermissionError } from "@/firebase/errors";
  */
 export const updateStudentPhoto = async (
     firestore: Firestore,
+    schoolId: string,
     studentId: string,
     photoUrl: string
 ): Promise<void> => {
     
-    if (!studentId) {
-        throw new Error("L'ID de l'élève est requis.");
+    if (!schoolId || !studentId) {
+        throw new Error("L'ID de l'école et de l'élève sont requis.");
     }
     
-    const studentRef = doc(firestore, `eleves/${studentId}`);
+    const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
     const dataToUpdate = { photoUrl };
 
     try {

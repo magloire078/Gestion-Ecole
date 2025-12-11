@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -78,8 +77,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
     // Fetch the student's class to get the mainTeacherId
     const classRef = useMemoFirebase(() =>
-        (student.classId) ? doc(firestore, `ecoles/${(window as any).schoolId}/classes/${student.classId}`) : null
-    , [firestore, student.classId]);
+        (student.schoolId && student.classId) ? doc(firestore, `ecoles/${student.schoolId}/classes/${student.classId}`) : null
+    , [firestore, student.schoolId, student.classId]);
     const { data: classData } = useDoc<Class>(classRef);
 
     // Get the main teacher for the class
@@ -210,18 +209,18 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
             }
         `;
         
-        printWindow.document.write(\`
+        printWindow.document.write(`
             <html>
                 <head>
                     <title>Bulletin de Notes</title>
-                    \${stylesheets}
-                    <style>\${pageStyles}</style>
+                    ${stylesheets}
+                    <style>${pageStyles}</style>
                 </head>
                 <body>
-                    \${printContent.innerHTML}
+                    ${printContent.innerHTML}
                 </body>
             </html>
-        \`);
+        `);
         printWindow.document.close();
         printWindow.focus();
         

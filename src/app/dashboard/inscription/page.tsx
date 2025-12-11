@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -61,11 +59,11 @@ export default function RegistrationPage() {
 
   const [step, setStep] = useState(1);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `frais_scolarite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
 
@@ -156,12 +154,12 @@ export default function RegistrationPage() {
     const batch = writeBatch(firestore);
     
     // 1. Create the new student document
-    const newStudentRef = doc(collection(firestore, `eleves`));
+    const newStudentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves`));
     batch.set(newStudentRef, studentData);
 
     // 2. Atomically increment the student count on the class document
     if (selectedClassInfo) {
-        const classRef = doc(firestore, `classes`, selectedClassInfo.id);
+        const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id);
         batch.update(classRef, { studentCount: increment(1) });
     }
 
@@ -174,7 +172,7 @@ export default function RegistrationPage() {
         router.push(`/dashboard/dossiers-eleves`);
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /eleves and /classes`,
+            path: `[BATCH WRITE] /ecoles/${schoolId}/eleves and /ecoles/${schoolId}/classes`,
             operation: 'create',
             requestResourceData: studentData,
         });

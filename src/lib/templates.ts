@@ -1,4 +1,3 @@
-
 export const SCHOOL_TEMPLATES = {
   FRENCH_PRIMARY: {
     cycles: [
