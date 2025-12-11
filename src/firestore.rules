@@ -11,7 +11,6 @@ service cloud.firestore {
     
     function isUserAdmin() {
       // Check for the admin custom claim on the user's token.
-      // This is more secure and efficient than checking the database.
       return request.auth.token.admin == true;
     }
 
@@ -23,12 +22,12 @@ service cloud.firestore {
       return isUserAuthenticated() && getUserSchoolId(request.auth.uid) == schoolId;
     }
     
-    function getUserRoleFromSchool(schoolId, userId) {
-        return get(/databases/$(database)/documents/ecoles/$(schoolId)/utilisateurs/$(userId)).data.role;
+    function getUserRole(schoolId, userId) {
+        return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId)).data.role;
     }
     
     function isSchoolDirector(schoolId, userId) {
-      return isUserInSchool(schoolId) && getUserRoleFromSchool(schoolId, userId) == 'directeur';
+      return isUserInSchool(schoolId) && getUserRole(schoolId, userId) == 'directeur';
     }
 
     function isCreatingOwnDocument(userId) {
@@ -55,34 +54,30 @@ service cloud.firestore {
         allow list: if isUserAuthenticated();
         // The school director or an admin can update the school's information.
         allow update: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-        // Admin can delete a school (document only, subcollections have their own rules if needed)
-        allow delete: if isUserAdmin();
+        allow delete: if isUserAdmin(); // Only an admin can delete a school.
         
         match /absences/{absenceId} {
             // Any authorized staff member can manage absences.
-            allow read, write, list: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel');
+            allow read, write, list: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRole(schoolId, request.auth.uid) == 'enseignant' || getUserRole(schoolId, request.auth.uid) == 'personnel');
         }
 
         // --- Subcollections with Specific Rules ---
-
-        match /utilisateurs/{userId} {
-            // A user can create their own profile in a school (onboarding)
-            // A director or admin can create users.
-            allow create: if isCreatingOwnDocument(userId) || isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-            
-            // A director or admin can modify any profile.
-            // A user can modify their own profile, but NOT their role.
-            allow update: if (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin()) || (isCreatingOwnDocument(userId) && isNotChangingRole(request, resource));
-
-            // Reading user list is restricted to admins and directors for privacy.
-            allow get, list: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-
-            // Only a director or admin can remove a user from the school.
+        
+        match /personnel/{staffId} {
+            // Any authenticated member of the school can see the staff list.
+            allow read, list: if isUserInSchool(schoolId);
+            // Director/admin can create/update staff.
+            // A user can update their own non-critical info.
+            allow create, update: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || (isCreatingOwnDocument(staffId) && isNotChangingRole(request, resource));
+            // Only a director or admin can remove a staff member.
             allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
         match /eleves/{studentId} {
-            allow read, list, create, update: if isUserInSchool(schoolId);
+            allow read, list: if isUserInSchool(schoolId);
+            // Any authenticated member of the school can update a student record.
+            allow update, create: if isUserInSchool(schoolId);
+            // Only director or admin can delete a student
             allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
 
             match /notes/{gradeId} {
@@ -92,14 +87,14 @@ service cloud.firestore {
             
             match /paiements/{paymentId} {
                 // Authorized staff (admin, director, personnel, teacher) can create/read payments.
-                allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
+                allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRole(schoolId, request.auth.uid) == 'personnel' || getUserRole(schoolId, request.auth.uid) == 'enseignant');
                 allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
             }
         }
         
         match /comptabilite/{transactionId} {
              // Authorized staff (admin, director, personnel, teacher) can manage accounting.
-            allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRoleFromSchool(schoolId, request.auth.uid) == 'personnel' || getUserRoleFromSchool(schoolId, request.auth.uid) == 'enseignant');
+            allow read, list, create: if isUserInSchool(schoolId) && (isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin() || getUserRole(schoolId, request.auth.uid) == 'personnel' || getUserRole(schoolId, request.auth.uid) == 'enseignant');
             allow update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
 
@@ -107,21 +102,13 @@ service cloud.firestore {
             allow read, list: if isUserInSchool(schoolId);
             // Any authenticated school member can update a class (e.g., to assign a teacher).
             allow update: if isUserInSchool(schoolId);
-            // A director or admin can create a class. A batch write for fees is associated.
-            allow create: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-            allow delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
+            // Only a director or admin can create or delete a class.
+            allow create, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         
         match /emploi_du_temps/{entryId} {
             allow read, list: if isUserInSchool(schoolId);
             allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-        }
-
-        match /personnel/{staffId} {
-            // Any authenticated member of the school can see the staff list.
-            allow read, list: if isUserInSchool(schoolId);
-            // Only a director or admin can add, modify, or remove staff members.
-            allow create, update, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         
         match /messagerie/{messageId} {
@@ -137,8 +124,6 @@ service cloud.firestore {
         
         match /frais_scolarite/{feeId} {
              allow read, list: if isUserInSchool(schoolId);
-            // Creating fees is now tied to creating a class in a batch write.
-            // Direct creation/update is restricted to director/admin for manual adjustments.
             allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         

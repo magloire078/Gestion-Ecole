@@ -13,6 +13,20 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from "@/hooks/use-toast";
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { Button } from '@/components/ui/button';
+import { Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useState } from 'react';
+import { deleteSchool } from '@/services/school-services';
 
 interface School {
     id: string;
@@ -32,6 +46,9 @@ export default function AdminSubscriptionsPage() {
     const firestore = useFirestore();
     const { toast } = useToast();
 
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+
     const schoolsQuery = useMemoFirebase(() => query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc')), [firestore]);
     const { data: schoolsData, loading: schoolsLoading } = useCollection(schoolsQuery);
 
@@ -47,6 +64,34 @@ export default function AdminSubscriptionsPage() {
             router.push('/dashboard');
         }
     }, [user, userLoading, router, toast]);
+
+    const handleOpenDeleteDialog = (school: School) => {
+        setSchoolToDelete(school);
+        setIsDeleteDialogOpen(true);
+    };
+    
+    const handleDeleteSchool = async () => {
+        if (!schoolToDelete) return;
+        
+        try {
+            await deleteSchool(firestore, schoolToDelete.id);
+            toast({
+                title: "École supprimée",
+                description: `L'école "${schoolToDelete.name}" a été supprimée.`,
+            });
+        } catch (error) {
+            // L'erreur est déjà gérée et émise par le service
+            toast({
+                variant: "destructive",
+                title: "Erreur de suppression",
+                description: "Impossible de supprimer l'école. Vérifiez les permissions.",
+            });
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSchoolToDelete(null);
+        }
+    };
+
 
     const isLoading = userLoading || schoolsLoading;
 
@@ -92,62 +137,87 @@ export default function AdminSubscriptionsPage() {
     };
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-lg font-semibold md:text-2xl">Administration des Abonnements</h1>
-                <p className="text-muted-foreground">
-                    Vue d'ensemble des abonnements de toutes les écoles inscrites.
-                </p>
-            </div>
+        <>
+            <div className="space-y-6">
+                <div>
+                    <h1 className="text-lg font-semibold md:text-2xl">Administration des Abonnements</h1>
+                    <p className="text-muted-foreground">
+                        Vue d'ensemble des abonnements de toutes les écoles inscrites.
+                    </p>
+                </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Liste des Écoles</CardTitle>
-                    <CardDescription>
-                        {schools.length} école(s) trouvée(s).
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Nom de l'école</TableHead>
-                                <TableHead>Date de création</TableHead>
-                                <TableHead>Plan</TableHead>
-                                <TableHead>Statut</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {schools.length > 0 ? (
-                                schools.map((school) => (
-                                    <TableRow key={school.id}>
-                                        <TableCell className="font-medium">{school.name}</TableCell>
-                                        <TableCell>
-                                            {isMounted && school.createdAt ? format(new Date(school.createdAt.seconds * 1000), 'd MMMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={getPlanBadgeVariant(school.subscription?.plan)}>
-                                                {school.subscription?.plan || 'N/A'}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={getStatusBadgeVariant(school.subscription?.status)}>
-                                                {school.subscription?.status || 'N/A'}
-                                            </Badge>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Liste des Écoles</CardTitle>
+                        <CardDescription>
+                            {schools.length} école(s) trouvée(s).
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Nom de l'école</TableHead>
+                                    <TableHead>Date de création</TableHead>
+                                    <TableHead>Plan</TableHead>
+                                    <TableHead>Statut</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {schools.length > 0 ? (
+                                    schools.map((school) => (
+                                        <TableRow key={school.id}>
+                                            <TableCell className="font-medium">{school.name}</TableCell>
+                                            <TableCell>
+                                                {isMounted && school.createdAt ? format(new Date(school.createdAt.seconds * 1000), 'd MMMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={getPlanBadgeVariant(school.subscription?.plan)}>
+                                                    {school.subscription?.plan || 'N/A'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={getStatusBadgeVariant(school.subscription?.status)}>
+                                                    {school.subscription?.status || 'N/A'}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="destructive" size="sm" onClick={() => handleOpenDeleteDialog(school)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    Supprimer
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            Aucune école n'a encore été créée.
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        Aucune école n'a encore été créée.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+            </div>
+             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous absolument sûr(e) ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. L'école <strong>"{schoolToDelete?.name}"</strong> sera supprimée. Cela ne supprimera pas les sous-collections (élèves, etc.), mais rendra l'école inaccessible.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteSchool} className="bg-destructive hover:bg-destructive/90">
+                            Oui, supprimer cette école
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }
