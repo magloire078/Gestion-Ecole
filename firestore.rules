@@ -90,7 +90,7 @@ service cloud.firestore {
         isUserAuthenticated() && 
         (isUserInSchool(schoolId) || isUserAdmin());
       
-      allow list: if isUserAdmin();
+      allow list: if isUserAuthenticated();
       
       allow update: if 
         (isSchoolDirector(schoolId) || isUserAdmin()) &&
@@ -118,11 +118,16 @@ service cloud.firestore {
       allow create: if 
         isUserAuthenticated() && 
         (
+          // Case 1: Director self-creating profile during school creation
+          (isCreatingOwnDocument(staffId) && 
+           request.resource.data.role == 'directeur') ||
+
+          // Case 2: Director creating staff for their school
           (isSchoolDirector(request.resource.data.schoolId) &&
            request.resource.data.schoolId == getUserSchoolId(request.auth.uid)) ||
-          isUserAdmin() ||
-          (isCreatingOwnDocument(staffId) && 
-           request.resource.data.role == 'directeur')
+
+          // Case 3: Admin
+          isUserAdmin()
         );
       
       allow update: if 
@@ -366,9 +371,12 @@ service cloud.firestore {
         isUserAuthenticated() && 
         isUserInSchool(getCycleSchoolId());
       
-      allow write: if 
+      // Allow creation during school setup
+      allow create: if isUserAuthenticated() && request.resource.data.schoolId != null;
+
+      allow update, delete: if 
         isUserAuthenticated() && 
-        (isSchoolDirector(request.resource.data.schoolId) || isUserAdmin());
+        (isSchoolDirector(getCycleSchoolId()) || isUserAdmin());
     }
     
     // Collection: admin_roles
