@@ -27,16 +27,16 @@ service cloud.firestore {
       return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
     }
     
-    function getStaffRole(userId) {
-        let schoolId = getUserSchoolId();
-        if (schoolId == null) {
-            return null;
-        }
-        let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
-        if (exists(staffDocPath)) {
-            return get(staffDocPath).data.role;
-        }
-        return null;
+    function getStaffRole(userId, schoolId) {
+      let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
+      if (exists(staffDocPath)) {
+        return get(staffDocPath).data.role;
+      }
+      return null;
+    }
+    
+    function isTeacher(schoolId) {
+        return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
     }
 
     // --- Global Collections ---
@@ -66,23 +66,30 @@ service cloud.firestore {
 
         // --- Staff Private Data ---
         match /donnees_privees/{privateDocId} {
-             allow read, write: if isSchoolDirector(schoolId) || request.auth.uid == staffId || isAdmin();
+             allow read, write: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId) || isAdmin();
         }
       }
 
       // --- Other Subcollections ---
       match /eleves/{studentId} {
         allow read, list: if isUserInSchool(schoolId);
-        allow create, update, delete: if isUserInSchool(schoolId);
+        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
 
+        // Teachers can manage grades for students in their school
+        match /notes/{gradeId} {
+            allow read: if isUserInSchool(schoolId);
+            allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+        }
+        
+        // Other student subcollections can be managed by director/admin
         match /{subpath=**} {
-            allow read, write: if isUserInSchool(schoolId);
+            allow read, write: if isSchoolDirector(schoolId) || isAdmin();
         }
       }
 
       match /{collection}/{docId} {
         allow read, list: if isUserInSchool(schoolId);
-        allow create, update, delete: if isUserInSchool(schoolId);
+        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
     }
 
