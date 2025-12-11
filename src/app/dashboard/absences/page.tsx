@@ -42,7 +42,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { UserX } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
@@ -72,7 +71,6 @@ type AbsenceFormValues = z.infer<typeof absenceSchema>;
 
 export default function AbsencesPage() {
   const isMounted = useHydrationFix();
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { user } = useUser();
@@ -176,8 +174,6 @@ export default function AbsencesPage() {
         errorEmitter.emit('permission-error', permissionError);
     });
   };
-
-  if (isAuthLoading) return <AuthProtectionLoader />;
 
   const isLoading = schoolLoading || classesLoading;
   const isDataLoading = studentsLoading || allAbsencesLoading;

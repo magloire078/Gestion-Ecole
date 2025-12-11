@@ -45,7 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -54,7 +54,6 @@ import { allSubjects } from '@/lib/data';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
@@ -100,7 +99,6 @@ type GradeFormValues = z.infer<typeof gradeSchema>;
 
 export default function GradeEntryPage() {
   const isMounted = useHydrationFix();
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -279,10 +277,6 @@ export default function GradeEntryPage() {
 
   const isLoading = schoolLoading || classesLoading;
   const isDataLoading = studentsLoading || isGradesLoading;
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
 
   return (
     <>

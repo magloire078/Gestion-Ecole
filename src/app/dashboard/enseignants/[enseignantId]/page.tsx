@@ -15,7 +15,6 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
 import type { class_type as Class, teacher as Teacher } from '@/lib/data-types';
 
 const mockStudentPerformanceData: Record<string, string> = {
@@ -27,7 +26,6 @@ const mockStudentPerformanceData: Record<string, string> = {
 
 
 export default function TeacherProfilePage() {
-  const { isLoading: isAuthLoading, AuthProtectionLoader } = useAuthProtection();
   const params = useParams();
   const teacherId = params.enseignantId as string;
   const { schoolId, schoolName, schoolData, loading: schoolDataLoading } = useSchoolData();
@@ -98,10 +96,6 @@ export default function TeacherProfilePage() {
   };
 
   const isLoading = teacherLoading || schoolDataLoading || classLoading;
-
-  if (isAuthLoading) {
-    return <AuthProtectionLoader />;
-  }
   
   if (isLoading) {
     return (

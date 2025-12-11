@@ -1,4 +1,3 @@
-
 'use client';
 
 import { MainNav } from '@/components/main-nav';
@@ -8,15 +7,60 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Bell, Menu, Search } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
-import { useAuthProtection } from '@/hooks/use-auth-protection';
+import { useUser, useFirestore } from '@/firebase';
 import { Input } from '@/components/ui/input';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { doc, getDoc } from 'firebase/firestore';
+
+function AuthProtectionLoader() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center">
+      <div className="text-center">
+        <p className="text-lg font-semibold">Chargement...</p>
+        <p className="text-muted-foreground">Vérification de votre compte et de votre école.</p>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { isLoading, AuthProtectionLoader } = useAuthProtection();
+  const { user, loading: userLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+  const [isVerified, setIsVerified] = useState(false);
+  const isLoading = userLoading || !isVerified;
+
+  useEffect(() => {
+    if (userLoading) return;
+
+    if (!user) {
+      router.replace('/login');
+      return;
+    }
+
+    const checkOnboarding = async () => {
+      const userRootRef = doc(firestore, 'utilisateurs', user.uid);
+      try {
+        const docSnap = await getDoc(userRootRef);
+        if (docSnap.exists() && docSnap.data()?.schoolId) {
+          setIsVerified(true);
+        } else {
+          router.replace('/onboarding');
+        }
+      } catch (error) {
+        console.error("Erreur lors de la vérification de l'onboarding:", error);
+        router.replace('/onboarding');
+      }
+    };
+
+    checkOnboarding();
+  }, [user, userLoading, firestore, router]);
+
 
   if (isLoading) {
     return <AuthProtectionLoader />;
