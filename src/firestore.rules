@@ -113,7 +113,8 @@ service cloud.firestore {
 
         match /classes/{classId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow write: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
+            allow update: if isUserInSchool(schoolId);
+            allow create, delete: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
         }
         
         match /emploi_du_temps/{entryId} {
