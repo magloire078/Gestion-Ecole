@@ -36,23 +36,23 @@ export function useUser() {
             };
             setUser(userWithClaims); // Set user early for faster UI response
 
-            // If user has a school, fetch their detailed profile from the school's subcollection
-            if (schoolId) {
-                const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
-                const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        // Merge the profile into the existing user object
-                        setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
-                    }
-                    setLoading(false);
-                }, (error) => {
-                    console.error("Error fetching user profile:", error);
-                    setLoading(false);
-                });
-                return () => unsubscribeProfile(); // Cleanup profile listener
-            } else {
-                setLoading(false); // No school, so we're done loading
-            }
+            // Fetch the user's profile from the root `personnel` collection
+            const profileRef = doc(firestore, `personnel/${authUser.uid}`);
+            const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    // Merge the profile into the existing user object
+                    setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
+                } else {
+                    // This case can happen during onboarding before the profile is created
+                    setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
+                }
+                setLoading(false);
+            }, (error) => {
+                console.error("Error fetching user profile from /personnel:", error);
+                setLoading(false);
+            });
+            return () => unsubscribeProfile(); // Cleanup profile listener
+            
         } else {
             setUser(null);
             setLoading(false);

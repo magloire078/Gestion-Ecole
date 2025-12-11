@@ -19,7 +19,6 @@ interface SchoolData extends DocumentData {
     directorId?: string;
     directorFirstName?: string;
     directorLastName?: string;
-    directorName?: string; // Legacy
     directorPhone?: string;
     schoolCode?: string;
     matricule?: string;
@@ -47,25 +46,11 @@ export function useSchoolData() {
             return;
         }
 
-        const userRootRef = doc(firestore, 'utilisateurs', user.uid);
-        const unsubscribeUser = onSnapshot(userRootRef, (userDocSnap) => {
-            if (userDocSnap.exists()) {
-                setSchoolId(userDocSnap.data()?.schoolId || null);
-            } else {
-                setSchoolId(null); // User has no school yet
-                setLoading(false);
-            }
-        }, (error) => {
-            console.error("Error fetching user root doc:", error);
-            // This is a critical error, maybe show an error page or try to recover.
-            // For now, we'll assume the user is not onboarded if this fails.
-            setSchoolId(null);
-            setLoading(false);
-        });
-        
-        return () => unsubscribeUser();
+        // The schoolId is now reliably on the custom claims.
+        const userSchoolId = user.customClaims?.schoolId || null;
+        setSchoolId(userSchoolId);
 
-    }, [user, userLoading, firestore]);
+    }, [user, userLoading]);
 
     useEffect(() => {
         if (schoolId === null) { // Explicitly check for null which means user has no school
@@ -134,7 +119,7 @@ export function useSchoolData() {
         schoolId, 
         schoolData,
         schoolName: schoolData?.name,
-        directorName: schoolData?.directorName,
+        directorName: `${schoolData?.directorFirstName || ''} ${schoolData?.directorLastName || ''}`.trim(),
         subscription: schoolData?.subscription,
         mainLogoUrl: schoolData?.mainLogoUrl,
         loading, 

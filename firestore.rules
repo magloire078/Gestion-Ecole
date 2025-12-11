@@ -28,7 +28,6 @@ service cloud.firestore {
     }
     
     function isSchoolDirector(schoolId, userId) {
-      // This now correctly uses getUserRole which points to the root collection
       return isUserInSchool(schoolId) && getUserRole(userId) == 'directeur';
     }
 
@@ -144,5 +143,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
