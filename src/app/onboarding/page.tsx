@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useAuth } from "@/firebase";
-import { doc, writeBatch, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { doc, writeBatch, collection, query, where, getDocs, serverTimestamp, addDoc } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -27,7 +28,8 @@ export default function OnboardingPage() {
   
   const [mode, setMode] = useState<OnboardingMode>("create");
   const [schoolName, setSchoolName] = useState('');
-  const [directorName, setDirectorName] = useState('');
+  const [directorFirstName, setDirectorFirstName] = useState('');
+  const [directorLastName, setDirectorLastName] = useState('');
   const [schoolCode, setSchoolCode] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -43,8 +45,8 @@ export default function OnboardingPage() {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
         return;
     }
-    if (!schoolName.trim() || !directorName.trim()) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Le nom de l\'école et du directeur sont requis.' });
+    if (!schoolName.trim() || !directorFirstName.trim() || !directorLastName.trim()) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Le nom de l\'école et le nom complet du directeur sont requis.' });
         return;
     }
 
@@ -53,11 +55,13 @@ export default function OnboardingPage() {
     const newSchoolCode = generateSchoolCode(schoolName);
     const schoolRef = doc(collection(firestore, 'ecoles'));
     const schoolId = schoolRef.id;
+    const directorFullName = `${directorFirstName} ${directorLastName}`;
 
     const schoolData = { 
       name: schoolName, 
       directorId: user.uid, 
-      directorName: directorName,
+      directorFirstName: directorFirstName,
+      directorLastName: directorLastName,
       createdAt: serverTimestamp(),
       schoolCode: newSchoolCode,
       subscription: {
@@ -66,14 +70,18 @@ export default function OnboardingPage() {
       }
     };
     
-    const schoolUserRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
-    const schoolUserData = {
+    const staffProfileRef = doc(firestore, `personnel/${user.uid}`);
+    const staffProfileData = {
         uid: user.uid,
         email: user.email,
-        displayName: user.displayName,
+        displayName: directorFullName,
         photoURL: user.photoURL,
         schoolId: schoolId,
         role: 'directeur',
+        firstName: directorFirstName,
+        lastName: directorLastName,
+        hireDate: new Date().toISOString().split('T')[0],
+        baseSalary: 0
     };
 
     const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
@@ -82,16 +90,13 @@ export default function OnboardingPage() {
     try {
         const batch = writeBatch(firestore);
         
-        // 1. Create school document
         batch.set(schoolRef, schoolData);
-        // 2. Create user document within the school
-        batch.set(schoolUserRef, schoolUserData);
-        // 3. Create root user-to-school mapping
+        batch.set(staffProfileRef, staffProfileData);
         batch.set(rootUserRef, rootUserData);
-        // 4. Pre-populate school cycles
+        
         schoolCycles.forEach(cycle => {
-            const cycleRef = doc(collection(firestore, `ecoles/${schoolId}/cycles`));
-            batch.set(cycleRef, cycle);
+            const cycleRef = doc(collection(firestore, `cycles`));
+            batch.set(cycleRef, {...cycle, schoolId});
         });
         
         await batch.commit();
@@ -107,11 +112,11 @@ export default function OnboardingPage() {
         window.location.href = '/dashboard';
 
     } catch (error: any) {
-        const path = `[BATCH WRITE] /ecoles/${schoolId}, user data, cycles`;
+        const path = `[BATCH WRITE] /ecoles, /personnel, /utilisateurs, /cycles`;
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'write',
-            requestResourceData: { school: schoolData, userInSchool: schoolUserData, userRoot: rootUserData },
+            requestResourceData: { school: schoolData, userInSchool: staffProfileData, userRoot: rootUserData },
         });
         errorEmitter.emit('permission-error', permissionError);
     } finally {
@@ -120,8 +125,8 @@ export default function OnboardingPage() {
   };
 
   const handleJoinSchool = async () => {
-    if (!user || !user.uid) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
+    if (!user || !user.uid || !user.displayName) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié ou nom d\'affichage manquant.' });
         return;
     }
     if (!schoolCode.trim()) {
@@ -144,23 +149,31 @@ export default function OnboardingPage() {
 
         const schoolDoc = querySnapshot.docs[0];
         const schoolId = schoolDoc.id;
+        const nameParts = user.displayName.split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ');
+
 
         const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
-        const schoolUserRef = doc(firestore, `ecoles/${schoolId}/utilisateurs/${user.uid}`);
+        const staffProfileRef = doc(firestore, `personnel/${user.uid}`);
         
         const rootUserData = { schoolId: schoolId };
-        const schoolUserData = {
+        const staffProfileData = {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL,
             schoolId: schoolId,
             role: 'enseignant', // Default role for joining users
+            firstName: firstName,
+            lastName: lastName,
+            hireDate: new Date().toISOString().split('T')[0],
+            baseSalary: 0,
         };
 
         const batch = writeBatch(firestore);
         batch.set(rootUserRef, rootUserData);
-        batch.set(schoolUserRef, schoolUserData);
+        batch.set(staffProfileRef, staffProfileData);
         await batch.commit();
 
         await auth.currentUser?.getIdToken(true);
@@ -174,7 +187,7 @@ export default function OnboardingPage() {
 
     } catch(error: any) {
          const permissionError = new FirestorePermissionError({
-            path: `/utilisateurs/${user.uid} and /ecoles/{schoolId}/utilisateurs/${user.uid}`,
+            path: `/utilisateurs/${user.uid} and /personnel/${user.uid}`,
             operation: 'write',
             requestResourceData: { schoolCode },
         });
@@ -235,15 +248,27 @@ export default function OnboardingPage() {
                         disabled={isProcessing}
                         />
                     </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="director-name">Votre nom complet (Directeur/rice)</Label>
-                        <Input
-                        id="director-name"
-                        placeholder="Ex: Aïssatou Diallo"
-                        value={directorName}
-                        onChange={(e) => setDirectorName(e.target.value)}
-                        disabled={isProcessing}
-                        />
+                     <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="director-firstname">Votre prénom</Label>
+                          <Input
+                            id="director-firstname"
+                            placeholder="Aïssatou"
+                            value={directorFirstName}
+                            onChange={(e) => setDirectorFirstName(e.target.value)}
+                            disabled={isProcessing}
+                          />
+                        </div>
+                        <div>
+                           <Label htmlFor="director-lastname">Votre nom de famille</Label>
+                           <Input
+                            id="director-lastname"
+                            placeholder="Diallo"
+                            value={directorLastName}
+                            onChange={(e) => setDirectorLastName(e.target.value)}
+                            disabled={isProcessing}
+                          />
+                        </div>
                     </div>
                 </div>
             )}
@@ -275,5 +300,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-
-    
