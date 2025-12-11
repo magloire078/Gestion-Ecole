@@ -349,8 +349,7 @@ export default function ClassesPage() {
                         options={cycleOptions}
                         value={field.value}
                         onValueChange={(value) => {
-                            const cycleOption = cycleOptions.find(c => c.value.toLowerCase() === value.toLowerCase());
-                            field.onChange(cycleOption ? cycleOption.value : '');
+                            field.onChange(value);
                             form.setValue('grade', ''); // Reset grade when cycle changes
                             form.setValue('name', '');
                             form.setValue('filiere', '');
