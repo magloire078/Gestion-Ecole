@@ -8,9 +8,10 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, Link2Off } from 'lucide-react';
 import type { student as Student, class_type as Class, teacher as Teacher } from '@/lib/data-types';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 
 interface StudentWithId extends Student { id: string; }
 interface ClassWithId extends Class { id: string; }
@@ -73,12 +74,18 @@ export default function DataIntegrityPage() {
                           <TableBody>
                               {students.map(student => (
                                   <TableRow key={student.id}>
-                                      <TableCell>{student.firstName} {student.lastName}</TableCell>
+                                      <TableCell>
+                                        <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline text-primary">
+                                            {student.firstName} {student.lastName}
+                                        </Link>
+                                      </TableCell>
                                       <TableCell className="font-mono text-xs">{student.id}</TableCell>
                                       <TableCell className="font-mono text-xs">{student.classId || 'N/A'}</TableCell>
                                       <TableCell>
                                           {student.classId && classIds.has(student.classId) ? (
                                               <Badge variant="secondary" className="text-emerald-600 border-emerald-600/20"><CheckCircle className="mr-2 h-4 w-4" />Valide</Badge>
+                                          ) : !student.classId ? (
+                                                <Badge variant="outline"><Link2Off className="mr-2 h-4 w-4" />Non assigné</Badge>
                                           ) : (
                                               <Badge variant="destructive"><AlertCircle className="mr-2 h-4 w-4" />Lien Cassé</Badge>
                                           )}
@@ -115,7 +122,7 @@ export default function DataIntegrityPage() {
                                           {cls.mainTeacherId && teacherIds.has(cls.mainTeacherId) ? (
                                              <Badge variant="secondary" className="text-emerald-600 border-emerald-600/20"><CheckCircle className="mr-2 h-4 w-4" />Valide</Badge>
                                           ) : !cls.mainTeacherId ? (
-                                              <Badge variant="outline">Non assigné</Badge>
+                                              <Badge variant="outline"><Link2Off className="mr-2 h-4 w-4" />Non assigné</Badge>
                                           ) : (
                                               <Badge variant="destructive"><AlertCircle className="mr-2 h-4 w-4" />Lien Cassé</Badge>
                                           )}
@@ -145,14 +152,18 @@ export default function DataIntegrityPage() {
                           <TableBody>
                                {teachers.map(teacher => (
                                   <TableRow key={teacher.id}>
-                                      <TableCell>{teacher.firstName} {teacher.lastName}</TableCell>
+                                      <TableCell>
+                                         <Link href={`/dashboard/enseignants/${teacher.id}`} className="hover:underline text-primary">
+                                            {teacher.firstName} {teacher.lastName}
+                                        </Link>
+                                      </TableCell>
                                       <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
                                       <TableCell className="font-mono text-xs">{teacher.classId || 'N/A'}</TableCell>
                                       <TableCell>
                                           {teacher.classId && classIds.has(teacher.classId) ? (
                                              <Badge variant="secondary" className="text-emerald-600 border-emerald-600/20"><CheckCircle className="mr-2 h-4 w-4" />Valide</Badge>
                                           ) : !teacher.classId ? (
-                                              <Badge variant="outline">Non assigné</Badge>
+                                              <Badge variant="outline"><Link2Off className="mr-2 h-4 w-4" />Non assigné</Badge>
                                           ) : (
                                               <Badge variant="destructive"><AlertCircle className="mr-2 h-4 w-4" />Lien Cassé</Badge>
                                           )}
