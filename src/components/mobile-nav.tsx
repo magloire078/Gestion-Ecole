@@ -22,6 +22,7 @@ import {
     Landmark,
     UserX,
     Database,
+    Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -30,7 +31,8 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion"
+} from "@/components/ui/accordion";
+import { useUser } from '@/firebase';
 
 const mySchoolLinks = [
   { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users },
@@ -62,6 +64,11 @@ const settingsLinks = [
   { href: '/dashboard/parametres/donnees', label: 'Données Brutes', icon: Database },
 ];
 
+const adminLinks = [
+    { href: '/dashboard/admin/abonnements', label: 'Abonnements', icon: CreditCard },
+    { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield },
+]
+
 const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
     const pathname = usePathname();
     const isActive = pathname.startsWith(href) && (href !== '/dashboard/parametres' || pathname === '/dashboard/parametres');
@@ -79,6 +86,8 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { user } = useUser();
+  const isAdmin = user?.customClaims?.role === 'admin';
   
   const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
 
@@ -90,6 +99,7 @@ export function MobileNav() {
     if (isLinkActive(pedagogicalLinks)) openValues.push('pedagogy');
     if (isLinkActive(financialLinks)) openValues.push('finance');
     if (isLinkActive(settingsLinks)) openValues.push('configuration');
+    if (isAdmin && isLinkActive(adminLinks)) openValues.push('super-admin');
     return openValues;
   }
 
@@ -152,6 +162,17 @@ export function MobileNav() {
                         {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
                     </AccordionContent>
                 </AccordionItem>
+
+                {isAdmin && (
+                    <AccordionItem value="super-admin" className="border-b-0">
+                        <AccordionTrigger className="py-2 hover:no-underline hover:text-white text-lg font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400">
+                           <div className='flex items-center gap-3'><Shield className="h-5 w-5" />Super Admin</div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pl-6 pt-2 space-y-4">
+                           {adminLinks.map(item => <NavLink key={item.href} {...item} />)}
+                        </AccordionContent>
+                    </AccordionItem>
+                )}
             </Accordion>
         </nav>
     </div>

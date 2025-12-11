@@ -39,6 +39,37 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
     },
+     "admin_role": {
+      "title": "Rôle Administrateur",
+      "description": "Définit un ensemble de permissions pour un rôle administratif.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nom du rôle (ex: Super Admin, Admin École)." },
+        "description": { "type": "string", "description": "Description des responsabilités du rôle." },
+        "level": { "type": "number", "description": "Niveau de permission (1 = le plus élevé)." },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "manageUsers": { "type": "boolean" },
+            "viewUsers": { "type": "boolean" },
+            "manageSchools": { "type": "boolean" },
+            "viewSchools": { "type": "boolean" },
+            "manageClasses": { "type": "boolean" },
+            "manageGrades": { "type": "boolean" },
+            "manageSystem": { "type": "boolean" },
+            "viewAnalytics": { "type": "boolean" },
+            "manageSettings": { "type": "boolean" },
+            "manageBilling": { "type": "boolean" },
+            "manageContent": { "type": "boolean" },
+            "viewSupportTickets": { "type": "boolean" },
+            "manageSupportTickets": { "type": "boolean" },
+            "apiAccess": { "type": "boolean" },
+            "exportData": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["name", "level", "permissions"]
+    },
     "staff": {
       "title": "Membre du Personnel",
       "description": "Un membre du personnel de l'école (enseignant ou non-enseignant). Représente aussi le profil utilisateur.",
@@ -52,6 +83,7 @@
         "firstName": { "type": "string", "description": "Le prénom du membre du personnel." },
         "lastName": { "type": "string", "description": "Le nom de famille du membre du personnel." },
         "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel"], "description": "Le rôle de l'utilisateur dans l'école." },
+        "adminRole": { "type": "string", "description": "L'ID du rôle administratif si l'utilisateur est un admin." },
         "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." },
         "phone": { "type": "string", "description": "Le numéro de téléphone." },
         "matricule": { "type": "string", "description": "Matricule interne de l'employé." },
@@ -84,6 +116,7 @@
       "description": "Une classe de l'école.",
       "type": "object",
       "properties": {
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
         "name": { "type": "string", "description": "Le nom de la classe." },
         "filiere": { "type": "string", "description": "La filière pour les classes de l'enseignement supérieur." },
         "mainTeacherId": { "type": "string", "description": "L'identifiant de l'enseignant principal de la classe." },
@@ -91,7 +124,7 @@
         "cycle": { "type": "string", "enum": ["Maternelle", "Enseignement Primaire", "Enseignement Secondaire - Premier cycle", "Enseignement Secondaire - Deuxième cycle", "Enseignement Supérieur"], "description": "Le cycle d'enseignement." },
         "studentCount": { "type": "number", "description": "Le nombre d'élèves dans la classe." }
       },
-      "required": ["name", "mainTeacherId", "building", "cycle"]
+      "required": ["schoolId", "name", "mainTeacherId", "building", "cycle"]
     },
     "cycle": {
         "title": "Cycle",
@@ -108,18 +141,20 @@
         "description": "Une structure de frais de scolarité.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
             "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
             "amount": { "type": "string", "description": "Le montant total des frais." },
             "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
             "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
         },
-        "required": ["grade", "amount", "installments"]
+        "required": ["schoolId", "grade", "amount", "installments"]
     },
     "student": {
         "title": "Élève",
         "description": "Un élève inscrit à l'école.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
             "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève." },
             "firstName": { "type": "string", "description": "Le prénom de l'élève." },
             "lastName": { "type": "string", "description": "Le nom de famille de l'élève." },
@@ -147,7 +182,7 @@
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
-        "required": ["firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
+        "required": ["schoolId", "firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
     },
     "gradeEntry": {
         "title": "Note",
@@ -167,13 +202,14 @@
       "description": "Une transaction financière (revenu ou dépense).",
       "type": "object",
       "properties": {
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
         "date": { "type": "string", "format": "date", "description": "La date de la transaction." },
         "description": { "type": "string", "description": "La description de la transaction." },
         "category": { "type": "string", "description": "La catégorie de la transaction." },
         "type": { "type": "string", "enum": ["Revenu", "Dépense"], "description": "Le type de transaction." },
         "amount": { "type": "number", "description": "Le montant de la transaction." }
       },
-      "required": ["date", "description", "category", "type", "amount"]
+      "required": ["schoolId", "date", "description", "category", "type", "amount"]
     },
     "payment": {
       "title": "Paiement de scolarité",
@@ -196,18 +232,20 @@
         "description": "Un livre disponible dans la bibliothèque de l'école.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
             "title": { "type": "string", "description": "Le titre du livre." },
             "author": { "type": "string", "description": "L'auteur du livre." },
             "quantity": { "type": "number", "description": "Le nombre d'exemplaires disponibles." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'ajout du livre." }
         },
-        "required": ["title", "author", "quantity"]
+        "required": ["schoolId", "title", "author", "quantity"]
     },
     "timetableEntry": {
         "title": "Entrée d'Emploi du Temps",
         "description": "Une entrée dans l'emploi du temps, associant une classe, un enseignant et une matière.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
             "classId": { "type": "string", "description": "L'ID de la classe." },
             "teacherId": { "type": "string", "description": "L'ID de l'enseignant." },
             "subject": { "type": "string", "description": "La matière enseignée." },
@@ -215,13 +253,14 @@
             "startTime": { "type": "string", "description": "L'heure de début (HH:MM)." },
             "endTime": { "type": "string", "description": "L'heure de fin (HH:MM)." }
         },
-        "required": ["classId", "teacherId", "subject", "day", "startTime", "endTime"]
+        "required": ["schoolId", "classId", "teacherId", "subject", "day", "startTime", "endTime"]
     },
     "message": {
         "title": "Message",
         "description": "Un message ou une annonce envoyé(e) via la messagerie interne.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
             "title": { "type": "string", "description": "Le titre ou l'objet du message." },
             "content": { "type": "string", "description": "Le corps du message." },
             "senderId": { "type": "string", "description": "L'UID de l'expéditeur." },
@@ -242,13 +281,14 @@
                 }
             }
         },
-        "required": ["title", "content", "senderId", "senderName", "createdAt", "recipients"]
+        "required": ["schoolId", "title", "content", "senderId", "senderName", "createdAt", "recipients"]
     },
     "absence": {
         "title": "Absence",
         "description": "Une absence enregistrée pour un élève.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
             "studentId": { "type": "string", "description": "L'identifiant de l'élève absent." },
             "studentName": { "type": "string", "description": "Le nom complet de l'élève." },
             "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
@@ -258,7 +298,7 @@
             "reason": { "type": "string", "description": "Le motif de l'absence (si justifiée)." },
             "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." }
         },
-        "required": ["studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
+        "required": ["schoolId", "studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
     }
   },
   "auth": {
@@ -267,59 +307,63 @@
   "firestore": {
     "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
-        "description": "Stocke une correspondance between l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+        "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
     "/ecoles/{schoolId}": {
       "schema": { "$ref": "#/entities/school" },
       "description": "Stocke les informations générales sur un établissement."
     },
-    "/ecoles/{schoolId}/personnel/{staffId}": {
+    "/personnel/{staffId}": {
       "schema": { "$ref": "#/entities/staff" },
       "description": "Stocke les profils du personnel (enseignants et non-enseignants) qui sont aussi les utilisateurs de l'application."
     },
-    "/ecoles/{schoolId}/classes/{classId}": {
+    "/classes/{classId}": {
       "schema": { "$ref": "#/entities/class" },
       "description": "Stocke les informations des classes pour une école."
     },
-    "/ecoles/{schoolId}/cycles/{cycleId}": {
+    "/cycles/{cycleId}": {
         "schema": { "$ref": "#/entities/cycle" },
         "description": "Stocke la liste des cycles d'enseignement pour une école."
     },
-    "/ecoles/{schoolId}/frais_scolarite/{feeId}": {
+    "/frais_scolarite/{feeId}": {
         "schema": { "$ref": "#/entities/fee" },
         "description": "Stocke la structure des frais de scolarité pour l'école."
     },
-    "/ecoles/{schoolId}/eleves/{studentId}": {
+    "/eleves/{studentId}": {
         "schema": { "$ref": "#/entities/student" },
         "description": "Stocke les profils des élèves pour une école."
     },
-    "/ecoles/{schoolId}/eleves/{studentId}/notes/{gradeId}": {
+    "/eleves/{studentId}/notes/{gradeId}": {
         "schema": { "$ref": "#/entities/gradeEntry" },
         "description": "Stocke les notes individuelles d'un élève."
     },
-     "/ecoles/{schoolId}/eleves/{studentId}/paiements/{paymentId}": {
+     "/eleves/{studentId}/paiements/{paymentId}": {
         "schema": { "$ref": "#/entities/payment" },
         "description": "Stocke l'historique des paiements de scolarité pour un élève."
     },
-    "/ecoles/{schoolId}/absences/{absenceId}": {
+    "/absences/{absenceId}": {
         "schema": { "$ref": "#/entities/absence" },
         "description": "Stocke l'historique des absences pour une école."
     },
-    "/ecoles/{schoolId}/comptabilite/{transactionId}": {
+    "/comptabilite/{transactionId}": {
         "schema": { "$ref": "#/entities/accountingTransaction" },
         "description": "Stocke les transactions comptables pour une école."
     },
-    "/ecoles/{schoolId}/bibliotheque/{bookId}": {
+    "/bibliotheque/{bookId}": {
         "schema": { "$ref": "#/entities/libraryBook" },
         "description": "Stocke les livres de la bibliothèque pour une école."
     },
-    "/ecoles/{schoolId}/emploi_du_temps/{entryId}": {
+    "/emploi_du_temps/{entryId}": {
         "schema": { "$ref": "#/entities/timetableEntry" },
         "description": "Stocke les entrées de l'emploi du temps pour une école."
     },
-    "/ecoles/{schoolId}/messagerie/{messageId}": {
+    "/messagerie/{messageId}": {
         "schema": { "$ref": "#/entities/message" },
         "description": "Stocke les messages et annonces envoyés via la messagerie interne."
+    },
+    "/admin_roles/{roleId}": {
+        "schema": { "$ref": "#/entities/admin_role" },
+        "description": "Définit les permissions pour les rôles administratifs."
     }
   }
 }
