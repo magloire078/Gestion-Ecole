@@ -134,9 +134,8 @@ service cloud.firestore {
         // Allow read for any user in the school
         allow read, list: if isUserInSchool(get(/databases/$(database)/documents/cycles/$(cycleId)).data.schoolId);
         // Allow write only by the school director or an admin.
-        // During school creation, we just need to know the user is authenticated.
-        allow create: if isUserAuthenticated();
-        allow update, delete: if get(/databases/$(database)/documents/ecoles/$(request.resource.data.schoolId)).data.directorId == request.auth.uid || isUserAdmin();
+        // This also implicitly allows creation during school setup if the creator is the director.
+        allow write: if get(/databases/$(database)/documents/ecoles/$(request.resource.data.schoolId)).data.directorId == request.auth.uid || isUserAdmin();
     }
     match /admin_roles/{roleId} {
         allow read: if isUserAdmin();
@@ -144,3 +143,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
