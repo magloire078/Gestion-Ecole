@@ -29,19 +29,17 @@ service cloud.firestore {
       return isAuth() && getUserSchoolId() == schoolId;
     }
     
-    function isSchoolDirector(schoolId) {
-        // Correctly and explicitly get the school document to check the directorId
-        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
-        // Check if the document exists and if the requester's UID matches the director's UID
-        return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
-    }
-    
     function getStaffRole(userId, schoolId) {
       let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
       if (exists(staffDocPath)) {
         return get(staffDocPath).data.role;
       }
       return null;
+    }
+
+    function isSchoolDirector(schoolId) {
+      // A user is a director if their role in the school's staff collection is 'directeur'
+      return getStaffRole(request.auth.uid, schoolId) == 'directeur';
     }
     
     function isTeacher(schoolId) {
