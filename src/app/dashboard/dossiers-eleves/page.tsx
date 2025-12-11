@@ -119,12 +119,10 @@ export default function StudentsPage() {
     if (!schoolId || !studentToDelete) return;
     
     const batch = writeBatch(firestore);
-
-    // 1. Get a reference to the student document to delete
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToDelete.id}`);
+    
     batch.delete(studentDocRef);
 
-    // 2. If the student was in a class, get a reference to the class and decrement its count
     if (studentToDelete.classId) {
         const classDocRef = doc(firestore, `ecoles/${schoolId}/classes/${studentToDelete.classId}`);
         batch.update(classDocRef, { studentCount: increment(-1) });
@@ -134,7 +132,14 @@ export default function StudentsPage() {
         await batch.commit();
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
     } catch(serverError) {
-        const permissionError = new FirestorePermissionError({ path: studentDocRef.path, operation: 'delete' });
+        const permissionError = new FirestorePermissionError({
+            path: `[BATCH] ${studentDocRef.path} & /ecoles/${schoolId}/classes/${studentToDelete.classId}`,
+            operation: 'write',
+            requestResourceData: {
+                studentDeletePath: studentDocRef.path,
+                classUpdatePath: studentToDelete.classId ? `/ecoles/${schoolId}/classes/${studentToDelete.classId}` : 'N/A'
+            }
+        });
         errorEmitter.emit('permission-error', permissionError);
     } finally {
         setIsDeleteDialogOpen(false);
@@ -343,4 +348,3 @@ export default function StudentsPage() {
     </>
   );
 }
-
