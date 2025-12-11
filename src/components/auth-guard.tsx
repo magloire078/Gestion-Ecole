@@ -3,7 +3,7 @@
 
 import { useUser, useFirestore } from '@/firebase';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { doc, getDoc } from 'firebase/firestore';
 
 function AuthProtectionLoader() {
@@ -21,6 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const pathname = usePathname(); // Get the current path
   const [isVerified, setIsVerified] = useState(false);
   const isLoading = userLoading || !isVerified;
 
@@ -31,6 +32,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace('/login');
       return;
     }
+    
+    // If the user is on an onboarding page, allow access without verification yet.
+    if (pathname.startsWith('/onboarding') || pathname.startsWith('/dashboard/onboarding')) {
+        setIsVerified(true);
+        return;
+    }
 
     const checkOnboarding = async () => {
       const userRootRef = doc(firestore, 'utilisateurs', user.uid);
@@ -39,16 +46,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         if (docSnap.exists() && docSnap.data()?.schoolId) {
           setIsVerified(true);
         } else {
-          router.replace('/onboarding');
+          router.replace('/dashboard/onboarding');
         }
       } catch (error) {
         console.error("Erreur lors de la vérification de l'onboarding:", error);
-        router.replace('/onboarding');
+        router.replace('/dashboard/onboarding');
       }
     };
 
     checkOnboarding();
-  }, [user, userLoading, firestore, router]);
+  }, [user, userLoading, firestore, router, pathname]);
 
 
   if (isLoading) {
