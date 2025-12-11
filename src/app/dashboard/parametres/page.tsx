@@ -10,13 +10,14 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, AlertCircle, Upload } from "lucide-react";
+import { Copy, AlertCircle, Upload, FileSignature } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ImageUploader } from "@/components/image-uploader";
+import { useRouter } from "next/navigation";
 
 
 const settingsSchema = z.object({
@@ -36,6 +37,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const { user } = useUser();
   const { 
     schoolData,
@@ -151,11 +153,17 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Paramètres Généraux</h1>
-        <p className="text-muted-foreground">
-          Gérez les paramètres de votre compte et de votre école.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+            <h1 className="text-lg font-semibold md:text-2xl">Paramètres Généraux</h1>
+            <p className="text-muted-foreground">
+              Gérez les paramètres de votre compte et de votre école.
+            </p>
+        </div>
+         <Button variant="outline" onClick={() => router.push('/dashboard/parametres/fiche-etablissement')}>
+            <FileSignature className="mr-2 h-4 w-4" />
+            Voir la Fiche de l'Établissement
+        </Button>
       </div>
 
        {error && (

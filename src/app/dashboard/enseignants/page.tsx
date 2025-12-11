@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, Mail, BookUser, Phone } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Mail, BookUser, Phone, FileSignature } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { 
   Dialog, 
@@ -53,6 +54,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { class_type as Class, teacher as Teacher } from '@/lib/data-types';
+import { useRouter } from "next/navigation";
 
 // Define Zod schema for validation
 const teacherSchema = z.object({
@@ -72,6 +74,7 @@ interface TeacherWithId extends Teacher {
 }
 
 export default function TeachersPage() {
+  const router = useRouter();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -277,6 +280,11 @@ export default function TeachersPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenFormDialog(teacher)}>Modifier</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => router.push(`/dashboard/enseignants/${teacher.id}/fiche`)}>
+                                <FileSignature className="mr-2 h-4 w-4" />
+                                Voir la fiche
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(teacher)}>Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                       </DropdownMenu>
