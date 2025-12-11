@@ -1,24 +1,19 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Helper function to check if a user belongs to a school
-    function isUserInSchool(schoolId) {
-      return exists(/databases/(default)/documents/utilisateurs/$(request.auth.uid)) &&
-             get(/databases/(default)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
-    }
 
     // Match any file in the `ecoles` directory
     match /ecoles/{schoolId}/{allPaths=**} {
       // Allow read access to anyone (e.g., for public logos or student photos)
       allow read;
       
-      // Allow write access (create, update, delete) only to users who are part of that specific school
-      allow write: if request.auth != null && isUserInSchool(schoolId);
+      // Allow write access only to authenticated users whose custom claim `schoolId`
+      // matches the `schoolId` in the storage path.
+      allow write: if request.auth != null && request.auth.token.schoolId == schoolId;
     }
 
-    // Default deny all other paths
+    // Default deny all other paths for security
     match /{allPaths=**} {
       allow read, write: if false;
     }
