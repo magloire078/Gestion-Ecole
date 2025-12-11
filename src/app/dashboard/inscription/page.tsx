@@ -174,7 +174,7 @@ export default function RegistrationPage() {
         router.push(`/dashboard/dossiers-eleves`);
     } catch (serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `BATCH WRITE on /eleves and /classes`,
+            path: `[BATCH WRITE] /eleves and /classes`,
             operation: 'create',
             requestResourceData: studentData,
         });

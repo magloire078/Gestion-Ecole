@@ -177,7 +177,7 @@ export default function ClassesPage() {
         filiere: values.cycle === "Enseignement Supérieur" ? values.filiere : "",
         building: values.building,
         mainTeacherId: values.mainTeacherId,
-        studentCount: 0,
+        studentCount: editingClass?.studentCount || 0, // Preserve count on edit
     };
     
     const feeData = {
@@ -190,41 +190,34 @@ export default function ClassesPage() {
 
     const batch = writeBatch(firestore);
 
-    if(editingClass) {
-        // Update class only. Fee editing is separate.
-        const classDocRef = getClassDocRef(editingClass.id);
-        batch.update(classDocRef, classData);
-        
-        try {
+    try {
+        if(editingClass) {
+            // Update class only. Fee editing is separate.
+            const classDocRef = getClassDocRef(editingClass.id);
+            batch.update(classDocRef, classData);
+            
             await batch.commit();
             toast({ title: "Classe modifiée", description: `Les informations de la classe ${values.name} ont été mises à jour.` });
-            setIsFormOpen(false);
-            setEditingClass(null);
-        } catch(serverError) {
-            const permissionError = new FirestorePermissionError({ path: classDocRef.path, operation: 'update', requestResourceData: classData });
-            errorEmitter.emit('permission-error', permissionError);
-        }
+        } else {
+            // Create both class and fee documents
+            const newClassRef = doc(collection(firestore, `classes`));
+            batch.set(newClassRef, classData);
 
-    } else {
-        // Create both class and fee documents
-        const newClassRef = doc(collection(firestore, `classes`));
-        batch.set(newClassRef, classData);
-
-        const newFeeRef = doc(collection(firestore, `frais_scolarite`));
-        batch.set(newFeeRef, feeData);
-        
-        try {
+            const newFeeRef = doc(collection(firestore, `frais_scolarite`));
+            batch.set(newFeeRef, feeData);
+            
             await batch.commit();
             toast({ title: "Classe et Frais ajoutés", description: `La classe ${values.name} et sa grille tarifaire ont été créées.` });
-            setIsFormOpen(false);
-        } catch(serverError) {
-             const permissionError = new FirestorePermissionError({
-                path: `[BATCH] /classes and /frais_scolarite`,
-                operation: 'create',
-                requestResourceData: { classData, feeData }
-            });
-            errorEmitter.emit('permission-error', permissionError);
         }
+        setIsFormOpen(false);
+        setEditingClass(null);
+    } catch(serverError) {
+        const permissionError = new FirestorePermissionError({
+            path: `[BATCH WRITE] /classes & /frais_scolarite`,
+            operation: editingClass ? 'update' : 'create',
+            requestResourceData: { classData, feeData: editingClass ? undefined : feeData }
+        });
+        errorEmitter.emit('permission-error', permissionError);
     }
   };
   
