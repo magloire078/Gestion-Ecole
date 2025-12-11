@@ -79,12 +79,12 @@ service cloud.firestore {
     
     match /classes/{classId} {
         allow read: if isUserInSchool(resource.data.schoolId);
-        allow write: if isDirectorOfSchool(resource.data.schoolId);
+        allow write: if isDirectorOfSchool(request.resource.data.schoolId) || isDirectorOfSchool(resource.data.schoolId);
     }
     
     match /eleves/{studentId} {
         allow read: if isUserInSchool(resource.data.schoolId);
-        allow write: if isDirectorOfSchool(resource.data.schoolId);
+        allow write: if isDirectorOfSchool(request.resource.data.schoolId) || isDirectorOfSchool(resource.data.schoolId);
         
         match /notes/{gradeId} {
             allow read: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
@@ -112,11 +112,6 @@ service cloud.firestore {
       allow update: if (isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid) || isAdmin();
       // Only admins can delete a school.
       allow delete: if isAdmin();
-    }
-
-    // Default deny all other paths for security
-    match /{path=**} {
-      allow read, write: if false;
     }
   }
 }
