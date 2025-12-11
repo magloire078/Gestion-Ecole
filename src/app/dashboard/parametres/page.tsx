@@ -9,9 +9,9 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { useUser } from "@/firebase";
+import { useUser, useFirestore, useAuth } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, AlertCircle, Upload, FileSignature } from "lucide-react";
+import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2 } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,6 +19,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ImageUploader } from "@/components/image-uploader";
 import { useRouter } from "next/navigation";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { doc, deleteDoc } from 'firebase/firestore';
+import { signOut } from "firebase/auth";
 
 
 const settingsSchema = z.object({
@@ -39,6 +51,8 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 export default function SettingsPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const auth = useAuth();
+  const firestore = useFirestore();
   const { user } = useUser();
   const { 
     schoolData,
@@ -46,7 +60,7 @@ export default function SettingsPage() {
     updateSchoolData 
   } = useSchoolData();
   const [error, setError] = useState<string | null>(null);
-  const [isUploaderOpen, setIsUploaderOpen] = useState(false);
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
@@ -84,12 +98,7 @@ export default function SettingsPage() {
   const handleSaveChanges = async (values: SettingsFormValues) => {
     setError(null);
     try {
-      // Consolidate director name for compatibility if needed, though schema is split now
-      const directorName = `${values.directorFirstName} ${values.directorLastName}`.trim();
-      await updateSchoolData({
-        ...values,
-        directorName: directorName, // Keep this for legacy components if any
-      });
+      await updateSchoolData(values);
       toast({
         title: "Paramètres enregistrés",
         description: "Les informations de l'école ont été mises à jour.",
@@ -101,9 +110,7 @@ export default function SettingsPage() {
   
   const handleLogoUploadComplete = (url: string) => {
       form.setValue('mainLogoUrl', url);
-      // Automatically submit the form to save the new URL
       form.handleSubmit(handleSaveChanges)();
-      setIsUploaderOpen(false);
   }
 
   const handleCopyCode = () => {
@@ -115,6 +122,24 @@ export default function SettingsPage() {
       });
     }
   };
+
+  const handleResetAccount = async () => {
+    if (!user || !firestore) {
+      toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
+      return;
+    }
+
+    try {
+      const userRootRef = doc(firestore, 'utilisateurs', user.uid);
+      await deleteDoc(userRootRef);
+      await signOut(auth);
+      toast({ title: "Compte réinitialisé", description: "Vous allez être redirigé vers la page de connexion." });
+      window.location.href = '/login';
+    } catch (e) {
+      console.error(e);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de réinitialiser le compte." });
+    }
+  };
   
   const renderSkeleton = () => (
     <div className="space-y-6">
@@ -124,7 +149,7 @@ export default function SettingsPage() {
           Gérez les paramètres de votre compte et de votre école.
         </p>
       </div>
-      {[...Array(2)].map((_, i) => (
+      {[...Array(3)].map((_, i) => (
         <Card key={i}>
           <CardHeader>
             <Skeleton className="h-6 w-1/4" />
@@ -153,6 +178,7 @@ export default function SettingsPage() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -260,6 +286,38 @@ export default function SettingsPage() {
             </div>
         </CardContent>
       </Card>
+       <Card>
+        <CardHeader>
+          <CardTitle>Zone de Danger</CardTitle>
+          <CardDescription>Actions irréversibles. Soyez prudent.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button variant="destructive" onClick={() => setIsResetDialogOpen(true)}>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Réinitialiser Mon Compte
+          </Button>
+           <p className="text-xs text-muted-foreground mt-2">
+            Cette action supprimera le lien entre votre compte et cette école. Vous serez déconnecté et pourrez créer une nouvelle école ou en rejoindre une autre.
+           </p>
+        </CardContent>
+      </Card>
     </div>
+     <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous absolument sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Votre compte sera dissocié de l'école actuelle et vous serez déconnecté. Vous pourrez ensuite créer une nouvelle école ou en rejoindre une autre.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetAccount} className="bg-destructive hover:bg-destructive/90">
+              Oui, réinitialiser mon compte
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

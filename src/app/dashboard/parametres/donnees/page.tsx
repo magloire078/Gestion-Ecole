@@ -1,21 +1,22 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, CheckCircle, Link2Off } from 'lucide-react';
-import type { student as Student, class_type as Class, teacher as Teacher } from '@/lib/data-types';
+import type { student as Student, class_type as Class, staff as Staff } from '@/lib/data-types';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
 interface StudentWithId extends Student { id: string; }
 interface ClassWithId extends Class { id: string; }
-interface TeacherWithId extends Teacher { id: string; }
+interface StaffWithId extends Staff { id: string; }
 
 
 export default function DataIntegrityPage() {
@@ -24,20 +25,20 @@ export default function DataIntegrityPage() {
 
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/enseignants`) : null, [firestore, schoolId]);
+  const staffQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/personnel`) : null, [firestore, schoolId]);
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+  const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
 
   const students: StudentWithId[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as StudentWithId)) || [], [studentsData]);
   const classes: ClassWithId[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as ClassWithId)) || [], [classesData]);
-  const teachers: TeacherWithId[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as TeacherWithId)) || [], [teachersData]);
+  const staff: StaffWithId[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffWithId)) || [], [staffData]);
   
   const classIds = useMemo(() => new Set(classes.map(c => c.id)), [classes]);
-  const teacherIds = useMemo(() => new Set(teachers.map(t => t.id)), [teachers]);
+  const teacherIds = useMemo(() => new Set(staff.filter(s => s.role === 'Enseignant').map(t => t.id)), [staff]);
 
-  const isLoading = schoolLoading || studentsLoading || classesLoading || teachersLoading;
+  const isLoading = schoolLoading || studentsLoading || classesLoading || staffLoading;
 
   return (
     <div className="space-y-6">
@@ -136,33 +137,33 @@ export default function DataIntegrityPage() {
               
                <Card>
                   <CardHeader>
-                      <CardTitle>Enseignants ({teachers.length})</CardTitle>
-                      <CardDescription>Vérification du lien de chaque enseignant à sa classe principale.</CardDescription>
+                      <CardTitle>Personnel ({staff.length})</CardTitle>
+                      <CardDescription>Vérification du lien des enseignants à leur classe principale.</CardDescription>
                   </CardHeader>
                   <CardContent>
                       <Table>
                           <TableHeader>
                               <TableRow>
-                                  <TableHead>Nom de l'enseignant</TableHead>
-                                  <TableHead>ID Enseignant</TableHead>
+                                  <TableHead>Nom du membre</TableHead>
+                                  <TableHead>Rôle</TableHead>
                                   <TableHead>ID Classe principale</TableHead>
                                   <TableHead>Statut du lien</TableHead>
                               </TableRow>
                           </TableHeader>
                           <TableBody>
-                               {teachers.map(teacher => (
-                                  <TableRow key={teacher.id}>
+                               {staff.map(member => (
+                                  <TableRow key={member.id}>
                                       <TableCell>
-                                         <Link href={`/dashboard/enseignants/${teacher.id}`} className="hover:underline text-primary">
-                                            {teacher.firstName} {teacher.lastName}
-                                        </Link>
+                                         <p className="font-medium">{member.firstName} {member.lastName}</p>
                                       </TableCell>
-                                      <TableCell className="font-mono text-xs">{teacher.id}</TableCell>
-                                      <TableCell className="font-mono text-xs">{teacher.classId || 'N/A'}</TableCell>
+                                      <TableCell>{member.role}</TableCell>
+                                      <TableCell className="font-mono text-xs">{member.classId || 'N/A'}</TableCell>
                                       <TableCell>
-                                          {teacher.classId && classIds.has(teacher.classId) ? (
+                                          {member.role !== 'Enseignant' ? (
+                                              <Badge variant="outline">Non applicable</Badge>
+                                          ) : member.classId && classIds.has(member.classId) ? (
                                              <Badge variant="secondary" className="text-emerald-600 border-emerald-600/20"><CheckCircle className="mr-2 h-4 w-4" />Valide</Badge>
-                                          ) : !teacher.classId ? (
+                                          ) : !member.classId ? (
                                               <Badge variant="outline"><Link2Off className="mr-2 h-4 w-4" />Non assigné</Badge>
                                           ) : (
                                               <Badge variant="destructive"><AlertCircle className="mr-2 h-4 w-4" />Lien Cassé</Badge>
