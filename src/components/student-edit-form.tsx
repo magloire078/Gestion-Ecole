@@ -14,7 +14,7 @@ import { Bot, Smile, Frown, Meh } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, writeBatch, increment } from 'firebase/firestore';
 import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -75,15 +75,21 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
   }, [watchedTuitionFee, watchedDiscountAmount, form]);
 
 
-  const handleEditStudent = (values: StudentFormValues) => {
+  const handleEditStudent = async (values: StudentFormValues) => {
+    const oldClassId = student.classId;
+    const newClassId = values.classId;
+    const classHasChanged = oldClassId !== newClassId;
+
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
-    const selectedClassInfo = classes.find(c => c.id === values.classId);
+    const selectedClassInfo = classes.find(c => c.id === newClassId);
+    
+    const batch = writeBatch(firestore);
 
     const updatedData = {
-        ...student, // Start with existing student data to not lose fields not in the form
+        ...student,
         firstName: values.firstName,
         lastName: values.lastName,
-        classId: values.classId,
+        classId: newClassId,
         class: selectedClassInfo?.name || student.class,
         cycle: selectedClassInfo?.cycle || student.cycle,
         dateOfBirth: values.dateOfBirth,
@@ -95,16 +101,34 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
         status: values.status,
         feedback: values.feedback || '',
     };
+    
+    // 1. Update the student document
+    batch.update(studentDocRef, updatedData);
 
-    setDoc(studentDocRef, updatedData, { merge: true })
-      .then(() => {
+    // 2. If the class has changed, update the counters
+    if (classHasChanged) {
+        // Decrement the old class counter if it existed
+        if (oldClassId) {
+            const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${oldClassId}`);
+            batch.update(oldClassRef, { studentCount: increment(-1) });
+        }
+        // Increment the new class counter
+        const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${newClassId}`);
+        batch.update(newClassRef, { studentCount: increment(1) });
+    }
+
+    try {
+        await batch.commit();
         toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         onFormSubmit();
-      })
-      .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: studentDocRef.path, operation: 'update', requestResourceData: updatedData });
+    } catch (serverError) {
+        const permissionError = new FirestorePermissionError({ 
+            path: `[BATCH] ${studentDocRef.path}`, 
+            operation: 'update', 
+            requestResourceData: updatedData 
+        });
         errorEmitter.emit('permission-error', permissionError);
-      });
+    }
   };
 
   const handleAnalyzeFeedback = async () => {
@@ -218,5 +242,3 @@ export function StudentEditForm({ student, classes, schoolId, onFormSubmit }: St
     </Form>
   );
 }
-
-    
