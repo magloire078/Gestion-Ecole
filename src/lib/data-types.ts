@@ -79,7 +79,6 @@ export type staff = {
 export type class_type = {
     id: string;
     name: string;
-    studentCount: number;
     mainTeacherId: string;
     building: string;
     cycle: "Maternelle" | "Enseignement Primaire" | "Enseignement Secondaire - Premier cycle" | "Enseignement Secondaire - Deuxième cycle" | "Enseignement Supérieur";
@@ -204,4 +203,3 @@ export type absence = {
     reason?: string;
     recordedBy: string;
 };
-

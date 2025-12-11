@@ -54,7 +54,6 @@ const classSchema = z.object({
   filiere: z.string().optional(),
   building: z.string().min(1, { message: "Le bâtiment est requis." }),
   mainTeacherId: z.string().min(1, { message: "Le professeur principal est requis." }),
-  studentCount: z.coerce.number().min(0, { message: "Le nombre d'élèves doit être un nombre positif." }),
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
@@ -118,7 +117,6 @@ export default function ClassesPage() {
       filiere: '',
       building: '',
       mainTeacherId: '',
-      studentCount: 0,
     },
   });
 
@@ -133,7 +131,6 @@ export default function ClassesPage() {
           filiere: editingClass.filiere || '',
           building: editingClass.building,
           mainTeacherId: editingClass.mainTeacherId,
-          studentCount: editingClass.studentCount,
         });
       } else {
         form.reset({
@@ -142,7 +139,6 @@ export default function ClassesPage() {
           filiere: '',
           building: '',
           mainTeacherId: '',
-          studentCount: 0,
         });
       }
     }
@@ -395,19 +391,6 @@ export default function ClassesPage() {
             </FormItem>
             )}
         />
-         <FormField
-            control={form.control}
-            name="studentCount"
-            render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-                <FormLabel className="text-right">Nb. Élèves</FormLabel>
-                <FormControl className="col-span-3">
-                    <Input type="number" placeholder="Ex: 25" {...field} />
-                </FormControl>
-                 <FormMessage className="col-start-2 col-span-3" />
-            </FormItem>
-            )}
-        />
       </form>
     </Form>
   );
@@ -477,7 +460,6 @@ export default function ClassesPage() {
                                     {cls.filiere && <div className="flex items-center text-sm text-muted-foreground"><BookCopy className="mr-2 h-4 w-4 flex-shrink-0" /><span>Filière: {cls.filiere}</span></div>}
                                     <div className="flex items-center text-sm text-muted-foreground"><Building className="mr-2 h-4 w-4 flex-shrink-0" /><span>Bâtiment: {cls.building}</span></div>
                                     <div className="flex items-center text-sm text-muted-foreground"><User className="mr-2 h-4 w-4 flex-shrink-0" /><span>Prof. principal: {teacherName}</span></div>
-                                    <div className="flex items-center text-sm text-muted-foreground"><Users className="mr-2 h-4 w-4 flex-shrink-0" /><span>{cls.studentCount} élèves</span></div>
                                 </CardContent>
                             </Card>
                             );
