@@ -62,9 +62,10 @@ service cloud.firestore {
     match /personnel/{staffId} {
         // Any authenticated member of the school can see the staff list.
         allow read, list: if isUserInSchool(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId);
-        // Director/admin can create/update staff.
-        // A user can update their own non-critical info.
-        allow create: if isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin());
+        // Director can create staff, OR a user can create their own 'directeur' profile during school creation.
+        allow create: if (isUserInSchool(request.resource.data.schoolId) && isSchoolDirector(request.resource.data.schoolId, request.auth.uid)) || 
+                       (isCreatingOwnDocument(staffId) && request.resource.data.role == 'directeur') ||
+                       isUserAdmin();
         allow update: if (isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin())) || (isCreatingOwnDocument(staffId) && isNotChangingRole(request, resource));
         // Only a director or admin can remove a staff member.
         allow delete: if isUserInSchool(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) && (isSchoolDirector(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId, request.auth.uid) || isUserAdmin());
@@ -130,9 +131,18 @@ service cloud.firestore {
         allow write: if isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin());
     }
     
-      match /cycles/{cycleId} {
+    match /cycles/{cycleId} {
+        // Allow read for any user in the school
         allow read, list: if isUserInSchool(get(/databases/$(database)/documents/cycles/$(cycleId)).data.schoolId);
-        allow write: if isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin());
+        // Allow write only by the school director or an admin.
+        // This also implicitly allows creation during school setup if the creator is the director.
+        allow write: if get(/databases/$(database)/documents/ecoles/$(request.resource.data.schoolId)).data.directorId == request.auth.uid || isUserAdmin();
+    }
+    match /admin_roles/{roleId} {
+        allow read: if isUserAdmin();
+        allow write: if isUserAdmin();
     }
   }
 }
+
+    
