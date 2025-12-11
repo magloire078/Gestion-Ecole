@@ -1,6 +1,5 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -10,12 +9,12 @@ service cloud.firestore {
     }
     
     function isUserAdmin() {
-      // Check for the admin custom claim on the user's token.
       return request.auth.token.admin == true;
     }
 
     function getUserSchoolId(userId) {
-      return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
+      let userDoc = get(/databases/$(database)/documents/utilisateurs/$(userId));
+      return userDoc.exists ? userDoc.data.schoolId : null;
     }
     
     function isUserInSchool(schoolId) {
@@ -23,123 +22,368 @@ service cloud.firestore {
     }
     
     function getUserRole(userId) {
-        // This path is now correct and points to the root collection.
-        return get(/databases/$(database)/documents/personnel/$(userId)).data.role;
+      let staffDoc = get(/databases/$(database)/documents/personnel/$(userId));
+      return staffDoc.exists ? staffDoc.data.role : null;
     }
     
-    function isSchoolDirector(schoolId, userId) {
-      return isUserInSchool(schoolId) && getUserRole(userId) == 'directeur';
+    function isSchoolDirector(schoolId) {
+      let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+      return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
     }
 
     function isCreatingOwnDocument(userId) {
       return request.auth.uid == userId;
     }
     
-    // --- Incoming Data Validation ---
-    function isNotChangingRole(request, resource) {
-        // A user cannot change their own role.
-        return request.resource.data.role == resource.data.role;
+    function isStaffMember(schoolId) {
+      let staffDoc = get(/databases/$(database)/documents/personnel/$(request.auth.uid));
+      return staffDoc.exists && staffDoc.data.schoolId == schoolId;
+    }
+    
+    function isTeacher(schoolId) {
+      let role = getUserRole(request.auth.uid);
+      return role != null && (role == 'enseignant' || role == 'directeur') 
+             && isStaffMember(schoolId);
+    }
+    
+    // --- Validation Functions ---
+    function isValidSchoolId(schoolId) {
+      return schoolId is string && schoolId.size() <= 100;
+    }
+    
+    function isNotChangingRole() {
+      return request.resource.data.role == resource.data.role;
+    }
+    
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
     }
 
     // --- Root Collections ---
 
+    // Collection: utilisateurs
     match /utilisateurs/{userId} {
-      allow create: if isUserAuthenticated() && isCreatingOwnDocument(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-      allow get: if isUserAuthenticated() && (isCreatingOwnDocument(userId) || isUserAdmin());
-      allow update, delete: if isUserAdmin();
+      allow create: if 
+        isUserAuthenticated() && 
+        isCreatingOwnDocument(userId) && 
+        !exists(/databases/$(database)/documents/utilisateurs/$(userId));
+      
+      allow get: if 
+        isUserAuthenticated() && 
+        (isCreatingOwnDocument(userId) || isUserAdmin());
+      
+      allow list: if false;
+      
+      allow update: if 
+        isUserAdmin();
+      
+      allow delete: if isUserAdmin();
     }
     
+    // Collection: ecoles
     match /ecoles/{schoolId} {
-        allow create: if isUserAuthenticated() && request.resource.data.directorId == request.auth.uid;
-        allow get: if isUserInSchool(schoolId) || isUserAdmin();
-        allow list: if isUserAuthenticated();
-        // The school director or an admin can update the school's information.
-        allow update: if isSchoolDirector(schoolId, request.auth.uid) || isUserAdmin();
-        allow delete: if isUserAdmin(); // Only an admin can delete a school.
+      allow create: if 
+        isUserAuthenticated() && 
+        request.resource.data.directorId == request.auth.uid;
+      
+      allow get: if 
+        isUserAuthenticated() && 
+        (isUserInSchool(schoolId) || isUserAdmin());
+      
+      allow list: if isUserAdmin();
+      
+      allow update: if 
+        (isSchoolDirector(schoolId) || isUserAdmin()) &&
+        !request.resource.data.keys().hasAny(['directorId']);
+      
+      allow delete: if isUserAdmin();
     }
 
+    // Collection: personnel
     match /personnel/{staffId} {
-        // Any authenticated member of the school can see the staff list.
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId);
-        // Director can create staff, OR a user can create their own 'directeur' profile during school creation.
-        allow create: if (isUserInSchool(request.resource.data.schoolId) && isSchoolDirector(request.resource.data.schoolId, request.auth.uid)) || 
-                       (isCreatingOwnDocument(staffId) && request.resource.data.role == 'directeur') ||
-                       isUserAdmin();
-        allow update: if (isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin())) || (isCreatingOwnDocument(staffId) && isNotChangingRole(request, resource));
-        // Only a director or admin can remove a staff member.
-        allow delete: if isUserInSchool(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId) && (isSchoolDirector(get(/databases/$(database)/documents/personnel/$(staffId)).data.schoolId, request.auth.uid) || isUserAdmin());
-    }
-
-    match /eleves/{studentId} {
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
-        // Any authenticated member of the school can update a student record.
-        allow create, update: if isUserInSchool(request.resource.data.schoolId);
-        // Only director or admin can delete a student
-        allow delete: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId) && (isSchoolDirector(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId, request.auth.uid) || isUserAdmin());
-
-        match /notes/{gradeId} {
-            // Any staff member of the school (teacher, admin, director) can read and write grades.
-            allow read, write: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
-        }
+      function getStaffSchoolId() {
+        let doc = get(/databases/$(database)/documents/personnel/$(staffId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(getStaffSchoolId());
+      
+      allow list: if 
+        isUserAuthenticated() && 
+        request.query.schoolId != null &&
+        isUserInSchool(request.query.schoolId);
         
-        match /paiements/{paymentId} {
-            // Authorized staff (admin, director, personnel, teacher) can create/read payments.
-            allow read, list, create: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
-            allow update, delete: if isSchoolDirector(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId, request.auth.uid) || isUserAdmin();
-        }
+      allow create: if 
+        isUserAuthenticated() && 
+        (
+          (isSchoolDirector(request.resource.data.schoolId) &&
+           request.resource.data.schoolId == getUserSchoolId(request.auth.uid)) ||
+          isUserAdmin() ||
+          (isCreatingOwnDocument(staffId) && 
+           request.resource.data.role == 'directeur')
+        );
+      
+      allow update: if 
+        isUserAuthenticated() && 
+        (
+          (isSchoolDirector(getStaffSchoolId()) &&
+           request.resource.data.schoolId == getStaffSchoolId()) ||
+          isUserAdmin() ||
+          (isCreatingOwnDocument(staffId) && 
+           isNotChangingRole() &&
+           !request.resource.data.keys().hasAny(['schoolId']))
+        );
+      
+      allow delete: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(getStaffSchoolId()) || isUserAdmin());
     }
 
+    // Collection: eleves
+    match /eleves/{studentId} {
+      function getStudentSchoolId() {
+        let doc = get(/databases/$(database)/documents/eleves/$(studentId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(getStudentSchoolId());
+      
+      allow list: if 
+        isUserAuthenticated() && 
+        request.query.schoolId != null &&
+        isUserInSchool(request.query.schoolId);
+      
+      allow create: if 
+        isUserAuthenticated() && 
+        isStaffMember(request.resource.data.schoolId) &&
+        request.resource.data.schoolId == getUserSchoolId(request.auth.uid);
+      
+      allow update: if 
+        isUserAuthenticated() && 
+        isStaffMember(getStudentSchoolId()) &&
+        request.resource.data.schoolId == getStudentSchoolId();
+      
+      allow delete: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(getStudentSchoolId()) || isUserAdmin());
+      
+      // Sous-collection: notes
+      match /notes/{gradeId} {
+        allow read: if 
+          isUserAuthenticated() && 
+          (isTeacher(getStudentSchoolId()) || isUserAdmin());
+        
+        allow write: if 
+          isUserAuthenticated() && 
+          isTeacher(getStudentSchoolId());
+      }
+      
+      // Sous-collection: paiements
+      match /paiements/{paymentId} {
+        allow read, list: if 
+          isUserAuthenticated() && 
+          isStaffMember(getStudentSchoolId());
+        
+        allow create: if 
+          isUserAuthenticated() && 
+          isStaffMember(getStudentSchoolId());
+        
+        allow update, delete: if 
+          isUserAuthenticated() && 
+          (isSchoolDirector(getStudentSchoolId()) || isUserAdmin());
+      }
+    }
+
+    // Collection: absences
     match /absences/{absenceId} {
-        // Any authorized staff member can manage absences.
-        allow read, write, list: if isUserInSchool(request.resource.data.schoolId);
+      function getAbsenceSchoolId() {
+        let doc = get(/databases/$(database)/documents/absences/$(absenceId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isStaffMember(getAbsenceSchoolId());
+      
+      allow list: if 
+        isUserAuthenticated() && 
+        request.query.schoolId != null &&
+        isStaffMember(request.query.schoolId);
+      
+      allow create: if 
+        isUserAuthenticated() && 
+        isTeacher(request.resource.data.schoolId);
+      
+      allow update: if 
+        isUserAuthenticated() && 
+        isStaffMember(getAbsenceSchoolId()) &&
+        request.resource.data.schoolId == getAbsenceSchoolId();
     }
     
+    // Collection: comptabilite
     match /comptabilite/{transactionId} {
-        // Authorized staff can manage accounting.
-        allow read, list, create: if isUserInSchool(request.resource.data.schoolId);
-        allow update, delete: if isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin();
+      function getTransactionSchoolId() {
+        let doc = get(/databases/$(database)/documents/comptabilite/$(transactionId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        (getUserRole(request.auth.uid) in ['directeur', 'comptable', 'admin'] &&
+         isStaffMember(getTransactionSchoolId()));
+         
+      allow list: if 
+        isUserAuthenticated() && 
+        request.query.schoolId != null &&
+        (getUserRole(request.auth.uid) in ['directeur', 'comptable', 'admin'] &&
+         isStaffMember(request.query.schoolId));
+      
+      allow create: if 
+        isUserAuthenticated() && 
+        (getUserRole(request.auth.uid) in ['directeur', 'comptable', 'admin']) &&
+        isStaffMember(request.resource.data.schoolId);
+      
+      allow update, delete: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(getTransactionSchoolId()) || isUserAdmin());
     }
 
+    // Collection: classes
     match /classes/{classId} {
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/classes/$(classId)).data.schoolId);
-        // Any authenticated school member can update a class (e.g., to assign a teacher).
-        allow update: if isUserInSchool(request.resource.data.schoolId);
-        // Only a director or admin can create or delete a class.
-        allow create: if isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin());
-        allow delete: if isUserInSchool(get(/databases/$(database)/documents/classes/$(classId)).data.schoolId) && (isSchoolDirector(get(/databases/$(database)/documents/classes/$(classId)).data.schoolId, request.auth.uid) || isUserAdmin());
+      function getClassSchoolId() {
+        let doc = get(/databases/$(database)/documents/classes/$(classId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(getClassSchoolId());
+      
+      allow list: if 
+        isUserAuthenticated() && 
+        request.query.schoolId != null &&
+        isUserInSchool(request.query.schoolId);
+      
+      allow create: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(request.resource.data.schoolId) || isUserAdmin()) &&
+        request.resource.data.schoolId == getUserSchoolId(request.auth.uid);
+      
+      allow update: if 
+        isUserAuthenticated() && 
+        isStaffMember(getClassSchoolId()) &&
+        request.resource.data.schoolId == getClassSchoolId();
+      
+      allow delete: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(getClassSchoolId()) || isUserAdmin());
     }
     
+    // Collection: emploi_du_temps
     match /emploi_du_temps/{entryId} {
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/emploi_du_temps/$(entryId)).data.schoolId);
-        allow write: if isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin());
+      function getScheduleSchoolId() {
+        let doc = get(/databases/$(database)/documents/emploi_du_temps/$(entryId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(getScheduleSchoolId());
+      
+      allow write: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(request.resource.data.schoolId) || isUserAdmin());
     }
     
+    // Collection: messagerie
     match /messagerie/{messageId} {
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/messagerie/$(messageId)).data.schoolId);
-        allow create: if isUserInSchool(request.resource.data.schoolId); // Any member of the school can send a message
-        allow update, delete: if isUserInSchool(get(/databases/$(database)/documents/messagerie/$(messageId)).data.schoolId) && (isSchoolDirector(get(/databases/$(database)/documents/messagerie/$(messageId)).data.schoolId, request.auth.uid) || isUserAdmin());
+      function getMessageSchoolId() {
+        let doc = get(/databases/$(database)/documents/messagerie/$(messageId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(getMessageSchoolId());
+      
+      allow create: if 
+        isUserAuthenticated() && 
+        isStaffMember(request.resource.data.schoolId);
+      
+      allow update: if false;
+      
+      allow delete: if 
+        isUserAuthenticated() && 
+        (resource.data.senderId == request.auth.uid || isUserAdmin());
     }
 
+    // Collection: bibliotheque
     match /bibliotheque/{bookId} {
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/bibliotheque/$(bookId)).data.schoolId);
-        allow write: if isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin());
+      function getBookSchoolId() {
+        let doc = get(/databases/$(database)/documents/bibliotheque/$(bookId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(getBookSchoolId());
+      
+      allow write: if 
+        isUserAuthenticated() && 
+        (getUserRole(request.auth.uid) in ['directeur', 'admin']) &&
+        isStaffMember(request.resource.data.schoolId);
     }
     
+    // Collection: frais_scolarite
     match /frais_scolarite/{feeId} {
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/frais_scolarite/$(feeId)).data.schoolId);
-        allow write: if isUserInSchool(request.resource.data.schoolId) && (isSchoolDirector(request.resource.data.schoolId, request.auth.uid) || isUserAdmin());
+      function getFeeSchoolId() {
+        let doc = get(/databases/$(database)/documents/frais_scolarite/$(feeId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isStaffMember(getFeeSchoolId());
+      
+      allow write: if 
+        isUserAuthenticated() && 
+        (getUserRole(request.auth.uid) in ['directeur', 'admin']) &&
+        isStaffMember(request.resource.data.schoolId);
     }
     
+    // Collection: cycles
     match /cycles/{cycleId} {
-        // Allow read for any user in the school
-        allow read, list: if isUserInSchool(get(/databases/$(database)/documents/cycles/$(cycleId)).data.schoolId);
-        // Allow write only by the school director or an admin.
-        // This also implicitly allows creation during school setup if the creator is the director.
-        allow write: if get(/databases/$(database)/documents/ecoles/$(request.resource.data.schoolId)).data.directorId == request.auth.uid || isUserAdmin();
+      function getCycleSchoolId() {
+        let doc = get(/databases/$(database)/documents/cycles/$(cycleId));
+        return doc.exists ? doc.data.schoolId : null;
+      }
+      
+      allow read: if 
+        isUserAuthenticated() && 
+        isUserInSchool(getCycleSchoolId());
+      
+      allow write: if 
+        isUserAuthenticated() && 
+        (isSchoolDirector(request.resource.data.schoolId) || isUserAdmin());
     }
+    
+    // Collection: admin_roles
     match /admin_roles/{roleId} {
-        allow read: if isUserAdmin();
-        allow write: if isUserAdmin();
+      allow read, write: if 
+        isUserAuthenticated() && 
+        request.auth.token.admin == true;
+    }
+    
+    // --- Global Rules ---
+    // Deny all other collections/paths not explicitly defined above
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
+
+    
