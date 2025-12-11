@@ -21,11 +21,9 @@ service cloud.firestore {
       return isAuth() && getUserSchoolId() == schoolId;
     }
     
-    function isSchoolDirector(schoolId) {
-      // This rule needs the school document to be passed in resource variable
-      // or to be read directly. For updates, it's in resource.data.
-      let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
-      return schoolDoc.exists && schoolDoc.data.directorId == request.auth.uid;
+    // The user is the director of the school being written to.
+    function isSchoolDirector() {
+      return request.auth.uid == request.resource.data.directorId;
     }
 
     // --- Special function for school creation ---
@@ -50,27 +48,31 @@ service cloud.firestore {
     match /ecoles/{schoolId} {
       allow create: if isSchoolCreation() || isAdmin();
       allow read: if isUserInSchool(schoolId) || isAdmin();
-      allow update: if isSchoolDirector(schoolId) || isAdmin();
+      allow update: if (isAuth() && isSchoolDirector()) || isAdmin();
       allow delete: if isAdmin();
       
         // --- SUB-COLLECTIONS ---
       
         // Allow a director to create their own staff profile during school creation
         match /personnel/{staffId} {
-            allow create: if (isSchoolCreation() && staffId == request.auth.uid && request.resource.data.role == 'directeur') || (isUserInSchool(schoolId) && isSchoolDirector(schoolId)) || isAdmin();
+            allow create: if (isSchoolCreation() && staffId == request.auth.uid && request.resource.data.role == 'directeur') || (isUserInSchool(schoolId) && isSchoolDirector()) || isAdmin();
             allow read: if isUserInSchool(schoolId) || (isAuth() && staffId == request.auth.uid);
-            allow update: if (isUserInSchool(schoolId) && isSchoolDirector(schoolId)) || (isAuth() && staffId == request.auth.uid) || isAdmin();
-            allow delete: if (isUserInSchool(schoolId) && isSchoolDirector(schoolId)) || isAdmin();
+            allow update: if (isUserInSchool(schoolId) && isSchoolDirector()) || (isAuth() && staffId == request.auth.uid) || isAdmin();
+            allow delete: if (isUserInSchool(schoolId) && isSchoolDirector()) || isAdmin();
+            
+            match /donnees_privees/{privateDocId} {
+                allow read, write: if (isAuth() && (isSchoolDirector() || request.auth.uid == staffId)) || isAdmin();
+            }
         }
 
         match /classes/{classId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+            allow create, update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
         }
 
         match /eleves/{studentId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+            allow create, update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
 
             match /notes/{gradeId} {
                 allow read, write: if isUserInSchool(schoolId);
@@ -83,13 +85,13 @@ service cloud.firestore {
         match /cycles/{cycleId} {
              allow create: if isSchoolCreation() || isAdmin();
              allow read, list: if isUserInSchool(schoolId);
-             allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
+             allow update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
         }
 
         // Default rule for other subcollections
         match /{subCollection}/{docId} {
             allow read, list: if isUserInSchool(schoolId);
-            allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+            allow create, update, delete: if (isAuth() && isSchoolDirector()) || isAdmin();
         }
     }
 

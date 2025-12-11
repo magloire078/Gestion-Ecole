@@ -24,6 +24,11 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) {
+        setUser(null);
+        setLoading(false);
+        return;
+    }
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             const tokenResult = await authUser.getIdTokenResult();
