@@ -364,8 +364,8 @@ export default {
   },
   plugins: [
     require('tailwindcss-animate'),
-    // require('@tailwindcss/typography'),
-    // require('@tailwindcss/forms'),
+    require('@tailwindcss/typography'),
+    require('@tailwindcss/forms'),
     require('@tailwindcss/aspect-ratio'),
     function({ addUtilities, theme }) {
       const newUtilities = {
