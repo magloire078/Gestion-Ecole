@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
@@ -41,6 +42,7 @@ interface Message {
   } | Date;
 }
 
+// Corrected GradeEntry type to match the data structure
 interface GradeEntry {
   subject: string;
   grade: number;
@@ -50,6 +52,7 @@ interface GradeEntry {
     nanoseconds: number;
   } | Date;
 }
+
 
 interface Transaction {
   category: string;
@@ -114,9 +117,9 @@ const RegularDashboard = () => {
 
       try {
         // --- Fetch Stats ---
-        const studentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId));
-        const teachersQuery = query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant'));
-        const classesQuery = query(collection(firestore, `classes`), where('schoolId', '==', schoolId));
+        const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
+        const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
+        const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
         
         const [studentsSnapshot, teachersSnapshot, classesSnapshot] = await Promise.all([
           getCountFromServer(studentsQuery).catch(() => ({ data: () => ({ count: 0 }) })),
@@ -126,7 +129,7 @@ const RegularDashboard = () => {
 
         let totalBooks = 0;
         try {
-          const libraryQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId));
+          const libraryQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
           const librarySnapshot = await getDocs(libraryQuery);
           totalBooks = librarySnapshot.docs.reduce((sum, doc) => {
             const data = doc.data() as LibraryBook;
@@ -139,8 +142,10 @@ const RegularDashboard = () => {
         let totalTuitionPaid = 0;
         let totalTuitionDue = 0;
         try {
-          const accountingQuery = query(collection(firestore, `comptabilite`), where('schoolId', '==', schoolId), where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'));
-          const tuitionPaidSnapshot = await getDocs(accountingQuery);
+          const accountingQuery = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+          const tuitionPaidSnapshot = await getDocs(
+            query(accountingQuery, where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'))
+          );
           
           totalTuitionPaid = tuitionPaidSnapshot.docs.reduce((sum, doc) => {
             const data = doc.data() as Transaction;
@@ -173,8 +178,9 @@ const RegularDashboard = () => {
           
           for (const studentDoc of studentDocs.docs) {
             try {
+              // Correctly query the subcollection for notes
               const notesSnapshot = await getDocs(
-                collection(firestore, `eleves/${studentDoc.id}/notes`)
+                collection(firestore, `ecoles/${schoolId}/eleves/${studentDoc.id}/notes`)
               );
               notesSnapshot.forEach(noteDoc => {
                 const data = noteDoc.data() as GradeEntry;
@@ -195,7 +201,7 @@ const RegularDashboard = () => {
         
         try {
           const recentStudentsQuery = query(
-            collection(firestore, `eleves`), where('schoolId', '==', schoolId),
+            collection(firestore, `ecoles/${schoolId}/eleves`),
             orderBy('createdAt', 'desc'),
             limit(3)
           );
@@ -228,7 +234,7 @@ const RegularDashboard = () => {
 
         try {
           const recentMessagesQuery = query(
-            collection(firestore, `messagerie`), where('schoolId', '==', schoolId),
+            collection(firestore, `ecoles/${schoolId}/messagerie`),
             orderBy('createdAt', 'desc'),
             limit(2)
           );
