@@ -1,5 +1,6 @@
-'use client';
 
+'use client';
+import * as React from "react";
 import { MainNav } from '@/components/main-nav';
 import { UserNav } from '@/components/user-nav';
 import { Logo } from '@/components/logo';
