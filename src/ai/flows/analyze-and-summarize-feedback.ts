@@ -1,6 +1,5 @@
 'use server';
-import {ai} from '@/ai/genkit';
-import {z} from '@genkit-ai/core';
+import {z} from 'zod';
 
 export const AnalyzeAndSummarizeFeedbackInputSchema = z.object({
   feedbackText: z.string().describe('The feedback text to analyze.'),
@@ -20,21 +19,13 @@ export type AnalyzeAndSummarizeFeedbackOutput = z.infer<
   typeof AnalyzeAndSummarizeFeedbackOutputSchema
 >;
 
-const prompt = ai.definePrompt(
-  {
-    name: 'analyzeAndSummarizeFeedbackPrompt',
-    input: {schema: AnalyzeAndSummarizeFeedbackInputSchema},
-    output: {schema: AnalyzeAndSummarizeFeedbackOutputSchema},
-    prompt: `Analyze the following student feedback and provide a summary, sentiment analysis (Positif, Négatif, Neutre), and key improvement areas.
-
-Feedback:
-"{{feedbackText}}"`,
-  },
-);
-
 export async function analyzeAndSummarizeFeedback(
   input: AnalyzeAndSummarizeFeedbackInput
 ): Promise<AnalyzeAndSummarizeFeedbackOutput> {
-  const {output} = await prompt(input);
-  return output!;
+  // Mock implementation since Genkit is removed
+  return {
+    sentiment: 'Neutre',
+    summary: 'Analyse IA non disponible.',
+    keyImprovementAreas: 'Indisponible',
+  };
 }

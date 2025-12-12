@@ -7,8 +7,7 @@
  * - GenerateReportCardCommentOutput - The return type for the function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from '@genkit-ai/core';
+import {z} from 'zod';
 
 // Input Schema
 export const GenerateReportCardCommentInputSchema = z.object({
@@ -30,30 +29,11 @@ export type GenerateReportCardCommentOutput = z.infer<
   typeof GenerateReportCardCommentOutputSchema
 >;
 
-// Genkit Prompt
-const commentPrompt = ai.definePrompt({
-  name: 'generateReportCardCommentPrompt',
-  input: {schema: GenerateReportCardCommentInputSchema},
-  output: {schema: GenerateReportCardCommentOutputSchema},
-  prompt: `Vous êtes un conseiller pédagogique expérimenté. Rédigez une appréciation concise et constructive pour le bulletin de l'élève {{studentName}}.
-
-Informations clés :
-- Nom de l'élève : {{studentName}}
-- Rédigé par : {{teacherName}}
-- Résumé des notes : {{grades}}
-
-L'appréciation doit être encourageante tout en étant réaliste. Mettez en avant les points forts et suggérez des axes d'amélioration si nécessaire. Le ton doit être formel et bienveillant.`,
-});
-
-// Genkit Flow (main exported function)
-export const generateReportCardComment = ai.defineFlow(
-  {
-    name: 'generateReportCardCommentFlow',
-    inputSchema: GenerateReportCardCommentInputSchema,
-    outputSchema: GenerateReportCardCommentOutputSchema,
-  },
-  async (input) => {
-    const {output} = await commentPrompt(input);
-    return output!;
+// Main exported function (mocked)
+export async function generateReportCardComment(
+  input: GenerateReportCardCommentInput
+): Promise<GenerateReportCardCommentOutput> {
+  return {
+      comment: "Génération de commentaire IA non disponible. Élève sérieux et travailleur."
   }
-);
+}

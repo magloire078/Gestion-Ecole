@@ -77,7 +77,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
     // Fetch the student's class to get the mainTeacherId
     const classRef = useMemoFirebase(() =>
-        (student.schoolId && student.classId) ? doc(firestore, `ecoles/${student.schoolId}/classes/${student.classId}`) : null
+        (student.schoolId && student.classId) ? doc(firestore, `classes/${student.classId}`) : null
     , [firestore, student.schoolId, student.classId]);
     const { data: classData } = useDoc<Class>(classRef);
 

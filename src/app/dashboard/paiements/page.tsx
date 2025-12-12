@@ -516,7 +516,7 @@ export default function PaymentsPage() {
                 {isGeneratingReminder ? (
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <Bot className="h-4 w-4 animate-spin" />
-                        <span>Génération du message par l'IA...</span>
+                        <span>Génération du message...</span>
                     </div>
                 ) : (
                     <Textarea
