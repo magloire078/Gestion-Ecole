@@ -1,4 +1,3 @@
-
 import type { Config } from 'tailwindcss';
 
 export default {
@@ -364,9 +363,6 @@ export default {
   },
   plugins: [
     require('tailwindcss-animate'),
-    // require('@tailwindcss/typography'),
-    // require('@tailwindcss/forms'),
-    require('@tailwindcss/aspect-ratio'),
     function({ addUtilities, theme }) {
       const newUtilities = {
         // Utilities pour les tables
@@ -526,5 +522,3 @@ export default {
     'grid-cols-calendar',
   ],
 } satisfies Config;
-
-    
