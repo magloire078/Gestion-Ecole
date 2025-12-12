@@ -476,6 +476,7 @@ const OnboardingDashboard = () => {
 // ====================================================================================
 export default function DashboardPage() {
     const { schoolData, loading } = useSchoolData();
+    const isMounted = useHydrationFix();
 
     // Condition pour déterminer si la configuration initiale est complète
     const isSetupComplete = useMemo(() => {
@@ -484,7 +485,7 @@ export default function DashboardPage() {
         return !!schoolData.address && !!schoolData.mainLogoUrl;
     }, [schoolData]);
 
-    if (loading) {
+    if (!isMounted || loading) {
         return <Skeleton className="h-screen w-full" />;
     }
 
