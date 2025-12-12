@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -12,12 +10,13 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, FileText, BookUser } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuTrigger 
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { 
   Dialog, 
@@ -69,6 +68,7 @@ import {
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { allSubjects } from '@/lib/data';
 import type { class_type as Class } from '@/lib/data-types';
+import Link from 'next/link';
 
 const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -100,7 +100,7 @@ const staffSchema = z.object({
   CG: z.string().optional(),
   numeroCompte: z.string().optional(),
   Cle_RIB: z.string().optional(),
-}).refine(data => data.role !== 'Enseignant' || (data.role === 'Enseignant' && data.subject), {
+}).refine(data => data.role !== 'enseignant' || (data.role === 'enseignant' && data.subject), {
   message: "La matière principale est requise pour un enseignant.",
   path: ["subject"],
 });
@@ -117,7 +117,14 @@ export default function HRPage() {
 
   const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, 'personnel'), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
-  const staff: StaffMember[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [], [staffData]);
+  
+  const { teachers, otherStaff } = useMemo(() => {
+    const allStaff: StaffMember[] = staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [];
+    return {
+        teachers: allStaff.filter(s => s.role === 'enseignant'),
+        otherStaff: allStaff.filter(s => s.role !== 'enseignant'),
+    }
+  }, [staffData]);
 
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -265,6 +272,65 @@ export default function HRPage() {
 
   const isLoading = schoolLoading || staffLoading || classesLoading;
 
+  const renderStaffCard = (member: StaffMember) => {
+    const fullName = `${member.firstName} ${member.lastName}`;
+    const fallback = `${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase();
+    const className = classes.find(c => c.id === member.classId)?.name;
+
+    return (
+        <Card key={member.id} className="flex flex-col">
+            <CardHeader>
+                <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                            <AvatarImage src={`https://picsum.photos/seed/${member.id}/100`} alt={fullName} data-ai-hint="person face" />
+                            <AvatarFallback>{fallback}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <CardTitle>{fullName}</CardTitle>
+                            <CardDescription className="capitalize">{member.role === 'enseignant' ? member.subject : member.role}</CardDescription>
+                        </div>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleGeneratePayslip(member)}>Générer Bulletin de Paie</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>Supprimer</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center">
+                    <Mail className="mr-2 h-4 w-4" />
+                    <a href={`mailto:${member.email}`} className="truncate hover:underline">{member.email}</a>
+                </div>
+                {member.phone && (
+                    <div className="flex items-center">
+                        <Phone className="mr-2 h-4 w-4" />
+                        <a href={`tel:${member.phone}`} className="truncate hover:underline">{member.phone}</a>
+                    </div>
+                )}
+                {className && (
+                     <div className="flex items-center">
+                        <BookUser className="mr-2 h-4 w-4" />
+                        <span>Classe principale: <strong>{className}</strong></span>
+                    </div>
+                )}
+            </CardContent>
+            <CardFooter>
+                 <Button variant="outline" size="sm" className="w-full" onClick={() => handleGeneratePayslip(member)}>
+                    <FileText className="mr-2 h-3 w-3" /> Voir le dernier bulletin
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -278,81 +344,42 @@ export default function HRPage() {
             </Button>
         </div>
         
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nom</TableHead>
-                            <TableHead>Rôle / Matière</TableHead>
-                            <TableHead>Salaire de Base</TableHead>
-                            <TableHead>Embauché le</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                    {isLoading ? (
-                        [...Array(5)].map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-9 w-28 ml-auto" /></TableCell>
-                            </TableRow>
-                        ))
-                    ) : staff.length > 0 ? (
-                        staff.map((member) => {
-                            const fullName = `${member.firstName} ${member.lastName}`;
-                            const fallback = `${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase();
-                            return (
-                                <TableRow key={member.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-9 w-9">
-                                                <AvatarImage src={`https://picsum.photos/seed/${member.id}/100`} alt={fullName} data-ai-hint="person face" />
-                                                <AvatarFallback>{fallback}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <p className="font-medium">{fullName}</p>
-                                                <p className="text-xs text-muted-foreground">{member.email}</p>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <p className="font-medium">{member.role}</p>
-                                        {member.role === 'Enseignant' && <p className="text-xs text-muted-foreground">{member.subject}</p>}
-                                    </TableCell>
-                                    <TableCell className="font-mono">{member.baseSalary ? `${(member.baseSalary || 0).toLocaleString('fr-FR')} CFA` : 'N/A'}</TableCell>
-                                    <TableCell>{isMounted && member.hireDate && isValid(parseISO(member.hireDate)) ? format(parseISO(member.hireDate), 'd MMM yyyy', { locale: fr }) : <Skeleton className="h-5 w-24" />}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex gap-2 justify-end">
-                                            <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(member)}>
-                                                <FileText className="mr-2 h-3 w-3" /> Bulletin
-                                            </Button>
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-9 w-9"><MoreHorizontal /></Button></DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>
-                                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>Supprimer</DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                                Aucun membre du personnel n'a été ajouté pour le moment.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+        <Tabs defaultValue="teachers">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="teachers">Enseignants ({teachers.length})</TabsTrigger>
+                <TabsTrigger value="staff">Autre Personnel ({otherStaff.length})</TabsTrigger>
+            </TabsList>
+            <TabsContent value="teachers" className="mt-6">
+                {isLoading ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+                    </div>
+                ) : teachers.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {teachers.map(renderStaffCard)}
+                    </div>
+                ) : (
+                    <Card className="flex items-center justify-center h-48">
+                        <p className="text-muted-foreground">Aucun enseignant n'a été ajouté pour le moment.</p>
+                    </Card>
+                )}
+            </TabsContent>
+             <TabsContent value="staff" className="mt-6">
+                {isLoading ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+                    </div>
+                ) : otherStaff.length > 0 ? (
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {otherStaff.map(renderStaffCard)}
+                    </div>
+                ) : (
+                    <Card className="flex items-center justify-center h-48">
+                        <p className="text-muted-foreground">Aucun autre membre du personnel n'a été ajouté.</p>
+                    </Card>
+                )}
+            </TabsContent>
+        </Tabs>
       </div>
       
        <Dialog open={isFormOpen} onOpenChange={(isOpen) => { setIsFormOpen(isOpen); if (!isOpen) setEditingStaff(null); }}>
@@ -378,8 +405,8 @@ export default function HRPage() {
                                     <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom de famille" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 </div>
-                                <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><FormControl><Input placeholder="Ex: Comptable, Enseignant" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                {watchedRole === 'Enseignant' && (
+                                <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="personnel">Personnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                {watchedRole === 'enseignant' && (
                                     <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
                                         <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{allSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                         <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
