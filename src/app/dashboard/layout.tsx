@@ -165,7 +165,7 @@ export default function DashboardLayout({
             
             {/* Header */}
             <header className={cn(
-              "sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md transition-shadow px-4 sm:px-6 print:hidden",
+              "sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md transition-shadow px-4 sm:px-6 print:hidden",
               isScrolled && "shadow-sm"
             )}>
               
