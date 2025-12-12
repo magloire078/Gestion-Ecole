@@ -333,159 +333,30 @@ export default function ClassesPage() {
   const filiereOptions = higherEdFiliere.map(f => ({ value: f, label: f }));
   
   const renderFormContent = () => (
-    <Form {...form}>
-      <form id="class-form" onSubmit={form.handleSubmit(handleClassSubmit)} className="space-y-4 max-h-[70vh] overflow-y-auto px-1">
-        <FormField
-            control={form.control}
-            name="cycle"
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>Cycle</FormLabel>
-                <FormControl>
-                    <Combobox
-                        placeholder="Sélectionner un cycle"
-                        searchPlaceholder="Chercher un cycle..."
-                        options={cycleOptions}
-                        value={field.value}
-                        onValueChange={(value) => {
-                            field.onChange(value);
-                            form.setValue('grade', ''); // Reset grade when cycle changes
-                            form.setValue('name', '');
-                            form.setValue('filiere', '');
-                        }}
-                    />
-                </FormControl>
-                <FormMessage />
-            </FormItem>
-            )}
-        />
-        
-        {watchedCycle && (
-          <FormField
-            control={form.control}
-            name="grade"
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>Niveau</FormLabel>
-                <FormControl>
-                    <Combobox
-                        placeholder="Sélectionner un niveau"
-                        searchPlaceholder="Chercher un niveau..."
-                        options={gradeOptions}
-                        value={field.value}
-                        onValueChange={(value) => {
-                            field.onChange(value);
-                            form.setValue('name', value);
-                        }}
-                    />
-                </FormControl>
-                <FormMessage />
-            </FormItem>
-            )}
-          />
-        )}
-
-
-        {watchedCycle === "Enseignement Supérieur" && (
-            <FormField
-                control={form.control}
-                name="filiere"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Filière</FormLabel>
-                    <FormControl>
-                        <Combobox
-                            placeholder="Sélectionner une filière"
-                            searchPlaceholder="Chercher une filière..."
-                            options={filiereOptions}
-                            value={field.value}
-                            onValueChange={field.onChange}
-                        />
-                    </FormControl>
-                </FormItem>
-                )}
-            />
-        )}
-        <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Nom Complet de la Classe</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Ex: CM2 A, Terminale D, etc." {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-            )}
-        />
-        <FormField
-            control={form.control}
-            name="building"
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>Bâtiment</FormLabel>
-                <FormControl>
-                    <Input placeholder="Ex: Bâtiment A" {...field} />
-                </FormControl>
-                 <FormMessage />
-            </FormItem>
-            )}
-        />
-         <FormField
-            control={form.control}
-            name="mainTeacherId"
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>Prof. Principal</FormLabel>
-                <FormControl>
-                    <Combobox
-                        placeholder="Sélectionner un enseignant"
-                        searchPlaceholder="Chercher ou créer..."
-                        options={teacherOptions}
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        onCreate={handleOpenAddTeacherDialog}
-                    />
-                </FormControl>
-                 <FormMessage />
-            </FormItem>
-            )}
-        />
-
-        {!editingClass && (
-            <>
-                <Separator className="my-6" />
-                <h4 className="text-md font-semibold text-primary">Frais de Scolarité Associés</h4>
-                <FormField
-                    control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Montant Total (CFA)</FormLabel>
-                        <FormControl>
-                           <Input type="number" placeholder="Ex: 980000" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="installments"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Modalités de Paiement</FormLabel>
-                        <FormControl>
-                            <Input placeholder="Ex: 10 tranches mensuelles" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-            </>
-        )}
-      </form>
+     <Form {...form}>
+        <form id="class-form" onSubmit={form.handleSubmit(handleClassSubmit)} className="space-y-4">
+           <Tabs defaultValue="general">
+             <TabsList className="grid w-full grid-cols-2">
+               <TabsTrigger value="general">Informations Générales</TabsTrigger>
+               <TabsTrigger value="fees" disabled={!!editingClass}>Scolarité</TabsTrigger>
+             </TabsList>
+             <div className="py-4 max-h-[60vh] overflow-y-auto px-1">
+                 <TabsContent value="general" className="mt-0 space-y-4">
+                    <FormField control={form.control} name="cycle" render={({ field }) => ( <FormItem> <FormLabel>Cycle</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un cycle" searchPlaceholder="Chercher un cycle..." options={cycleOptions} value={field.value} onValueChange={(value) => { field.onChange(value); form.setValue('grade', ''); form.setValue('name', ''); form.setValue('filiere', ''); }} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                    {watchedCycle && <FormField control={form.control} name="grade" render={({ field }) => ( <FormItem> <FormLabel>Niveau</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un niveau" searchPlaceholder="Chercher un niveau..." options={gradeOptions} value={field.value} onValueChange={(value) => { field.onChange(value); form.setValue('name', value); }}/> </FormControl> <FormMessage /> </FormItem> )}/>}
+                    {watchedCycle === "Enseignement Supérieur" && <FormField control={form.control} name="filiere" render={({ field }) => ( <FormItem> <FormLabel>Filière</FormLabel> <FormControl> <Combobox placeholder="Sélectionner une filière" searchPlaceholder="Chercher une filière..." options={filiereOptions} value={field.value} onValueChange={field.onChange}/> </FormControl> </FormItem> )}/>}
+                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom Complet de la Classe</FormLabel> <FormControl> <Input placeholder="Ex: CM2 A, Terminale D, etc." {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="building" render={({ field }) => ( <FormItem> <FormLabel>Bâtiment</FormLabel> <FormControl> <Input placeholder="Ex: Bâtiment A" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="mainTeacherId" render={({ field }) => ( <FormItem> <FormLabel>Prof. Principal</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un enseignant" searchPlaceholder="Chercher ou créer..." options={teacherOptions} value={field.value} onValueChange={field.onChange} onCreate={handleOpenAddTeacherDialog}/> </FormControl> <FormMessage /> </FormItem> )}/>
+                 </TabsContent>
+                 <TabsContent value="fees" className="mt-0 space-y-4">
+                     <p className="text-sm text-muted-foreground">Définissez les frais de scolarité qui seront associés à cette classe. Ces informations peuvent être modifiées plus tard dans la section "Frais de Scolarité".</p>
+                    <FormField control={form.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Montant Total (CFA)</FormLabel> <FormControl> <Input type="number" placeholder="Ex: 980000" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="installments" render={({ field }) => ( <FormItem> <FormLabel>Modalités de Paiement</FormLabel> <FormControl> <Input placeholder="Ex: 10 tranches mensuelles" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                 </TabsContent>
+             </div>
+           </Tabs>
+        </form>
     </Form>
   );
 
@@ -505,7 +376,7 @@ export default function ClassesPage() {
                   <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
                   <DialogTitle>{editingClass ? "Modifier la Classe" : "Ajouter une Nouvelle Classe"}</DialogTitle>
                   <DialogDescription>
@@ -637,3 +508,5 @@ export default function ClassesPage() {
     </>
   );
 }
+
+    
