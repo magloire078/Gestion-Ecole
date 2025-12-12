@@ -3,7 +3,7 @@
 
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ReactNode, useState, useEffect } from "react";
+import { ReactNode } from "react";
 import { FirebaseClientProvider } from "@/firebase";
 
 export function MainLayout({
@@ -11,27 +11,17 @@ export function MainLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   return (
-    <>
-      {isClient ? (
-        <FirebaseClientProvider>
-          <ThemeProvider
-              attribute="class"
-              defaultTheme="system"
-              enableSystem
-              disableTransitionOnChange
-          >
-              {children}
-              <Toaster />
-          </ThemeProvider>
-        </FirebaseClientProvider>
-      ) : null}
-    </>
+    <FirebaseClientProvider>
+      <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+      >
+          {children}
+          <Toaster />
+      </ThemeProvider>
+    </FirebaseClientProvider>
   );
 }
