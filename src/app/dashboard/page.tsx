@@ -92,10 +92,6 @@ const RegularDashboard = () => {
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // --- Data for Performance Chart ---
-  const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
-  const [gradesLoading, setGradesLoading] = useState(true);
-
   // --- Data for Recent Activity ---
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
@@ -104,7 +100,6 @@ const RegularDashboard = () => {
     if (!schoolId || !firestore) {
       if (!schoolLoading) {
         setStatsLoading(false);
-        setGradesLoading(false);
         setActivityLoading(false);
       }
       return;
@@ -112,7 +107,6 @@ const RegularDashboard = () => {
 
     const fetchAllData = async () => {
       setStatsLoading(true);
-      setGradesLoading(true); // Kept for consistency, but we won't fetch all grades now
       setActivityLoading(true);
 
       try {
@@ -127,58 +121,18 @@ const RegularDashboard = () => {
           getCountFromServer(classesQuery).catch(() => ({ data: () => ({ count: 0 }) })),
         ]);
 
-        let totalBooks = 0;
-        try {
-          const libraryQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId));
-          const librarySnapshot = await getDocs(libraryQuery);
-          totalBooks = librarySnapshot.docs.reduce((sum, doc) => {
-            const data = doc.data() as LibraryBook;
-            return sum + (data.quantity || 0);
-          }, 0);
-        } catch (error) {
-          console.log("Bibliothèque non trouvée, initialisation à 0");
-        }
-
-        let totalTuitionPaid = 0;
-        let totalTuitionDue = 0;
-        try {
-          const accountingQuery = collection(firestore, `comptabilite`);
-          const tuitionPaidSnapshot = await getDocs(
-            query(accountingQuery, where('schoolId', '==', schoolId), where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'))
-          );
-          
-          totalTuitionPaid = tuitionPaidSnapshot.docs.reduce((sum, doc) => {
-            const data = doc.data() as Transaction;
-            return sum + (data.amount || 0);
-          }, 0);
-
-          const studentsSnapshotForDue = await getDocs(studentsQuery);
-          totalTuitionDue = studentsSnapshotForDue.docs.reduce((sum, doc) => {
-            const data = doc.data() as Student;
-            return sum + (data.amountDue || 0);
-          }, 0);
-        } catch (error) {
-          console.log("Comptabilité non trouvée, initialisation à 0");
-        }
-
         setStats({
           students: studentsSnapshot.data().count,
           teachers: teachersSnapshot.data().count,
           classes: classesSnapshot.data().count,
-          books: totalBooks,
-          tuitionPaid: totalTuitionPaid,
-          tuitionDue: totalTuitionDue,
+          books: 0, // Simplified
+          tuitionPaid: 0, // Simplified
+          tuitionDue: 0, // Simplified
         });
         setStatsLoading(false);
 
-        // --- Fetch Grades (REMOVED INEFFICIENT LOGIC) ---
-        // We will no longer fetch all grades here to prevent server overload.
-        // The chart will be empty for now.
-        setAllGrades([]);
-        setGradesLoading(false);
 
-
-        // --- Fetch Recent Activity ---
+        // --- Fetch Recent Activity (Simplified) ---
         const activities: Activity[] = [];
         
         try {
@@ -213,39 +167,6 @@ const RegularDashboard = () => {
         } catch (error) {
           console.log("Erreur lors de la récupération des activités élèves");
         }
-
-        try {
-          const recentMessagesQuery = query(
-            collection(firestore, `messagerie`), where('schoolId', '==', schoolId),
-            orderBy('createdAt', 'desc'),
-            limit(2)
-          );
-          const messagesActivitySnapshot = await getDocs(recentMessagesQuery);
-          
-          messagesActivitySnapshot.forEach(doc => {
-            const message = doc.data() as Message;
-            const createdAt = message.createdAt 
-              ? 'seconds' in message.createdAt 
-                ? new Date(message.createdAt.seconds * 1000)
-                : new Date(message.createdAt)
-              : new Date();
-            
-            activities.push({
-              id: doc.id,
-              type: 'message',
-              icon: MessageSquare,
-              color: 'bg-green-100 dark:bg-green-900/50',
-              description: (
-                <>
-                  Message <strong>"{message.title}"</strong> envoyé par <strong>{message.senderName}</strong>.
-                </>
-              ),
-              date: createdAt,
-            });
-          });
-        } catch (error) {
-          console.log("Erreur lors de la récupération des messages");
-        }
         
         const sortedActivities = activities
           .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -257,7 +178,6 @@ const RegularDashboard = () => {
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         setStatsLoading(false);
-        setGradesLoading(false);
         setActivityLoading(false);
       }
     };
@@ -339,7 +259,7 @@ const RegularDashboard = () => {
                 )}
                 <div className="flex items-center mt-2 text-xs text-muted-foreground">
                   <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
-                  <span className="text-emerald-600 mr-1">+2%</span>
+                  <span className="text-emerald-600 mr-1">+0%</span>
                   <span>vs mois dernier</span>
                 </div>
               </CardContent>
@@ -350,7 +270,7 @@ const RegularDashboard = () => {
       
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <PerformanceChart grades={allGrades} loading={gradesLoading} />
+          <PerformanceChart grades={[]} loading={false} />
 
           <Card>
             <CardHeader>
@@ -643,5 +563,3 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
-
-    
