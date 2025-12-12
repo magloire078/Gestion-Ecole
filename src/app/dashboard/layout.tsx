@@ -20,7 +20,7 @@ export default function DashboardLayout({
 
   return (
     <AuthGuard>
-      <div className="flex min-h-screen w-full flex-col bg-background print:bg-white">
+      <div className="flex min-h-screen w-full flex-col bg-muted/40 print:bg-white">
         <aside className="fixed inset-y-0 left-0 z-10 hidden w-64 flex-col border-r bg-gray-900 text-white sm:flex print:hidden">
           <div className="flex h-[60px] items-center border-b border-gray-700/50 px-6">
             <Logo />
