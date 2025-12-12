@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -485,7 +486,9 @@ export default function StudentProfilePage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
             <Button type="submit" form={`edit-student-form-${student.id}`}>
-              Enregistrer
+              <span className="flex items-center gap-2">
+                Enregistrer
+              </span>
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -359,7 +359,7 @@ export default function AbsencesPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
             <Button type="submit" form="absence-form" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+              <span className="flex items-center gap-2">{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</span>
             </Button>
           </DialogFooter>
         </DialogContent>
