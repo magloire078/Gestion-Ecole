@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,6 +16,7 @@ import { doc } from 'firebase/firestore';
 // --- Interfaces ---
 interface StudentWithClass extends Student {
   classId?: string;
+  name: string;
 }
 
 interface School {
@@ -59,13 +60,13 @@ interface ReportCardProps {
   student: StudentWithClass;
   school: School;
   grades: Grade[];
-  teachers: (Staff & { id: string })[]; // Liste de tous les enseignants
+  teachers: (Staff & { id: string })[];
 }
 
 export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades, teachers }) => {
     const isMounted = useHydrationFix();
     const { toast } = useToast();
-    const printRef = React.useRef<HTMLDivElement>(null);
+    const printRef = useRef<HTMLDivElement>(null);
     const firestore = useFirestore();
 
     const [councilComment, setCouncilComment] = useState("Excellent trimestre. Élève sérieux et motivé qui a fourni un travail de qualité. Les résultats sont très satisfaisants. Félicitations du conseil de classe.");
@@ -76,7 +77,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
     // Fetch the student's class to get the mainTeacherId
     const classRef = useMemoFirebase(() =>
-        (student.schoolId && student.classId) ? doc(firestore, `ecoles/${student.schoolId}/classes/${student.classId}`) : null
+        (student.schoolId && student.classId) ? doc(firestore, `classes/${student.classId}`) : null
     , [firestore, student.schoolId, student.classId]);
     const { data: classData } = useDoc<Class>(classRef);
 
@@ -86,7 +87,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         return teachers.find(t => t.id === classData.mainTeacherId) || null;
     }, [classData, teachers]);
 
-    const { subjectReports, generalAverage } = useMemo(() => {
+    const { subjectReports, generalAverage, totalCoefficients } = useMemo(() => {
         const reports: SubjectReport[] = [];
         let totalPoints = 0;
         let totalCoeffs = 0;
@@ -135,7 +136,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
         const finalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
 
-        return { subjectReports: reports, generalAverage: finalAverage };
+        return { subjectReports: reports, generalAverage: finalAverage, totalCoefficients: totalCoeffs };
     }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);
 
     const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
@@ -156,125 +157,90 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         }
     };
     
-    const handlePrint = () => {
-        const printContent = printRef.current;
-        if (!printContent) return;
-
-        const printWindow = window.open('', '', 'height=800,width=800');
-        if (!printWindow) {
-            toast({ variant: "destructive", title: "Erreur", description: "Impossible d'ouvrir la fenêtre d'impression. Veuillez autoriser les pop-ups." });
-            return;
-        }
-
-        const stylesheets = Array.from(document.styleSheets)
-            .map(sheet => sheet.href ? `<link rel="stylesheet" href="${sheet.href}">` : '')
+   const handlePrint = () => {
+    const printContent = printRef.current?.innerHTML;
+    if (printContent) {
+      const printWindow = window.open('', '', 'height=800,width=1200');
+      if (printWindow) {
+        printWindow.document.write('<html><head><title>Bulletin de Notes</title>');
+        // Inclure les styles pour l'impression
+        const styles = Array.from(document.styleSheets)
+            .map(s => s.href ? `<link rel="stylesheet" href="${s.href}" media="print">` : '')
             .join('');
-
-        const pageStyles = `
-            @media print {
-                body {
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                .no-print {
-                    display: none !important;
-                }
-                .report-card {
-                    border: none;
-                    box-shadow: none;
-                }
-            }
-        `;
-        
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Bulletin de Notes</title>
-                    ${stylesheets}
-                    <style>${pageStyles}</style>
-                </head>
-                <body>
-                    ${printContent.innerHTML}
-                </body>
-            </html>
-        `);
+        printWindow.document.write(styles);
+        printWindow.document.write('</head><body>');
+        printWindow.document.write(printContent);
+        printWindow.document.write('</body></html>');
         printWindow.document.close();
         printWindow.focus();
-        
-        setTimeout(() => {
+        setTimeout(() => { // Donner le temps de charger les styles
             printWindow.print();
             printWindow.close();
-        }, 500); // Un léger délai pour s'assurer que les styles sont chargés
-    };
+        }, 500);
+      }
+    }
+  };
 
 
   return (
-    <Card className="report-card">
+    <Card className="report-card font-serif">
       <CardContent className="p-4 sm:p-6">
-        <div ref={printRef}>
+        <div ref={printRef} className="print:text-black">
             {/* Header */}
-            <div className="flex justify-between items-start pb-4 border-b-2 border-primary mb-6">
+            <div className="flex justify-between items-start pb-4 border-b-2 border-black mb-6">
                 <div className="flex items-center gap-4">
-                     {school.mainLogoUrl && <img src={school.mainLogoUrl} alt={school.name} className="h-16 w-16 object-contain" />}
+                     {school.mainLogoUrl && <img src={school.mainLogoUrl} alt={school.name} className="h-20 w-20 object-contain" />}
                     <div>
-                        <h2 className="text-xl font-bold">{school.name || "Nom de l'école"}</h2>
-                        <p className="text-xs text-muted-foreground">{school.address || "Adresse de l'école"}</p>
-                        <p className="text-xs text-muted-foreground">
-                            Tél: {school.phone || "N/A"} - Site: {school.website || "N/A"}
-                        </p>
+                        <h2 className="text-2xl font-bold uppercase">{school.name || "Nom de l'école"}</h2>
+                        <p className="text-xs">{school.address || "Adresse de l'école"}</p>
                     </div>
                 </div>
-                <div className="flex-shrink-0">
-                    <Avatar className="h-16 w-16">
-                        <AvatarImage src={`https://picsum.photos/seed/${student.matricule}/100`} alt={student.name} data-ai-hint="student portrait" />
-                        <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
+                <div className="text-right">
+                    <p>Année scolaire: {isMounted ? `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`: '...'}</p>
+                    <h1 className="text-lg font-bold">BULLETIN DE NOTES</h1>
+                    <p>PREMIER TRIMESTRE</p>
                 </div>
-            </div>
-
-            {/* Title */}
-            <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold tracking-tight">BULLETIN DE NOTES DU 1ER TRIMESTRE</h1>
-                <p className="text-muted-foreground">Année scolaire: {isMounted ? `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`: '...'}</p>
             </div>
 
             {/* Student Info */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-6 text-sm">
-                <div><span className="font-semibold">Nom & Prénoms :</span> {student.name}</div>
-                <div><span className="font-semibold">Matricule :</span> {student.matricule || 'N/A'}</div>
-                <div><span className="font-semibold">Classe :</span> {student.class || 'N/A'}</div>
+            <div className="flex justify-between items-center mb-6">
+                <div className="text-sm space-y-1">
+                    <p><span className="font-semibold">Élève :</span> {student.name}</p>
+                    <p><span className="font-semibold">Classe :</span> {student.class || 'N/A'}</p>
+                    <p><span className="font-semibold">Matricule :</span> {student.matricule || 'N/A'}</p>
+                </div>
+                <Avatar className="h-20 w-20 border-2 border-black/10">
+                    <AvatarImage src={`https://picsum.photos/seed/${student.matricule}/100`} alt={student.name} data-ai-hint="student portrait" />
+                    <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()}</AvatarFallback>
+                </Avatar>
             </div>
 
             {/* Grades Table */}
             <div className="overflow-x-auto">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="bg-muted">
-                            <TableHead className="font-bold">Matières</TableHead>
-                            <TableHead className="text-center font-bold">Coeff.</TableHead>
-                            <TableHead className="text-center font-bold">Moy /20</TableHead>
-                            <TableHead className="text-center font-bold hidden sm:table-cell">Min</TableHead>
-                            <TableHead className="text-center font-bold hidden sm:table-cell">Max</TableHead>
-                            <TableHead className="text-center font-bold hidden sm:table-cell">Moy Classe</TableHead>
-                            <TableHead className="font-bold">Appréciations</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                <table className="w-full text-sm">
+                    <thead className="border-y-2 border-black">
+                        <tr className="text-left">
+                            <th className="p-2 font-bold">MATIÈRES</th>
+                            <th className="p-2 text-center font-bold">COEFF.</th>
+                            <th className="p-2 text-center font-bold">MOY. ÉLÈVE</th>
+                            <th className="p-2 text-center font-bold hidden sm:table-cell">MOY. CLASSE</th>
+                            <th className="p-2 font-bold">APPRÉCIATIONS DES PROFESSEURS</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-300">
                         {subjectReports.map((report) => {
                             const totalCoeffs = grades.filter(g => g.subject === report.subject).reduce((sum, g) => sum + g.coefficient, 0);
                             const isGenerating = subjectAppreciations[report.subject]?.isGenerating;
                             return (
-                                <TableRow key={report.subject}>
-                                    <TableCell>
+                                <tr key={report.subject} className="print-break-inside-avoid">
+                                    <TableCell className="p-2">
                                         <p className="font-semibold">{report.subject}</p>
-                                        <p className="text-xs text-muted-foreground">{report.teacherName}</p>
+                                        <p className="text-xs text-gray-500">{report.teacherName}</p>
                                     </TableCell>
-                                    <TableCell className="text-center font-mono">{totalCoeffs}</TableCell>
-                                    <TableCell className="text-center font-mono font-bold">{report.average.toFixed(2)}</TableCell>
-                                    <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMin.toFixed(2)}</TableCell>
-                                    <TableCell className="text-center font-mono hidden sm:table-cell">{report.classMax.toFixed(2)}</TableCell>
-                                    <TableCell className="text-center font-mono hidden sm:table-cell">{report.classAverage.toFixed(2)}</TableCell>
-                                    <TableCell className="text-xs italic">
+                                    <td className="p-2 text-center font-mono">{totalCoeffs}</td>
+                                    <td className="p-2 text-center font-mono font-bold text-base">{report.average.toFixed(2)}</td>
+                                    <td className="p-2 text-center font-mono hidden sm:table-cell">{report.classAverage.toFixed(2)}</td>
+                                    <td className="p-2 text-xs italic">
                                         <div className="flex items-start gap-1">
                                             <span className="flex-1">{report.appreciation}</span>
                                             <Button 
@@ -287,56 +253,51 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                                                 <Bot className="h-3 w-3" />
                                             </Button>
                                         </div>
-                                    </TableCell>
-                                </TableRow>
+                                    </td>
+                                </tr>
                             );
                         })}
-                    </TableBody>
-                </Table>
+                    </tbody>
+                </table>
             </div>
 
             {/* Summary */}
-            <div className="mt-6 p-3 bg-slate-700 text-white rounded-md grid grid-cols-2 gap-4">
-                <div className="flex justify-between items-center">
-                    <span className="font-bold">Moyenne générale :</span>
-                    <span className="text-lg font-bold">{generalAverage.toFixed(2)}</span>
+             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-100 rounded-md space-y-2">
+                    <div className="flex justify-between items-center text-base">
+                        <span className="font-bold">MOYENNE GÉNÉRALE TRIMESTRIELLE :</span>
+                        <span className="text-xl font-bold text-primary">{generalAverage.toFixed(2)} / 20</span>
+                    </div>
+                     <div className="flex justify-between items-center text-base">
+                        <span className="font-bold">TOTAL COEFFICIENTS :</span>
+                        <span className="text-xl font-bold">{totalCoefficients}</span>
+                    </div>
+                    <div className="text-center pt-2">
+                        <p className="font-bold text-lg">{getMention(generalAverage)}</p>
+                    </div>
                 </div>
-                 <div className="flex justify-between items-center">
-                    <span className="font-bold">Nombre de demi-journée d'absence :</span>
-                    <span className="text-lg font-bold">0</span>
-                </div>
-            </div>
-
-             {/* Mention and Council Comments */}
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="md:col-span-1 p-3 bg-muted rounded-md">
-                    <p className="font-bold mb-1">Mention</p>
-                    <p className="text-lg font-semibold text-primary">{getMention(generalAverage)}</p>
-                </div>
-                 <div className="md:col-span-2 p-3 bg-muted rounded-md">
-                    <div className="flex justify-between items-start">
-                        <p className="font-bold mb-1">Appréciations du conseil de classe</p>
+                 <div className="p-3 bg-gray-100 rounded-md">
+                     <div className="flex justify-between items-start">
+                        <p className="font-bold mb-1">APPRÉCIATION DU CONSEIL DE CLASSE</p>
                         <Button variant="ghost" size="sm" onClick={() => handleGenerateComment()} disabled={isGeneratingCouncilComment} className="no-print">
                              <Bot className="mr-2 h-4 w-4" />
                             {isGeneratingCouncilComment ? "Génération..." : "Générer"}
                         </Button>
                     </div>
-                    <p className="italic text-xs">{councilComment}</p>
-                </div>
+                    <p className="italic text-sm">{councilComment}</p>
+                 </div>
             </div>
+
              {/* Footer with signatures */}
-             <div className="mt-16 flex justify-between items-end text-center text-xs">
+             <div className="mt-16 grid grid-cols-2 gap-8 text-center text-sm print-break-inside-avoid">
                 <div>
                     <p className="font-bold">Le Professeur Principal</p>
-                    <div className="mt-12 border-t border-dashed w-40 mx-auto"></div>
+                    <div className="mt-16 border-t border-black w-48 mx-auto"></div>
                     <p>{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}` : ''}</p>
-                </div>
-                 <div>
-                    <p>Fait à {school.address ? school.address.split(',')[0] : 'Abidjan'}, le {isMounted ? new Date().toLocaleDateString('fr-FR') : '...'}</p>
                 </div>
                 <div>
                     <p className="font-bold">Le Directeur</p>
-                     <div className="mt-12 border-t border-dashed w-40 mx-auto"></div>
+                     <div className="mt-16 border-t border-black w-48 mx-auto"></div>
                      <p>{school.directorName}</p>
                 </div>
             </div>

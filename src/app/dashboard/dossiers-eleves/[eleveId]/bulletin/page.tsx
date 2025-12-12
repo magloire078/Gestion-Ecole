@@ -7,14 +7,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { ReportCard } from '@/components/report-card';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { staff as Staff, student as Student } from '@/lib/data-types';
-
-interface Grade {
-  id: string;
-  subject: string;
-  grade: number;
-  coefficient: number;
-}
+import type { staff as Staff, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
 
 interface StudentWithClass extends Student {
     classId?: string;
@@ -28,23 +21,22 @@ export default function StudentReportPage() {
 
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+    (schoolId && eleveId) ? doc(firestore, `eleves/${eleveId}`) : null
   , [firestore, schoolId, eleveId]);
 
   const gradesQuery = useMemoFirebase(() =>
-    (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`)) : null
+    (schoolId && eleveId) ? query(collection(firestore, `eleves/${eleveId}/notes`)) : null
   , [firestore, schoolId, eleveId]);
   
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
-
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
 
   const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);
-  const { data: gradesData, loading: gradesLoading } = useCollection<Grade>(gradesQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection<Staff & { id: string }>(teachersQuery);
+  const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
 
-  const student = studentData;
-  const grades = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() })) || [], [gradesData]);
-  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
+  const student = useMemo(() => studentData ? { ...studentData, id: eleveId } as StudentWithClass : null, [studentData, eleveId]);
+  const grades = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
+  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
 
   const isLoading = schoolLoading || studentLoading || gradesLoading || teachersLoading;
   
@@ -53,12 +45,12 @@ export default function StudentReportPage() {
         <div className="space-y-4">
             <Skeleton className="h-8 w-1/2" />
             <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-[70vh] w-full" />
+            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
         </div>
     );
   }
 
-  if (!student) {
+  if (!student || student.schoolId !== schoolId) {
     notFound();
   }
 

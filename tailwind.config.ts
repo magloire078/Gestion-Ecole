@@ -365,14 +365,12 @@ export default {
     require('tailwindcss-animate'),
     function({ addUtilities, theme }) {
       const newUtilities = {
-        // Utilities pour les tables
         '.table-fixed-layout': {
           'table-layout': 'fixed',
         },
         '.table-auto-layout': {
           'table-layout': 'auto',
         },
-        // Utilities pour le text overflow avec ellipsis multiple lignes
         '.line-clamp-1': {
           'display': '-webkit-box',
           '-webkit-line-clamp': '1',
@@ -391,14 +389,12 @@ export default {
           '-webkit-box-orient': 'vertical',
           'overflow': 'hidden',
         },
-        // Utilities pour les gradients text
         '.text-gradient-primary': {
           'background': `linear-gradient(135deg, ${theme('colors.primary.500')}, ${theme('colors.primary.700')})`,
           '-webkit-background-clip': 'text',
           '-webkit-text-fill-color': 'transparent',
           'background-clip': 'text',
         },
-        // Utilities pour les scrollbars personnalisées
         '.scrollbar-thin': {
           'scrollbar-width': 'thin',
         },
@@ -407,7 +403,6 @@ export default {
             'border-radius': '9999px',
           },
         },
-        // Utilities pour les effets de glassmorphism
         '.glass': {
           'background': 'hsla(var(--background) / 0.8)',
           'backdrop-filter': 'blur(10px)',
@@ -416,7 +411,6 @@ export default {
           'background': 'hsla(var(--foreground) / 0.05)',
           'backdrop-filter': 'blur(10px)',
         },
-        // Utilities pour les séparateurs
         '.divider-y': {
           '& > * + *': {
             'border-top': '1px solid hsl(var(--border))',
@@ -427,20 +421,17 @@ export default {
             'border-left': '1px solid hsl(var(--border))',
           },
         },
-        // Utility pour les ombres de text
         '.text-shadow': {
           'text-shadow': '0 2px 4px hsl(var(--foreground) / 0.1)',
         },
         '.text-shadow-lg': {
           'text-shadow': '0 4px 8px hsl(var(--foreground) / 0.2)',
         },
-        // Utilities pour les transitions de height auto
         '.transition-height': {
           'transition-property': 'height',
           'transition-timing-function': 'cubic-bezier(0.4, 0, 0.2, 1)',
           'transition-duration': '300ms',
         },
-        // Utility pour les backgrounds de chargement (skeleton)
         '.skeleton': {
           'background': `linear-gradient(90deg, 
             hsl(var(--muted)) 25%, 
@@ -450,11 +441,9 @@ export default {
           'background-size': '200% 100%',
           'animation': 'shimmer 2s infinite linear',
         },
-        // Utility pour les badges avec glow
         '.badge-glow': {
           'box-shadow': '0 0 10px currentColor',
         },
-        // Utility pour les cards interactives
         '.card-hover': {
           'transition': 'all 0.3s ease',
           '&:hover': {
@@ -462,7 +451,6 @@ export default {
             'box-shadow': theme('boxShadow.card-hover'),
           },
         },
-        // Utility pour les tooltips personnalisés
         '.tooltip-arrow': {
           'position': 'relative',
           '&::after': {
@@ -475,7 +463,6 @@ export default {
             'border-top-color': 'hsl(var(--popover))',
           },
         },
-        // Utility pour les formes géométriques
         '.triangle-up': {
           'width': '0',
           'height': '0',

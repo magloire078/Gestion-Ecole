@@ -1,14 +1,14 @@
-
 'use client';
-import { redirect } from 'next/navigation';
+
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function OldStudentsPage() {
+  const router = useRouter();
+
   useEffect(() => {
-    redirect('/dashboard/dossiers-eleves');
-  }, []);
+    router.push('/dashboard/dossiers-eleves');
+  }, [router]);
 
-  return null; 
+  return null;
 }
-
-    

@@ -527,130 +527,12 @@
     scrollbar-width: thin;
   }
 
-  /* Print utilities - AMÉLIORÉ */
+  /* Print utilities */
   .print-break-inside-avoid {
     break-inside: avoid;
   }
-
-  .print-force-break-before {
-    break-before: page;
-  }
-
   .print-force-break-after {
-    break-after: page;
-  }
-
-  .print-header {
-    @apply border-b-2 border-black mb-6 pb-4 print:block;
-  }
-
-  .print-footer {
-    @apply border-t-2 border-black mt-6 pt-4 print:block;
-  }
-
-  .print-watermark {
-    @apply print:opacity-10 print:fixed print:center-absolute print:text-6xl print:font-bold print:text-gray-400 print:rotate-45 print:pointer-events-none;
-  }
-
-  /* Responsive utilities */
-  .container-responsive {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
-  }
-
-  /* Spacing utilities */
-  .spacing-y > * + * {
-    @apply mt-4;
-  }
-
-  .spacing-x > * + * {
-    @apply ml-4;
-  }
-
-  /* Interactive utilities */
-  .interactive-scale {
-    @apply transition-transform duration-200 hover:scale-[1.02] active:scale-[0.98];
-  }
-
-  .interactive-opacity {
-    @apply transition-opacity duration-200 hover:opacity-90 active:opacity-80;
-  }
-
-  /* Accessibility utilities */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
-
-  .not-sr-only {
-    position: static;
-    width: auto;
-    height: auto;
-    padding: 0;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
-    white-space: normal;
-  }
-
-  /* Custom scroll area */
-  .scroll-area {
-    @apply overflow-auto;
-  }
-
-  .scroll-area-viewport {
-    @apply h-full w-full rounded-[inherit];
-  }
-
-  .scroll-area-scrollbar {
-    @apply flex touch-none select-none transition-colors;
-  }
-
-  .scroll-area-thumb {
-    @apply relative flex-1 rounded-full bg-border;
-  }
-
-  /* Loading spinner */
-  .loading-spinner {
-    @apply animate-spin rounded-full border-2 border-current border-t-transparent;
-  }
-
-  /* Divider */
-  .divider {
-    @apply border-t border-border my-4;
-  }
-
-  /* Badge avec glow */
-  .badge-glow {
-    box-shadow: 0 0 0 1px currentColor, 0 0 10px currentColor;
-  }
-
-  /* Table striped */
-  .table-striped tbody tr:nth-child(odd) {
-    @apply bg-muted/30;
-  }
-
-  /* Card avec header accent */
-  .card-accent-header {
-    @apply border-t-4 border-t-primary;
-  }
-
-  /* Utility pour les dashboards */
-  .dashboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 1.5rem;
-  }
-
-  /* Utility pour les grades charts */
-  .grade-chart-bar {
-    @apply bg-primary/20 hover:bg-primary/30 transition-colors;
+      break-after: page;
   }
 }
 
@@ -659,240 +541,29 @@
   body {
     background-color: white !important;
     color: black !important;
-    font-size: 12pt !important;
-    line-height: 1.5 !important;
+    font-size: 10pt !important;
+    line-height: 1.4 !important;
   }
 
-  /* Masquer les éléments non nécessaires à l'impression */
-  .print\:hidden {
+  .no-print {
     display: none !important;
   }
 
-  /* Reset les paddings/margins pour l'impression */
-  .print\:p-0 {
-    padding: 0 !important;
-  }
-
-  .print\:m-0 {
-    margin: 0 !important;
-  }
-
-  .print\:bg-white {
-    background-color: white !important;
-  }
-
-  /* Optimiser les marges de page */
   @page {
-    margin: 1cm;
+    size: A4;
+    margin: 1.5cm;
   }
 
-  /* Éviter les coupures dans les tableaux */
-  table {
-    page-break-inside: avoid;
-  }
-
-  /* Éviter les coupures dans les listes */
-  ul, ol {
-    page-break-inside: avoid;
-  }
-
-  /* Éviter les coupures dans les titres */
   h1, h2, h3, h4, h5, h6 {
-    page-break-after: avoid;
+    break-after: avoid;
+  }
+  
+  table, figure, img {
+      break-inside: avoid;
   }
 
-  /* Éviter les coupures dans les paragraphes */
-  p {
-    orphans: 3;
-    widows: 3;
+  a {
+    color: #333 !important;
+    text-decoration: none !important;
   }
-
-  /* Ajouter des URLs après les liens */
-  a[href^="http"]:after {
-    content: " (" attr(href) ")";
-    font-size: 0.9em;
-    font-weight: normal;
-  }
-
-  /* Masquer les liens internes */
-  a[href^="#"]:after {
-    content: "";
-  }
-
-  /* Améliorer la lisibilité du texte */
-  .print\:text-black {
-    color: black !important;
-  }
-
-  .print\:font-normal {
-    font-weight: normal !important;
-  }
-
-  /* Forcer les arrière-plans blancs */
-  .print\:bg-transparent {
-    background: transparent !important;
-  }
-
-  /* Supprimer les ombres et bordures inutiles */
-  .print\:shadow-none {
-    box-shadow: none !important;
-  }
-
-  .print\:border {
-    border: 1px solid #ddd !important;
-  }
-
-  /* Optimiser les tableaux pour l'impression */
-  .print-table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-  }
-
-  .print-table th,
-  .print-table td {
-    border: 1px solid #ddd !important;
-    padding: 0.5rem !important;
-    vertical-align: top !important;
-  }
-
-  /* Masquer la sidebar dans le dashboard layout */
-  aside,
-  header:has(.sm\\:hidden),
-  .sidebar,
-  .user-nav,
-  .search-bar,
-  .notifications,
-  nav:not(.print-nav) {
-    display: none !important;
-  }
-
-  /* Ajuster le layout principal */
-  .sm\\:pl-64,
-  .sm\\:pl-60,
-  .lg\\:pl-72 {
-    padding-left: 0 !important;
-  }
-
-  .flex-col.sm\\:gap-4,
-  .sm\\:py-4,
-  .sm\\:px-6 {
-    padding: 0 !important;
-    gap: 0 !important;
-  }
-
-  /* Afficher uniquement le contenu principal */
-  main {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
-  /* Forcer les sauts de page */
-  .page-break {
-    page-break-before: always;
-  }
-
-  .avoid-break {
-    page-break-inside: avoid;
-  }
-
-  /* Styles pour les bulletins de notes */
-  .bulletin-header {
-    text-align: center;
-    margin-bottom: 2rem;
-    border-bottom: 2px solid black;
-    padding-bottom: 1rem;
-  }
-
-  .bulletin-section {
-    margin-bottom: 1.5rem;
-    page-break-inside: avoid;
-  }
-
-  .bulletin-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 1rem;
-  }
-
-  .bulletin-table th {
-    background-color: #f5f5f5;
-    font-weight: bold;
-    text-align: left;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-  }
-
-  .bulletin-table td {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-  }
-
-  /* Signature section */
-  .signature-section {
-    margin-top: 3rem;
-    page-break-inside: avoid;
-  }
-
-  .signature-line {
-    border-top: 1px solid black;
-    width: 200px;
-    display: inline-block;
-    margin-top: 2rem;
-  }
-}
-
-/* Animations personnalisées supplémentaires */
-@keyframes shimmer {
-  0% {
-    background-position: -200% center;
-  }
-  100% {
-    background-position: 200% center;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes pulse-subtle {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
-@keyframes bounce-subtle {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-/* Utilisation des animations personnalisées */
-.animate-shimmer {
-  animation: shimmer 2s infinite linear;
-}
-
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-pulse-subtle {
-  animation: pulse-subtle 2s infinite;
-}
-
-.animate-bounce-subtle {
-  animation: bounce-subtle 2s infinite;
 }
