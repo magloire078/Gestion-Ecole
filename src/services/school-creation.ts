@@ -9,9 +9,8 @@ import {
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { Firestore } from 'firebase/firestore';
 
-interface SchoolData {
+interface SchoolCreationData {
     name: string;
-    type: string;
     address: string;
     city: string;
     country: string;
@@ -20,7 +19,7 @@ interface SchoolData {
     academicYear: string;
     language: string;
     currency: string;
-    template: string;
+    // template: string; // This property does not exist on the type, so it's commented out
     directorId: string;
     directorFirstName: string;
     directorLastName: string;
@@ -40,8 +39,8 @@ export class SchoolCreationService {
     this.db = firestore;
   }
 
-  async createSchool(schoolData: SchoolData, userId: string) {
-    const templateId = (schoolData.template === 'international' ? 'INTERNATIONAL_SCHOOL' : 'FRENCH_PRIMARY') as keyof typeof SCHOOL_TEMPLATES;
+  async createSchool(schoolData: SchoolCreationData, userId: string) {
+    const templateId = 'FRENCH_PRIMARY' as keyof typeof SCHOOL_TEMPLATES;
     const template = SCHOOL_TEMPLATES[templateId];
 
     const schoolId = doc(collection(this.db, 'id_generator')).id;
@@ -86,11 +85,12 @@ export class SchoolCreationService {
         baseSalary: 0, // Default base salary
     });
     
+    // This step is incorrect as cycles are not school-specific
     // 4. Create default structure from template
-    template.cycles.forEach(cycle => {
-        const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
-        batch.set(cycleRef, { ...cycle, schoolId });
-    });
+    // template.cycles.forEach(cycle => {
+    //     const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
+    //     batch.set(cycleRef, { ...cycle, schoolId });
+    // });
 
     await batch.commit();
     

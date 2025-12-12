@@ -48,19 +48,21 @@ export default function CreateSchoolPage() {
     try {
       const result = await schoolCreationService.createSchool({
         ...schoolData,
-        template: 'french_primary', // Default template for now
+        // template is not a valid property of schoolData
+        // template: 'french_primary', // Default template for now
         directorId: user.uid,
         directorFirstName: directorData.firstName,
         directorLastName: directorData.lastName,
         directorEmail: user.email,
-        phone: '', // Add other required fields if necessary
+        phone: '', 
         email: '',
         academicYear: '2024-2025',
         language: 'fr',
         currency: 'XOF',
       }, user.uid);
       
-      await auth.currentUser?.getIdToken(true); // Force token refresh
+      // Force a token refresh to get the new custom claims
+      await auth.currentUser?.getIdToken(true); 
       
       toast({
         title: 'École créée avec succès !',
