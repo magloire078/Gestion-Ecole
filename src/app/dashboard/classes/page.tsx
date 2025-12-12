@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -281,7 +282,7 @@ export default function ClassesPage() {
         schoolId,
         firstName: newTeacherFirstName, 
         lastName: newTeacherLastName, 
-        role: 'Enseignant',
+        role: 'enseignant',
         subject: newTeacherSubject, 
         email: newTeacherEmail,
         hireDate: new Date().toISOString().split('T')[0],
