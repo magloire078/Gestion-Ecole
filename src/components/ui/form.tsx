@@ -106,8 +106,9 @@ FormLabel.displayName = "FormLabel"
 const FormControl = React.forwardRef<
   React.ElementRef<typeof Slot>,
   React.ComponentPropsWithoutRef<typeof Slot>
->(({ ...props }, ref) => {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+>(({ children, ...props }, ref) => {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
+  const child = React.Children.only(children);
 
   return (
     <Slot
@@ -120,9 +121,11 @@ const FormControl = React.forwardRef<
       }
       aria-invalid={!!error}
       {...props}
-    />
-  )
-})
+    >
+      {child}
+    </Slot>
+  );
+});
 FormControl.displayName = "FormControl"
 
 const FormDescription = React.forwardRef<
@@ -176,5 +179,3 @@ export {
   FormMessage,
   FormField,
 }
-
-    
