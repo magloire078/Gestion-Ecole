@@ -2,6 +2,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /* config options here */
+  swcMinify: true,
   reactStrictMode: true,
   typescript: {
     ignoreBuildErrors: true,
@@ -9,7 +10,6 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Adding a comment to force cache invalidation.
   images: {
     remotePatterns: [
       {
@@ -55,20 +55,16 @@ const nextConfig = {
         hostname: "i.imgur.com",
       },
       {
-        protocol: "https",
+        protocol: "https" ,
         hostname: "images.seeklogo.com",
       },
       {
-        protocol: "https",
+        protocol: "https,"
         hostname: "www.pigroup360.com",
       }
     ],
   },
-   experimental: {
-    serverActions: {
-      bodySizeLimit: '10mb',
-    }
-  },
+  serverActions: true,
 };
 
 module.exports = nextConfig;
