@@ -112,14 +112,14 @@ const RegularDashboard = () => {
 
     const fetchAllData = async () => {
       setStatsLoading(true);
-      setGradesLoading(true);
+      setGradesLoading(true); // Kept for consistency, but we won't fetch all grades now
       setActivityLoading(true);
 
       try {
         // --- Fetch Stats ---
-        const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
-        const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
-        const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
+        const studentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId));
+        const teachersQuery = query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant'));
+        const classesQuery = query(collection(firestore, `classes`), where('schoolId', '==', schoolId));
         
         const [studentsSnapshot, teachersSnapshot, classesSnapshot] = await Promise.all([
           getCountFromServer(studentsQuery).catch(() => ({ data: () => ({ count: 0 }) })),
@@ -129,7 +129,7 @@ const RegularDashboard = () => {
 
         let totalBooks = 0;
         try {
-          const libraryQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
+          const libraryQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId));
           const librarySnapshot = await getDocs(libraryQuery);
           totalBooks = librarySnapshot.docs.reduce((sum, doc) => {
             const data = doc.data() as LibraryBook;
@@ -142,9 +142,9 @@ const RegularDashboard = () => {
         let totalTuitionPaid = 0;
         let totalTuitionDue = 0;
         try {
-          const accountingQuery = collection(firestore, `ecoles/${schoolId}/comptabilite`);
+          const accountingQuery = collection(firestore, `comptabilite`);
           const tuitionPaidSnapshot = await getDocs(
-            query(accountingQuery, where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'))
+            query(accountingQuery, where('schoolId', '==', schoolId), where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'))
           );
           
           totalTuitionPaid = tuitionPaidSnapshot.docs.reduce((sum, doc) => {
@@ -171,37 +171,19 @@ const RegularDashboard = () => {
         });
         setStatsLoading(false);
 
-        // --- Fetch Grades ---
-        try {
-          const grades: GradeEntry[] = [];
-          const studentDocs = await getDocs(studentsQuery);
-          
-          for (const studentDoc of studentDocs.docs) {
-            try {
-              // Correctly query the subcollection for notes
-              const notesSnapshot = await getDocs(
-                collection(firestore, `ecoles/${schoolId}/eleves/${studentDoc.id}/notes`)
-              );
-              notesSnapshot.forEach(noteDoc => {
-                const data = noteDoc.data() as GradeEntry;
-                grades.push(data);
-              });
-            } catch (error) {
-              console.log(`Pas de notes pour l'élève ${studentDoc.id}`);
-            }
-          }
-          setAllGrades(grades);
-        } catch (error) {
-          console.log("Erreur lors de la récupération des notes");
-        }
+        // --- Fetch Grades (REMOVED INEFFICIENT LOGIC) ---
+        // We will no longer fetch all grades here to prevent server overload.
+        // The chart will be empty for now.
+        setAllGrades([]);
         setGradesLoading(false);
+
 
         // --- Fetch Recent Activity ---
         const activities: Activity[] = [];
         
         try {
           const recentStudentsQuery = query(
-            collection(firestore, `ecoles/${schoolId}/eleves`),
+            collection(firestore, `eleves`), where('schoolId', '==', schoolId),
             orderBy('createdAt', 'desc'),
             limit(3)
           );
@@ -234,7 +216,7 @@ const RegularDashboard = () => {
 
         try {
           const recentMessagesQuery = query(
-            collection(firestore, `ecoles/${schoolId}/messagerie`),
+            collection(firestore, `messagerie`), where('schoolId', '==', schoolId),
             orderBy('createdAt', 'desc'),
             limit(2)
           );
@@ -661,3 +643,5 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
+
+    
