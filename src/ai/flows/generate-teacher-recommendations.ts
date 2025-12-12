@@ -1,69 +1,39 @@
-{
-  "name": "nextn",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev -p 9002",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "dependencies": {
-    "@hookform/resolvers": "^3.9.0",
-    "@radix-ui/react-accordion": "^1.2.0",
-    "@radix-ui/react-alert-dialog": "^1.1.1",
-    "@radix-ui/react-avatar": "^1.1.0",
-    "@radix-ui/react-checkbox": "^1.1.1",
-    "@radix-ui/react-collapsible": "^1.1.0",
-    "@radix-ui/react-dialog": "^1.1.1",
-    "@radix-ui/react-dropdown-menu": "^2.1.1",
-    "@radix-ui/react-label": "^2.1.0",
-    "@radix-ui/react-menubar": "^1.1.1",
-    "@radix-ui/react-popover": "^1.1.1",
-    "@radix-ui/react-progress": "^1.1.0",
-    "@radix-ui/react-radio-group": "^1.2.0",
-    "@radix-ui/react-scroll-area": "^1.2.0",
-    "@radix-ui/react-select": "^2.1.1",
-    "@radix-ui/react-separator": "^1.1.0",
-    "@radix-ui/react-slider": "^1.2.0",
-    "@radix-ui/react-slot": "^1.1.0",
-    "@radix-ui/react-switch": "^1.1.0",
-    "@radix-ui/react-tabs": "^1.1.0",
-    "@radix-ui/react-toast": "^1.2.1",
-    "@radix-ui/react-tooltip": "^1.1.2",
-    "class-variance-authority": "^0.7.0",
-    "clsx": "^2.1.1",
-    "cmdk": "^1.0.0",
-    "d3-array": "^3.2.4",
-    "date-fns": "^3.6.0",
-    "dotenv": "^16.4.5",
-    "embla-carousel-react": "^8.1.6",
-    "events": "^3.3.0",
-    "firebase": "^10.12.3",
-    "french-numbers-to-words": "^1.0.2",
-    "lucide-react": "^0.417.0",
-    "next": "14.2.5",
-    "next-themes": "^0.4.0",
-    "react": "18.3.0",
-    "react-dom": "18.3.0",
-    "recharts": "^2.15.1",
-    "tailwind-merge": "^2.4.0",
-    "tailwindcss-animate": "^1.0.7",
-    "wav": "^1.0.2",
-    "zod": "^3.23.8"
-  },
-  "devDependencies": {
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.7",
-    "@tailwindcss/typography": "^0.5.13",
-    "@types/d3-array": "^3.2.1",
-    "@types/events": "^3.0.0",
-    "@types/node": "^20.14.10",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
-    "@types/wav": "^1.0.3",
-    "postcss": "^8.4.39",
-    "tailwindcss": "^3.4.6",
-    "typescript": "^5.5.3"
+'use server';
+/**
+ * @fileOverview An AI agent to generate teacher recommendations based on performance.
+ *
+ * - generateTeacherRecommendations - A function that handles the recommendation generation.
+ * - GenerateTeacherRecommendationsInput - The input type for the function.
+ * - GenerateTeacherRecommendationsOutput - The return type for the function.
+ */
+
+import {z} from 'zod';
+
+// Input Schema
+export const GenerateTeacherRecommendationsInputSchema = z.object({
+  teacherName: z.string().describe("Le nom de l'enseignant."),
+  studentAverages: z.string().describe("Un résumé des moyennes des élèves de l'enseignant."),
+  classParticipation: z.string().describe("Observations sur la participation en classe."),
+});
+export type GenerateTeacherRecommendationsInput = z.infer<
+  typeof GenerateTeacherRecommendationsInputSchema
+>;
+
+// Output Schema
+export const GenerateTeacherRecommendationsOutputSchema = z.object({
+  recommendations: z
+    .string()
+    .describe("Les recommandations générées pour l'enseignant."),
+});
+export type GenerateTeacherRecommendationsOutput = z.infer<
+  typeof GenerateTeacherRecommendationsOutputSchema
+>;
+
+// Main exported function (mocked)
+export async function generateTeacherRecommendations(
+  input: GenerateTeacherRecommendationsInput
+): Promise<GenerateTeacherRecommendationsOutput> {
+  return {
+      recommendations: "Génération de recommandations IA non disponible. L'enseignant montre un bon engagement avec les élèves."
   }
 }
