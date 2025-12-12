@@ -9,15 +9,12 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // In a real application, you would set this custom claim on the user's token
+      // Custom claim set on the user's token, e.g. via a Cloud Function
       return request.auth.token.admin == true;
     }
 
-    function getUserSchoolId() {
-      // Path to the user's document in the global /users collection
-      let userDocPath = /databases/$(database)/documents/utilisateurs/$(request.auth.uid);
-      
-      // Check if the document exists before accessing data
+    function getUserSchoolId(userId) {
+      let userDocPath = /databases/$(database)/documents/utilisateurs/$(userId);
       if (exists(userDocPath)) {
         return get(userDocPath).data.schoolId;
       }
@@ -25,31 +22,26 @@ service cloud.firestore {
     }
     
     function isUserInSchool(schoolId) {
-      // Ensures the user is authenticated and their schoolId matches the requested one
-      return isAuth() && getUserSchoolId() == schoolId;
+      return isAuth() && getUserSchoolId(request.auth.uid) == schoolId;
     }
     
-    function getStaffRole(userId) {
-      // Reads the user's role from the global personnel collection.
-      let staffDoc = get(/databases/$(database)/documents/personnel/$(userId));
-      if (staffDoc.exists) {
-        return staffDoc.data.role;
-      }
-      return null;
-    }
-    
-    function isDirectorOfSchool(schoolId) {
+    function isSchoolDirector(schoolId) {
        // On read/update, check existing resource. On create, check incoming resource.
-       let directorId = exists(/databases/$(database)/documents/ecoles/$(schoolId)) 
-                          ? get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId 
-                          : request.resource.data.directorId;
-       return isAuth() && request.auth.uid == directorId;
+       let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+       return isAuth() && schoolDoc.data.directorId == request.auth.uid;
     }
     
+    function getStaffRole(userId, schoolId) {
+        // Path to staff document in the subcollection
+        let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
+        if (exists(staffDocPath)) {
+            return get(staffDocPath).data.role;
+        }
+        return null;
+    }
+
     function isTeacher(schoolId) {
-      // This function now correctly points to the global /personnel collection
-      // to check the role.
-        return getStaffRole(request.auth.uid) == 'enseignant';
+        return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
     }
 
     // --- Global Collections ---
@@ -66,52 +58,34 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
-    match /personnel/{staffId} {
-        // Allow read access if the user belongs to the same school as the staff member.
-        allow read: if isUserInSchool(resource.data.schoolId);
-        // Allow a user to create their own initial staff profile (e.g., director during onboarding).
-        allow create: if isAuth() && request.auth.uid == staffId;
-        // Allow a user to update their own profile, or allow a director to update any profile in their school.
-        allow update: if (isAuth() && request.auth.uid == staffId) || isDirectorOfSchool(getUserSchoolId());
-        // Only a director can delete a staff member.
-        allow delete: if isDirectorOfSchool(getUserSchoolId());
-    }
-    
-    match /classes/{classId} {
-        allow read: if isUserInSchool(resource.data.schoolId);
-        allow write: if isDirectorOfSchool(request.resource.data.schoolId) || isDirectorOfSchool(resource.data.schoolId);
-    }
-    
-    match /eleves/{studentId} {
-        allow read: if isUserInSchool(resource.data.schoolId);
-        allow write: if isDirectorOfSchool(request.resource.data.schoolId) || isDirectorOfSchool(resource.data.schoolId);
-        
-        match /notes/{gradeId} {
-            allow read: if isUserInSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
-            allow write: if isDirectorOfSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId) || isTeacher(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
-        }
-        match /paiements/{paymentId} {
-            allow read, write: if isDirectorOfSchool(get(/databases/$(database)/documents/eleves/$(studentId)).data.schoolId);
-        }
-    }
+    // --- School-Specific Collections (Subcollections) ---
 
-    // --- Collections where anyone in the school can read, but only directors can write ---
-    match /(cycles|frais_scolarite|absences|comptabilite|bibliotheque|emploi_du_temps|messagerie)/{docId} {
-        allow read: if isUserInSchool(resource.data.schoolId);
-        allow create: if isDirectorOfSchool(request.resource.data.schoolId); // Check incoming data on create
-        allow update, delete: if isDirectorOfSchool(resource.data.schoolId); // Check existing data on update/delete
-    }
-
-    // --- School Document ---
     match /ecoles/{schoolId} {
       // Anyone in the school or an admin can read the school's public details.
       allow read: if isUserInSchool(schoolId) || isAdmin();
       // Allow any authenticated user to create a school document.
-      allow create: if isAuth() && isDirectorOfSchool(schoolId);
+      allow create: if isAuth();
       // Only the designated director of that school or an admin can update it.
-      allow update: if (isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid) || isAdmin();
+      allow update: if isSchoolDirector(schoolId) || isAdmin();
       // Only admins can delete a school.
       allow delete: if isAdmin();
+      
+      // Match all subcollections within a school
+      match /{subcollection}/{docId} {
+        // Allow reads for any user belonging to that school.
+        allow read: if isUserInSchool(schoolId);
+        
+        // Allow writes (create, update, delete) only for the school's director or a platform admin.
+        // This is a broad rule. More specific rules can be added below for specific subcollections.
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      
+      // Specific rule for student notes: teachers can also write.
+      match /eleves/{studentId}/notes/{gradeId} {
+         // Inherits read rule from parent.
+         // Allow teachers of the school to write notes.
+         allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+      }
     }
   }
 }

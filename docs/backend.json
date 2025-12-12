@@ -312,59 +312,71 @@
     },
     "/ecoles/{schoolId}": {
       "schema": { "$ref": "#/entities/school" },
-      "description": "Stocke les informations générales sur un établissement."
-    },
-    "/personnel/{staffId}": {
-      "schema": { "$ref": "#/entities/staff" },
-      "description": "Collection globale stockant les profils de tous les membres du personnel."
-    },
-    "/classes/{classId}": {
-      "schema": { "$ref": "#/entities/class" },
-      "description": "Collection globale pour toutes les classes de toutes les écoles."
-    },
-     "/cycles/{cycleId}": {
-        "schema": { "$ref": "#/entities/cycle" },
-        "description": "Stocke la liste des cycles d'enseignement."
-    },
-    "/frais_scolarite/{feeId}": {
-        "schema": { "$ref": "#/entities/fee" },
-        "description": "Stocke la structure des frais de scolarité."
-    },
-    "/eleves/{studentId}": {
-        "schema": { "$ref": "#/entities/student" },
-        "description": "Collection globale des profils élèves.",
-        "subcollections": {
-          "notes": {
-            "path": "notes/{gradeId}",
-            "schema": { "$ref": "#/entities/gradeEntry" },
-            "description": "Stocke les notes individuelles d'un élève."
-          },
-          "paiements": {
-            "path": "paiements/{paymentId}",
-            "schema": { "$ref": "#/entities/payment" },
-            "description": "Stocke l'historique des paiements de scolarité pour un élève."
-          }
+      "description": "Stocke les informations générales sur un établissement.",
+      "subcollections": {
+        "personnel": {
+          "path": "personnel/{staffId}",
+          "schema": { "$ref": "#/entities/staff" },
+          "description": "Stocke les profils du personnel (enseignants et non-enseignants) pour cette école."
+        },
+        "classes": {
+            "path": "classes/{classId}",
+            "schema": { "$ref": "#/entities/class" },
+            "description": "Stocke les informations des classes pour cette école."
+        },
+        "eleves": {
+            "path": "eleves/{studentId}",
+            "schema": { "$ref": "#/entities/student" },
+            "description": "Stocke les profils des élèves pour cette école.",
+            "subcollections": {
+                "notes": {
+                    "path": "notes/{gradeId}",
+                    "schema": { "$ref": "#/entities/gradeEntry" },
+                    "description": "Stocke les notes individuelles d'un élève."
+                },
+                "paiements": {
+                    "path": "paiements/{paymentId}",
+                    "schema": { "$ref": "#/entities/payment" },
+                    "description": "Stocke l'historique des paiements de scolarité pour un élève."
+                }
+            }
+        },
+        "cycles": {
+            "path": "cycles/{cycleId}",
+            "schema": { "$ref": "#/entities/cycle" },
+            "description": "Stocke la liste des cycles d'enseignement pour cette école."
+        },
+        "frais_scolarite": {
+            "path": "frais_scolarite/{feeId}",
+            "schema": { "$ref": "#/entities/fee" },
+            "description": "Stocke la structure des frais de scolarité pour cette école."
+        },
+        "absences": {
+            "path": "absences/{absenceId}",
+            "schema": { "$ref": "#/entities/absence" },
+            "description": "Stocke l'historique des absences pour cette école."
+        },
+        "comptabilite": {
+            "path": "comptabilite/{transactionId}",
+            "schema": { "$ref": "#/entities/accountingTransaction" },
+            "description": "Stocke les transactions comptables pour cette école."
+        },
+        "bibliotheque": {
+            "path": "bibliotheque/{bookId}",
+            "schema": { "$ref": "#/entities/libraryBook" },
+            "description": "Stocke les livres de la bibliothèque pour cette école."
+        },
+        "emploi_du_temps": {
+            "path": "emploi_du_temps/{entryId}",
+            "schema": { "$ref": "#/entities/timetableEntry" },
+            "description": "Stocke les entrées de l'emploi du temps pour cette école."
+        },
+        "messagerie": {
+            "path": "messagerie/{messageId}",
+            "schema": { "$ref": "#/entities/message" },
+            "description": "Stocke les messages et annonces envoyés via la messagerie interne pour cette école."
         }
-    },
-    "/absences/{absenceId}": {
-        "schema": { "$ref": "#/entities/absence" },
-        "description": "Collection globale des absences."
-    },
-    "/comptabilite/{transactionId}": {
-        "schema": { "$ref": "#/entities/accountingTransaction" },
-        "description": "Collection globale des transactions comptables."
-    },
-    "/bibliotheque/{bookId}": {
-        "schema": { "$ref": "#/entities/libraryBook" },
-        "description": "Collection globale des livres de bibliothèque."
-    },
-    "/emploi_du_temps/{entryId}": {
-        "schema": { "$ref": "#/entities/timetableEntry" },
-        "description": "Collection globale des entrées de l'emploi du temps."
-    },
-    "/messagerie/{messageId}": {
-        "schema": { "$ref": "#/entities/message" },
-        "description": "Collection globale des messages et annonces."
+      }
     },
     "/admin_roles/{roleId}": {
         "schema": { "$ref": "#/entities/admin_role" },
