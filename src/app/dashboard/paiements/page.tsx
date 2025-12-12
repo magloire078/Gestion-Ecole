@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -82,13 +83,18 @@ export default function PaymentsPage() {
   const [isReminderOpen, setIsReminderOpen] = useState(false);
   const [reminderMessage, setReminderMessage] = useState('');
   const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
+  const [todayDateString, setTodayDateString] = useState('');
+
+  useEffect(() => {
+    setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
   
   const { toast } = useToast();
 
     const paymentForm = useForm<PaymentFormValues>({
         resolver: zodResolver(paymentSchema),
         defaultValues: {
-            paymentDate: format(new Date(), 'yyyy-MM-dd'),
+            paymentDate: todayDateString,
             paymentDescription: '',
             paymentAmount: 0,
             payerFirstName: '',
@@ -103,14 +109,14 @@ export default function PaymentsPage() {
         paymentForm.reset({
             paymentAmount: 0,
             paymentDescription: `Scolarité - ${selectedStudent.firstName} ${selectedStudent.lastName}`,
-            paymentDate: format(new Date(), 'yyyy-MM-dd'),
+            paymentDate: todayDateString,
             payerFirstName: selectedStudent.parent1FirstName || '',
             payerLastName: selectedStudent.parent1LastName || '',
             payerContact: selectedStudent.parent1Contact || '',
             paymentMethod: 'Espèces',
         });
     }
-  }, [selectedStudent, isManageFeeDialogOpen, paymentForm]);
+  }, [selectedStudent, isManageFeeDialogOpen, paymentForm, todayDateString]);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {

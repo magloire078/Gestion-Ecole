@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -138,11 +139,16 @@ export default function HRPage() {
   const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
   const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
   const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
+  const [todayDateString, setTodayDateString] = useState('');
+
+  useEffect(() => {
+    setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
 
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffSchema),
     defaultValues: {
-      firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+      firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
     },
   });
 
@@ -159,16 +165,16 @@ export default function HRPage() {
                 ...fullData,
                 password: '',
                 baseSalary: fullData.baseSalary || 0,
-                hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+                hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : todayDateString,
             });
-        } else {
+        } else if (isFormOpen) {
             form.reset({
-                firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+                firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
             });
         }
     }
     loadPrivateData();
-  }, [isFormOpen, editingStaff, schoolId, firestore, form]);
+  }, [isFormOpen, editingStaff, schoolId, firestore, form, todayDateString]);
 
   const handleSubmit = async (values: StaffFormValues) => {
     if (!schoolId) {

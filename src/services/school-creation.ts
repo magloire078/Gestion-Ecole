@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { Firestore } from 'firebase/firestore';
+import { format as formatDateFns } from 'date-fns';
 
 interface SchoolCreationData {
     name: string;
@@ -80,7 +81,7 @@ export class SchoolCreationService {
         lastName: schoolData.directorLastName,
         displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
         email: schoolData.directorEmail,
-        hireDate: format(new Date(), 'yyyy-MM-dd'),
+        hireDate: formatDateFns(new Date(), 'yyyy-MM-dd'),
         baseSalary: 0, // Default base salary
     });
     
@@ -96,17 +97,3 @@ export class SchoolCreationService {
     return { schoolId, schoolCode };
   }
 }
-
-// Helper to format date
-const format = (date: Date, formatStr: string) => {
-    // Basic formatter, replace with date-fns if available
-    if (formatStr === 'yyyy-MM-dd') {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    }
-    return date.toISOString();
-}
-
-    

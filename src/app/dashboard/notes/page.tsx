@@ -8,14 +8,14 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -23,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,13 +122,18 @@ export default function GradeEntryPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingGrade, setEditingGrade] = useState<GradeEntry | null>(null);
   const [gradeToDelete, setGradeToDelete] = useState<GradeEntry | null>(null);
+  const [todayDateString, setTodayDateString] = useState('');
+
+  useEffect(() => {
+    setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
 
   const form = useForm<GradeFormValues>({
     resolver: zodResolver(gradeSchema),
     defaultValues: {
       studentId: '',
       type: 'Devoir',
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: todayDateString,
       grade: 0,
       coefficient: 1,
     }
@@ -185,13 +190,13 @@ export default function GradeEntryPage() {
             form.reset({
                 studentId: '',
                 type: 'Devoir',
-                date: format(new Date(), 'yyyy-MM-dd'),
+                date: todayDateString,
                 grade: 0,
                 coefficient: 1,
             });
         }
     }
-  }, [isFormOpen, editingGrade, form]);
+  }, [isFormOpen, editingGrade, form, todayDateString]);
 
 
   const handleOpenFormDialog = (grade: GradeEntry | null) => {

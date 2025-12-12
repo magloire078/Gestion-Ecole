@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -79,6 +79,11 @@ export default function AbsencesPage() {
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [todayDateString, setTodayDateString] = useState('');
+
+  useEffect(() => {
+    setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
 
   // --- Data Fetching ---
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
@@ -99,7 +104,7 @@ export default function AbsencesPage() {
 
   // --- Derived Data ---
   const { todayAbsences, historicAbsences } = useMemo(() => {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = todayDateString;
     const absences = allAbsencesData?.map(d => ({ id: d.id, ...d.data() } as Absence & {id: string})) || [];
     
     const todayList: (Absence & { id: string })[] = [];
@@ -112,7 +117,7 @@ export default function AbsencesPage() {
         }
     }
     return { todayAbsences: todayList, historicAbsences: historyList };
-  }, [allAbsencesData]);
+  }, [allAbsencesData, todayDateString]);
 
 
   const studentsWithAbsenceStatus = useMemo<StudentWithAbsence[]>(() => {
@@ -127,18 +132,29 @@ export default function AbsencesPage() {
   const form = useForm<AbsenceFormValues>({
     resolver: zodResolver(absenceSchema),
     defaultValues: {
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: todayDateString,
       type: "Journée entière",
       justified: false,
       reason: "",
     }
   });
 
+  useEffect(() => {
+      if (todayDateString) {
+          form.reset({
+              date: todayDateString,
+              type: "Journée entière",
+              justified: false,
+              reason: "",
+          });
+      }
+  }, [todayDateString, form]);
+
   const handleOpenForm = (student: Student) => {
     setSelectedStudent(student);
     form.reset({
       studentId: student.id,
-      date: format(new Date(), 'yyyy-MM-dd'),
+      date: todayDateString,
       type: "Journée entière",
       justified: false,
       reason: "",

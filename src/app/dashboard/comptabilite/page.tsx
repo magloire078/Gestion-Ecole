@@ -95,6 +95,11 @@ export default function AccountingPage() {
   });
 
   const { toast } = useToast();
+  const [todayDateString, setTodayDateString] = useState('');
+
+  useEffect(() => {
+    setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
+  }, []);
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionSchema),
@@ -103,7 +108,7 @@ export default function AccountingPage() {
         amount: 0,
         type: "Dépense",
         category: "",
-        date: format(new Date(), 'yyyy-MM-dd'),
+        date: todayDateString,
     },
   });
 
@@ -125,11 +130,11 @@ export default function AccountingPage() {
                 amount: 0,
                 type: "Dépense",
                 category: "",
-                date: format(new Date(), 'yyyy-MM-dd'),
+                date: todayDateString,
             });
         }
     }
-  }, [isFormOpen, editingTransaction, form]);
+  }, [isFormOpen, editingTransaction, form, todayDateString]);
   
   useEffect(() => {
     form.setValue('category', '');
@@ -320,7 +325,7 @@ export default function AccountingPage() {
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
             <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setEditingTransaction(null); setIsFormOpen(isOpen); }}>
                 <DialogTrigger asChild>
-                    <Button onClick={() => handleOpenFormDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Transaction</Button>
+                    <Button onClick={() => handleOpenFormDialog(null)}><span className="flex items-center gap-2"><PlusCircle className="h-4 w-4" /> Ajouter une Transaction</span></Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
