@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -115,7 +116,7 @@ export default function HRPage() {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
-  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, 'personnel'), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   
   const { teachers, otherStaff } = useMemo(() => {
@@ -126,7 +127,7 @@ export default function HRPage() {
     }
   }, [staffData]);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
@@ -151,7 +152,7 @@ export default function HRPage() {
   useEffect(() => {
     async function loadPrivateData() {
         if (isFormOpen && editingStaff && schoolId) {
-            const staffRef = doc(firestore, `personnel/${editingStaff.id}`);
+            const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
             const docSnap = await getDoc(staffRef);
             const fullData = docSnap.exists() ? docSnap.data() as Staff : {};
             form.reset({
@@ -185,7 +186,7 @@ export default function HRPage() {
 
     try {
         if (editingStaff) {
-            const staffDocRef = doc(firestore, `personnel/${editingStaff.id}`);
+            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
             await setDoc(staffDocRef, dataToSave, { merge: true });
             toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
         } else {
@@ -196,7 +197,7 @@ export default function HRPage() {
             const userCredential = await createUserWithEmailAndPassword(auth, values.email, password);
             const newUid = userCredential.user.uid;
             
-            const staffDocRef = doc(firestore, `personnel/${newUid}`);
+            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}`);
             await setDoc(staffDocRef, { ...dataToSave, uid: newUid });
 
             const userRootRef = doc(firestore, `utilisateurs/${newUid}`);
@@ -211,7 +212,7 @@ export default function HRPage() {
             form.setError("email", { type: "manual", message: "Cette adresse e-mail est déjà utilisée." });
         } else {
             const operation = editingStaff ? 'update' : 'create';
-            const path = `personnel/${editingStaff?.id || ''}`;
+            const path = `ecoles/${schoolId}/personnel/${editingStaff?.id || ''}`;
             const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
             errorEmitter.emit('permission-error', permissionError);
         }
@@ -220,7 +221,7 @@ export default function HRPage() {
   
   const handleDelete = () => {
     if (!schoolId || !staffToDelete) return;
-    const staffDocRef = doc(firestore, `personnel/${staffToDelete.id}`);
+    const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffToDelete.id}`);
     deleteDoc(staffDocRef)
       .then(() => {
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
@@ -240,7 +241,7 @@ export default function HRPage() {
     setIsPayslipOpen(true);
     
     try {
-        const staffDocRef = doc(firestore, `personnel/${staffMember.id}`);
+        const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffMember.id}`);
         const staffDocSnap = await getDoc(staffDocRef);
         const fullStaffData = staffDocSnap.exists() ? staffDocSnap.data() as Staff : staffMember;
 
@@ -512,4 +513,5 @@ export default function HRPage() {
       </Dialog>
     </>
   );
-}
+
+    
