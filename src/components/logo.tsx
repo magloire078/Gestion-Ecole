@@ -5,6 +5,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from './ui/skeleton';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const DefaultLogo = ({ compact }: { compact?: boolean }) => (
     <svg
