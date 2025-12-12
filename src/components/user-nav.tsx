@@ -67,7 +67,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                 <button className="flex w-full items-center justify-center gap-2 rounded-full p-1 hover:bg-gray-700">
+                 <button className="flex w-full items-center justify-center gap-2 rounded-full p-1 hover:bg-sidebar-accent">
                     <Avatar className="h-9 w-9">
                         <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/100`} alt={displayName} data-ai-hint="person face" />
                         <AvatarFallback>{fallback}</AvatarFallback>

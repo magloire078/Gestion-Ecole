@@ -35,8 +35,8 @@ import { useSubscription } from '@/hooks/use-subscription';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:text-white text-sm";
-const navClassCollapsed = "justify-center rounded-lg text-gray-300 transition-all hover:text-white";
+const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/80 transition-all hover:text-sidebar-foreground text-sm";
+const navClassCollapsed = "justify-center rounded-lg text-sidebar-foreground/80 transition-all hover:text-sidebar-foreground";
 
 const mySchoolLinks = [
   { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users },
@@ -83,7 +83,7 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
                 <TooltipTrigger asChild>
                     <Link
                         href={href}
-                        className={cn(navClassCollapsed, "h-9 w-9", isActive && "bg-gray-700/50 text-white")}
+                        className={cn(navClassCollapsed, "h-9 w-9", isActive && "bg-sidebar-accent text-sidebar-accent-foreground")}
                     >
                         <Icon className="h-5 w-5" />
                         <span className="sr-only">{label}</span>
@@ -97,7 +97,7 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
     return (
         <Link
             href={href}
-            className={cn(navClass, isActive && "text-white bg-gray-700/50")}
+            className={cn(navClass, isActive && "text-sidebar-accent-foreground bg-sidebar-accent")}
         >
             <Icon className="h-4 w-4" />
             {label}
@@ -134,15 +134,15 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
         {collapsed ? (
             <div className="space-y-2 mt-4">
                 {mySchoolLinks.map(item => <NavLink key={item.href} {...item} collapsed />)}
-                 <hr className="my-2 border-gray-700" />
+                 <hr className="my-2 border-sidebar-border" />
                 {administrationLinks.map(item => <NavLink key={item.href} {...item} collapsed />)}
-                 <hr className="my-2 border-gray-700" />
+                 <hr className="my-2 border-sidebar-border" />
                 {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} collapsed />)}
             </div>
         ) : (
             <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
               <AccordionItem value="my-school" className="border-b-0">
-                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(mySchoolLinks) && "text-white")}>
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-sidebar-foreground text-sm font-semibold text-sidebar-foreground/70 [&[data-state=open]>svg]:text-blue-400", isLinkActive(mySchoolLinks) && "text-sidebar-foreground")}>
                     <div className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</div>
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -151,7 +151,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               </AccordionItem>
               
               <AccordionItem value="administration" className="border-b-0">
-                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(administrationLinks) && "text-white")}>
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-sidebar-foreground text-sm font-semibold text-sidebar-foreground/70 [&[data-state=open]>svg]:text-blue-400", isLinkActive(administrationLinks) && "text-sidebar-foreground")}>
                     <div className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</div>
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -160,7 +160,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               </AccordionItem>
 
               <AccordionItem value="pedagogy" className="border-b-0">
-                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(pedagogicalLinks) && "text-white")}>
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-sidebar-foreground text-sm font-semibold text-sidebar-foreground/70 [&[data-state=open]>svg]:text-blue-400", isLinkActive(pedagogicalLinks) && "text-sidebar-foreground")}>
                      <div className='flex items-center gap-3'><GraduationCap className="h-4 w-4" />Pédagogie</div>
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -169,7 +169,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               </AccordionItem>
               
                <AccordionItem value="finance" className="border-b-0">
-                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(financialLinks) && "text-white")}>
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-sidebar-foreground text-sm font-semibold text-sidebar-foreground/70 [&[data-state=open]>svg]:text-blue-400", isLinkActive(financialLinks) && "text-sidebar-foreground")}>
                      <div className='flex items-center gap-3'><Wallet className="h-4 w-4" />Finance</div>
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -178,7 +178,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               </AccordionItem>
 
               <AccordionItem value="configuration" className="border-b-0">
-                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(settingsLinks) && "text-white")}>
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-sidebar-foreground text-sm font-semibold text-sidebar-foreground/70 [&[data-state=open]>svg]:text-blue-400", isLinkActive(settingsLinks) && "text-sidebar-foreground")}>
                      <div className='flex items-center gap-3'><FolderCog className="h-4 w-4" />Configuration</div>
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 pt-1 space-y-1">
@@ -188,7 +188,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               
                {isAdmin && (
                    <AccordionItem value="super-admin" className="border-b-0">
-                    <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(adminLinks) && "text-white")}>
+                    <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-sidebar-foreground text-sm font-semibold text-sidebar-foreground/70 [&[data-state=open]>svg]:text-blue-400", isLinkActive(adminLinks) && "text-sidebar-foreground")}>
                          <div className='flex items-center gap-3'><Shield className="h-4 w-4" />Super Admin</div>
                     </AccordionTrigger>
                     <AccordionContent className="pl-4 pt-1 space-y-1">

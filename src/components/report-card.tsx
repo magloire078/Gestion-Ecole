@@ -77,7 +77,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
     // Fetch the student's class to get the mainTeacherId
     const classRef = useMemoFirebase(() =>
-        (student.schoolId && student.classId) ? doc(firestore, `classes/${student.classId}`) : null
+        (student.schoolId && student.classId) ? doc(firestore, `ecoles/${student.schoolId}/classes/${student.classId}`) : null
     , [firestore, student.schoolId, student.classId]);
     const { data: classData } = useDoc<Class>(classRef);
 
@@ -192,7 +192,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                      {school.mainLogoUrl && <img src={school.mainLogoUrl} alt={school.name} className="h-20 w-20 object-contain" />}
                     <div>
                         <h2 className="text-2xl font-bold uppercase">{school.name || "Nom de l'école"}</h2>
-                        <p className="text-xs">{school.address || "Adresse de l'école"}</p>
+                        <p className="text-xs text-muted-foreground">{school.address || "Adresse de l'école"}</p>
                     </div>
                 </div>
                 <div className="text-right">
@@ -227,7 +227,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                             <th className="p-2 font-bold">APPRÉCIATIONS DES PROFESSEURS</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-300">
+                    <tbody className="divide-y divide-border">
                         {subjectReports.map((report) => {
                             const totalCoeffs = grades.filter(g => g.subject === report.subject).reduce((sum, g) => sum + g.coefficient, 0);
                             const isGenerating = subjectAppreciations[report.subject]?.isGenerating;
@@ -235,7 +235,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                                 <tr key={report.subject} className="print-break-inside-avoid">
                                     <TableCell className="p-2">
                                         <p className="font-semibold">{report.subject}</p>
-                                        <p className="text-xs text-gray-500">{report.teacherName}</p>
+                                        <p className="text-xs text-muted-foreground">{report.teacherName}</p>
                                     </TableCell>
                                     <td className="p-2 text-center font-mono">{totalCoeffs}</td>
                                     <td className="p-2 text-center font-mono font-bold text-base">{report.average.toFixed(2)}</td>
@@ -263,7 +263,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
             {/* Summary */}
              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-3 bg-gray-100 rounded-md space-y-2">
+                <div className="p-3 bg-muted/50 rounded-md space-y-2">
                     <div className="flex justify-between items-center text-base">
                         <span className="font-bold">MOYENNE GÉNÉRALE TRIMESTRIELLE :</span>
                         <span className="text-xl font-bold text-primary">{generalAverage.toFixed(2)} / 20</span>
@@ -276,7 +276,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                         <p className="font-bold text-lg">{getMention(generalAverage)}</p>
                     </div>
                 </div>
-                 <div className="p-3 bg-gray-100 rounded-md">
+                 <div className="p-3 bg-muted/50 rounded-md">
                      <div className="flex justify-between items-start">
                         <p className="font-bold mb-1">APPRÉCIATION DU CONSEIL DE CLASSE</p>
                         <Button variant="ghost" size="sm" onClick={() => handleGenerateComment()} disabled={isGeneratingCouncilComment} className="no-print">
