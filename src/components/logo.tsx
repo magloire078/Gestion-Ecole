@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -7,9 +6,9 @@ import { Skeleton } from './ui/skeleton';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import Image from 'next/image';
 
-const DefaultLogo = () => (
+const DefaultLogo = ({ compact }: { compact?: boolean }) => (
     <svg
-        className="h-7 w-7"
+        className={cn("h-7 w-7 transition-all duration-300", compact && "h-8 w-8")}
         viewBox="0 0 24 24"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
@@ -27,17 +26,19 @@ const DefaultLogo = () => (
 );
 
 
-export function Logo() {
+export function Logo({ compact = false }: { compact?: boolean }) {
   const isMounted = useHydrationFix();
   const { schoolData, loading } = useSchoolData();
 
   if (!isMounted || loading) {
     return (
        <div className="flex items-center gap-2 text-primary font-semibold">
-          <DefaultLogo />
-          <div className="flex flex-col">
-            <Skeleton className="h-5 w-32" />
-          </div>
+          <DefaultLogo compact={compact} />
+          {!compact && (
+            <div className="flex flex-col">
+              <Skeleton className="h-5 w-32" />
+            </div>
+          )}
       </div>
     )
   }
@@ -45,15 +46,21 @@ export function Logo() {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
         {schoolData?.mainLogoUrl ? (
-            <Image src={schoolData.mainLogoUrl} alt={schoolData.name || 'Logo École'} width={32} height={32} className="h-8 w-8 object-contain" />
+            <Image 
+              src={schoolData.mainLogoUrl} 
+              alt={schoolData.name || 'Logo École'} 
+              width={32} 
+              height={32} 
+              className={cn("h-8 w-8 object-contain transition-all duration-300", compact && "h-9 w-9")}
+            />
         ) : (
-            <DefaultLogo />
+            <DefaultLogo compact={compact} />
         )}
-        <div className="flex flex-col">
-          <h1 className="text-lg font-bold font-headline leading-tight">{schoolData?.name || 'Mon École'}</h1>
-        </div>
+        {!compact && (
+          <div className="flex flex-col">
+            <h1 className="text-lg font-bold font-headline leading-tight">{schoolData?.name || 'Mon École'}</h1>
+          </div>
+        )}
     </Link>
   );
 }
-
-    

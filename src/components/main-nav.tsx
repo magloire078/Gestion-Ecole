@@ -1,4 +1,3 @@
-
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,9 +33,10 @@ import {
 import { useUser } from '@/firebase';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Button } from './ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 const navClass = "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:text-white text-sm";
-
+const navClassCollapsed = "justify-center rounded-lg text-gray-300 transition-all hover:text-white";
 
 const mySchoolLinks = [
   { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users },
@@ -73,9 +73,27 @@ const adminLinks = [
     { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield },
 ]
 
-const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
+const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean }) => {
     const pathname = usePathname();
     const isActive = pathname === href || (pathname.startsWith(href) && href !== '/dashboard');
+
+    if (collapsed) {
+        return (
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Link
+                        href={href}
+                        className={cn(navClassCollapsed, "h-9 w-9", isActive && "bg-gray-700/50 text-white")}
+                    >
+                        <Icon className="h-5 w-5" />
+                        <span className="sr-only">{label}</span>
+                    </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">{label}</TooltipContent>
+            </Tooltip>
+        );
+    }
+    
     return (
         <Link
             href={href}
@@ -87,7 +105,7 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
     );
 };
 
-export function MainNav() {
+export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = usePathname();
   const { user } = useUser();
   const { subscription } = useSubscription();
@@ -96,6 +114,7 @@ export function MainNav() {
   const isLinkActive = (links: {href: string}[]) => links.some(link => pathname.startsWith(link.href));
 
   const getDefaultOpenValues = () => {
+    if (collapsed) return [];
     if (pathname === '/dashboard') return [];
     const openValues = [];
     if (isLinkActive(mySchoolLinks)) openValues.push('my-school');
@@ -110,82 +129,74 @@ export function MainNav() {
   return (
     <nav className="flex flex-col flex-1 p-2">
       <div className='flex-1 space-y-1'>
-         <Link
-          href="/dashboard"
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-gray-300 transition-all hover:text-white text-sm font-semibold",
-            pathname === '/dashboard' && "bg-gray-700/80 text-white"
-          )}
-        >
-            <LayoutDashboard className="h-4 w-4" />
-            Tableau de Bord
-        </Link>
+         <NavLink href="/dashboard" icon={LayoutDashboard} label="Tableau de Bord" collapsed={collapsed} />
         
-        <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
-          <AccordionItem value="my-school" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(mySchoolLinks) && "text-white")}>
-                <div className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</div>
-            </AccordionTrigger>
-            <AccordionContent className="pl-4 pt-1 space-y-1">
-              {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
-            </AccordionContent>
-          </AccordionItem>
-          
-          <AccordionItem value="administration" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(administrationLinks) && "text-white")}>
-                <div className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</div>
-            </AccordionTrigger>
-            <AccordionContent className="pl-4 pt-1 space-y-1">
-              {administrationLinks.map(item => <NavLink key={item.href} {...item} />)}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="pedagogy" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(pedagogicalLinks) && "text-white")}>
-                 <div className='flex items-center gap-3'><GraduationCap className="h-4 w-4" />Pédagogie</div>
-            </AccordionTrigger>
-            <AccordionContent className="pl-4 pt-1 space-y-1">
-               {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} />)}
-            </AccordionContent>
-          </AccordionItem>
-          
-           <AccordionItem value="finance" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(financialLinks) && "text-white")}>
-                 <div className='flex items-center gap-3'><Wallet className="h-4 w-4" />Finance</div>
-            </AccordionTrigger>
-            <AccordionContent className="pl-4 pt-1 space-y-1">
-               {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem value="configuration" className="border-b-0">
-            <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(settingsLinks) && "text-white")}>
-                 <div className='flex items-center gap-3'><FolderCog className="h-4 w-4" />Configuration</div>
-            </AccordionTrigger>
-            <AccordionContent className="pl-4 pt-1 space-y-1">
-               {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
-            </AccordionContent>
-          </AccordionItem>
-          
-           {isAdmin && (
-               <AccordionItem value="super-admin" className="border-b-0">
-                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(adminLinks) && "text-white")}>
-                     <div className='flex items-center gap-3'><Shield className="h-4 w-4" />Super Admin</div>
+        {collapsed ? (
+            <div className="space-y-2 mt-4">
+                {mySchoolLinks.map(item => <NavLink key={item.href} {...item} collapsed />)}
+                 <hr className="my-2 border-gray-700" />
+                {administrationLinks.map(item => <NavLink key={item.href} {...item} collapsed />)}
+                 <hr className="my-2 border-gray-700" />
+                {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} collapsed />)}
+            </div>
+        ) : (
+            <Accordion type="multiple" className="w-full" defaultValue={getDefaultOpenValues()}>
+              <AccordionItem value="my-school" className="border-b-0">
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(mySchoolLinks) && "text-white")}>
+                    <div className='flex items-center gap-3'><School className="h-4 w-4" /> Mon École</div>
                 </AccordionTrigger>
                 <AccordionContent className="pl-4 pt-1 space-y-1">
-                   {adminLinks.map(item => <NavLink key={item.href} {...item} />)}
+                  {mySchoolLinks.map(item => <NavLink key={item.href} {...item} />)}
                 </AccordionContent>
               </AccordionItem>
-           )}
-        </Accordion>
-      </div>
-      <div className="mt-auto p-4">
-        {subscription?.status === 'trialing' && (
-          <Button variant="destructive" size="sm" className="w-full">
-            <span className="font-bold">{user?.displayName?.charAt(0) || 'N'}</span>
-            <span className="mx-2 font-semibold">Trial</span>
-            <X className="h-4 w-4" />
-          </Button>
+              
+              <AccordionItem value="administration" className="border-b-0">
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(administrationLinks) && "text-white")}>
+                    <div className='flex items-center gap-3'><Briefcase className="h-4 w-4" /> Administration</div>
+                </AccordionTrigger>
+                <AccordionContent className="pl-4 pt-1 space-y-1">
+                  {administrationLinks.map(item => <NavLink key={item.href} {...item} />)}
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="pedagogy" className="border-b-0">
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(pedagogicalLinks) && "text-white")}>
+                     <div className='flex items-center gap-3'><GraduationCap className="h-4 w-4" />Pédagogie</div>
+                </AccordionTrigger>
+                <AccordionContent className="pl-4 pt-1 space-y-1">
+                   {pedagogicalLinks.map(item => <NavLink key={item.href} {...item} />)}
+                </AccordionContent>
+              </AccordionItem>
+              
+               <AccordionItem value="finance" className="border-b-0">
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(financialLinks) && "text-white")}>
+                     <div className='flex items-center gap-3'><Wallet className="h-4 w-4" />Finance</div>
+                </AccordionTrigger>
+                <AccordionContent className="pl-4 pt-1 space-y-1">
+                   {financialLinks.map(item => <NavLink key={item.href} {...item} />)}
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="configuration" className="border-b-0">
+                <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(settingsLinks) && "text-white")}>
+                     <div className='flex items-center gap-3'><FolderCog className="h-4 w-4" />Configuration</div>
+                </AccordionTrigger>
+                <AccordionContent className="pl-4 pt-1 space-y-1">
+                   {settingsLinks.map(item => <NavLink key={item.href} {...item} />)}
+                </AccordionContent>
+              </AccordionItem>
+              
+               {isAdmin && (
+                   <AccordionItem value="super-admin" className="border-b-0">
+                    <AccordionTrigger className={cn("py-2 px-3 hover:no-underline hover:text-white text-sm font-semibold text-gray-400 [&[data-state=open]>svg]:text-blue-400", isLinkActive(adminLinks) && "text-white")}>
+                         <div className='flex items-center gap-3'><Shield className="h-4 w-4" />Super Admin</div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pl-4 pt-1 space-y-1">
+                       {adminLinks.map(item => <NavLink key={item.href} {...item} />)}
+                    </AccordionContent>
+                  </AccordionItem>
+               )}
+            </Accordion>
         )}
       </div>
     </nav>

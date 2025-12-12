@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -24,8 +23,9 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "./ui/skeleton";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
+import { cn } from "@/lib/utils";
 
-export function UserNav() {
+export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const isMounted = useHydrationFix();
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
@@ -40,7 +40,6 @@ export function UserNav() {
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté(e).",
       });
-      // Use window.location to ensure all state is cleared
       window.location.href = '/login';
     } catch (error) {
       console.error("Erreur de déconnexion: ", error);
@@ -61,10 +60,43 @@ export function UserNav() {
   const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  // The role now comes from the user's custom claims, which are secure.
   const isAdmin = user?.customClaims?.role === 'admin';
   const userRole = user?.profile?.role;
 
+  if (collapsed) {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                 <button className="flex w-full items-center justify-center gap-2 rounded-full p-1 hover:bg-gray-700">
+                    <Avatar className="h-9 w-9">
+                        <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/100`} alt={displayName} data-ai-hint="person face" />
+                        <AvatarFallback>{fallback}</AvatarFallback>
+                    </Avatar>
+                </button>
+            </DropdownMenuTrigger>
+            {/* Same content as non-collapsed */}
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{displayName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                    {user?.email}
+                    </p>
+                    {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{isAdmin ? 'Admin' : userRole}</p>}
+                </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>Profil & Paramètres</DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                Se déconnecter
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+  }
 
   return (
     <DropdownMenu>
@@ -89,25 +121,6 @@ export function UserNav() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>Profil & Paramètres</DropdownMenuItem>
-           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
-              {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-              <span className="ml-2">Thème</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                  Clair
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                  Sombre
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                  Système
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
         </DropdownMenuGroup>
         {isAdmin && (
           <>
