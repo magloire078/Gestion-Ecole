@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -208,7 +207,11 @@ export default function FeesPage() {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Grille Tarifaire</h2>
-              <Button onClick={() => handleOpenFeeGridDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Grille</Button>
+              <Button onClick={() => handleOpenFeeGridDialog(null)}>
+                <span className="flex items-center gap-2">
+                    <PlusCircle className="h-4 w-4" /> Ajouter une Grille
+                </span>
+              </Button>
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {isLoading ? (

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -174,7 +173,9 @@ export default function AdminRolesPage() {
                         <p className="text-muted-foreground">Créez et gérez les rôles administratifs de la plateforme.</p>
                     </div>
                     <Button onClick={() => handleOpenForm(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Rôle
+                      <span className="flex items-center gap-2">
+                        <PlusCircle className="h-4 w-4" /> Ajouter un Rôle
+                      </span>
                     </Button>
                 </div>
 

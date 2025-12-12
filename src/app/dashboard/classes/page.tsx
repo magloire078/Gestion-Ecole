@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -373,7 +372,9 @@ export default function ClassesPage() {
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
                 <Button onClick={() => handleOpenFormDialog(null)}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
+                  <span className="flex items-center gap-2">
+                    <PlusCircle className="h-4 w-4" /> Ajouter une Classe
+                  </span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-xl">
@@ -508,5 +509,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    

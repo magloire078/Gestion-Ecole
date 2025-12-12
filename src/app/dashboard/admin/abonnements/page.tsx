@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -184,8 +183,10 @@ export default function AdminSubscriptionsPage() {
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="destructive" size="sm" onClick={() => handleOpenDeleteDialog(school)}>
-                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                  <span className="flex items-center gap-2">
+                                                    <Trash2 className="h-4 w-4" />
                                                     Supprimer
+                                                  </span>
                                                 </Button>
                                             </TableCell>
                                         </TableRow>

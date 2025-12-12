@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -325,7 +324,9 @@ export default function HRPage() {
             </CardContent>
             <CardFooter>
                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleGeneratePayslip(member)}>
-                    <FileText className="mr-2 h-3 w-3" /> Voir le dernier bulletin
+                    <span className="flex items-center gap-2">
+                        <FileText className="h-3 w-3" /> Voir le dernier bulletin
+                    </span>
                 </Button>
             </CardFooter>
         </Card>
@@ -341,7 +342,9 @@ export default function HRPage() {
               <p className="text-muted-foreground">Gérez le personnel (enseignant et non-enseignant) de votre école.</p>
           </div>
             <Button onClick={() => handleOpenFormDialog(null)}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Membre
+              <span className="flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" /> Ajouter un Membre
+              </span>
             </Button>
         </div>
         

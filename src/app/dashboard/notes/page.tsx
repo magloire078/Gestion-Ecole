@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -327,7 +326,9 @@ export default function GradeEntryPage() {
                   </CardDescription>
                 </div>
                 <Button onClick={() => handleOpenFormDialog(null)}>
-                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une note
+                  <span className="flex items-center gap-2">
+                    <PlusCircle className="h-4 w-4" /> Ajouter une note
+                  </span>
                 </Button>
               </div>
             </CardHeader>

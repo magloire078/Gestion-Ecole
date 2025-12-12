@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -337,11 +335,15 @@ export default function PaymentsPage() {
                                <div className="flex justify-end gap-2">
                                 {(student.amountDue || 0) > 0 && (
                                     <Button variant="outline" size="sm" onClick={() => handleOpenReminderDialog(student)}>
-                                        <MessageSquare className="mr-2 h-3 w-3" /> Rappel
+                                      <span className="flex items-center gap-2">
+                                        <MessageSquare className="h-3 w-3" /> Rappel
+                                      </span>
                                     </Button>
                                 )}
                                 <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
-                                <Pencil className="mr-2 h-3 w-3" /> Gérer
+                                  <span className="flex items-center gap-2">
+                                    <Pencil className="h-3 w-3" /> Gérer
+                                  </span>
                                 </Button>
                                </div>
                             </TableCell>

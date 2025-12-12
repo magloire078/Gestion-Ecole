@@ -1,4 +1,3 @@
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -72,7 +71,7 @@ const calculateAverages = (grades: GradeEntry[]) => {
 };
 
 interface PaymentHistoryEntry extends Payment {
-    id: string;
+  id: string;
 }
 
 const formatCurrency = (value: number | undefined) => {
@@ -205,10 +204,26 @@ export default function StudentProfilePage() {
     <>
     <div className="space-y-6">
         <div className="flex flex-wrap justify-end items-center gap-2">
-            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/bulletin`)}><FileText className="mr-2 h-4 w-4" />Bulletin</Button>
-            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/emploi-du-temps`)}><CalendarDays className="mr-2 h-4 w-4" />Emploi du Temps</Button>
-            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)}><FileSignature className="mr-2 h-4 w-4" />Fiche</Button>
-            <Button onClick={() => setIsEditDialogOpen(true)}><Pencil className="mr-2 h-4 w-4" /> Modifier</Button>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/bulletin`)}>
+              <span className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />Bulletin
+              </span>
+            </Button>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/emploi-du-temps`)}>
+              <span className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />Emploi du Temps
+              </span>
+            </Button>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)}>
+              <span className="flex items-center gap-2">
+                <FileSignature className="h-4 w-4" />Fiche
+              </span>
+            </Button>
+            <Button onClick={() => setIsEditDialogOpen(true)}>
+              <span className="flex items-center gap-2">
+                <Pencil className="h-4 w-4" /> Modifier
+              </span>
+            </Button>
         </div>
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
 
@@ -399,7 +414,9 @@ export default function StudentProfilePage() {
                                                     <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
                                                     <TableCell className="text-right">
                                                         <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
-                                                            <Receipt className="mr-2 h-3 w-3" /> Reçu
+                                                            <span className="flex items-center gap-2">
+                                                                <Receipt className="h-3 w-3" /> Reçu
+                                                            </span>
                                                         </Button>
                                                     </TableCell>
                                                 </TableRow>
@@ -486,5 +503,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    

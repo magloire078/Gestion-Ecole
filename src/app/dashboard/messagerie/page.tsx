@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -280,7 +279,11 @@ export default function MessagingPage() {
             <h2 className="text-xl font-semibold">Historique des envois</h2>
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
-                    <Button onClick={() => setIsFormOpen(true)}><PlusCircle className="mr-2 h-4 w-4" /> Nouveau Message</Button>
+                    <Button onClick={() => setIsFormOpen(true)}>
+                      <span className="flex items-center gap-2">
+                        <PlusCircle className="h-4 w-4" /> Nouveau Message
+                      </span>
+                    </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
@@ -291,8 +294,10 @@ export default function MessagingPage() {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
                         <Button type="submit" form="message-form" disabled={form.formState.isSubmitting}>
-                            <Send className="mr-2 h-4 w-4" />
+                          <span className="flex items-center gap-2">
+                            <Send className="h-4 w-4" />
                             {form.formState.isSubmitting ? 'Envoi...' : 'Envoyer'}
+                          </span>
                         </Button>
                     </DialogFooter>
                 </DialogContent>

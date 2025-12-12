@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -81,15 +80,15 @@ const InvitationCode = ({ code, onCopy }: { code: string; onCopy: () => void }) 
             className="shrink-0"
           >
             {copied ? (
-              <>
-                <Check className="mr-2 h-4 w-4" />
+              <span className="flex items-center gap-2">
+                <Check className="h-4 w-4" />
                 Copié !
-              </>
+              </span>
             ) : (
-              <>
-                <Copy className="mr-2 h-4 w-4" />
+              <span className="flex items-center gap-2">
+                <Copy className="h-4 w-4" />
                 Copier
-              </>
+              </span>
             )}
           </Button>
         </div>
@@ -229,8 +228,10 @@ export default function SettingsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => router.push('/dashboard/parametres/fiche-etablissement')}>
-            <FileSignature className="mr-2 h-4 w-4" />
-            Fiche établissement
+            <span className="flex items-center gap-2">
+              <FileSignature className="h-4 w-4" />
+              Fiche établissement
+            </span>
           </Button>
         </div>
       </div>
@@ -265,7 +266,11 @@ export default function SettingsPage() {
                                  <div className="space-y-2 flex-1">
                                     <FormLabel>Logo de l'école</FormLabel>
                                     <ImageUploader onUploadComplete={handleLogoUploadComplete} storagePath={`ecoles/${schoolData?.schoolCode || 'logos'}/`}>
-                                        <Button type="button" variant="outline"><Upload className="mr-2 h-4 w-4"/> {field.value ? "Changer" : "Télécharger"}</Button>
+                                        <Button type="button" variant="outline">
+                                          <span className="flex items-center gap-2">
+                                            <Upload className="h-4 w-4"/> {field.value ? "Changer" : "Télécharger"}
+                                          </span>
+                                        </Button>
                                     </ImageUploader>
                                  </div>
                                 </div>
@@ -298,8 +303,10 @@ export default function SettingsPage() {
                         </Alert>
                          <div className="mt-4">
                            <Button type="button" variant="destructive" onClick={() => setIsResetDialogOpen(true)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Réinitialiser Mon Compte
+                                <span className="flex items-center gap-2">
+                                    <Trash2 className="h-4 w-4" />
+                                    Réinitialiser Mon Compte
+                                </span>
                            </Button>
                            <p className="text-xs text-muted-foreground mt-2">
                                 Dissocie votre compte de l'école et vous déconnecte.
@@ -310,9 +317,9 @@ export default function SettingsPage() {
                     <CardFooter className="border-t px-6 py-4">
                       <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
                         {isSaving ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sauvegarde...</>
+                            <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...</span>
                         ) : !form.formState.isDirty ? (
-                            <><CheckCircle className="mr-2 h-4 w-4" /> Enregistré</>
+                            <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4" /> Enregistré</span>
                         ) : (
                             "Enregistrer les Modifications"
                         )}
