@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -33,10 +34,10 @@ const DropdownMenuSubTrigger = React.forwardRef<
     )}
     {...props}
   >
-    <React.Fragment>
+    
       {children}
       <ChevronRight className="ml-auto" />
-    </React.Fragment>
+    
   </DropdownMenuPrimitive.SubTrigger>
 ))
 DropdownMenuSubTrigger.displayName =

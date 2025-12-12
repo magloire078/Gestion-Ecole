@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -81,10 +82,10 @@ const MenubarSubTrigger = React.forwardRef<
     )}
     {...props}
   >
-    <React.Fragment>
+    
       {children}
       <ChevronRight className="ml-auto h-4 w-4" />
-    </React.Fragment>
+    
   </MenubarPrimitive.SubTrigger>
 ))
 MenubarSubTrigger.displayName = MenubarPrimitive.SubTrigger.displayName
