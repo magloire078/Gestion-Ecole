@@ -1,96 +1,69 @@
-'use server';
-/**
- * @fileOverview Un agent IA pour générer des lettres de recommandation pour les enseignants.
- *
- * - generateTeacherRecommendations - Une fonction qui gère le processus de génération.
- * - GenerateTeacherRecommendationsInput - Le type d'entrée pour la fonction.
- * - GenerateTeacherRecommendationsOutput - Le type de retour pour la fonction.
- */
-
-import {ai} from '@/ai/genkit';
-import {z} from '@genkit-ai/core';
-
-// Input Schema
-export const GenerateTeacherRecommendationsInputSchema = z.object({
-  teacherName: z.string().describe("Le nom de l'enseignant."),
-  className: z.string().describe('La classe principale de l\'enseignant.'),
-  studentPerformanceData: z
-    .string()
-    .describe(
-      'Un résumé des performances des élèves dans la matière de l\'enseignant.'
-    ),
-  teacherSkills: z
-    .array(z.string())
-    .describe('Une liste des compétences clés de l\'enseignant.'),
-  directorName: z.string().describe('Le nom du directeur/de la directrice.'),
-  schoolName: z.string().describe("Le nom de l'école."),
-});
-export type GenerateTeacherRecommendationsInput = z.infer<
-  typeof GenerateTeacherRecommendationsInputSchema
->;
-
-// Output Schema
-export const GenerateTeacherRecommendationsOutputSchema = z.object({
-  recommendationLetterDraft: z
-    .string()
-    .describe("Le brouillon de la lettre de recommandation générée par l'IA."),
-});
-export type GenerateTeacherRecommendationsOutput = z.infer<
-  typeof GenerateTeacherRecommendationsOutputSchema
->;
-
-// Main exported function
-export async function generateTeacherRecommendations(
-  input: GenerateTeacherRecommendationsInput
-): Promise<GenerateTeacherRecommendationsOutput> {
-  const {output} = await recommendationFlow(input);
-  return output!;
-}
-
-// Genkit Prompt
-const recommendationPrompt = ai.definePrompt({
-  name: 'recommendationPrompt',
-  input: {schema: z.object({
-      ...GenerateTeacherRecommendationsInputSchema.shape,
-      year: z.number(),
-  })},
-  output: {schema: GenerateTeacherRecommendationsOutputSchema},
-  prompt: `Vous êtes un assistant de direction d'école chargé de rédiger des brouillons de lettres de recommandation.
-
-Rédigez une lettre de recommandation professionnelle et élogieuse pour {{teacherName}}.
-
-Informations clés à inclure :
-- Nom de l'enseignant : {{teacherName}}
-- Classe principale : {{className}}
-- Performance des élèves : {{studentPerformanceData}}
-- Compétences clés de l'enseignant : {{#each teacherSkills}}- {{this}} {{/each}}
-- Nom du directeur/de la directrice : {{directorName}}
-- Nom de l'école : {{schoolName}}
-- Date : Nous sommes en {{year}}.
-
-Structure de la lettre :
-1. Introduction : Présentez {{teacherName}} et votre relation avec lui/elle.
-2. Corps du texte : Mettez en avant ses compétences ({{teacherSkills}}) et illustrez-les avec les performances de ses élèves ({{studentPerformanceData}}).
-3. Conclusion : Réitérez votre recommandation forte.
-4. Signature : Terminez par la formule de politesse et le nom du directeur/de la directrice.
-
-Le ton doit être formel, sincère et convaincant. Mettez en évidence l'impact positif de l'enseignant sur l'école et les élèves.`,
-});
-
-
-// Genkit Flow
-const recommendationFlow = ai.defineFlow(
-  {
-    name: 'recommendationFlow',
-    inputSchema: GenerateTeacherRecommendationsInputSchema,
-    outputSchema: GenerateTeacherRecommendationsOutputSchema,
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 9002",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  async (input) => {
-    const context = {
-        ...input,
-        year: new Date().getFullYear(),
-    };
-    const {output} = await recommendationPrompt(context);
-    return output!;
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@radix-ui/react-accordion": "^1.2.0",
+    "@radix-ui/react-alert-dialog": "^1.1.1",
+    "@radix-ui/react-avatar": "^1.1.0",
+    "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-collapsible": "^1.1.0",
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-dropdown-menu": "^2.1.1",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-menubar": "^1.1.1",
+    "@radix-ui/react-popover": "^1.1.1",
+    "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-radio-group": "^1.2.0",
+    "@radix-ui/react-scroll-area": "^1.2.0",
+    "@radix-ui/react-select": "^2.1.1",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@radix-ui/react-toast": "^1.2.1",
+    "@radix-ui/react-tooltip": "^1.1.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.0",
+    "d3-array": "^3.2.4",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "embla-carousel-react": "^8.1.6",
+    "events": "^3.3.0",
+    "firebase": "^10.12.3",
+    "french-numbers-to-words": "^1.0.2",
+    "lucide-react": "^0.417.0",
+    "next": "14.2.5",
+    "next-themes": "^0.4.0",
+    "react": "18.3.0",
+    "react-dom": "18.3.0",
+    "recharts": "^2.15.1",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "wav": "^1.0.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.13",
+    "@types/d3-array": "^3.2.1",
+    "@types/events": "^3.0.0",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/wav": "^1.0.3",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.3"
   }
-);
+}

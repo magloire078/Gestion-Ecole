@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, writeBatch, increment } from 'firebase/firestore';
-import { analyzeAndSummarizeFeedback, AnalyzeAndSummarizeFeedbackOutput } from '@/ai/flows/analyze-and-summarize-feedback';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student, class_type as Class, fee as Fee } from '@/lib/data-types';
@@ -46,7 +45,6 @@ interface StudentEditFormProps {
 export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit }: StudentEditFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
-  const [analysisResult, setAnalysisResult] = useState<AnalyzeAndSummarizeFeedbackOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const form = useForm<StudentFormValues>({
@@ -158,27 +156,8 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
       return;
     }
     setIsAnalyzing(true);
-    setAnalysisResult(null);
-    try {
-      const result = await analyzeAndSummarizeFeedback({ feedbackText });
-      setAnalysisResult(result);
-    } catch (error) {
-      console.error("AI analysis failed:", error);
-      toast({ variant: 'destructive', title: "Erreur d'analyse", description: "L'analyse par IA a échoué." });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
-  const renderSentiment = (sentiment: string) => {
-    const sentimentLower = sentiment.toLowerCase();
-    if (sentimentLower === 'positif') {
-      return <span className="flex items-center gap-1 text-emerald-600"><Smile className="h-4 w-4" /> Positif</span>
-    }
-    if (sentimentLower === 'négatif') {
-      return <span className="flex items-center gap-1 text-red-600"><Frown className="h-4 w-4" /> Négatif</span>
-    }
-    return <span className="flex items-center gap-1 text-gray-600"><Meh className="h-4 w-4" /> Neutre</span>
+    toast({ title: "Analyse IA non disponible", description: "La fonctionnalité d'analyse par IA a été temporairement désactivée." });
+    setIsAnalyzing(false);
   };
 
   return (
@@ -239,21 +218,6 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
                   <FormControl><Textarea {...field} /></FormControl>
                   <Button type="button" variant="outline" size="icon" onClick={handleAnalyzeFeedback} disabled={isAnalyzing}><Bot className="h-4 w-4" /></Button>
                 </div>
-                {isAnalyzing && <p className="text-xs text-muted-foreground">Analyse en cours...</p>}
-                {analysisResult && (
-                  <Card className="bg-muted/50 text-xs">
-                    <div className="p-3">
-                        <div className="text-sm flex justify-between items-center font-semibold">
-                            <span>Analyse IA</span>
-                            {renderSentiment(analysisResult.sentiment)}
-                        </div>
-                        <div className="pt-2">
-                            <p><strong>Résumé:</strong> {analysisResult.summary}</p>
-                            <p className="mt-2"><strong>Points d'amélioration:</strong> {analysisResult.keyImprovementAreas}</p>
-                        </div>
-                    </div>
-                  </Card>
-                )}
               </div>
             </FormItem>
           )}

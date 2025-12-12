@@ -1,68 +1,69 @@
-
-'use server';
-/**
- * @fileOverview An AI agent to generate payment reminder messages.
- *
- * - generatePaymentReminder - A function that handles reminder generation.
- * - GeneratePaymentReminderInput - The input type for the function.
- * - GeneratePaymentReminderOutput - The return type for the function.
- */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-export const GeneratePaymentReminderInputSchema = z.object({
-  studentName: z.string().describe("Le nom complet de l'élève."),
-  parentName: z.string().describe("Le nom complet du parent."),
-  amountDue: z.number().describe("Le montant restant à payer."),
-});
-export type GeneratePaymentReminderInput = z.infer<
-  typeof GeneratePaymentReminderInputSchema
->;
-
-export const GeneratePaymentReminderOutputSchema = z.object({
-  reminderMessage: z
-    .string()
-    .describe("Le message de rappel de paiement généré."),
-});
-export type GeneratePaymentReminderOutput = z.infer<
-  typeof GeneratePaymentReminderOutputSchema
->;
-
-const reminderPrompt = ai.definePrompt({
-  name: 'generatePaymentReminderPrompt',
-  input: {schema: GeneratePaymentReminderInputSchema},
-  output: {schema: GeneratePaymentReminderOutputSchema},
-  prompt: `Vous êtes un assistant administratif pour une école. Rédigez un message de rappel de paiement court, poli et professionnel pour un parent d'élève. Le message doit être adapté pour un envoi par SMS ou messagerie instantanée.
-
-Informations :
-- Nom de l'élève : {{studentName}}
-- Nom du parent : {{parentName}}
-- Montant dû : {{amountDue}} CFA
-
-Le message doit :
-1. Saluer poliment le parent.
-2. Mentionner l'objet du message (solde de scolarité) et le nom de l'élève.
-3. Indiquer clairement le montant restant à payer.
-4. Remercier le parent pour son attention.
-5. Se terminer par une formule de politesse simple et le nom de l'école.`,
-});
-
-export async function generatePaymentReminder(
-  input: GeneratePaymentReminderInput
-): Promise<GeneratePaymentReminderOutput> {
-  return generatePaymentReminderFlow(input);
-}
-
-
-const generatePaymentReminderFlow = ai.defineFlow(
-  {
-    name: 'generatePaymentReminderFlow',
-    inputSchema: GeneratePaymentReminderInputSchema,
-    outputSchema: GeneratePaymentReminderOutputSchema,
+{
+  "name": "nextn",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 9002",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
-  async (input) => {
-    const {output} = await reminderPrompt(input);
-    return output!;
+  "dependencies": {
+    "@hookform/resolvers": "^3.9.0",
+    "@radix-ui/react-accordion": "^1.2.0",
+    "@radix-ui/react-alert-dialog": "^1.1.1",
+    "@radix-ui/react-avatar": "^1.1.0",
+    "@radix-ui/react-checkbox": "^1.1.1",
+    "@radix-ui/react-collapsible": "^1.1.0",
+    "@radix-ui/react-dialog": "^1.1.1",
+    "@radix-ui/react-dropdown-menu": "^2.1.1",
+    "@radix-ui/react-label": "^2.1.0",
+    "@radix-ui/react-menubar": "^1.1.1",
+    "@radix-ui/react-popover": "^1.1.1",
+    "@radix-ui/react-progress": "^1.1.0",
+    "@radix-ui/react-radio-group": "^1.2.0",
+    "@radix-ui/react-scroll-area": "^1.2.0",
+    "@radix-ui/react-select": "^2.1.1",
+    "@radix-ui/react-separator": "^1.1.0",
+    "@radix-ui/react-slider": "^1.2.0",
+    "@radix-ui/react-slot": "^1.1.0",
+    "@radix-ui/react-switch": "^1.1.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@radix-ui/react-toast": "^1.2.1",
+    "@radix-ui/react-tooltip": "^1.1.2",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.0.0",
+    "d3-array": "^3.2.4",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "embla-carousel-react": "^8.1.6",
+    "events": "^3.3.0",
+    "firebase": "^10.12.3",
+    "french-numbers-to-words": "^1.0.2",
+    "lucide-react": "^0.417.0",
+    "next": "14.2.5",
+    "next-themes": "^0.4.0",
+    "react": "18.3.0",
+    "react-dom": "18.3.0",
+    "recharts": "^2.15.1",
+    "tailwind-merge": "^2.4.0",
+    "tailwindcss-animate": "^1.0.7",
+    "wav": "^1.0.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@tailwindcss/aspect-ratio": "^0.4.2",
+    "@tailwindcss/forms": "^0.5.7",
+    "@tailwindcss/typography": "^0.5.13",
+    "@types/d3-array": "^3.2.1",
+    "@types/events": "^3.0.0",
+    "@types/node": "^20.14.10",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/wav": "^1.0.3",
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.6",
+    "typescript": "^5.5.3"
   }
-);
+}

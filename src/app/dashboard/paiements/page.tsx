@@ -40,7 +40,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { generatePaymentReminder } from '@/ai/flows/generate-payment-reminder';
 import { Label } from "@/components/ui/label";
 
 
@@ -219,21 +218,9 @@ export default function PaymentsPage() {
     setSelectedStudent(student);
     setIsReminderOpen(true);
     setIsGeneratingReminder(true);
-    setReminderMessage('');
-    try {
-        const result = await generatePaymentReminder({
-            studentName: `${student.firstName} ${student.lastName}`,
-            parentName: `${student.parent1FirstName} ${student.parent1LastName}`,
-            amountDue: student.amountDue || 0,
-        });
-        setReminderMessage(result.reminderMessage);
-    } catch (error) {
-        console.error("Failed to generate reminder:", error);
-        setReminderMessage("Bonjour [Nom du Parent],\n\nCeci est un rappel amical concernant le solde de la scolarité de [Nom de l'Élève] qui s'élève à [Montant Dû] CFA. Nous vous remercions de bien vouloir procéder au règlement.\n\nCordialement,\nLa direction");
-        toast({ variant: "destructive", title: "Erreur IA", description: "Impossible de générer le message. Un modèle par défaut est utilisé." });
-    } finally {
-        setIsGeneratingReminder(false);
-    }
+    setReminderMessage("Bonjour [Nom du Parent],\n\nCeci est un rappel amical concernant le solde de la scolarité de [Nom de l'Élève] qui s'élève à [Montant Dû] CFA. Nous vous remercions de bien vouloir procéder au règlement.\n\nCordialement,\nLa direction");
+    toast({ title: "Génération IA désactivée", description: "Un message par défaut est utilisé." });
+    setIsGeneratingReminder(false);
   };
 
   const handleSendReminder = () => {

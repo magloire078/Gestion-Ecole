@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Bot, Printer } from 'lucide-react';
-import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
@@ -147,35 +146,13 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         } else {
              setSubjectAppreciations(prev => ({...prev, [subject!]: { text: '', isGenerating: true }}));
         }
+        
+        toast({ title: "Fonctionnalité indisponible", description: "La génération de commentaires par IA a été temporairement désactivée." });
 
-        try {
-            const gradesSummary = subject 
-                ? `Moyenne en ${subject}: ${average?.toFixed(2)}/20`
-                : subjectReports.map(r => `${r.subject}: ${r.average.toFixed(2)}/20`).join(', ');
-
-            const result = await generateReportCardComment({
-                studentName: student.name,
-                grades: gradesSummary,
-                teacherName: teacherName || "Le Conseil de Classe",
-            });
-            
-            if (isCouncilComment) {
-                setCouncilComment(result.comment);
-                toast({ title: "Appréciation générée", description: "L'appréciation du conseil de classe a été mise à jour." });
-            } else {
-                setSubjectAppreciations(prev => ({...prev, [subject!]: { text: result.comment, isGenerating: false }}));
-                toast({ title: `Appréciation pour ${subject} générée` });
-            }
-
-        } catch (error) {
-            console.error(error);
-            toast({ variant: "destructive", title: "Erreur", description: "Impossible de générer l'appréciation." });
-        } finally {
-             if (isCouncilComment) {
-                setIsGeneratingCouncilComment(false);
-            } else {
-                setSubjectAppreciations(prev => ({...prev, [subject!]: { ...prev[subject!], isGenerating: false }}));
-            }
+        if (isCouncilComment) {
+            setIsGeneratingCouncilComment(false);
+        } else {
+            setSubjectAppreciations(prev => ({...prev, [subject!]: { ...prev[subject!], isGenerating: false }}));
         }
     };
     
