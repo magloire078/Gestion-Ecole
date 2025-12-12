@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -96,24 +97,24 @@ export default function StudentProfilePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
-  const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
-  const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
+  const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
+  const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
+  const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
   
   const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
-  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `classes/${student.classId}`) : null, [student, schoolId]);
+  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
+  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
   // This query is for the edit form, to be able to switch classes.
-  const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `classes`) : null, [firestore, schoolId]);
+  const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
-  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `frais_scolarite`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
 
 
@@ -217,7 +218,7 @@ export default function StudentProfilePage() {
                     <CardHeader className="flex-row items-center gap-4 pb-4">
                         <ImageUploader 
                             onUploadComplete={handlePhotoUploadComplete}
-                            storagePath={`eleves/${eleveId}/avatars/`}
+                            storagePath={`ecoles/${schoolId}/eleves/${eleveId}/avatars/`}
                         >
                             <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
                                 <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${eleveId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
@@ -485,3 +486,5 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
+    

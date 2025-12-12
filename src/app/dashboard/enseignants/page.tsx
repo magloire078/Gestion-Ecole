@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import {
@@ -82,8 +81,8 @@ export default function TeachersPage() {
   const { toast } = useToast();
 
   // --- Firestore Data Hooks ---
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -138,7 +137,7 @@ export default function TeachersPage() {
   // --- Firestore Actions ---
   const getTeacherDocRef = (id: string) => {
     if (!schoolId) throw new Error("ID de l'école non disponible");
-    return doc(firestore, `personnel/${id}`);
+    return doc(firestore, `ecoles/${schoolId}/personnel/${id}`);
   };
 
   const onSubmit = async (values: TeacherFormValues) => {
@@ -159,12 +158,12 @@ export default function TeachersPage() {
         if (editingTeacher.classId !== dataToSave.classId) {
             // Remove teacher from old class if it exists
             if (editingTeacher.classId) {
-                const oldClassRef = doc(firestore, `classes/${editingTeacher.classId}`);
+                const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${editingTeacher.classId}`);
                 batch.update(oldClassRef, { mainTeacherId: '' });
             }
             // Add teacher to new class if selected
             if (dataToSave.classId) {
-                const newClassRef = doc(firestore, `classes/${dataToSave.classId}`);
+                const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${dataToSave.classId}`);
                 batch.update(newClassRef, { mainTeacherId: editingTeacher.id });
             }
         }
@@ -181,12 +180,12 @@ export default function TeachersPage() {
 
     } else {
         // --- CREATE ---
-        const newTeacherRef = doc(collection(firestore, `personnel`));
+        const newTeacherRef = doc(collection(firestore, `ecoles/${schoolId}/personnel`));
         batch.set(newTeacherRef, { ...dataToSave, uid: newTeacherRef.id /* or a real auth UID */ });
         
         // If a class is assigned, update the class document with the new teacher's ID
         if (dataToSave.classId) {
-            const classRef = doc(firestore, `classes/${dataToSave.classId}`);
+            const classRef = doc(firestore, `ecoles/${schoolId}/classes/${dataToSave.classId}`);
             batch.update(classRef, { mainTeacherId: newTeacherRef.id });
         }
         
@@ -210,7 +209,7 @@ export default function TeachersPage() {
 
     // If the teacher was a main teacher of a class, unset it
     if (teacherToDelete.classId) {
-        const classRef = doc(firestore, `classes/${teacherToDelete.classId}`);
+        const classRef = doc(firestore, `ecoles/${schoolId}/classes/${teacherToDelete.classId}`);
         batch.update(classRef, { mainTeacherId: '' });
     }
 
@@ -456,3 +455,5 @@ export default function TeachersPage() {
     </>
   );
 }
+
+    

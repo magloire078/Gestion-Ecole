@@ -102,10 +102,7 @@ service cloud.firestore {
         allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
     }
-
-    // Default deny all other paths for security
-    match /{path=**} {
-      allow read, write: if false;
-    }
   }
 }
+
+    

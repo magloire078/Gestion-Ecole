@@ -19,7 +19,6 @@ interface SchoolCreationData {
     academicYear: string;
     language: string;
     currency: string;
-    // template: string; // This property does not exist on the type, so it's commented out
     directorId: string;
     directorFirstName: string;
     directorLastName: string;
@@ -72,7 +71,7 @@ export class SchoolCreationService {
     batch.set(userRef, { schoolId });
 
     // 3. Create a staff profile for the director
-    const staffRef = doc(this.db, `personnel`, userId);
+    const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, userId);
     batch.set(staffRef, {
         uid: userId,
         schoolId: schoolId,
@@ -109,3 +108,5 @@ const format = (date: Date, formatStr: string) => {
     }
     return date.toISOString();
 }
+
+    

@@ -42,21 +42,25 @@ export function useUser() {
             // Set user with claims immediately for faster UI response
             setUser(userWithClaims); 
 
-            // If user is authenticated, fetch their profile from the global /personnel collection
-            const profileRef = doc(firestore, `personnel/${authUser.uid}`);
-            const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
-                } else {
-                     // This case might happen if the profile doc is not yet created.
-                    setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
-                }
+            if (schoolId) {
+                // If user is part of a school, fetch their profile from the school's subcollection
+                const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
+                const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
+                    } else {
+                        setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
+                    }
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching user profile:", error);
+                    setLoading(false);
+                });
+                return () => unsubscribeProfile();
+            } else {
+                // User is authenticated but not associated with a school yet (e.g., during onboarding)
                 setLoading(false);
-            }, (error) => {
-                console.error("Error fetching user profile from /personnel:", error);
-                setLoading(false);
-            });
-            return () => unsubscribeProfile();
+            }
             
         } else {
             setUser(null);
@@ -69,3 +73,5 @@ export function useUser() {
 
   return {user, loading};
 }
+
+    

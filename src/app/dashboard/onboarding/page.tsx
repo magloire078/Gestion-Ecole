@@ -70,7 +70,7 @@ export default function OnboardingPage() {
       }
     };
     
-    const staffProfileRef = doc(firestore, `personnel/${user.uid}`);
+    const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
     const staffProfileData = {
         uid: user.uid,
         email: user.email,
@@ -95,7 +95,7 @@ export default function OnboardingPage() {
         batch.set(rootUserRef, rootUserData);
         
         schoolCycles.forEach(cycle => {
-            const cycleRef = doc(collection(firestore, `cycles`));
+            const cycleRef = doc(collection(firestore, `ecoles/${schoolId}/cycles`));
             batch.set(cycleRef, {...cycle, schoolId});
         });
         
@@ -155,7 +155,7 @@ export default function OnboardingPage() {
 
 
         const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
-        const staffProfileRef = doc(firestore, `personnel/${user.uid}`);
+        const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
         
         const rootUserData = { schoolId: schoolId };
         const staffProfileData = {
@@ -300,3 +300,5 @@ export default function OnboardingPage() {
     </div>
   );
 }
+
+    

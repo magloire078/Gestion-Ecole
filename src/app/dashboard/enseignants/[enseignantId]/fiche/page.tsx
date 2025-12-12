@@ -16,7 +16,7 @@ export default function TeacherSheetPage() {
   const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
 
   const teacherRef = useMemoFirebase(() => 
-    (schoolId && teacherId) ? doc(firestore, `personnel/${teacherId}`) : null
+    (schoolId && teacherId) ? doc(firestore, `ecoles/${schoolId}/personnel/${teacherId}`) : null
   , [firestore, schoolId, teacherId]);
 
   const { data: teacherData, loading: teacherLoading } = useDoc<Teacher>(teacherRef);
@@ -56,9 +56,11 @@ export default function TeacherSheetPage() {
         <p className="text-muted-foreground">Cliquez sur le bouton ci-dessous pour imprimer la fiche.</p>
       </div>
       <TeacherInfoSheet 
-        teacher={teacherWithId}
+        teacher={teacherWithId as Teacher & { id: string }}
         school={schoolInfo}
       />
     </div>
   );
 }
+
+    
