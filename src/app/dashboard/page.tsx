@@ -139,10 +139,8 @@ const RegularDashboard = () => {
         let totalTuitionPaid = 0;
         let totalTuitionDue = 0;
         try {
-          const accountingQuery = collection(firestore, `comptabilite`);
-          const tuitionPaidSnapshot = await getDocs(
-            query(accountingQuery, where('schoolId', '==', schoolId), where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'))
-          );
+          const accountingQuery = query(collection(firestore, `comptabilite`), where('schoolId', '==', schoolId), where('category', '==', 'Scolarité'), where('type', '==', 'Revenu'));
+          const tuitionPaidSnapshot = await getDocs(accountingQuery);
           
           totalTuitionPaid = tuitionPaidSnapshot.docs.reduce((sum, doc) => {
             const data = doc.data() as Transaction;
