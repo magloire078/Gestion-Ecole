@@ -119,7 +119,7 @@ export default function AbsencesPage() {
       const absentStudentIds = new Set(todayAbsences.map(absence => absence.studentId));
       return studentsInClass.map(student => ({
           ...student,
-          isAbsentToday: absentStudentIds.has(student.id)
+          isAbsentToday: absentStudentIds.has(student.id!)
       }));
   }, [studentsInClass, todayAbsences]);
 

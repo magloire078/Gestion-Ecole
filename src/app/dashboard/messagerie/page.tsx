@@ -46,6 +46,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from "@/components/ui/checkbox";
 import type { class_type as Class } from '@/lib/data-types';
+import { useHydrationFix } from "@/hooks/use-hydration-fix";
 
 const messageSchema = z.object({
     title: z.string().min(1, { message: "Le titre est requis." }),
@@ -73,6 +74,7 @@ interface Message {
 }
 
 export default function MessagingPage() {
+  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -321,7 +323,7 @@ export default function MessagingPage() {
                 ) : messages.length > 0 ? (
                     messages.map((message) => (
                     <TableRow key={message.id} className="cursor-pointer" onClick={() => handleViewMessage(message)}>
-                        <TableCell>{message.createdAt ? format(new Date(message.createdAt.seconds * 1000), 'd MMM yyyy, HH:mm', { locale: fr }) : 'N/A'}</TableCell>
+                        <TableCell>{isMounted && message.createdAt ? format(new Date(message.createdAt.seconds * 1000), 'd MMM yyyy, HH:mm', { locale: fr }) : '...'}</TableCell>
                         <TableCell className="font-medium">{message.title}</TableCell>
                         <TableCell className="text-xs text-muted-foreground">{getRecipientSummary(message.recipients)}</TableCell>
                         <TableCell>{message.senderName}</TableCell>
@@ -344,7 +346,7 @@ export default function MessagingPage() {
           <DialogHeader>
             <DialogTitle>{viewedMessage?.title}</DialogTitle>
             <DialogDescription>
-              Envoyé par {viewedMessage?.senderName} le {viewedMessage?.createdAt ? format(new Date(viewedMessage.createdAt.seconds * 1000), 'd MMMM yyyy à HH:mm', { locale: fr }) : ''}
+              Envoyé par {viewedMessage?.senderName} le {isMounted && viewedMessage?.createdAt ? format(new Date(viewedMessage.createdAt.seconds * 1000), 'd MMMM yyyy à HH:mm', { locale: fr }) : ''}
               <br />
               À : {viewedMessage ? getRecipientSummary(viewedMessage.recipients) : ''}
             </DialogDescription>
@@ -360,5 +362,3 @@ export default function MessagingPage() {
     </>
   );
 }
-
-    
