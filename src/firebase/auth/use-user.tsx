@@ -29,7 +29,9 @@ export function useUser() {
         setLoading(false);
         return;
     }
+    
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
+        setLoading(true); // Set loading true at the start of auth state change
         if (authUser) {
             const tokenResult = await authUser.getIdTokenResult();
             const schoolId = tokenResult.claims.schoolId as string | undefined;
@@ -39,11 +41,9 @@ export function useUser() {
                 customClaims: tokenResult.claims
             };
             
-            // Set user with claims immediately for faster UI response
             setUser(userWithClaims); 
 
             if (schoolId) {
-                // If user is part of a school, fetch their profile from the school's subcollection
                 const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
                 const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
                     if (docSnap.exists()) {
@@ -58,7 +58,6 @@ export function useUser() {
                 });
                 return () => unsubscribeProfile();
             } else {
-                // User is authenticated but not associated with a school yet (e.g., during onboarding)
                 setLoading(false);
             }
             
@@ -73,5 +72,3 @@ export function useUser() {
 
   return {user, loading};
 }
-
-    
