@@ -85,8 +85,8 @@ export default function ClassesPage() {
 
 
   // --- Firestore Data Hooks ---
-  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
+  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   
   const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -164,7 +164,7 @@ export default function ClassesPage() {
     return teachers.find(t => t.id === teacherId);
   };
   
-  const getClassDocRef = (classId: string) => doc(firestore, `ecoles/${schoolId}/classes/${classId}`);
+  const getClassDocRef = (classId: string) => doc(firestore, `classes/${classId}`);
 
   // --- CRUD Operations ---
   const handleClassSubmit = async (values: ClassFormValues) => {
@@ -204,10 +204,10 @@ export default function ClassesPage() {
             toast({ title: "Classe modifiée", description: `Les informations de la classe ${values.name} ont été mises à jour.` });
         } else {
             // Create both class and fee documents
-            const newClassRef = doc(collection(firestore, `ecoles/${schoolId}/classes`));
+            const newClassRef = doc(collection(firestore, `classes`));
             batch.set(newClassRef, classData);
 
-            const newFeeRef = doc(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
+            const newFeeRef = doc(collection(firestore, `frais_scolarite`));
             batch.set(newFeeRef, feeData);
             
             await batch.commit();
@@ -217,7 +217,7 @@ export default function ClassesPage() {
         setEditingClass(null);
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}/classes & /ecoles/${schoolId}/frais_scolarite`,
+            path: `[BATCH WRITE] /classes & /frais_scolarite`,
             operation: editingClass ? 'update' : 'create',
             requestResourceData: { classData, feeData: editingClass ? undefined : feeData }
         });
@@ -236,7 +236,8 @@ export default function ClassesPage() {
 
     // Check if any students are in this class
     const studentsInClassQuery = query(
-      collection(firestore, `ecoles/${schoolId}/eleves`),
+      collection(firestore, `eleves`),
+      where('schoolId', '==', schoolId),
       where('classId', '==', cls.id),
       limit(1)
     );
@@ -288,7 +289,7 @@ export default function ClassesPage() {
         hireDate: new Date().toISOString().split('T')[0],
         baseSalary: 0,
     };
-    const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
+    const staffCollectionRef = collection(firestore, `personnel`);
     try {
         const docRef = await addDoc(staffCollectionRef, newTeacherData);
         toast({ title: "Enseignant ajouté", description: `${newTeacherFirstName} ${newTeacherLastName} a été ajouté(e).` });
@@ -304,7 +305,7 @@ export default function ClassesPage() {
 
   const isLoading = schoolDataLoading || classesLoading || personnelLoading;
   
-  if (isLoading && !cycles.length) {
+  if (isLoading) {
     return (
         <div className="space-y-4">
             <div className="flex justify-between items-center">
