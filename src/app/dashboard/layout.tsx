@@ -6,9 +6,8 @@ import { UserNav } from '@/components/user-nav';
 import { Logo } from '@/components/logo';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Bell, Menu, Search, X, Home, Settings, LogOut, Moon, Sun, ChevronLeft, ChevronRight, HelpCircle, Download } from 'lucide-react';
+import { Bell, Menu, Search } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
-import { Input } from '@/components/ui/input';
 import { AuthGuard } from '@/components/auth-guard';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
@@ -20,6 +19,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { SearchModal } from '@/components/search-modal';
 import { NotificationsPanel } from '@/components/notifications-panel';
+import { Home } from 'lucide-react';
+
 
 export default function DashboardLayout({
   children,
@@ -28,7 +29,6 @@ export default function DashboardLayout({
 }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { theme, toggleTheme } = useTheme();
@@ -50,11 +50,6 @@ export default function DashboardLayout({
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchOpen(true);
-      }
-      // Cmd/Ctrl + / pour basculer la sidebar
-      if ((e.metaKey || e.ctrlKey) && e.key === '/') {
-        e.preventDefault();
-        setIsSidebarCollapsed(prev => !prev);
       }
       // Échap pour fermer les modals
       if (e.key === 'Escape') {
@@ -103,59 +98,22 @@ export default function DashboardLayout({
   return (
     <AuthGuard>
       <TooltipProvider>
-        <div className={cn("flex min-h-screen w-full flex-col bg-muted/40 print:bg-white")}>
-          
-          {/* Sidebar Desktop */}
-          <aside className={cn(
-            "fixed inset-y-0 left-0 z-40 hidden flex-col border-r bg-background shadow-lg transition-all duration-300 ease-in-out sm:flex print:hidden",
-            isSidebarCollapsed ? "w-20" : "w-64"
-          )}>
-            
-            {/* Logo et toggle */}
-            <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
-              {!isSidebarCollapsed && <Logo />}
-              {isSidebarCollapsed && (
-                <div className="mx-auto">
-                  <Logo compact />
-                </div>
-              )}
-               <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                    className="absolute -right-4 top-6 z-50 h-8 w-8 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-                  >
-                    {isSidebarCollapsed ? (
-                      <ChevronRight className="h-4 w-4" />
-                    ) : (
-                      <ChevronLeft className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">
-                  {isSidebarCollapsed ? 'Étendre' : 'Réduire'}
-                </TooltipContent>
-              </Tooltip>
+        <div className={cn("min-h-screen w-full bg-muted/40 print:bg-white")}>
+          <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-background sm:flex print:hidden">
+            <div className="flex h-16 shrink-0 items-center border-b px-6">
+              <Logo />
             </div>
-
-            {/* Navigation */}
-            <div className="flex-1 overflow-y-auto">
-              <MainNav collapsed={isSidebarCollapsed} />
-            </div>
-
+            <nav className="flex-1 overflow-y-auto p-4">
+              <MainNav collapsed={false} />
+            </nav>
           </aside>
 
           {/* Main content */}
-          <div className={cn(
-            "flex flex-col transition-all duration-300 ease-in-out",
-            isSidebarCollapsed ? "sm:pl-20" : "sm:pl-64"
-          )}>
+          <div className="flex flex-col sm:pl-60">
             
             {/* Header */}
             <header className={cn(
-              "sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md transition-shadow px-4 sm:px-6 print:hidden shadow-sm"
+              "sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md px-4 sm:px-6 print:hidden"
             )}>
               
               <div className="flex items-center gap-3">
@@ -214,18 +172,6 @@ export default function DashboardLayout({
               </div>
 
               <div className="flex items-center gap-2">
-                
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={toggleTheme} className="hidden sm:inline-flex">
-                      {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
-                  </TooltipContent>
-                </Tooltip>
-
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>

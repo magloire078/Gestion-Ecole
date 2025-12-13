@@ -111,7 +111,7 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
         <Link
             href={href}
             className={cn(
-                "group flex items-center gap-x-3 rounded-md p-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                "group flex items-center gap-x-3 rounded-lg p-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                 isActive && "bg-accent text-accent-foreground"
             )}
         >
@@ -142,7 +142,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   }
 
   return (
-    <nav className="flex flex-col gap-y-4 p-4">
+    <nav className="flex flex-col gap-y-4">
       {navLinks.map((group) => {
           if (group.adminOnly && !isAdmin) return null;
           return (
