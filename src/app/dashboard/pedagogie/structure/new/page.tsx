@@ -22,6 +22,16 @@ import { collection, query, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const classSchema = z.object({
   name: z.string()
@@ -65,6 +75,11 @@ export default function NewClassPage() {
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
+  // --- Component State ---
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [formValues, setFormValues] = useState<ClassFormValues | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // --- Data Fetching ---
   const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
   const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
@@ -81,7 +96,7 @@ export default function NewClassPage() {
   // Schéma de validation dynamique qui dépend des niveaux chargés
   const classSchemaWithRefine = useMemo(() => classSchema.refine(
     (data) => {
-      if (!niveaux || niveaux.length === 0) return true;
+      if (!niveaux || niveaux.length === 0) return true; // Ne pas valider si les niveaux ne sont pas chargés
       const niveau = niveaux.find(n => n.id === data.niveauId);
       return niveau ? niveau.cycleId === data.cycleId : true;
     },
@@ -129,65 +144,63 @@ export default function NewClassPage() {
         form.setValue('code', '');
       }
 
-  }, [watchedNiveauId, watchedSection, niveaux, form])
+  }, [watchedNiveauId, watchedSection, niveaux, form]);
 
   const handleSubmit = async (values: ClassFormValues) => {
-    if (!schoolId || !user) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Erreur', 
-        description: 'Impossible de créer la classe sans ID d\'école ou utilisateur.' 
-      });
-      return;
-    }
+    setFormValues(values);
+    setShowConfirmDialog(true);
+  };
   
-    try {
-      const teacher = teachers.find(t => t.id === values.mainTeacherId);
-      const niveau = niveaux.find(n => n.id === values.niveauId);
-  
-      if (!niveau) {
-        toast({
-          variant: 'destructive',
-          title: 'Niveau introuvable',
-          description: 'Le niveau sélectionné n\'existe pas.',
-        });
+  const handleConfirmCreate = async () => {
+    if (!formValues || !schoolId || !user) {
+        setShowConfirmDialog(false);
         return;
-      }
-      
-      const classData = {
-        ...values,
-        schoolId,
-        createdBy: user.uid,
-        mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
-        teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
-        grade: niveau?.name || '',
-      };
-      
-      const response = await fetch('/api/classes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(classData),
-      });
-  
-      const responseData = await response.json();
-  
-      if (!response.ok) {
-        throw new Error(responseData.error || 'Une erreur est survenue.');
-      }
-      
-      toast({
-        title: 'Classe créée !',
-        description: `La classe ${values.name} a été ajoutée avec succès.`,
-      });
-      router.push('/dashboard/pedagogie/structure');
+    }
+    
+    setIsSubmitting(true);
+
+    try {
+        const teacher = teachers.find(t => t.id === formValues.mainTeacherId);
+        const niveau = niveaux.find(n => n.id === formValues.niveauId);
+        
+        const classData = {
+          ...formValues,
+          schoolId,
+          createdBy: user.uid,
+          mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
+          teacherIds: formValues.mainTeacherId ? [formValues.mainTeacherId] : [],
+          grade: niveau?.name || '',
+        };
+        
+        const response = await fetch('/api/classes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(classData),
+        });
+    
+        const responseData = await response.json();
+    
+        if (!response.ok) {
+            throw new Error(responseData.error || 'Une erreur est survenue.');
+        }
+
+        toast({
+            title: 'Classe créée !',
+            description: `La classe ${formValues.name} a été ajoutée avec succès.`,
+        });
+        router.push('/dashboard/pedagogie/structure');
     
     } catch (error: any) {
-      if (error.message.includes('code existe déjà')) {
-        form.setError('code', { message: error.message });
-      } else {
-        console.error("Erreur lors de la création de la classe:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: error.message });
-      }
+        if (error.message.includes('code existe déjà')) {
+            form.setError('code', { message: error.message });
+        } else {
+            console.error("Erreur lors de la création de la classe:", error);
+            toast({ variant: 'destructive', title: 'Erreur', description: error.message });
+        }
+    } finally {
+        setIsSubmitting(false);
+        setShowConfirmDialog(false);
+        setFormValues(null);
     }
   };
 
@@ -217,6 +230,7 @@ export default function NewClassPage() {
   }
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -262,18 +276,22 @@ export default function NewClassPage() {
                     <Card>
                         <CardHeader><CardTitle>Configuration de l'effectif</CardTitle><CardDescription>Définissez les limites d'effectif pour cette classe.</CardDescription></CardHeader>
                         <CardContent>
-                            <FormField control={form.control} name="maxStudents" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Nombre maximum d'élèves *</FormLabel>
-                                    <FormControl><Input type="number" min="1" {...field} /></FormControl>
-                                    <FormMessage />
-                                    {form.getValues("niveauId") && niveaux.find(n => n.id === form.getValues("niveauId")) && (
-                                        <p className="text-xs text-muted-foreground pt-1">
-                                            Capacité recommandée pour le niveau "{niveaux.find(n => n.id === form.getValues("niveauId"))?.name}": {niveaux.find(n => n.id === form.getValues("niveauId"))?.capacity} élèves.
-                                        </p>
-                                    )}
-                                </FormItem>
-                            )} />
+                           <FormField
+                                control={form.control}
+                                name="maxStudents"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nombre maximum d'élèves *</FormLabel>
+                                        <FormControl><Input type="number" min="1" {...field} /></FormControl>
+                                        <FormMessage />
+                                        {form.getValues("niveauId") && niveaux.find(n => n.id === form.getValues("niveauId")) && (
+                                            <p className="text-xs text-muted-foreground pt-1">
+                                                Capacité du niveau "{niveaux.find(n => n.id === form.getValues("niveauId"))?.name}": {niveaux.find(n => n.id === form.getValues("niveauId"))?.capacity} élèves.
+                                            </p>
+                                        )}
+                                    </FormItem>
+                                )}
+                            />
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -290,12 +308,31 @@ export default function NewClassPage() {
             </Tabs>
 
             <div className="flex items-center justify-end pt-6">
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</> : <><Save className="mr-2 h-4 w-4" />Créer la classe</>}
+                <Button type="submit" disabled={isSubmitting}>
+                    <Save className="mr-2 h-4 w-4" />Créer la classe
                 </Button>
             </div>
         </form>
       </Form>
     </div>
+
+    <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirmer la création</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Vous êtes sur le point de créer la classe <strong>{formValues?.name}</strong> pour l'année scolaire <strong>{formValues?.academicYear}</strong>.
+                    Voulez-vous continuer ?
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel disabled={isSubmitting}>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmCreate} disabled={isSubmitting}>
+                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</> : "Confirmer"}
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
