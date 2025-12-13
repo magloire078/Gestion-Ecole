@@ -49,7 +49,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -96,9 +96,9 @@ export default function TimetablePage() {
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
 
   // --- Firestore Data Hooks ---
-  const timetableQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `emploi_du_temps`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
-  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const timetableQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`)) : null, [firestore, schoolId]);
+  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
@@ -181,7 +181,7 @@ export default function TimetablePage() {
 }, [timetable, selectedClassId]);
 
 
-  const getEntryDocRef = (entryId: string) => doc(firestore, `emploi_du_temps/${entryId}`);
+  const getEntryDocRef = (entryId: string) => doc(firestore, `ecoles/${schoolId}/emploi_du_temps/${entryId}`);
 
   const handleSubmitEntry = (values: TimetableFormValues) => {
     if (!schoolId) {
@@ -201,7 +201,7 @@ export default function TimetablePage() {
             errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-        const timetableCollectionRef = collection(firestore, `emploi_du_temps`);
+        const timetableCollectionRef = collection(firestore, `ecoles/${schoolId}/emploi_du_temps`);
         addDoc(timetableCollectionRef, dataWithSchoolId)
         .then(() => {
             toast({ title: "Entrée ajoutée", description: "La nouvelle entrée a été ajoutée à l'emploi du temps." });

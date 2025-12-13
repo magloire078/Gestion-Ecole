@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -43,7 +44,7 @@ import {
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, writeBatch, increment, query, where } from "firebase/firestore";
+import { collection, doc, writeBatch, increment, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";

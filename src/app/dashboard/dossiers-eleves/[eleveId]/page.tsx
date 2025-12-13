@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -97,24 +98,24 @@ export default function StudentProfilePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
-  const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
-  const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
+  const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
+  const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
+  const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
   
   const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
-  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `classes/${student.classId}`) : null, [student, schoolId, firestore]);
+  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
+  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
   // This query is for the edit form, to be able to switch classes.
-  const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `classes`) : null, [firestore, schoolId]);
+  const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
-  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `frais_scolarite`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
 
 
