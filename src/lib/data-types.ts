@@ -20,11 +20,11 @@ export type school = {
     phone?: string;
     website?: string;
     mainLogoUrl?: string;
+    email?: string;
     subscription?: {
         plan?: "Essentiel" | "Pro";
         status?: "active" | "trialing" | "past_due" | "canceled";
     };
-    email?: string;
 };
 
 export type admin_role = {
