@@ -4,29 +4,33 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // --- Fonctions d'aide optimisées ---
     function isAuth() {
       return request.auth != null;
     }
     
+    // Vérifie si l'utilisateur a le rôle 'admin' dans ses custom claims.
     function isAdmin() {
-      // In a real application, you would set this custom claim on the user's token
       return request.auth.token.admin == true;
     }
 
+    // Récupère l'ID de l'école depuis les custom claims du token.
+    // C'est plus performant qu'une lecture Firestore.
     function getUserSchoolId() {
       return request.auth.token.schoolId;
     }
     
+    // Vérifie si un utilisateur appartient à une école spécifique.
     function isUserInSchool(schoolId) {
       return isAuth() && getUserSchoolId() == schoolId;
     }
     
+    // Vérifie si l'utilisateur est le directeur de l'école (basé sur le document de l'école).
     function isSchoolDirector(schoolId) {
-       let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
-       return isAuth() && schoolDoc.data.directorId == request.auth.uid;
+       return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
     
+    // Récupère le rôle d'un membre du personnel.
     function getStaffRole(userId, schoolId) {
       let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
       if (exists(staffDocPath)) {
@@ -35,94 +39,108 @@ service cloud.firestore {
       return null;
     }
     
+    // Vérifie si l'utilisateur connecté est un enseignant.
     function isTeacher(schoolId) {
         return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
     }
-
-    // --- Global Collections ---
-
-    match /utilisateurs/{userId} {
-      allow read, write: if isAuth() && request.auth.uid == userId;
-      allow read: if isAdmin();
+    
+    // Vérifie si un enseignant est assigné à une classe (soit comme prof principal, soit dans la liste des profs).
+    function isTeacherForClass(classId, schoolId) {
+      let classDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/classes/$(classId));
+      return request.auth.uid == classDoc.data.mainTeacherId || request.auth.uid in classDoc.data.teacherIds;
     }
 
+    // --- Collections Globales ---
+
+    // Accès sécurisé à la collection des utilisateurs (pour l'onboarding).
+    match /utilisateurs/{userId} {
+      allow read, update: if isAuth() && request.auth.uid == userId;
+      allow create: if isAuth() && request.auth.uid == userId;
+      // Seul un admin peut supprimer un document racine utilisateur.
+      allow delete: if isAdmin();
+    }
+    
+    // Les rôles admin sont gérés uniquement par les super-admins.
     match /admin_roles/{roleId} {
       allow read, write: if isAdmin();
     }
 
-    // --- School-based Collections ---
+    // --- Collections par École ---
     match /ecoles/{schoolId} {
+      // Un utilisateur ne peut lire que les données de sa propre école.
       allow read: if isUserInSchool(schoolId) || isAdmin();
-      allow create: if isAuth(); 
+      // N'importe qui peut créer une école (et se définit comme directeur).
+      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid; 
+      // Seul le directeur ou un admin peut mettre à jour les infos de l'école.
       allow update: if isSchoolDirector(schoolId) || isAdmin();
       allow delete: if isAdmin();
 
-      // --- Staff Subcollection ---
+      // --- Sous-collections ---
+
+      // Gestion du personnel
       match /personnel/{staffId} {
         allow read, list: if isUserInSchool(schoolId);
-        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+        // Le directeur peut ajouter du personnel. Un utilisateur peut créer son propre profil en rejoignant une école.
+        allow create: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId);
+        // Le directeur peut modifier/supprimer du personnel.
+        allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
 
-      // --- Pedagogical Subcollections ---
-      match /cycles/{cycleId} {
+      // Structure pédagogique (Cycles, Niveaux, Matières)
+      match /cycles/{cycleId} | /niveaux/{niveauId} | /matieres/{subjectId} {
         allow read, list: if isUserInSchool(schoolId);
         allow write: if isSchoolDirector(schoolId) || isAdmin();
       }
-      match /niveaux/{niveauId} {
-        allow read, list: if isUserInSchool(schoolId);
-        allow write: if isSchoolDirector(schoolId) || isAdmin();
-      }
+      
+      // Classes
       match /classes/{classId} {
         allow read, list: if isUserInSchool(schoolId);
         allow write: if isSchoolDirector(schoolId) || isAdmin();
       }
-      match /matieres/{subjectId} {
-        allow read, list: if isUserInSchool(schoolId);
-        allow write: if isSchoolDirector(schoolId) || isAdmin();
-      }
+
+      // Emploi du temps
       match /emploi_du_temps/{entryId} {
           allow read, list: if isUserInSchool(schoolId);
           allow write: if isSchoolDirector(schoolId) || isAdmin();
       }
-
-      // --- Student-related Subcollections ---
+      
+      // Données des élèves
       match /eleves/{studentId} {
         allow read, list: if isUserInSchool(schoolId);
         allow write: if isSchoolDirector(schoolId) || isAdmin();
 
+        // Notes d'un élève
         match /notes/{gradeId} {
             allow read: if isUserInSchool(schoolId);
-            allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+            // Seul un enseignant de la classe de l'élève, le directeur ou un admin peut écrire des notes.
+            allow write: if isSchoolDirector(schoolId) || isAdmin() || (isTeacher(schoolId) && isTeacherForClass(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)).data.classId, schoolId));
         }
-        match /paiements/{paymentId} {
-             allow read, write: if isSchoolDirector(schoolId) || isAdmin();
-        }
-        match /affectations/{assignmentId} {
-            allow read, list: if isUserInSchool(schoolId);
-            allow write: if isSchoolDirector(schoolId) || isAdmin();
+        // Paiements et affectations
+        match /paiements/{paymentId} | /affectations/{assignmentId} {
+             allow read, list: if isUserInSchool(schoolId);
+             allow write: if isSchoolDirector(schoolId) || isAdmin();
         }
       }
 
-       // --- Other School Subcollections ---
-       match /frais_scolarite/{feeId} {
-          allow read, list: if isUserInSchool(schoolId);
-          allow write: if isSchoolDirector(schoolId) || isAdmin();
-      }
+      // Absences
       match /absences/{absenceId} {
           allow read, list: if isUserInSchool(schoolId);
-          allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+          // Un enseignant peut gérer les absences de sa classe.
+          allow write: if isSchoolDirector(schoolId) || isAdmin() || (isTeacher(schoolId) && isTeacherForClass(request.resource.data.classId, schoolId));
       }
-      match /comptabilite/{transactionId} {
-          allow read, list, write: if isSchoolDirector(schoolId) || isAdmin();
-      }
-      match /bibliotheque/{bookId} {
+
+       // Frais, Comptabilité, Bibliothèque
+       match /frais_scolarite/{feeId} | /comptabilite/{transactionId} | /bibliotheque/{bookId} {
           allow read, list: if isUserInSchool(schoolId);
           allow write: if isSchoolDirector(schoolId) || isAdmin();
       }
+      
+      // Messagerie
       match /messagerie/{messageId} {
           allow read, list: if isUserInSchool(schoolId);
+          // Un enseignant ou un directeur peut envoyer des messages.
           allow create: if isSchoolDirector(schoolId) || isTeacher(schoolId) || isAdmin();
-          allow update, delete: if isAdmin();
+          allow update, delete: if isAdmin(); // Seul un admin peut modifier/supprimer des messages (pour modération).
       }
     }
   }
