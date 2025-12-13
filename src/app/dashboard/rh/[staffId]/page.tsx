@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -112,11 +113,11 @@ export default function StaffProfilePage() {
     <>
     <div className="space-y-6">
         <div className="flex flex-wrap justify-end items-center gap-2">
-             <Button variant="outline" onClick={() => handleGeneratePayslip()}>
-              <FileText className="mr-2 h-4 w-4" />Bulletin de Paie
+             <Button variant="outline" onClick={handleGeneratePayslip}>
+              <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Bulletin de Paie</span>
             </Button>
             <Button variant="outline" onClick={() => setIsInfoSheetOpen(true)}>
-              <FileText className="mr-2 h-4 w-4" />Imprimer la Fiche
+              <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
             </Button>
         </div>
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">

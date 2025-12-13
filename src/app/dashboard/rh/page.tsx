@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -338,11 +339,19 @@ export default function HRPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>Voir le Profil</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleGeneratePayslip(member)}>Générer Bulletin de Paie</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>
+                        <span className="flex items-center gap-2"><BookUser className="h-4 w-4" />Voir le Profil</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>
+                        <span className="flex items-center gap-2">Modifier</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGeneratePayslip(member)}>
+                        <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Bulletin de Paie</span>
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>Supprimer</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>
+                        <span className="flex items-center gap-2">Supprimer</span>
+                      </DropdownMenuItem>
                   </DropdownMenuContent>
               </DropdownMenu>
             </CardFooter>
