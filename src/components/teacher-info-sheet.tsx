@@ -8,7 +8,7 @@ import { Printer, User, Cake, MapPin, Phone, Mail, Book, BookUser, Hash } from '
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { teacher as Teacher } from '@/lib/data-types';
+import type { staff as Teacher } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface SchoolInfo {

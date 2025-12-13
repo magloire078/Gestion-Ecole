@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useRef } from 'react';
@@ -44,7 +45,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                 @page { size: A4; margin: 20mm; }
             </style>
         `);
-        printWindow.document.write('</head><body style="color: black !important;">');
+        printWindow.document.write('<body style="color: black !important;">');
         printWindow.document.write(printContent);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
@@ -138,7 +139,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                         </div>
                     </div>
                      <div className="flex justify-end mt-12 text-sm">
-                        Fait à {school.address?.split(',')[0] || 'Abidjan'}, le {isMounted ? format(new Date(), 'd MMMM yyyy', { locale: fr }) : '...'}
+                        Fait à {school.address?.split(',')[0] || '...'}, le {isMounted ? format(new Date(), 'd MMMM yyyy', { locale: fr }) : '...'}
                      </div>
                 </div>
 

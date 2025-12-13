@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,9 +52,9 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     }
   };
 
-  const isLoading = userLoading;
+  const isLoading = userLoading || !isMounted;
 
-  if (!isMounted || isLoading) {
+  if (isLoading) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   

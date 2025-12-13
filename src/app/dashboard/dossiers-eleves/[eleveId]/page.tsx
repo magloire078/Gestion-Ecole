@@ -98,17 +98,17 @@ export default function StudentProfilePage() {
   
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
-  const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
-  const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [schoolId, eleveId]);
+  const gradesQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
+  const paymentsQuery = useMemoFirebase(() => schoolId && eleveId ? query(collection(firestore, `eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
   
   const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
-  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `classes/${student.classId}`) : null, [student, schoolId]);
+  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `classes/${student.classId}`) : null, [student, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId]);
+  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
   // This query is for the edit form, to be able to switch classes.
@@ -140,7 +140,7 @@ export default function StudentProfilePage() {
         return;
     }
     try {
-        await updateStudentPhoto(firestore, eleveId, url);
+        await updateStudentPhoto(firestore, schoolId, eleveId, url);
         toast({ title: 'Photo de profil mise à jour !' });
     } catch (error) {
         // The error is already emitted as a permission error in the service
@@ -226,7 +226,7 @@ export default function StudentProfilePage() {
                     <CardHeader className="flex-row items-center gap-4 pb-4">
                         <ImageUploader 
                             onUploadComplete={handlePhotoUploadComplete}
-                            storagePath={`eleves/${eleveId}/avatars/`}
+                            storagePath={`ecoles/${schoolId}/eleves/${eleveId}/avatars/`}
                         >
                             <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
                                 <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${eleveId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
