@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -122,7 +121,7 @@ export default function StructurePage() {
     if (!searchQuery) return cycles;
     return cycles.filter(cycle => 
       cycle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cycle.code.toLowerCase().includes(searchQuery.toLowerCase())
+      (cycle.code && cycle.code.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [cycles, searchQuery]);
 
@@ -131,7 +130,7 @@ export default function StructurePage() {
     if (!searchQuery) return filteredNiveaux;
     return filteredNiveaux.filter(niveau => 
       niveau.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      niveau.code.toLowerCase().includes(searchQuery.toLowerCase())
+      (niveau.code && niveau.code.toLowerCase().includes(searchQuery.toLowerCase()))
     );
   }, [filteredNiveaux, searchQuery]);
 
@@ -266,7 +265,6 @@ export default function StructurePage() {
                               <div className="flex items-center gap-2">
                                 <div 
                                   className="w-3 h-3 rounded-full"
-                                  style={{ backgroundColor: cycle.color || '#3b82f6' }}
                                 />
                                 {cycle.name}
                               </div>
@@ -313,9 +311,6 @@ export default function StructurePage() {
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-3 h-3 rounded-full"
-                          style={{ 
-                            backgroundColor: cycleMap.get(selectedCycleForDisplay)?.color || '#3b82f6' 
-                          }}
                         />
                         <span className="font-medium">
                           {cycleMap.get(selectedCycleForDisplay)?.name} - Niveaux associés
@@ -441,7 +436,6 @@ export default function StructurePage() {
                             <div className="flex items-center gap-2">
                               <div 
                                 className="w-2 h-2 rounded-full"
-                                style={{ backgroundColor: cycle.color || '#3b82f6' }}
                               />
                               {cycle.name}
                             </div>
@@ -508,7 +502,6 @@ export default function StructurePage() {
                                   <div className="flex items-center gap-2">
                                     <div 
                                       className="w-2 h-2 rounded-full"
-                                      style={{ backgroundColor: cycle.color || '#3b82f6' }}
                                     />
                                     <span>{cycle.name}</span>
                                   </div>
