@@ -23,7 +23,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const classSchemaBase = z.object({
+const classSchema = z.object({
   name: z.string()
     .min(2, 'Le nom doit contenir au moins 2 caractères')
     .max(50, 'Le nom ne peut excéder 50 caractères'),
@@ -56,7 +56,7 @@ const classSchemaBase = z.object({
   status: z.enum(['active', 'inactive', 'archived']).default('active'),
 });
 
-type ClassFormValues = z.infer<typeof classSchemaBase>;
+type ClassFormValues = z.infer<typeof classSchema>;
 
 export default function NewClassPage() {
   const router = useRouter();
@@ -79,9 +79,9 @@ export default function NewClassPage() {
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
 
   // Schéma de validation dynamique qui dépend des niveaux chargés
-  const classSchema = useMemo(() => classSchemaBase.refine(
+  const classSchemaWithRefine = useMemo(() => classSchema.refine(
     (data) => {
-      if (!niveaux || niveaux.length === 0) return true; // Ne pas valider si les données ne sont pas prêtes
+      if (!niveaux || niveaux.length === 0) return true;
       const niveau = niveaux.find(n => n.id === data.niveauId);
       return niveau ? niveau.cycleId === data.cycleId : true;
     },
@@ -92,7 +92,7 @@ export default function NewClassPage() {
   ), [niveaux]);
 
   const form = useForm<ClassFormValues>({
-    resolver: zodResolver(classSchema),
+    resolver: zodResolver(classSchemaWithRefine),
     defaultValues: {
       academicYear: '2024-2025',
       maxStudents: 28,
@@ -117,7 +117,6 @@ export default function NewClassPage() {
     }
   }, [watchedCycleId, form]);
 
-  // Autogenerate name and code
   useEffect(() => {
       const niveau = niveaux.find(n => n.id === watchedNiveauId);
       if(niveau && watchedSection) {
@@ -134,31 +133,34 @@ export default function NewClassPage() {
 
   const handleSubmit = async (values: ClassFormValues) => {
     if (!schoolId || !user) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de créer la classe sans ID d\'école ou utilisateur.' });
-        return;
+      toast({ 
+        variant: 'destructive', 
+        title: 'Erreur', 
+        description: 'Impossible de créer la classe sans ID d\'école ou utilisateur.' 
+      });
+      return;
     }
-
+  
     try {
       const teacher = teachers.find(t => t.id === values.mainTeacherId);
       const niveau = niveaux.find(n => n.id === values.niveauId);
-
-      if(!niveau) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Le niveau sélectionné est invalide.' });
+  
+      if (!niveau) {
+        toast({
+          variant: 'destructive',
+          title: 'Niveau introuvable',
+          description: 'Le niveau sélectionné n\'existe pas.',
+        });
         return;
       }
       
-      if (values.maxStudents > niveau.capacity) {
-        form.setError('maxStudents', { message: `L'effectif dépasse la capacité du niveau (${niveau.capacity}).` });
-        return;
-      }
-
       const classData = {
-          ...values,
-          schoolId,
-          createdBy: user.uid,
-          mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
-          teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
-          grade: niveau?.name || '',
+        ...values,
+        schoolId,
+        createdBy: user.uid,
+        mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
+        teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
+        grade: niveau?.name || '',
       };
       
       const response = await fetch('/api/classes', {
@@ -166,26 +168,26 @@ export default function NewClassPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(classData),
       });
-
+  
       const responseData = await response.json();
-
+  
       if (!response.ok) {
         throw new Error(responseData.error || 'Une erreur est survenue.');
       }
       
       toast({
-          title: 'Classe créée !',
-          description: `La classe ${values.name} a été ajoutée avec succès.`,
+        title: 'Classe créée !',
+        description: `La classe ${values.name} a été ajoutée avec succès.`,
       });
       router.push('/dashboard/pedagogie/structure');
     
     } catch (error: any) {
-        if (error.message.includes('code existe déjà')) {
-          form.setError('code', { message: error.message });
-        } else {
-          console.error("Erreur lors de la création de la classe:", error);
-          toast({ variant: 'destructive', title: 'Erreur', description: error.message });
-        }
+      if (error.message.includes('code existe déjà')) {
+        form.setError('code', { message: error.message });
+      } else {
+        console.error("Erreur lors de la création de la classe:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: error.message });
+      }
     }
   };
 
