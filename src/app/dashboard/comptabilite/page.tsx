@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -324,9 +325,13 @@ export default function AccountingPage() {
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
-            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if (!isOpen) setEditingTransaction(null); setIsFormOpen(isOpen); }}>
-                <DialogTrigger asChild>
-                    <Button onClick={() => handleOpenFormDialog(null)}><span className="flex items-center gap-2"><PlusCircle className="h-4 w-4" /> Ajouter une Transaction</span></Button>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger>
+                    <Button onClick={() => handleOpenFormDialog(null)}>
+                      <span className="flex items-center gap-2">
+                        <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
+                      </span>
+                    </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>

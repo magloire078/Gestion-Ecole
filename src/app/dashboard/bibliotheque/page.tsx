@@ -235,8 +235,12 @@ export default function LibraryPage() {
             <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
           </div>
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleOpenFormDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre</Button>
+            <DialogTrigger>
+              <Button onClick={() => handleOpenFormDialog(null)}>
+                <span className="flex items-center gap-2">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
+                </span>
+              </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
               <DialogHeader>

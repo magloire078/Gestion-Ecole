@@ -384,9 +384,13 @@ export default function TimetablePage() {
                     {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
             </Select>
-            <Dialog open={isFormOpen} onOpenChange={(isOpen) => { if(!isOpen) setEditingEntry(null); setIsFormOpen(isOpen); }}>
-              <DialogTrigger asChild>
-                <Button onClick={() => handleOpenFormDialog(null)}><PlusCircle className="mr-2 h-4 w-4" /> Ajouter</Button>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger>
+                <Button onClick={() => handleOpenFormDialog(null)}>
+                  <span className="flex items-center gap-2">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter
+                  </span>
+                </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>

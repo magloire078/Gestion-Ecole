@@ -371,12 +371,9 @@ export default function ClassesPage() {
             <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
           <div className="flex gap-2">
-             <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
-                if (isOpen) handleOpenFormDialog(null);
-                else setIsFormOpen(false);
-            }}>
-              <DialogTrigger asChild>
-                <Button>
+             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger>
+                <Button onClick={() => handleOpenFormDialog(null)}>
                     <span className="flex items-center gap-2">
                         <PlusCircle className="h-4 w-4" /> Ajouter une Classe
                     </span>

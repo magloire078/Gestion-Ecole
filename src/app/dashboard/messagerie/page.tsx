@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -279,7 +280,7 @@ export default function MessagingPage() {
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Historique des envois</h2>
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogTrigger asChild>
+                <DialogTrigger>
                     <Button onClick={() => setIsFormOpen(true)}>
                       <span className="flex items-center gap-2">
                         <PlusCircle className="h-4 w-4" /> Nouveau Message
