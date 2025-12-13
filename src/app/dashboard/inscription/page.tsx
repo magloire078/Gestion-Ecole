@@ -18,7 +18,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { schoolClasses } from '@/lib/data';
 import type { class_type as Class, fee as Fee } from '@/lib/data-types';
 
 const registrationSchema = z.object({
@@ -115,10 +114,9 @@ export default function RegistrationPage() {
     form.clearErrors();
 
     const selectedClassInfo = classes.find(c => c.id === values.classId);
-    const schoolClassInfo = schoolClasses.find(sc => sc.name === selectedClassInfo?.name);
-    const studentCycle = schoolClassInfo?.cycle || selectedClassInfo?.cycle || 'N/A';
+    const studentCycle = selectedClassInfo?.cycle || 'N/A';
     
-    const feeInfo = fees.find(f => f.grade === selectedClassInfo?.name);
+    const feeInfo = fees.find(f => f.grade === selectedClassInfo?.grade);
     const tuitionFee = feeInfo ? parseFloat(feeInfo.amount) : 0;
 
 
@@ -160,7 +158,7 @@ export default function RegistrationPage() {
 
     // 2. Atomically increment the student count on the class document
     if (selectedClassInfo) {
-        const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id);
+        const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id!);
         batch.update(classRef, { studentCount: increment(1) });
     }
 
@@ -181,7 +179,7 @@ export default function RegistrationPage() {
     }
   };
 
-  if (schoolDataLoading || feesLoading) {
+  if (schoolDataLoading || feesLoading || classesLoading) {
     return <div>Chargement...</div>;
   }
   
@@ -226,7 +224,7 @@ export default function RegistrationPage() {
                   <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations Scolaires</div>
                   <FormField control={form.control} name="previousSchool" render={({ field }) => (<FormItem><FormLabel>Ancien établissement (si applicable)</FormLabel><FormControl><Input placeholder="Ex: Lycée Lamine Gueye" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe souhaitée</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe souhaitée</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut de l'inscription</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un statut" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif / Inscrit</SelectItem><SelectItem value="En attente">En attente / Pré-inscrit</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                   </div>
                 </div>
@@ -277,5 +275,3 @@ export default function RegistrationPage() {
     </div>
   );
 }
-
-    
