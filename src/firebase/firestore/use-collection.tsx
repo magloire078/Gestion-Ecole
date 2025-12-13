@@ -35,8 +35,9 @@ export function useCollection<T>(query: Query<T> | null) {
       setData(snapshot.docs);
       setLoading(false);
     }, async (serverError) => {
+        const path = (query as any)._query?.path?.segments.join('/') || 'unknown path';
         const permissionError = new FirestorePermissionError({
-            path: (query as any)._query.path.segments.join('/'),
+            path: path,
             operation: 'list',
         });
         errorEmitter.emit('permission-error', permissionError);
@@ -58,8 +59,9 @@ export function useCollection<T>(query: Query<T> | null) {
         const docRef = await addDoc(collRef, data);
         return docRef;
     } catch (serverError) {
+        const path = (query as any)._query?.path?.segments.join('/') || 'unknown path';
         const permissionError = new FirestorePermissionError({
-            path: (query as any)._query.path.segments.join('/'),
+            path: path,
             operation: 'create',
             requestResourceData: data,
         });

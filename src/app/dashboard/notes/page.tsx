@@ -140,7 +140,7 @@ export default function GradeEntryPage() {
   });
 
   useEffect(() => {
-    if (todayDateString) {
+    if (todayDateString && !form.getValues('date')) {
         form.reset({ ...form.getValues(), date: todayDateString });
     }
   }, [todayDateString, form]);
@@ -515,3 +515,5 @@ export default function GradeEntryPage() {
     </>
   );
 }
+
+    

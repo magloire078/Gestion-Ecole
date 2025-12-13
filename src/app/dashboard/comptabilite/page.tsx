@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import {
   PlusCircle,
   MoreHorizontal,
@@ -78,10 +78,11 @@ const transactionSchema = z.object({
 type TransactionFormValues = z.infer<typeof transactionSchema>;
 
 export default function AccountingPage() {
+  const [isMounted, setIsMounted] = useState(false);
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
-  const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `comptabilite`), where('schoolId', '==', schoolId), orderBy("date", "desc")) : null, [firestore, schoolId]);
+  const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), orderBy("date", "desc")) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
   const transactions: AccountingTransaction[] = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction)) || [], [transactionsData]);
 
@@ -99,6 +100,7 @@ export default function AccountingPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
+    setIsMounted(true);
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -114,7 +116,7 @@ export default function AccountingPage() {
   });
   
   useEffect(() => {
-    if (todayDateString) {
+    if (todayDateString && !form.getValues('date')) {
         form.reset({ ...form.getValues(), date: todayDateString });
     }
   }, [todayDateString, form]);
@@ -148,7 +150,7 @@ export default function AccountingPage() {
   }, [watchedType, form]);
 
 
-  const getTransactionDocRef = (transactionId: string) => doc(firestore, `comptabilite/${transactionId}`);
+  const getTransactionDocRef = (transactionId: string) => doc(firestore, `ecoles/${schoolId}/comptabilite/${transactionId}`);
   
   const handleTransactionSubmit = (values: TransactionFormValues) => {
     if (!schoolId) return;
@@ -160,7 +162,7 @@ export default function AccountingPage() {
     };
 
     if (editingTransaction) {
-        const transactionDocRef = getTransactionDocRef(editingTransaction.id);
+        const transactionDocRef = getTransactionDocRef(editingTransaction.id!);
         setDoc(transactionDocRef, transactionData, { merge: true })
         .then(() => {
             toast({ title: "Transaction modifiée", description: "La transaction a été mise à jour." });
@@ -170,7 +172,7 @@ export default function AccountingPage() {
             errorEmitter.emit('permission-error', permissionError);
         });
     } else {
-        const transactionCollectionRef = collection(firestore, `comptabilite`);
+        const transactionCollectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
         addDoc(transactionCollectionRef, transactionData)
         .then(() => {
             toast({ title: "Transaction ajoutée", description: `La transaction a été enregistrée.` });
@@ -193,7 +195,7 @@ export default function AccountingPage() {
   };
 
   const handleDeleteTransaction = () => {
-    if (!schoolId || !transactionToDelete) return;
+    if (!schoolId || !transactionToDelete || !transactionToDelete.id) return;
     const transactionDocRef = getTransactionDocRef(transactionToDelete.id);
     deleteDoc(transactionDocRef)
     .then(() => {
@@ -363,7 +365,7 @@ export default function AccountingPage() {
                 ) : transactions.length > 0 ? (
                     transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
-                        <TableCell>{format(new Date(transaction.date), 'd MMM yyyy', { locale: fr })}</TableCell>
+                        <TableCell>{isMounted ? format(new Date(transaction.date), 'd MMM yyyy', { locale: fr }) : '...'}</TableCell>
                         <TableCell className="font-medium">{transaction.description}</TableCell>
                         <TableCell>{transaction.category}</TableCell>
                         <TableCell className={`text-right font-mono ${transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive'}`}>
@@ -426,3 +428,5 @@ export default function AccountingPage() {
     </>
   );
 }
+
+    

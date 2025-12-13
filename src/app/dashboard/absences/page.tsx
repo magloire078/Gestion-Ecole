@@ -86,19 +86,19 @@ export default function AbsencesPage() {
   }, []);
 
   // --- Data Fetching ---
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `classes`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const studentsQuery = useMemoFirebase(() => 
-    schoolId && selectedClassId ? query(collection(firestore, `eleves`), where('schoolId', '==', schoolId), where('classId', '==', selectedClassId)) : null,
+    schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('schoolId', '==', schoolId), where('classId', '==', selectedClassId)) : null,
     [firestore, schoolId, selectedClassId]
   );
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   
   const allAbsencesQuery = useMemoFirebase(() =>
-    schoolId ? query(collection(firestore, `absences`), where('schoolId', '==', schoolId), orderBy('date', 'desc')) : null
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), where('schoolId', '==', schoolId), orderBy('date', 'desc')) : null
   , [firestore, schoolId]);
   const { data: allAbsencesData, loading: allAbsencesLoading } = useCollection(allAbsencesQuery);
 
@@ -173,7 +173,7 @@ export default function AbsencesPage() {
       createdAt: serverTimestamp(),
     };
     
-    const absenceCollectionRef = collection(firestore, `absences`);
+    const absenceCollectionRef = collection(firestore, `ecoles/${schoolId}/absences`);
     addDoc(absenceCollectionRef, absenceData)
     .then(() => {
         toast({
@@ -382,3 +382,5 @@ export default function AbsencesPage() {
     </>
   );
 }
+
+    
