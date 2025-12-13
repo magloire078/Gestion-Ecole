@@ -56,12 +56,12 @@ export default function StructurePage() {
   // --- Data Fetching ---
   const cyclesQuery = useMemoFirebase(() => 
     schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, 
-    [schoolId, firestore]
+    [schoolId]
   );
   
   const niveauxQuery = useMemoFirebase(() => 
     schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, 
-    [schoolId, firestore]
+    [schoolId]
   );
   
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
@@ -640,20 +640,19 @@ export default function StructurePage() {
                   <TabsTrigger 
                     key={cycle.id} 
                     value={cycle.id}
-                    onClick={() => setSelectedCycleForDisplay(cycle.id)}
                   >
                     {cycle.name}
                   </TabsTrigger>
                 ))
               }
             </TabsList>
-
+            
             <TabsContent value={activeCycleFilter} className="mt-6">
-              {viewMode === 'grid' ? (
-                <ClassesGridView cycleId={activeCycleFilter} />
-              ) : (
-                <ClassesListView cycleId={activeCycleFilter} />
-              )}
+                 {viewMode === 'grid' ? (
+                    <ClassesGridView cycleId={activeCycleFilter} />
+                  ) : (
+                    <ClassesListView cycleId={activeCycleFilter} />
+                 )}
             </TabsContent>
           </Tabs>
         </TabsContent>
