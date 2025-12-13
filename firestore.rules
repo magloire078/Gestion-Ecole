@@ -109,8 +109,7 @@ service cloud.firestore {
         
         // --- Paiements de l'élève ---
         match /paiements/{paymentId} {
-          allow read, list: if isSchoolDirector(schoolId) || isAdmin(); // Only director/admin can see payment history
-          allow write: if isSchoolDirector(schoolId) || isAdmin();
+          allow read, list, write: if isSchoolDirector(schoolId) || isAdmin();
         }
 
         // --- Affectations de l'élève ---
