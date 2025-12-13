@@ -18,7 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -81,9 +81,9 @@ export default function NewClassPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- Data Fetching ---
-  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
-  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
-  const teachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [schoolId, firestore]);
+  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
+  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
+  const teachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [schoolId]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
@@ -96,7 +96,7 @@ export default function NewClassPage() {
   // Schéma de validation dynamique qui dépend des niveaux chargés
   const classSchemaWithRefine = useMemo(() => classSchema.refine(
     (data) => {
-      if (!niveaux || niveaux.length === 0) return true; // Ne pas valider si les niveaux ne sont pas chargés
+      if (!niveaux || niveaux.length === 0) return true;
       const niveau = niveaux.find(n => n.id === data.niveauId);
       if (niveau && data.maxStudents > niveau.capacity) {
         form.setError("maxStudents", { message: `L'effectif ne peut dépasser la capacité du niveau (${niveau.capacity}).`});
