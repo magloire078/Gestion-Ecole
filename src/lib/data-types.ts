@@ -43,6 +43,7 @@ export type staff = {
     matricule?: string;
     status?: "Actif" | "Inactif";
     subject?: string;
+    classId?: string;
     situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
     enfants?: number;
     categorie?: string;
@@ -91,6 +92,9 @@ export type student = {
     createdAt?: string;
     id?: string;
     name?: string;
+    classId?: string;
+    class?: string;
+    cycle?: string;
 };
 
 export type cycle = {
@@ -148,6 +152,9 @@ export type classe = {
     building?: string;
     createdAt?: string;
     updatedAt?: string;
+    notes?: string;
+    id?: string;
+    grade?: string;
 };
 
 export type studentClassAssignment = {
@@ -252,4 +259,13 @@ export type absence = {
     justified: boolean;
     recordedBy: string;
     reason?: string;
+};
+
+export type fee = {
+    schoolId: string;
+    grade: string;
+    amount: string;
+    installments: string;
+    details?: string;
+    id?: string;
 };
