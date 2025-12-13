@@ -23,22 +23,40 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const classSchema = z.object({
-  name: z.string().min(1, 'Le nom est requis.'),
-  code: z.string().min(1, 'Le code est requis.').regex(/^[A-Z0-9-]+$/, "Le code ne doit contenir que des majuscules, chiffres et tirets."),
+const classSchemaBase = z.object({
+  name: z.string()
+    .min(2, 'Le nom doit contenir au moins 2 caractères')
+    .max(50, 'Le nom ne peut excéder 50 caractères'),
+  
+  code: z.string()
+    .min(2, 'Le code doit contenir au moins 2 caractères')
+    .max(10, 'Le code ne peut excéder 10 caractères')
+    .regex(/^[A-Z0-9]+$/, 'Le code doit contenir uniquement des lettres majuscules et chiffres'),
+  
   cycleId: z.string().min(1, 'Le cycle est requis.'),
   niveauId: z.string().min(1, 'Le niveau est requis.'),
-  section: z.string().optional(),
-  academicYear: z.string().min(1, "L'année est requise."),
-  maxStudents: z.coerce.number().min(1, "L'effectif maximum est requis."),
+  
+  section: z.string()
+    .length(1, 'La section doit être une seule lettre')
+    .regex(/^[A-Z]$/, 'La section doit être une lettre majuscule A-Z')
+    .optional(),
+  
+  academicYear: z.string()
+    .regex(/^\d{4}-\d{4}$/, 'Format invalide. Utilisez: 2024-2025'),
+  
+  maxStudents: z.coerce.number()
+    .min(1, "L'effectif maximum est requis.")
+    .max(40, "L'effectif maximum ne peut excéder 40 élèves"),
+  
   mainTeacherId: z.string().optional(),
-  classroom: z.string().optional(),
-  building: z.string().optional(),
-  notes: z.string().optional(),
+  classroom: z.string().max(50).optional(),
+  building: z.string().max(50).optional(),
+  notes: z.string().max(500).optional(),
+  
   status: z.enum(['active', 'inactive', 'archived']).default('active'),
 });
 
-type ClassFormValues = z.infer<typeof classSchema>;
+type ClassFormValues = z.infer<typeof classSchemaBase>;
 
 export default function NewClassPage() {
   const router = useRouter();
@@ -48,9 +66,9 @@ export default function NewClassPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   // --- Data Fetching ---
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
-  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [schoolId]);
+  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
+  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
+  const teachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [schoolId]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
@@ -59,7 +77,20 @@ export default function NewClassPage() {
   const cycles = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle & { id: string })) || [], [cyclesData]);
   const niveaux = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
-  
+
+  // Schéma de validation dynamique qui dépend des niveaux chargés
+  const classSchema = useMemo(() => classSchemaBase.refine(
+    (data) => {
+      if (!niveaux || niveaux.length === 0) return true; // Ne pas valider si les données ne sont pas prêtes
+      const niveau = niveaux.find(n => n.id === data.niveauId);
+      return niveau ? niveau.cycleId === data.cycleId : true;
+    },
+    {
+      message: "Le niveau sélectionné n'appartient pas au cycle choisi",
+      path: ["niveauId"]
+    }
+  ), [niveaux]);
+
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
@@ -228,7 +259,20 @@ export default function NewClassPage() {
                 <TabsContent value="effectif">
                     <Card>
                         <CardHeader><CardTitle>Configuration de l'effectif</CardTitle><CardDescription>Définissez les limites d'effectif pour cette classe.</CardDescription></CardHeader>
-                        <CardContent><FormField control={form.control} name="maxStudents" render={({ field }) => (<FormItem><FormLabel>Nombre maximum d'élèves *</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>)} /></CardContent>
+                        <CardContent>
+                            <FormField control={form.control} name="maxStudents" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Nombre maximum d'élèves *</FormLabel>
+                                    <FormControl><Input type="number" min="1" {...field} /></FormControl>
+                                    <FormMessage />
+                                    {form.getValues("niveauId") && niveaux.find(n => n.id === form.getValues("niveauId")) && (
+                                        <p className="text-xs text-muted-foreground pt-1">
+                                            Capacité recommandée pour le niveau "{niveaux.find(n => n.id === form.getValues("niveauId"))?.name}": {niveaux.find(n => n.id === form.getValues("niveauId"))?.capacity} élèves.
+                                        </p>
+                                    )}
+                                </FormItem>
+                            )} />
+                        </CardContent>
                     </Card>
                 </TabsContent>
 
