@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -9,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
@@ -83,7 +81,6 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
       const selectedClass = classes.find(c => c.id === classId);
       if (!selectedClass) return 0;
       
-      // The grade name is now on the class object.
       const gradeName = selectedClass.grade;
       if(!gradeName) return 0;
       
@@ -94,17 +91,14 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
 
     const newTuitionFee = getTuitionFeeForClass(watchedClassId);
     
-    // Mettre à jour les frais de scolarité uniquement si la classe change
-    if (watchedClassId !== student.classId) {
-        form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
-    }
+    // Mettre à jour les frais de scolarité
+    form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
 
     const currentDiscount = watchedDiscountAmount || 0;
-    const currentTuition = form.getValues('tuitionFee');
-    const newAmountDue = Math.max(0, currentTuition - currentDiscount);
+    const newAmountDue = Math.max(0, newTuitionFee - currentDiscount);
     form.setValue('amountDue', newAmountDue, { shouldValidate: true });
 
-  }, [watchedClassId, watchedDiscountAmount, form, classes, fees, student.classId, niveaux]);
+  }, [watchedClassId, watchedDiscountAmount, form, classes, fees, niveaux]);
 
 
   const handleEditStudent = async (values: StudentFormValues) => {
@@ -241,5 +235,3 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     </Form>
   );
 }
-
-    
