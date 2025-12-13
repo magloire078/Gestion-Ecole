@@ -25,16 +25,19 @@ import {
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 const navLinks = [
     {
       group: "Principal",
+      icon: LayoutDashboard,
       links: [
         { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard, adminOnly: false },
       ]
     },
     {
       group: "École",
+      icon: School,
       links: [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, adminOnly: false },
         { href: '/dashboard/classes', label: 'Classes', icon: School, adminOnly: false },
@@ -44,6 +47,7 @@ const navLinks = [
     },
     {
       group: "Pédagogie",
+      icon: GraduationCap,
       links: [
         { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText, adminOnly: false },
         { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, adminOnly: false },
@@ -52,6 +56,7 @@ const navLinks = [
     },
      {
       group: "Finance",
+      icon: Wallet,
       links: [
         { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus, adminOnly: false },
         { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: GraduationCap, adminOnly: false },
@@ -61,12 +66,14 @@ const navLinks = [
     },
     {
       group: "Communication",
+      icon: Send,
       links: [
         { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, adminOnly: false },
       ]
     },
      {
       group: "Configuration",
+      icon: Settings,
       links: [
         { href: '/dashboard/parametres', label: 'Paramètres généraux', icon: Settings, adminOnly: false },
         { href: '/dashboard/parametres/abonnement', label: 'Abonnement', icon: CreditCard, adminOnly: false },
@@ -75,6 +82,7 @@ const navLinks = [
     },
     {
       group: "Super Admin",
+      icon: Shield,
       links: [
         { href: '/dashboard/admin/abonnements', label: 'Abonnements', icon: CreditCard, adminOnly: true },
         { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield, adminOnly: true },
@@ -126,6 +134,7 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
   const isAdmin = user?.customClaims?.role === 'admin';
+  const pathname = usePathname();
   
   if (collapsed) {
       return (
@@ -140,24 +149,38 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
       );
   }
 
+  const defaultActiveGroup = navLinks.find(group => group.links.some(link => pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group || "Principal";
+
   return (
-    <nav className="flex flex-col gap-y-4">
+    <Accordion type="single" collapsible defaultValue={defaultActiveGroup} className="w-full">
       {navLinks.map((group) => {
           if (group.adminOnly && !isAdmin) return null;
+          
+          if (group.links.length === 1 && group.group === "Principal") {
+              return <NavLink key={group.links[0].href} {...group.links[0]} collapsed={false} />;
+          }
+
           return (
-            <div key={group.group}>
-                <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-                    {group.group}
-                </h3>
-                 <div className="space-y-1">
-                    {group.links.map((link) => {
-                       if (link.adminOnly && !isAdmin) return null;
-                       return <NavLink key={link.href} {...link} collapsed={false} />;
-                    })}
-                </div>
-            </div>
+            <AccordionItem value={group.group} key={group.group} className="border-b-0">
+                <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline">
+                     <div className="flex items-center gap-x-3">
+                        <div className="flex h-6 w-6 items-center justify-center">
+                            <group.icon className="h-5 w-5" />
+                        </div>
+                        <span>{group.group}</span>
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-1 pl-4">
+                    <div className="space-y-1">
+                        {group.links.map((link) => {
+                           if (link.adminOnly && !isAdmin) return null;
+                           return <NavLink key={link.href} {...link} collapsed={false} />;
+                        })}
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
           );
       })}
-    </nav>
+    </Accordion>
   );
 }
