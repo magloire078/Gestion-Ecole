@@ -13,7 +13,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -330,9 +329,8 @@ export default function ClassesPage() {
           </div>
           <div className="flex gap-2">
             <Button onClick={() => router.push('/dashboard/classes/new')}>
-              <span className="flex items-center gap-2">
-                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
-              </span>
+                <PlusCircle className="mr-2 h-4 w-4" /> 
+                Ajouter une Classe
             </Button>
           </div>
         </div>
