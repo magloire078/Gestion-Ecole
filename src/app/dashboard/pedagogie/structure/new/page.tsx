@@ -84,6 +84,7 @@ export default function NewClassPage() {
     }
 
     const teacher = teachers.find(t => t.id === values.mainTeacherId);
+    const niveau = niveaux.find(n => n.id === values.niveauId);
     
     const classData = {
         ...values,
@@ -95,6 +96,7 @@ export default function NewClassPage() {
         updatedAt: serverTimestamp(),
         mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
         teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
+        grade: niveau?.name || '', // Add the grade name
     };
     
     try {
@@ -117,7 +119,26 @@ export default function NewClassPage() {
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading || teachersLoading;
 
   if (isLoading) {
-      return <Skeleton className="w-full h-screen" />;
+      return (
+        <div className="space-y-6">
+            <Skeleton className="h-10 w-48" />
+             <Tabs defaultValue="informations" className="space-y-6">
+                <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="informations">Informations</TabsTrigger>
+                    <TabsTrigger value="effectif">Effectif</TabsTrigger>
+                    <TabsTrigger value="options">Options</TabsTrigger>
+                </TabsList>
+                 <Card>
+                    <CardHeader><Skeleton className="h-6 w-1/3" /><Skeleton className="h-4 w-2/3 mt-2" /></CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                           {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                        </div>
+                    </CardContent>
+                </Card>
+             </Tabs>
+        </div>
+      );
   }
 
   return (
@@ -137,7 +158,7 @@ export default function NewClassPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)}>
             <Tabs defaultValue="informations" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="informations">Informations</TabsTrigger>
                     <TabsTrigger value="effectif">Effectif</TabsTrigger>
                     <TabsTrigger value="options">Options</TabsTrigger>
@@ -149,7 +170,7 @@ export default function NewClassPage() {
                         <CardContent className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField control={form.control} name="cycleId" render={({ field }) => (<FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un cycle" /></SelectTrigger></FormControl><SelectContent>{cycles.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="niveauId" render={({ field }) => (<FormItem><FormLabel>Niveau *</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!watchedCycleId}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un niveau" /></SelectTrigger></FormControl><SelectContent>{filteredNiveaux.map((n) => (<SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="niveauId" render={({ field }) => (<FormItem><FormLabel>Niveau *</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!watchedCycleId || filteredNiveaux.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={!watchedCycleId ? "Choisissez un cycle" : "Sélectionnez un niveau"} /></SelectTrigger></FormControl><SelectContent>{filteredNiveaux.map((n) => (<SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la classe *</FormLabel><FormControl><Input placeholder="Ex: CE1-A" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code *</FormLabel><FormControl><Input placeholder="Ex: CE1A" {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="section" render={({ field }) => (<FormItem><FormLabel>Section</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{['A', 'B', 'C', 'D', 'E'].map(s => <SelectItem key={s} value={s}>Section {s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
