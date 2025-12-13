@@ -11,21 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const classSchema = z.object({
   name: z.string().min(1, 'Le nom est requis.'),
-  code: z.string().min(1, 'Le code est requis.'),
+  code: z.string().min(1, 'Le code est requis.').regex(/^[A-Z0-9-]+$/, "Le code ne doit contenir que des majuscules, chiffres et tirets."),
   cycleId: z.string().min(1, 'Le cycle est requis.'),
   niveauId: z.string().min(1, 'Le niveau est requis.'),
   section: z.string().optional(),
@@ -48,9 +48,9 @@ export default function NewClassPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   // --- Data Fetching ---
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
-  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
@@ -67,10 +67,17 @@ export default function NewClassPage() {
       maxStudents: 28,
       status: 'active',
       section: 'A',
+      name: '',
+      code: '',
+      cycleId: '',
+      niveauId: '',
     },
   });
   
   const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
+  const watchedNiveauId = useWatch({ control: form.control, name: 'niveauId' });
+  const watchedSection = useWatch({ control: form.control, name: 'section' });
+
   const filteredNiveaux = useMemo(() => niveaux.filter(n => n.cycleId === watchedCycleId), [niveaux, watchedCycleId]);
 
   useEffect(() => {
@@ -79,42 +86,74 @@ export default function NewClassPage() {
     }
   }, [watchedCycleId, form]);
 
+  // Autogenerate name and code
+  useEffect(() => {
+      const niveau = niveaux.find(n => n.id === watchedNiveauId);
+      if(niveau && watchedSection) {
+        const newName = `${niveau.name}-${watchedSection}`;
+        const newCode = `${niveau.code}${watchedSection}`;
+        form.setValue('name', newName);
+        form.setValue('code', newCode);
+      } else {
+        form.setValue('name', '');
+        form.setValue('code', '');
+      }
+
+  }, [watchedNiveauId, watchedSection, niveaux, form])
+
   const handleSubmit = async (values: ClassFormValues) => {
     if (!schoolId || !user) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de créer la classe sans ID d\'école ou utilisateur.' });
         return;
     }
 
-    const teacher = teachers.find(t => t.id === values.mainTeacherId);
-    const niveau = niveaux.find(n => n.id === values.niveauId);
-    
-    const classData = {
-        ...values,
-        schoolId,
-        studentCount: 0,
-        isFull: false,
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
-        teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
-        grade: niveau?.name || '',
-    };
-    
     try {
-        await addDoc(collection(firestore, `ecoles/${schoolId}/classes`), classData);
-        toast({
-            title: 'Classe créée !',
-            description: `La classe ${values.name} a été ajoutée avec succès.`,
-        });
-        router.push('/dashboard/pedagogie/structure');
-    } catch (error) {
-        console.error("Erreur lors de la création de la classe:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Erreur',
-            description: 'Une erreur est survenue lors de la création de la classe.',
-        });
+      const teacher = teachers.find(t => t.id === values.mainTeacherId);
+      const niveau = niveaux.find(n => n.id === values.niveauId);
+
+      if(!niveau) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Le niveau sélectionné est invalide.' });
+        return;
+      }
+      
+      if (values.maxStudents > niveau.capacity) {
+        form.setError('maxStudents', { message: `L'effectif dépasse la capacité du niveau (${niveau.capacity}).` });
+        return;
+      }
+
+      const classData = {
+          ...values,
+          schoolId,
+          createdBy: user.uid,
+          mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
+          teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
+          grade: niveau?.name || '',
+      };
+      
+      const response = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(classData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Une erreur est survenue.');
+      }
+
+      toast({
+!          title: 'Classe créée !',
+          description: `La classe ${values.name} a été ajoutée avec succès.`,
+      });
+      router.push('/dashboard/pedagogie/structure');
+    
+    } catch (error: any) {
+        if (error.message.includes('code existe déjà')) {
+          form.setError('code', { message: error.message });
+        } else {
+          console.error("Erreur lors de la création de la classe:", error);
+          toast({ variant: 'destructive', title: 'Erreur', description: error.message });
+        }
     }
   };
 
@@ -173,10 +212,10 @@ export default function NewClassPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <FormField control={form.control} name="cycleId" render={({ field }) => (<FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un cycle" /></SelectTrigger></FormControl><SelectContent>{cycles.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="niveauId" render={({ field }) => (<FormItem><FormLabel>Niveau *</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!watchedCycleId || filteredNiveaux.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={!watchedCycleId ? "Choisissez un cycle" : "Sélectionnez un niveau"} /></SelectTrigger></FormControl><SelectContent>{filteredNiveaux.map((n) => (<SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la classe *</FormLabel><FormControl><Input placeholder="Ex: CE1-A" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code *</FormLabel><FormControl><Input placeholder="Ex: CE1A" {...field} onChange={(e) => field.onChange(e.target.value.toUpperCase())} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="section" render={({ field }) => (<FormItem><FormLabel>Section</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{['A', 'B', 'C', 'D', 'E'].map(s => <SelectItem key={s} value={s}>Section {s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année scolaire *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="2024-2025">2024-2025</SelectItem><SelectItem value="2025-2026">2025-2026</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la classe *</FormLabel><FormControl><Input placeholder="Auto-généré" {...field} readOnly /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code *</FormLabel><FormControl><Input placeholder="Auto-généré" {...field} readOnly /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="mainTeacherId" render={({ field }) => (<FormItem><FormLabel>Enseignant principal</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un enseignant" /></SelectTrigger></FormControl><SelectContent>{teachers.map((t) => (<SelectItem key={t.id} value={t.id}>{`${t.firstName} ${t.lastName}`}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="classroom" render={({ field }) => (<FormItem><FormLabel>Salle de classe</FormLabel><FormControl><Input placeholder="Ex: Salle 101" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="building" render={({ field }) => (<FormItem><FormLabel>Bâtiment</FormLabel><FormControl><Input placeholder="Ex: Bâtiment A" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -205,7 +244,7 @@ export default function NewClassPage() {
 
             <div className="flex items-center justify-end pt-6">
                 <Button type="submit" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Création...' : <><Save className="mr-2 h-4 w-4" />Créer la classe</>}
+                    {form.formState.isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</> : <><Save className="mr-2 h-4 w-4" />Créer la classe</>}
                 </Button>
             </div>
         </form>
