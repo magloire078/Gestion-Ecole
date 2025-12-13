@@ -1,11 +1,12 @@
+
 'use server';
 
 // Fichier de configuration pour l'intégration CinetPay
 
 // IMPORTANT: Ces informations doivent être stockées dans des variables d'environnement sécurisées en production.
 // Ne jamais les exposer côté client.
-const CINETPAY_API_KEY = process.env.CINETPAY_API_KEY || "YOUR_CINETPAY_API_KEY";
-const CINETPAY_SITE_ID = process.env.CINETPAY_SITE_ID || "YOUR_CINETPAY_SITE_ID";
+const CINETPAY_API_KEY = process.env.CINETPAY_API_KEY || "148354392664d375a31421b7.56832817";
+const CINETPAY_SITE_ID = process.env.CINETPAY_SITE_ID || "593976";
 const CINETPAY_API_URL = "https://api-checkout.cinetpay.com/v2/payment";
 
 interface PaymentData {
@@ -34,7 +35,7 @@ export async function getCinetPayPaymentLink(data: PaymentData) {
         apikey: CINETPAY_API_KEY,
         site_id: CINETPAY_SITE_ID,
         notify_url: `${BASE_APP_URL}/api/webhooks/cinetpay`, // URL où CinetPay enverra les notifications de statut (backend)
-        return_url: `${BASE_APP_URL}/dashboard/settings/subscription`, // URL où l'utilisateur est redirigé après le paiement
+        return_url: `${BASE_APP_URL}/dashboard/parametres/abonnement`, // URL où l'utilisateur est redirigé après le paiement
         metadata: JSON.stringify({ schoolId: data.transaction_id.split('_')[0] }) // Exemple de métadonnées
     };
 
