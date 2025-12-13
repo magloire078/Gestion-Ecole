@@ -130,12 +130,11 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   if (collapsed) {
       return (
           <nav className="flex flex-col items-center gap-2 px-2 py-4">
-               {navLinks.map((group) => {
-                   if (group.adminOnly && !isAdmin) return null;
-                   return group.links.map((link) => {
-                       if (link.adminOnly && !isAdmin) return null;
-                       return <NavLink key={link.href} {...link} collapsed />;
-                   });
+               {navLinks.flatMap(group => {
+                   if (group.adminOnly && !isAdmin) return [];
+                   return group.links.filter(link => !link.adminOnly || isAdmin).map(link => (
+                       <NavLink key={link.href} {...link} collapsed />
+                   ));
                })}
           </nav>
       );
