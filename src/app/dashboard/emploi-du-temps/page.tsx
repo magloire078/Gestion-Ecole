@@ -58,8 +58,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { class_type as Class, staff as Staff } from '@/lib/data-types';
+import type { class_type as Class, staff as Staff, timetableEntry } from '@/lib/data-types';
 import { cn } from "@/lib/utils";
+import { allSubjects } from "@/lib/data";
 
 const timetableSchema = z.object({
   classId: z.string().min(1, { message: "La classe est requise." }),
@@ -68,22 +69,13 @@ const timetableSchema = z.object({
   day: z.enum(['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi']),
   startTime: z.string().min(1, { message: "L'heure de début est requise." }),
   endTime: z.string().min(1, { message: "L'heure de fin est requise." }),
+  color: z.string().optional(),
 });
 
 type TimetableFormValues = z.infer<typeof timetableSchema>;
 
 
-interface TimetableEntry {
-  id: string;
-  classId: string;
-  teacherId: string;
-  subject: string;
-  day: 'Lundi' | 'Mardi' | 'Mercredi' | 'Jeudi' | 'Vendredi' | 'Samedi';
-  startTime: string;
-  endTime: string;
-}
-
-const daysOfWeek = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+const daysOfWeek: TimetableFormValues['day'][] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 const timeSlots = [
     '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'
 ];
@@ -97,14 +89,14 @@ export default function TimetablePage() {
 
   // --- Firestore Data Hooks ---
   const timetableQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`)) : null, [firestore, schoolId]);
-  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
-  const timetable: TimetableEntry[] = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() } as TimetableEntry)) || [], [timetableData]);
+  const timetable: timetableEntry[] = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() } as timetableEntry)) || [], [timetableData]);
   const teachers: (Staff & {id: string})[] = useMemo(() => personnelData?.map(d => ({ id: d.id, ...d.data() } as Staff & {id: string})) || [], [personnelData]);
   const classes: (Class & {id: string})[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [classesData]);
 
@@ -112,8 +104,8 @@ export default function TimetablePage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
-  const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
-  const [entryToDelete, setEntryToDelete] = useState<TimetableEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<timetableEntry | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<timetableEntry | null>(null);
   
   const form = useForm<TimetableFormValues>({
     resolver: zodResolver(timetableSchema),
@@ -137,6 +129,7 @@ export default function TimetablePage() {
           day: editingEntry.day,
           startTime: editingEntry.startTime,
           endTime: editingEntry.endTime,
+          color: editingEntry.color,
         });
       } else {
         form.reset({
@@ -146,13 +139,14 @@ export default function TimetablePage() {
           day: "Lundi",
           startTime: "08:00",
           endTime: "09:00",
+          color: '#3b82f6'
         });
       }
     }
   }, [isFormOpen, editingEntry, form, selectedClassId]);
 
   const { timetableGrid, allTimeSlots } = useMemo(() => {
-    const grid: { [time: string]: { [day: string]: TimetableEntry[] } } = {};
+    const grid: { [time: string]: { [day: string]: timetableEntry[] } } = {};
     const filteredEntries = timetable.filter(entry => selectedClassId === 'all' || entry.classId === selectedClassId);
 
     const uniqueTimes = new Set<string>();
@@ -191,7 +185,7 @@ export default function TimetablePage() {
     const dataWithSchoolId = { ...values, schoolId };
 
     if (editingEntry) {
-        const entryDocRef = getEntryDocRef(editingEntry.id);
+        const entryDocRef = getEntryDocRef(editingEntry.id!);
         setDoc(entryDocRef, dataWithSchoolId, { merge: true })
         .then(() => {
             toast({ title: "Entrée modifiée", description: "L'entrée de l'emploi du temps a été mise à jour." });
@@ -213,7 +207,7 @@ export default function TimetablePage() {
     }
   };
   
-  const handleOpenFormDialog = (entry: TimetableEntry | null, day?: string, time?: string) => {
+  const handleOpenFormDialog = (entry: timetableEntry | null, day?: string, time?: string) => {
     if (entry) {
         setEditingEntry(entry);
     } else if(day && time) {
@@ -226,7 +220,8 @@ export default function TimetablePage() {
             startTime: time,
             endTime: endTime,
             teacherId: '',
-            subject: ''
+            subject: '',
+            color: '#3b82f6',
         })
     } else {
         setEditingEntry(null);
@@ -234,7 +229,7 @@ export default function TimetablePage() {
     setIsFormOpen(true);
   };
 
-  const handleOpenDeleteDialog = (entry: TimetableEntry) => {
+  const handleOpenDeleteDialog = (entry: timetableEntry) => {
     setEntryToDelete(entry);
     setIsDeleteDialogOpen(true);
   };
@@ -242,7 +237,7 @@ export default function TimetablePage() {
   const handleDeleteEntry = () => {
     if (!schoolId || !entryToDelete) return;
     
-    const entryDocRef = getEntryDocRef(entryToDelete.id);
+    const entryDocRef = getEntryDocRef(entryToDelete.id!);
     deleteDoc(entryDocRef)
     .then(() => {
         toast({ title: "Entrée supprimée", description: "L'entrée a été supprimée de l'emploi du temps." });
@@ -301,9 +296,14 @@ export default function TimetablePage() {
             render={({ field }) => (
               <FormItem className="grid grid-cols-4 items-center gap-4">
                 <FormLabel className="text-right">Matière</FormLabel>
-                <FormControl className="col-span-3">
-                  <Input placeholder="Ex: Mathématiques" {...field} />
-                </FormControl>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl className="col-span-3">
+                    <SelectTrigger><SelectValue placeholder="Sélectionner une matière" /></SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                      {allSubjects.map((subject) => (<SelectItem key={subject} value={subject}>{subject}</SelectItem>))}
+                  </SelectContent>
+                </Select>
                 <FormMessage className="col-start-2 col-span-3" />
               </FormItem>
             )}
@@ -385,7 +385,7 @@ export default function TimetablePage() {
                 </SelectContent>
             </Select>
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger>
+              <DialogTrigger asChild>
                 <Button onClick={() => handleOpenFormDialog(null)}>
                   <span className="flex items-center gap-2">
                     <PlusCircle className="mr-2 h-4 w-4" /> Ajouter
@@ -436,10 +436,10 @@ export default function TimetablePage() {
                                             const teacher = teachers.find(t => t.id === entry.teacherId);
                                             const classInfo = classes.find(c => c.id === entry.classId);
                                             return (
-                                                <div key={entry.id} className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg text-xs mb-1 relative">
-                                                    <p className="font-bold text-blue-800 dark:text-blue-300">{entry.subject}</p>
+                                                <div key={entry.id} className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg text-xs mb-1 relative" style={{ backgroundColor: entry.color ? `${entry.color}1A` : undefined, borderColor: entry.color, borderLeftWidth: '3px'}}>
+                                                    <p className="font-bold" style={{ color: entry.color }}>{entry.subject}</p>
                                                     <p className="text-muted-foreground">{teacher ? `${teacher.firstName[0]}. ${teacher.lastName}` : 'N/A'}</p>
-                                                    {selectedClassId === 'all' && <p className="text-blue-600 dark:text-blue-400 font-semibold">{classInfo?.name}</p>}
+                                                    {selectedClassId === 'all' && <p className="font-semibold" style={{ color: entry.color }}>{classInfo?.name}</p>}
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100")}>
                                                             <MoreHorizontal className="h-4 w-4" />
@@ -487,3 +487,5 @@ export default function TimetablePage() {
     </>
   );
 }
+
+    
