@@ -29,17 +29,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { UserX } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
@@ -92,14 +90,14 @@ export default function AbsencesPage() {
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
   const studentsQuery = useMemoFirebase(() => 
-    schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('schoolId', '==', schoolId), where('classId', '==', selectedClassId)) : null,
+    schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', selectedClassId)) : null,
     [firestore, schoolId, selectedClassId]
   );
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   
   const allAbsencesQuery = useMemoFirebase(() =>
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), where('schoolId', '==', schoolId), orderBy('date', 'desc')) : null
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc')) : null
   , [firestore, schoolId]);
   const { data: allAbsencesData, loading: allAbsencesLoading } = useCollection(allAbsencesQuery);
 
