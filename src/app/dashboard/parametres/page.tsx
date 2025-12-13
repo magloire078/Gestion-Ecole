@@ -105,7 +105,7 @@ export default function SettingsPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const { user } = useUser();
-  const { schoolData, loading, updateSchoolData } = useSchoolData();
+  const { schoolId, schoolData, loading, updateSchoolData } = useSchoolData();
   const [error, setError] = useState<string | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -284,6 +284,13 @@ export default function SettingsPage() {
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Matricule de l'Établissement</FormLabel><FormControl><Input placeholder="Ex: 0123/ETAB/2024" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="cnpsEmployeur" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employeur</FormLabel><FormControl><Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormItem>
+                          <FormLabel>ID de l'Établissement</FormLabel>
+                          <FormControl>
+                            <Input value={schoolId || ''} disabled />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
                       </TabsContent>
                       <TabsContent value="director" className="space-y-6 mt-0">
                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
