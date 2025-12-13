@@ -48,9 +48,9 @@ export default function NewClassPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   // --- Data Fetching ---
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
-  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
@@ -142,7 +142,7 @@ export default function NewClassPage() {
       }
 
       toast({
-!          title: 'Classe créée !',
+          title: 'Classe créée !',
           description: `La classe ${values.name} a été ajoutée avec succès.`,
       });
       router.push('/dashboard/pedagogie/structure');
