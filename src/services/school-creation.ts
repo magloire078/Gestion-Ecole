@@ -84,27 +84,27 @@ export class SchoolCreationService {
     // 4. Initialize school structure (Cycles and Niveaux)
     const template = SCHOOL_TEMPLATES.FRENCH_PRIMARY;
     
+    const NIVEAUX_MAP = {
+      "Maternelle": ["Petite Section", "Moyenne Section", "Grande Section"],
+      "Enseignement Primaire": ["CP1", "CP2", "CE1", "CE2", "CM1", "CM2"],
+      "Enseignement Secondaire - Premier cycle": ["6ème", "5ème", "4ème", "3ème"],
+      "Enseignement Secondaire - Deuxième cycle": ["Seconde", "Première", "Terminale"]
+    };
+
     for (const cycle of template.cycles) {
         const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
         batch.set(cycleRef, { ...cycle, schoolId });
         
-        const NIVEAUX = {
-          "Maternelle": ["Petite Section", "Moyenne Section", "Grande Section"],
-          "Enseignement Primaire": ["CP1", "CP2", "CE1", "CE2", "CM1", "CM2"],
-          "Enseignement Secondaire - Premier cycle": ["6ème", "5ème", "4ème", "3ème"],
-          "Enseignement Secondaire - Deuxième cycle": ["Seconde", "Première", "Terminale"]
-        };
+        const niveauxForCycle = NIVEAUX_MAP[cycle.name as keyof typeof NIVEAUX_MAP] || [];
         
-        const niveauxForCycle = NIVEAUX[cycle.name as keyof typeof NIVEAUX] || [];
-        
-        for (const niveauName of niveauxForCycle) {
+        for (const [index, niveauName] of niveauxForCycle.entries()) {
             const niveauRef = doc(collection(this.db, `ecoles/${schoolId}/niveaux`));
             batch.set(niveauRef, {
                 name: niveauName,
                 code: niveauName.replace(/\s+/g, '').toUpperCase(),
                 cycleId: cycleRef.id,
                 schoolId: schoolId,
-                order: niveauxForCycle.indexOf(niveauName) + 1,
+                order: index + 1,
                 // Default values that can be edited later
                 ageMin: 5,
                 ageMax: 6,
@@ -124,3 +124,5 @@ export class SchoolCreationService {
     return { schoolId, schoolCode };
   }
 }
+
+  

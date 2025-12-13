@@ -103,7 +103,9 @@ export type student = {
     amountDue: number;
     tuitionStatus: "Soldé" | "En retard" | "Partiel";
     photoUrl?: string;
-    currentClassId?: string;
+    classId?: string;
+    class?: string;
+    cycle?: string;
     address?: string;
     parent2FirstName?: string;
     parent2LastName?: string;
@@ -115,9 +117,6 @@ export type student = {
     createdAt?: string;
     id?: string;
     name?: string;
-    classId?: string;
-    class?: string;
-    cycle?: string;
 };
 
 export type cycle = {
@@ -156,6 +155,7 @@ export type class_type = {
     cycleId: string;
     niveauId: string;
     name: string;
+    grade: string;
     code: string;
     academicYear: string;
     studentCount: number;
@@ -177,9 +177,8 @@ export type class_type = {
     building?: string;
     createdAt?: string;
     updatedAt?: string;
-    notes?: string;
     id?: string;
-    grade?: string;
+    cycle?: string;
 };
 
 export type studentClassAssignment = {
@@ -289,4 +288,13 @@ export type fee = {
     id?: string;
 };
 
-    
+export type subject = {
+    schoolId: string;
+    name: string;
+    code?: string;
+    color?: string;
+    id?: string;
+};
+
+
+  

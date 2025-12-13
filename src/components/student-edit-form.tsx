@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -9,14 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Bot, Smile, Frown, Meh } from 'lucide-react';
+import { Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, writeBatch, increment } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import type { student as Student, class_type as Class, fee as Fee } from '@/lib/data-types';
+import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
 
 const studentSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -37,7 +40,7 @@ type StudentFormValues = z.infer<typeof studentSchema>;
 interface StudentEditFormProps {
   student: Student;
   classes: Class[];
-  fees: Fee[]; // Ajout des frais
+  fees: Fee[];
   schoolId: string;
   onFormSubmit: () => void;
 }
@@ -46,6 +49,11 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+  const niveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
+
 
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
@@ -69,13 +77,24 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
 
   // Effet pour recalculer les montants lorsque la classe ou la remise change
   useEffect(() => {
-    const newClass = classes.find(c => c.id === watchedClassId);
-    let newTuitionFee = form.getValues('tuitionFee');
+    const getTuitionFeeForClass = (classId: string) => {
+      if (!classId || !classes.length || !niveaux.length || !fees.length) return 0;
+      
+      const selectedClass = classes.find(c => c.id === classId);
+      if (!selectedClass) return 0;
 
+      const niveau = niveaux.find(n => n.id === selectedClass.niveauId);
+      if (!niveau) return 0;
+      
+      const feeInfo = fees.find(f => f.grade === niveau.name);
+
+      return feeInfo ? parseFloat(feeInfo.amount) : 0;
+    }
+
+    const newTuitionFee = getTuitionFeeForClass(watchedClassId);
+    
     // Mettre à jour les frais de scolarité uniquement si la classe change
-    if (watchedClassId !== student.classId && newClass) {
-        const feeForNewClass = fees.find(f => f.grade === newClass.grade); // Utilise grade au lieu de name
-        newTuitionFee = feeForNewClass ? parseFloat(feeForNewClass.amount) : 0;
+    if (watchedClassId !== student.classId) {
         form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
     }
 
@@ -83,7 +102,7 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     const newAmountDue = Math.max(0, newTuitionFee - currentDiscount);
     form.setValue('amountDue', newAmountDue, { shouldValidate: true });
 
-  }, [watchedClassId, watchedDiscountAmount, form, classes, fees, student.classId]);
+  }, [watchedClassId, watchedDiscountAmount, form, classes, fees, student.classId, niveaux]);
 
 
   const handleEditStudent = async (values: StudentFormValues) => {
@@ -102,7 +121,8 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
         lastName: values.lastName,
         classId: newClassId,
         class: selectedClassInfo?.name || student.class,
-        cycle: selectedClassInfo?.cycle || student.cycle,
+        cycle: selectedClassInfo?.cycleId || student.cycle,
+        grade: selectedClassInfo?.grade || 'N/A',
         dateOfBirth: values.dateOfBirth,
         tuitionFee: values.tuitionFee,
         discountAmount: values.discountAmount,
@@ -219,3 +239,5 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     </Form>
   );
 }
+
+  

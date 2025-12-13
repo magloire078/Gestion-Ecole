@@ -14,11 +14,11 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { class_type as Class, fee as Fee } from '@/lib/data-types';
+import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 
 const registrationSchema = z.object({
   // Step 1
@@ -66,6 +66,11 @@ export default function RegistrationPage() {
   const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+  
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+  const niveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
+
 
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -88,6 +93,23 @@ export default function RegistrationPage() {
         parent2Contact: '',
     }
   });
+
+  const watchedClassId = useWatch({ control: form.control, name: 'classId' });
+
+  const getTuitionFeeForClass = (classId: string) => {
+    if (!classId || !classes.length || !niveaux.length || !fees.length) return 0;
+    
+    const selectedClass = classes.find(c => c.id === classId);
+    if (!selectedClass) return 0;
+
+    const niveau = niveaux.find(n => n.id === selectedClass.niveauId);
+    if (!niveau) return 0;
+    
+    // On cherche un frais qui correspond au nom du niveau (ex: "CE1")
+    const feeInfo = fees.find(f => f.grade === niveau.name);
+
+    return feeInfo ? parseFloat(feeInfo.amount) : 0;
+  }
   
   const handleNextStep = async () => {
       let fieldsToValidate: (keyof RegistrationFormValues)[] = [];
@@ -114,11 +136,9 @@ export default function RegistrationPage() {
     form.clearErrors();
 
     const selectedClassInfo = classes.find(c => c.id === values.classId);
-    const studentCycle = selectedClassInfo?.cycle || 'N/A';
+    const selectedNiveauInfo = niveaux.find(n => n.id === selectedClassInfo?.niveauId);
     
-    const feeInfo = fees.find(f => f.grade === selectedClassInfo?.grade);
-    const tuitionFee = feeInfo ? parseFloat(feeInfo.amount) : 0;
-
+    const tuitionFee = getTuitionFeeForClass(values.classId);
 
     const studentData = {
       schoolId,
@@ -134,7 +154,8 @@ export default function RegistrationPage() {
       status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
-      cycle: studentCycle,
+      cycle: selectedClassInfo?.cycleId || 'N/A', // Assuming you'll fetch cycle name
+      grade: selectedNiveauInfo?.name || 'N/A', // Storing grade name
       parent1LastName: values.parent1LastName,
       parent1FirstName: values.parent1FirstName,
       parent1Contact: values.parent1Contact,
@@ -179,7 +200,9 @@ export default function RegistrationPage() {
     }
   };
 
-  if (schoolDataLoading || feesLoading || classesLoading) {
+  const isLoading = schoolDataLoading || feesLoading || classesLoading || niveauxLoading;
+
+  if (isLoading) {
     return <div>Chargement...</div>;
   }
   
@@ -195,7 +218,7 @@ export default function RegistrationPage() {
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
           <CardTitle>Formulaire d'Inscription</CardTitle>
-          <CardDescription>Étape {step} sur 3</CardDescription>
+          <CardDescription>Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée: {getTuitionFeeForClass(watchedClassId).toLocaleString('fr-FR')} CFA</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -275,3 +298,5 @@ export default function RegistrationPage() {
     </div>
   );
 }
+
+  
