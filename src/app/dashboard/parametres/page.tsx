@@ -34,7 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const settingsSchema = z.object({
-  name: z.string(), // On le garde pour la validation mais il ne sera pas éditable
+  name: z.string().min(1, "Le nom de l'école est requis."),
   matricule: z.string().regex(/^[A-Z0-9\/-]*$/, { message: "Format de matricule invalide" }).optional().or(z.literal('')),
   cnpsEmployeur: z.string().regex(/^[0-9]*$/, { message: "Le numéro CNPS doit contenir uniquement des chiffres" }).optional().or(z.literal('')),
   directorFirstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -112,6 +112,19 @@ export default function SettingsPage() {
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
+    defaultValues: {
+        name: "",
+        directorFirstName: "",
+        directorLastName: "",
+        matricule: "",
+        cnpsEmployeur: "",
+        directorPhone: "",
+        address: "",
+        phone: "",
+        website: "",
+        mainLogoUrl: "",
+        email: "",
+    }
   });
 
   useEffect(() => {
@@ -136,10 +149,9 @@ export default function SettingsPage() {
     setError(null);
     setIsSaving(true);
     try {
-        // Ne pas inclure le nom dans les données à sauvegarder
-        const { name, ...dataToSave } = values;
+        const dataToSave = { ...values };
         await updateSchoolData(dataToSave);
-        form.reset(values); // Re-synchronise l'état dirty après la sauvegarde
+        form.reset(values, { keepValues: true }); // Re-synchronise l'état dirty après la sauvegarde
         toast({
             title: "✅ Paramètres enregistrés",
             description: "Les informations ont été mises à jour avec succès.",
@@ -269,7 +281,7 @@ export default function SettingsPage() {
                                 </div>
                             </FormItem>
                          )} />
-                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Matricule de l'Établissement</FormLabel><FormControl><Input placeholder="Ex: 0123/ETAB/2024" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="cnpsEmployeur" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employeur</FormLabel><FormControl><Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                       </TabsContent>
