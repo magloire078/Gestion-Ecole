@@ -125,6 +125,7 @@ export type cycle = {
     code: string;
     order: number;
     description?: string;
+    color?: string;
     ageRange?: {
         min?: number;
         max?: number;
