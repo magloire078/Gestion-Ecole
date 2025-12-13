@@ -298,7 +298,7 @@ export default function HRPage() {
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                         <Avatar className="h-12 w-12">
-                            <AvatarImage src={`https://picsum.photos/seed/${member.id}/100`} alt={fullName} data-ai-hint="person face" />
+                            <AvatarImage src={member.photoURL || `https://picsum.photos/seed/${member.id}/100`} alt={fullName} data-ai-hint="person face" />
                             <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div>

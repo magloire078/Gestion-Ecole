@@ -63,7 +63,7 @@ export function ImageUploader({ onUploadComplete, storagePath, children }: Image
         toast({
           variant: 'destructive',
           title: 'Erreur de téléversement',
-          description: error.message,
+          description: "Vérifiez les permissions dans vos règles de stockage Firebase.",
         });
       },
       () => {

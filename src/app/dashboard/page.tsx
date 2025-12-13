@@ -78,20 +78,21 @@ const RegularDashboard = () => {
 
       try {
         // --- Fetch Stats ---
-        const studentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId));
-        const teachersQuery = query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant'));
-        const classesQuery = query(collection(firestore, `classes`), where('schoolId', '==', schoolId));
-        const booksQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId));
+        const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
+        const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
+        const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
+        const booksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
 
-        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot, studentsForTuitionSnapshot] = await Promise.all([
+        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot] = await Promise.all([
           getCountFromServer(studentsQuery),
           getCountFromServer(teachersQuery),
           getCountFromServer(classesQuery),
-          getDocs(booksQuery),
-          getDocs(studentsQuery)
+          getDocs(booksQuery)
         ]);
 
         const totalBooks = booksSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as LibraryBook).quantity, 0);
+        
+        const studentsForTuitionSnapshot = await getDocs(studentsQuery);
         const { totalPaid, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
             const student = doc.data() as Student;
             const tuition = student.tuitionFee || 0;
@@ -115,9 +116,9 @@ const RegularDashboard = () => {
         // --- Fetch Recent Activity ---
         const activities: Activity[] = [];
         
-        const recentStudentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(2));
-        const recentMessagesQuery = query(collection(firestore, `messagerie`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(2));
-        const recentBooksQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(2));
+        const recentStudentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(2));
+        const recentMessagesQuery = query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(2));
+        const recentBooksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(2));
 
         const [studentsActivitySnapshot, messagesActivitySnapshot, booksActivitySnapshot] = await Promise.all([
           getDocs(recentStudentsQuery), getDocs(recentMessagesQuery), getDocs(recentBooksQuery)
@@ -126,7 +127,7 @@ const RegularDashboard = () => {
         studentsActivitySnapshot.forEach(doc => {
             const student = doc.data() as Student;
             const createdAt = (student.createdAt && typeof student.createdAt === 'object' && 'seconds' in student.createdAt) 
-                ? new Date(student.createdAt.seconds * 1000) 
+                ? new Date((student.createdAt as any).seconds * 1000) 
                 : new Date();
             activities.push({
               id: doc.id, type: 'student', icon: UserPlus, color: 'bg-blue-100 dark:bg-blue-900/50',
@@ -137,7 +138,7 @@ const RegularDashboard = () => {
         messagesActivitySnapshot.forEach(doc => {
             const message = doc.data() as Message;
              const createdAt = (message.createdAt && typeof message.createdAt === 'object' && 'seconds' in message.createdAt) 
-                ? new Date(message.createdAt.seconds * 1000) 
+                ? new Date((message.createdAt as any).seconds * 1000) 
                 : new Date();
             activities.push({
                 id: doc.id, type: 'message', icon: MessageSquare, color: 'bg-violet-100 dark:bg-violet-900/50',
@@ -148,7 +149,7 @@ const RegularDashboard = () => {
         booksActivitySnapshot.forEach(doc => {
             const book = doc.data() as LibraryBook;
             const createdAt = (book.createdAt && typeof book.createdAt === 'object' && 'seconds' in book.createdAt) 
-                ? new Date(book.createdAt.seconds * 1000) 
+                ? new Date((book.createdAt as any).seconds * 1000) 
                 : new Date();
             activities.push({
                 id: doc.id, type: 'book', icon: BookOpen, color: 'bg-amber-100 dark:bg-amber-900/50',
@@ -163,12 +164,31 @@ const RegularDashboard = () => {
 
         // --- Fetch Grades for Chart ---
         const gradesCollectionGroup = collectionGroup(firestore, 'notes');
-        // This is not fully scalable. In a real app, aggregation would be better.
-        // Also, we can't filter by schoolId in a collectionGroup query without a composite index.
-        // For the prototype, we assume we're fetching all grades and they implicitly belong to the school.
-        const gradesSnapshot = await getDocs(gradesCollectionGroup);
-        const fetchedGrades = gradesSnapshot.docs.map(doc => doc.data() as GradeEntry);
-        setAllGrades(fetchedGrades);
+        const allStudentsInSchool = await getDocs(studentsQuery);
+        const studentIds = allStudentsInSchool.docs.map(doc => doc.id);
+        
+        if(studentIds.length > 0) {
+            const studentChunks = [];
+            for (let i = 0; i < studentIds.length; i += 30) {
+                studentChunks.push(studentIds.slice(i, i + 30));
+            }
+
+            const gradesPromises = studentChunks.map(chunk => 
+                getDocs(query(gradesCollectionGroup, where('__name__', 'in', chunk.map(id => `ecoles/${schoolId}/eleves/${id}`))))
+            );
+
+            const gradesSnapshots = await Promise.all(gradesPromises);
+            const fetchedGrades: GradeEntry[] = [];
+            gradesSnapshots.forEach(snapshot => {
+                snapshot.forEach(doc => {
+                    fetchedGrades.push(doc.data() as GradeEntry);
+                });
+            });
+            setAllGrades(fetchedGrades);
+        } else {
+            setAllGrades([]);
+        }
+        
         setGradesLoading(false);
 
 

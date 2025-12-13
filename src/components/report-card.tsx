@@ -211,7 +211,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     <p><span className="font-semibold">Matricule :</span> {student.matricule || 'N/A'}</p>
                 </div>
                 <Avatar className="h-20 w-20 border-2 border-black/10">
-                    <AvatarImage src={`https://picsum.photos/seed/${student.matricule}/100`} alt={student.name} data-ai-hint="student portrait" />
+                    <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${student.matricule}/100`} alt={student.name} data-ai-hint="student portrait" />
                     <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase()}</AvatarFallback>
                 </Avatar>
             </div>

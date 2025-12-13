@@ -98,7 +98,7 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     const newClassId = values.classId;
     const classHasChanged = oldClassId !== newClassId;
 
-    const studentDocRef = doc(firestore, `eleves/${student.id}`);
+    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
     const selectedClassInfo = classes.find(c => c.id === newClassId);
     
     const batch = writeBatch(firestore);
@@ -127,11 +127,11 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     if (classHasChanged) {
         // Decrement the old class counter if it existed
         if (oldClassId) {
-            const oldClassRef = doc(firestore, `classes/${oldClassId}`);
+            const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${oldClassId}`);
             batch.update(oldClassRef, { studentCount: increment(-1) });
         }
         // Increment the new class counter
-        const newClassRef = doc(firestore, `classes/${newClassId}`);
+        const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${newClassId}`);
         batch.update(newClassRef, { studentCount: increment(1) });
     }
 
@@ -141,7 +141,7 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
         onFormSubmit();
     }).catch((serverError) => {
         const permissionError = new FirestorePermissionError({ 
-            path: `[BATCH] /eleves/${student.id}`, 
+            path: `[BATCH] /ecoles/${schoolId}/eleves/${student.id}`, 
             operation: 'update', 
             requestResourceData: updatedData 
         });
