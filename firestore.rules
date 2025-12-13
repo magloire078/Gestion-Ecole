@@ -145,6 +145,11 @@ service cloud.firestore {
           allow read, list: if isUserInSchool(schoolId);
           allow write: if isSchoolDirector(schoolId) || isAdmin();
       }
+
+       match /frais_scolarite/{feeId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
     }
   }
 }
