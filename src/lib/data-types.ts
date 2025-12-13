@@ -27,34 +27,11 @@ export type school = {
     };
 };
 
-export type admin_role = {
-    name: string;
-    level: number;
-    permissions: {
-        manageUsers?: boolean;
-        viewUsers?: boolean;
-        manageSchools?: boolean;
-        viewSchools?: boolean;
-        manageClasses?: boolean;
-        manageGrades?: boolean;
-        manageSystem?: boolean;
-        viewAnalytics?: boolean;
-        manageSettings?: boolean;
-        manageBilling?: boolean;
-        manageContent?: boolean;
-        viewSupportTickets?: boolean;
-        manageSupportTickets?: boolean;
-        apiAccess?: boolean;
-        exportData?: boolean;
-    };
-    description?: string;
-};
-
 export type staff = {
     uid: string;
     email: string;
     schoolId: string;
-    role: "directeur" | "enseignant" | "personnel";
+    role: "directeur" | "enseignant" | "personnel" | "coordinateur";
     firstName: string;
     lastName: string;
     hireDate: string;
@@ -66,7 +43,6 @@ export type staff = {
     matricule?: string;
     status?: "Actif" | "Inactif";
     subject?: string;
-    classId?: string;
     situationMatrimoniale?: "Célibataire" | "Marié(e)" | "Divorcé(e)" | "Veuf(ve)";
     enfants?: number;
     categorie?: string;
@@ -87,41 +63,12 @@ export type staff = {
     id?: string;
 };
 
-export type class_type = {
-    schoolId: string;
-    name: string;
-    grade: string;
-    mainTeacherId: string;
-    building: string;
-    cycle: "Maternelle" | "Enseignement Primaire" | "Enseignement Secondaire - Premier cycle" | "Enseignement Secondaire - Deuxième cycle" | "Enseignement Supérieur";
-    filiere?: string;
-    studentCount?: number;
-    id?: string;
-};
-
-export type cycle = {
-    name: string;
-    order: number;
-};
-
-export type fee = {
-    schoolId: string;
-    grade: string;
-    amount: string;
-    installments: string;
-    details?: string;
-    id?: string;
-};
-
 export type student = {
     schoolId: string;
     firstName: string;
     lastName: string;
     matricule: string;
     status: "Actif" | "En attente" | "Radié";
-    class: string;
-    classId: string;
-    cycle: string;
     dateOfBirth: string;
     placeOfBirth: string;
     gender: "Masculin" | "Féminin";
@@ -132,6 +79,7 @@ export type student = {
     amountDue: number;
     tuitionStatus: "Soldé" | "En retard" | "Partiel";
     photoUrl?: string;
+    currentClassId?: string;
     address?: string;
     parent2FirstName?: string;
     parent2LastName?: string;
@@ -143,6 +91,99 @@ export type student = {
     createdAt?: string;
     id?: string;
     name?: string;
+};
+
+export type cycle = {
+    schoolId: string;
+    name: string;
+    code: string;
+    order: number;
+    description?: string;
+    ageRange?: {
+        min?: number;
+        max?: number;
+    };
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type niveau = {
+    schoolId: string;
+    cycleId: string;
+    name: string;
+    code: string;
+    order: number;
+    ageMin: number;
+    ageMax: number;
+    capacity: number;
+    color?: string;
+    description?: string;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type classe = {
+    schoolId: string;
+    cycleId: string;
+    niveauId: string;
+    name: string;
+    code: string;
+    academicYear: string;
+    studentCount: number;
+    maxStudents: number;
+    status: "active" | "inactive" | "archived";
+    isFull: boolean;
+    createdBy: string;
+    section?: string;
+    mainTeacherId?: string;
+    mainTeacherName?: string;
+    teacherIds?: string[];
+    coordinatorId?: string;
+    schedule?: {
+        startTime?: string;
+        endTime?: string;
+        days?: string[];
+    };
+    classroom?: string;
+    building?: string;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type studentClassAssignment = {
+    schoolId: string;
+    studentId: string;
+    classeId: string;
+    academicYear: string;
+    startDate: string;
+    promotionType: "normal" | "redoublement" | "avancement";
+    status: "active" | "transferred" | "graduated" | "withdrawn";
+    createdBy: string;
+    endDate?: string;
+    previousClass?: string;
+    notes?: string;
+    createdAt?: string;
+};
+
+export type schedule = {
+    schoolId: string;
+    classeId: string;
+    academicYear: string;
+    periods: {
+        id?: string;
+        day?: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday";
+        startTime?: string;
+        endTime?: string;
+        subjectId?: string;
+        subjectName?: string;
+        teacherId?: string;
+        teacherName?: string;
+        classroom?: string;
+        type?: "cours" | "td" | "tp" | "examen";
+        color?: string;
+    }[];
+    createdAt?: string;
+    updatedAt?: string;
 };
 
 export type gradeEntry = {
@@ -182,17 +223,6 @@ export type libraryBook = {
     author: string;
     quantity: number;
     createdAt?: string;
-    id?: string;
-};
-
-export type timetableEntry = {
-    schoolId: string;
-    classId: string;
-    teacherId: string;
-    subject: string;
-    day: "Lundi" | "Mardi" | "Mercredi" | "Jeudi" | "Vendredi" | "Samedi";
-    startTime: string;
-    endTime: string;
     id?: string;
 };
 
