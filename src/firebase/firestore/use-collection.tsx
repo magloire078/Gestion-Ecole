@@ -48,17 +48,19 @@ export function useCollection<T>(query: Query<T> | null) {
     return () => unsubscribe();
   }, [query, firestore]);
   
-  const add = async (data: DocumentData): Promise<DocumentReference<DocumentData> | undefined> => {
+  const add = (data: DocumentData): void => {
     if (!query) {
         toast({ variant: 'destructive', title: 'Erreur', description: "La requête n'est pas définie." });
         return;
     }
     const collRef = query.firestore.collection((query as any)._query.path.segments.join('/')) as CollectionReference<DocumentData>;
     
-    try {
-        const docRef = await addDoc(collRef, data);
-        return docRef;
-    } catch (serverError) {
+    addDoc(collRef, data)
+    .then((docRef) => {
+        // Opération réussie, le listener onSnapshot mettra à jour l'UI.
+        // On peut afficher un toast si nécessaire.
+    })
+    .catch((serverError) => {
         const path = (query as any)._query?.path?.segments.join('/') || 'unknown path';
         const permissionError = new FirestorePermissionError({
             path: path,
@@ -66,8 +68,7 @@ export function useCollection<T>(query: Query<T> | null) {
             requestResourceData: data,
         });
         errorEmitter.emit('permission-error', permissionError);
-        return undefined;
-    }
+    });
   }
 
 
