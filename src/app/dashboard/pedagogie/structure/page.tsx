@@ -109,7 +109,7 @@ export default function StructurePage() {
                           <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Code</TableHead><TableHead>Cycle</TableHead><TableHead>Ordre</TableHead></TableRow></TableHeader>
                           <TableBody>
                               {isLoading ? [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>) : 
-                              niveaux.map(n => (
+                              niveaux.sort((a, b) => a.order - b.order).map(n => (
                                   <TableRow key={n.id}><TableCell>{n.name}</TableCell><TableCell>{n.code}</TableCell><TableCell>{cycleMap.get(n.cycleId) || 'N/A'}</TableCell><TableCell>{n.order}</TableCell></TableRow>
                               ))}
                           </TableBody>
