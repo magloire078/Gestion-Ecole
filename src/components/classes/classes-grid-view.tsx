@@ -1,64 +1,41 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { useSchoolData } from '@/hooks/use-school-data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Users, 
-  User, 
-  Calendar, 
-  MapPin, 
-  BookOpen,
-  MoreVertical,
-  AlertCircle,
-  CheckCircle
-} from 'lucide-react';
+import { Users, User, MapPin, BookOpen, MoreVertical } from 'lucide-react';
 import Link from 'next/link';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { classe as Classe, staff as Staff } from '@/lib/data-types';
 
 interface ClassCardProps {
-  classe: {
-    id: string;
-    name: string;
-    code: string;
-    niveau: string;
-    cycle: string;
-    teacher: string;
-    studentCount: number;
-    maxStudents: number;
-    classroom: string;
-    status: 'active' | 'inactive' | 'full';
-    color: string;
-  };
+  classe: Classe & { id: string };
+  teacherName?: string;
 }
 
-export function ClassCard({ classe }: ClassCardProps) {
-  const fillPercentage = Math.round((classe.studentCount / classe.maxStudents) * 100);
+export function ClassCard({ classe, teacherName }: ClassCardProps) {
+  const fillPercentage = classe.maxStudents > 0 ? Math.round((classe.studentCount / classe.maxStudents) * 100) : 0;
   
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: classe.color }}
-              />
               {classe.name}
               <Badge variant="outline" className="ml-2">
                 {classe.code}
               </Badge>
             </CardTitle>
             <CardDescription className="mt-1">
-              {classe.cycle} • {classe.niveau}
+              Année: {classe.academicYear}
             </CardDescription>
           </div>
           <DropdownMenu>
@@ -71,22 +48,13 @@ export function ClassCard({ classe }: ClassCardProps) {
               <DropdownMenuItem asChild>
                 <Link href={`/dashboard/classes/${classe.id}`}>Voir détails</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/classes/${classe.id}/editer`}>Modifier</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/classes/${classe.id}/eleves`}>Gérer élèves</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/classes/${classe.id}/emploi-du-temps`}>Emploi du temps</Link>
-              </DropdownMenuItem>
+              <DropdownMenuItem>Modifier</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-4">
-        {/* Enseignant */}
+      <CardContent className="space-y-4 flex-1">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
             <AvatarFallback>
@@ -94,12 +62,11 @@ export function ClassCard({ classe }: ClassCardProps) {
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{classe.teacher}</p>
+            <p className="text-sm font-medium truncate">{teacherName || 'Non assigné'}</p>
             <p className="text-xs text-muted-foreground">Enseignant principal</p>
           </div>
         </div>
         
-        {/* Effectifs */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Effectif</span>
@@ -108,34 +75,19 @@ export function ClassCard({ classe }: ClassCardProps) {
             </span>
           </div>
           <Progress value={fillPercentage} className="h-2" />
-          <div className="flex justify-between text-xs">
-            <span className={fillPercentage >= 90 ? "text-amber-600" : "text-muted-foreground"}>
-              {fillPercentage >= 90 ? 'Classe presque pleine' : 'Places disponibles'}
-            </span>
-            <span className={fillPercentage >= 90 ? "text-amber-600 font-medium" : "text-muted-foreground"}>
-              {fillPercentage}%
-            </span>
-          </div>
         </div>
         
-        {/* Infos rapides */}
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span className="truncate">{classe.classroom}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>8h-16h30</span>
-          </div>
+        <div className="flex items-center gap-2 text-sm">
+          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <span className="truncate">{classe.classroom || 'Non défini'}</span>
         </div>
       </CardContent>
       
-      <CardFooter className="pt-0">
+      <CardFooter className="pt-4">
         <Button asChild variant="outline" className="w-full">
           <Link href={`/dashboard/classes/${classe.id}`}>
             <BookOpen className="mr-2 h-4 w-4" />
-            Voir la classe
+            Gérer la classe
           </Link>
         </Button>
       </CardFooter>
@@ -143,97 +95,68 @@ export function ClassCard({ classe }: ClassCardProps) {
   );
 }
 
-export function ClassesGridView({ cycle }: { cycle: string }) {
-  // Données simulées
-  const classes = [
-    {
-      id: '1',
-      name: 'CE1-A',
-      code: 'CE1A',
-      niveau: 'CE1',
-      cycle: 'Primaire',
-      teacher: 'M. Dupont',
-      studentCount: 24,
-      maxStudents: 28,
-      classroom: 'Salle 101 - Bât A',
-      status: 'active',
-      color: '#3b82f6',
-    },
-    {
-      id: '2',
-      name: 'CE1-B',
-      code: 'CE1B',
-      niveau: 'CE1',
-      cycle: 'Primaire',
-      teacher: 'Mme. Martin',
-      studentCount: 26,
-      maxStudents: 28,
-      classroom: 'Salle 102 - Bât A',
-      status: 'active',
-      color: '#10b981',
-    },
-    {
-      id: '3',
-      name: 'CE1-C',
-      code: 'CE1C',
-      niveau: 'CE1',
-      cycle: 'Primaire',
-      teacher: 'M. Laurent',
-      studentCount: 28,
-      maxStudents: 28,
-      classroom: 'Salle 103 - Bât A',
-      status: 'full',
-      color: '#8b5cf6',
-    },
-    {
-      id: '4',
-      name: 'CE2-A',
-      code: 'CE2A',
-      niveau: 'CE2',
-      cycle: 'Primaire',
-      teacher: 'Mme. Dubois',
-      studentCount: 22,
-      maxStudents: 28,
-      classroom: 'Salle 201 - Bât A',
-      status: 'active',
-      color: '#f59e0b',
-    },
-    {
-      id: '5',
-      name: '6ème A',
-      code: '6EMEA',
-      niveau: '6ème',
-      cycle: 'Collège',
-      teacher: 'M. Simon',
-      studentCount: 30,
-      maxStudents: 32,
-      classroom: 'Salle 301 - Bât B',
-      status: 'active',
-      color: '#ef4444',
-    },
-    {
-      id: '6',
-      name: '6ème B',
-      code: '6EMEB',
-      niveau: '6ème',
-      cycle: 'Collège',
-      teacher: 'Mme. Leroy',
-      studentCount: 31,
-      maxStudents: 32,
-      classroom: 'Salle 302 - Bât B',
-      status: 'active',
-      color: '#ec4899',
-    },
-  ];
+interface ClassesGridViewProps {
+  cycleId: string;
+}
 
-  const filteredClasses = cycle === 'all' 
-    ? classes 
-    : classes.filter(c => c.cycle.toLowerCase() === cycle);
+export function ClassesGridView({ cycleId }: ClassesGridViewProps) {
+  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const firestore = useFirestore();
+
+  const classesQuery = useMemoFirebase(() => {
+    if (!schoolId) return null;
+    const baseQuery = collection(firestore, `ecoles/${schoolId}/classes`);
+    if (cycleId === 'all') {
+      return query(baseQuery);
+    }
+    return query(baseQuery, where('cycleId', '==', cycleId));
+  }, [schoolId, cycleId, firestore]);
+
+  const teachersQuery = useMemoFirebase(() => {
+    if (!schoolId) return null;
+    return query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
+  }, [schoolId, firestore]);
+
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
+
+  const classes = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Classe & { id: string })) || [], [classesData]);
+  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
+
+  const teacherMap = useMemo(() => {
+    const map = new Map<string, string>();
+    teachers.forEach(t => map.set(t.id, `${t.firstName} ${t.lastName}`));
+    return map;
+  }, [teachers]);
+
+  const isLoading = schoolLoading || classesLoading || teachersLoading;
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 w-full" />)}
+      </div>
+    );
+  }
+  
+  if (classes.length === 0) {
+      return (
+          <Card className="flex items-center justify-center h-48">
+              <p className="text-muted-foreground">
+                  {cycleId === 'all' ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour ce cycle.'}
+              </p>
+          </Card>
+      );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {filteredClasses.map((classe) => (
-        <ClassCard key={classe.id} classe={classe} />
+      {classes.map((classe) => (
+        <ClassCard 
+            key={classe.id} 
+            classe={classe} 
+            teacherName={classe.mainTeacherId ? teacherMap.get(classe.mainTeacherId) : undefined}
+        />
       ))}
     </div>
   );
