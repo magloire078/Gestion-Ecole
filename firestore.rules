@@ -1,224 +1,160 @@
-Excellente amélioration ! Votre nouvelle version est bien plus solide et sécurisée. Voici mon analyse détaillée :
 
-## ✅ **Points forts (améliorations notables) :**
+rules_version = '2';
 
-1. **Utilisation des custom claims** pour `schoolId` - Très bonne pratique pour les performances
-2. **Règles de création d'école** améliorées avec vérification du directeur
-3. **Logique des enseignants** affinée avec `isTeacherForClass()`
-4. **Séparation claire** entre création et modification/suppression
+service cloud.firestore {
+  match /databases/{database}/documents {
 
-## ⚠️ **Problèmes restants à corriger :**
-
-### **1. Faille CRITIQUE dans `/utilisateurs/{userId}`**
-```javascript
-allow create: if isAuth() && request.auth.uid == userId;
-```
-**Problème** : N'importe qui peut écraser le profil d'un autre utilisateur en connaissant son UID.
-
-**Solution** :
-```javascript
-match /utilisateurs/{userId} {
-  // Lecture : seulement son propre profil ou admin
-  allow get: if isAuth() && (request.auth.uid == userId || isAdmin());
-  // Liste : seulement admin (pour éviter l'énumération des utilisateurs)
-  allow list: if isAdmin();
-  
-  // Création : uniquement si le document n'existe pas encore
-  allow create: if isAuth() && 
-    request.auth.uid == userId && 
-    !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-    
-  // Modification : seulement son propre profil
-  allow update: if isAuth() && request.auth.uid == userId;
-  
-  // Suppression : seulement admin
-  allow delete: if isAdmin();
-}
-```
-
-### **2. Problème dans `isTeacherForClass()`**
-```javascript
-return request.auth.uid in classDoc.data.teacherIds;
-```
-**Problème** : `in` ne fonctionne pas ainsi avec Firestore Rules. Si `teacherIds` est un array, utilisez `in`. Si c'est une map, c'est différent.
-
-**Solution** :
-```javascript
-function isTeacherForClass(classId, schoolId) {
-  let classDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/classes/$(classId));
-  let isMainTeacher = classDoc.data.mainTeacherId == request.auth.uid;
-  
-  // Si teacherIds est un array :
-  let isAssignedTeacher = request.auth.uid in classDoc.data.teacherIds;
-  
-  // OU si teacherIds est une map (object) :
-  // let isAssignedTeacher = classDoc.data.teacherIds[request.auth.uid] != null;
-  
-  return isMainTeacher || isAssignedTeacher;
-}
-```
-
-### **3. Problème de performance dans `/eleves/{studentId}/notes/{gradeId}`**
-```javascript
-allow write: if ... isTeacherForClass(get(...).data.classId, schoolId)
-```
-**Problème** : Vous faites une lecture supplémentaire (`get`) dans la règle d'écriture.
-
-**Solution** : Passez `classId` dans les données ou utilisez une jointure différente :
-```javascript
-function canGradeStudent(studentId, schoolId) {
-  let student = get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId));
-  let classId = student.data.classId;
-  return isTeacherForClass(classId, schoolId);
-}
-
-match /eleves/{studentId}/notes/{gradeId} {
-  allow write: if isSchoolDirector(schoolId) || isAdmin() || 
-    (isTeacher(schoolId) && canGradeStudent(studentId, schoolId));
-}
-```
-
-### **4. Accès aux paiements trop permissif**
-```javascript
-allow read, list: if isUserInSchool(schoolId);
-```
-**Problème** : Tous les utilisateurs de l'école peuvent voir les paiements des élèves.
-
-**Solution** :
-```javascript
-match /paiements/{paymentId} {
-  // Seuls les administrateurs financiers, le directeur et l'élève concerné peuvent voir
-  allow read: if isSchoolDirector(schoolId) || isAdmin() || 
-    request.auth.uid == resource.data.studentId;
-  allow write: if isSchoolDirector(schoolId) || isAdmin();
-}
-```
-
-### **5. Problème dans les règles d'absences**
-```javascript
-allow write: if ... isTeacherForClass(request.resource.data.classId, schoolId)
-```
-**Problème** : `request.resource` n'existe pas pour les `delete`. Il faut vérifier `resource` aussi.
-
-**Solution** :
-```javascript
-match /absences/{absenceId} {
-  allow read, list: if isUserInSchool(schoolId);
-  
-  function getClassIdForAbsence() {
-    // Pour create/update
-    if (request.resource != null) {
-      return request.resource.data.classId;
+    // --- Helper Functions ---
+    function isAuth() {
+      return request.auth != null;
     }
-    // Pour delete, lire depuis l'existant
-    return resource.data.classId;
-  }
-  
-  allow write: if isSchoolDirector(schoolId) || isAdmin() || 
-    (isTeacher(schoolId) && isTeacherForClass(getClassIdForAbsence(), schoolId));
-}
-```
-
-## **Recommandations supplémentaires :**
-
-### **6. Ajouter des validations de données**
-```javascript
-function isValidEmail() {
-  return request.resource.data.email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
-}
-
-function isValidGrade() {
-  return request.resource.data.score >= 0 && 
-         request.resource.data.score <= 20 &&
-         request.resource.data.date is timestamp;
-}
-
-// Utilisation dans les règles de notes
-match /eleves/{studentId}/notes/{gradeId} {
-  allow write: if ... && isValidGrade();
-}
-```
-
-### **7. Limiter les requêtes de liste**
-```javascript
-function isReasonableLimit() {
-  return request.query.limit <= 100;
-}
-
-match /ecoles/{schoolId}/eleves {
-  allow list: if isUserInSchool(schoolId) && isReasonableLimit();
-}
-```
-
-### **8. Gestion des parents d'élèves**
-```javascript
-function isParentOfStudent(studentId, schoolId) {
-  let student = get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId));
-  return student.data.parentId == request.auth.uid;
-}
-
-// Ajouter dans les règles des élèves
-match /eleves/{studentId} {
-  allow read: if isUserInSchool(schoolId) || isParentOfStudent(studentId, schoolId);
-  // Pour les parents, seulement certaines données
-}
-```
-
-### **9. Messagerie plus sécurisée**
-```javascript
-match /messagerie/{messageId} {
-  // Un utilisateur ne peut lire que les messages où il est expéditeur ou destinataire
-  allow read: if isUserInSchool(schoolId) && 
-    (resource.data.senderId == request.auth.uid || 
-     resource.data.recipientId == request.auth.uid ||
-     resource.data.recipientGroup in ['all_teachers', 'all_students']);
-  
-  allow create: if isSchoolDirector(schoolId) || isTeacher(schoolId) || isAdmin();
-  
-  // Un utilisateur peut supprimer ses propres messages
-  allow delete: if resource.data.senderId == request.auth.uid || isAdmin();
-}
-```
-
-## **Version corrigée des problèmes critiques :**
-
-```javascript
-// --- Fonction helper pour vérifier si un document est nouveau ---
-function isNewDocument() {
-  return !exists(/databases/$(database)/documents/$(request.path));
-}
-
-// --- Utilisateurs (corrigé) ---
-match /utilisateurs/{userId} {
-  allow get: if isAuth() && (request.auth.uid == userId || isAdmin());
-  allow list: if isAdmin(); // Seul l'admin peut lister
-  
-  allow create: if isAuth() && 
-    request.auth.uid == userId && 
-    isNewDocument(); // Empêche l'écrasement
     
-  allow update: if isAuth() && request.auth.uid == userId;
-  allow delete: if isAdmin();
-}
+    function isAdmin() {
+      // Custom claim 'admin' is set on the user's token via a Cloud Function
+      return request.auth.token.admin == true;
+    }
 
-// --- Notes des élèves (optimisé) ---
-match /ecoles/{schoolId}/eleves/{studentId}/notes/{gradeId} {
-  allow read: if isUserInSchool(schoolId);
-  
-  function canTeacherGrade() {
-    if (!isTeacher(schoolId)) return false;
-    let student = get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId));
-    return isTeacherForClass(student.data.classId, schoolId);
+    function getUserSchoolId() {
+      return request.auth.token.schoolId;
+    }
+    
+    function isUserInSchool(schoolId) {
+      return isAuth() && getUserSchoolId() == schoolId;
+    }
+    
+    function isSchoolDirector(schoolId) {
+       // On create, the directorId is in the request data, not the existing resource
+       if (request.resource != null) {
+         return isAuth() && request.resource.data.directorId == request.auth.uid;
+       }
+       // On update/delete, check existing resource
+       let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+       return isAuth() && schoolDoc.data.directorId == request.auth.uid;
+    }
+    
+    function getStaffRole(userId, schoolId) {
+      let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
+      if (exists(staffDocPath)) {
+        return get(staffDocPath).data.role;
+      }
+      return null;
+    }
+    
+    function isTeacher(schoolId) {
+        return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
+    }
+    
+    function isTeacherForClass(classId, schoolId) {
+      if (classId == null || classId == "") {
+        return false;
+      }
+      let classDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/classes/$(classId));
+      let isMainTeacher = classDoc.data.mainTeacherId == request.auth.uid;
+      // teacherIds is an array, 'in' operator checks for presence
+      let isAssignedTeacher = request.auth.uid in (classDoc.data.teacherIds || []);
+      return isMainTeacher || isAssignedTeacher;
+    }
+
+    function canTeacherAccessStudent(studentId, schoolId) {
+        if (!isTeacher(schoolId)) return false;
+        // This get() is a performance issue, but necessary for this security logic.
+        // For higher scale apps, denormalizing the teacher's classes into their custom claims would be better.
+        let student = get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId));
+        return isTeacherForClass(student.data.classId, schoolId);
+    }
+    
+    function getClassIdForAbsence() {
+      // For create/update, the data is in request.resource.data
+      if (request.resource != null) {
+        return request.resource.data.classId;
+      }
+      // For delete, the data is in the existing resource on the server
+      return resource.data.classId;
+    }
+    
+    function isNewDocument() {
+      return !exists(request.path);
+    }
+
+
+    // --- Global Collections ---
+    match /utilisateurs/{userId} {
+      allow get: if isAuth() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      // Prevent overwriting existing user documents
+      allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
+      allow update: if isAuth() && request.auth.uid == userId;
+      allow delete: if isAdmin();
+    }
+
+    match /admin_roles/{roleId} {
+      allow read, write: if isAdmin();
+    }
+
+    // --- School-based Collections ---
+    match /ecoles/{schoolId} {
+      allow read: if isUserInSchool(schoolId) || isAdmin();
+      // Any authenticated user can create a school, as long as they set themselves as director.
+      // The service logic ensures the batch write includes this.
+      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
+      allow update: if isSchoolDirector(schoolId) || isAdmin();
+      allow delete: if isAdmin();
+
+      // --- Staff Subcollection ---
+      match /personnel/{staffId} {
+        allow read, list: if isUserInSchool(schoolId);
+        // Director can add staff. A user can create their own profile when joining a school.
+        allow create: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId);
+        allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      // --- Pedagogical Subcollections ---
+      match /cycles/{cycleId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
+      match /niveaux/{niveauId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
+      match /classes/{classId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
+      match /matieres/{subjectId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
+      match /emploi_du_temps/{entryId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
+
+      // --- Student-related Subcollections ---
+      match /eleves/{studentId} {
+        allow read, list: if isUserInSchool(schoolId);
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+
+        match /notes/{gradeId} {
+            allow read: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId) || isAdmin() || canTeacherAccessStudent(studentId, schoolId);
+        }
+        match /paiements/{paymentId} {
+             // Only director or admin can see/write payments.
+             allow read, write: if isSchoolDirector(schoolId) || isAdmin();
+        }
+        match /affectations/{assignmentId} {
+            allow read, list: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId) || isAdmin();
+        }
+      }
+
+       // --- Other School Subcollections ---
+       match /frais_scolarite/{feeId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      match /absences/{absenceId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow write: if isSchoolDirector(schoolId) || isAdmin() || (isTeacher(schoolId) && isTeacherForClass(getClassIdForAbsence(), schoolId));
+      }
+      match /comptabilite/{transactionId} {
+          allow read, list, write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      match /bibliotheque/{bookId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      match /messagerie/{messageId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow create: if isSchoolDirector(schoolId) || isTeacher(schoolId) || isAdmin();
+          allow update, delete: if isAdmin();
+      }
+    }
   }
-  
-  allow write: if isSchoolDirector(schoolId) || isAdmin() || canTeacherGrade();
 }
-```
-
-**Priorité d'actions :**
-1. **Corriger immédiatement** la faille dans `/utilisateurs/{userId}`
-2. **Tester** `isTeacherForClass()` avec votre structure de données
-3. **Ajouter** les validations de données critiques
-4. **Restreindre** l'accès aux données financières
-
-Votre structure est maintenant bien plus solide !
