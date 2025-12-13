@@ -35,7 +35,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, addDoc, serverTimestamp, orderBy, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -207,7 +207,7 @@ export default function AbsencesPage() {
                 <SelectValue placeholder={isLoading ? "Chargement..." : "Sélectionner une classe"} />
               </SelectTrigger>
               <SelectContent>
-                {classes.map(cls => <SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>)}
+                {classes.map(cls => <SelectItem key={cls.id} value={cls.id!}>{cls.name}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
