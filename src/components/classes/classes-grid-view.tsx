@@ -97,9 +97,10 @@ export function ClassCard({ classe, teacherName }: ClassCardProps) {
 
 interface ClassesGridViewProps {
   cycleId: string;
+  searchQuery: string;
 }
 
-export function ClassesGridView({ cycleId }: ClassesGridViewProps) {
+export function ClassesGridView({ cycleId, searchQuery }: ClassesGridViewProps) {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
 
@@ -129,6 +130,11 @@ export function ClassesGridView({ cycleId }: ClassesGridViewProps) {
     return map;
   }, [teachers]);
 
+  const filteredClasses = useMemo(() => {
+    if (!searchQuery) return classes;
+    return classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  }, [classes, searchQuery]);
+
   const isLoading = schoolLoading || classesLoading || teachersLoading;
 
   if (isLoading) {
@@ -139,11 +145,11 @@ export function ClassesGridView({ cycleId }: ClassesGridViewProps) {
     );
   }
   
-  if (classes.length === 0) {
+  if (filteredClasses.length === 0) {
       return (
           <Card className="flex items-center justify-center h-48">
               <p className="text-muted-foreground">
-                  {cycleId === 'all' ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour ce cycle.'}
+                  {cycleId === 'all' && !searchQuery ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour les filtres actuels.'}
               </p>
           </Card>
       );
@@ -151,7 +157,7 @@ export function ClassesGridView({ cycleId }: ClassesGridViewProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {classes.map((classe) => (
+      {filteredClasses.map((classe) => (
         <ClassCard 
             key={classe.id} 
             classe={classe} 

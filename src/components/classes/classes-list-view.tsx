@@ -18,9 +18,10 @@ import type { classe as Classe } from '@/lib/data-types';
 
 interface ClassesListViewProps {
     cycleId: string;
+    searchQuery: string;
 }
 
-export function ClassesListView({ cycleId }: ClassesListViewProps) {
+export function ClassesListView({ cycleId, searchQuery }: ClassesListViewProps) {
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
 
@@ -35,6 +36,11 @@ export function ClassesListView({ cycleId }: ClassesListViewProps) {
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
 
     const classes = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Classe & { id: string })) || [], [classesData]);
+
+    const filteredClasses = useMemo(() => {
+      if (!searchQuery) return classes;
+      return classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }, [classes, searchQuery]);
 
     const isLoading = schoolLoading || classesLoading;
 
@@ -62,8 +68,8 @@ export function ClassesListView({ cycleId }: ClassesListViewProps) {
                                     <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : classes.length > 0 ? (
-                            classes.map((classe) => (
+                        ) : filteredClasses.length > 0 ? (
+                            filteredClasses.map((classe) => (
                                 <TableRow key={classe.id}>
                                     <TableCell className="font-medium">{classe.name}</TableCell>
                                     <TableCell>{classe.studentCount} / {classe.maxStudents}</TableCell>
@@ -92,7 +98,7 @@ export function ClassesListView({ cycleId }: ClassesListViewProps) {
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">
-                                    Aucune classe trouvée pour ce cycle.
+                                     {cycleId === 'all' && !searchQuery ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour les filtres actuels.'}
                                 </TableCell>
                             </TableRow>
                         )}
