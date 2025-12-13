@@ -372,11 +372,9 @@ export default function ClassesPage() {
           </div>
           <div className="flex gap-2">
              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger>
+              <DialogTrigger asChild>
                 <Button onClick={() => handleOpenFormDialog(null)}>
-                    <span className="flex items-center gap-2">
-                        <PlusCircle className="h-4 w-4" /> Ajouter une Classe
-                    </span>
+                    <PlusCircle className="h-4 w-4 mr-2" /> Ajouter une Classe
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-xl">
