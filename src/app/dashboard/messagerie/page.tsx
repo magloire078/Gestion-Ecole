@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -237,10 +236,10 @@ export default function MessagingPage() {
                                                   <FormItem key={c.id} className="flex flex-row items-start space-x-3 space-y-0">
                                                     <FormControl>
                                                       <Checkbox
-                                                        checked={field.value?.includes(c.id)}
+                                                        checked={field.value?.includes(c.id!)}
                                                         onCheckedChange={(checked) => {
                                                           return checked
-                                                            ? field.onChange([...(field.value || []), c.id])
+                                                            ? field.onChange([...(field.value || []), c.id!])
                                                             : field.onChange(
                                                                 field.value?.filter(
                                                                   (value) => value !== c.id
@@ -280,7 +279,7 @@ export default function MessagingPage() {
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Historique des envois</h2>
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogTrigger>
+                <DialogTrigger asChild>
                     <Button onClick={() => setIsFormOpen(true)}>
                       <span className="flex items-center gap-2">
                         <PlusCircle className="h-4 w-4" /> Nouveau Message

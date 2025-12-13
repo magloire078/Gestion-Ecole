@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -329,8 +328,10 @@ export default function ClassesPage() {
           </div>
           <div className="flex gap-2">
             <Button onClick={() => router.push('/dashboard/classes/new')}>
+              <span className="flex items-center gap-2">
                 <PlusCircle className="mr-2 h-4 w-4" /> 
                 Ajouter une Classe
+              </span>
             </Button>
           </div>
         </div>

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -45,7 +44,7 @@ import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { FirestorePermissionError } from "@/firebase/errors";
+import { FirestorePermissionError from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from 'react-hook-form';
@@ -235,7 +234,7 @@ export default function LibraryPage() {
             <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
           </div>
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger>
+            <DialogTrigger asChild>
               <Button onClick={() => handleOpenFormDialog(null)}>
                 <span className="flex items-center gap-2">
                   <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
