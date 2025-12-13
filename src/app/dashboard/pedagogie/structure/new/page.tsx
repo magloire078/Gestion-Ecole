@@ -18,7 +18,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,9 +48,9 @@ export default function NewClassPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   // --- Data Fetching ---
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
-  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [schoolId]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
@@ -136,11 +136,12 @@ export default function NewClassPage() {
         body: JSON.stringify(classData),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Une erreur est survenue.');
-      }
+      const responseData = await response.json();
 
+      if (!response.ok) {
+        throw new Error(responseData.error || 'Une erreur est survenue.');
+      }
+      
       toast({
           title: 'Classe créée !',
           description: `La classe ${values.name} a été ajoutée avec succès.`,
