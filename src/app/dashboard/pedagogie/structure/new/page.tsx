@@ -123,7 +123,7 @@ export default function NewClassPage() {
         <div className="space-y-6">
             <Skeleton className="h-10 w-48" />
              <Tabs defaultValue="informations" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="informations">Informations</TabsTrigger>
                     <TabsTrigger value="effectif">Effectif</TabsTrigger>
                     <TabsTrigger value="options">Options</TabsTrigger>
