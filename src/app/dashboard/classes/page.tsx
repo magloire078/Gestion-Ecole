@@ -326,14 +326,6 @@ export default function ClassesPage() {
             <h1 className="text-lg font-semibold md:text-2xl">Gestion des Classes</h1>
             <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => router.push('/dashboard/classes/new')}>
-              <span className="flex items-center gap-2">
-                <PlusCircle className="mr-2 h-4 w-4" /> 
-                Ajouter une Classe
-              </span>
-            </Button>
-          </div>
         </div>
 
         
@@ -397,7 +389,7 @@ export default function ClassesPage() {
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
               <Button type="submit" form="class-form" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                <span className="flex items-center gap-2">{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</span>
               </Button>
             </DialogFooter>
           </DialogContent>
