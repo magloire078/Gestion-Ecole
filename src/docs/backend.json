@@ -28,6 +28,7 @@
             "phone": { "type": "string", "description": "Numéro de téléphone de l'école." },
             "website": { "type": "string", "description": "Site web de l'école." },
             "mainLogoUrl": { "type": "string", "format": "uri", "description": "URL du logo principal de l'école." },
+            "email": { "type": "string", "format": "email", "description": "Email de contact de l'école." },
             "subscription": {
                 "type": "object",
                 "description": "Détails de l'abonnement de l'école.",
@@ -384,3 +385,5 @@
     }
   }
 }
+
+    
