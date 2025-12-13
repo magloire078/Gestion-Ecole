@@ -1,4 +1,5 @@
 
+
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -162,12 +163,14 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
 
           return (
             <AccordionItem value={group.group} key={group.group} className="border-b-0">
-                <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline">
-                     <div className="flex items-center gap-x-3">
-                        <div className="flex h-6 w-6 items-center justify-center">
-                            <group.icon className="h-5 w-5" />
+                <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline [&[data-state=open]>div>svg.chevron]:rotate-180">
+                    <div className="flex flex-1 items-center justify-between">
+                         <div className="flex items-center gap-x-3">
+                            <div className="flex h-6 w-6 items-center justify-center">
+                                <group.icon className="h-5 w-5" />
+                            </div>
+                            <span>{group.group}</span>
                         </div>
-                        <span>{group.group}</span>
                     </div>
                 </AccordionTrigger>
                 <AccordionContent className="pb-1 pl-4">
