@@ -3,7 +3,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser } from '@/firebase';
@@ -22,7 +22,7 @@ function PaymentPageContent() {
     const { user, loading: userLoading } = useUser();
     const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
 
-    const [isLoadingProvider, setIsLoadingProvider] = useState(false);
+    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'cinetpay' | 'stripe'>(null);
     const [error, setError] = useState<string | null>(null);
 
     const plan = searchParams.get('plan');
@@ -36,7 +36,7 @@ function PaymentPageContent() {
     }, [plan, price, description, userLoading, schoolLoading]);
 
     const handleCinetPay = async () => {
-        setIsLoadingProvider(true);
+        setIsLoadingProvider('cinetpay');
         setError(null);
         if (!plan || !price || !description || !user || !schoolId) return;
 
@@ -60,12 +60,12 @@ function PaymentPageContent() {
             window.location.href = paymentLink;
         } else {
             setError("Impossible de générer le lien de paiement CinetPay. Veuillez contacter le support.");
-            setIsLoadingProvider(false);
+            setIsLoadingProvider(null);
         }
     };
     
     const handleStripe = async () => {
-        setIsLoadingProvider(true);
+        setIsLoadingProvider('stripe');
         setError(null);
         if (!plan || !price || !description || !user || !schoolId) return;
 
@@ -86,7 +86,7 @@ function PaymentPageContent() {
             window.location.href = url;
         } else {
             setError(error || "Impossible de générer le lien de paiement Stripe. Veuillez contacter le support.");
-            setIsLoadingProvider(false);
+            setIsLoadingProvider(null);
         }
     };
 
@@ -139,9 +139,9 @@ function PaymentPageContent() {
                         <Button 
                             className="w-full h-16 text-lg" 
                             onClick={handleCinetPay} 
-                            disabled={isLoadingProvider}
+                            disabled={!!isLoadingProvider}
                         >
-                            {isLoadingProvider ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                            {isLoadingProvider === 'cinetpay' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                                 <div className="flex items-center justify-center gap-4">
                                      <Image src={placeholderImages.cinetpayLogo} alt="CinetPay" width={100} height={30} />
                                      <span>(Mobile Money, Wave...)</span>
@@ -158,9 +158,9 @@ function PaymentPageContent() {
                             variant="outline" 
                             className="w-full h-16 text-lg"
                             onClick={handleStripe}
-                            disabled={isLoadingProvider}
+                            disabled={!!isLoadingProvider}
                         >
-                             {isLoadingProvider ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                             {isLoadingProvider === 'stripe' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                                 <div className="flex items-center justify-center gap-2">
                                     <CreditCard className="h-6 w-6" />
                                     <span>Payer par Carte Bancaire</span>
