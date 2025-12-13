@@ -6,9 +6,7 @@ import {
   writeBatch, 
   serverTimestamp
 } from 'firebase/firestore';
-import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { Firestore } from 'firebase/firestore';
-import { format as formatDateFns } from 'date-fns';
 
 interface SchoolCreationData {
     name: string;
@@ -78,7 +76,7 @@ export class SchoolCreationService {
         lastName: schoolData.directorLastName,
         displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
         email: schoolData.directorEmail,
-        hireDate: formatDateFns(new Date(), 'yyyy-MM-dd'),
+        hireDate: new Date().toISOString(), // Use ISO string for server compatibility
         baseSalary: 0, // Default base salary
     });
 
