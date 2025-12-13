@@ -11,7 +11,7 @@ export interface Subscription {
 }
 
 export function useSubscription() {
-    const { subscription, loading, updateSchoolData } = useSchoolData();
+    const { schoolData, loading, updateSchoolData } = useSchoolData();
 
     const updateSubscription = async (newSubscriptionData: Partial<Subscription>) => {
         // Enveloppe les données de l'abonnement dans l'objet attendu par updateSchoolData
@@ -19,7 +19,7 @@ export function useSubscription() {
     };
 
     return {
-        subscription,
+        subscription: schoolData?.subscription,
         loading,
         updateSubscription
     };
