@@ -112,7 +112,6 @@ export default function SettingsPage() {
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { name: "", directorFirstName: "", directorLastName: "", matricule: "", cnpsEmployeur: "", directorPhone: "", address: "", phone: "", website: "", mainLogoUrl: "", email: "" },
   });
 
   useEffect(() => {
@@ -135,22 +134,12 @@ export default function SettingsPage() {
 
  const handleSaveChanges = async (values: SettingsFormValues) => {
     setError(null);
-
-    // Ne pas inclure le nom dans les données à sauvegarder car il est non modifiable ici.
-    const { name, ...dataToSave } = values;
-
-    if (!form.formState.isDirty) {
-        toast({
-            title: "Aucune modification",
-            description: "Aucun changement à enregistrer.",
-        });
-        return;
-    }
-
     setIsSaving(true);
     try {
+        // Ne pas inclure le nom dans les données à sauvegarder
+        const { name, ...dataToSave } = values;
         await updateSchoolData(dataToSave);
-        form.reset(values); // Réinitialise l'état dirty
+        form.reset(values); // Re-synchronise l'état dirty après la sauvegarde
         toast({
             title: "✅ Paramètres enregistrés",
             description: "Les informations ont été mises à jour avec succès.",
@@ -319,13 +308,13 @@ export default function SettingsPage() {
                       </TabsContent>
                     </CardContent>
                     <CardFooter className="border-t px-6 py-4">
-                      <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
+                       <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
                         {isSaving ? (
-                            <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...</span>
+                          <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> Sauvegarde...</span>
                         ) : !form.formState.isDirty ? (
-                            <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4" /> Enregistré</span>
+                          <span className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> Enregistré</span>
                         ) : (
-                            "Enregistrer les Modifications"
+                          "Enregistrer les Modifications"
                         )}
                       </Button>
                     </CardFooter>
