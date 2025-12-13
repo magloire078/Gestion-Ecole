@@ -15,7 +15,6 @@ service cloud.firestore {
     }
 
     function getUserSchoolId() {
-      // The schoolId is now reliably available in the user's token after onboarding
       return request.auth.token.schoolId;
     }
     
@@ -24,10 +23,13 @@ service cloud.firestore {
     }
     
     function isSchoolDirector(schoolId) {
+       // On create, the directorId is in the request data, not the existing resource
+       if (request.resource != null) {
+         return isAuth() && request.resource.data.directorId == request.auth.uid;
+       }
+       // On update/delete, check existing resource
        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
-       // On create, the directorId would be in the request.resource.data
-       let directorId = request.resource.data.directorId != null ? request.resource.data.directorId : schoolDoc.data.directorId;
-       return isAuth() && directorId == request.auth.uid;
+       return isAuth() && schoolDoc.data.directorId == request.auth.uid;
     }
     
     function getStaffRole(userId, schoolId) {
@@ -41,7 +43,7 @@ service cloud.firestore {
     function isTeacher(schoolId) {
         return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
     }
-
+    
     function isTeacherForClass(classId, schoolId) {
       if (classId == null || classId == "") {
         return false;
@@ -55,14 +57,18 @@ service cloud.firestore {
 
     function canTeacherAccessStudent(studentId, schoolId) {
         if (!isTeacher(schoolId)) return false;
+        // This get() is a performance issue, but necessary for this security logic.
+        // For higher scale apps, denormalizing the teacher's classes into their custom claims would be better.
         let student = get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId));
         return isTeacherForClass(student.data.classId, schoolId);
     }
     
     function getClassIdForAbsence() {
+      // For create/update, the data is in request.resource.data
       if (request.resource != null) {
         return request.resource.data.classId;
       }
+      // For delete, the data is in the existing resource on the server
       return resource.data.classId;
     }
     
@@ -72,16 +78,12 @@ service cloud.firestore {
 
 
     // --- Global Collections ---
-
-    // Root collection mapping a user's UID to their school for access control.
     match /utilisateurs/{userId} {
       allow get: if isAuth() && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin(); // Only admins can list users
-      // A user can create their own user_root doc, but cannot overwrite it.
-      allow create: if isAuth() && request.auth.uid == userId && isNewDocument();
-      // A user can update their own document (e.g. if they change schools, though this is not a current feature)
+      allow list: if isAdmin();
+      // Prevent overwriting existing user documents
+      allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
       allow update: if isAuth() && request.auth.uid == userId;
-      // Only admins can delete user root documents.
       allow delete: if isAdmin();
     }
 
@@ -92,16 +94,17 @@ service cloud.firestore {
     // --- School-based Collections ---
     match /ecoles/{schoolId} {
       allow read: if isUserInSchool(schoolId) || isAdmin();
-      // Allow any authenticated user to create a school, as long as they set themselves as director.
-      allow create: if isAuth() && isSchoolDirector(schoolId); 
+      // Any authenticated user can create a school, as long as they set themselves as director.
+      // The service logic ensures the batch write includes this.
+      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
       allow update: if isSchoolDirector(schoolId) || isAdmin();
       allow delete: if isAdmin();
 
       // --- Staff Subcollection ---
       match /personnel/{staffId} {
         allow read, list: if isUserInSchool(schoolId);
-        // Director can add staff. A user can create their own profile when joining a school.
-        allow create: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId);
+        // On create, allow if user is the school director being set on the school doc, or if the user creates their own profile.
+        allow create: if (isAuth() && request.auth.uid == staffId) || isSchoolDirector(schoolId);
         allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
 
@@ -122,9 +125,8 @@ service cloud.firestore {
             allow write: if isSchoolDirector(schoolId) || isAdmin() || canTeacherAccessStudent(studentId, schoolId);
         }
         match /paiements/{paymentId} {
-             // Only director, admin, or potentially parent (not implemented) can see payments.
-             allow read: if isSchoolDirector(schoolId) || isAdmin();
-             allow write: if isSchoolDirector(schoolId) || isAdmin();
+             // Only director or admin can see/write payments.
+             allow read, write: if isSchoolDirector(schoolId) || isAdmin();
         }
         match /affectations/{assignmentId} {
             allow read, list: if isUserInSchool(schoolId);
