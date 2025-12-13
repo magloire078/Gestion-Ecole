@@ -26,7 +26,6 @@ import {
   DialogTitle, 
   DialogDescription,
   DialogFooter,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -71,6 +70,7 @@ import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
+import { useRouter } from "next/navigation";
 
 
 const staffSchema = z.object({
@@ -115,6 +115,7 @@ export default function HRPage() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const auth = useAuth();
+  const router = useRouter();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
@@ -293,6 +294,7 @@ export default function HRPage() {
 
     return (
         <Card key={member.id} className="flex flex-col">
+          <Link href={`/dashboard/rh/${member.id}`} className="flex-1 flex flex-col">
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
@@ -305,28 +307,17 @@ export default function HRPage() {
                             <CardDescription className="capitalize">{member.role === 'enseignant' ? member.subject : member.role}</CardDescription>
                         </div>
                     </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0")}>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleGeneratePayslip(member)}>Générer Bulletin de Paie</DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>Supprimer</DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
                 </div>
             </CardHeader>
             <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center">
                     <Mail className="mr-2 h-4 w-4" />
-                    <a href={`mailto:${member.email}`} className="truncate hover:underline">{member.email}</a>
+                    <span className="truncate">{member.email}</span>
                 </div>
                 {member.phone && (
                     <div className="flex items-center">
                         <Phone className="mr-2 h-4 w-4" />
-                        <a href={`tel:${member.phone}`} className="truncate hover:underline">{member.phone}</a>
+                        <span className="truncate">{member.phone}</span>
                     </div>
                 )}
                 {className && (
@@ -336,12 +327,24 @@ export default function HRPage() {
                     </div>
                 )}
             </CardContent>
-            <CardFooter>
-                 <Button variant="outline" size="sm" className="w-full" onClick={() => handleGeneratePayslip(member)}>
-                    <span className="flex items-center gap-2">
-                        <FileText className="h-3 w-3" /> Voir le dernier bulletin
-                    </span>
-                </Button>
+          </Link>
+           <CardFooter className="pt-4 border-t">
+              <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-start">
+                      <span className="flex items-center gap-2">
+                        <MoreHorizontal className="h-4 w-4" /> Actions
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>Voir le Profil</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleGeneratePayslip(member)}>Générer Bulletin de Paie</DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>Supprimer</DropdownMenuItem>
+                  </DropdownMenuContent>
+              </DropdownMenu>
             </CardFooter>
         </Card>
     );
