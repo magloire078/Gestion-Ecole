@@ -31,7 +31,6 @@ export default function DashboardLayout({
   const [searchQuery, setSearchQuery] = useState('');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const [isScrolled, setIsScrolled] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
@@ -42,15 +41,6 @@ export default function DashboardLayout({
     // Simuler des notifications
     const mockUnread = Math.floor(Math.random() * 10);
     setUnreadNotifications(mockUnread);
-  }, []);
-
-  // Détecter le scroll pour l'effet de header
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // Raccourcis clavier
@@ -165,8 +155,7 @@ export default function DashboardLayout({
             
             {/* Header */}
             <header className={cn(
-              "sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md transition-shadow px-4 sm:px-6 print:hidden",
-              isScrolled && "shadow-sm"
+              "sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md transition-shadow px-4 sm:px-6 print:hidden shadow-sm"
             )}>
               
               <div className="flex items-center gap-3">
