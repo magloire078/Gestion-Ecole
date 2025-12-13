@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone } from "lucide-react";
 import { 
@@ -70,6 +70,7 @@ import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { allSubjects } from '@/lib/data';
 import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
+import { cn } from "@/lib/utils";
 
 const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -298,8 +299,8 @@ export default function HRPage() {
                         </div>
                     </div>
                     <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0")}>
+                            <MoreHorizontal className="h-4 w-4" />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>Modifier</DropdownMenuItem>

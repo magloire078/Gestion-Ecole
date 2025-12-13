@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, MoreHorizontal, Mail, BookUser, Phone, FileSignature } from "lucide-react";
 import { 
@@ -56,6 +56,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { class_type as Class, staff as Teacher } from '@/lib/data-types';
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 // Define Zod schema for validation
 const teacherSchema = z.object({
@@ -283,10 +284,8 @@ export default function TeachersPage() {
                           </div>
                       </div>
                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="shrink-0">
+                          <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0")}>
                               <MoreHorizontal className="h-4 w-4" />
-                          </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenFormDialog(teacher)}>Modifier</DropdownMenuItem>
@@ -455,5 +454,3 @@ export default function TeachersPage() {
     </>
   );
 }
-
-    

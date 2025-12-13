@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -59,6 +59,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { class_type as Class, staff as Staff } from '@/lib/data-types';
+import { cn } from "@/lib/utils";
 
 const timetableSchema = z.object({
   classId: z.string().min(1, { message: "La classe est requise." }),
@@ -436,10 +437,8 @@ export default function TimetablePage() {
                                                     <p className="text-muted-foreground">{teacher ? `${teacher.firstName[0]}. ${teacher.lastName}` : 'N/A'}</p>
                                                     {selectedClassId === 'all' && <p className="text-blue-600 dark:text-blue-400 font-semibold">{classInfo?.name}</p>}
                                                     <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
+                                                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100")}>
+                                                            <MoreHorizontal className="h-4 w-4" />
                                                         </DropdownMenuTrigger>
                                                         <DropdownMenuContent>
                                                             <DropdownMenuItem onClick={() => handleOpenFormDialog(entry)}>Modifier</DropdownMenuItem>

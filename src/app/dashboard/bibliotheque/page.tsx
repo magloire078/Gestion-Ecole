@@ -11,7 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, User, Hash } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -52,6 +52,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { cn } from "@/lib/utils";
 
 const bookSchema = z.object({
   title: z.string().min(1, { message: "Le titre est requis." }),
@@ -275,10 +276,8 @@ export default function LibraryPage() {
                     <div className="flex items-start justify-between gap-2">
                          <CardTitle className="text-lg leading-tight font-bold">{book.title}</CardTitle>
                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8">
+                            <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0 h-8 w-8")}>
                                 <MoreHorizontal className="h-4 w-4" />
-                              </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleOpenFormDialog(book)}>Modifier</DropdownMenuItem>

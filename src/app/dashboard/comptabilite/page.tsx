@@ -16,7 +16,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   PlusCircle,
   MoreHorizontal,
@@ -65,6 +65,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AccountingCharts } from './charts';
+import { cn } from "@/lib/utils";
 
 const transactionSchema = z.object({
     description: z.string().min(1, { message: "La description est requise." }),
@@ -377,7 +378,9 @@ export default function AccountingPage() {
                         </TableCell>
                         <TableCell className="text-right">
                         <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal /></Button></DropdownMenuTrigger>
+                                <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
+                                    <MoreHorizontal />
+                                </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
                                     <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>

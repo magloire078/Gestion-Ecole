@@ -2,7 +2,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { PlusCircle, Users, User, Building, MoreHorizontal, BookCopy, AlertTriangle } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -47,6 +47,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { staff as Staff, class_type as Class } from '@/lib/data-types';
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 // Define Zod schema for validation
 const classSchema = z.object({
@@ -370,15 +371,15 @@ export default function ClassesPage() {
             <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
           <div className="flex gap-2">
-            <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
-                if(isOpen) handleOpenFormDialog(null);
+             <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+                if (isOpen) handleOpenFormDialog(null);
                 else setIsFormOpen(false);
             }}>
               <DialogTrigger asChild>
                 <Button>
-                  <span className="flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" /> Ajouter une Classe
-                  </span>
+                    <span className="flex items-center gap-2">
+                        <PlusCircle className="h-4 w-4" /> Ajouter une Classe
+                    </span>
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-xl">
@@ -417,7 +418,9 @@ export default function ClassesPage() {
                                 <div className="flex items-center justify-between">
                                     <CardTitle>{cls.name}</CardTitle>
                                     <DropdownMenu>
-                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                    <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem onClick={() => handleOpenFormDialog(cls)}>Modifier</DropdownMenuItem>
                                         <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(cls)}>Supprimer</DropdownMenuItem>
@@ -513,5 +516,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    
