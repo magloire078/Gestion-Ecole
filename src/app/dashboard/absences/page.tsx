@@ -54,6 +54,8 @@ import type { class_type as Class, student as Student, absence as Absence } from
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
+
 
 interface StudentWithAbsence extends Student {
     isAbsentToday?: boolean;
@@ -69,7 +71,7 @@ const absenceSchema = z.object({
 type AbsenceFormValues = z.infer<typeof absenceSchema>;
 
 export default function AbsencesPage() {
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { user } = useUser();
@@ -81,7 +83,6 @@ export default function AbsencesPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
-    setIsMounted(true);
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -382,5 +383,3 @@ export default function AbsencesPage() {
     </>
   );
 }
-
-    

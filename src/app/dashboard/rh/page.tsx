@@ -70,6 +70,8 @@ import { allSubjects } from '@/lib/data';
 import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
+import { useHydrationFix } from "@/hooks/use-hydration-fix";
+
 
 const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -110,6 +112,7 @@ type StaffFormValues = z.infer<typeof staffSchema>;
 type StaffMember = Staff & { id: string };
 
 export default function HRPage() {
+  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const auth = useAuth();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -528,5 +531,3 @@ export default function HRPage() {
     </>
   );
 }
-
-    

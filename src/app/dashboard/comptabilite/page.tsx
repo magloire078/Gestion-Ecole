@@ -29,7 +29,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -66,6 +65,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AccountingCharts } from './charts';
 import { cn } from "@/lib/utils";
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
+
 
 const transactionSchema = z.object({
     description: z.string().min(1, { message: "La description est requise." }),
@@ -78,7 +79,7 @@ const transactionSchema = z.object({
 type TransactionFormValues = z.infer<typeof transactionSchema>;
 
 export default function AccountingPage() {
-  const [isMounted, setIsMounted] = useState(false);
+  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
@@ -100,7 +101,6 @@ export default function AccountingPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
-    setIsMounted(true);
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -428,5 +428,3 @@ export default function AccountingPage() {
     </>
   );
 }
-
-    
