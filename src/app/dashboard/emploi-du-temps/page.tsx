@@ -485,5 +485,4 @@ export default function TimetablePage() {
     </>
   );
 }
-
     
