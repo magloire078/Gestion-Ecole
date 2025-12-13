@@ -13,12 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save } from 'lucide-react';
 import Link from 'next/link';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle, niveau, staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,9 +48,9 @@ export default function NewClassPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   // --- Data Fetching ---
-  const cyclesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/cycles`) : null, [schoolId, firestore]);
-  const niveauxQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/niveaux`) : null, [schoolId, firestore]);
-  const teachersQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/personnel`) : null, [schoolId, firestore]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
+  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
@@ -70,11 +70,14 @@ export default function NewClassPage() {
     },
   });
   
-  const watchedCycleId = form.watch('cycleId');
+  const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
   const filteredNiveaux = useMemo(() => niveaux.filter(n => n.cycleId === watchedCycleId), [niveaux, watchedCycleId]);
 
   useEffect(() => {
-    form.setValue('niveauId', '');
+    // Reset niveauId when cycleId changes and the new list of niveaux is available
+    if (watchedCycleId) {
+        form.setValue('niveauId', '');
+    }
   }, [watchedCycleId, form]);
 
   const handleSubmit = async (values: ClassFormValues) => {
