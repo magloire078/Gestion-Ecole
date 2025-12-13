@@ -92,17 +92,46 @@ service cloud.firestore {
             allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
         }
         
-        match /{subpath=**} {
-            allow read, write: if isSchoolDirector(schoolId) || isAdmin();
+        match /paiements/{paymentId} {
+             allow read, write: if isSchoolDirector(schoolId) || isAdmin();
         }
       }
 
-      match /{collection}/{docId} {
-        allow read, list: if isUserInSchool(schoolId);
-        allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      match /classes/{classId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+       match /frais_scolarite/{feeId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      
+       match /absences/{absenceId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+      }
+
+       match /comptabilite/{transactionId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      match /bibliotheque/{bookId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      
+      match /emploi_du_temps/{entryId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow create, update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      
+      match /messagerie/{messageId} {
+          allow read, list: if isUserInSchool(schoolId);
+          allow create: if isSchoolDirector(schoolId) || isTeacher(schoolId) || isAdmin();
+          allow update, delete: if isAdmin(); // Only admin can delete messages for now
       }
     }
   }
 }
-
-    

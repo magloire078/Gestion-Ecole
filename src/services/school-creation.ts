@@ -40,13 +40,13 @@ export class SchoolCreationService {
   }
 
   async createSchool(schoolData: SchoolCreationData, userId: string) {
-    const schoolId = doc(collection(this.db, 'id_generator')).id;
+    const schoolRef = doc(collection(this.db, 'ecoles'));
+    const schoolId = schoolRef.id;
     const schoolCode = generateSchoolCode(schoolData.name);
     
     const batch = writeBatch(this.db);
 
     // 1. Create the main school document
-    const schoolRef = doc(this.db, 'ecoles', schoolId);
     batch.set(schoolRef, {
       name: schoolData.name,
       address: `${schoolData.address}, ${schoolData.city}, ${schoolData.country}`,
