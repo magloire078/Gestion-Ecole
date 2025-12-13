@@ -209,7 +209,7 @@ export default function ClassesPage() {
             const newClassRef = doc(collection(firestore, `ecoles/${schoolId}/classes`));
             batch.set(newClassRef, classData);
 
-            const newFeeRef = doc(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
+            const newFeeRef = doc(collection(firestore, `frais_scolarite`));
             batch.set(newFeeRef, feeData);
             
             await batch.commit();
@@ -219,7 +219,7 @@ export default function ClassesPage() {
         setEditingClass(null);
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}/classes & /ecoles/${schoolId}/frais_scolarite`,
+            path: `[BATCH WRITE] /ecoles/${schoolId}/classes & /frais_scolarite`,
             operation: editingClass ? 'update' : 'create',
             requestResourceData: { classData, feeData: editingClass ? undefined : feeData }
         });
