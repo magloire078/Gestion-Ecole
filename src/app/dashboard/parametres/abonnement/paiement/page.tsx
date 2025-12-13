@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
@@ -31,14 +32,23 @@ function PaymentPageContent() {
 
     useEffect(() => {
         if (!userLoading && !schoolLoading && (!plan || !price || !description)) {
-            setError("Les informations de la transaction sont manquantes. Veuillez retourner à la page d'abonnement et réessayer.");
+            // Give it a moment for params to appear on client
+            setTimeout(() => {
+                if (!searchParams.get('plan') || !searchParams.get('price') || !searchParams.get('description')) {
+                    setError("Les informations de la transaction sont manquantes. Veuillez retourner à la page d'abonnement et réessayer.");
+                }
+            }, 500);
         }
-    }, [plan, price, description, userLoading, schoolLoading]);
+    }, [plan, price, description, userLoading, schoolLoading, searchParams]);
 
     const handleCinetPay = async () => {
         setIsLoadingProvider('cinetpay');
         setError(null);
-        if (!plan || !price || !description || !user || !schoolId) return;
+        if (!plan || !price || !description || !user || !schoolId) {
+             setError("Impossible de lancer le paiement. Données manquantes.");
+             setIsLoadingProvider(null);
+             return;
+        }
 
         const transactionId = `${schoolId}_${new Date().getTime()}`;
         const [firstName, ...lastNameParts] = user.displayName?.split(' ') || ['Utilisateur', 'Anonyme'];
@@ -67,7 +77,11 @@ function PaymentPageContent() {
     const handleStripe = async () => {
         setIsLoadingProvider('stripe');
         setError(null);
-        if (!plan || !price || !description || !user || !schoolId) return;
+        if (!plan || !price || !description || !user || !schoolId) {
+            setError("Impossible de lancer le paiement. Données manquantes.");
+            setIsLoadingProvider(null);
+            return;
+        }
 
         // Stripe works with cents, and prefers EUR for CIV
         const priceInCents = Math.round(parseInt(price, 10) / 655.957 * 100);
@@ -80,12 +94,12 @@ function PaymentPageContent() {
             customerEmail: user.email,
         };
         
-        const { url, error } = await createStripeCheckoutSession(sessionData);
+        const { url, error: stripeError } = await createStripeCheckoutSession(sessionData);
 
         if (url) {
             window.location.href = url;
         } else {
-            setError(error || "Impossible de générer le lien de paiement Stripe. Veuillez contacter le support.");
+            setError(stripeError || "Impossible de générer le lien de paiement Stripe. Veuillez contacter le support.");
             setIsLoadingProvider(null);
         }
     };

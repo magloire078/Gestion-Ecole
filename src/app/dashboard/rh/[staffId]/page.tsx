@@ -5,7 +5,7 @@
 import { notFound, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, Phone, BookUser, FileText, Briefcase, Building } from 'lucide-react';
+import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -13,7 +13,7 @@ import { doc, collection, query, where, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import type { staff as Staff, class_type as Class, school as OrganizationSettings } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, school as OrganizationSettings, timetableEntry as TimetableEntry } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/app/bulletin-de-paie';
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
@@ -50,8 +50,12 @@ export default function StaffProfilePage() {
 
   const classRef = useMemoFirebase(() => staffMember?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
+
+  const timetableQuery = useMemoFirebase(() => schoolId && staffId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
+  const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
+  const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as TimetableEntry) || [], [timetableData]);
   
-  const isLoading = schoolLoading || staffLoading || classLoading;
+  const isLoading = schoolLoading || staffLoading || classLoading || timetableLoading;
 
   if (!staffId) {
     return <div>ID du membre du personnel invalide ou manquant dans l'URL.</div>;
@@ -107,6 +111,9 @@ export default function StaffProfilePage() {
 
   const staffFullName = `${staffMember.firstName} ${staffMember.lastName}`;
   const fallback = staffFullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+
+  const uniqueSubjects = [...new Set(timetableEntries.map(e => e.subject))];
+  const uniqueClasses = [...new Set(timetableEntries.map(e => e.classId))];
 
 
   return (
@@ -168,12 +175,21 @@ export default function StaffProfilePage() {
             <div className="lg:col-span-2 flex flex-col gap-6">
                  <Card>
                     <CardHeader>
-                        <CardTitle>À venir...</CardTitle>
-                         <CardDescription>Cette section affichera des informations contextuelles comme les classes gérées, les performances des élèves, etc.</CardDescription>
+                        <CardTitle>Statistiques</CardTitle>
+                         <CardDescription>Aperçu de l'activité de l'enseignant.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-40 w-full flex items-center justify-center bg-muted rounded-md">
-                            <p className="text-muted-foreground">Bientôt disponible</p>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                                <Book className="h-8 w-8 text-primary mb-2"/>
+                                <p className="text-2xl font-bold">{uniqueSubjects.length}</p>
+                                <p className="text-sm text-muted-foreground">Matière(s) enseignée(s)</p>
+                            </div>
+                            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                                <School className="h-8 w-8 text-primary mb-2"/>
+                                <p className="text-2xl font-bold">{uniqueClasses.length}</p>
+                                <p className="text-sm text-muted-foreground">Classe(s) assignée(s)</p>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -219,3 +235,4 @@ export default function StaffProfilePage() {
     </>
   );
 }
+

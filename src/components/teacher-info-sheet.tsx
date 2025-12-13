@@ -97,7 +97,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                     <main className="space-y-8">
                         <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/50">
                             <Avatar className="h-24 w-24">
-                                <AvatarImage src={`https://picsum.photos/seed/${teacher.id}/200`} alt={teacherFullName} data-ai-hint="person face" />
+                                <AvatarImage src={teacher.photoURL || `https://picsum.photos/seed/${teacher.id}/200`} alt={teacherFullName} data-ai-hint="person face" />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                             <div className="space-y-1 text-center sm:text-left">
