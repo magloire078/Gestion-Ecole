@@ -26,13 +26,11 @@ service cloud.firestore {
     }
     
     function isSchoolDirector(schoolId) {
-       // On read/update, check existing resource. On create, check incoming resource.
        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
        return isAuth() && schoolDoc.data.directorId == request.auth.uid;
     }
     
     function getStaffRole(userId, schoolId) {
-        // Path to staff document in the subcollection
         let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId);
         if (exists(staffDocPath)) {
             return get(staffDocPath).data.role;
@@ -44,50 +42,110 @@ service cloud.firestore {
         return getStaffRole(request.auth.uid, schoolId) == 'enseignant';
     }
 
+    function isClassTeacher(schoolId, classeId) {
+      let classeDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/classes/$(classeId));
+      return isAuth() && isTeacher(schoolId) && classeDoc.data.mainTeacherId == request.auth.uid;
+    }
+
     // --- Global Collections ---
 
     match /utilisateurs/{userId} {
-      // A user can create/read/update their own user_root document.
       allow read, write: if isAuth() && request.auth.uid == userId;
-      // An admin can read any user document for administrative purposes.
       allow read: if isAdmin();
     }
 
     match /admin_roles/{roleId} {
-      // Only admins can manage administrative roles.
       allow read, write: if isAdmin();
     }
     
-    // --- School-Specific Collections (Subcollections) ---
+    // --- School-Specific Collections ---
 
     match /ecoles/{schoolId} {
-      // Anyone in the school or an admin can read the school's public details.
       allow read: if isUserInSchool(schoolId) || isAdmin();
-      // Allow any authenticated user to create a school document.
       allow create: if isAuth();
-      // Only the designated director of that school or an admin can update it.
       allow update: if isSchoolDirector(schoolId) || isAdmin();
-      // Only admins can delete a school.
       allow delete: if isAdmin();
       
-      // Match all subcollections within a school
-      match /{subcollection}/{docId} {
-        // Allow reads for any user belonging to that school.
+      // === CYCLES ===
+      match /cycles/{cycleId} {
         allow read: if isUserInSchool(schoolId);
-        
-        // Allow writes (create, update, delete) only for the school's director or a platform admin.
-        // This is a broad rule. More specific rules can be added below for specific subcollections.
         allow write: if isSchoolDirector(schoolId) || isAdmin();
       }
       
-      // Specific rule for student notes: teachers can also write.
-      match /eleves/{studentId}/notes/{gradeId} {
-         // Inherits read rule from parent.
-         // Allow teachers of the school to write notes.
-         allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+      // === NIVEAUX ===
+      match /niveaux/{niveauId} {
+        allow read: if isUserInSchool(schoolId);
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      
+      // === CLASSES ===
+      match /classes/{classeId} {
+        allow read: if isUserInSchool(schoolId);
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      // === AFFECTATIONS ===
+      match /affectations/{assignmentId} {
+        allow read: if isUserInSchool(schoolId);
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      // === EMPLOIS DU TEMPS ===
+      match /emplois_du_temps/{scheduleId} {
+        allow read: if isUserInSchool(schoolId);
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      // === PERSONNEL ===
+      match /personnel/{staffId} {
+        allow read: if isUserInSchool(schoolId);
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      // === ELEVES ===
+      match /eleves/{studentId} {
+        allow read: if isUserInSchool(schoolId);
+        allow write: if isSchoolDirector(schoolId) || isAdmin();
+
+        // --- Notes de l'élève ---
+        match /notes/{gradeId} {
+          allow read: if isUserInSchool(schoolId);
+          allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+        }
+        
+        // --- Paiements de l'élève ---
+        match /paiements/{paymentId} {
+          allow read: if isSchoolDirector(schoolId) || isAdmin(); // Only director/admin can see payment history
+          allow write: if isSchoolDirector(schoolId) || isAdmin();
+        }
+
+        // --- Affectations de l'élève ---
+        match /affectations/{assignmentId} {
+            allow read: if isUserInSchool(schoolId);
+            allow write: if isSchoolDirector(schoolId) || isAdmin();
+        }
+      }
+      
+      // === AUTRES SOUS-COLLECTIONS ===
+      match /absences/{absenceId} {
+          allow read: if isUserInSchool(schoolId);
+          allow write: if isTeacher(schoolId) || isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      match /comptabilite/{transactionId} {
+          allow read, write: if isSchoolDirector(schoolId) || isAdmin();
+      }
+
+      match /bibliotheque/{bookId} {
+          allow read: if isUserInSchool(schoolId);
+          allow write: if isSchoolDirector(schoolId) || isTeacher(schoolId) || isAdmin();
+      }
+
+      match /messagerie/{messageId} {
+          allow read: if isUserInSchool(schoolId);
+          allow create: if isSchoolDirector(schoolId) || isTeacher(schoolId) || isAdmin();
+          allow delete: if isAdmin();
       }
     }
   }
 }
-
-    
