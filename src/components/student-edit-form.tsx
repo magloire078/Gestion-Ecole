@@ -64,33 +64,26 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     },
   });
   
-  const watchedTuitionFee = useWatch({ control: form.control, name: 'tuitionFee' });
-  const watchedDiscountAmount = useWatch({ control: form.control, name: 'discountAmount' });
   const watchedClassId = useWatch({ control: form.control, name: 'classId' });
+  const watchedDiscountAmount = useWatch({ control: form.control, name: 'discountAmount' });
 
-  // Effet pour mettre à jour les frais de scolarité et le solde dû lors du changement de classe
+  // Effet pour recalculer les montants lorsque la classe ou la remise change
   useEffect(() => {
-    if (watchedClassId === student.classId) {
-        // Si la classe n'a pas changé, on recalcule juste le solde dû
-        const netAmount = (watchedTuitionFee || 0) - (watchedDiscountAmount || 0);
-        form.setValue('amountDue', Math.max(0, netAmount));
-        return;
-    };
-    
     const newClass = classes.find(c => c.id === watchedClassId);
-    if (!newClass) return;
+    let newTuitionFee = form.getValues('tuitionFee');
 
-    const feeForNewClass = fees.find(f => f.grade === newClass.name);
-    const newTuitionFee = feeForNewClass ? parseFloat(feeForNewClass.amount) : 0;
-    
-    // Mettre à jour les champs du formulaire
-    form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
-    // Réinitialiser la remise lors du changement de classe, car elle pourrait ne plus être applicable
-    form.setValue('discountAmount', 0, { shouldValidate: true }); 
-    const netAmount = newTuitionFee - (form.getValues('discountAmount') || 0);
-    form.setValue('amountDue', Math.max(0, netAmount), { shouldValidate: true });
+    // Mettre à jour les frais de scolarité uniquement si la classe change
+    if (watchedClassId !== student.classId && newClass) {
+        const feeForNewClass = fees.find(f => f.grade === newClass.grade); // Utilise grade au lieu de name
+        newTuitionFee = feeForNewClass ? parseFloat(feeForNewClass.amount) : 0;
+        form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
+    }
 
-  }, [watchedClassId, watchedTuitionFee, watchedDiscountAmount, form, classes, fees, student.classId]);
+    const currentDiscount = watchedDiscountAmount || 0;
+    const newAmountDue = Math.max(0, newTuitionFee - currentDiscount);
+    form.setValue('amountDue', newAmountDue, { shouldValidate: true });
+
+  }, [watchedClassId, watchedDiscountAmount, form, classes, fees, student.classId]);
 
 
   const handleEditStudent = async (values: StudentFormValues) => {
@@ -98,7 +91,7 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     const newClassId = values.classId;
     const classHasChanged = oldClassId !== newClassId;
 
-    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id}`);
+    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id!}`);
     const selectedClassInfo = classes.find(c => c.id === newClassId);
     
     const batch = writeBatch(firestore);
@@ -177,7 +170,7 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                 <SelectContent>
-                  {classes.map((opt) => (<SelectItem key={opt.id} value={opt.id}>{opt.name}</SelectItem>))}
+                  {classes.map((opt) => (<SelectItem key={opt.id} value={opt.id!}>{opt.name}</SelectItem>))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -188,7 +181,7 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
         
         <div className="p-4 border rounded-lg space-y-4 mt-4">
             <h4 className="font-medium text-sm">Gestion de la Scolarité</h4>
-            <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly={watchedClassId !== student.classId} className={watchedClassId !== student.classId ? "bg-muted" : ""} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
              <FormField
