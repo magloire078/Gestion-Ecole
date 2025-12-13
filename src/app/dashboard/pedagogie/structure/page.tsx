@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -31,6 +32,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SCHOOL_TEMPLATES } from '@/lib/templates';
 
 const cycleSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
@@ -51,11 +53,12 @@ const niveauSchema = z.object({
 });
 type NiveauFormValues = z.infer<typeof niveauSchema>;
 
+const ivorianCycles = SCHOOL_TEMPLATES.IVORIAN_SYSTEM.cycles;
+
 
 export default function StructurePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeCycleFilter, setActiveCycleFilter] = useState<string>('all');
-  const [selectedCycleForNiveaux, setSelectedCycleForNiveaux] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   
@@ -103,11 +106,19 @@ export default function StructurePage() {
   });
 
   const cycleMap = useMemo(() => new Map(cycles.map(c => [c.id, c])), [cycles]);
+  
+  const watchedCycleName = cycleForm.watch('name');
+
+  useEffect(() => {
+      const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
+      if (selectedCycleTemplate) {
+          cycleForm.setValue('code', selectedCycleTemplate.code);
+          cycleForm.setValue('order', selectedCycleTemplate.order);
+      }
+  }, [watchedCycleName, cycleForm]);
 
   const filteredNiveaux = useMemo(() => {
-    let filtered = selectedCycleForNiveaux === 'all'
-      ? niveaux
-      : niveaux.filter(n => n.cycleId === selectedCycleForNiveaux);
+    let filtered = niveaux;
 
     if (searchQuery) {
         filtered = filtered.filter(niveau => 
@@ -116,7 +127,7 @@ export default function StructurePage() {
         );
     }
     return filtered.sort((a, b) => a.order - b.order);
-  }, [niveaux, selectedCycleForNiveaux, searchQuery]);
+  }, [niveaux, searchQuery]);
 
 
   const filteredCycles = useMemo(() => {
@@ -279,22 +290,6 @@ export default function StructurePage() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Select value={selectedCycleForNiveaux} onValueChange={setSelectedCycleForNiveaux}>
-                  <SelectTrigger className="w-full md:w-[240px]">
-                    <SelectValue placeholder="Filtrer par cycle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les cycles</SelectItem>
-                    {cycles.sort((a,b) => a.order - b.order).map(cycle => (
-                       <SelectItem key={cycle.id} value={cycle.id}>
-                          <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }}/>
-                              {cycle.name}
-                          </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
               </div>
               <div className="border rounded-lg">
                 <Table>
@@ -353,9 +348,28 @@ export default function StructurePage() {
         <DialogHeader><DialogTitle>{editingCycle ? 'Modifier' : 'Nouveau'} Cycle</DialogTitle></DialogHeader>
         <Form {...cycleForm}>
           <form id="cycle-form" onSubmit={cycleForm.handleSubmit(handleAddCycleSubmit)} className="space-y-4">
-             <FormField control={cycleForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du cycle</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-             <FormField control={cycleForm.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-             <FormField control={cycleForm.control} name="order" render={({ field }) => (<FormItem><FormLabel>Ordre d'affichage</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField
+                control={cycleForm.control}
+                name="name"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Nom du cycle</FormLabel>
+                         <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                                <SelectTrigger><SelectValue placeholder="Sélectionnez un type de cycle..." /></SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {ivorianCycles.map((cycle) => (
+                                    <SelectItem key={cycle.name} value={cycle.name}>{cycle.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}
+             />
+             <FormField control={cycleForm.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={cycleForm.control} name="order" render={({ field }) => (<FormItem><FormLabel>Ordre d'affichage</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
              <FormField control={cycleForm.control} name="color" render={({ field }) => (<FormItem><FormLabel>Couleur</FormLabel><FormControl><Input type="color" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>)} />
           </form>
         </Form>
