@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -416,37 +415,37 @@ export default function NewClassPage() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Jours de cours</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {daysOptions.map(day => (
-                      <Button
-                        key={day.value}
-                        type="button"
-                        variant={formData.days.includes(day.value) ? 'default' : 'outline'}
-                        onClick={() => {
-                          const newDays = formData.days.includes(day.value)
-                            ? formData.days.filter(d => d !== day.value)
-                            : [...formData.days, day.value];
-                          handleInputChange('days', newDays);
-                        }}
-                      >
-                        {day.label}
-                      </Button>
+                <div className="space-y-3">
+                  <Label>Jours de cours *</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                    {daysOptions.map((day) => (
+                      <div key={day.value} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`day-${day.value}`}
+                          checked={formData.days.includes(day.value)}
+                          onChange={(e) => {
+                            const newDays = e.target.checked
+                              ? [...formData.days, day.value]
+                              : formData.days.filter(d => d !== day.value);
+                            handleInputChange('days', newDays);
+                          }}
+                          className="h-4 w-4"
+                        />
+                        <label htmlFor={`day-${day.value}`} className="text-sm">
+                          {day.label}
+                        </label>
+                      </div>
                     ))}
                   </div>
                 </div>
-                
-                <div className="text-center p-4 bg-gray-50 rounded-lg">
-                  <p className="font-medium">
-                    Emploi du temps détaillé
-                  </p>
-                  <p className="text-sm text-muted-foreground mb-2">
-                    Vous pourrez configurer l'emploi du temps matière par matière après avoir créé la classe.
-                  </p>
-                  <Button type="button" variant="secondary" disabled>
-                    Configurer l'emploi du temps détaillé
-                  </Button>
+
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <h4 className="font-medium mb-2">Récapitulatif horaire</h4>
+                  <div className="text-sm text-muted-foreground">
+                    <p>La classe aura cours de <strong>{formData.startTime}</strong> à <strong>{formData.endTime}</strong></p>
+                    <p>les jours: <strong>{formData.days.map(d => daysOptions.find(opt => opt.value === d)?.label).join(', ')}</strong></p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -456,25 +455,42 @@ export default function NewClassPage() {
           <TabsContent value="options">
             <Card>
               <CardHeader>
-                <CardTitle>Options avancées</CardTitle>
+                <CardTitle>Options supplémentaires</CardTitle>
+                <CardDescription>
+                  Paramètres avancés et notes
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center space-x-2">
-                  <Switch 
-                    id="is-active"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) => handleInputChange('isActive', checked)}
-                  />
-                  <Label htmlFor="is-active">Activer la classe pour l'année en cours</Label>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="notes">Notes internes (visibles uniquement par l'administration)</Label>
-                  <Textarea 
-                    id="notes" 
-                    placeholder="Ajoutez des notes ou commentaires ici..."
-                    value={formData.notes}
-                    onChange={(e) => handleInputChange('notes', e.target.value)}
-                  />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="isActive" className="font-medium">
+                        Classe active
+                      </Label>
+                      <p className="text-sm text-muted-foreground">
+                        Désactivez pour archiver la classe
+                      </p>
+                    </div>
+                    <Switch
+                      id="isActive"
+                      checked={formData.isActive}
+                      onCheckedChange={(checked) => handleInputChange('isActive', checked)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes internes</Label>
+                    <Textarea
+                      id="notes"
+                      placeholder="Informations supplémentaires sur cette classe..."
+                      value={formData.notes}
+                      onChange={(e) => handleInputChange('notes', e.target.value)}
+                      rows={4}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Ces notes sont visibles uniquement par l'administration.
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -482,17 +498,34 @@ export default function NewClassPage() {
         </Tabs>
 
         {/* Boutons d'action */}
-        <div className="flex justify-end gap-4 mt-8">
-          <Button variant="outline" asChild>
-            <Link href="/dashboard/classes">Annuler</Link>
+        <div className="flex items-center justify-between pt-6">
+          <Button variant="outline" type="button" asChild>
+            <Link href="/dashboard/pedagogie/structure">
+              Annuler
+            </Link>
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? 'Enregistrement...' : 'Enregistrer la classe'}
-          </Button>
+          
+          <div className="flex items-center gap-2">
+            <Button variant="outline" type="button">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Supprimer le brouillon
+            </Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent mr-2" />
+                  Création...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Créer la classe
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </form>
     </div>
   );
 }
-
