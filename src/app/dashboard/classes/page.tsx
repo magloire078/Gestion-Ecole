@@ -330,7 +330,9 @@ export default function ClassesPage() {
           </div>
           <div className="flex gap-2">
             <Button onClick={() => router.push('/dashboard/classes/new')}>
-              <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
+              <span className="flex items-center gap-2">
+                <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
+              </span>
             </Button>
           </div>
         </div>
@@ -352,8 +354,10 @@ export default function ClassesPage() {
                                 <div className="flex items-center justify-between">
                                     <CardTitle>{cls.name}</CardTitle>
                                     <DropdownMenu>
-                                    <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
-                                        <MoreHorizontal className="h-4 w-4" />
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon">
+                                            <MoreHorizontal className="h-4 w-4" />
+                                        </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem onClick={() => handleOpenFormDialog(cls)}>Modifier</DropdownMenuItem>
