@@ -20,7 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp, query } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
-import type { cycle, niveau, staff } from '@/lib/data-types';
+import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const classSchema = z.object({
@@ -56,9 +56,9 @@ export default function NewClassPage() {
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
 
-  const cycles = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as cycle & { id: string })) || [], [cyclesData]);
-  const niveaux = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as niveau & { id: string })) || [], [niveauxData]);
-  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as staff & { id: string })) || [], [teachersData]);
+  const cycles = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle & { id: string })) || [], [cyclesData]);
+  const niveaux = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
+  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
   
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
@@ -74,7 +74,6 @@ export default function NewClassPage() {
   const filteredNiveaux = useMemo(() => niveaux.filter(n => n.cycleId === watchedCycleId), [niveaux, watchedCycleId]);
 
   useEffect(() => {
-    // Reset niveauId when cycleId changes and the new list of niveaux is available
     if (watchedCycleId) {
         form.setValue('niveauId', '');
     }
@@ -99,7 +98,7 @@ export default function NewClassPage() {
         updatedAt: serverTimestamp(),
         mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
         teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
-        grade: niveau?.name || '', // Add the grade name
+        grade: niveau?.name || '',
     };
     
     try {
