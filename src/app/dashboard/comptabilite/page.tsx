@@ -99,7 +99,6 @@ export default function AccountingPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
-    // Set date only on the client to avoid hydration mismatch
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -331,28 +330,11 @@ export default function AccountingPage() {
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogTrigger>
-                    <Button onClick={() => handleOpenFormDialog(null)}>
-                      <span className="flex items-center gap-2">
-                        <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
-                      </span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{editingTransaction ? 'Modifier' : 'Nouvelle'} Transaction</DialogTitle>
-                        <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
-                    </DialogHeader>
-                    {renderFormContent()}
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                        <Button type="submit" form="transaction-form" disabled={form.formState.isSubmitting}>
-                            {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <Button onClick={() => handleOpenFormDialog(null)}>
+              <span className="flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
+              </span>
+            </Button>
         </div>
 
         <Card>
@@ -411,7 +393,6 @@ export default function AccountingPage() {
         </Card>
       </div>
       
-      {/* Delete Confirmation Dialog */}
        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -426,8 +407,22 @@ export default function AccountingPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingTransaction ? 'Modifier' : 'Nouvelle'} Transaction</DialogTitle>
+                <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
+            </DialogHeader>
+            {renderFormContent()}
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                <Button type="submit" form="transaction-form" disabled={form.formState.isSubmitting}>
+                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     </>
   );
 }
-
-    

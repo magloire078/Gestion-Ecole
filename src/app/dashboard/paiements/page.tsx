@@ -86,7 +86,6 @@ export default function PaymentsPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
-    // Set date only on client to avoid hydration issues
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
   
@@ -553,5 +552,3 @@ export default function PaymentsPage() {
     </>
   );
 }
-
-    

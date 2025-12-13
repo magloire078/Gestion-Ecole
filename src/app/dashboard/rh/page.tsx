@@ -50,10 +50,8 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { isValid, parseISO, format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { getPayslipDetails, type PayslipDetails } from '@/app/bulletin-de-paie';
 import type { staff as Staff, school as OrganizationSettings } from '@/lib/data-types';
-import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -112,7 +110,6 @@ type StaffFormValues = z.infer<typeof staffSchema>;
 type StaffMember = Staff & { id: string };
 
 export default function HRPage() {
-  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const auth = useAuth();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -144,7 +141,6 @@ export default function HRPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
-    // Set date only on client to avoid hydration issues
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -156,7 +152,7 @@ export default function HRPage() {
   });
 
   useEffect(() => {
-    if (todayDateString) {
+    if (todayDateString && !form.getValues('hireDate')) {
       form.reset({ ...form.getValues(), hireDate: todayDateString });
     }
   }, [todayDateString, form]);
@@ -248,7 +244,7 @@ export default function HRPage() {
   };
   
   const handleGeneratePayslip = async (staffMember: StaffMember) => {
-    if (!isMounted || !schoolData || !schoolId) return;
+    if (!schoolData || !schoolId) return;
 
     setIsGeneratingPayslip(true);
     setPayslipDetails(null);
@@ -356,102 +352,11 @@ export default function HRPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Ressources Humaines</h1>
               <p className="text-muted-foreground">Gérez le personnel (enseignant et non-enseignant) de votre école.</p>
           </div>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger>
-                <Button onClick={() => handleOpenFormDialog(null)}>
-                  <span className="flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" /> Ajouter un Membre
-                  </span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-3xl">
-                  <DialogHeader>
-                    <DialogTitle>{editingStaff ? "Modifier un Membre" : "Ajouter un Membre du Personnel"}</DialogTitle>
-                    <DialogDescription>
-                      {editingStaff ? `Mettez à jour les informations de ${editingStaff.firstName} ${editingStaff.lastName}.` : "Renseignez les informations du nouveau membre."}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Form {...form}>
-                      <form id="staff-form" onSubmit={form.handleSubmit(handleSubmit)}>
-                          <Tabs defaultValue="general" className="w-full">
-                              <TabsList className="grid w-full grid-cols-4">
-                                  <TabsTrigger value="general">Général</TabsTrigger>
-                                  <TabsTrigger value="payroll">Paie</TabsTrigger>
-                                  <TabsTrigger value="personal">Personnel</TabsTrigger>
-                                  <TabsTrigger value="banking">Bancaire</TabsTrigger>
-                              </TabsList>
-                              <div className="py-6 max-h-[60vh] overflow-y-auto px-1">
-                                  <TabsContent value="general" className="space-y-4">
-                                      <div className="grid grid-cols-2 gap-4">
-                                          <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                          <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom de famille" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                      </div>
-                                      <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="personnel">Personnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                                      {watchedRole === 'enseignant' && (
-                                          <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
-                                              <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{allSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                              <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
-                                          </div>
-                                      )}
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemple.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                         {!editingStaff && (
-                                          <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Mot de Passe</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                         )}
-                                      </div>
-                                       <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />
-                                      <FormField control={form.control} name="hireDate" render={({ field }) => (<FormItem><FormLabel>Date d'embauche</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                  </TabsContent>
-                                  <TabsContent value="payroll" className="space-y-4">
-                                      <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                      <Accordion type="single" collapsible className="w-full">
-                                        <AccordionItem value="indemnities">
-                                          <AccordionTrigger>Indemnités et Primes</AccordionTrigger>
-                                          <AccordionContent>
-                                            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
-                                                <FormField control={form.control} name="indemniteTransportImposable" render={({ field }) => (<FormItem><FormLabel>Transport (imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="transportNonImposable" render={({ field }) => (<FormItem><FormLabel>Transport (non-imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="indemniteLogement" render={({ field }) => (<FormItem><FormLabel>Logement</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="indemniteResponsabilite" render={({ field }) => (<FormItem><FormLabel>Responsabilité</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="indemniteSujetion" render={({ field }) => (<FormItem><FormLabel>Sujétion</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="indemniteCommunication" render={({ field }) => (<FormItem><FormLabel>Communication</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                                <FormField control={form.control} name="indemniteRepresentation" render={({ field }) => (<FormItem><FormLabel>Représentation</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                            </div>
-                                          </AccordionContent>
-                                        </AccordionItem>
-                                      </Accordion>
-                                  </TabsContent>
-                                   <TabsContent value="personal" className="space-y-4">
-                                       <div className="grid grid-cols-2 gap-4">
-                                          <FormField control={form.control} name="situationMatrimoniale" render={({ field }) => (<FormItem><FormLabel>Situation Matrimoniale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="Célibataire">Célibataire</SelectItem><SelectItem value="Marié(e)">Marié(e)</SelectItem><SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem><SelectItem value="Veuf(ve)">Veuf(ve)</SelectItem></SelectContent></Select></FormItem>)} />
-                                          <FormField control={form.control} name="enfants" render={({ field }) => (<FormItem><FormLabel>Enfants à charge</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                                       </div>
-                                       <FormField control={form.control} name="categorie" render={({ field }) => (<FormItem><FormLabel>Catégorie</FormLabel><FormControl><Input placeholder="Ex: Catégorie 7" {...field} /></FormControl></FormItem>)} />
-                                      <h4 className="font-semibold text-sm pt-2">Informations CNPS</h4>
-                                      <FormField control={form.control} name="cnpsEmploye" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employé</FormLabel><FormControl><Input placeholder="Numéro CNPS" {...field} /></FormControl></FormItem>)} />
-                                      <FormField control={form.control} name="CNPS" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Soumis aux cotisations CNPS</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
-                                  </TabsContent>
-                                  <TabsContent value="banking" className="space-y-4">
-                                       <FormField control={form.control} name="banque" render={({ field }) => (<FormItem><FormLabel>Banque</FormLabel><FormControl><Input placeholder="Nom de la banque" {...field} /></FormControl></FormItem>)} />
-                                       <div className="grid grid-cols-3 gap-4">
-                                          <FormField control={form.control} name="CB" render={({ field }) => (<FormItem><FormLabel>Code Banque</FormLabel><FormControl><Input placeholder="CB" {...field} /></FormControl></FormItem>)} />
-                                          <FormField control={form.control} name="CG" render={({ field }) => (<FormItem><FormLabel>Code Guichet</FormLabel><FormControl><Input placeholder="CG" {...field} /></FormControl></FormItem>)} />
-                                          <FormField control={form.control} name="Cle_RIB" render={({ field }) => (<FormItem><FormLabel>Clé RIB</FormLabel><FormControl><Input placeholder="Clé" {...field} /></FormControl></FormItem>)} />
-                                       </div>
-                                       <FormField control={form.control} name="numeroCompte" render={({ field }) => (<FormItem><FormLabel>Numéro de Compte</FormLabel><FormControl><Input placeholder="Numéro de compte" {...field} /></FormControl></FormItem>)} />
-                                  </TabsContent>
-                              </div>
-                          </Tabs>
-                      </form>
-                  </Form>
-                   <DialogFooter className="pt-4 border-t">
-                      <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                      <Button type="submit" form="staff-form" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                      </Button>
-                  </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => handleOpenFormDialog(null)}>
+              <span className="flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" /> Ajouter un Membre
+              </span>
+            </Button>
         </div>
         
         <Tabs defaultValue="teachers">
@@ -530,8 +435,96 @@ export default function HRPage() {
             </div>
         </DialogContent>
       </Dialog>
+      
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{editingStaff ? "Modifier un Membre" : "Ajouter un Membre du Personnel"}</DialogTitle>
+              <DialogDescription>
+                {editingStaff ? `Mettez à jour les informations de ${editingStaff.firstName} ${editingStaff.lastName}.` : "Renseignez les informations du nouveau membre."}
+              </DialogDescription>
+            </DialogHeader>
+            <Form {...form}>
+                <form id="staff-form" onSubmit={form.handleSubmit(handleSubmit)}>
+                    <Tabs defaultValue="general" className="w-full">
+                        <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="general">Général</TabsTrigger>
+                            <TabsTrigger value="payroll">Paie</TabsTrigger>
+                            <TabsTrigger value="personal">Personnel</TabsTrigger>
+                            <TabsTrigger value="banking">Bancaire</TabsTrigger>
+                        </TabsList>
+                        <div className="py-6 max-h-[60vh] overflow-y-auto px-1">
+                            <TabsContent value="general" className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom de famille" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
+                                <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="personnel">Personnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                {watchedRole === 'enseignant' && (
+                                    <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
+                                        <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{allSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                                    </div>
+                                )}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemple.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                   {!editingStaff && (
+                                    <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Mot de Passe</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                   )}
+                                </div>
+                                 <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />
+                                <FormField control={form.control} name="hireDate" render={({ field }) => (<FormItem><FormLabel>Date d'embauche</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </TabsContent>
+                            <TabsContent value="payroll" className="space-y-4">
+                                <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <Accordion type="single" collapsible className="w-full">
+                                  <AccordionItem value="indemnities">
+                                    <AccordionTrigger>Indemnités et Primes</AccordionTrigger>
+                                    <AccordionContent>
+                                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 pt-2">
+                                          <FormField control={form.control} name="indemniteTransportImposable" render={({ field }) => (<FormItem><FormLabel>Transport (imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="transportNonImposable" render={({ field }) => (<FormItem><FormLabel>Transport (non-imposable)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteLogement" render={({ field }) => (<FormItem><FormLabel>Logement</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteResponsabilite" render={({ field }) => (<FormItem><FormLabel>Responsabilité</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteSujetion" render={({ field }) => (<FormItem><FormLabel>Sujétion</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteCommunication" render={({ field }) => (<FormItem><FormLabel>Communication</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                          <FormField control={form.control} name="indemniteRepresentation" render={({ field }) => (<FormItem><FormLabel>Représentation</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                      </div>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                </Accordion>
+                            </TabsContent>
+                             <TabsContent value="personal" className="space-y-4">
+                                 <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="situationMatrimoniale" render={({ field }) => (<FormItem><FormLabel>Situation Matrimoniale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="Célibataire">Célibataire</SelectItem><SelectItem value="Marié(e)">Marié(e)</SelectItem><SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem><SelectItem value="Veuf(ve)">Veuf(ve)</SelectItem></SelectContent></Select></FormItem>)} />
+                                    <FormField control={form.control} name="enfants" render={({ field }) => (<FormItem><FormLabel>Enfants à charge</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                                 </div>
+                                 <FormField control={form.control} name="categorie" render={({ field }) => (<FormItem><FormLabel>Catégorie</FormLabel><FormControl><Input placeholder="Ex: Catégorie 7" {...field} /></FormControl></FormItem>)} />
+                                <h4 className="font-semibold text-sm pt-2">Informations CNPS</h4>
+                                <FormField control={form.control} name="cnpsEmploye" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employé</FormLabel><FormControl><Input placeholder="Numéro CNPS" {...field} /></FormControl></FormItem>)} />
+                                <FormField control={form.control} name="CNPS" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Soumis aux cotisations CNPS</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
+                            </TabsContent>
+                            <TabsContent value="banking" className="space-y-4">
+                                 <FormField control={form.control} name="banque" render={({ field }) => (<FormItem><FormLabel>Banque</FormLabel><FormControl><Input placeholder="Nom de la banque" {...field} /></FormControl></FormItem>)} />
+                                 <div className="grid grid-cols-3 gap-4">
+                                    <FormField control={form.control} name="CB" render={({ field }) => (<FormItem><FormLabel>Code Banque</FormLabel><FormControl><Input placeholder="CB" {...field} /></FormControl></FormItem>)} />
+                                    <FormField control={form.control} name="CG" render={({ field }) => (<FormItem><FormLabel>Code Guichet</FormLabel><FormControl><Input placeholder="CG" {...field} /></FormControl></FormItem>)} />
+                                    <FormField control={form.control} name="Cle_RIB" render={({ field }) => (<FormItem><FormLabel>Clé RIB</FormLabel><FormControl><Input placeholder="Clé" {...field} /></FormControl></FormItem>)} />
+                                 </div>
+                                 <FormField control={form.control} name="numeroCompte" render={({ field }) => (<FormItem><FormLabel>Numéro de Compte</FormLabel><FormControl><Input placeholder="Numéro de compte" {...field} /></FormControl></FormItem>)} />
+                            </TabsContent>
+                        </div>
+                    </Tabs>
+                </form>
+            </Form>
+             <DialogFooter className="pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                <Button type="submit" form="staff-form" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
-
-    

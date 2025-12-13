@@ -59,7 +59,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 
 // --- Interfaces ---
@@ -95,7 +94,7 @@ type GradeFormValues = z.infer<typeof gradeSchema>;
 
 
 export default function GradeEntryPage() {
-  const isMounted = useHydrationFix();
+  const [isMounted, setIsMounted] = useState(false);
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
@@ -125,7 +124,7 @@ export default function GradeEntryPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
-    // Set date only on client to avoid hydration issues
+    setIsMounted(true);
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -516,5 +515,3 @@ export default function GradeEntryPage() {
     </>
   );
 }
-
-    
