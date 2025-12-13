@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -145,15 +144,22 @@ export default function HRPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
+    // Set date only on client to avoid hydration issues
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
   const form = useForm<StaffFormValues>({
     resolver: zodResolver(staffSchema),
     defaultValues: {
-      firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+      firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: '', subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
     },
   });
+
+  useEffect(() => {
+    if (todayDateString) {
+      form.reset({ ...form.getValues(), hireDate: todayDateString });
+    }
+  }, [todayDateString, form]);
 
   const watchedRole = form.watch('role');
 
@@ -527,3 +533,5 @@ export default function HRPage() {
     </>
   );
 }
+
+    

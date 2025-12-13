@@ -86,6 +86,7 @@ export default function PaymentsPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
+    // Set date only on client to avoid hydration issues
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
   
@@ -94,7 +95,7 @@ export default function PaymentsPage() {
     const paymentForm = useForm<PaymentFormValues>({
         resolver: zodResolver(paymentSchema),
         defaultValues: {
-            paymentDate: todayDateString,
+            paymentDate: '', // Initialize as empty
             paymentDescription: '',
             paymentAmount: 0,
             payerFirstName: '',
@@ -103,6 +104,12 @@ export default function PaymentsPage() {
             paymentMethod: 'Espèces',
         }
     });
+
+  useEffect(() => {
+    if (todayDateString) {
+        paymentForm.reset({ ...paymentForm.getValues(), paymentDate: todayDateString });
+    }
+  }, [todayDateString, paymentForm]);
   
   useEffect(() => {
     if (selectedStudent && isManageFeeDialogOpen) {
@@ -546,3 +553,5 @@ export default function PaymentsPage() {
     </>
   );
 }
+
+    

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -100,6 +99,7 @@ export default function AccountingPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
+    // Set date only on the client to avoid hydration mismatch
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -110,9 +110,15 @@ export default function AccountingPage() {
         amount: 0,
         type: "Dépense",
         category: "",
-        date: todayDateString,
+        date: '', // Initialize as empty
     },
   });
+  
+  useEffect(() => {
+    if (todayDateString) {
+        form.reset({ ...form.getValues(), date: todayDateString });
+    }
+  }, [todayDateString, form]);
 
   const watchedType = form.watch('type');
 
@@ -423,3 +429,5 @@ export default function AccountingPage() {
     </>
   );
 }
+
+    

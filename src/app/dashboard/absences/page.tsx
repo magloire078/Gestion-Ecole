@@ -82,6 +82,7 @@ export default function AbsencesPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
+    // Set date only on the client to avoid hydration mismatch
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -121,18 +122,19 @@ export default function AbsencesPage() {
 
 
   const studentsWithAbsenceStatus = useMemo<StudentWithAbsence[]>(() => {
+      if (!isMounted) return studentsInClass.map(s => ({...s, isAbsentToday: false}));
       const absentStudentIds = new Set(todayAbsences.map(absence => absence.studentId));
       return studentsInClass.map(student => ({
           ...student,
           isAbsentToday: absentStudentIds.has(student.id!)
       }));
-  }, [studentsInClass, todayAbsences]);
+  }, [studentsInClass, todayAbsences, isMounted]);
 
 
   const form = useForm<AbsenceFormValues>({
     resolver: zodResolver(absenceSchema),
     defaultValues: {
-      date: todayDateString,
+      date: '', // Initialize as empty, will be set by useEffect
       type: "Journée entière",
       justified: false,
       reason: "",
@@ -142,10 +144,8 @@ export default function AbsencesPage() {
   useEffect(() => {
       if (todayDateString) {
           form.reset({
+              ...form.getValues(),
               date: todayDateString,
-              type: "Journée entière",
-              justified: false,
-              reason: "",
           });
       }
   }, [todayDateString, form]);
@@ -226,7 +226,7 @@ export default function AbsencesPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Liste des Élèves - {classes.find(c => c.id === selectedClassId)?.name}</CardTitle>
-                  <CardDescription>Cliquez sur un élève pour enregistrer une absence pour aujourd'hui.</CardDescription>
+                  <CardDescription>Cliquez sur un élève pour enregistrer une absence pour aujourd'hui ({isMounted ? format(new Date(), 'd MMMM', {locale: fr}) : '...'}).</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -383,3 +383,5 @@ export default function AbsencesPage() {
     </>
   );
 }
+
+    

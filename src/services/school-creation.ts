@@ -97,3 +97,5 @@ export class SchoolCreationService {
     return { schoolId, schoolCode };
   }
 }
+
+    

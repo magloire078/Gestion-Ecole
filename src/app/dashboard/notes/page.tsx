@@ -125,6 +125,7 @@ export default function GradeEntryPage() {
   const [todayDateString, setTodayDateString] = useState('');
 
   useEffect(() => {
+    // Set date only on client to avoid hydration issues
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -133,11 +134,17 @@ export default function GradeEntryPage() {
     defaultValues: {
       studentId: '',
       type: 'Devoir',
-      date: todayDateString,
+      date: '', // Initialize as empty, will be set by useEffect
       grade: 0,
       coefficient: 1,
     }
   });
+
+  useEffect(() => {
+    if (todayDateString) {
+        form.reset({ ...form.getValues(), date: todayDateString });
+    }
+  }, [todayDateString, form]);
 
   // --- Effects ---
   useEffect(() => {
@@ -509,3 +516,5 @@ export default function GradeEntryPage() {
     </>
   );
 }
+
+    
