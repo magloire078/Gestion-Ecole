@@ -24,6 +24,15 @@ export default function SubscriptionPage() {
     const [error, setError] = useState<string | null>(null);
 
     const handleChoosePlan = (planName: 'Essentiel' | 'Pro', price: number) => {
+        if (!schoolName) {
+            toast({
+                variant: "destructive",
+                title: "Erreur",
+                description: "Le nom de l'école n'est pas encore chargé. Veuillez patienter un instant.",
+            });
+            return;
+        }
+
         if (planName === 'Pro') {
              const transactionDetails = new URLSearchParams({
                 plan: planName,
@@ -126,6 +135,7 @@ export default function SubscriptionPage() {
                                         className="w-full" 
                                         variant={plan.name === 'Pro' ? 'default' : 'secondary'}
                                         onClick={() => handleChoosePlan(plan.name as 'Essentiel' | 'Pro', plan.priceNumber)}
+                                        disabled={isLoading}
                                     >
                                         {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
                                         Passer au Plan {plan.name}
