@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -54,7 +55,7 @@ const niveauSchema = z.object({
 type NiveauFormValues = z.infer<typeof niveauSchema>;
 
 const ivorianCycles = SCHOOL_TEMPLATES.IVORIAN_SYSTEM.cycles;
-
+const ivorianNiveaux = SCHOOL_TEMPLATES.IVORIAN_SYSTEM.niveaux;
 
 export default function StructurePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -108,6 +109,10 @@ export default function StructurePage() {
   const cycleMap = useMemo(() => new Map(cycles.map(c => [c.id, c])), [cycles]);
   
   const watchedCycleName = cycleForm.watch('name');
+  const watchedNiveauCycleId = niveauForm.watch('cycleId');
+  const selectedCycleForNiveau = cycles.find(c => c.id === watchedNiveauCycleId);
+  const niveauxOptionsForSelectedCycle = selectedCycleForNiveau ? ivorianNiveaux[selectedCycleForNiveau.name as keyof typeof ivorianNiveaux] || [] : [];
+
 
   useEffect(() => {
       const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
@@ -116,6 +121,19 @@ export default function StructurePage() {
           cycleForm.setValue('order', selectedCycleTemplate.order);
       }
   }, [watchedCycleName, cycleForm]);
+  
+  useEffect(() => {
+      niveauForm.setValue('name', '');
+  }, [watchedNiveauCycleId, niveauForm]);
+
+  useEffect(() => {
+    const watchedNiveauName = niveauForm.watch('name');
+    const selectedNiveauTemplate = niveauxOptionsForSelectedCycle.find(n => n === watchedNiveauName);
+    if(selectedNiveauTemplate) {
+        niveauForm.setValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
+    }
+  }, [niveauForm.watch('name'), niveauxOptionsForSelectedCycle, niveauForm]);
+
 
   const filteredNiveaux = useMemo(() => {
     let filtered = niveaux;
@@ -142,7 +160,10 @@ export default function StructurePage() {
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading;
   
   const handleAddCycleSubmit = async (values: CycleFormValues) => {
-    if (!schoolId) return;
+    if (!schoolId) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'ID de l\'école non trouvé. Rechargez la page.' });
+        return;
+    }
 
     const dataToSave = { ...values, schoolId, color: values.color || '#3b82f6' };
     
@@ -177,7 +198,11 @@ export default function StructurePage() {
   }
 
   const handleAddNiveauSubmit = async (values: NiveauFormValues) => {
-    if (!schoolId) return;
+    if (!schoolId) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'ID de l\'école non trouvé. Rechargez la page.' });
+        return;
+    }
+
     try {
       const dataToSave = { ...values, schoolId };
       if (editingNiveau) {
@@ -383,8 +408,29 @@ export default function StructurePage() {
         <Form {...niveauForm}>
           <form id="niveau-form" onSubmit={niveauForm.handleSubmit(handleAddNiveauSubmit)} className="space-y-4">
              <FormField control={niveauForm.control} name="cycleId" render={({ field }) => (<FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un cycle" /></SelectTrigger></FormControl><SelectContent>{cycles.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-             <FormField control={niveauForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du niveau</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-             <FormField control={niveauForm.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+             <FormField 
+                control={niveauForm.control} 
+                name="name" 
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Nom du niveau</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={!watchedNiveauCycleId}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder={!watchedNiveauCycleId ? "Choisissez d'abord un cycle" : "Sélectionnez un niveau"} />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {niveauxOptionsForSelectedCycle.map((niveau) => (
+                                    <SelectItem key={niveau} value={niveau}>{niveau}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )} 
+            />
+             <FormField control={niveauForm.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} readOnly={niveauxOptionsForSelectedCycle.length > 0} className={niveauxOptionsForSelectedCycle.length > 0 ? "bg-muted" : ""} /></FormControl><FormMessage /></FormItem>)} />
              <div className="grid grid-cols-2 gap-4">
                 <FormField control={niveauForm.control} name="order" render={({ field }) => (<FormItem><FormLabel>Ordre</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={niveauForm.control} name="capacity" render={({ field }) => (<FormItem><FormLabel>Capacité</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
