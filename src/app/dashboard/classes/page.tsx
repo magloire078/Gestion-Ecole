@@ -49,6 +49,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import type { staff as Staff, class_type as Class } from '@/lib/data-types';
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+
 
 // Define Zod schema for validation
 const classSchema = z.object({
@@ -58,9 +60,7 @@ const classSchema = z.object({
   filiere: z.string().optional(),
   building: z.string().min(1, { message: "Le bâtiment est requis." }),
   mainTeacherId: z.string().min(1, { message: "Le professeur principal est requis." }),
-  // Fee fields
-  amount: z.string().min(1, { message: "Le montant est requis." }),
-  installments: z.string().min(1, { message: "Les modalités de paiement sont requises." }),
+  // Fee fields are no longer in this form
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
@@ -84,6 +84,7 @@ type Cycle = {
 export default function ClassesPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
+  const router = useRouter();
 
 
   // --- Firestore Data Hooks ---
@@ -125,8 +126,6 @@ export default function ClassesPage() {
       filiere: '',
       building: '',
       mainTeacherId: '',
-      amount: '',
-      installments: '',
     },
   });
 
@@ -135,7 +134,6 @@ export default function ClassesPage() {
   useEffect(() => {
     if (isFormOpen) {
       if (editingClass) {
-        // NOTE: Editing fees is handled in the fees page, so we don't pre-fill them here.
         form.reset({
           cycle: editingClass.cycle,
           grade: editingClass.grade,
@@ -143,8 +141,6 @@ export default function ClassesPage() {
           filiere: editingClass.filiere || '',
           building: editingClass.building,
           mainTeacherId: editingClass.mainTeacherId,
-          amount: '', // Reset fee fields for editing to avoid confusion
-          installments: '',
         });
       } else {
         form.reset({
@@ -154,8 +150,6 @@ export default function ClassesPage() {
           filiere: '',
           building: '',
           mainTeacherId: '',
-          amount: '',
-          installments: '',
         });
       }
     }
@@ -185,43 +179,20 @@ export default function ClassesPage() {
         mainTeacherId: values.mainTeacherId,
         studentCount: editingClass?.studentCount || 0, // Preserve count on edit
     };
-    
-    const feeData = {
-        schoolId,
-        grade: values.grade, // Use grade for the fee link
-        amount: values.amount,
-        installments: values.installments,
-        details: `Frais pour la classe ${values.name}`,
-    };
-
-    const batch = writeBatch(firestore);
 
     try {
         if(editingClass) {
-            // Update class only. Fee editing is separate.
             const classDocRef = getClassDocRef(editingClass.id);
-            batch.update(classDocRef, classData);
-            
-            await batch.commit();
+            await setDoc(classDocRef, classData, { merge: true });
             toast({ title: "Classe modifiée", description: `Les informations de la classe ${values.name} ont été mises à jour.` });
-        } else {
-            // Create both class and fee documents
-            const newClassRef = doc(collection(firestore, `ecoles/${schoolId}/classes`));
-            batch.set(newClassRef, classData);
-
-            const newFeeRef = doc(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
-            batch.set(newFeeRef, feeData);
-            
-            await batch.commit();
-            toast({ title: "Classe et Frais ajoutés", description: `La classe ${values.name} et sa grille tarifaire ont été créées.` });
         }
         setIsFormOpen(false);
         setEditingClass(null);
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}/classes & /ecoles/${schoolId}/frais_scolarite`,
-            operation: editingClass ? 'update' : 'create',
-            requestResourceData: { classData, feeData: editingClass ? undefined : feeData }
+            path: `ecoles/${schoolId}/classes/${editingClass?.id}`,
+            operation: 'update',
+            requestResourceData: classData
         });
         errorEmitter.emit('permission-error', permissionError);
     }
@@ -336,27 +307,14 @@ export default function ClassesPage() {
   const renderFormContent = () => (
      <Form {...form}>
         <form id="class-form" onSubmit={form.handleSubmit(handleClassSubmit)} className="space-y-4">
-           <Tabs defaultValue="general">
-             <TabsList className="grid w-full grid-cols-2">
-               <TabsTrigger value="general">Informations Générales</TabsTrigger>
-               <TabsTrigger value="fees" disabled={!!editingClass}>Scolarité</TabsTrigger>
-             </TabsList>
-             <div className="py-4 max-h-[60vh] overflow-y-auto px-1">
-                 <TabsContent value="general" className="mt-0 space-y-4">
-                    <FormField control={form.control} name="cycle" render={({ field }) => ( <FormItem> <FormLabel>Cycle</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un cycle" searchPlaceholder="Chercher un cycle..." options={cycleOptions} value={field.value} onValueChange={(value) => { field.onChange(value); form.setValue('grade', ''); form.setValue('name', ''); form.setValue('filiere', ''); }} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    {watchedCycle && <FormField control={form.control} name="grade" render={({ field }) => ( <FormItem> <FormLabel>Niveau</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un niveau" searchPlaceholder="Chercher un niveau..." options={gradeOptions} value={field.value} onValueChange={(value) => { field.onChange(value); form.setValue('name', value); }}/> </FormControl> <FormMessage /> </FormItem> )}/>}
-                    {watchedCycle === "Enseignement Supérieur" && <FormField control={form.control} name="filiere" render={({ field }) => ( <FormItem> <FormLabel>Filière</FormLabel> <FormControl> <Combobox placeholder="Sélectionner une filière" searchPlaceholder="Chercher une filière..." options={filiereOptions} value={field.value} onValueChange={field.onChange}/> </FormControl> </FormItem> )}/>}
-                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom Complet de la Classe</FormLabel> <FormControl> <Input placeholder="Ex: CM2 A, Terminale D, etc." {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="building" render={({ field }) => ( <FormItem> <FormLabel>Bâtiment</FormLabel> <FormControl> <Input placeholder="Ex: Bâtiment A" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="mainTeacherId" render={({ field }) => ( <FormItem> <FormLabel>Prof. Principal</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un enseignant" searchPlaceholder="Chercher ou créer..." options={teacherOptions} value={field.value} onValueChange={field.onChange} onCreate={handleOpenAddTeacherDialog}/> </FormControl> <FormMessage /> </FormItem> )}/>
-                 </TabsContent>
-                 <TabsContent value="fees" className="mt-0 space-y-4">
-                     <p className="text-sm text-muted-foreground">Définissez les frais de scolarité qui seront associés à cette classe. Ces informations peuvent être modifiées plus tard dans la section "Frais de Scolarité".</p>
-                    <FormField control={form.control} name="amount" render={({ field }) => ( <FormItem> <FormLabel>Montant Total (CFA)</FormLabel> <FormControl> <Input type="number" placeholder="Ex: 980000" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="installments" render={({ field }) => ( <FormItem> <FormLabel>Modalités de Paiement</FormLabel> <FormControl> <Input placeholder="Ex: 10 tranches mensuelles" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                 </TabsContent>
-             </div>
-           </Tabs>
+           <div className="py-4 max-h-[60vh] overflow-y-auto px-1 space-y-4">
+              <FormField control={form.control} name="cycle" render={({ field }) => ( <FormItem> <FormLabel>Cycle</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un cycle" searchPlaceholder="Chercher un cycle..." options={cycleOptions} value={field.value} onValueChange={(value) => { field.onChange(value); form.setValue('grade', ''); form.setValue('name', ''); form.setValue('filiere', ''); }} /> </FormControl> <FormMessage /> </FormItem> )}/>
+              {watchedCycle && <FormField control={form.control} name="grade" render={({ field }) => ( <FormItem> <FormLabel>Niveau</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un niveau" searchPlaceholder="Chercher un niveau..." options={gradeOptions} value={field.value} onValueChange={(value) => { field.onChange(value); form.setValue('name', value); }}/> </FormControl> <FormMessage /> </FormItem> )}/>}
+              {watchedCycle === "Enseignement Supérieur" && <FormField control={form.control} name="filiere" render={({ field }) => ( <FormItem> <FormLabel>Filière</FormLabel> <FormControl> <Combobox placeholder="Sélectionner une filière" searchPlaceholder="Chercher une filière..." options={filiereOptions} value={field.value} onValueChange={field.onChange}/> </FormControl> </FormItem> )}/>}
+              <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom Complet de la Classe</FormLabel> <FormControl> <Input placeholder="Ex: CM2 A, Terminale D, etc." {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+              <FormField control={form.control} name="building" render={({ field }) => ( <FormItem> <FormLabel>Bâtiment</FormLabel> <FormControl> <Input placeholder="Ex: Bâtiment A" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+              <FormField control={form.control} name="mainTeacherId" render={({ field }) => ( <FormItem> <FormLabel>Prof. Principal</FormLabel> <FormControl> <Combobox placeholder="Sélectionner un enseignant" searchPlaceholder="Chercher ou créer..." options={teacherOptions} value={field.value} onValueChange={field.onChange} onCreate={handleOpenAddTeacherDialog}/> </FormControl> <FormMessage /> </FormItem> )}/>
+           </div>
         </form>
     </Form>
   );
@@ -371,28 +329,9 @@ export default function ClassesPage() {
             <p className="text-muted-foreground">Créez, visualisez et modifiez les classes de votre école par cycle.</p>
           </div>
           <div className="flex gap-2">
-             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => handleOpenFormDialog(null)}>
-                  <span className="flex items-center gap-2"><PlusCircle className="h-4 w-4" /> Ajouter une Classe</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-xl">
-                <DialogHeader>
-                  <DialogTitle>{editingClass ? "Modifier la Classe" : "Ajouter une Nouvelle Classe"}</DialogTitle>
-                  <DialogDescription>
-                    {editingClass ? `Renseignez les nouvelles informations de la classe ${editingClass.name}. La modification des frais se fait sur la page dédiée.` : "Renseignez les informations de la nouvelle classe et de sa grille tarifaire."}
-                  </DialogDescription>
-                </DialogHeader>
-                {renderFormContent()}
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                  <Button type="submit" form="class-form" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+            <Button onClick={() => router.push('/dashboard/classes/new')}>
+              <PlusCircle className="mr-2 h-4 w-4" /> Ajouter une Classe
+            </Button>
           </div>
         </div>
 
@@ -442,6 +381,25 @@ export default function ClassesPage() {
         </Tabs>
         
       </div>
+      
+       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogContent className="sm:max-w-xl">
+            <DialogHeader>
+              <DialogTitle>Modifier la Classe</DialogTitle>
+              <DialogDescription>
+                Renseignez les nouvelles informations de la classe {editingClass?.name}. La modification des frais se fait sur la page dédiée.
+              </DialogDescription>
+            </DialogHeader>
+            {renderFormContent()}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+              <Button type="submit" form="class-form" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
 
        {/* Add Teacher Dialog (modal over a modal) */}
        <Dialog open={isAddTeacherDialogOpen} onOpenChange={setIsAddTeacherDialogOpen}>
@@ -511,5 +469,3 @@ export default function ClassesPage() {
     </>
   );
 }
-
-    
