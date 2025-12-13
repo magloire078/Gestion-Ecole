@@ -41,7 +41,7 @@ const navLinks = [
       icon: School,
       links: [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, adminOnly: false },
-        { href: '/dashboard/classes', label: 'Classes', icon: School, adminOnly: false },
+        { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, adminOnly: false },
         { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, adminOnly: false },
         { href: '/dashboard/rh', label: 'RH / Personnel', icon: Briefcase, adminOnly: false },
       ]
