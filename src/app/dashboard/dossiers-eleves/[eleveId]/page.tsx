@@ -163,7 +163,7 @@ export default function StudentProfilePage() {
         schoolName: schoolName || "Votre École",
         studentName: studentFullName,
         studentMatricule: student.matricule || "N/A",
-        className: student.class,
+        className: student.class || "N/A",
         date: new Date(payment.date),
         description: payment.description,
         amountPaid: payment.amount,
@@ -495,3 +495,5 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
+    

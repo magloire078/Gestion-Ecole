@@ -123,7 +123,9 @@
             "lastName": { "type": "string", "description": "Le nom de famille de l'élève." },
             "photoUrl": { "type": "string", "format": "uri", "description": "URL de la photo de profil de l'élève." },
             "status": { "type": "string", "enum": ["Actif", "En attente", "Radié"], "description": "Statut actuel de l'élève." },
-            "currentClassId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
+            "classId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
+            "class": { "type": "string", "description": "Le nom de la classe actuelle de l'élève." },
+            "cycle": { "type": "string", "description": "Le nom du cycle actuel de l'élève." },
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
             "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
@@ -196,6 +198,7 @@
         "cycleId": { "type": "string" },
         "niveauId": { "type": "string" },
         "name": { "type": "string", "description": "Nom complet (ex: CE1-A)." },
+        "grade": { "type": "string", "description": "Nom du niveau, ex: 'CE1'." },
         "code": { "type": "string", "description": "Code unique (ex: CE1A)." },
         "section": { "type": "string", "description": "Section (A, B, C...)." },
         "academicYear": { "type": "string", "description": "Année académique (ex: 2024-2025)." },
@@ -373,6 +376,18 @@
             "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
         },
         "required": ["schoolId", "grade", "amount", "installments"]
+    },
+    "subject": {
+        "title": "Matière",
+        "description": "Une matière enseignée dans l'école.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "name": { "type": "string" },
+            "code": { "type": "string" },
+            "color": { "type": "string" }
+        },
+        "required": ["schoolId", "name"]
     }
   },
   "auth": {
@@ -458,6 +473,11 @@
             "path": "messagerie/{messageId}",
             "schema": { "$ref": "#/entities/message" },
             "description": "Stocke les messages et annonces envoyés via la messagerie interne pour cette école."
+        },
+        "matieres": {
+            "path": "matieres/{subjectId}",
+            "schema": { "$ref": "#/entities/subject" },
+            "description": "Stocke les matières enseignées dans l'école."
         }
       }
     },

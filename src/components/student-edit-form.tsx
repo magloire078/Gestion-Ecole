@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, writeBatch, increment } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -82,11 +82,12 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
       
       const selectedClass = classes.find(c => c.id === classId);
       if (!selectedClass) return 0;
-
-      const niveau = niveaux.find(n => n.id === selectedClass.niveauId);
-      if (!niveau) return 0;
       
-      const feeInfo = fees.find(f => f.grade === niveau.name);
+      // The grade name is now on the class object.
+      const gradeName = selectedClass.grade;
+      if(!gradeName) return 0;
+      
+      const feeInfo = fees.find(f => f.grade === gradeName);
 
       return feeInfo ? parseFloat(feeInfo.amount) : 0;
     }
@@ -99,7 +100,8 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
     }
 
     const currentDiscount = watchedDiscountAmount || 0;
-    const newAmountDue = Math.max(0, newTuitionFee - currentDiscount);
+    const currentTuition = form.getValues('tuitionFee');
+    const newAmountDue = Math.max(0, currentTuition - currentDiscount);
     form.setValue('amountDue', newAmountDue, { shouldValidate: true });
 
   }, [watchedClassId, watchedDiscountAmount, form, classes, fees, student.classId, niveaux]);
@@ -240,4 +242,4 @@ export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit
   );
 }
 
-  
+    

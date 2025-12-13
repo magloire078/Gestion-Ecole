@@ -102,11 +102,12 @@ export default function RegistrationPage() {
     const selectedClass = classes.find(c => c.id === classId);
     if (!selectedClass) return 0;
 
-    const niveau = niveaux.find(n => n.id === selectedClass.niveauId);
-    if (!niveau) return 0;
+    // The grade is now directly on the class object
+    const gradeName = selectedClass.grade;
+    if (!gradeName) return 0;
     
-    // On cherche un frais qui correspond au nom du niveau (ex: "CE1")
-    const feeInfo = fees.find(f => f.grade === niveau.name);
+    // Find the fee structure matching the grade name
+    const feeInfo = fees.find(f => f.grade === gradeName);
 
     return feeInfo ? parseFloat(feeInfo.amount) : 0;
   }
@@ -299,4 +300,4 @@ export default function RegistrationPage() {
   );
 }
 
-  
+    
