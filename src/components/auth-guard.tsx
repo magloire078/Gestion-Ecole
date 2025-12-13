@@ -1,10 +1,9 @@
 
 'use client';
 
-import { useUser, useFirestore } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { doc, getDoc } from 'firebase/firestore';
 
 function AuthProtectionLoader() {
   return (
@@ -19,46 +18,51 @@ function AuthProtectionLoader() {
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: userLoading } = useUser();
-  const firestore = useFirestore();
   const router = useRouter();
-  const pathname = usePathname(); // Get the current path
+  const pathname = usePathname();
   const [isVerified, setIsVerified] = useState(false);
-  const isLoading = userLoading || !isVerified;
 
   useEffect(() => {
-    if (userLoading) return;
+    if (userLoading) {
+      return; // Attendre la fin du chargement de l'utilisateur
+    }
 
     if (!user) {
-      router.replace('/login');
+      // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
+      if (pathname !== '/login') {
+        router.replace('/login');
+      } else {
+        setIsVerified(true); // Autoriser l'accès à la page de connexion elle-même
+      }
       return;
     }
-    
-    // If the user is on any onboarding page, allow access without verification yet.
-    if (pathname.startsWith('/dashboard/onboarding')) {
-        setIsVerified(true);
-        return;
-    }
 
-    const checkOnboarding = async () => {
-      const userRootRef = doc(firestore, 'utilisateurs', user.uid);
-      try {
-        const docSnap = await getDoc(userRootRef);
-        if (docSnap.exists() && docSnap.data()?.schoolId) {
-          setIsVerified(true);
-        } else {
-          router.replace('/dashboard/onboarding');
-        }
-      } catch (error) {
-        console.error("Erreur lors de la vérification de l'onboarding:", error);
+    // L'utilisateur est connecté
+    const schoolId = user.customClaims?.schoolId;
+
+    if (schoolId) {
+      // L'utilisateur est associé à une école.
+      if (pathname.startsWith('/dashboard/onboarding')) {
+        // S'il est déjà onboardé, le rediriger vers le tableau de bord principal
+        router.replace('/dashboard');
+      } else {
+        // Autoriser l'accès à toutes les autres pages du tableau de bord
+        setIsVerified(true);
+      }
+    } else {
+      // L'utilisateur n'est pas encore associé à une école.
+      if (pathname.startsWith('/dashboard/onboarding') || pathname === '/dashboard') {
+         // Autoriser l'accès aux pages d'onboarding ou à la page racine du dashboard qui redirigera
+        setIsVerified(true);
+      } else {
+        // Le rediriger vers le processus d'onboarding pour toute autre page
         router.replace('/dashboard/onboarding');
       }
-    };
+    }
 
-    checkOnboarding();
-  }, [user, userLoading, firestore, router, pathname]);
+  }, [user, userLoading, pathname, router]);
 
-
-  if (isLoading) {
+  if (userLoading || !isVerified) {
     return <AuthProtectionLoader />;
   }
 

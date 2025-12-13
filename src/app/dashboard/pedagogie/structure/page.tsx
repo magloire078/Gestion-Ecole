@@ -442,5 +442,3 @@ export default function StructurePage() {
     </>
   );
 }
-
-    

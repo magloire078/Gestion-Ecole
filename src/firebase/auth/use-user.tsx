@@ -31,36 +31,43 @@ export function useUser() {
     }
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
-        setLoading(true); // Set loading true at the start of auth state change
         if (authUser) {
-            const tokenResult = await authUser.getIdTokenResult();
-            const schoolId = tokenResult.claims.schoolId as string | undefined;
+            try {
+                const tokenResult = await authUser.getIdTokenResult(true); // Force refresh
+                const schoolId = tokenResult.claims.schoolId as string | undefined;
 
-            const userWithClaims: User = {
-                ...authUser,
-                customClaims: tokenResult.claims
-            };
-            
-            setUser(userWithClaims); 
+                const userWithClaims: User = {
+                    ...authUser,
+                    customClaims: tokenResult.claims
+                };
+                
+                setUser(userWithClaims); 
 
-            if (schoolId) {
-                const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
-                const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
-                    } else {
-                        setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
-                    }
+                if (schoolId) {
+                    const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
+                    const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            setUser(prevUser => prevUser ? { ...prevUser, profile: docSnap.data() as AppUser } : null);
+                        } else {
+                            // Le profil n'existe peut-être pas encore, mais c'est ok.
+                            setUser(prevUser => prevUser ? { ...prevUser, profile: undefined } : null);
+                        }
+                        setLoading(false);
+                    }, (error) => {
+                        console.error("Error fetching user profile:", error);
+                        setLoading(false);
+                    });
+                    // Retourner la fonction de désinscription pour le profil
+                    return () => unsubscribeProfile();
+                } else {
+                    // Pas de schoolId, l'utilisateur n'est pas encore onboardé
                     setLoading(false);
-                }, (error) => {
-                    console.error("Error fetching user profile:", error);
-                    setLoading(false);
-                });
-                return () => unsubscribeProfile();
-            } else {
-                setLoading(false);
+                }
+            } catch (error) {
+                 console.error("Error getting id token result:", error);
+                 setUser(authUser); // Garder l'utilisateur de base même si le token échoue
+                 setLoading(false);
             }
-            
         } else {
             setUser(null);
             setLoading(false);
