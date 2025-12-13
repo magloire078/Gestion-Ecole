@@ -128,7 +128,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                          <div>
                             <p className="font-bold">Cachet et Signature de la Direction</p>
                              <div className="mt-16 border-t border-dashed w-48 mx-auto"></div>
-                             <p>{directorFullName}</p>
+                             <span>{directorFullName}</span>
                         </div>
                      </footer>
                 </div>
