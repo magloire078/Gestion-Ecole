@@ -30,14 +30,13 @@ export default function SubscriptionPage() {
             return;
         }
 
-        if (planName === 'Pro') {
-             const transactionDetails = new URLSearchParams({
-                plan: planName,
-                price: price.toString(),
-                description: `Abonnement ${planName} pour ${schoolName}`,
-            }).toString();
-            router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
-        }
+        const transactionDetails = new URLSearchParams({
+            plan: planName,
+            price: price.toString(),
+            description: `Abonnement ${planName} pour ${schoolName}`,
+        }).toString();
+
+        router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
     };
     
     const isCurrentPlan = (planName: 'Essentiel' | 'Pro') => {
@@ -132,7 +131,7 @@ export default function SubscriptionPage() {
                                         className="w-full" 
                                         variant={plan.name === 'Pro' ? 'default' : 'secondary'}
                                         onClick={() => handleChoosePlan(plan.name as 'Essentiel' | 'Pro', plan.priceNumber)}
-                                        disabled={isLoading}
+                                        disabled={isLoading || !schoolName}
                                     >
                                         {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
                                         Passer au Plan {plan.name}
