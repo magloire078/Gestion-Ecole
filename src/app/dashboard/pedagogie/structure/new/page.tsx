@@ -81,9 +81,9 @@ export default function NewClassPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- Data Fetching ---
-  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
-  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId]);
-  const teachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [schoolId]);
+  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
+  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
+  const teachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [schoolId, firestore]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
@@ -98,13 +98,17 @@ export default function NewClassPage() {
     (data) => {
       if (!niveaux || niveaux.length === 0) return true; // Ne pas valider si les niveaux ne sont pas chargés
       const niveau = niveaux.find(n => n.id === data.niveauId);
+      if (niveau && data.maxStudents > niveau.capacity) {
+        form.setError("maxStudents", { message: `L'effectif ne peut dépasser la capacité du niveau (${niveau.capacity}).`});
+        return false;
+      }
       return niveau ? niveau.cycleId === data.cycleId : true;
     },
     {
       message: "Le niveau sélectionné n'appartient pas au cycle choisi",
       path: ["niveauId"]
     }
-  ), [niveaux]);
+  ), [niveaux, form]);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchemaWithRefine),
@@ -207,26 +211,30 @@ export default function NewClassPage() {
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading || teachersLoading;
 
   if (isLoading) {
-      return (
-        <div className="space-y-6">
-            <Skeleton className="h-10 w-48" />
-             <Tabs defaultValue="informations" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="informations">Informations</TabsTrigger>
-                    <TabsTrigger value="effectif">Effectif</TabsTrigger>
-                    <TabsTrigger value="options">Options</TabsTrigger>
-                </TabsList>
-                 <Card>
-                    <CardHeader><Skeleton className="h-6 w-1/3" /><Skeleton className="h-4 w-2/3 mt-2" /></CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                           {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                        </div>
-                    </CardContent>
-                </Card>
-             </Tabs>
+    return (
+      <div className="space-y-6 p-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-10 w-10" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
         </div>
-      );
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+          {[...Array(9)].map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
+        </div>
+        
+        <div className="flex justify-end gap-2 pt-6">
+          <Skeleton className="h-10 w-32" />
+        </div>
+      </div>
+    );
   }
 
   return (
