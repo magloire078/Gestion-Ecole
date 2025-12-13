@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,7 +35,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const cycleSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
@@ -75,12 +76,12 @@ export default function StructurePage() {
   // --- Data Fetching ---
   const cyclesQuery = useMemoFirebase(() => 
     schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, 
-    [schoolId]
+    [schoolId, firestore]
   );
   
   const niveauxQuery = useMemoFirebase(() => 
     schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, 
-    [schoolId]
+    [schoolId, firestore]
   );
   
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
@@ -141,19 +142,25 @@ export default function StructurePage() {
   
   const handleAddCycleSubmit = async (values: CycleFormValues) => {
     if (!schoolId) return;
+
+    const dataToSave = { ...values, schoolId, color: values.color || '#3b82f6' };
+    
     try {
-      const docPath = editingCycle ? `ecoles/${schoolId}/cycles/${editingCycle.id}` : `ecoles/${schoolId}/cycles`;
       if (editingCycle) {
-        await setDoc(doc(firestore, docPath), { ...values, schoolId }, { merge: true });
+        const cycleRef = doc(firestore, `ecoles/${schoolId}/cycles/${editingCycle.id}`);
+        await setDoc(cycleRef, dataToSave, { merge: true });
         toast({ title: 'Cycle modifié', description: `Le cycle "${values.name}" a été mis à jour.`});
       } else {
-        await addDoc(collection(firestore, docPath), { ...values, schoolId });
+        const cyclesCollectionRef = collection(firestore, `ecoles/${schoolId}/cycles`);
+        await addDoc(cyclesCollectionRef, dataToSave);
         toast({ title: 'Cycle créé', description: `Le cycle "${values.name}" a été ajouté.`});
       }
       setIsCycleFormOpen(false);
     } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder le cycle.'});
+        const path = editingCycle ? `ecoles/${schoolId}/cycles/${editingCycle.id}` : `ecoles/${schoolId}/cycles`;
+        const operation = editingCycle ? 'update' : 'create';
+        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
+        errorEmitter.emit('permission-error', permissionError);
     }
   };
 
@@ -171,18 +178,22 @@ export default function StructurePage() {
   const handleAddNiveauSubmit = async (values: NiveauFormValues) => {
     if (!schoolId) return;
     try {
-      const docPath = editingNiveau ? `ecoles/${schoolId}/niveaux/${editingNiveau.id}` : `ecoles/${schoolId}/niveaux`;
+      const dataToSave = { ...values, schoolId };
       if (editingNiveau) {
-        await setDoc(doc(firestore, docPath), { ...values, schoolId }, { merge: true });
+        const niveauRef = doc(firestore, `ecoles/${schoolId}/niveaux/${editingNiveau.id}`);
+        await setDoc(niveauRef, dataToSave, { merge: true });
         toast({ title: 'Niveau modifié', description: `Le niveau "${values.name}" a été mis à jour.`});
       } else {
-        await addDoc(collection(firestore, docPath), { ...values, schoolId });
+        const niveauxCollectionRef = collection(firestore, `ecoles/${schoolId}/niveaux`);
+        await addDoc(niveauxCollectionRef, dataToSave);
         toast({ title: 'Niveau créé', description: `Le niveau "${values.name}" a été ajouté.`});
       }
       setIsNiveauFormOpen(false);
     } catch (error) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder le niveau.'});
+        const path = editingNiveau ? `ecoles/${schoolId}/niveaux/${editingNiveau.id}` : `ecoles/${schoolId}/niveaux`;
+        const operation = editingNiveau ? 'update' : 'create';
+        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
+        errorEmitter.emit('permission-error', permissionError);
     }
   };
 
