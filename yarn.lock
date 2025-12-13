@@ -2506,6 +2506,11 @@ fraction.js@^5.3.4:
   resolved "https://registry.npmjs.org/fraction.js/-/fraction.js-5.3.4.tgz"
   integrity sha512-1X1NTtiJphryn/uLQz3whtY6jK3fTqoE3ohKs0tT+Ujr1W59oopxmoEh7Lu5p6vBaPbgoM0bzveAW4Qi5RyWDQ==
 
+french-numbers-to-words@^1.0.3:
+  version "1.0.8"
+  resolved "https://registry.npmjs.org/french-numbers-to-words/-/french-numbers-to-words-1.0.8.tgz"
+  integrity sha512-/fANSRphTtYVy/RpqBsMAyIS7qv4cMNcw5KUQgAPofbS5Z2noIPSQTaMtj37wftpzmtcdwCxOWWsROlPzS2oxA==
+
 fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
