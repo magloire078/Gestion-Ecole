@@ -99,16 +99,18 @@ export default function NewClassPage() {
       if (!niveaux || niveaux.length === 0) return true;
       const niveau = niveaux.find(n => n.id === data.niveauId);
       if (niveau && data.maxStudents > niveau.capacity) {
-        form.setError("maxStudents", { message: `L'effectif ne peut dépasser la capacité du niveau (${niveau.capacity}).`});
         return false;
       }
       return niveau ? niveau.cycleId === data.cycleId : true;
     },
-    {
-      message: "Le niveau sélectionné n'appartient pas au cycle choisi",
-      path: ["niveauId"]
+    (data) => {
+      const niveau = niveaux.find(n => n.id === data.niveauId);
+      if (niveau && data.maxStudents > niveau.capacity) {
+        return { message: `L'effectif ne peut dépasser la capacité du niveau (${niveau.capacity}).`, path: ["maxStudents"] };
+      }
+      return { message: "Le niveau sélectionné n'appartient pas au cycle choisi", path: ["niveauId"]};
     }
-  ), [niveaux, form]);
+  ), [niveaux]);
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchemaWithRefine),
@@ -150,7 +152,7 @@ export default function NewClassPage() {
 
   }, [watchedNiveauId, watchedSection, niveaux, form]);
 
-  const handleSubmit = async (values: ClassFormValues) => {
+  const handleSubmit = (values: ClassFormValues) => {
     setFormValues(values);
     setShowConfirmDialog(true);
   };
@@ -167,13 +169,17 @@ export default function NewClassPage() {
         const teacher = teachers.find(t => t.id === formValues.mainTeacherId);
         const niveau = niveaux.find(n => n.id === formValues.niveauId);
         
+        if (!niveau) {
+            throw new Error('Niveau non trouvé. La création ne peut continuer.');
+        }
+
         const classData = {
           ...formValues,
           schoolId,
           createdBy: user.uid,
           mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
           teacherIds: formValues.mainTeacherId ? [formValues.mainTeacherId] : [],
-          grade: niveau?.name || '',
+          grade: niveau.name || '',
         };
         
         const response = await fetch('/api/classes', {
