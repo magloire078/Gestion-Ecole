@@ -110,6 +110,17 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                         </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                 </DropdownMenuSub>
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem onClick={() => router.push('/dashboard/admin/abonnements')}>
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        <span>Admin Abonnements</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                 Se déconnecter

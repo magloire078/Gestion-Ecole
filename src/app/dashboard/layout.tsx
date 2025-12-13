@@ -157,21 +157,20 @@ export default function DashboardLayout({
                 </Breadcrumb>
               </div>
 
-              <div className="flex-1 max-w-sm mx-4 hidden lg:block">
-                <Button
-                    variant="outline"
-                    className="w-full justify-start text-muted-foreground"
-                    onClick={() => setIsSearchOpen(true)}
-                  >
-                    <Search className="mr-2 h-4 w-4" />
-                    Rechercher...
-                    <kbd className="ml-auto inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
-                      <span className="text-lg">⌘</span>K
-                    </kbd>
-                </Button>
-              </div>
-
               <div className="flex items-center gap-2">
+                 <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setIsSearchOpen(true)}
+                    >
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Rechercher (⌘K)</TooltipContent>
+                </Tooltip>
+
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
