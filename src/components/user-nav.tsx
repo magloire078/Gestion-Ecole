@@ -62,7 +62,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
   const isAdmin = user?.customClaims?.role === 'admin';
-  const userRole = user?.profile?.role;
+  const userRole = isAdmin ? 'Admin' : user?.profile?.role;
 
   if (collapsed) {
     return (
@@ -83,7 +83,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                     <p className="text-xs leading-none text-muted-foreground">
                     {user?.email}
                     </p>
-                    {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{isAdmin ? 'Admin' : userRole}</p>}
+                    {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
                 </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -147,7 +147,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
             <p className="text-xs leading-none text-muted-foreground">
               {user?.email}
             </p>
-             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{isAdmin ? 'Admin' : userRole}</p>}
+             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
