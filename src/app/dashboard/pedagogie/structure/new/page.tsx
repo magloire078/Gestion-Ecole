@@ -49,8 +49,7 @@ const classSchema = z.object({
   
   section: z.string()
     .length(1, 'La section doit être une seule lettre')
-    .regex(/^[A-Z]$/, 'La section doit être une lettre majuscule A-Z')
-    .optional(),
+    .regex(/^[A-Z]$/, 'La section doit être une lettre majuscule A-Z'),
   
   academicYear: z.string()
     .regex(/^\d{4}-\d{4}$/, 'Format invalide. Utilisez: 2024-2025'),
@@ -173,7 +172,7 @@ export default function NewClassPage() {
           createdBy: user.uid,
           mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
           teacherIds: formValues.mainTeacherId ? [formValues.mainTeacherId] : [],
-          grade: niveau.name || '',
+          grade: niveau.name || '', // Correction: Assurer que le nom du niveau est inclus
           studentCount: 0,
           isFull: false,
           createdAt: new Date(),
