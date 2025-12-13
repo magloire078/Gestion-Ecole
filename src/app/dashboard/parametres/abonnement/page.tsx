@@ -131,7 +131,7 @@ export default function SubscriptionPage() {
                                         className="w-full" 
                                         variant={plan.name === 'Pro' ? 'default' : 'secondary'}
                                         onClick={() => handleChoosePlan(plan.name as 'Essentiel' | 'Pro', plan.priceNumber)}
-                                        disabled={isLoading || !schoolName}
+                                        disabled={isLoading}
                                     >
                                         {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
                                         Passer au Plan {plan.name}
