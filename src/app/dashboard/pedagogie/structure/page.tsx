@@ -37,6 +37,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const cycleSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
@@ -47,7 +48,7 @@ const cycleSchema = z.object({
 type CycleFormValues = z.infer<typeof cycleSchema>;
 
 const niveauSchema = z.object({
-  name: z.string().min(2, "Le nom est requis."),
+  name: z.string().min(1, "Le nom est requis."),
   code: z.string().min(1, "Le code est requis.").max(10, "Le code ne peut excéder 10 caractères."),
   order: z.coerce.number().min(1, "L'ordre est requis."),
   cycleId: z.string().min(1, 'Le cycle est requis.'),
@@ -213,7 +214,7 @@ export default function StructurePage() {
         </p>
       </div>
 
-      <Tabs defaultValue="classes" className="w-full">
+      <Tabs defaultValue="cycles" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="cycles">Cycles & Niveaux</TabsTrigger>
           <TabsTrigger value="classes">Classes</TabsTrigger>
@@ -331,7 +332,7 @@ export default function StructurePage() {
         <DialogHeader><DialogTitle>{editingNiveau ? 'Modifier' : 'Nouveau'} Niveau</DialogTitle></DialogHeader>
         <Form {...niveauForm}>
           <form id="niveau-form" onSubmit={niveauForm.handleSubmit(handleAddNiveauSubmit)} className="space-y-4">
-             <FormField control={niveauForm.control} name="cycleId" render={({ field }) => (<FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un cycle" /></SelectTrigger></FormControl><SelectContent>{cycles.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+             <FormField control={niveauForm.control} name="cycleId" render={({ field }) => (<FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un cycle" /></SelectTrigger></FormControl><SelectContent>{cycles.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
              <FormField control={niveauForm.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du niveau</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
              <FormField control={niveauForm.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
              <div className="grid grid-cols-2 gap-4">
