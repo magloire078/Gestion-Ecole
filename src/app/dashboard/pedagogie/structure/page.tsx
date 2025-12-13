@@ -1,276 +1,185 @@
+
 'use client';
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query, orderBy } from "firebase/firestore";
-import { useSchoolData } from "@/hooks/use-school-data";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { cycle as Cycle } from '@/lib/data-types';
-
-const cycleSchema = z.object({
-  name: z.string().min(1, { message: "Le nom du cycle est requis." }),
-  code: z.string().min(1, { message: "Le code est requis (ex: MAT, PRI)." }),
-  order: z.coerce.number().int().min(1, { message: "L'ordre doit être un nombre positif." }),
-  description: z.string().optional(),
-});
-
-type CycleFormValues = z.infer<typeof cycleSchema>;
-
-interface CycleWithId extends Cycle {
-  id: string;
-}
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Plus, 
+  Users, 
+  BookOpen, 
+  Filter, 
+  Search, 
+  Calendar,
+  GraduationCap,
+  School,
+  LayoutGrid,
+  List
+} from 'lucide-react';
+import Link from 'next/link';
+import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, getCountFromServer } from 'firebase/firestore';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { ClassesGridView } from '@/components/classes/classes-grid-view';
+import { ClassesListView } from '@/components/classes/classes-list-view';
 
 export default function StructurePage() {
-  const firestore = useFirestore();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeCycle, setActiveCycle] = useState<string>('all');
   const { schoolId, loading: schoolLoading } = useSchoolData();
-  const { toast } = useToast();
   
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`), orderBy("order")) : null, [firestore, schoolId]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId]);
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
-  const cycles: CycleWithId[] = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as CycleWithId)) || [], [cyclesData]);
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingCycle, setEditingCycle] = useState<CycleWithId | null>(null);
-  const [cycleToDelete, setCycleToDelete] = useState<CycleWithId | null>(null);
+  const [stats, setStats] = useState({ classes: 0, students: 0, teachers: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
 
-  const form = useForm<CycleFormValues>({
-    resolver: zodResolver(cycleSchema),
-    defaultValues: { name: "", code: "", order: 1, description: "" },
-  });
+  const firestore = useFirestore();
 
-  useEffect(() => {
-    if (isFormOpen) {
-      if (editingCycle) {
-        form.reset(editingCycle);
-      } else {
-        form.reset({ name: "", code: "", order: (cycles.length + 1), description: "" });
-      }
-    }
-  }, [isFormOpen, editingCycle, form, cycles]);
-
-  const getCycleDocRef = (cycleId: string) => doc(firestore, `ecoles/${schoolId}/cycles/${cycleId}`);
-
-  const handleCycleSubmit = (values: CycleFormValues) => {
-    if (!schoolId) {
-      toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
-      return;
-    }
-    
-    const cycleData = {
-      ...values,
-      schoolId,
-      updatedAt: serverTimestamp(),
-    };
-
-    if (editingCycle) {
-        const cycleDocRef = getCycleDocRef(editingCycle.id);
-        setDoc(cycleDocRef, cycleData, { merge: true })
-        .then(() => {
-          toast({ title: "Cycle modifié", description: `Le cycle "${values.name}" a été mis à jour.` });
-          setIsFormOpen(false);
-        })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: cycleDocRef.path, operation: 'update', requestResourceData: cycleData });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    } else {
-        const cyclesCollectionRef = collection(firestore, `ecoles/${schoolId}/cycles`);
-        addDoc(cyclesCollectionRef, { ...cycleData, createdAt: serverTimestamp() })
-        .then(() => {
-            toast({ title: "Cycle ajouté", description: `Le cycle "${values.name}" a été ajouté.` });
-            setIsFormOpen(false);
-        })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: cyclesCollectionRef.path, operation: 'create', requestResourceData: cycleData });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    }
-  };
-
-  const handleOpenFormDialog = (cycle: CycleWithId | null) => {
-    setEditingCycle(cycle);
-    setIsFormOpen(true);
-  };
-
-  const handleOpenDeleteDialog = (cycle: CycleWithId) => {
-    setCycleToDelete(cycle);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteCycle = () => {
-    if (!schoolId || !cycleToDelete) return;
-    // TODO: Add logic to check if cycle has children (niveaux) before deleting
-    const cycleDocRef = getCycleDocRef(cycleToDelete.id);
-    deleteDoc(cycleDocRef)
-    .then(() => {
-        toast({ title: "Cycle supprimé", description: `Le cycle "${cycleToDelete.name}" a été supprimé.` });
-        setIsDeleteDialogOpen(false);
-        setCycleToDelete(null);
-    })
-    .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: cycleDocRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+  useMemo(async () => {
+    if (!schoolId) return;
+    setStatsLoading(true);
+    const classesSnap = await getCountFromServer(collection(firestore, `ecoles/${schoolId}/classes`));
+    const studentsSnap = await getCountFromServer(collection(firestore, `ecoles/${schoolId}/eleves`));
+    const teachersSnap = await getCountFromServer(collection(firestore, `ecoles/${schoolId}/personnel`));
+    setStats({
+      classes: classesSnap.data().count,
+      students: studentsSnap.data().count,
+      teachers: teachersSnap.data().count,
     });
-  };
-  
+    setStatsLoading(false);
+  }, [schoolId, firestore]);
+
+  const cycles = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() })) || [], [cyclesData]);
+
   const isLoading = schoolLoading || cyclesLoading;
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Structure Pédagogique</h1>
-            <p className="text-muted-foreground">Gérez les cycles, les niveaux et les classes de votre établissement.</p>
-          </div>
+    <div className="space-y-6">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Structure Pédagogique</h1>
+          <p className="text-muted-foreground">
+            Organisez les cycles, niveaux et classes de votre établissement.
+          </p>
         </div>
-
-        <Card>
-            <CardHeader>
-                <div className="flex justify-between items-center">
-                    <div>
-                        <CardTitle>Cycles d'Enseignement</CardTitle>
-                        <CardDescription>Organisez votre école en grands cycles (Maternelle, Primaire, etc.).</CardDescription>
-                    </div>
-                     <Button onClick={() => handleOpenFormDialog(null)}>
-                        <span className="flex items-center gap-2">
-                            <PlusCircle className="h-4 w-4" /> Ajouter un Cycle
-                        </span>
-                    </Button>
-                </div>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Ordre</TableHead>
-                            <TableHead>Nom du Cycle</TableHead>
-                            <TableHead>Code</TableHead>
-                            <TableHead>Description</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                     <TableBody>
-                        {isLoading ? (
-                            [...Array(3)].map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-5 w-8"/></TableCell>
-                                <TableCell><Skeleton className="h-5 w-32"/></TableCell>
-                                <TableCell><Skeleton className="h-5 w-16"/></TableCell>
-                                <TableCell><Skeleton className="h-5 w-48"/></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto"/></TableCell>
-                            </TableRow>
-                            ))
-                        ) : cycles.length > 0 ? (
-                            cycles.map(cycle => (
-                                <TableRow key={cycle.id}>
-                                    <TableCell>{cycle.order}</TableCell>
-                                    <TableCell className="font-medium">{cycle.name}</TableCell>
-                                    <TableCell className="font-mono text-xs">{cycle.code}</TableCell>
-                                    <TableCell className="text-muted-foreground">{cycle.description}</TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button></DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => handleOpenFormDialog(cycle)}>Modifier</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(cycle)}>Supprimer</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">Aucun cycle créé. Commencez par en ajouter un.</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>
+            {viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/pedagogie/structure/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvelle Classe
+            </Link>
+          </Button>
+        </div>
       </div>
 
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingCycle ? "Modifier le" : "Ajouter un"} Cycle</DialogTitle>
-          </DialogHeader>
-          <Form {...form}>
-            <form id="cycle-form" onSubmit={form.handleSubmit(handleCycleSubmit)} className="space-y-4 py-4">
-                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du Cycle</FormLabel><FormControl><Input placeholder="Ex: Enseignement Primaire" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input placeholder="Ex: PRI" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="order" render={({ field }) => (<FormItem><FormLabel>Ordre</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+      {/* Filtres */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Rechercher une classe, niveau, enseignant..." className="pl-10" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline">
+                <Filter className="mr-2 h-4 w-4" />
+                Filtres
+              </Button>
+              <Button variant="outline">
+                Année: 2024-2025
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Vue par cycles */}
+       <Tabs defaultValue="all" onValueChange={setActiveCycle}>
+        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          <TabsTrigger value="all">Toutes</TabsTrigger>
+          {isLoading ? 
+            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />) :
+            cycles.sort((a, b) => a.order - b.order).map(cycle => (
+              <TabsTrigger key={cycle.id} value={cycle.id}>{cycle.name}</TabsTrigger>
+            ))
+          }
+        </TabsList>
+
+        <TabsContent value={activeCycle} className="mt-6">
+          {viewMode === 'grid' ? (
+            <ClassesGridView cycleId={activeCycle} />
+          ) : (
+            <ClassesListView cycleId={activeCycle} />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Statistiques rapides */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+             {statsLoading ? <Skeleton className="h-16 w-full" /> : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Classes Actives</p>
+                  <p className="text-2xl font-bold">{stats.classes}</p>
                 </div>
-                 <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description (optionnel)</FormLabel><FormControl><Textarea placeholder="Courte description du cycle..." {...field} /></FormControl></FormItem>)} />
-            </form>
-          </Form>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-            <Button type="submit" form="cycle-form" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-            <AlertDialogDescription>Cette action est irréversible. La suppression d'un cycle entraînera la suppression de tous les niveaux et classes associés.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteCycle} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+                <School className="h-8 w-8 text-blue-500" />
+              </div>
+             )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            {statsLoading ? <Skeleton className="h-16 w-full" /> : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Élèves</p>
+                  <p className="text-2xl font-bold">{stats.students}</p>
+                </div>
+                <Users className="h-8 w-8 text-emerald-500" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            {statsLoading ? <Skeleton className="h-16 w-full" /> : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Taux Remplissage</p>
+                  <p className="text-2xl font-bold">N/A</p>
+                </div>
+                <GraduationCap className="h-8 w-8 text-amber-500" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            {statsLoading ? <Skeleton className="h-16 w-full" /> : (
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Enseignants</p>
+                  <p className="text-2xl font-bold">{stats.teachers}</p>
+                </div>
+                <BookOpen className="h-8 w-8 text-violet-500" />
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }
