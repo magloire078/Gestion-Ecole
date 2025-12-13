@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -22,7 +20,7 @@ import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { staff as Staff, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment, fee as Fee } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
@@ -112,11 +110,13 @@ export default function StudentProfilePage() {
   const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
-  // This query is for the edit form, to be able to switch classes.
+  // Queries for the edit form
   const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
   const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
   const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
 
 
   // --- Data Memoization ---
@@ -124,12 +124,13 @@ export default function StudentProfilePage() {
   const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
   const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);
   const allSchoolFees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+  const allNiveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
 
 
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading || feesLoading;
+  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
 
   if (!eleveId) {
     return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
@@ -470,6 +471,7 @@ export default function StudentProfilePage() {
                 student={student} 
                 classes={allSchoolClasses} 
                 fees={allSchoolFees}
+                niveaux={allNiveaux}
                 schoolId={schoolId} 
                 onFormSubmit={() => setIsEditDialogOpen(false)} 
               />
@@ -495,5 +497,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
-    

@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -55,7 +53,7 @@ import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { student as Student, class_type as Class, fee as Fee } from "@/lib/data-types";
+import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from "@/lib/data-types";
 import { StudentEditForm } from "@/components/student-edit-form";
 
 const getStatusBadgeVariant = (status: Student['status']) => {
@@ -81,14 +79,17 @@ export default function StudentsPage() {
   const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
+  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
   
   const allStudents: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+  const niveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
 
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -167,7 +168,7 @@ export default function StudentsPage() {
     }
   }
 
-  const isLoading = schoolLoading || studentsLoading || classesLoading || feesLoading;
+  const isLoading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading;
   
   const handlePrint = () => {
     window.print();
@@ -319,6 +320,7 @@ export default function StudentsPage() {
               student={editingStudent} 
               classes={classes}
               fees={fees}
+              niveaux={niveaux}
               schoolId={schoolId} 
               onFormSubmit={() => setIsEditDialogOpen(false)} 
             />

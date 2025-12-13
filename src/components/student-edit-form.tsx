@@ -10,14 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Bot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
 import { doc, writeBatch, increment } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
-import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
 
 const studentSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -39,19 +37,15 @@ interface StudentEditFormProps {
   student: Student;
   classes: Class[];
   fees: Fee[];
+  niveaux: Niveau[];
   schoolId: string;
   onFormSubmit: () => void;
 }
 
-export function StudentEditForm({ student, classes, fees, schoolId, onFormSubmit }: StudentEditFormProps) {
+export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onFormSubmit }: StudentEditFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-
-  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
-  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
-  const niveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
-
 
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
