@@ -41,7 +41,7 @@ const settingsSchema = z.object({
   directorLastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   directorPhone: z.string().regex(/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/, "Numéro de téléphone invalide").optional().or(z.literal('')),
   address: z.string().max(200).optional(),
-  phone: z.string().regex(/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/, "Numéro de téléphone invalide").optional().or(zliteral('')),
+  phone: z.string().regex(/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/, "Numéro de téléphone invalide").optional().or(z.literal('')),
   website: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
   mainLogoUrl: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
   email: z.string().email("Email invalide").optional().or(z.literal('')),
