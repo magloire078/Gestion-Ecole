@@ -27,6 +27,29 @@ export type school = {
     };
 };
 
+export type admin_role = {
+    name: string;
+    level: number;
+    permissions: {
+        manageUsers?: boolean;
+        viewUsers?: boolean;
+        manageSchools?: boolean;
+        viewSchools?: boolean;
+        manageClasses?: boolean;
+        manageGrades?: boolean;
+        manageSystem?: boolean;
+        viewAnalytics?: boolean;
+        manageSettings?: boolean;
+        manageBilling?: boolean;
+        manageContent?: boolean;
+        viewSupportTickets?: boolean;
+        manageSupportTickets?: boolean;
+        apiAccess?: boolean;
+        exportData?: boolean;
+    };
+    description?: string;
+};
+
 export type staff = {
     uid: string;
     email: string;
@@ -109,6 +132,7 @@ export type cycle = {
     };
     createdAt?: string;
     updatedAt?: string;
+    id?: string;
 };
 
 export type niveau = {
@@ -124,6 +148,7 @@ export type niveau = {
     description?: string;
     createdAt?: string;
     updatedAt?: string;
+    id?: string;
 };
 
 export type classe = {
@@ -170,27 +195,20 @@ export type studentClassAssignment = {
     previousClass?: string;
     notes?: string;
     createdAt?: string;
+    id?: string;
 };
 
-export type schedule = {
+export type timetableEntry = {
     schoolId: string;
-    classeId: string;
-    academicYear: string;
-    periods: {
-        id?: string;
-        day?: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday";
-        startTime?: string;
-        endTime?: string;
-        subjectId?: string;
-        subjectName?: string;
-        teacherId?: string;
-        teacherName?: string;
-        classroom?: string;
-        type?: "cours" | "td" | "tp" | "examen";
-        color?: string;
-    }[];
-    createdAt?: string;
-    updatedAt?: string;
+    classId: string;
+    teacherId: string;
+    subject: string;
+    day: "Lundi" | "Mardi" | "Mercredi" | "Jeudi" | "Vendredi" | "Samedi";
+    startTime: string;
+    endTime: string;
+    classroom?: string;
+    color?: string;
+    id?: string;
 };
 
 export type gradeEntry = {
@@ -259,6 +277,7 @@ export type absence = {
     justified: boolean;
     recordedBy: string;
     reason?: string;
+    id?: string;
 };
 
 export type fee = {
@@ -269,3 +288,5 @@ export type fee = {
     details?: string;
     id?: string;
 };
+
+    

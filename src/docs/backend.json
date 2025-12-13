@@ -83,7 +83,7 @@
         "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
         "firstName": { "type": "string", "description": "Le prénom du membre du personnel." },
         "lastName": { "type": "string", "description": "Le nom de famille du membre du personnel." },
-        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel"], "description": "Le rôle de l'utilisateur dans l'école." },
+        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel", "coordinateur"], "description": "Le rôle de l'utilisateur dans l'école." },
         "adminRole": { "type": "string", "description": "L'ID du rôle administratif si l'utilisateur est un admin." },
         "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." },
         "phone": { "type": "string", "description": "Le numéro de téléphone." },
@@ -112,45 +112,6 @@
       },
       "required": ["uid", "email", "schoolId", "role", "firstName", "lastName", "hireDate", "baseSalary"]
     },
-    "class": {
-      "title": "Classe",
-      "description": "Une classe de l'école.",
-      "type": "object",
-      "properties": {
-        "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
-        "name": { "type": "string", "description": "Le nom complet de la classe (ex: CM2 A)." },
-        "grade": { "type": "string", "description": "Le niveau scolaire de base de la classe (ex: CM2)." },
-        "filiere": { "type": "string", "description": "La filière pour les classes de l'enseignement supérieur." },
-        "mainTeacherId": { "type": "string", "description": "L'identifiant de l'enseignant principal de la classe." },
-        "building": { "type": "string", "description": "Le bâtiment où se trouve la classe." },
-        "cycle": { "type": "string", "enum": ["Maternelle", "Enseignement Primaire", "Enseignement Secondaire - Premier cycle", "Enseignement Secondaire - Deuxième cycle", "Enseignement Supérieur"], "description": "Le cycle d'enseignement." },
-        "studentCount": { "type": "number", "description": "Le nombre d'élèves dans la classe." }
-      },
-      "required": ["schoolId", "name", "grade", "mainTeacherId", "building", "cycle"]
-    },
-    "cycle": {
-        "title": "Cycle",
-        "description": "Un cycle d'enseignement (ex: Lycée, Collège).",
-        "type": "object",
-        "properties": {
-            "name": { "type": "string", "description": "Le nom du cycle." },
-            "order": { "type": "number", "description": "L'ordre d'affichage du cycle." }
-        },
-        "required": ["name", "order"]
-    },
-    "fee": {
-        "title": "Frais de Scolarité",
-        "description": "Une structure de frais de scolarité.",
-        "type": "object",
-        "properties": {
-            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
-            "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
-            "amount": { "type": "string", "description": "Le montant total des frais." },
-            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
-            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
-        },
-        "required": ["schoolId", "grade", "amount", "installments"]
-    },
     "student": {
         "title": "Élève",
         "description": "Un élève inscrit à l'école.",
@@ -162,9 +123,7 @@
             "lastName": { "type": "string", "description": "Le nom de famille de l'élève." },
             "photoUrl": { "type": "string", "format": "uri", "description": "URL de la photo de profil de l'élève." },
             "status": { "type": "string", "enum": ["Actif", "En attente", "Radié"], "description": "Statut actuel de l'élève." },
-            "class": { "type": "string", "description": "Le nom de la classe de l'élève." },
-            "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
-            "cycle": { "type": "string", "description": "Le cycle d'enseignement de l'élève." },
+            "currentClassId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
             "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
@@ -184,7 +143,122 @@
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
         },
-        "required": ["schoolId", "firstName", "lastName", "matricule", "status", "class", "classId", "cycle", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
+        "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
+    },
+    "cycle": {
+        "title": "Cycle",
+        "description": "Un cycle d'enseignement (ex: Maternelle, Primaire).",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "name": { "type": "string", "description": "Nom du cycle (ex: Maternelle)." },
+            "code": { "type": "string", "description": "Code du cycle (ex: MAT)." },
+            "order": { "type": "number", "description": "Ordre d'affichage." },
+            "description": { "type": "string" },
+            "ageRange": {
+                "type": "object",
+                "properties": {
+                    "min": { "type": "number" },
+                    "max": { "type": "number" }
+                }
+            },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["schoolId", "name", "code", "order"]
+    },
+    "niveau": {
+        "title": "Niveau",
+        "description": "Un niveau scolaire au sein d'un cycle (ex: CE1, 6ème).",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "cycleId": { "type": "string" },
+            "name": { "type": "string", "description": "Nom du niveau (ex: CE1)." },
+            "code": { "type": "string", "description": "Code du niveau (ex: CE1)." },
+            "order": { "type": "number" },
+            "ageMin": { "type": "number" },
+            "ageMax": { "type": "number" },
+            "capacity": { "type": "number", "description": "Nombre maximum d'élèves." },
+            "color": { "type": "string", "description": "Couleur pour l'interface." },
+            "description": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["schoolId", "cycleId", "name", "code", "order", "ageMin", "ageMax", "capacity"]
+    },
+    "classe": {
+      "title": "Classe",
+      "description": "Une classe spécifique pour une année académique (ex: CE1-A 2024-2025).",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "cycleId": { "type": "string" },
+        "niveauId": { "type": "string" },
+        "name": { "type": "string", "description": "Nom complet (ex: CE1-A)." },
+        "code": { "type": "string", "description": "Code unique (ex: CE1A)." },
+        "section": { "type": "string", "description": "Section (A, B, C...)." },
+        "academicYear": { "type": "string", "description": "Année académique (ex: 2024-2025)." },
+        "studentCount": { "type": "number" },
+        "maxStudents": { "type": "number" },
+        "mainTeacherId": { "type": "string" },
+        "mainTeacherName": { "type": "string" },
+        "teacherIds": { "type": "array", "items": { "type": "string" } },
+        "coordinatorId": { "type": "string" },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "startTime": { "type": "string" },
+            "endTime": { "type": "string" },
+            "days": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "classroom": { "type": "string" },
+        "building": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "archived"] },
+        "isFull": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["schoolId", "cycleId", "niveauId", "name", "code", "academicYear", "studentCount", "maxStudents", "status", "isFull", "createdBy"]
+    },
+    "studentClassAssignment": {
+        "title": "Affectation Élève-Classe",
+        "description": "Historique de l'affectation d'un élève à une classe pour une année.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "studentId": { "type": "string" },
+            "classeId": { "type": "string" },
+            "academicYear": { "type": "string" },
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time" },
+            "previousClass": { "type": "string" },
+            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
+            "notes": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "createdBy": { "type": "string" }
+        },
+        "required": ["schoolId", "studentId", "classeId", "academicYear", "startDate", "promotionType", "status", "createdBy"]
+    },
+    "timetableEntry": {
+        "title": "Entrée d'Emploi du Temps",
+        "description": "Un cours spécifique dans l'emploi du temps d'une classe.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "classId": { "type": "string" },
+            "teacherId": { "type": "string" },
+            "subject": { "type": "string" },
+            "day": { "type": "string", "enum": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"] },
+            "startTime": { "type": "string", "description": "Format HH:mm" },
+            "endTime": { "type": "string", "description": "Format HH:mm" },
+            "classroom": { "type": "string" },
+            "color": { "type": "string", "description": "Couleur pour l'affichage" }
+        },
+        "required": ["schoolId", "classId", "teacherId", "subject", "day", "startTime", "endTime"]
     },
     "gradeEntry": {
         "title": "Note",
@@ -242,21 +316,6 @@
         },
         "required": ["schoolId", "title", "author", "quantity"]
     },
-    "timetableEntry": {
-        "title": "Entrée d'Emploi du Temps",
-        "description": "Une entrée dans l'emploi du temps, associant une classe, un enseignant et une matière.",
-        "type": "object",
-        "properties": {
-            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
-            "classId": { "type": "string", "description": "L'ID de la classe." },
-            "teacherId": { "type": "string", "description": "L'ID de l'enseignant." },
-            "subject": { "type": "string", "description": "La matière enseignée." },
-            "day": { "type": "string", "enum": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"], "description": "Le jour de la semaine." },
-            "startTime": { "type": "string", "description": "L'heure de début (HH:MM)." },
-            "endTime": { "type": "string", "description": "L'heure de fin (HH:MM)." }
-        },
-        "required": ["schoolId", "classId", "teacherId", "subject", "day", "startTime", "endTime"]
-    },
     "message": {
         "title": "Message",
         "description": "Un message ou une annonce envoyé(e) via la messagerie interne.",
@@ -301,6 +360,19 @@
             "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." }
         },
         "required": ["schoolId", "studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
+    },
+    "fee": {
+        "title": "Frais de Scolarité",
+        "description": "Une structure de frais de scolarité.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
+            "amount": { "type": "string", "description": "Le montant total des frais." },
+            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
+            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
+        },
+        "required": ["schoolId", "grade", "amount", "installments"]
     }
   },
   "auth": {
@@ -318,12 +390,7 @@
         "personnel": {
           "path": "personnel/{staffId}",
           "schema": { "$ref": "#/entities/staff" },
-          "description": "Stocke les profils du personnel (enseignants et non-enseignants) pour cette école."
-        },
-        "classes": {
-            "path": "classes/{classId}",
-            "schema": { "$ref": "#/entities/class" },
-            "description": "Stocke les informations des classes pour cette école."
+          "description": "Stocke les profils du personnel pour cette école."
         },
         "eleves": {
             "path": "eleves/{studentId}",
@@ -339,6 +406,11 @@
                     "path": "paiements/{paymentId}",
                     "schema": { "$ref": "#/entities/payment" },
                     "description": "Stocke l'historique des paiements de scolarité pour un élève."
+                },
+                "affectations": {
+                    "path": "affectations/{assignmentId}",
+                    "schema": { "$ref": "#/entities/studentClassAssignment" },
+                    "description": "Stocke l'historique des affectations de classe pour un élève."
                 }
             }
         },
@@ -346,6 +418,21 @@
             "path": "cycles/{cycleId}",
             "schema": { "$ref": "#/entities/cycle" },
             "description": "Stocke la liste des cycles d'enseignement pour cette école."
+        },
+        "niveaux": {
+            "path": "niveaux/{niveauId}",
+            "schema": { "$ref": "#/entities/niveau" },
+            "description": "Stocke la liste des niveaux scolaires pour cette école."
+        },
+        "classes": {
+            "path": "classes/{classeId}",
+            "schema": { "$ref": "#/entities/classe" },
+            "description": "Stocke les informations des classes pour cette école."
+        },
+        "emploi_du_temps": {
+            "path": "emploi_du_temps/{entryId}",
+            "schema": { "$ref": "#/entities/timetableEntry" },
+            "description": "Stocke les entrées de l'emploi du temps pour cette école."
         },
         "frais_scolarite": {
             "path": "frais_scolarite/{feeId}",
@@ -367,11 +454,6 @@
             "schema": { "$ref": "#/entities/libraryBook" },
             "description": "Stocke les livres de la bibliothèque pour cette école."
         },
-        "emploi_du_temps": {
-            "path": "emploi_du_temps/{entryId}",
-            "schema": { "$ref": "#/entities/timetableEntry" },
-            "description": "Stocke les entrées de l'emploi du temps pour cette école."
-        },
         "messagerie": {
             "path": "messagerie/{messageId}",
             "schema": { "$ref": "#/entities/message" },
@@ -385,3 +467,5 @@
     }
   }
 }
+
+    
