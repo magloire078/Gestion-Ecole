@@ -34,14 +34,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 const settingsSchema = z.object({
-  name: z.string().min(3, { message: "Le nom doit contenir au moins 3 caractères" }).max(100, { message: "Le nom ne peut excéder 100 caractères" }),
+  name: z.string(), // On le garde pour la validation mais il ne sera pas éditable
   matricule: z.string().regex(/^[A-Z0-9\/-]*$/, { message: "Format de matricule invalide" }).optional().or(z.literal('')),
   cnpsEmployeur: z.string().regex(/^[0-9]*$/, { message: "Le numéro CNPS doit contenir uniquement des chiffres" }).optional().or(z.literal('')),
   directorFirstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
   directorLastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
   directorPhone: z.string().regex(/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/, "Numéro de téléphone invalide").optional().or(z.literal('')),
   address: z.string().max(200).optional(),
-  phone: z.string().regex(/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/, "Numéro de téléphone invalide").optional().or(z.literal('')),
+  phone: z.string().regex(/^[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$/, "Numéro de téléphone invalide").optional().or(zliteral('')),
   website: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
   mainLogoUrl: z.string().url({ message: "URL invalide" }).optional().or(z.literal('')),
   email: z.string().email("Email invalide").optional().or(z.literal('')),
@@ -136,6 +136,9 @@ export default function SettingsPage() {
  const handleSaveChanges = async (values: SettingsFormValues) => {
     setError(null);
 
+    // Ne pas inclure le nom dans les données à sauvegarder car il est non modifiable ici.
+    const { name, ...dataToSave } = values;
+
     if (!form.formState.isDirty) {
         toast({
             title: "Aucune modification",
@@ -146,7 +149,7 @@ export default function SettingsPage() {
 
     setIsSaving(true);
     try {
-        await updateSchoolData(values);
+        await updateSchoolData(dataToSave);
         form.reset(values); // Réinitialise l'état dirty
         toast({
             title: "✅ Paramètres enregistrés",
@@ -277,7 +280,7 @@ export default function SettingsPage() {
                                 </div>
                             </FormItem>
                          )} />
-                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Matricule de l'Établissement</FormLabel><FormControl><Input placeholder="Ex: 0123/ETAB/2024" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                         <FormField control={form.control} name="cnpsEmployeur" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employeur</FormLabel><FormControl><Input placeholder="Numéro d'immatriculation CNPS de l'école" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                       </TabsContent>
