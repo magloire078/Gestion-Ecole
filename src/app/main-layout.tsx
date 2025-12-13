@@ -3,7 +3,7 @@
 
 import { Toaster } from "@/components/ui/toaster"
 import { ThemeProvider } from "@/components/theme-provider"
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import { FirebaseClientProvider } from "@/firebase";
 
 export function MainLayout({
@@ -11,6 +11,16 @@ export function MainLayout({
 }: Readonly<{
   children: ReactNode;
 }>) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null; 
+  }
+
   return (
     <FirebaseClientProvider>
       <ThemeProvider
