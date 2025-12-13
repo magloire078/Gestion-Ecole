@@ -11,7 +11,8 @@ import {
   List,
   Plus,
   Edit,
-  ChevronDown
+  ChevronDown,
+  Filter
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -62,6 +63,7 @@ type NiveauFormValues = z.infer<typeof niveauSchema>;
 export default function StructurePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeCycleFilter, setActiveCycleFilter] = useState<string>('all');
+  const [selectedCycleForNiveaux, setSelectedCycleForNiveaux] = useState<string>('all');
   const [selectedCycleForDisplay, setSelectedCycleForDisplay] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
@@ -109,27 +111,23 @@ export default function StructurePage() {
     defaultValues: { name: '', code: '', order: 1, cycleId: '', capacity: 30 }
   });
 
-  // Create cycle map for quick lookup
   const cycleMap = useMemo(() => new Map(cycles.map(c => [c.id, c])), [cycles]);
 
-  // Group niveaux by cycle for display
-  const niveauxByCycle = useMemo(() => {
-    const grouped: Record<string, (Niveau & {id: string})[]> = {};
-    cycles.forEach(cycle => { grouped[cycle.id] = []; });
-    grouped['unassigned'] = [];
-    
-    niveaux.forEach(niveau => {
-      if (cycleMap.has(niveau.cycleId)) {
-        if (!grouped[niveau.cycleId]) grouped[niveau.cycleId] = [];
-        grouped[niveau.cycleId].push(niveau);
-      } else {
-        grouped['unassigned'].push(niveau);
-      }
-    });
-    return grouped;
-  }, [niveaux, cycles, cycleMap]);
+  const filteredNiveaux = useMemo(() => {
+    let filtered = selectedCycleForNiveaux === 'all'
+      ? niveaux
+      : niveaux.filter(n => n.cycleId === selectedCycleForNiveaux);
 
-  // Filtered cycles for display (with search)
+    if (searchQuery) {
+        filtered = filtered.filter(niveau => 
+          niveau.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          niveau.code.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }
+    return filtered;
+  }, [niveaux, selectedCycleForNiveaux, searchQuery]);
+
+
   const filteredCycles = useMemo(() => {
     if (!searchQuery) return cycles;
     return cycles.filter(cycle => 
@@ -216,19 +214,19 @@ export default function StructurePage() {
 
       <Tabs defaultValue="cycles" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="cycles">Cycles & Niveaux</TabsTrigger>
+          <TabsTrigger value="cycles">Cycles</TabsTrigger>
+          <TabsTrigger value="niveaux">Niveaux</TabsTrigger>
           <TabsTrigger value="classes">Classes</TabsTrigger>
-          <TabsTrigger value="matieres">Matières</TabsTrigger>
         </TabsList>
         
         <TabsContent value="cycles" className="mt-6 space-y-6">
-          <Card>
+           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Gestion des Cycles</CardTitle>
                   <CardDescription>
-                    Cliquez sur un cycle pour voir les niveaux associés.
+                    Définissez les cycles d'enseignement de votre établissement.
                   </CardDescription>
                 </div>
                 <Button onClick={() => handleOpenCycleForm(null)} size="sm">
@@ -240,20 +238,18 @@ export default function StructurePage() {
             <CardContent className="space-y-4">
               <div className="border rounded-lg">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Code</TableHead><TableHead>Ordre</TableHead><TableHead>Niveaux</TableHead><TableHead className="text-right w-24">Actions</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Nom du Cycle</TableHead><TableHead>Code</TableHead><TableHead>Ordre</TableHead><TableHead className="text-right w-24">Actions</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {isLoading ? [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
-                    : filteredCycles.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Aucun cycle trouvé</TableCell></TableRow>
+                    {isLoading ? [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
+                    : filteredCycles.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Aucun cycle trouvé</TableCell></TableRow>
                     : filteredCycles.sort((a, b) => a.order - b.order).map((cycle) => (
-                          <TableRow key={cycle.id} className="group hover:bg-muted/50 cursor-pointer" onClick={() => setSelectedCycleForDisplay(cycle.id)}>
+                          <TableRow key={cycle.id} className="group hover:bg-muted/50">
                             <TableCell className="font-medium"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }} />{cycle.name}</div></TableCell>
                             <TableCell><Badge variant="outline">{cycle.code}</Badge></TableCell>
                             <TableCell>{cycle.order}</TableCell>
-                            <TableCell><Badge variant="secondary">{niveauxByCycle[cycle.id]?.length || 0} niveau(x)</Badge></TableCell>
                             <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); handleOpenCycleForm(cycle); }}><Edit className="h-4 w-4" /></Button>
-                                <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); setSelectedCycleForDisplay(cycle.id);}}><ChevronDown className="h-4 w-4" /></Button>
+                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4" /></Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -261,32 +257,82 @@ export default function StructurePage() {
                   </TableBody>
                 </Table>
               </div>
-              {selectedCycleForDisplay && cycleMap.has(selectedCycleForDisplay) && (
-                <Accordion type="single" collapsible defaultValue="details" value="details">
-                  <AccordionItem value="details"><AccordionTrigger className="px-4" onClick={() => setSelectedCycleForDisplay(null)}><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: cycleMap.get(selectedCycleForDisplay)?.color || '#3b82f6' }}/><span className="font-medium">{cycleMap.get(selectedCycleForDisplay)?.name} - Niveaux associés</span></div></AccordionTrigger>
-                    <AccordionContent className="p-4">
-                      <div className="space-y-3">
-                         <div className="flex justify-end">
-                            <Button size="sm" variant="outline" onClick={() => handleOpenNiveauForm(null)}><Plus className="mr-2 h-4 w-4" />Ajouter un Niveau</Button>
-                         </div>
-                        {niveauxByCycle[selectedCycleForDisplay]?.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">Aucun niveau n'est associé à ce cycle</p>
-                        : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {niveauxByCycle[selectedCycleForDisplay]?.sort((a, b) => a.order - b.order).map((niveau) => (
-                                <div key={niveau.id} className="border rounded-lg p-3 hover:bg-muted/30 transition-colors group relative">
-                                    <div className="font-medium">{niveau.name}</div>
-                                    <div className="text-xs text-muted-foreground">Capacité: {niveau.capacity} élèves</div>
-                                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4"/></Button>
-                                    </div>
-                                </div>
-                              ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="niveaux" className="mt-6 space-y-6">
+           <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Gestion des Niveaux</CardTitle>
+                  <CardDescription>
+                    Listes des niveaux d'enseignement, filtrables par cycle.
+                  </CardDescription>
+                </div>
+                <Button onClick={() => handleOpenNiveauForm(null)} size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nouveau Niveau
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    placeholder="Rechercher un niveau..." 
+                    className="pl-10"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <Select value={selectedCycleForNiveaux} onValueChange={setSelectedCycleForNiveaux}>
+                  <SelectTrigger className="w-full md:w-[240px]">
+                    <SelectValue placeholder="Filtrer par cycle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les cycles</SelectItem>
+                    {cycles.sort((a,b) => a.order - b.order).map(cycle => (
+                       <SelectItem key={cycle.id} value={cycle.id}>
+                          <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }}/>
+                              {cycle.name}
                           </div>
-                        }
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader><TableRow><TableHead>Nom du Niveau</TableHead><TableHead>Code</TableHead><TableHead>Cycle</TableHead><TableHead>Ordre</TableHead><TableHead>Capacité</TableHead><TableHead className="text-right w-24">Actions</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {isLoading ? [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
+                    : filteredNiveaux.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Aucun niveau trouvé pour les filtres actuels</TableCell></TableRow>
+                    : filteredNiveaux.sort((a, b) => a.order - b.order).map((niveau) => {
+                      const cycle = cycleMap.get(niveau.cycleId);
+                      return (
+                        <TableRow key={niveau.id} className="group hover:bg-muted/50">
+                          <TableCell className="font-medium">{niveau.name}</TableCell>
+                          <TableCell><Badge variant="outline">{niveau.code}</Badge></TableCell>
+                          <TableCell>
+                            {cycle ? <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }}/><span>{cycle.name}</span></div> : <Badge variant="destructive">N/A</Badge>}
+                          </TableCell>
+                          <TableCell>{niveau.order}</TableCell>
+                          <TableCell>{niveau.capacity}</TableCell>
+                          <TableCell className="text-right">
+                             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
+                              </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
