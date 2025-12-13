@@ -24,12 +24,9 @@ export default function SubscriptionPage() {
     const [error, setError] = useState<string | null>(null);
 
     const handleChoosePlan = (planName: 'Essentiel' | 'Pro', price: number) => {
+        setError(null);
         if (!schoolName) {
-            toast({
-                variant: "destructive",
-                title: "Erreur",
-                description: "Le nom de l'école n'est pas encore chargé. Veuillez patienter un instant.",
-            });
+            setError("Le nom de l'école n'est pas encore chargé. Veuillez patienter un instant.");
             return;
         }
 
