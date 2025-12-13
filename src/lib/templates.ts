@@ -9,6 +9,8 @@ export const SCHOOL_TEMPLATES = {
       { name: "Enseignement Secondaire - Deuxième Cycle", code: "LYC", order: 4 },
       { name: "Enseignement Supérieur (BTS, DUT...)", code: "SUP", order: 5 },
       { name: "Enseignement Universitaire (LMD)", code: "UNIV", order: 6 },
+      { name: "Cycle Ingénieur", code: "ING", order: 7 },
+      { name: "Cycle Master", code: "MAS", order: 8 },
     ],
     niveaux: {
       "Enseignement Préscolaire": ["Petite Section", "Moyenne Section", "Grande Section"],
@@ -17,6 +19,8 @@ export const SCHOOL_TEMPLATES = {
       "Enseignement Secondaire - Deuxième Cycle": ["Seconde", "Première", "Terminale"],
       "Enseignement Supérieur (BTS, DUT...)": ["BTS 1", "BTS 2", "DUT 1", "DUT 2"],
       "Enseignement Universitaire (LMD)": ["Licence 1", "Licence 2", "Licence 3", "Master 1", "Master 2", "Doctorat"],
+      "Cycle Ingénieur": ["Ingénieur 1 (Prépa Intégrée)", "Ingénieur 2 (Prépa Intégrée)", "Ingénieur 3", "Ingénieur 4", "Ingénieur 5"],
+      "Cycle Master": ["Master 1", "Master 2"],
     },
     subjects: [
       { name: "Français", color: "#3B82F6" },
