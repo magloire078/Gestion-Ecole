@@ -107,12 +107,12 @@ export default function DashboardLayout({
           
           {/* Sidebar Desktop */}
           <aside className={cn(
-            "fixed inset-y-0 left-0 z-40 hidden flex-col border-r bg-gray-900 text-white shadow-xl transition-all duration-300 ease-in-out sm:flex print:hidden",
+            "fixed inset-y-0 left-0 z-40 hidden flex-col border-r bg-background shadow-lg transition-all duration-300 ease-in-out sm:flex print:hidden",
             isSidebarCollapsed ? "w-20" : "w-64"
           )}>
             
             {/* Logo et toggle */}
-            <div className="flex h-16 items-center justify-between border-b border-gray-700/50 px-4">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b px-4">
               {!isSidebarCollapsed && <Logo />}
               {isSidebarCollapsed && (
                 <div className="mx-auto">
@@ -141,7 +141,7 @@ export default function DashboardLayout({
             </div>
 
             {/* Navigation */}
-            <div className="flex-1 overflow-y-auto py-2">
+            <div className="flex-1 overflow-y-auto">
               <MainNav collapsed={isSidebarCollapsed} />
             </div>
 
@@ -155,7 +155,7 @@ export default function DashboardLayout({
             
             {/* Header */}
             <header className={cn(
-              "sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md transition-shadow px-4 sm:px-6 print:hidden shadow-sm"
+              "sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md transition-shadow px-4 sm:px-6 print:hidden shadow-sm"
             )}>
               
               <div className="flex items-center gap-3">
@@ -165,7 +165,7 @@ export default function DashboardLayout({
                       <Menu className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-full max-w-xs p-0 bg-gray-900 text-white border-r-0">
+                  <SheetContent side="left" className="w-full max-w-xs p-0 bg-background text-foreground border-r-0">
                     <MobileNav />
                   </SheetContent>
                 </Sheet>
