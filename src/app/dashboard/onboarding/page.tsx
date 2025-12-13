@@ -94,11 +94,6 @@ export default function OnboardingPage() {
         batch.set(staffProfileRef, staffProfileData);
         batch.set(rootUserRef, rootUserData);
         
-        schoolCycles.forEach(cycle => {
-            const cycleRef = doc(collection(firestore, `ecoles/${schoolId}/cycles`));
-            batch.set(cycleRef, {...cycle, schoolId});
-        });
-        
         await batch.commit();
 
         await auth.currentUser?.getIdToken(true);
@@ -112,7 +107,7 @@ export default function OnboardingPage() {
         window.location.href = '/dashboard';
 
     } catch (error: any) {
-        const path = `[BATCH WRITE] /ecoles, /personnel, /utilisateurs, /cycles`;
+        const path = `[BATCH WRITE] /ecoles, /personnel, /utilisateurs`;
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'write',
@@ -300,5 +295,3 @@ export default function OnboardingPage() {
     </div>
   );
 }
-
-    

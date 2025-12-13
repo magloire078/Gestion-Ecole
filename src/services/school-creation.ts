@@ -40,9 +40,6 @@ export class SchoolCreationService {
   }
 
   async createSchool(schoolData: SchoolCreationData, userId: string) {
-    const templateId = 'FRENCH_PRIMARY' as keyof typeof SCHOOL_TEMPLATES;
-    const template = SCHOOL_TEMPLATES[templateId];
-
     const schoolId = doc(collection(this.db, 'id_generator')).id;
     const schoolCode = generateSchoolCode(schoolData.name);
     
@@ -84,18 +81,9 @@ export class SchoolCreationService {
         hireDate: formatDateFns(new Date(), 'yyyy-MM-dd'),
         baseSalary: 0, // Default base salary
     });
-    
-    // This step is incorrect as cycles are not school-specific
-    // 4. Create default structure from template
-    // template.cycles.forEach(cycle => {
-    //     const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
-    //     batch.set(cycleRef, { ...cycle, schoolId });
-    // });
 
     await batch.commit();
     
     return { schoolId, schoolCode };
   }
 }
-
-    

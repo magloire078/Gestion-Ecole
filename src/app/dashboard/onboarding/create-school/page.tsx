@@ -48,8 +48,6 @@ export default function CreateSchoolPage() {
     try {
       const result = await schoolCreationService.createSchool({
         ...schoolData,
-        // template is not a valid property of schoolData
-        // template: 'french_primary', // Default template for now
         directorId: user.uid,
         directorFirstName: directorData.firstName,
         directorLastName: directorData.lastName,
