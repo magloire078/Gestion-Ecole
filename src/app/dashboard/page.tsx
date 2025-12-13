@@ -7,7 +7,7 @@ import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, M
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, getCountFromServer, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit, getDocs, getCountFromServer, where, collectionGroup } from 'firebase/firestore';
 import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -17,52 +17,12 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, accountingTransaction as Transaction } from '@/lib/data-types';
+
 
 // ====================================================================================
 // TYPES
 // ====================================================================================
-interface Student {
-  id: string;
-  firstName: string;
-  lastName: string;
-  createdAt?: {
-    seconds: number;
-    nanoseconds: number;
-  } | Date;
-  amountDue?: number;
-}
-
-interface Message {
-  id: string;
-  title: string;
-  senderName: string;
-  createdAt?: {
-    seconds: number;
-    nanoseconds: number;
-  } | Date;
-}
-
-// Corrected GradeEntry type to match the data structure
-interface GradeEntry {
-  subject: string;
-  grade: number;
-  coefficient: number;
-  createdAt?: {
-    seconds: number;
-    nanoseconds: number;
-  } | Date;
-}
-
-
-interface Transaction {
-  category: string;
-  type: string;
-  amount: number;
-}
-
-interface LibraryBook {
-  quantity?: number;
-}
 
 type Activity = {
   id: string;
@@ -96,11 +56,17 @@ const RegularDashboard = () => {
   const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
+  // --- Data for Performance Chart ---
+  const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
+  const [gradesLoading, setGradesLoading] = useState(true);
+
+
   useEffect(() => {
     if (!schoolId || !firestore) {
       if (!schoolLoading) {
         setStatsLoading(false);
         setActivityLoading(false);
+        setGradesLoading(false);
       }
       return;
     }
@@ -108,77 +74,109 @@ const RegularDashboard = () => {
     const fetchAllData = async () => {
       setStatsLoading(true);
       setActivityLoading(true);
+      setGradesLoading(true);
 
       try {
         // --- Fetch Stats ---
         const studentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId));
         const teachersQuery = query(collection(firestore, `personnel`), where('schoolId', '==', schoolId), where('role', '==', 'enseignant'));
         const classesQuery = query(collection(firestore, `classes`), where('schoolId', '==', schoolId));
-        
-        const [studentsSnapshot, teachersSnapshot, classesSnapshot] = await Promise.all([
-          getCountFromServer(studentsQuery).catch(() => ({ data: () => ({ count: 0 }) })),
-          getCountFromServer(teachersQuery).catch(() => ({ data: () => ({ count: 0 }) })),
-          getCountFromServer(classesQuery).catch(() => ({ data: () => ({ count: 0 }) })),
+        const booksQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId));
+
+        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot, studentsForTuitionSnapshot] = await Promise.all([
+          getCountFromServer(studentsQuery),
+          getCountFromServer(teachersQuery),
+          getCountFromServer(classesQuery),
+          getDocs(booksQuery),
+          getDocs(studentsQuery)
         ]);
+
+        const totalBooks = booksSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as LibraryBook).quantity, 0);
+        const { totalPaid, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
+            const student = doc.data() as Student;
+            const tuition = student.tuitionFee || 0;
+            const due = student.amountDue || 0;
+            acc.totalPaid += (tuition - due);
+            acc.totalDue += due;
+            return acc;
+        }, { totalPaid: 0, totalDue: 0 });
 
         setStats({
           students: studentsSnapshot.data().count,
           teachers: teachersSnapshot.data().count,
           classes: classesSnapshot.data().count,
-          books: 0, // Simplified
-          tuitionPaid: 0, // Simplified
-          tuitionDue: 0, // Simplified
+          books: totalBooks,
+          tuitionPaid: totalPaid,
+          tuitionDue: totalDue,
         });
         setStatsLoading(false);
 
 
-        // --- Fetch Recent Activity (Simplified) ---
+        // --- Fetch Recent Activity ---
         const activities: Activity[] = [];
         
-        try {
-          const recentStudentsQuery = query(
-            collection(firestore, `eleves`), where('schoolId', '==', schoolId),
-            orderBy('createdAt', 'desc'),
-            limit(3)
-          );
-          const studentsActivitySnapshot = await getDocs(recentStudentsQuery);
-          
-          studentsActivitySnapshot.forEach(doc => {
+        const recentStudentsQuery = query(collection(firestore, `eleves`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(2));
+        const recentMessagesQuery = query(collection(firestore, `messagerie`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(2));
+        const recentBooksQuery = query(collection(firestore, `bibliotheque`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(2));
+
+        const [studentsActivitySnapshot, messagesActivitySnapshot, booksActivitySnapshot] = await Promise.all([
+          getDocs(recentStudentsQuery), getDocs(recentMessagesQuery), getDocs(recentBooksQuery)
+        ]);
+        
+        studentsActivitySnapshot.forEach(doc => {
             const student = doc.data() as Student;
-            const createdAt = student.createdAt 
-              ? 'seconds' in student.createdAt 
-                ? new Date(student.createdAt.seconds * 1000)
-                : new Date(student.createdAt)
-              : new Date();
-            
+            const createdAt = (student.createdAt && typeof student.createdAt === 'object' && 'seconds' in student.createdAt) 
+                ? new Date(student.createdAt.seconds * 1000) 
+                : new Date();
             activities.push({
-              id: doc.id,
-              type: 'student',
-              icon: UserPlus,
-              color: 'bg-blue-100 dark:bg-blue-900/50',
-              description: (
-                <>
-                  Nouvel élève, <strong>{student.firstName} {student.lastName}</strong>, ajouté.
-                </>
-              ),
+              id: doc.id, type: 'student', icon: UserPlus, color: 'bg-blue-100 dark:bg-blue-900/50',
+              description: <>Nouvel élève, <strong>{student.firstName} {student.lastName}</strong>, ajouté.</>,
               date: createdAt,
             });
-          });
-        } catch (error) {
-          console.log("Erreur lors de la récupération des activités élèves");
-        }
-        
-        const sortedActivities = activities
-          .sort((a, b) => b.date.getTime() - a.date.getTime())
-          .slice(0, 5);
-        
+        });
+        messagesActivitySnapshot.forEach(doc => {
+            const message = doc.data() as Message;
+             const createdAt = (message.createdAt && typeof message.createdAt === 'object' && 'seconds' in message.createdAt) 
+                ? new Date(message.createdAt.seconds * 1000) 
+                : new Date();
+            activities.push({
+                id: doc.id, type: 'message', icon: MessageSquare, color: 'bg-violet-100 dark:bg-violet-900/50',
+                description: <>Nouveau message: <strong>{message.title}</strong> par {message.senderName}.</>,
+                date: createdAt,
+            });
+        });
+        booksActivitySnapshot.forEach(doc => {
+            const book = doc.data() as LibraryBook;
+            const createdAt = (book.createdAt && typeof book.createdAt === 'object' && 'seconds' in book.createdAt) 
+                ? new Date(book.createdAt.seconds * 1000) 
+                : new Date();
+            activities.push({
+                id: doc.id, type: 'book', icon: BookOpen, color: 'bg-amber-100 dark:bg-amber-900/50',
+                description: <>Nouveau livre, <strong>{book.title}</strong>, ajouté à la bibliothèque.</>,
+                date: createdAt,
+            });
+        });
+
+        const sortedActivities = activities.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
         setRecentActivity(sortedActivities);
         setActivityLoading(false);
+
+        // --- Fetch Grades for Chart ---
+        const gradesCollectionGroup = collectionGroup(firestore, 'notes');
+        // This is not fully scalable. In a real app, aggregation would be better.
+        // Also, we can't filter by schoolId in a collectionGroup query without a composite index.
+        // For the prototype, we assume we're fetching all grades and they implicitly belong to the school.
+        const gradesSnapshot = await getDocs(gradesCollectionGroup);
+        const fetchedGrades = gradesSnapshot.docs.map(doc => doc.data() as GradeEntry);
+        setAllGrades(fetchedGrades);
+        setGradesLoading(false);
+
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         setStatsLoading(false);
         setActivityLoading(false);
+        setGradesLoading(false);
       }
     };
     
@@ -257,11 +255,6 @@ const RegularDashboard = () => {
                 ) : (
                   <div className="text-3xl font-bold mt-2">{stat.value}</div>
                 )}
-                <div className="flex items-center mt-2 text-xs text-muted-foreground">
-                  <TrendingUp className="w-4 h-4 text-emerald-500 mr-1" />
-                  <span className="text-emerald-600 mr-1">+0%</span>
-                  <span>vs mois dernier</span>
-                </div>
               </CardContent>
             </Card>
           </Link>
@@ -270,7 +263,7 @@ const RegularDashboard = () => {
       
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <PerformanceChart grades={[]} loading={false} />
+          <PerformanceChart grades={allGrades} loading={gradesLoading} />
 
           <Card>
             <CardHeader>
