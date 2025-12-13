@@ -7,6 +7,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
+import { SCHOOL_TEMPLATES } from '@/lib/templates';
 
 interface SchoolCreationData {
     name: string;
@@ -79,6 +80,44 @@ export class SchoolCreationService {
         hireDate: new Date().toISOString(), // Use ISO string for server compatibility
         baseSalary: 0, // Default base salary
     });
+
+    // 4. Initialize school structure (Cycles and Niveaux)
+    const template = SCHOOL_TEMPLATES.FRENCH_PRIMARY;
+    
+    for (const cycle of template.cycles) {
+        const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
+        batch.set(cycleRef, { ...cycle, schoolId });
+        
+        const NIVEAUX = {
+          "Maternelle": ["Petite Section", "Moyenne Section", "Grande Section"],
+          "Enseignement Primaire": ["CP1", "CP2", "CE1", "CE2", "CM1", "CM2"],
+          "Enseignement Secondaire - Premier cycle": ["6ème", "5ème", "4ème", "3ème"],
+          "Enseignement Secondaire - Deuxième cycle": ["Seconde", "Première", "Terminale"]
+        };
+        
+        const niveauxForCycle = NIVEAUX[cycle.name as keyof typeof NIVEAUX] || [];
+        
+        for (const niveauName of niveauxForCycle) {
+            const niveauRef = doc(collection(this.db, `ecoles/${schoolId}/niveaux`));
+            batch.set(niveauRef, {
+                name: niveauName,
+                code: niveauName.replace(/\s+/g, '').toUpperCase(),
+                cycleId: cycleRef.id,
+                schoolId: schoolId,
+                order: niveauxForCycle.indexOf(niveauName) + 1,
+                // Default values that can be edited later
+                ageMin: 5,
+                ageMax: 6,
+                capacity: 30,
+            });
+        }
+    }
+    
+    // 5. Initialize default subjects
+    for (const subject of template.subjects) {
+      const subjectRef = doc(collection(this.db, `ecoles/${schoolId}/matieres`));
+      batch.set(subjectRef, { ...subject, schoolId });
+    }
 
     await batch.commit();
     

@@ -1,10 +1,11 @@
+
 export const SCHOOL_TEMPLATES = {
   FRENCH_PRIMARY: {
     cycles: [
-      { name: "Maternelle", order: 1 },
-      { name: "Enseignement Primaire", order: 2 },
-      { name: "Enseignement Secondaire - Premier cycle", order: 3 },
-      { name: "Enseignement Secondaire - Deuxième cycle", order: 4 },
+      { name: "Maternelle", code: "MAT", order: 1 },
+      { name: "Enseignement Primaire", code: "PRI", order: 2 },
+      { name: "Enseignement Secondaire - Premier cycle", code: "COL", order: 3 },
+      { name: "Enseignement Secondaire - Deuxième cycle", code: "LYC", order: 4 },
     ],
     subjects: [
       { name: "Français", color: "#3B82F6" },
@@ -19,10 +20,10 @@ export const SCHOOL_TEMPLATES = {
   },
   INTERNATIONAL_SCHOOL: {
     cycles: [
-        { name: "Early Years", order: 1 },
-        { name: "Primary School", order: 2 },
-        { name: "Middle School", order: 3 },
-        { name: "High School", order: 4 },
+        { name: "Early Years", code: "EY", order: 1 },
+        { name: "Primary School", code: "PS", order: 2 },
+        { name: "Middle School", code: "MS", order: 3 },
+        { name: "High School", code: "HS", order: 4 },
     ],
     subjects: [
       { name: "English", color: "#DC2626" },

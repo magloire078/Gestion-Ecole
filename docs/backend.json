@@ -40,6 +40,37 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
     },
+     "admin_role": {
+      "title": "Rôle Administrateur",
+      "description": "Définit un ensemble de permissions pour un rôle administratif.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Nom du rôle (ex: Super Admin, Admin École)." },
+        "description": { "type": "string", "description": "Description des responsabilités du rôle." },
+        "level": { "type": "number", "description": "Niveau de permission (1 = le plus élevé)." },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "manageUsers": { "type": "boolean" },
+            "viewUsers": { "type": "boolean" },
+            "manageSchools": { "type": "boolean" },
+            "viewSchools": { "type": "boolean" },
+            "manageClasses": { "type": "boolean" },
+            "manageGrades": { "type": "boolean" },
+            "manageSystem": { "type": "boolean" },
+            "viewAnalytics": { "type": "boolean" },
+            "manageSettings": { "type": "boolean" },
+            "manageBilling": { "type": "boolean" },
+            "manageContent": { "type": "boolean" },
+            "viewSupportTickets": { "type": "boolean" },
+            "manageSupportTickets": { "type": "boolean" },
+            "apiAccess": { "type": "boolean" },
+            "exportData": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["name", "level", "permissions"]
+    },
     "staff": {
       "title": "Membre du Personnel",
       "description": "Un membre du personnel de l'école (enseignant ou non-enseignant). Représente aussi le profil utilisateur.",
@@ -59,6 +90,7 @@
         "matricule": { "type": "string", "description": "Matricule interne de l'employé." },
         "status": { "type": "string", "enum": ["Actif", "Inactif"], "description": "Statut de l'employé." },
         "subject": { "type": "string", "description": "La matière principale enseignée (si enseignant)." },
+        "classId": { "type": "string", "description": "L'identifiant de la classe principale supervisée (si enseignant)." },
         "situationMatrimoniale": { "type": "string", "enum": ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf(ve)"], "description": "Situation matrimoniale." },
         "enfants": { "type": "number", "description": "Nombre d'enfants à charge." },
         "categorie": { "type": "string", "description": "Catégorie professionnelle." },
@@ -164,6 +196,7 @@
         "cycleId": { "type": "string" },
         "niveauId": { "type": "string" },
         "name": { "type": "string", "description": "Nom complet (ex: CE1-A)." },
+        "grade": { "type": "string", "description": "Nom du niveau, ex: 'CE1'." },
         "code": { "type": "string", "description": "Code unique (ex: CE1A)." },
         "section": { "type": "string", "description": "Section (A, B, C...)." },
         "academicYear": { "type": "string", "description": "Année académique (ex: 2024-2025)." },
@@ -211,37 +244,22 @@
         },
         "required": ["schoolId", "studentId", "classeId", "academicYear", "startDate", "promotionType", "status", "createdBy"]
     },
-    "schedule": {
-        "title": "Emploi du Temps",
-        "description": "Emploi du temps pour une classe sur une année académique.",
+    "timetableEntry": {
+        "title": "Entrée d'Emploi du Temps",
+        "description": "Un cours spécifique dans l'emploi du temps d'une classe.",
         "type": "object",
         "properties": {
             "schoolId": { "type": "string" },
-            "classeId": { "type": "string" },
-            "academicYear": { "type": "string" },
-            "periods": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "id": { "type": "string" },
-                        "day": { "type": "string", "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"] },
-                        "startTime": { "type": "string" },
-                        "endTime": { "type": "string" },
-                        "subjectId": { "type": "string" },
-                        "subjectName": { "type": "string" },
-                        "teacherId": { "type": "string" },
-                        "teacherName": { "type": "string" },
-                        "classroom": { "type": "string" },
-                        "type": { "type": "string", "enum": ["cours", "td", "tp", "examen"] },
-                        "color": { "type": "string" }
-                    }
-                }
-            },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "updatedAt": { "type": "string", "format": "date-time" }
+            "classId": { "type": "string" },
+            "teacherId": { "type": "string" },
+            "subject": { "type": "string" },
+            "day": { "type": "string", "enum": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"] },
+            "startTime": { "type": "string", "description": "Format HH:mm" },
+            "endTime": { "type": "string", "description": "Format HH:mm" },
+            "classroom": { "type": "string" },
+            "color": { "type": "string", "description": "Couleur pour l'affichage" }
         },
-        "required": ["schoolId", "classeId", "academicYear", "periods"]
+        "required": ["schoolId", "classId", "teacherId", "subject", "day", "startTime", "endTime"]
     },
     "gradeEntry": {
         "title": "Note",
@@ -343,6 +361,31 @@
             "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." }
         },
         "required": ["schoolId", "studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
+    },
+    "fee": {
+        "title": "Frais de Scolarité",
+        "description": "Une structure de frais de scolarité.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
+            "amount": { "type": "string", "description": "Le montant total des frais." },
+            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
+            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
+        },
+        "required": ["schoolId", "grade", "amount", "installments"]
+    },
+    "subject": {
+        "title": "Matière",
+        "description": "Une matière enseignée dans l'école.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "name": { "type": "string" },
+            "code": { "type": "string" },
+            "color": { "type": "string" }
+        },
+        "required": ["schoolId", "name"]
     }
   },
   "auth": {
@@ -399,10 +442,10 @@
             "schema": { "$ref": "#/entities/classe" },
             "description": "Stocke les informations des classes pour cette école."
         },
-        "emplois_du_temps": {
-            "path": "emplois_du_temps/{scheduleId}",
-            "schema": { "$ref": "#/entities/schedule" },
-            "description": "Stocke les emplois du temps pour cette école."
+        "emploi_du_temps": {
+            "path": "emploi_du_temps/{entryId}",
+            "schema": { "$ref": "#/entities/timetableEntry" },
+            "description": "Stocke les entrées de l'emploi du temps pour cette école."
         },
         "frais_scolarite": {
             "path": "frais_scolarite/{feeId}",
@@ -428,8 +471,17 @@
             "path": "messagerie/{messageId}",
             "schema": { "$ref": "#/entities/message" },
             "description": "Stocke les messages et annonces envoyés via la messagerie interne pour cette école."
+        },
+        "matieres": {
+            "path": "matieres/{subjectId}",
+            "schema": { "$ref": "#/entities/subject" },
+            "description": "Stocke les matières enseignées dans l'école."
         }
       }
+    },
+    "/admin_roles/{roleId}": {
+        "schema": { "$ref": "#/entities/admin_role" },
+        "description": "Définit les permissions pour les rôles administratifs."
     }
   }
 }
