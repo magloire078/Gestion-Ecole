@@ -265,6 +265,7 @@ export default function SettingsPage() {
                                 <FormField control={form.control} name="directorFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={form.control} name="directorLastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
+                            <FormField control={form.control} name="directorPhone" render={({ field }) => (<FormItem><FormLabel>Téléphone (Directeur)</FormLabel><FormControl><Input type="tel" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                           </div>
                         </AccordionContent>
                        </Card>
