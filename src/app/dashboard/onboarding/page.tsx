@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -85,7 +86,7 @@ export default function OnboardingPage() {
             description: `Vous avez rejoint l'établissement ${schoolDoc.data().name}.`,
         });
 
-        window.location.href = '/dashboard';
+        router.push('/dashboard');
 
     } catch(error: any) {
          const permissionError = new FirestorePermissionError({
