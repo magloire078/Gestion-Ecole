@@ -102,6 +102,9 @@ export default function NewClassPage() {
       code: '',
       cycleId: '',
       niveauId: '',
+      mainTeacherId: '',
+      classroom: '',
+      building: '',
     },
   });
   
