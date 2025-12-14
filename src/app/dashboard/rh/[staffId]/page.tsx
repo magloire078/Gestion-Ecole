@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -48,7 +47,8 @@ export default function StaffProfilePage() {
   
   // --- Data Fetching ---
   const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId]);
-  const { data: staffMember, loading: staffLoading } = useDoc<Staff>(staffRef);
+  const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
+  const staffMember = staffMemberData;
 
   const classRef = useMemoFirebase(() => staffMember?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -102,7 +101,6 @@ export default function StudentProfilePage() {
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
-  const student = studentData;
 
   const gradesQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
   const paymentsQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
@@ -110,7 +108,7 @@ export default function StudentProfilePage() {
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
-  const classRef = useMemoFirebase(() => student?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
+  const classRef = useMemoFirebase(() => studentData?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${studentData.classId}`) : null, [studentData, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
   const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
@@ -133,7 +131,7 @@ export default function StudentProfilePage() {
   const allNiveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
 
 
-  const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
+  const studentFullName = studentData ? `${studentData.firstName} ${studentData.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
   const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
@@ -155,9 +153,12 @@ export default function StudentProfilePage() {
     );
   }
   
-  if (!student && !isLoading) {
+  if (!studentData && !isLoading) {
     notFound();
   }
+  
+  // After loading and after check, we can assume studentData exists
+  const student = studentData;
 
   
   const handlePhotoUploadComplete = async (url: string) => {
