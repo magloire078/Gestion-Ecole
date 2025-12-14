@@ -34,7 +34,7 @@ export function useUser() {
         setLoading(true); // Set loading to true whenever the user state might change
         if (authUser) {
             try {
-                const tokenResult = await authUser.getIdTokenResult(true); // Force refresh
+                const tokenResult = await authUser.getIdTokenResult(); // DO NOT force refresh here to avoid quota issues
                 const schoolId = tokenResult.claims.schoolId as string | undefined;
 
                 const userWithClaims: User = {
