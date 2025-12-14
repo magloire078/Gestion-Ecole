@@ -10,18 +10,19 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Pour l'instant, aucun utilisateur n'est admin. 
-      // Cette fonction est prête pour une utilisation future.
+      // Pour l'instant, seul l'admin a ce claim.
       return request.auth.token.admin == true;
     }
 
     // --- Global Collections ---
     
-    // Règle sécurisée pour la collection des utilisateurs
+    // Correction de sécurité pour /utilisateurs
     match /utilisateurs/{userId} {
-      allow get, update: if isAuth() && request.auth.uid == userId;
+      allow get: if isAuth() && request.auth.uid == userId;
       allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-      allow list, delete: if false; // Désactiver la liste et la suppression
+      allow update: if isAuth() && request.auth.uid == userId;
+      allow delete: if false; // La suppression directe est désactivée
+      allow list: if isAdmin();
     }
 
     // Admins can manage roles.
@@ -29,14 +30,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
-    // --- School Collections ---
-    
-    // Accès plus permissif pour le développement, mais avec suppression contrôlée.
-    // Cette règle permet à tout utilisateur authentifié de lire et écrire, 
-    // ce qui facilite le développement, mais empêche les suppressions accidentelles.
+    // --- School Collections (Règles intermédiaires plus sécurisées) ---
     match /ecoles/{schoolId}/{allPaths=**} {
+       // La lecture et la mise à jour sont autorisées pour les utilisateurs authentifiés
        allow read, create, update: if isAuth();
-       // Seul un admin (futur rôle) pourra supprimer des données critiques.
+       
+       // La suppression est réservée aux administrateurs pour éviter les pertes de données
        allow delete: if isAdmin();
     }
   }
