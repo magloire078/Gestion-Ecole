@@ -64,12 +64,12 @@ export default function CreateSchoolPage() {
       
       toast({
         title: 'École créée avec succès !',
-        description: `Le code de votre établissement est : ${result.schoolCode}.`,
+        description: `Le code de votre établissement est : ${result.schoolCode}. Redirection en cours...`,
         duration: 9000,
       });
 
-      // Redirect to the dashboard, AuthGuard will handle the rest
-      window.location.href = '/dashboard';
+      // Use router.push to allow AuthGuard to re-evaluate the user state correctly
+      router.push('/dashboard');
 
     } catch (error: any) {
       console.error(error);

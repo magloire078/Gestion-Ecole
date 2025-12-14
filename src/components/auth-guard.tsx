@@ -23,39 +23,40 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [isVerified, setIsVerified] = useState(false);
 
   useEffect(() => {
+    // We wait until user loading is complete
     if (userLoading) {
-      return; // Attendre la fin du chargement de l'utilisateur
+      return;
     }
 
+    // If no user is found, redirect to login page
     if (!user) {
-      // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
       if (pathname !== '/login') {
         router.replace('/login');
       } else {
-        setIsVerified(true); // Autoriser l'accès à la page de connexion elle-même
+        setIsVerified(true);
       }
       return;
     }
 
-    // L'utilisateur est connecté
+    // User is logged in, now check for school association
     const schoolId = user.customClaims?.schoolId;
 
     if (schoolId) {
-      // L'utilisateur est associé à une école.
+      // User is associated with a school.
       if (pathname.startsWith('/dashboard/onboarding')) {
-        // S'il est déjà onboardé, le rediriger vers le tableau de bord principal
+        // If they land on onboarding, redirect them to the main dashboard.
         router.replace('/dashboard');
       } else {
-        // Autoriser l'accès à toutes les autres pages du tableau de bord
+        // Otherwise, they are authorized to see the page.
         setIsVerified(true);
       }
     } else {
-      // L'utilisateur n'est pas encore associé à une école.
-      if (pathname.startsWith('/dashboard/onboarding') || pathname === '/dashboard') {
-         // Autoriser l'accès aux pages d'onboarding ou à la page racine du dashboard qui redirigera
+      // User is not associated with a school.
+      if (pathname.startsWith('/dashboard/onboarding') || pathname === '/login') {
+        // Allow access to onboarding pages or login.
         setIsVerified(true);
       } else {
-        // Le rediriger vers le processus d'onboarding pour toute autre page
+        // For any other page, redirect to the onboarding flow.
         router.replace('/dashboard/onboarding');
       }
     }
