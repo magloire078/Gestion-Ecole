@@ -12,18 +12,22 @@ import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
-import { ArrowRight, ArrowLeft, User, Users, GraduationCap } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
+import { ImageUploader } from '@/components/image-uploader';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 const registrationSchema = z.object({
   // Step 1
   lastName: z.string().min(1, { message: "Le nom de famille est requis." }),
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
+  photoUrl: z.string().optional(),
   matricule: z.string().min(1, { message: "Le numéro matricule est requis." }),
   dateOfBirth: z.string().min(1, { message: "La date de naissance est requise." }),
   placeOfBirth: z.string().min(1, { message: "Le lieu de naissance est requis." }),
@@ -46,7 +50,7 @@ const registrationSchema = z.object({
 
 type RegistrationFormValues = z.infer<typeof registrationSchema>;
 
-const step1Fields: (keyof RegistrationFormValues)[] = ['lastName', 'firstName', 'matricule', 'dateOfBirth', 'placeOfBirth', 'gender', 'address'];
+const step1Fields: (keyof RegistrationFormValues)[] = ['lastName', 'firstName', 'matricule', 'dateOfBirth', 'placeOfBirth', 'gender', 'address', 'photoUrl'];
 const step2Fields: (keyof RegistrationFormValues)[] = ['previousSchool', 'classId', 'status'];
 const step3Fields: (keyof RegistrationFormValues)[] = ['parent1LastName', 'parent1FirstName', 'parent1Contact', 'parent2LastName', 'parent2FirstName', 'parent2Contact'];
 
@@ -58,6 +62,7 @@ export default function RegistrationPage() {
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
 
   const [step, setStep] = useState(1);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -78,6 +83,7 @@ export default function RegistrationPage() {
         lastName: '',
         firstName: '',
         matricule: '',
+        photoUrl: '',
         dateOfBirth: '',
         placeOfBirth: '',
         gender: undefined,
@@ -102,11 +108,9 @@ export default function RegistrationPage() {
     const selectedClass = classes.find(c => c.id === classId);
     if (!selectedClass) return 0;
 
-    // The grade is now directly on the class object
     const gradeName = selectedClass.grade;
     if (!gradeName) return 0;
     
-    // Find the fee structure matching the grade name
     const feeInfo = fees.find(f => f.grade === gradeName);
 
     return feeInfo ? parseFloat(feeInfo.amount) : 0;
@@ -151,12 +155,12 @@ export default function RegistrationPage() {
       gender: values.gender,
       address: values.address,
       previousSchool: values.previousSchool,
-      photoUrl: `https://picsum.photos/seed/${values.matricule}/200`,
+      photoUrl: photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
       status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
-      cycle: selectedClassInfo?.cycleId || 'N/A', // Assuming you'll fetch cycle name
-      grade: selectedNiveauInfo?.name || 'N/A', // Storing grade name
+      cycle: selectedClassInfo?.cycleId || 'N/A', 
+      grade: selectedNiveauInfo?.name || 'N/A', 
       parent1LastName: values.parent1LastName,
       parent1FirstName: values.parent1FirstName,
       parent1Contact: values.parent1Contact,
@@ -174,11 +178,9 @@ export default function RegistrationPage() {
     
     const batch = writeBatch(firestore);
     
-    // 1. Create the new student document
     const newStudentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves`));
     batch.set(newStudentRef, studentData);
 
-    // 2. Atomically increment the student count on the class document
     if (selectedClassInfo) {
         const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id!);
         batch.update(classRef, { studentCount: increment(1) });
@@ -230,11 +232,37 @@ export default function RegistrationPage() {
               {step === 1 && (
                 <div className="space-y-4 animate-in fade-in-50">
                   <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5"/>Informations de l'Élève</div>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  
+                  <div className="flex flex-col sm:flex-row items-center gap-6">
+                      <FormField control={form.control} name="photoUrl" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Photo</FormLabel>
+                          <FormControl>
+                            <ImageUploader 
+                                onUploadComplete={(url) => { field.onChange(url); setPhotoUrl(url); }}
+                                storagePath={`ecoles/${schoolId}/student-photos/`}
+                                currentImageUrl={field.value}
+                            >
+                                <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">
+                                    <AvatarImage src={photoUrl || undefined} alt="Photo de l'élève" />
+                                    <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
+                                        <Upload className="h-6 w-6 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">Photo</span>
+                                    </AvatarFallback>
+                                </Avatar>
+                            </ImageUploader>
+                          </FormControl>
+                        </FormItem>
+                      )} />
+                      <div className="flex-1 w-full space-y-4">
+                        <div className="grid sm:grid-cols-2 gap-4">
+                          <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        </div>
+                        <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      </div>
                   </div>
-                   <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+
                   <div className="grid sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="placeOfBirth" render={({ field }) => (<FormItem><FormLabel>Lieu de naissance</FormLabel><FormControl><Input placeholder="Ex: Dakar" {...field} /></FormControl><FormMessage /></FormItem>)} />

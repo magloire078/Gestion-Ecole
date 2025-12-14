@@ -27,10 +27,14 @@ import {
 } from "@/components/ui/accordion";
 import { allSubjects } from '@/lib/data';
 import { DialogFooter } from "./ui/dialog";
+import { ImageUploader } from "./image-uploader";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Upload } from 'lucide-react';
 
 const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
   lastName: z.string().min(1, { message: "Le nom est requis." }),
+  photoURL: z.string().optional(),
   role: z.string().min(1, { message: "Le rôle est requis." }),
   email: z.string().email({ message: "L'adresse email est invalide." }),
   phone: z.string().optional(),
@@ -77,6 +81,8 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
     const auth = useAuth();
     const { toast } = useToast();
     const [todayDateString, setTodayDateString] = useState('');
+    const [photoUrl, setPhotoUrl] = useState<string | null>(editingStaff?.photoURL || null);
+
 
     useEffect(() => {
         setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
@@ -85,7 +91,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(staffSchema),
         defaultValues: {
-          firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: '', subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+          firstName: '', lastName: '', role: '', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: '', subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
         },
     });
 
@@ -116,10 +122,12 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
                     baseSalary: fullData.baseSalary || 0,
                     hireDate: formattedHireDate,
                 });
+                setPhotoUrl(editingStaff.photoURL || null);
             } else {
                 form.reset({
-                    firstName: '', lastName: '', role: '', email: '', phone: '', password: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+                    firstName: '', lastName: '', role: '', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
                 });
+                setPhotoUrl(null);
             }
         }
         loadPrivateData();
@@ -134,6 +142,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
         const { password, ...dataToSave } = {
             ...values,
             schoolId,
+            photoURL: photoUrl || '',
             matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
             status: editingStaff?.status || 'Actif',
             displayName: `${values.firstName} ${values.lastName}`
@@ -187,10 +196,33 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
                     </TabsList>
                     <div className="py-6 max-h-[60vh] overflow-y-auto px-1">
                         <TabsContent value="general" className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom de famille" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <div className="flex items-center gap-6">
+                                <FormField control={form.control} name="photoURL" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Photo</FormLabel>
+                                        <FormControl>
+                                            <ImageUploader 
+                                                onUploadComplete={(url) => { field.onChange(url); setPhotoUrl(url); }}
+                                                storagePath={`ecoles/${schoolId}/staff-photos/`}
+                                                currentImageUrl={field.value}
+                                            >
+                                                <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">
+                                                    <AvatarImage src={photoUrl || undefined} alt="Photo" />
+                                                    <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
+                                                        <Upload className="h-6 w-6 text-muted-foreground" />
+                                                        <span className="text-xs text-muted-foreground">Photo</span>
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            </ImageUploader>
+                                        </FormControl>
+                                    </FormItem>
+                                )} />
+                                <div className="flex-1 space-y-4">
+                                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input placeholder="Prénom" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom de famille" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                </div>
                             </div>
+
                             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="personnel">Personnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                             {watchedRole === 'enseignant' && (
                                 <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">

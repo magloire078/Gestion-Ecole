@@ -165,7 +165,8 @@
                 }
             },
             "createdAt": { "type": "string", "format": "date-time" },
-            "updatedAt": { "type": "string", "format": "date-time" }
+            "updatedAt": { "type": "string", "format": "date-time" },
+            "color": { "type": "string" }
         },
         "required": ["schoolId", "name", "code", "order"]
     },
@@ -487,5 +488,3 @@
     }
   }
 }
-
-    
