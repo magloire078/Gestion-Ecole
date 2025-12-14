@@ -22,7 +22,7 @@ service cloud.firestore {
     function belongsToSchool(schoolId) {
         return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
     }
-    
+
     // --- Global Collections ---
     
     // Users can read/write their own root document.
@@ -43,12 +43,39 @@ service cloud.firestore {
     match /ecoles/{schoolId} {
        allow get: if isAuth();
        allow list: if isAuth(); // Allows querying for a school by code
-       allow create: if isAuth(); // For initial school creation
+       
+       // Allow creation only if the user is setting themselves as the director
+       allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
+       
        allow update: if isAuth() && belongsToSchool(schoolId);
        allow delete: if isAdmin(); // Only admins can delete a whole school
     }
     
-    // Default-deny for all subcollections, with specific overrides below
+    // --- School Subcollections Rules ---
+
+    // Personnel: Only members of the school can read.
+    // A user can create their own staff profile when joining.
+    // The director can create/update/delete any staff profile.
+    match /ecoles/{schoolId}/personnel/{staffId} {
+      allow read, update, delete: if belongsToSchool(schoolId);
+      allow create: if isAuth(); // Allows director or joining user to create a profile
+    }
+
+    // Niveaux, Cycles, Matieres: School members can manage these structure documents.
+    match /ecoles/{schoolId}/cycles/{cycleId} {
+      allow read, write: if belongsToSchool(schoolId);
+      allow create: if isAuth();
+    }
+    match /ecoles/{schoolId}/niveaux/{niveauId} {
+      allow read, write: if belongsToSchool(schoolId);
+      allow create: if isAuth();
+    }
+     match /ecoles/{schoolId}/matieres/{subjectId} {
+      allow read, write: if belongsToSchool(schoolId);
+      allow create: if isAuth();
+    }
+    
+    // Default-deny for all other subcollections, with specific overrides below
     match /ecoles/{schoolId}/{document=**} {
       allow read, write: if isAuth() && belongsToSchool(schoolId);
     }
