@@ -58,25 +58,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   }, [user, schoolId, isLoading, pathname, router]);
 
-
-  // Affiche le loader tant que la vérification n'est pas terminée
   if (isLoading) {
-      return <AuthProtectionLoader />;
+    return <AuthProtectionLoader />;
   }
-  
-  // Logique pour éviter l'affichage de la mauvaise page pendant la redirection
+
+  // Si l'application redirige, ne montrez rien pour éviter un flash de contenu incorrect
   if (!user && !pathname.startsWith('/login')) {
-      return <AuthProtectionLoader />;
+    return <AuthProtectionLoader />;
   }
-
   if (user && !schoolId && !pathname.startsWith('/dashboard/onboarding')) {
-      return <AuthProtectionLoader />;
+    return <AuthProtectionLoader />;
   }
   
-  if (user && schoolId && (pathname.startsWith('/dashboard/onboarding') || pathname.startsWith('/login'))) {
-      return <AuthProtectionLoader />;
-  }
-
-  // Si tout est correct, affiche la page demandée
+  // Affiche le contenu si tout est correct
   return <>{children}</>;
 }

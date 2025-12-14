@@ -43,6 +43,7 @@ export function useSchoolData() {
         }
         if (!user) {
             setSchoolId(null);
+            setSchoolData(null);
             setLoading(false);
             return;
         }
@@ -53,16 +54,11 @@ export function useSchoolData() {
                 // Method 1: Check the user document for a schoolId
                 const userDocRef = doc(firestore, 'utilisateurs', userId);
                 const userDoc = await getDoc(userDocRef);
+
                 if (userDoc.exists() && userDoc.data()?.schoolId) {
                     const foundSchoolId = userDoc.data().schoolId;
-                    const schoolDoc = await getDoc(doc(firestore, 'ecoles', foundSchoolId));
-                    if (schoolDoc.exists()) {
-                         setSchoolId(foundSchoolId);
-                         return;
-                    } else {
-                        // Data is inconsistent, the referenced school doesn't exist.
-                        // Let's proceed to the next check.
-                    }
+                    setSchoolId(foundSchoolId);
+                    return; // Exit early if found
                 }
 
                 // Method 2: If user doc has no schoolId, check if the user is a director of any school
@@ -81,10 +77,10 @@ export function useSchoolData() {
                     setSchoolId(null); // No school found for this user
                 }
             } catch (error) {
-                console.error("Error fetching user's school data:", error);
+                console.error("Error fetching user's school association:", error);
                 setSchoolId(null);
             } finally {
-                setLoading(false);
+                // The loading state will be properly handled by the second useEffect
             }
         };
 
@@ -92,13 +88,14 @@ export function useSchoolData() {
     }, [user, userLoading, firestore]);
 
     useEffect(() => {
-        if (schoolId === null) {
+        if (schoolId === null) { // Explicitly check for null (meaning search is complete and nothing was found)
             setSchoolData(null);
+            setLoading(false);
             document.title = DEFAULT_TITLE;
             return;
         }
         
-        if (!schoolId) {
+        if (!schoolId) { // schoolId is undefined, search is in progress
             return;
         }
 
@@ -113,9 +110,11 @@ export function useSchoolData() {
                 setSchoolId(null); // The referenced school does not exist, reset.
                 document.title = DEFAULT_TITLE;
             }
+            setLoading(false);
         }, (error) => {
              console.error("Error fetching school data:", error);
              setSchoolData(null);
+             setLoading(false);
         });
 
         return () => unsubscribe();
