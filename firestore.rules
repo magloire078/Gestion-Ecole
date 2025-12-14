@@ -104,7 +104,7 @@ service cloud.firestore {
       match /personnel/{staffId} {
         allow read, list: if isUserInSchool(schoolId);
         // Director can add staff. A user can create their own profile when joining a school.
-        allow create: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId);
+        allow create: if (isAuth() && request.resource.data.uid == request.auth.uid) || isSchoolDirector(schoolId);
         allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
 
