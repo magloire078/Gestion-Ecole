@@ -273,9 +273,9 @@ export default function PaymentsPage() {
                 <CardTitle>Total dû (filtré)</CardTitle>
             </CardHeader>
             <CardContent>
-                <p className="text-3xl font-bold text-destructive">
+                <div className="text-3xl font-bold text-destructive">
                     {isLoading ? <Skeleton className="h-8 w-48" /> : formatCurrency(totalDue)}
-                </p>
+                </div>
             </CardContent>
         </Card>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
