@@ -1,4 +1,4 @@
-// Re-synchronisation du 12 Décembre
+// Re-synchronisation du 12 Décembre pour forcer le déploiement.
 rules_version = '2';
 
 service cloud.firestore {
@@ -8,22 +8,35 @@ service cloud.firestore {
     function isAuth() {
       return request.auth != null;
     }
+    
+    function isAdmin() {
+      // Pour l'instant, seul l'admin a ce claim.
+      return request.auth.token.admin == true;
+    }
 
     // --- Global Collections ---
-    // Any authenticated user can manage their own user_root document.
+    
+    // Correction de sécurité pour /utilisateurs
     match /utilisateurs/{userId} {
-      allow read, write: if isAuth() && request.auth.uid == userId;
+      allow get: if isAuth() && request.auth.uid == userId;
+      allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
+      allow update: if isAuth() && request.auth.uid == userId;
+      allow delete: if false; // La suppression directe est désactivée
+      allow list: if isAdmin();
     }
 
     // Admins can manage roles.
     match /admin_roles/{roleId} {
-      allow read, write: if isAuth() && request.auth.token.admin == true;
+      allow read, write: if isAdmin();
     }
-
-    // --- School Collections (Temporarily Permissive) ---
-    // Any authenticated user can create, read, write, update any school data for now.
+    
+    // --- School Collections (Règles intermédiaires plus sécurisées) ---
     match /ecoles/{schoolId}/{allPaths=**} {
-      allow read, write: if isAuth();
+       // La lecture et la mise à jour sont autorisées pour les utilisateurs authentifiés
+       allow read, create, update: if isAuth();
+       
+       // La suppression est réservée aux administrateurs pour éviter les pertes de données
+       allow delete: if isAdmin();
     }
   }
 }
