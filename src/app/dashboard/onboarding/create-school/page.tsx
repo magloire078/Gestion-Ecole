@@ -64,8 +64,8 @@ export default function CreateSchoolPage() {
       
       toast({
         title: 'École créée avec succès !',
-        description: `Le code de votre établissement est : ${result.schoolCode}. Redirection en cours...`,
-        duration: 9000,
+        description: `Le code de votre établissement est : ${result.schoolCode}. Vous allez être redirigé...`,
+        duration: 5000,
       });
 
       // Use router.push to allow AuthGuard to re-evaluate the user state correctly
