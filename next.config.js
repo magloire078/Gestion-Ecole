@@ -4,7 +4,19 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**',
+        hostname: 'firebasestorage.googleapis.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+       {
+        protocol: 'https',
+        hostname: 'upload.wikimedia.org',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.pigroup360.com',
       },
     ],
   },
