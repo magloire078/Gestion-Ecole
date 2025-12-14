@@ -14,29 +14,43 @@ service cloud.firestore {
       return request.auth.token.admin == true;
     }
 
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Fonction pour vérifier si un utilisateur appartient à une école
+    function belongsToSchool(schoolId) {
+        return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
+    }
+
     // --- Global Collections ---
     
-    // Correction de sécurité pour /utilisateurs
+    // Les utilisateurs peuvent gérer leur propre document racine
     match /utilisateurs/{userId} {
-      allow get: if isAuth() && request.auth.uid == userId;
-      allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-      allow update: if isAuth() && request.auth.uid == userId;
-      allow delete: if false; // La suppression directe est désactivée
+      allow read, write: if isOwner(userId);
       allow list: if isAdmin();
     }
 
-    // Admins can manage roles.
+    // Les admins peuvent gérer les rôles
     match /admin_roles/{roleId} {
       allow read, write: if isAdmin();
     }
     
-    // --- School Collections (Règles intermédiaires plus sécurisées) ---
-    match /ecoles/{schoolId}/{allPaths=**} {
-       // La lecture et la mise à jour sont autorisées pour les utilisateurs authentifiés
-       allow read, create, update: if isAuth();
-       
-       // La suppression est réservée aux administrateurs pour éviter les pertes de données
-       allow delete: if isAdmin();
+    // --- School Collections ---
+
+    // N'importe quel utilisateur authentifié peut créer une école.
+    // Seuls les membres de l'école peuvent la mettre à jour.
+    match /ecoles/{schoolId} {
+       allow get: if isAuth();
+       allow list: if isAuth(); // Autorise la recherche d'école par code
+       allow create: if isAuth(); // Permet la création initiale de l'école
+       allow update: if belongsToSchool(schoolId);
+       allow delete: if isAdmin(); // Seuls les admins peuvent supprimer une école
+    }
+    
+    // Une fois l'école créée, seuls ses membres peuvent lire/écrire dans les sous-collections
+    match /ecoles/{schoolId}/{document=**} {
+      allow read, write: if belongsToSchool(schoolId);
     }
   }
 }
