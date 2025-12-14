@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
@@ -16,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, classe as Classe, staff as Staff } from '@/lib/data-types';
+import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, classe as Classe, staff as Staff, fee as Fee } from '@/lib/data-types';
 
 
 // ====================================================================================
@@ -383,6 +384,7 @@ const OnboardingDashboard = () => {
   const [onboardingData, setOnboardingData] = useState({
     classesCount: 0,
     teachersCount: 0,
+    feesCount: 0,
   });
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -393,15 +395,18 @@ const OnboardingDashboard = () => {
       setDataLoading(true);
       const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
       const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
+      const feesQuery = query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
 
-      const [classesSnap, teachersSnap] = await Promise.all([
+      const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
         getCountFromServer(classesQuery),
         getCountFromServer(teachersQuery),
+        getCountFromServer(feesQuery),
       ]);
       
       setOnboardingData({
         classesCount: classesSnap.data().count,
         teachersCount: teachersSnap.data().count,
+        feesCount: feesSnap.data().count,
       });
       setDataLoading(false);
     };
@@ -409,25 +414,28 @@ const OnboardingDashboard = () => {
     fetchData();
   }, [schoolId, firestore]);
 
-  const { completion, isBaseInfoDone, isStructureDone, isStaffDone } = useMemo(() => {
-    if (!schoolData) return { completion: 0, isBaseInfoDone: false, isStructureDone: false, isStaffDone: false };
+  const { completion, isBaseInfoDone, isStructureDone, isStaffDone, isFeesDone } = useMemo(() => {
+    if (!schoolData) return { completion: 0, isBaseInfoDone: false, isStructureDone: false, isStaffDone: false, isFeesDone: false };
 
     let completedSteps = 0;
-    const totalSteps = 3; 
+    const totalSteps = 4;
 
     const baseInfoDone = !!(schoolData.name && schoolData.directorFirstName && schoolData.mainLogoUrl && schoolData.address);
     const structureDone = onboardingData.classesCount > 0;
     const staffDone = onboardingData.teachersCount > 0;
+    const feesDone = onboardingData.feesCount > 0;
 
     if (baseInfoDone) completedSteps++;
     if (structureDone) completedSteps++;
     if (staffDone) completedSteps++;
+    if (feesDone) completedSteps++;
 
     return {
       completion: Math.round((completedSteps / totalSteps) * 100),
       isBaseInfoDone: baseInfoDone,
       isStructureDone: structureDone,
       isStaffDone: staffDone,
+      isFeesDone: feesDone,
     };
   }, [schoolData, onboardingData]);
 
@@ -459,7 +467,7 @@ const OnboardingDashboard = () => {
         <div className="flex items-start mb-4">
           <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mr-4", isDone ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-muted')}>
             <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", isDone ? 'bg-blue-500' : 'bg-gray-400')}>
-              <span className="text-white font-bold">{number}</span>
+              {isDone ? <Check className="w-4 h-4 text-white" /> : <span className="text-white font-bold">{number}</span>}
             </div>
           </div>
           <div>
@@ -494,32 +502,29 @@ const OnboardingDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StepCard number={1} title="Informations de base" description="Configuration essentielle" isDone={isBaseInfoDone}>
-          <div className="space-y-3 text-sm">
-            <div className={cn("flex items-center", schoolData?.name ? 'text-green-600' : 'text-yellow-600')}><CheckCircle className="w-5 h-5 mr-2" /><span>Nom de l'école</span></div>
-            <div className={cn("flex items-center", schoolData?.directorFirstName ? 'text-green-600' : 'text-yellow-600')}><CheckCircle className="w-5 h-5 mr-2" /><span>Directeur désigné</span></div>
-            <div className={cn("flex items-center", schoolData?.mainLogoUrl ? 'text-green-600' : 'text-yellow-600')}><CheckCircle className="w-5 h-5 mr-2" /><span>Logo de l'école</span></div>
-            <div className={cn("flex items-center", schoolData?.address ? 'text-green-600' : 'text-yellow-600')}><CheckCircle className="w-5 h-5 mr-2" /><span>Adresse complète</span></div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StepCard number={1} title="Infos de l'École" description="Nom, logo, adresse..." isDone={isBaseInfoDone}>
+          <p className="text-muted-foreground text-sm mb-4">
+             Fournissez les informations de base de votre établissement.
+          </p>
           <Button className="mt-6 w-full" onClick={() => router.push('/dashboard/parametres')}>
-            {isBaseInfoDone ? 'Vérifier' : 'Compléter'} les informations
+            {isBaseInfoDone ? 'Vérifier' : 'Compléter'} les infos
           </Button>
         </StepCard>
 
-        <StepCard number={2} title="Structure scolaire" description="Cycles, classes et matières" isDone={isStructureDone}>
+        <StepCard number={2} title="Structure Scolaire" description="Cycles, classes..." isDone={isStructureDone}>
           <p className="text-muted-foreground text-sm mb-4">
-             Définissez l'organisation pédagogique de votre établissement. (Au moins 1 classe requise)
+             Définissez l'organisation pédagogique. (Au moins 1 classe requise)
           </p>
           <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/pedagogie/structure')}>
             <Plus className="w-5 h-5 inline mr-2" />
-            Configurer la structure
+            Gérer la structure
           </Button>
         </StepCard>
 
-        <StepCard number={3} title="Équipe pédagogique" description="Ajouter les enseignants" isDone={isStaffDone}>
+        <StepCard number={3} title="Équipe Pédagogique" description="Ajouter des enseignants" isDone={isStaffDone}>
           <p className="text-muted-foreground text-sm mb-4">
-             Commencez à construire votre équipe pour assigner les classes. (Au moins 1 enseignant requis)
+             Commencez à construire votre équipe. (Au moins 1 enseignant requis)
           </p>
           <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/rh')}>
             <Plus className="w-5 h-5 inline mr-2" />
@@ -527,7 +532,17 @@ const OnboardingDashboard = () => {
           </Button>
         </StepCard>
 
-        <Card className="md:col-span-2 lg:col-span-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 p-6 border border-blue-100 dark:border-blue-900">
+        <StepCard number={4} title="Grille Tarifaire" description="Frais de scolarité" isDone={isFeesDone}>
+          <p className="text-muted-foreground text-sm mb-4">
+             Définissez les frais pour au moins un niveau scolaire.
+          </p>
+          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/frais-scolarite')}>
+            <Plus className="w-5 h-5 inline mr-2" />
+            Définir les frais
+          </Button>
+        </StepCard>
+
+        <Card className="md:col-span-2 lg:col-span-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 p-6 border border-blue-100 dark:border-blue-900">
           <h3 className="text-xl font-bold mb-4">Actions rapides</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <QuickActionCard icon={<UserPlus />} title="Inscrire un élève" description="Via le formulaire complet" color="blue" href="/dashboard/inscription"/>
@@ -559,6 +574,7 @@ export default function DashboardPage() {
   const [onboardingData, setOnboardingData] = useState({
     classesCount: 0,
     teachersCount: 0,
+    feesCount: 0,
   });
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -572,15 +588,18 @@ export default function DashboardPage() {
       setDataLoading(true);
       const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
       const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
+      const feesQuery = query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
 
-      const [classesSnap, teachersSnap] = await Promise.all([
+      const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
         getCountFromServer(classesQuery),
         getCountFromServer(teachersQuery),
+        getCountFromServer(feesQuery),
       ]);
       
       setOnboardingData({
         classesCount: classesSnap.data().count,
         teachersCount: teachersSnap.data().count,
+        feesCount: feesSnap.data().count,
       });
       setDataLoading(false);
     };
@@ -593,7 +612,8 @@ export default function DashboardPage() {
     const baseInfoDone = !!(schoolData.address && schoolData.mainLogoUrl);
     const structureDone = onboardingData.classesCount > 0;
     const staffDone = onboardingData.teachersCount > 0;
-    return baseInfoDone && structureDone && staffDone;
+    const feesDone = onboardingData.feesCount > 0;
+    return baseInfoDone && structureDone && staffDone && feesDone;
   }, [schoolData, onboardingData]);
 
   if (!isMounted || loading || dataLoading) {
@@ -619,3 +639,4 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
+
