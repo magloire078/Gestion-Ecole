@@ -3,9 +3,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, collection, query, where, getDocs, setDoc, limit } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
+import { errorEmitter } from '../error-emitter';
 
 const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 
