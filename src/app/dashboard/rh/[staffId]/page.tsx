@@ -18,6 +18,8 @@ import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
+import { ImageUploader } from '@/components/image-uploader';
+import { updateStaffPhoto } from '@/services/staff-services';
 
 const getStatusBadgeVariant = (status: Staff['status']) => {
     switch (status) {
@@ -61,6 +63,19 @@ export default function StaffProfilePage() {
     return <div>ID du membre du personnel invalide ou manquant dans l'URL.</div>;
   }
   
+  const handlePhotoUploadComplete = async (url: string) => {
+    if (!schoolId) {
+        toast({ variant: 'destructive', title: "Erreur", description: "ID de l'école non trouvé." });
+        return;
+    }
+    try {
+        await updateStaffPhoto(firestore, schoolId, staffId, url);
+        toast({ title: 'Photo de profil mise à jour !' });
+    } catch (error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la photo de profil.' });
+    }
+  };
+
   const handleGeneratePayslip = async () => {
     if (!schoolData || !schoolId || !staffMember) return;
 
@@ -133,10 +148,15 @@ export default function StaffProfilePage() {
             <div className="lg:col-span-1 flex flex-col gap-6">
                  <Card>
                     <CardHeader className="items-center text-center">
-                        <Avatar className="h-24 w-24 mb-2">
-                            <AvatarImage src={staffMember.photoURL || `https://picsum.photos/seed/${staffId}/100`} alt={staffFullName} data-ai-hint="person face" />
-                            <AvatarFallback>{fallback}</AvatarFallback>
-                        </Avatar>
+                        <ImageUploader 
+                            onUploadComplete={handlePhotoUploadComplete}
+                            storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
+                        >
+                            <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
+                                <AvatarImage src={staffMember.photoURL || `https://picsum.photos/seed/${staffId}/100`} alt={staffFullName} data-ai-hint="person face" />
+                                <AvatarFallback>{fallback}</AvatarFallback>
+                            </Avatar>
+                        </ImageUploader>
                         <CardTitle className="text-2xl">{staffFullName}</CardTitle>
                         <CardDescription className='capitalize'>{staffMember.role}</CardDescription>
                     </CardHeader>
@@ -235,4 +255,3 @@ export default function StaffProfilePage() {
     </>
   );
 }
-
