@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -46,7 +45,8 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
+import { getPayslipDetails } from '@/lib/bulletin-de-paie';
+import type { PayslipDetails } from '@/lib/bulletin-de-paie';
 import type { staff as Staff, school as OrganizationSettings } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PayslipPreview } from '@/components/payroll/payslip-template';
