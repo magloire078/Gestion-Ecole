@@ -229,8 +229,8 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
             </div>
         </Tabs>
         <DialogFooter className="pt-4 border-t">
-          <Button variant="outline" onClick={onFormSubmit} type="button">Annuler</Button>
-          <Button type="submit" form={`edit-student-form-${student.id}`} disabled={isSaving}>
+          <Button type="button" variant="outline" onClick={onFormSubmit}>Annuler</Button>
+          <Button type="submit" disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Enregistrer
           </Button>

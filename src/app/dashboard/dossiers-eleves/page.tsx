@@ -19,7 +19,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -321,7 +320,7 @@ export default function StudentsPage() {
           setIsEditDialogOpen(isOpen);
           if (!isOpen) setEditingStudent(null);
       }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Modifier l'Élève</DialogTitle>
             <DialogDescription>
@@ -338,12 +337,6 @@ export default function StudentsPage() {
               onFormSubmit={() => setIsEditDialogOpen(false)} 
             />
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button type="submit" form={`edit-student-form-${editingStudent?.id}`}>
-              Enregistrer
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 
