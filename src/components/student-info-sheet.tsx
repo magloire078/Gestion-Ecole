@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useRef } from 'react';
@@ -12,6 +13,7 @@ import { fr } from 'date-fns/locale';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { student as Student } from '@/lib/data-types';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
+import { SafeImage } from './ui/safe-image';
 
 interface SchoolInfo {
   name: string;
@@ -80,7 +82,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                     {/* Header */}
                     <div className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
                         <div className="flex items-center gap-4">
-                            {school.mainLogoUrl && <img src={school.mainLogoUrl} alt={school.name} className="h-20 w-20 object-contain" />}
+                            {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={80} height={80} className="object-contain" />}
                             <div>
                                 <h2 className="text-2xl font-bold">{school.name}</h2>
                                 <p className="text-xs text-muted-foreground">{school.address}</p>
@@ -97,7 +99,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                     {/* Student Identity */}
                     <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 p-4 border rounded-lg bg-muted/50">
                         <Avatar className="h-24 w-24">
-                            <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${student.matricule}/200`} alt={studentFullName} data-ai-hint="student portrait" />
+                            <SafeImage src={student.photoUrl} alt={studentFullName} width={96} height={96} data-ai-hint="student portrait" className="rounded-full" />
                             <AvatarFallback>{fallback}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1 text-center sm:text-left">

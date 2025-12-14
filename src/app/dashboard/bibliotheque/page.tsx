@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -40,7 +41,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import Image from 'next/image';
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
@@ -52,6 +52,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { cn } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
 
 const bookSchema = z.object({
   title: z.string().min(1, { message: "Le titre est requis." }),
@@ -266,7 +267,7 @@ export default function LibraryPage() {
              <Card key={book.id} className="flex flex-col">
               <CardHeader className="p-0">
                   <div className="relative h-40 w-full">
-                     <Image 
+                     <SafeImage 
                         src={`https://picsum.photos/seed/${book.id}/400/200`} 
                         alt={`Couverture du livre ${book.title}`} 
                         fill

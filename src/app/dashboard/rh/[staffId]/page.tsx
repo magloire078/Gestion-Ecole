@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
+import { SafeImage } from '@/components/ui/safe-image';
 
 const getStatusBadgeVariant = (status: Staff['status']) => {
     switch (status) {
@@ -153,7 +154,7 @@ export default function StaffProfilePage() {
                             storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
                         >
                             <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
-                                <AvatarImage src={staffMember.photoURL || `https://picsum.photos/seed/${staffId}/100`} alt={staffFullName} data-ai-hint="person face" />
+                                <SafeImage src={staffMember.photoURL} alt={staffFullName} width={96} height={96} className="rounded-full" />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                         </ImageUploader>

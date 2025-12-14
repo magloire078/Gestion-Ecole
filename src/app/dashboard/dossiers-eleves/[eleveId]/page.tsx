@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -27,6 +28,7 @@ import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
 import { StudentEditForm } from '@/components/student-edit-form';
 import { updateStudentPhoto } from '@/services/student-services';
+import { SafeImage } from '@/components/ui/safe-image';
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -231,7 +233,7 @@ export default function StudentProfilePage() {
                             storagePath={`ecoles/${schoolId}/eleves/${eleveId}/avatars/`}
                         >
                             <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
-                                <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${eleveId}/100/100`} alt={studentFullName} data-ai-hint="person face" />
+                                <SafeImage src={student.photoUrl} alt={studentFullName} width={64} height={64} className="rounded-full" />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                         </ImageUploader>

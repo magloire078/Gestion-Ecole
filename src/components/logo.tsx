@@ -1,10 +1,11 @@
+
 'use client';
 
 import Link from 'next/link';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from './ui/skeleton';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
-import Image from 'next/image';
+import { SafeImage } from './ui/safe-image';
 import { cn } from '@/lib/utils';
 
 const DefaultLogo = ({ compact }: { compact?: boolean }) => (
@@ -46,17 +47,14 @@ export function Logo({ compact = false }: { compact?: boolean }) {
 
   return (
     <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
-        {schoolData?.mainLogoUrl ? (
-            <Image 
-              src={schoolData.mainLogoUrl} 
-              alt={schoolData.name || 'Logo École'} 
-              width={32} 
-              height={32} 
-              className={cn("h-8 w-8 object-contain transition-all duration-300", compact && "h-9 w-9")}
-            />
-        ) : (
-            <DefaultLogo compact={compact} />
-        )}
+        <SafeImage 
+            src={schoolData?.mainLogoUrl} 
+            alt={schoolData?.name || 'Logo École'} 
+            width={32} 
+            height={32} 
+            className={cn("h-8 w-8 object-contain transition-all duration-300", compact && "h-9 w-9")}
+            fallback={<DefaultLogo compact={compact} />}
+        />
         {!compact && (
           <div className="flex flex-col">
             <h1 className="text-lg font-bold font-headline leading-tight">{schoolData?.name || 'Mon École'}</h1>

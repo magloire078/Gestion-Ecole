@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -25,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "./ui/skeleton";
 import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { cn } from "@/lib/utils";
+import { SafeImage } from "./ui/safe-image";
 
 export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const isMounted = useHydrationFix();
@@ -71,7 +73,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
             <DropdownMenuTrigger asChild>
                  <button className="flex w-full items-center justify-center gap-2 rounded-full p-1 hover:bg-sidebar-accent">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/100`} alt={displayName} data-ai-hint="person face" />
+                         <SafeImage src={user?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
                         <AvatarFallback>{fallback}</AvatarFallback>
                     </Avatar>
                 </button>
@@ -140,7 +142,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={user?.photoURL || `https://picsum.photos/seed/${user?.uid}/100`} alt={displayName} data-ai-hint="person face" />
+            <SafeImage src={user?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
         </Button>
