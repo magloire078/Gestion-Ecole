@@ -51,7 +51,7 @@ export default function StudentReportPage() {
     );
   }
 
-  if (!student || student.schoolId !== schoolId) {
+  if (!student) {
     notFound();
   }
 
