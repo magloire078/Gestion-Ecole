@@ -84,7 +84,7 @@ export function ClassesListView({ cycleId, searchQuery }: ClassesListViewProps) 
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuItem asChild>
-                                                    <Link href={`/dashboard/classes/${classe.id}`}>
+                                                    <Link href={`/dashboard/pedagogie/structure`}>
                                                         Gérer la classe
                                                     </Link>
                                                 </DropdownMenuItem>
