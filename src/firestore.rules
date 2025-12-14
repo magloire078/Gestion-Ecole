@@ -50,7 +50,10 @@ service cloud.firestore {
     
     // Une fois l'école créée, seuls ses membres peuvent lire/écrire dans les sous-collections
     match /ecoles/{schoolId}/{document=**} {
-      allow read, write: if belongsToSchool(schoolId);
+      // Allow creation of sub-collection documents during school setup
+      allow create: if isAuth();
+      // Allow read/update/delete only for members of the school
+      allow read, update, delete: if belongsToSchool(schoolId);
     }
   }
 }
