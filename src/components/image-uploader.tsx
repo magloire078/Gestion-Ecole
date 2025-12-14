@@ -2,14 +2,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { useFirebaseApp } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, Upload } from 'lucide-react';
+import { useStorageUploader } from '@/hooks/use-storage-uploader';
 
 interface ImageUploaderProps {
   onUploadComplete: (url: string) => void;
@@ -18,65 +17,35 @@ interface ImageUploaderProps {
 }
 
 export function ImageUploader({ onUploadComplete, storagePath, children }: ImageUploaderProps) {
-  const firebaseApp = useFirebaseApp();
-  const storage = getStorage(firebaseApp);
-  const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  
+  const handleSuccess = (url: string) => {
+      onUploadComplete(url);
+      toast({
+        title: 'Téléversement réussi',
+        description: "L'image a été enregistrée.",
+      });
+  };
 
-  const [isUploading, setIsUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const handleError = (errorMessage: string) => {
+      toast({
+          variant: 'destructive',
+          title: 'Erreur de téléversement',
+          description: errorMessage,
+      });
+  };
+
+  const { uploadFile, isUploading, progress, error } = useStorageUploader({ 
+      onSuccess: handleSuccess, 
+      onError: handleError 
+  });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      handleUpload(file);
+      uploadFile(file, storagePath);
     }
-  };
-
-  const handleUpload = (file: File) => {
-    if (!file.type.startsWith('image/')) {
-        setError("Veuillez sélectionner un fichier image (jpg, png, etc.).");
-        return;
-    }
-
-    setIsUploading(true);
-    setError(null);
-    setProgress(0);
-
-    const fileName = `${new Date().getTime()}_${file.name}`;
-    const fullPath = `${storagePath}${fileName}`;
-    const storageRef = ref(storage, fullPath);
-
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setProgress(progress);
-      },
-      (error) => {
-        console.error("Upload error:", error);
-        setError("Échec du téléversement. Vérifiez les règles de sécurité de Firebase Storage.");
-        setIsUploading(false);
-        toast({
-          variant: 'destructive',
-          title: 'Erreur de téléversement',
-          description: "Vérifiez les permissions dans vos règles de stockage Firebase.",
-        });
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          onUploadComplete(downloadURL);
-          setIsUploading(false);
-          toast({
-            title: 'Téléversement réussi',
-            description: "L'image a été enregistrée.",
-          });
-        });
-      }
-    );
   };
   
   const triggerFileSelect = () => {
@@ -92,11 +61,11 @@ export function ImageUploader({ onUploadComplete, storagePath, children }: Image
             className="hidden"
             accept="image/*"
         />
-        <div onClick={triggerFileSelect}>
+        <div onClick={triggerFileSelect} className="cursor-pointer">
             {children}
         </div>
         
-        <Dialog open={isUploading} onOpenChange={setIsUploading}>
+        <Dialog open={isUploading}>
             <DialogContent hideCloseButton>
                 <DialogHeader>
                     <DialogTitle>Téléversement en cours...</DialogTitle>
