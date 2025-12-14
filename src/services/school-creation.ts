@@ -13,6 +13,7 @@ import type { school, user_root, staff, cycle, niveau, subject } from '@/lib/dat
 interface SchoolCreationData {
     name: string;
     address: string;
+    mainLogoUrl: string;
     city: string;
     country: string;
     phone: string;
@@ -49,7 +50,7 @@ export class SchoolCreationService {
     // 1. Create the main school document
     const schoolDocData: Partial<school> = {
       name: schoolData.name,
-      address: `${schoolData.address}, ${schoolData.city}, ${schoolData.country}`,
+      address: schoolData.address,
       phone: schoolData.phone,
       website: '', // Can be added later
       schoolCode: schoolCode,
@@ -58,6 +59,7 @@ export class SchoolCreationService {
       directorLastName: schoolData.directorLastName,
       directorPhone: '', // Can be added later
       createdAt: serverTimestamp() as unknown as string,
+      mainLogoUrl: schoolData.mainLogoUrl,
       subscription: {
         plan: 'Essentiel', // Start with a basic plan
         status: 'trialing',

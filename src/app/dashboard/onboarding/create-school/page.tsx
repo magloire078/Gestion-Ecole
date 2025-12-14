@@ -6,15 +6,34 @@ import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useAuth } from '@/firebase';
 import { 
   School, 
-  Globe, 
-  Sparkles,
-  User as UserIcon
+  User as UserIcon,
+  Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { SchoolCreationService } from '@/services/school-creation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImageUploader } from '@/components/image-uploader';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+
+const createSchoolSchema = z.object({
+  schoolName: z.string().min(3, "Le nom de l'école doit avoir au moins 3 caractères."),
+  address: z.string().optional(),
+  directorFirstName: z.string().min(2, "Le prénom est requis."),
+  directorLastName: z.string().min(2, "Le nom est requis."),
+  logoUrl: z.string().optional(),
+});
+
+type CreateSchoolFormValues = z.infer<typeof createSchoolSchema>;
+
 
 export default function CreateSchoolPage() {
   const router = useRouter();
@@ -23,21 +42,33 @@ export default function CreateSchoolPage() {
   const { user, loading: userLoading } = useUser();
   const { toast } = useToast();
 
-  const [step, setStep] = useState('details');
-  const [schoolData, setSchoolData] = useState({
-    name: '',
-    address: '',
-    city: '',
-    country: 'Côte d\'Ivoire',
-  });
-   const [directorData, setDirectorData] = useState({
-    firstName: user?.displayName?.split(' ')[0] || '',
-    lastName: user?.displayName?.split(' ').slice(1).join(' ') || '',
-  });
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const form = useForm<CreateSchoolFormValues>({
+    resolver: zodResolver(createSchoolSchema),
+    defaultValues: {
+      schoolName: '',
+      address: '',
+      directorFirstName: user?.displayName?.split(' ')[0] || '',
+      directorLastName: user?.displayName?.split(' ').slice(1).join(' ') || '',
+      logoUrl: '',
+    }
+  });
+  
+  // Sync user name to form once loaded
+  useState(() => {
+    if (user && !userLoading) {
+      form.reset({
+        directorFirstName: user.displayName?.split(' ')[0] || '',
+        directorLastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, userLoading, form.reset]);
+
+
+  const handleSubmit = async (values: CreateSchoolFormValues) => {
     if (!user || !user.uid || !user.email) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide.' });
         return;
@@ -47,19 +78,17 @@ export default function CreateSchoolPage() {
     const schoolCreationService = new SchoolCreationService(firestore);
     try {
       const result = await schoolCreationService.createSchool({
-        ...schoolData,
+        name: values.schoolName,
+        address: values.address || '',
+        mainLogoUrl: logoUrl || '',
         directorId: user.uid,
-        directorFirstName: directorData.firstName,
-        directorLastName: directorData.lastName,
+        directorFirstName: values.directorFirstName,
+        directorLastName: values.directorLastName,
         directorEmail: user.email,
-        phone: '', 
-        email: '',
-        academicYear: '2024-2025',
-        language: 'fr',
-        currency: 'XOF',
+        // Default values for other fields
+        city: '', country: '', phone: '', email: '', academicYear: '2024-2025', language: 'fr', currency: 'XOF',
       }, user.uid);
       
-      // Force a token refresh to get the new custom claims
       await auth.currentUser?.getIdToken(true); 
       
       toast({
@@ -68,7 +97,6 @@ export default function CreateSchoolPage() {
         duration: 5000,
       });
 
-      // Force a full page reload to ensure all states and guards are re-evaluated correctly.
       window.location.assign('/dashboard');
 
     } catch (error: any) {
@@ -78,63 +106,68 @@ export default function CreateSchoolPage() {
       setLoading(false);
     }
   };
+  
+  const handleLogoUploadComplete = (url: string) => {
+    setLogoUrl(url);
+    form.setValue('logoUrl', url);
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-muted/40 p-4 md:p-8">
+      <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Créer votre établissement
           </h1>
-          <p className="text-gray-600">
+          <p className="text-gray-600 dark:text-gray-400">
             Renseignez les informations de base pour démarrer.
           </p>
         </div>
         
-        <div className="max-w-2xl mx-auto animate-in fade-in-50">
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className="animate-in fade-in-50">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><School className="h-5 w-5 text-primary" /> Informations de l'école</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 
-                <div className="space-y-4 p-4 border rounded-lg">
-                    <h3 className="font-medium flex items-center gap-2"><School className="h-5 w-5 text-primary" /> Informations de l'école</h3>
-                    <div>
-                      <Label htmlFor="school-name">Nom de l'établissement *</Label>
-                      <Input id="school-name" required value={schoolData.name} onChange={(e) => setSchoolData({...schoolData, name: e.target.value})} placeholder="Ex: École Les Lauréats" />
+                <div className="flex items-center gap-6">
+                    <ImageUploader 
+                        onUploadComplete={handleLogoUploadComplete}
+                        storagePath="ecoles/logos/"
+                    >
+                        <Avatar className={cn("h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity", logoUrl && "border-2 border-primary")}>
+                            <AvatarImage src={logoUrl || undefined} alt="Logo de l'école" />
+                            <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
+                                <Upload className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">Logo</span>
+                            </AvatarFallback>
+                        </Avatar>
+                    </ImageUploader>
+                    <div className="flex-1 space-y-2">
+                        <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de l'établissement *</FormLabel><FormControl><Input placeholder="Ex: École Les Lauréats" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse</FormLabel><FormControl><Input placeholder="Ex: Abidjan, Cocody Angré" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="address">Adresse</Label>
-                          <Input id="address" value={schoolData.address} onChange={(e) => setSchoolData({...schoolData, address: e.target.value})} placeholder="Ex: Cocody Angré" />
-                        </div>
-                        <div>
-                          <Label htmlFor="city">Ville</Label>
-                          <Input id="city" value={schoolData.city} onChange={(e) => setSchoolData({...schoolData, city: e.target.value})} placeholder="Ex: Abidjan" />
-                        </div>
-                      </div>
                 </div>
 
-                <div className="space-y-4 p-4 border rounded-lg">
-                   <h3 className="font-medium flex items-center gap-2"><UserIcon className="h-5 w-5 text-primary" /> Informations du Directeur/Fondateur</h3>
+                <div className="space-y-4 pt-6 border-t">
+                   <h3 className="font-medium flex items-center gap-2 text-lg"><UserIcon className="h-5 w-5 text-primary" /> Informations du Directeur/Fondateur</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="director-firstname">Votre prénom *</Label>
-                          <Input id="director-firstname" required value={directorData.firstName} onChange={(e) => setDirectorData({...directorData, firstName: e.target.value})} />
-                        </div>
-                        <div>
-                          <Label htmlFor="director-lastname">Votre nom *</Label>
-                          <Input id="director-lastname" required value={directorData.lastName} onChange={(e) => setDirectorData({...directorData, lastName: e.target.value})} />
-                        </div>
+                       <FormField control={form.control} name="directorFirstName" render={({ field }) => (<FormItem><FormLabel>Votre prénom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                       <FormField control={form.control} name="directorLastName" render={({ field }) => (<FormItem><FormLabel>Votre nom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                 </div>
 
-                <div className="flex justify-end mt-8 pt-6 border-t">
-                  <Button type="submit" disabled={loading || !schoolData.name || !directorData.firstName || !directorData.lastName || userLoading}>
-                    {loading ? 'Création en cours...' : 'Créer mon école'}
-                  </Button>
-                </div>
-              </form>
-            </div>
-          </div>
+              </CardContent>
+              <CardFooter className="flex justify-end">
+                <Button type="submit" disabled={loading || userLoading}>
+                  {loading ? 'Création en cours...' : 'Créer mon école'}
+                </Button>
+              </CardFooter>
+            </form>
+          </Form>
+        </Card>
       </div>
     </div>
   );
