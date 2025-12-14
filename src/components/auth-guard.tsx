@@ -18,6 +18,77 @@ function AuthProtectionLoader() {
   );
 }
 
+// --- Panneau de Débogage Temporaire ---
+function DebugPanel() {
+  const { user } = useUser();
+  const { schoolId } = useSchoolData();
+  const firestore = useFirestore();
+  
+  const checkData = async () => {
+    if (!user) {
+      alert("Utilisateur non connecté.");
+      return;
+    }
+    try {
+      // 1. Vérifier le document utilisateur
+      const userRef = doc(firestore, 'utilisateurs', user.uid);
+      const userDoc = await getDoc(userRef);
+      const userData = userDoc.exists() ? userDoc.data() : 'N\'EXISTE PAS';
+      
+      console.log('--- DEBUG ---');
+      console.log('User doc:', userData);
+      
+      // 2. Chercher les écoles où l'utilisateur est directeur
+      const schoolsQuery = query(
+        collection(firestore, 'ecoles'),
+        where('directorId', '==', user.uid),
+        limit(1)
+      );
+      const schoolsSnapshot = await getDocs(schoolsQuery);
+      
+      console.log('Écoles trouvées où l\'utilisateur est directeur:', schoolsSnapshot.size);
+      
+      let schoolDataFromDirectorQuery: any = 'Pas d\'école trouvée';
+      if (!schoolsSnapshot.empty) {
+        schoolDataFromDirectorQuery = schoolsSnapshot.docs[0].data();
+        console.log('Détails de l\'école:', schoolsSnapshot.docs[0].id, schoolDataFromDirectorQuery);
+      }
+      
+      // 3. Afficher le schoolId du hook
+      console.log('schoolId actuel via le hook useSchoolData:', schoolId);
+      
+      alert(`
+        Résultats du Debug (voir la console pour plus de détails):
+        
+        1. Document /utilisateurs/${user.uid} :
+           ${JSON.stringify(userData, null, 2)}
+           
+        2. École où vous êtes directeur :
+           ${schoolsSnapshot.size > 0 ? `Oui, école ID: ${schoolsSnapshot.docs[0].id}` : 'Non'}
+           
+        3. schoolId détecté par l'application :
+           ${schoolId || 'null'}
+      `);
+
+    } catch (error) {
+      console.error("Erreur de débogage:", error);
+      alert(`Une erreur est survenue lors du débogage: ${error}`);
+    }
+  };
+  
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      <button 
+        onClick={checkData}
+        className="bg-red-500 text-white p-2 rounded text-sm shadow-lg hover:bg-red-600"
+      >
+        Debug School
+      </button>
+    </div>
+  );
+}
+
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: userLoading } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -73,13 +144,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           setIsChecking(false);
         }
       } else {
-        // N'a pas d'école - vérifier s'il en a réellement une
+        // N'a pas d'école - vérifier manuellement en base
         const hasSchool = await checkIfUserHasSchool(user.uid);
         
         if (hasSchool) {
-          // L'utilisateur a une école mais elle n'est pas encore détectée par le hook
-          // Rafraîchir les données et rediriger
-          router.refresh(); // Force Next.js à recharger les données côté serveur/client
+          // L'utilisateur a une école mais elle n'est pas encore détectée
+          // Rafraîchir les données pour forcer le hook à se mettre à jour
+          router.refresh();
         } else {
           // Vraiment pas d'école - aller à l'onboarding
           if (!isOnboardingPage) {
@@ -95,10 +166,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, schoolId, userLoading, schoolLoading, pathname, router]);
   
   // Afficher un loader pendant les vérifications
-  if (userLoading || schoolLoading || isChecking) {
+  if (userLoading || schoolLoading) {
     return <AuthProtectionLoader />;
   }
   
   // Rendre les enfants
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      <DebugPanel />
+    </>
+  );
 }
