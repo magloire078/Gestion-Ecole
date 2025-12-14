@@ -50,27 +50,21 @@ export function useSchoolData() {
             return;
         }
 
-        // Centralized logic to find schoolId
         const findSchoolId = async () => {
-            // 1. Try custom claims (fastest)
-            const claims = user.customClaims;
-            if (claims && claims.schoolId) {
-                setSchoolId(claims.schoolId);
-                return;
-            }
-
-            // 2. Fallback to reading the /utilisateurs document (crucial for post-onboarding)
+            setLoading(true); // Start loading when we begin search
             try {
                 const userRootRef = doc(firestore, 'utilisateurs', user.uid);
                 const docSnap = await getDoc(userRootRef);
-                if (docSnap.exists()) {
-                    setSchoolId(docSnap.data().schoolId || null);
+                if (docSnap.exists() && docSnap.data().schoolId) {
+                    setSchoolId(docSnap.data().schoolId);
                 } else {
-                    setSchoolId(null); // No document, so no school
+                    setSchoolId(null);
+                    setLoading(false); // Stop loading if no school is found
                 }
             } catch (error) {
                 console.error("Error fetching user root doc:", error);
                 setSchoolId(null);
+                setLoading(false);
             }
         };
 
@@ -87,11 +81,9 @@ export function useSchoolData() {
         }
         
         if (!schoolId) {
-            // Still waiting for schoolId to be determined
             return;
         }
 
-        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -102,7 +94,7 @@ export function useSchoolData() {
                 setSchoolData(null);
                 document.title = DEFAULT_TITLE;
             }
-            setLoading(false);
+            setLoading(false); // Stop loading once school data is fetched or confirmed non-existent
         }, (error) => {
              console.error("Error fetching school data:", error);
              setSchoolData(null);
