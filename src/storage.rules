@@ -1,22 +1,59 @@
-
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Match any file in the `ecoles` directory
-    match /ecoles/{schoolId}/{allPaths=**} {
-      // Allow read access to anyone (e.g., for public logos or student photos)
-      allow read;
-      
-      // Allow write access only to authenticated users whose custom claim `schoolId`
-      // matches the `schoolId` in the storage path.
-      allow write: if request.auth != null && request.auth.token.schoolId == schoolId;
+    function isAuth() {
+      return request.auth != null;
     }
 
-    // Default deny all other paths for security
-    match /{allPaths=**} {
-      allow read, write: if false;
+    function isSchoolMember(schoolId) {
+      return request.auth != null && request.auth.token.schoolId == schoolId;
     }
+
+    function getDirectorId(schoolId) {
+        return get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+    }
+
+    function isDirector(schoolId) {
+        return isAuth() && request.auth.uid == getDirectorId(schoolId);
+    }
+    
+    function isStaffMember(schoolId, userId) {
+        return exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId));
+    }
+    
+    function getStaffRole(userId, schoolId) {
+        return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId)).data.role;
+    }
+
+    // Accès en lecture pour tous les membres de l'école
+    match /ecoles/{schoolId}/{allPaths=**} {
+      allow read: if isSchoolMember(schoolId);
+    }
+
+    // Logos: seul le directeur peut écrire
+    match /ecoles/{schoolId}/logos/{imageId} {
+      allow write: if isDirector(schoolId);
+    }
+    
+    // Photos de profil des élèves: le directeur ou un enseignant peut écrire
+    match /ecoles/{schoolId}/eleves/{studentId}/avatars/{imageId} {
+       allow write: if isDirector(schoolId) || getStaffRole(request.auth.uid, schoolId) == 'enseignant';
+    }
+    
+    // Photos de profil du personnel: le directeur ou le membre lui-même peut écrire
+    match /ecoles/{schoolId}/staff/{staffId}/avatars/{imageId} {
+       allow write: if isDirector(schoolId) || request.auth.uid == staffId;
+    }
+    
+    // Photos de profil temporaires pendant l'inscription/création
+     match /ecoles/{schoolId}/student-photos/{imageId} {
+        allow write: if isSchoolMember(schoolId);
+     }
+     match /ecoles/{schoolId}/staff-photos/{imageId} {
+        allow write: if isSchoolMember(schoolId);
+     }
+
   }
 }
