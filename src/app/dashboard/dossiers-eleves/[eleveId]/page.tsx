@@ -101,7 +101,8 @@ export default function StudentProfilePage() {
   
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
-  const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const student = studentData;
 
   const gradesQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
   const paymentsQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
@@ -154,7 +155,6 @@ export default function StudentProfilePage() {
     );
   }
   
-  // This should only be called AFTER loading is false
   if (!student && !isLoading) {
     notFound();
   }
@@ -169,9 +169,6 @@ export default function StudentProfilePage() {
         await updateStudentPhoto(firestore, schoolId, eleveId, url);
         toast({ title: 'Photo de profil mise à jour !' });
     } catch (error) {
-        // The error is already emitted as a permission error in the service
-        // and will be caught by the FirebaseErrorListener.
-        // We can show a generic toast here if needed.
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la photo de profil.' });
     }
   };

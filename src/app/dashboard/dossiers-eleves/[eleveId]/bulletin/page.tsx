@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -24,6 +25,7 @@ export default function StudentReportPage() {
   const studentRef = useMemoFirebase(() => 
     (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
   , [firestore, schoolId, eleveId]);
+  const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);
 
   const gradesQuery = useMemoFirebase(() =>
     (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`)) : null
@@ -31,7 +33,6 @@ export default function StudentReportPage() {
   
   const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
 
-  const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
 
@@ -51,7 +52,7 @@ export default function StudentReportPage() {
     );
   }
 
-  if (!student) {
+  if (!student && !isLoading) {
     notFound();
   }
 
