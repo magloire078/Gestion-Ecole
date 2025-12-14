@@ -9,6 +9,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
@@ -79,6 +89,9 @@ export default function AdminRolesPage() {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<AdminRole & { id: string } | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [roleToDelete, setRoleToDelete] = useState<AdminRole & { id: string } | null>(null);
+
 
     const rolesQuery = useMemoFirebase(() => query(collection(firestore, 'admin_roles')), [firestore]);
     const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
@@ -95,7 +108,6 @@ export default function AdminRolesPage() {
         }
     });
 
-    // DEV ONLY: Grant admin rights to a specific email for development
     const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
 
     useEffect(() => {
@@ -128,6 +140,11 @@ export default function AdminRolesPage() {
         setEditingRole(role);
         setIsFormOpen(true);
     };
+    
+    const handleOpenDeleteDialog = (role: AdminRole & { id: string }) => {
+        setRoleToDelete(role);
+        setIsDeleteDialogOpen(true);
+    };
 
     const handleSaveRole = async (values: RoleFormValues) => {
         try {
@@ -148,6 +165,26 @@ export default function AdminRolesPage() {
             errorEmitter.emit('permission-error', permissionError);
         }
     };
+    
+    const handleDeleteRole = async () => {
+        if (!roleToDelete) return;
+        
+        try {
+            const roleRef = doc(firestore, 'admin_roles', roleToDelete.id);
+            await deleteDoc(roleRef);
+            toast({
+                title: "Rôle supprimé",
+                description: `Le rôle "${roleToDelete.name}" a été supprimé.`,
+            });
+        } catch (error) {
+            const permissionError = new FirestorePermissionError({ path: `admin_roles/${roleToDelete.id}`, operation: 'delete' });
+            errorEmitter.emit('permission-error', permissionError);
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setRoleToDelete(null);
+        }
+    };
+
 
     const isLoading = userLoading || rolesLoading;
 
@@ -207,7 +244,9 @@ export default function AdminRolesPage() {
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenForm(role)}>
                                                 <Edit className="h-4 w-4" />
                                             </Button>
-                                            {/* La suppression sera ajoutée plus tard */}
+                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleOpenDeleteDialog(role)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
                                         </TableCell>
                                     </TableRow>
                                 )) : (
@@ -281,6 +320,23 @@ export default function AdminRolesPage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            
+             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous absolument sûr(e) ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. Le rôle <strong>"{roleToDelete?.name}"</strong> sera supprimé.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteRole} className="bg-destructive hover:bg-destructive/90">
+                            Oui, supprimer ce rôle
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
