@@ -68,8 +68,8 @@ export default function CreateSchoolPage() {
         duration: 5000,
       });
 
-      // Use router.push to allow AuthGuard to re-evaluate the user state correctly
-      router.push('/dashboard');
+      // Force a full page reload to ensure all states and guards are re-evaluated correctly.
+      window.location.assign('/dashboard');
 
     } catch (error: any) {
       console.error(error);

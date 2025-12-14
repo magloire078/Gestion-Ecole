@@ -83,10 +83,11 @@ export default function OnboardingPage() {
 
         toast({
             title: 'Bienvenue !',
-            description: `Vous avez rejoint l'établissement ${schoolDoc.data().name}.`,
+            description: `Vous avez rejoint l'établissement ${schoolDoc.data().name}. Redirection en cours...`,
         });
 
-        router.push('/dashboard');
+        // Force a full page reload to ensure all states and guards are re-evaluated correctly.
+        window.location.assign('/dashboard');
 
     } catch(error: any) {
          const permissionError = new FirestorePermissionError({
