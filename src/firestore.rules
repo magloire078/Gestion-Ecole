@@ -14,7 +14,6 @@ service cloud.firestore {
       return request.auth.token.admin == true;
     }
 
-    // It's more secure and performant to get schoolId from the token
     function getUserSchoolId() {
       return request.auth.token.schoolId;
     }
@@ -23,7 +22,6 @@ service cloud.firestore {
       return isAuth() && getUserSchoolId() == schoolId;
     }
     
-    // For read/update operations on existing documents
     function isSchoolDirector(schoolId) {
        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
        return isAuth() && schoolDoc.data.directorId == request.auth.uid;
@@ -68,7 +66,7 @@ service cloud.firestore {
     match /utilisateurs/{userId} {
       allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
       // A user can create their own root doc, but not overwrite it.
-      allow create: if isAuth() && request.auth.uid == userId && !exists(path);
+      allow create: if isAuth() && request.auth.uid == userId;
       allow update: if isAuth() && request.auth.uid == userId;
       allow delete: if isAdmin();
     }
@@ -90,16 +88,34 @@ service cloud.firestore {
       match /personnel/{staffId} {
         allow read, list: if isUserInSchool(schoolId);
         // Director can add staff. A user can create their own profile when joining.
-        allow create: if (isAuth() && request.auth.uid == staffId) || isSchoolDirector(schoolId) || isAdmin();
+        allow create: if (isAuth() && request.auth.uid == staffId) || (isAuth() && request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId);
         allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
 
       // --- Pedagogical Subcollections ---
-      match /cycles/{cycleId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
-      match /niveaux/{niveauId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
-      match /classes/{classId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
-      match /matieres/{subjectId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
-      match /emploi_du_temps/{entryId} { allow read, list: if isUserInSchool(schoolId); allow write: if isSchoolDirector(schoolId) || isAdmin(); }
+      match /cycles/{cycleId} { 
+          allow read, list: if isUserInSchool(schoolId); 
+          allow create: if isAuth() && request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+          allow update, delete: if isSchoolDirector(schoolId) || isAdmin(); 
+      }
+      match /niveaux/{niveauId} { 
+          allow read, list: if isUserInSchool(schoolId); 
+          allow create: if isAuth() && request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+          allow update, delete: if isSchoolDirector(schoolId) || isAdmin(); 
+      }
+      match /classes/{classId} { 
+          allow read, list: if isUserInSchool(schoolId); 
+          allow write: if isSchoolDirector(schoolId) || isAdmin(); 
+      }
+      match /matieres/{subjectId} { 
+          allow read, list: if isUserInSchool(schoolId); 
+          allow create: if isAuth() && request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+          allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
+      }
+      match /emploi_du_temps/{entryId} { 
+          allow read, list: if isUserInSchool(schoolId); 
+          allow write: if isSchoolDirector(schoolId) || isAdmin(); 
+      }
 
       // --- Student-related Subcollections ---
       match /eleves/{studentId} {
