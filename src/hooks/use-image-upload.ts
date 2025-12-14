@@ -4,6 +4,8 @@
 import { useState } from 'react';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useFirebaseApp } from '@/firebase';
+import { resizeImage } from '@/lib/image-optimization';
+
 
 interface UseImageUploadProps {
     onSuccess?: (url: string, path: string) => void;
@@ -20,7 +22,7 @@ export function useImageUpload({ onSuccess, onError, onDeleteSuccess }: UseImage
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
 
-    const upload = (file: File, path: string, maxSizeMB: number = 5) => {
+    const upload = async (file: File, path: string, maxSizeMB: number = 5, resizeWidth: number = 1024) => {
         if (file.size > maxSizeMB * 1024 * 1024) {
             const errorMsg = `L'image ne doit pas dépasser ${maxSizeMB}MB.`;
             setError(errorMsg);
@@ -39,37 +41,46 @@ export function useImageUpload({ onSuccess, onError, onDeleteSuccess }: UseImage
         setError(null);
         setProgress(0);
 
-        const timestamp = Date.now();
-        const filename = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
-        const fullPath = `${path}${filename}`;
-        const storageRef = ref(storage, fullPath);
+        try {
+            const imageBlob = await resizeImage(file, resizeWidth);
+            
+            const timestamp = Date.now();
+            const filename = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
+            const fullPath = `${path}${filename}`;
+            const storageRef = ref(storage, fullPath);
 
-        const uploadTask = uploadBytesResumable(storageRef, file);
+            const uploadTask = uploadBytesResumable(storageRef, imageBlob);
 
-        uploadTask.on(
-            'state_changed',
-            (snapshot) => {
-                const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setProgress(currentProgress);
-            },
-            (uploadError) => {
-                const errorMsg = "Échec du téléversement. Vérifiez les règles de sécurité de Firebase Storage.";
-                setError(errorMsg);
-                onError?.(errorMsg);
-                setIsUploading(false);
-            },
-            () => {
-                getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                    onSuccess?.(downloadURL, fullPath);
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const currentProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    setProgress(currentProgress);
+                },
+                (uploadError) => {
+                    const errorMsg = "Échec du téléversement. Vérifiez les règles de sécurité de Firebase Storage.";
+                    setError(errorMsg);
+                    onError?.(errorMsg);
                     setIsUploading(false);
-                }).catch(urlError => {
-                     const errorMsg = "Impossible de récupérer l'URL de l'image après le téléversement.";
-                     setError(errorMsg);
-                     onError?.(errorMsg);
-                     setIsUploading(false);
-                });
-            }
-        );
+                },
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+                        onSuccess?.(downloadURL, fullPath);
+                        setIsUploading(false);
+                    }).catch(urlError => {
+                         const errorMsg = "Impossible de récupérer l'URL de l'image après le téléversement.";
+                         setError(errorMsg);
+                         onError?.(errorMsg);
+                         setIsUploading(false);
+                    });
+                }
+            );
+        } catch (resizeError: any) {
+            const errorMsg = `Erreur lors du redimensionnement de l'image: ${resizeError.message}`;
+            setError(errorMsg);
+            onError?.(errorMsg);
+            setIsUploading(false);
+        }
     };
 
     const remove = async (filePath: string) => {
@@ -90,15 +101,16 @@ export function useImageUpload({ onSuccess, onError, onDeleteSuccess }: UseImage
     
     const getPathFromUrl = (url: string): string | null => {
         try {
-            const urlObject = new URL(url);
-            if (urlObject.hostname === 'firebasestorage.googleapis.com') {
-                const decodedPath = decodeURIComponent(urlObject.pathname);
-                // The path starts with /v0/b/{bucket}/o/{path}
-                const path = decodedPath.substring(decodedPath.indexOf('/o/') + 3);
+            // Check if the URL is from Firebase Storage
+            if (url.includes('firebasestorage.googleapis.com')) {
+                const decodedUrl = decodeURIComponent(url);
+                // Extract the path after '/o/'
+                const path = decodedUrl.split('/o/')[1].split('?')[0];
                 return path;
             }
             return null;
         } catch (e) {
+            console.error("Error parsing URL:", e);
             return null;
         }
     }
