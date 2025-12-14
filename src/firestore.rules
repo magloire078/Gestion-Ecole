@@ -1,5 +1,4 @@
 
-// Règle de sécurité renforcée (Phase 1)
 rules_version = '2';
 
 service cloud.firestore {
@@ -34,9 +33,8 @@ service cloud.firestore {
 
     // Les admins peuvent gérer les rôles
     match /admin_roles/{roleId} {
-      allow read, write: if isAdmin();
-      // Allow list for admins
-      allow list: if isAdmin();
+      // Admins can perform all actions on roles
+      allow read, write, list, delete: if isAdmin();
     }
     
     // --- School Collections ---
@@ -59,3 +57,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

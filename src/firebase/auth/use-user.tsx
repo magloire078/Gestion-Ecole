@@ -30,7 +30,7 @@ export function useUser() {
         if (authUser) {
             // This is now simpler. We just get the user and their claims.
             // The logic to fetch schoolId and profile is delegated.
-            const tokenResult = await authUser.getIdTokenResult();
+            const tokenResult = await authUser.getIdTokenResult(true); // Force refresh
             setUser({
                 ...authUser,
                 customClaims: tokenResult.claims
@@ -46,3 +46,5 @@ export function useUser() {
 
   return {user, loading};
 }
+
+    
