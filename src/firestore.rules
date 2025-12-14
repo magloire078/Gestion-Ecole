@@ -10,8 +10,8 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Pour l'instant, seul l'admin a ce claim.
-      return request.auth.token.admin == true;
+      // Pour l'instant, seul l'admin a ce claim, ou l'email hardcodé.
+      return request.auth.token.admin == true || request.auth.token.email == "magloire078@gmail.com";
     }
 
     function isOwner(userId) {
@@ -34,6 +34,8 @@ service cloud.firestore {
     // Les admins peuvent gérer les rôles
     match /admin_roles/{roleId} {
       allow read, write: if isAdmin();
+      // Allow list for admins
+      allow list: if isAdmin();
     }
     
     // --- School Collections ---
@@ -44,16 +46,15 @@ service cloud.firestore {
        allow get: if isAuth();
        allow list: if isAuth(); // Autorise la recherche d'école par code
        allow create: if isAuth(); // Permet la création initiale de l'école
-       allow update: if belongsToSchool(schoolId);
+       allow update: if belongsToSchool(schoolId) || isAdmin();
        allow delete: if isAdmin(); // Seuls les admins peuvent supprimer une école
     }
     
-    // Une fois l'école créée, seuls ses membres peuvent lire/écrire dans les sous-collections
+    // Une fois l'école créée, seuls ses membres (ou un admin) peuvent lire/écrire dans les sous-collections.
+    // La création est autorisée pour tout utilisateur authentifié pour permettre l'onboarding.
     match /ecoles/{schoolId}/{document=**} {
-      // Allow creation of sub-collection documents during school setup
       allow create: if isAuth();
-      // Allow read/update/delete only for members of the school
-      allow read, update, delete: if belongsToSchool(schoolId);
+      allow read, update, delete: if belongsToSchool(schoolId) || isAdmin();
     }
   }
 }
