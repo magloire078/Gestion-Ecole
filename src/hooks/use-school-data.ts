@@ -41,60 +41,59 @@ export function useSchoolData() {
             setLoading(true);
             return;
         }
-
         if (!user) {
             setSchoolId(null);
-            setSchoolData(null);
             setLoading(false);
             return;
         }
 
         const findSchoolForUser = async (userId: string) => {
             setLoading(true);
-            
-            // Étape 1: Vérifier le document utilisateur
-            const userRootRef = doc(firestore, 'utilisateurs', userId);
-            const userDoc = await getDoc(userRootRef);
-
-            if (userDoc.exists() && userDoc.data().schoolId) {
-                setSchoolId(userDoc.data().schoolId);
-                setLoading(false);
-                return;
-            }
-
-            // Étape 2: Si l'étape 1 échoue, chercher si l'utilisateur est directeur d'une école
-            const schoolsRef = collection(firestore, 'ecoles');
-            const q = query(schoolsRef, where("directorId", "==", userId));
-            const schoolQuerySnapshot = await getDocs(q);
-
-            if (!schoolQuerySnapshot.empty) {
-                const foundSchoolDoc = schoolQuerySnapshot.docs[0];
-                const foundSchoolId = foundSchoolDoc.id;
-                
-                // Étape 3: Correction automatique - mettre à jour le document utilisateur
-                try {
-                    await setDoc(userRootRef, { schoolId: foundSchoolId }, { merge: true });
-                    setSchoolId(foundSchoolId);
-                } catch(e) {
-                     console.error("Failed to auto-correct user document:", e);
+            try {
+                // Method 1: Check the user document for a schoolId
+                const userDocRef = doc(firestore, 'utilisateurs', userId);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists() && userDoc.data()?.schoolId) {
+                    const foundSchoolId = userDoc.data().schoolId;
+                    const schoolDoc = await getDoc(doc(firestore, 'ecoles', foundSchoolId));
+                    if (schoolDoc.exists()) {
+                         setSchoolId(foundSchoolId);
+                         return;
+                    } else {
+                        // Data is inconsistent, the referenced school doesn't exist.
+                        // Let's proceed to the next check.
+                    }
                 }
-                setLoading(false);
-                return;
-            }
 
-            // Étape 4: Aucune école trouvée
-            setSchoolId(null);
-            setLoading(false);
+                // Method 2: If user doc has no schoolId, check if the user is a director of any school
+                const schoolsQuery = query(collection(firestore, 'ecoles'), where('directorId', '==', userId), limit(1));
+                const schoolsSnapshot = await getDocs(schoolsQuery);
+
+                if (!schoolsSnapshot.empty) {
+                    const foundSchoolDoc = schoolsSnapshot.docs[0];
+                    const foundSchoolId = foundSchoolDoc.id;
+                    setSchoolId(foundSchoolId);
+                    
+                    // Auto-correction: update the user document with the found schoolId
+                    await setDoc(userDocRef, { schoolId: foundSchoolId }, { merge: true });
+
+                } else {
+                    setSchoolId(null); // No school found for this user
+                }
+            } catch (error) {
+                console.error("Error fetching user's school data:", error);
+                setSchoolId(null);
+            } finally {
+                setLoading(false);
+            }
         };
 
         findSchoolForUser(user.uid);
-
     }, [user, userLoading, firestore]);
 
     useEffect(() => {
         if (schoolId === null) {
             setSchoolData(null);
-            setLoading(false);
             document.title = DEFAULT_TITLE;
             return;
         }
@@ -103,7 +102,6 @@ export function useSchoolData() {
             return;
         }
 
-        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -112,14 +110,12 @@ export function useSchoolData() {
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
-                setSchoolId(null); // L'école référencée n'existe pas, réinitialiser
+                setSchoolId(null); // The referenced school does not exist, reset.
                 document.title = DEFAULT_TITLE;
             }
-            setLoading(false);
         }, (error) => {
              console.error("Error fetching school data:", error);
              setSchoolData(null);
-             setLoading(false);
         });
 
         return () => unsubscribe();
