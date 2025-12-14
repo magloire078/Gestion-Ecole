@@ -106,7 +106,8 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MobileNav() {
   const { user } = useUser();
-  const isAdmin = user?.customClaims?.role === 'admin';
+  // DEV ONLY: Grant admin rights to a specific email for development
+  const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "VOTRE_EMAIL_ADMIN@example.com";
 
   return (
     <div className='flex flex-col h-full'>

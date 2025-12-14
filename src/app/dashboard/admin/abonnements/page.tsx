@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect } from 'react';
@@ -53,8 +54,11 @@ export default function AdminSubscriptionsPage() {
 
     const schools: School[] = schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [];
 
+    // DEV ONLY: Grant admin rights to a specific email for development
+    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "VOTRE_EMAIL_ADMIN@example.com";
+
     useEffect(() => {
-        if (!userLoading && (!user || user.customClaims?.role !== 'admin')) {
+        if (!userLoading && !isAdmin) {
             toast({
                 variant: 'destructive',
                 title: 'Accès non autorisé',
@@ -62,7 +66,7 @@ export default function AdminSubscriptionsPage() {
             });
             router.push('/dashboard');
         }
-    }, [user, userLoading, router, toast]);
+    }, [user, userLoading, router, toast, isAdmin]);
 
     const handleOpenDeleteDialog = (school: School) => {
         setSchoolToDelete(school);
@@ -94,7 +98,7 @@ export default function AdminSubscriptionsPage() {
 
     const isLoading = userLoading || schoolsLoading;
 
-    if (!isMounted || isLoading || !user || user.customClaims?.role !== 'admin') {
+    if (!isMounted || isLoading || !isAdmin) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-1/2" />

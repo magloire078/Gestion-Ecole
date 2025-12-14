@@ -61,7 +61,8 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const displayName = user?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  const isAdmin = user?.customClaims?.role === 'admin';
+  // DEV ONLY: Grant admin rights to a specific email for development
+  const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "VOTRE_EMAIL_ADMIN@example.com";
   const userRole = isAdmin ? 'Admin' : user?.profile?.role;
 
   if (collapsed) {
@@ -117,6 +118,10 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                       <DropdownMenuItem onClick={() => router.push('/dashboard/admin/abonnements')}>
                         <ShieldCheck className="mr-2 h-4 w-4" />
                         <span>Admin Abonnements</span>
+                      </DropdownMenuItem>
+                       <DropdownMenuItem onClick={() => router.push('/dashboard/admin/roles')}>
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        <span>Gestion des Rôles</span>
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </>
@@ -181,6 +186,10 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
               <DropdownMenuItem onClick={() => router.push('/dashboard/admin/abonnements')}>
                 <ShieldCheck className="mr-2 h-4 w-4" />
                 <span>Admin Abonnements</span>
+              </DropdownMenuItem>
+               <DropdownMenuItem onClick={() => router.push('/dashboard/admin/roles')}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <span>Gestion des Rôles</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </>

@@ -133,7 +133,8 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
 
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
-  const isAdmin = user?.customClaims?.role === 'admin';
+  // DEV ONLY: Grant admin rights to a specific email for development
+  const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "VOTRE_EMAIL_ADMIN@example.com";
   const pathname = usePathname();
   
   if (collapsed) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -94,8 +95,11 @@ export default function AdminRolesPage() {
         }
     });
 
+    // DEV ONLY: Grant admin rights to a specific email for development
+    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "VOTRE_EMAIL_ADMIN@example.com";
+
     useEffect(() => {
-        if (!userLoading && (!user || user.customClaims?.role !== 'admin')) {
+        if (!userLoading && !isAdmin) {
             toast({
                 variant: 'destructive',
                 title: 'Accès non autorisé',
@@ -103,7 +107,7 @@ export default function AdminRolesPage() {
             });
             router.push('/dashboard');
         }
-    }, [user, userLoading, router, toast]);
+    }, [user, userLoading, router, toast, isAdmin]);
 
     useEffect(() => {
         if (isFormOpen) {
@@ -147,7 +151,7 @@ export default function AdminRolesPage() {
 
     const isLoading = userLoading || rolesLoading;
 
-    if (isLoading || !user || user.customClaims?.role !== 'admin') {
+    if (isLoading || !isAdmin) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-1/2" />
