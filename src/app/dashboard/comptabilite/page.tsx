@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -373,8 +372,10 @@ export default function AccountingPage() {
                         </TableCell>
                         <TableCell className="text-right">
                         <DropdownMenu>
-                                <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
-                                    <MoreHorizontal />
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <MoreHorizontal />
+                                    </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>

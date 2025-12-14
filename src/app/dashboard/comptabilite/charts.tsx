@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Pie, PieChart, Cell } from 'recharts';
@@ -104,8 +103,8 @@ export function AccountingCharts({ transactions }: AccountingChartsProps) {
                         <YAxis tickLine={false} axisLine={false} tickMargin={8} />
                         <ChartTooltipContent />
                         <Legend />
-                        <Bar dataKey="revenus" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="depenses" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="revenus" fill="var(--color-revenus)" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="depenses" fill="var(--color-depenses)" radius={[4, 4, 0, 0]} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>
@@ -131,7 +130,11 @@ export function AccountingCharts({ transactions }: AccountingChartsProps) {
                                 paddingAngle={5}
                                 labelLine={false}
                                 label={renderCustomizedLabel}
-                            />
+                            >
+                               {categoryData.revenue.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                                ))}
+                            </Pie>
                              <Legend iconSize={10} layout="vertical" verticalAlign="middle" align="right" />
                         </PieChart>
                     </ChartContainer>
