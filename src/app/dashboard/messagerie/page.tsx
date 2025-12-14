@@ -46,7 +46,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from "@/components/ui/checkbox";
 import type { class_type as Class } from '@/lib/data-types';
-import { useHydrationFix } from "@/hooks/use-hydration-fix";
+import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 const messageSchema = z.object({
     title: z.string().min(1, { message: "Le titre est requis." }),
