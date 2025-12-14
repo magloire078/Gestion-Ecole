@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { collection, doc, getDoc, query, where, getDocs, limit } from 'firebase/firestore';
 
+const DEBUG_MODE = true; // À désactiver après résolution
+
 function AuthProtectionLoader() {
   return (
     <div className="flex h-screen w-full items-center justify-center">
@@ -97,76 +99,67 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [isChecking, setIsChecking] = useState(true);
   
-  // Fonction pour vérifier si l'utilisateur a réellement une école
-  async function checkIfUserHasSchool(userId: string): Promise<boolean> {
-    try {
-      if (!firestore) return false;
-      const [userDoc, schoolsQuery] = await Promise.all([
-        getDoc(doc(firestore, 'utilisateurs', userId)),
-        getDocs(query(collection(firestore, 'ecoles'), where('directorId', '==', userId), limit(1)))
-      ]);
-      
-      return (userDoc.exists() && userDoc.data()?.schoolId) || 
-             !schoolsQuery.empty;
-    } catch (error) {
-      console.error('Error checking school:', error);
-      return false;
-    }
-  }
-
   useEffect(() => {
     // Attendre que les chargements initiaux soient terminés
     if (userLoading || schoolLoading) {
       return;
     }
-    
-    const checkAccess = async () => {
-      
-      const isAuthPage = pathname === '/login';
-      const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
-      
-      // Utilisateur non connecté
-      if (!user) {
-        if (!isAuthPage) {
-          router.replace('/login');
-        } else {
-          setIsChecking(false);
-        }
-        return;
-      }
-      
-      // Utilisateur connecté
-      if (schoolId) {
-        // A une école - rediriger du login/onboarding vers le dashboard
-        if (isAuthPage || isOnboardingPage) {
-          router.replace('/dashboard');
-        } else {
-          setIsChecking(false);
-        }
+
+    const isAuthPage = pathname === '/login';
+    const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+
+    // Utilisateur non connecté
+    if (!user) {
+      if (!isAuthPage) {
+        router.replace('/login');
       } else {
-        // N'a pas d'école - vérifier manuellement en base
-        const hasSchool = await checkIfUserHasSchool(user.uid);
-        
-        if (hasSchool) {
-          // L'utilisateur a une école mais elle n'est pas encore détectée
-          // Rafraîchir les données pour forcer le hook à se mettre à jour
-          router.refresh();
-        } else {
-          // Vraiment pas d'école - aller à l'onboarding
-          if (!isOnboardingPage) {
-            router.replace('/dashboard/onboarding');
-          } else {
-            setIsChecking(false);
-          }
-        }
+        setIsChecking(false);
       }
-    };
-    
-    checkAccess();
-  }, [user, schoolId, userLoading, schoolLoading, pathname, router]);
+      return;
+    }
+
+    // Utilisateur connecté
+    if (schoolId) {
+      // A une école - rediriger du login/onboarding vers le dashboard
+      if (isAuthPage || isOnboardingPage) {
+        router.replace('/dashboard');
+      } else {
+        setIsChecking(false);
+      }
+    } else {
+        // N'a pas (encore) d'école
+        if (DEBUG_MODE && !isOnboardingPage) {
+            console.log('DEBUG: user has no schoolId, checking manually...');
+            
+            // Vérifier manuellement avec un délai
+            setTimeout(async () => {
+              const schoolsQuery = query(collection(firestore, 'ecoles'), where('directorId', '==', user.uid), limit(1));
+              const schoolsSnapshot = await getDocs(schoolsQuery);
+              
+              if (!schoolsSnapshot.empty) {
+                console.log('DEBUG: Found school, forcing navigation');
+                router.replace('/dashboard');
+              } else {
+                 // Vraiment pas d'école - aller à l'onboarding
+                if (!isOnboardingPage) {
+                    router.replace('/dashboard/onboarding');
+                } else {
+                    setIsChecking(false);
+                }
+              }
+            }, 1000);
+        } else {
+             if (!isOnboardingPage) {
+                router.replace('/dashboard/onboarding');
+            } else {
+                setIsChecking(false);
+            }
+        }
+    }
+  }, [user, schoolId, userLoading, schoolLoading, pathname, router, firestore]);
   
   // Afficher un loader pendant les vérifications
-  if (userLoading || schoolLoading) {
+  if (userLoading || schoolLoading || isChecking) {
     return <AuthProtectionLoader />;
   }
   
