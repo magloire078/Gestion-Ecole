@@ -2,69 +2,78 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { Skeleton } from './ui/skeleton';
 
 function AuthProtectionLoader() {
   return (
-    <div className="flex h-screen w-full items-center justify-center">
-      <div className="text-center">
-        <p className="text-lg font-semibold">Chargement...</p>
-        <p className="text-muted-foreground">Vérification de votre compte et de votre école.</p>
+    <div className="flex h-screen w-full items-center justify-center p-4">
+      <div className="w-full max-w-md space-y-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-10 w-full" />
       </div>
     </div>
   );
 }
 
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading: userLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [isVerified, setIsVerified] = useState(false);
-
+  
   useEffect(() => {
-    // We wait until user loading is complete
     if (userLoading) {
-      return;
+      return; // Ne rien faire tant que l'utilisateur n'est pas chargé
     }
 
-    // If no user is found, redirect to login page
+    const isAuthPage = pathname === '/login';
+    const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+    const schoolId = user?.customClaims?.schoolId;
+
     if (!user) {
-      if (pathname !== '/login') {
+      // Si pas d'utilisateur et pas sur la page de login, rediriger vers le login
+      if (!isAuthPage) {
         router.replace('/login');
-      } else {
-        setIsVerified(true);
-      }
-      return;
-    }
-
-    // User is logged in, now check for school association
-    const schoolId = user.customClaims?.schoolId;
-
-    if (schoolId) {
-      // User is associated with a school.
-      if (pathname.startsWith('/dashboard/onboarding')) {
-        // If they land on onboarding, redirect them to the main dashboard.
-        router.replace('/dashboard');
-      } else {
-        // Otherwise, they are authorized to see the page.
-        setIsVerified(true);
       }
     } else {
-      // User is not associated with a school.
-      if (pathname.startsWith('/dashboard/onboarding') || pathname === '/login') {
-        // Allow access to onboarding pages or login.
-        setIsVerified(true);
+      // Si l'utilisateur est connecté
+      if (schoolId) {
+        // Si l'utilisateur a une école et est sur une page d'onboarding/login, le rediriger au dashboard
+        if (isOnboardingPage || isAuthPage) {
+          router.replace('/dashboard');
+        }
       } else {
-        // For any other page, redirect to the onboarding flow.
-        router.replace('/dashboard/onboarding');
+        // Si l'utilisateur n'a pas d'école et n'est pas sur une page d'onboarding/login, le rediriger
+        if (!isOnboardingPage && !isAuthPage) {
+          router.replace('/dashboard/onboarding');
+        }
       }
     }
-
   }, [user, userLoading, pathname, router]);
 
-  if (userLoading || !isVerified) {
+  // Affiche le loader si l'utilisateur est en cours de chargement
+  // ou si la logique de redirection n'a pas encore déterminé la destination finale.
+  if (userLoading) {
     return <AuthProtectionLoader />;
+  }
+
+  // Logique pour déterminer si on doit afficher les enfants ou attendre la redirection
+  const isAuthPage = pathname === '/login';
+  const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+  
+  if (!user && !isAuthPage) {
+    return <AuthProtectionLoader />; // Redirection vers login en cours
+  }
+  
+  if (user && !user.customClaims?.schoolId && !isOnboardingPage && !isAuthPage) {
+    return <AuthProtectionLoader />; // Redirection vers onboarding en cours
+  }
+
+  if (user && user.customClaims?.schoolId && (isOnboardingPage || isAuthPage)) {
+    return <AuthProtectionLoader />; // Redirection vers dashboard en cours
   }
 
   return <>{children}</>;
