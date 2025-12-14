@@ -155,7 +155,7 @@ export default function StudentProfilePage() {
   }
   
   // This should only be called AFTER loading is false
-  if (!student) {
+  if (!student && !isLoading) {
     notFound();
   }
 

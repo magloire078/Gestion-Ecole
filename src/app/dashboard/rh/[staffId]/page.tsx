@@ -74,7 +74,7 @@ export default function StaffProfilePage() {
     );
   }
   
-  if (!staffMember) {
+  if (!staffMember && !isLoading) {
     notFound();
   }
 

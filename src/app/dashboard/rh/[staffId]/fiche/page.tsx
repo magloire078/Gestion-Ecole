@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -33,7 +34,7 @@ export default function TeacherSheetPage() {
     );
   }
 
-  if (!staffData) {
+  if (!staffData && !isLoading) {
     notFound();
   }
 
