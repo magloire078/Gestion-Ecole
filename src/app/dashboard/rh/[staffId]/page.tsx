@@ -2,7 +2,7 @@
 
 'use client';
 
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book } from 'lucide-react';
@@ -17,7 +17,6 @@ import type { staff as Staff, class_type as Class, school as OrganizationSetting
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
-import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
 import { SafeImage } from '@/components/ui/safe-image';
@@ -36,6 +35,7 @@ const getStatusBadgeVariant = (status: Staff['status']) => {
 
 export default function StaffProfilePage() {
   const params = useParams();
+  const router = useRouter();
   const staffId = params.staffId as string;
   
   const firestore = useFirestore();
@@ -43,7 +43,6 @@ export default function StaffProfilePage() {
   const { toast } = useToast();
 
   const [isPayslipOpen, setIsPayslipOpen] = useState(false);
-  const [isInfoSheetOpen, setIsInfoSheetOpen] = useState(false);
   const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
   const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
   
@@ -139,7 +138,7 @@ export default function StaffProfilePage() {
              <Button variant="outline" onClick={handleGeneratePayslip}>
               <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Bulletin de Paie</span>
             </Button>
-            <Button variant="outline" onClick={() => setIsInfoSheetOpen(true)}>
+            <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
               <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
             </Button>
         </div>
@@ -239,18 +238,6 @@ export default function StaffProfilePage() {
                   </div>
               )}
             </div>
-        </DialogContent>
-      </Dialog>
-      
-      <Dialog open={isInfoSheetOpen} onOpenChange={setIsInfoSheetOpen}>
-        <DialogContent className="max-w-4xl p-0">
-          <DialogHeader className="p-6 pb-0">
-            <DialogTitle>Fiche de renseignements</DialogTitle>
-            <DialogDescription>
-                Aperçu de la fiche pour {staffMember.firstName} {staffMember.lastName}.
-            </DialogDescription>
-          </DialogHeader>
-          {schoolData && <TeacherInfoSheet teacher={staffMember as Staff & {id: string}} school={schoolData} />}
         </DialogContent>
       </Dialog>
     </>
