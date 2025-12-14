@@ -2,7 +2,7 @@
 import * as React from 'react';
 import {initializeApp, getApp, getApps, FirebaseApp} from 'firebase/app';
 import {getAuth, Auth} from 'firebase/auth';
-import {getFirestore, Firestore, initializeFirestore, memoryLocalCache} from 'firebase/firestore';
+import {getFirestore, Firestore, initializeFirestore, persistentLocalCache, memoryLocalCache} from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import {firebaseConfig} from './config';
 export * from './provider';
@@ -21,15 +21,13 @@ function initializeFirebase() {
     if (!getApps().length) {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
-      // Use initializeFirestore for more granular control over settings
       firestore = initializeFirestore(app, {
-        cache: memoryLocalCache(),
+        localCache: persistentLocalCache({ tabManager: 'MEMORY' }),
       });
       storage = getStorage(app);
     } else {
       app = getApp();
       auth = getAuth(app);
-      // Ensure Firestore is also re-initialized or retrieved correctly
       firestore = getFirestore(app);
       storage = getStorage(app);
     }
