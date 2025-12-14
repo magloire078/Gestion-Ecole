@@ -83,16 +83,16 @@ const RegularDashboard = () => {
         const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
         const booksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
 
-        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot] = await Promise.all([
-          getCountFromServer(studentsQuery),
-          getCountFromServer(teachersQuery),
-          getCountFromServer(classesQuery),
-          getDocs(booksQuery)
+        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot, studentsForTuitionSnapshot] = await Promise.all([
+            getCountFromServer(studentsQuery),
+            getCountFromServer(teachersQuery),
+            getCountFromServer(classesQuery),
+            getDocs(booksQuery),
+            getDocs(studentsQuery)
         ]);
 
         const totalBooks = booksSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as LibraryBook).quantity, 0);
-        
-        const studentsForTuitionSnapshot = await getDocs(studentsQuery);
+
         const { totalPaid, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
             const student = doc.data() as Student;
             const tuition = student.tuitionFee || 0;
@@ -163,8 +163,6 @@ const RegularDashboard = () => {
         setActivityLoading(false);
 
         // --- Fetch Grades for Chart ---
-        // This is a costly operation. We limit it to students for now.
-        // A better approach would be to have a separate aggregation logic.
         const gradesCollectionGroup = collectionGroup(firestore, 'notes');
         const gradesQuery = query(gradesCollectionGroup, where('__name__', '>=', `ecoles/${schoolId}/`), where('__name__', '<', `ecoles/${schoolId}0/`));
         const gradesSnapshot = await getDocs(gradesQuery);
@@ -560,3 +558,5 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
+
+    
