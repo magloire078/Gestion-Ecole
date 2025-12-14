@@ -87,10 +87,10 @@ service cloud.firestore {
       // --- Staff Subcollection ---
       match /personnel/{staffId} {
         allow read, list: if isUserInSchool(schoolId);
-        // Director can add staff. A user can create their own profile when joining.
-        // During school creation, the directorId is not yet in the DB, so we check the incoming resource.
-        allow create: if isAuth() && (request.auth.uid == staffId || request.resource.data.schoolId == schoolId);
-        allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
+        // Director can add/edit staff. A user can create their own profile when joining.
+        allow create: if isAuth() && request.auth.uid == staffId;
+        allow update: if isSchoolDirector(schoolId) || isAdmin() || (isAuth() && request.auth.uid == staffId);
+        allow delete: if isSchoolDirector(schoolId) || isAdmin();
       }
 
       // --- Pedagogical Subcollections ---
@@ -106,8 +106,7 @@ service cloud.firestore {
       }
       match /classes/{classId} { 
           allow read, list: if isUserInSchool(schoolId); 
-          allow create: if isAuth() && request.resource.data.schoolId == schoolId;
-          allow update, delete: if isSchoolDirector(schoolId) || isAdmin(); 
+          allow write: if isSchoolDirector(schoolId) || isAdmin(); 
       }
       match /matieres/{subjectId} { 
           allow read, list: if isUserInSchool(schoolId); 
@@ -116,8 +115,7 @@ service cloud.firestore {
       }
       match /emploi_du_temps/{entryId} { 
           allow read, list: if isUserInSchool(schoolId); 
-          allow create: if isAuth() && request.resource.data.schoolId == schoolId;
-          allow update, delete: if isSchoolDirector(schoolId) || isAdmin(); 
+          allow write: if isSchoolDirector(schoolId) || isAdmin(); 
       }
 
       // --- Student-related Subcollections ---
