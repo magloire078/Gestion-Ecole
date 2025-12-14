@@ -1,11 +1,9 @@
 
 'use client';
 
-import { useUser, useFirestore } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { collection, doc, getDoc, query, where, getDocs, limit } from 'firebase/firestore';
+import { usePathname } from 'next/navigation';
 
 function AuthProtectionLoader() {
   return (
@@ -19,54 +17,21 @@ function AuthProtectionLoader() {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading: userLoading } = useUser();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
-  const router = useRouter();
+  const { loading: userLoading } = useUser();
+  const { loading: schoolLoading } = useSchoolData();
   const pathname = usePathname();
-  const [isChecking, setIsChecking] = useState(true);
   
-  useEffect(() => {
-    // Attendre que les chargements soient terminés
-    if (userLoading || schoolLoading) {
-      return;
-    }
-    
-    const isAuthPage = pathname === '/login';
-    const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
-
-    // Utilisateur non connecté
-    if (!user) {
-      if (!isAuthPage) {
-        router.replace('/login');
-      } else {
-        setIsChecking(false);
+  // Affiche un loader uniquement pendant le chargement initial de l'utilisateur ou de l'école.
+  // Ne gère plus les redirections, ce rôle est délégué au layout.
+  if (userLoading || schoolLoading) {
+      // Les pages d'authentification ou publiques ne doivent pas montrer ce loader.
+      if (pathname === '/login' || pathname.startsWith('/public') || pathname === '/') {
+        return <>{children}</>;
       }
-      return;
-    }
-
-    // Utilisateur connecté
-    if (schoolId) {
-      // A une école - rediriger du login/onboarding vers le dashboard
-      if (isAuthPage || isOnboardingPage) {
-        router.replace('/dashboard');
-      } else {
-        setIsChecking(false);
-      }
-    } else {
-        // N'a pas d'école - aller à l'onboarding
-        if (!isOnboardingPage) {
-            router.replace('/dashboard/onboarding');
-        } else {
-            setIsChecking(false);
-        }
-    }
-  }, [user, schoolId, userLoading, schoolLoading, pathname, router]);
-  
-  // Afficher un loader pendant les vérifications
-  if (isChecking) {
-    return <AuthProtectionLoader />;
+      return <AuthProtectionLoader />;
   }
   
-  // Rendre les enfants
+  // Une fois le chargement terminé, on rend les enfants.
+  // Le layout parent (ex: DashboardLayout) se chargera de la logique de redirection.
   return <>{children}</>;
 }

@@ -14,6 +14,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/hooks/use-theme';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
@@ -22,11 +23,7 @@ import { NotificationsPanel } from '@/components/notifications-panel';
 import { Home } from 'lucide-react';
 
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -96,7 +93,6 @@ export default function DashboardLayout({
   }, [router]);
 
   return (
-    <AuthGuard>
       <TooltipProvider>
         <div className={cn("min-h-screen w-full bg-muted/40 print:bg-white")}>
           <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-background sm:flex print:hidden">
@@ -212,6 +208,52 @@ export default function DashboardLayout({
           />
         </div>
       </TooltipProvider>
+  )
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { user, loading: userLoading } = useUser();
+  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (userLoading || schoolLoading) {
+      return; // Ne rien faire pendant le chargement
+    }
+
+    const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+
+    if (!user) {
+      // Si l'utilisateur n'est pas connecté, redirigez-le vers la page de connexion
+      router.replace('/login');
+      return;
+    }
+
+    if (!schoolId && !isOnboardingPage) {
+      // Si l'utilisateur est connecté mais n'a pas d'école ET n'est pas sur la page d'intégration,
+      // redirigez-le vers la page d'intégration.
+      router.replace('/dashboard/onboarding');
+      return;
+    }
+    
+    if (schoolId && isOnboardingPage) {
+      // Si l'utilisateur a une école mais est sur la page d'intégration,
+      // redirigez-le vers le tableau de bord principal.
+      router.replace('/dashboard');
+      return;
+    }
+
+  }, [user, schoolId, userLoading, schoolLoading, pathname, router]);
+
+  // AuthGuard gère l'état de chargement initial.
+  return (
+    <AuthGuard>
+      <DashboardContent>{children}</DashboardContent>
     </AuthGuard>
   );
 }
