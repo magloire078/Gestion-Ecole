@@ -48,9 +48,8 @@ export default function StaffProfilePage() {
   // --- Data Fetching ---
   const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId]);
   const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
-  const staffMember = staffMemberData;
 
-  const classRef = useMemoFirebase(() => staffMember?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
+  const classRef = useMemoFirebase(() => staffMemberData?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMemberData.classId}`) : null, [staffMemberData, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
 
   const timetableQuery = useMemoFirebase(() => (schoolId && staffId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
@@ -59,7 +58,7 @@ export default function StaffProfilePage() {
   
   const isLoading = schoolLoading || staffLoading || classLoading || timetableLoading;
 
-  if (isLoading) {
+  if (isLoading && !staffMemberData) {
     return (
         <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-3">
@@ -74,9 +73,11 @@ export default function StaffProfilePage() {
     );
   }
   
-  if (!staffMember && !isLoading) {
+  if (!staffMemberData && !isLoading) {
     notFound();
   }
+
+  const staffMember = staffMemberData as Staff;
 
   const handlePhotoUploadComplete = async (url: string) => {
     if (!schoolId) {
