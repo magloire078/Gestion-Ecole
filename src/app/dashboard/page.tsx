@@ -83,16 +83,16 @@ const RegularDashboard = () => {
         const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
         const booksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
 
-        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot, studentsForTuitionSnapshot] = await Promise.all([
+        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot] = await Promise.all([
             getCountFromServer(studentsQuery),
             getCountFromServer(teachersQuery),
-            getCountFromServer(classesQuery),
-            getDocs(booksQuery),
-            getDocs(studentsQuery)
+            getDocs(classesQuery), // Changed to getDocs
+            getDocs(booksQuery)
         ]);
 
         const totalBooks = booksSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as LibraryBook).quantity, 0);
 
+        const studentsForTuitionSnapshot = await getDocs(studentsQuery);
         const { totalPaid, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
             const student = doc.data() as Student;
             const tuition = student.tuitionFee || 0;
@@ -105,7 +105,7 @@ const RegularDashboard = () => {
         setStats({
           students: studentsSnapshot.data().count,
           teachers: teachersSnapshot.data().count,
-          classes: classesSnapshot.data().count,
+          classes: classesSnapshot.size, // Use snapshot.size for direct count
           books: totalBooks,
           tuitionPaid: totalPaid,
           tuitionDue: totalDue,
@@ -558,5 +558,3 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
-
-    
