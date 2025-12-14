@@ -216,41 +216,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, loading: userLoading } = useUser();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
-  const router = useRouter();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    if (userLoading || schoolLoading) {
-      return; // Ne rien faire pendant le chargement
-    }
-
-    const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
-
-    if (!user) {
-      // Si l'utilisateur n'est pas connecté, redirigez-le vers la page de connexion
-      router.replace('/login');
-      return;
-    }
-
-    if (!schoolId && !isOnboardingPage) {
-      // Si l'utilisateur est connecté mais n'a pas d'école ET n'est pas sur la page d'intégration,
-      // redirigez-le vers la page d'intégration.
-      router.replace('/dashboard/onboarding');
-      return;
-    }
-    
-    if (schoolId && isOnboardingPage) {
-      // Si l'utilisateur a une école mais est sur la page d'intégration,
-      // redirigez-le vers le tableau de bord principal.
-      router.replace('/dashboard');
-      return;
-    }
-
-  }, [user, schoolId, userLoading, schoolLoading, pathname, router]);
-
-  // AuthGuard gère l'état de chargement initial.
+  
   return (
     <AuthGuard>
       <DashboardContent>{children}</DashboardContent>
