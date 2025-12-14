@@ -49,12 +49,6 @@ service cloud.firestore {
       return isMainTeacher || isAssignedTeacher;
     }
     
-    function canTeacherAccessStudent(studentId, schoolId) {
-        if (!isTeacher(schoolId)) return false;
-        let student = get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId));
-        return isTeacherForClass(student.data.classId, schoolId);
-    }
-    
     function getClassIdForAbsence() {
       if (request.resource != null) {
         return request.resource.data.classId;
@@ -64,11 +58,8 @@ service cloud.firestore {
 
     // --- Global Collections ---
     match /utilisateurs/{userId} {
-      allow read: if isAuth() && (request.auth.uid == userId || isAdmin());
-      // A user can create their own root doc, but not overwrite it.
-      allow create: if isAuth() && request.auth.uid == userId;
-      allow update: if isAuth() && request.auth.uid == userId;
-      allow delete: if isAdmin();
+      allow read, write: if isAuth() && request.auth.uid == userId;
+      allow read: if isAdmin();
     }
 
     match /admin_roles/{roleId} {
@@ -87,10 +78,9 @@ service cloud.firestore {
       // --- Staff Subcollection ---
       match /personnel/{staffId} {
         allow read, list: if isUserInSchool(schoolId);
-        // Director can add/edit staff. A user can create their own profile when joining.
-        allow create: if isAuth() && request.auth.uid == staffId;
-        allow update: if isSchoolDirector(schoolId) || isAdmin() || (isAuth() && request.auth.uid == staffId);
-        allow delete: if isSchoolDirector(schoolId) || isAdmin();
+        // Director can add staff. A user can create their own profile when joining.
+        allow create: if isAuth() && (request.auth.uid == staffId || isSchoolDirector(schoolId));
+        allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
 
       // --- Pedagogical Subcollections ---
