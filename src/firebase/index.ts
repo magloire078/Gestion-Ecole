@@ -22,7 +22,7 @@ function initializeFirebase() {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       firestore = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: 'MEMORY' }),
+        localCache: persistentLocalCache(/* settings */),
       });
       storage = getStorage(app);
     } else {
