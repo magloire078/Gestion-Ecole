@@ -34,7 +34,7 @@ export function useUser() {
         setLoading(true); // Set loading to true whenever the user state might change
         if (authUser) {
             try {
-                const tokenResult = await authUser.getIdTokenResult(); // DO NOT force refresh here to avoid quota issues
+                const tokenResult = await authUser.getIdTokenResult(); // Use cached token if available
                 const schoolId = tokenResult.claims.schoolId as string | undefined;
 
                 const userWithClaims: User = {
@@ -42,9 +42,11 @@ export function useUser() {
                     customClaims: tokenResult.claims
                 };
                 
+                // Fetch profile only if we have a schoolId from claims.
+                // The useSchoolData hook will handle the fallback logic.
                 if (schoolId) {
                     const profileRef = doc(firestore, `ecoles/${schoolId}/personnel/${authUser.uid}`);
-                    const unsubscribeProfile = onSnapshot(profileRef, (docSnap) => {
+                    onSnapshot(profileRef, (docSnap) => {
                         const profileData = docSnap.exists() ? docSnap.data() as AppUser : undefined;
                         setUser({ ...userWithClaims, profile: profileData });
                         setLoading(false);
@@ -53,10 +55,8 @@ export function useUser() {
                         setUser(userWithClaims); // Keep user data even if profile fails
                         setLoading(false);
                     });
-                    // This unsubscribe is for the profile listener
-                    return () => unsubscribeProfile();
                 } else {
-                    // No schoolId, user is authenticated but not onboarded yet
+                    // No schoolId in claims, let useSchoolData figure it out.
                     setUser(userWithClaims);
                     setLoading(false);
                 }

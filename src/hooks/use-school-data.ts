@@ -33,7 +33,7 @@ interface SchoolData extends DocumentData {
 export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
-    const [schoolId, setSchoolId] = useState<string | null>(null);
+    const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined); // undefined: not checked, null: no school, string: school found
     const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -50,18 +50,38 @@ export function useSchoolData() {
             return;
         }
 
-        const userSchoolId = user.customClaims?.schoolId || null;
-        setSchoolId(userSchoolId);
+        // Stratégie de récupération du schoolId
+        // 1. Essayer de le récupérer depuis les custom claims (plus rapide)
+        const claimSchoolId = user.customClaims?.schoolId;
+        if (claimSchoolId) {
+            setSchoolId(claimSchoolId);
+            return;
+        }
 
-    }, [user, userLoading]);
+        // 2. Si non trouvé, le chercher dans la collection /utilisateurs (cas post-onboarding)
+        const userRootRef = doc(firestore, 'utilisateurs', user.uid);
+        const unsubscribeUserRoot = onSnapshot(userRootRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setSchoolId(data.schoolId || null);
+            } else {
+                setSchoolId(null); // Pas de document, donc pas d'école associée
+            }
+        }, (error) => {
+            console.error("Error fetching user root doc:", error);
+            setSchoolId(null);
+        });
+
+        return () => unsubscribeUserRoot();
+
+    }, [user, userLoading, firestore]);
 
     useEffect(() => {
         if (schoolId === undefined) {
-          // Still determining if schoolId exists
-          return;
+          return; // Toujours en train de déterminer l'ID de l'école
         }
         if (schoolId === null) {
-            // User is authenticated but not associated with a school
+            // Utilisateur connecté mais pas d'école
             setSchoolData(null);
             setLoading(false);
             document.title = DEFAULT_TITLE;
