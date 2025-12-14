@@ -3,7 +3,7 @@
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, DollarSign, AlertCircle, CheckCircle, Plus, CreditCard, Calendar } from 'lucide-react';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, DollarSign, AlertCircle, CheckCircle, Plus, CreditCard, Calendar, Check } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -639,4 +639,3 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
-
