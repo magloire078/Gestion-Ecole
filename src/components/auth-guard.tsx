@@ -25,30 +25,32 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
+  // The crucial check: we wait until BOTH user and school data fetching are complete.
   const isLoading = userLoading || schoolLoading;
   
   useEffect(() => {
+    // Don't do anything until all data is loaded.
     if (isLoading) {
-      return; // Ne rien faire tant que tout n'est pas chargé
+      return; 
     }
 
     const isAuthPage = pathname === '/login';
     const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
     
     if (!user) {
-      // Utilisateur non connecté -> doit aller sur la page de login
+      // User is not logged in, must go to login page.
       if (!isAuthPage) {
         router.replace('/login');
       }
     } else {
-        // Utilisateur connecté
+        // User is logged in. Now check for school association.
         if (schoolId) {
-            // A une école -> ne doit pas être sur login ou onboarding
+            // User has a school. They should NOT be on login or onboarding.
              if (isAuthPage || isOnboardingPage) {
                 router.replace('/dashboard');
             }
         } else {
-            // N'a pas d'école -> doit aller sur onboarding
+            // User has NO school. They MUST go to onboarding.
             if (!isOnboardingPage) {
                 router.replace('/dashboard/onboarding');
             }
@@ -57,10 +59,28 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   }, [user, schoolId, isLoading, pathname, router]);
 
-  // Si on charge ou si une redirection est imminente, on affiche le loader.
-  if (isLoading || (!user && pathname !== '/login') || (user && !schoolId && !pathname.startsWith('/dashboard/onboarding'))) {
+  // Render a loader if we are still fetching critical data, or if a redirect is imminent.
+  // This prevents rendering a page for a split second before redirecting.
+  if (isLoading) {
+      return <AuthProtectionLoader />;
+  }
+  
+  // Specific condition to show loader while redirecting away from a protected route
+  if (!user && !pathname.startsWith('/login')) {
       return <AuthProtectionLoader />;
   }
 
+  // Specific condition to show loader while redirecting an authenticated user to onboarding
+  if (user && !schoolId && !pathname.startsWith('/dashboard/onboarding')) {
+      return <AuthProtectionLoader />;
+  }
+  
+  // Specific condition to show loader while redirecting an onboarded user away from onboarding/login
+  if (user && schoolId && (pathname.startsWith('/dashboard/onboarding') || pathname.startsWith('/login'))) {
+      return <AuthProtectionLoader />;
+  }
+
+
+  // If all checks pass, render the children.
   return <>{children}</>;
 }
