@@ -96,7 +96,7 @@ export default function AdminRolesPage() {
     });
 
     // DEV ONLY: Grant admin rights to a specific email for development
-    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "VOTRE_EMAIL_ADMIN@example.com";
+    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
 
     useEffect(() => {
         if (!userLoading && !isAdmin) {

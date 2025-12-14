@@ -62,7 +62,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
   // DEV ONLY: Grant admin rights to a specific email for development
-  const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "VOTRE_EMAIL_ADMIN@example.com";
+  const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
   const userRole = isAdmin ? 'Admin' : user?.profile?.role;
 
   if (collapsed) {
