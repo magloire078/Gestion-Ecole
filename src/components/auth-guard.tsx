@@ -35,28 +35,36 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const isAuthPage = pathname === '/login';
     const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
     
+    // Si l'utilisateur n'est pas connecté, il doit aller sur la page de login
     if (!user) {
       if (!isAuthPage) {
         router.replace('/login');
       }
+      return;
+    }
+    
+    // Si l'utilisateur est connecté
+    if (schoolId) {
+      // Il a une école, il ne doit PAS être sur les pages de login ou d'onboarding
+      if (isAuthPage || isOnboardingPage) {
+        router.replace('/dashboard');
+      }
     } else {
-        if (schoolId) {
-             if (isAuthPage || isOnboardingPage) {
-                router.replace('/dashboard');
-            }
-        } else {
-            if (!isOnboardingPage) {
-                router.replace('/dashboard/onboarding');
-            }
-        }
+      // Il n'a pas d'école, il DOIT être sur la page d'onboarding
+      if (!isOnboardingPage) {
+        router.replace('/dashboard/onboarding');
+      }
     }
 
   }, [user, schoolId, isLoading, pathname, router]);
 
+
+  // Affiche le loader tant que la vérification n'est pas terminée
   if (isLoading) {
       return <AuthProtectionLoader />;
   }
   
+  // Logique pour éviter l'affichage de la mauvaise page pendant la redirection
   if (!user && !pathname.startsWith('/login')) {
       return <AuthProtectionLoader />;
   }
@@ -69,5 +77,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return <AuthProtectionLoader />;
   }
 
+  // Si tout est correct, affiche la page demandée
   return <>{children}</>;
 }

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -24,7 +24,6 @@ interface SchoolData extends DocumentData {
     matricule?: string;
     mainLogoUrl?: string;
     subscription?: Subscription;
-    // Ajout des champs pour le suivi des mises à jour
     updatedAt?: any; 
     updatedBy?: string;
     updatedByName?: string;
@@ -50,25 +49,45 @@ export function useSchoolData() {
             return;
         }
 
-        const findSchoolId = async () => {
-            setLoading(true); // Start loading when we begin search
-            try {
-                const userRootRef = doc(firestore, 'utilisateurs', user.uid);
-                const docSnap = await getDoc(userRootRef);
-                if (docSnap.exists() && docSnap.data().schoolId) {
-                    setSchoolId(docSnap.data().schoolId);
-                } else {
-                    setSchoolId(null);
-                    setLoading(false); // Stop loading if no school is found
-                }
-            } catch (error) {
-                console.error("Error fetching user root doc:", error);
-                setSchoolId(null);
+        const findSchoolForUser = async (userId: string) => {
+            setLoading(true);
+            
+            // Étape 1: Vérifier le document utilisateur
+            const userRootRef = doc(firestore, 'utilisateurs', userId);
+            const userDoc = await getDoc(userRootRef);
+
+            if (userDoc.exists() && userDoc.data().schoolId) {
+                setSchoolId(userDoc.data().schoolId);
                 setLoading(false);
+                return;
             }
+
+            // Étape 2: Si l'étape 1 échoue, chercher si l'utilisateur est directeur d'une école
+            const schoolsRef = collection(firestore, 'ecoles');
+            const q = query(schoolsRef, where("directorId", "==", userId));
+            const schoolQuerySnapshot = await getDocs(q);
+
+            if (!schoolQuerySnapshot.empty) {
+                const foundSchoolDoc = schoolQuerySnapshot.docs[0];
+                const foundSchoolId = foundSchoolDoc.id;
+                
+                // Étape 3: Correction automatique - mettre à jour le document utilisateur
+                try {
+                    await setDoc(userRootRef, { schoolId: foundSchoolId }, { merge: true });
+                    setSchoolId(foundSchoolId);
+                } catch(e) {
+                     console.error("Failed to auto-correct user document:", e);
+                }
+                setLoading(false);
+                return;
+            }
+
+            // Étape 4: Aucune école trouvée
+            setSchoolId(null);
+            setLoading(false);
         };
 
-        findSchoolId();
+        findSchoolForUser(user.uid);
 
     }, [user, userLoading, firestore]);
 
@@ -84,6 +103,7 @@ export function useSchoolData() {
             return;
         }
 
+        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -92,9 +112,10 @@ export function useSchoolData() {
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
+                setSchoolId(null); // L'école référencée n'existe pas, réinitialiser
                 document.title = DEFAULT_TITLE;
             }
-            setLoading(false); // Stop loading once school data is fetched or confirmed non-existent
+            setLoading(false);
         }, (error) => {
              console.error("Error fetching school data:", error);
              setSchoolData(null);
