@@ -53,7 +53,7 @@ export default function StaffProfilePage() {
   const classRef = useMemoFirebase(() => staffMember?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const timetableQuery = useMemoFirebase(() => schoolId && staffId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
+  const timetableQuery = useMemoFirebase(() => (schoolId && staffId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as TimetableEntry) || [], [timetableData]);
   
@@ -74,7 +74,6 @@ export default function StaffProfilePage() {
     );
   }
   
-  // This should only be called AFTER loading is false
   if (!staffMember) {
     notFound();
   }
