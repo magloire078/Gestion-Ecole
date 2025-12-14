@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -11,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -276,10 +277,22 @@ export default function StudentsPage() {
                                 <DropdownMenuContent align="end">
                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}`)}>
                                         <Eye className="mr-2 h-4 w-4" />
-                                        Voir le dossier
+                                        Voir le Profil
                                     </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
+                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/bulletin`)}>
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        Bulletin
+                                    </DropdownMenuItem>
+                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/emploi-du-temps`)}>
+                                        <CalendarDays className="mr-2 h-4 w-4" />
+                                        Emploi du temps
+                                    </DropdownMenuItem>
+                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/fiche`)}>
+                                        <FileSignature className="mr-2 h-4 w-4" />
+                                        Fiche
+                                    </DropdownMenuItem>
                                   <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
                                   <DropdownMenuItem 
                                     className="text-destructive"
                                     onClick={() => handleOpenDeleteDialog(student)}
