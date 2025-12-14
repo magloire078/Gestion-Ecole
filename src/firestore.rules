@@ -103,8 +103,8 @@ service cloud.firestore {
       // --- Staff Subcollection ---
       match /personnel/{staffId} {
         allow read, list: if isUserInSchool(schoolId);
-        // On create, allow if user is the school director being set on the school doc, or if the user creates their own profile.
-        allow create: if (isAuth() && request.auth.uid == staffId) || isSchoolDirector(schoolId);
+        // Director can add staff. A user can create their own profile when joining a school.
+        allow create: if isSchoolDirector(schoolId) || (isAuth() && request.auth.uid == staffId);
         allow update, delete: if isSchoolDirector(schoolId) || isAdmin();
       }
 
