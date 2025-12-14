@@ -57,7 +57,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       firstName: student.firstName || '',
       lastName: student.lastName || '',
       classId: student.classId || '',
-      dateOfBirth: student.dateOfBirth || '',
+      dateOfBirth: student.dateOfBirth ? student.dateOfBirth.split('T')[0] : '', // Assurer le format YYYY-MM-DD
       tuitionFee: student.tuitionFee || 0,
       discountAmount: student.discountAmount || 0,
       discountReason: student.discountReason || '',

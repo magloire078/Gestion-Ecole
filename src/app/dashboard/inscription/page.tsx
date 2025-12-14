@@ -219,7 +219,10 @@ export default function RegistrationPage() {
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
           <CardTitle>Formulaire d'Inscription</CardTitle>
-          <CardDescription>Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée: {getTuitionFeeForClass(watchedClassId).toLocaleString('fr-FR')} CFA</CardDescription>
+          <CardDescription>
+              Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée : 
+              <span className="font-bold text-primary"> {getTuitionFeeForClass(watchedClassId).toLocaleString('fr-FR')} CFA</span>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -299,5 +302,3 @@ export default function RegistrationPage() {
     </div>
   );
 }
-
-    
