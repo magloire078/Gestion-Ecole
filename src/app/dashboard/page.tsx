@@ -3,7 +3,7 @@
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, TrendingUp, DollarSign, AlertCircle, CheckCircle, Plus, Settings, CreditCard, Calendar } from 'lucide-react';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, DollarSign, AlertCircle, CheckCircle, Plus, CreditCard, Calendar } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, accountingTransaction as Transaction } from '@/lib/data-types';
+import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook } from '@/lib/data-types';
 
 
 // ====================================================================================
@@ -163,32 +163,16 @@ const RegularDashboard = () => {
         setActivityLoading(false);
 
         // --- Fetch Grades for Chart ---
+        // This is a costly operation. We limit it to students for now.
+        // A better approach would be to have a separate aggregation logic.
         const gradesCollectionGroup = collectionGroup(firestore, 'notes');
-        const allStudentsInSchool = await getDocs(studentsQuery);
-        const studentIds = allStudentsInSchool.docs.map(doc => doc.id);
-        
-        if(studentIds.length > 0) {
-            const studentChunks = [];
-            for (let i = 0; i < studentIds.length; i += 30) {
-                studentChunks.push(studentIds.slice(i, i + 30));
-            }
-
-            const gradesPromises = studentChunks.map(chunk => 
-                getDocs(query(gradesCollectionGroup, where('__name__', 'in', chunk.map(id => `ecoles/${schoolId}/eleves/${id}`))))
-            );
-
-            const gradesSnapshots = await Promise.all(gradesPromises);
-            const fetchedGrades: GradeEntry[] = [];
-            gradesSnapshots.forEach(snapshot => {
-                snapshot.forEach(doc => {
-                    fetchedGrades.push(doc.data() as GradeEntry);
-                });
-            });
-            setAllGrades(fetchedGrades);
-        } else {
-            setAllGrades([]);
-        }
-        
+        const gradesQuery = query(gradesCollectionGroup, where('__name__', '>=', `ecoles/${schoolId}/`), where('__name__', '<', `ecoles/${schoolId}0/`));
+        const gradesSnapshot = await getDocs(gradesQuery);
+        const fetchedGrades: GradeEntry[] = [];
+        gradesSnapshot.forEach(doc => {
+            fetchedGrades.push(doc.data() as GradeEntry);
+        });
+        setAllGrades(fetchedGrades);
         setGradesLoading(false);
 
 
@@ -239,7 +223,7 @@ const RegularDashboard = () => {
       loading: statsLoading, 
       color: 'text-amber-600', 
       bgColor: 'bg-amber-100 dark:bg-amber-900/50', 
-      href: '/dashboard/classes' 
+      href: '/dashboard/pedagogie/structure'
     },
     { 
       title: 'Livres', 
@@ -494,7 +478,7 @@ const OnboardingDashboard = () => {
           <p className="text-muted-foreground text-sm mb-4">
             Définissez l'organisation pédagogique de votre établissement.
           </p>
-          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/classes')}>
+          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/pedagogie/structure')}>
             <Plus className="w-5 h-5 inline mr-2" />
             Configurer la structure
           </Button>
@@ -525,7 +509,7 @@ const OnboardingDashboard = () => {
           <h3 className="text-xl font-bold mb-4">Actions rapides</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <QuickActionCard icon={<UserPlus />} title="Inscrire un élève" description="Via le formulaire complet" color="blue" href="/dashboard/inscription"/>
-            <QuickActionCard icon={<Calendar />} title="Créer une classe" description="Définir niveaux et frais" color="green" href="/dashboard/classes"/>
+            <QuickActionCard icon={<Calendar />} title="Créer une classe" description="Définir niveaux et frais" color="green" href="/dashboard/pedagogie/structure/new"/>
             <QuickActionCard icon={<CreditCard />} title="Encaisser un paiement" description="Suivi de la scolarité" color="purple" href="/dashboard/paiements"/>
             <QuickActionCard icon={<BookOpen />} title="Ajouter des livres" description="Gestion de la bibliothèque" color="orange" href="/dashboard/bibliotheque"/>
           </div>

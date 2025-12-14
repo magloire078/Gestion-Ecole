@@ -11,7 +11,6 @@ import {
     UserPlus, 
     GraduationCap, 
     School, 
-    FolderCog, 
     BookOpen,
     Briefcase,
     CreditCard,
