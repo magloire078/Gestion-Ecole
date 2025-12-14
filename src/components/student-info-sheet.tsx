@@ -33,31 +33,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    const printContent = printRef.current?.innerHTML;
-    if (printContent) {
-      const printWindow = window.open('', '', 'height=800,width=800');
-      if (printWindow) {
-        printWindow.document.write('<html><head><title>Fiche de Renseignements</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/_next/static/css/app/layout.css" type="text/css" media="print">');
-        printWindow.document.write(`
-            <style>
-                body { font-family: sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                .no-print { display: none !important; }
-                .printable-card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 auto; max-width: 210mm; }
-                @page { size: A4; margin: 20mm; }
-            </style>
-        `);
-        printWindow.document.write('<body style="color: black !important;">');
-        printWindow.document.write(printContent);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 250);
-      }
-    }
+    window.print();
   };
 
   const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string | number | null }) => (
