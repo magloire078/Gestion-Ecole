@@ -190,14 +190,19 @@ export default function AdminRolesPage() {
     if (isLoading || !isAdmin) {
         return (
             <div className="space-y-6">
-                <Skeleton className="h-8 w-1/2" />
-                <Skeleton className="h-4 w-2/3" />
+                <div className="flex justify-between items-center">
+                    <div>
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-64 mt-2" />
+                    </div>
+                    <Skeleton className="h-10 w-32" />
+                </div>
                 <Card>
                     <CardHeader>
                         <Skeleton className="h-6 w-1/4" />
                     </CardHeader>
                     <CardContent>
-                        <Skeleton className="h-64 w-full" />
+                        <Skeleton className="h-40 w-full" />
                     </CardContent>
                 </Card>
             </div>
