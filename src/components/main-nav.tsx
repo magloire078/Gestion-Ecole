@@ -75,9 +75,7 @@ const navLinks = [
       group: "Configuration",
       icon: Settings,
       links: [
-        { href: '/dashboard/parametres', label: 'Paramètres généraux', icon: Settings, adminOnly: false },
-        { href: '/dashboard/parametres/abonnement', label: 'Abonnement', icon: CreditCard, adminOnly: false },
-        { href: '/dashboard/parametres/donnees', label: 'Données Brutes', icon: Database, adminOnly: false },
+        { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings, adminOnly: false },
       ]
     },
     {
@@ -157,7 +155,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
       {navLinks.map((group) => {
           if (group.adminOnly && !isAdmin) return null;
           
-          if (group.links.length === 1 && group.group === "Principal") {
+          if (group.links.length === 1 && (group.group === "Principal" || group.group === "Configuration")) {
               return <NavLink key={group.links[0].href} {...group.links[0]} collapsed={false} />;
           }
 

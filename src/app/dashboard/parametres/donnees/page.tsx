@@ -41,13 +41,6 @@ export default function DataIntegrityPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg font-semibold md:text-2xl">Vérification des Données Brutes</h1>
-        <p className="text-muted-foreground">
-          Cette page affiche les liens entre vos données pour aider au diagnostic d'éventuelles incohérences.
-        </p>
-      </div>
-
       {isLoading ? (
           <div className="space-y-6">
               <Skeleton className="h-64 w-full" />

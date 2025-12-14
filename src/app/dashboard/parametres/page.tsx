@@ -191,16 +191,8 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-4 w-96" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Skeleton className="h-[70vh] w-full" />
-          </div>
-          <div className="space-y-6">
-            <Skeleton className="h-48 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
+        <div className="lg:col-span-2 space-y-6">
+          <Skeleton className="h-[70vh] w-full" />
         </div>
       </div>
     )
@@ -209,24 +201,12 @@ export default function SettingsPage() {
   return (
     <>
     <div className="space-y-6">
-       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Paramètres</h1>
-          <p className="text-muted-foreground">Gérez les informations de votre établissement scolaire.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push('/dashboard/parametres/fiche-etablissement')}>
-            <span className="flex items-center gap-2"> <FileSignature className="h-4 w-4" /> Fiche établissement </span>
-          </Button>
-        </div>
-      </div>
-
        {error && (
         <Alert variant="destructive"> <AlertCircle className="h-4 w-4" /> <AlertTitle>Erreur</AlertTitle> <AlertDescription>{error}</AlertDescription> </Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-3">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSaveChanges)} className="space-y-6">
                  <Card>
@@ -277,6 +257,18 @@ export default function SettingsPage() {
                         </AccordionContent>
                        </Card>
                     </AccordionItem>
+                     <AccordionItem value="item-3">
+                       <Card><AccordionTrigger className="p-6"><CardTitle>Mon Profil Directeur</CardTitle></AccordionTrigger>
+                         <AccordionContent>
+                          <div className="px-6 pb-6 pt-0 space-y-6">
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormField control={form.control} name="directorFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="directorLastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                          </div>
+                        </AccordionContent>
+                       </Card>
+                    </AccordionItem>
                  </Accordion>
                 <div className="flex justify-end">
                     <Button type="submit" disabled={isSaving || !form.formState.isDirty}>
@@ -287,24 +279,7 @@ export default function SettingsPage() {
               </form>
             </Form>
         </div>
-        <div className="space-y-6">
-           <InvitationCode code={schoolData?.schoolCode || '...'} onCopy={handleCopyCode} />
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Mon Profil</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2"> <Label>Nom complet</Label> <Input value={user?.displayName || ''} disabled /> </div>
-                    <div className="space-y-2"> <Label>Email</Label> <Input value={user?.email || ''} disabled /> </div>
-                     <div className="space-y-2"> <Label>Rôle</Label> <Input value={user?.profile?.role || 'Directeur'} className="capitalize" disabled /> </div>
-                </CardContent>
-                 <CardFooter className="border-t pt-4">
-                   <Button type="button" variant="destructive" onClick={() => setIsResetDialogOpen(true)}>
-                       <span className="flex items-center gap-2"> <Trash2 className="h-4 w-4" /> Réinitialiser Mon Compte </span>
-                   </Button>
-                </CardFooter>
-            </Card>
-        </div>
+        
       </div>
     </div>
      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
