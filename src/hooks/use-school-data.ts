@@ -33,7 +33,7 @@ interface SchoolData extends DocumentData {
 export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
-    const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined); // undefined: not checked, null: no school, string: school found
+    const [schoolId, setSchoolId] = useState<string | null>(null);
     const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -44,71 +44,72 @@ export function useSchoolData() {
         }
 
         if (!user) {
-            setLoading(false);
             setSchoolId(null);
             setSchoolData(null);
+            setLoading(false);
             return;
         }
 
-        // Stratégie de récupération du schoolId
-        // 1. Essayer de le récupérer depuis les custom claims (plus rapide)
-        const claimSchoolId = user.customClaims?.schoolId;
-        if (claimSchoolId) {
-            setSchoolId(claimSchoolId);
-            return;
-        }
-
-        // 2. Si non trouvé, le chercher dans la collection /utilisateurs (cas post-onboarding)
-        const userRootRef = doc(firestore, 'utilisateurs', user.uid);
-        const unsubscribeUserRoot = onSnapshot(userRootRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                setSchoolId(data.schoolId || null);
-            } else {
-                setSchoolId(null); // Pas de document, donc pas d'école associée
+        // Centralized logic to find schoolId
+        const findSchoolId = async () => {
+            // 1. Try custom claims (fastest)
+            const claims = user.customClaims;
+            if (claims && claims.schoolId) {
+                setSchoolId(claims.schoolId);
+                return;
             }
-        }, (error) => {
-            console.error("Error fetching user root doc:", error);
-            setSchoolId(null);
-        });
 
-        return () => unsubscribeUserRoot();
+            // 2. Fallback to reading the /utilisateurs document (crucial for post-onboarding)
+            try {
+                const userRootRef = doc(firestore, 'utilisateurs', user.uid);
+                const docSnap = await getDoc(userRootRef);
+                if (docSnap.exists()) {
+                    setSchoolId(docSnap.data().schoolId || null);
+                } else {
+                    setSchoolId(null); // No document, so no school
+                }
+            } catch (error) {
+                console.error("Error fetching user root doc:", error);
+                setSchoolId(null);
+            }
+        };
+
+        findSchoolId();
 
     }, [user, userLoading, firestore]);
 
     useEffect(() => {
-        if (schoolId === undefined) {
-          return; // Toujours en train de déterminer l'ID de l'école
-        }
         if (schoolId === null) {
-            // Utilisateur connecté mais pas d'école
             setSchoolData(null);
             setLoading(false);
             document.title = DEFAULT_TITLE;
             return;
         }
+        
+        if (!schoolId) {
+            // Still waiting for schoolId to be determined
+            return;
+        }
 
+        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
-        const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
+        const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as SchoolData;
                 setSchoolData(data);
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
-                console.error(`School document with ID ${schoolId} not found.`);
                 setSchoolData(null);
                 document.title = DEFAULT_TITLE;
             }
             setLoading(false);
         }, (error) => {
              console.error("Error fetching school data:", error);
-             const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
-             errorEmitter.emit('permission-error', permissionError);
              setSchoolData(null);
              setLoading(false);
         });
 
-        return () => unsubscribeSchool();
+        return () => unsubscribe();
         
     }, [schoolId, firestore]);
 
