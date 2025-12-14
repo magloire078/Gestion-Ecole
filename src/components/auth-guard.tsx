@@ -8,11 +8,10 @@ import { Skeleton } from './ui/skeleton';
 
 function AuthProtectionLoader() {
   return (
-    <div className="flex h-screen w-full items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-10 w-full" />
+    <div className="flex h-screen w-full items-center justify-center">
+      <div className="text-center">
+        <p className="text-lg font-semibold">Chargement de votre espace...</p>
+        <p className="text-muted-foreground">Vérification de votre compte.</p>
       </div>
     </div>
   );
@@ -55,7 +54,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, userLoading, pathname, router]);
 
   // Affiche le loader si l'utilisateur est en cours de chargement
-  // ou si la logique de redirection n'a pas encore déterminé la destination finale.
   if (userLoading) {
     return <AuthProtectionLoader />;
   }
@@ -64,17 +62,22 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname === '/login';
   const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
   
+  // Si l'utilisateur n'est pas chargé, on affiche toujours le loader (déjà géré au-dessus)
+  // Si l'utilisateur n'est pas connecté et n'est pas sur la page de login, la redirection est en cours
   if (!user && !isAuthPage) {
-    return <AuthProtectionLoader />; // Redirection vers login en cours
+    return <AuthProtectionLoader />;
   }
   
+  // Si l'utilisateur est connecté mais n'a pas d'école et n'est pas sur une page d'onboarding, la redirection est en cours
   if (user && !user.customClaims?.schoolId && !isOnboardingPage && !isAuthPage) {
-    return <AuthProtectionLoader />; // Redirection vers onboarding en cours
+    return <AuthProtectionLoader />;
   }
 
+  // Si l'utilisateur est connecté, a une école, mais se trouve sur une page d'onboarding/login, la redirection est en cours
   if (user && user.customClaims?.schoolId && (isOnboardingPage || isAuthPage)) {
-    return <AuthProtectionLoader />; // Redirection vers dashboard en cours
+    return <AuthProtectionLoader />;
   }
 
+  // Si aucune des conditions de redirection n'est remplie, on affiche le contenu de la page
   return <>{children}</>;
 }
