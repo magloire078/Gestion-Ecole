@@ -2,46 +2,47 @@
 'use client';
 
 import { useState } from 'react';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useFirebaseApp } from '@/firebase';
 
-interface UseStorageUploaderProps {
-    onSuccess: (url: string) => void;
-    onError: (error: string) => void;
-    maxSizeMB?: number;
+interface UseImageUploadProps {
+    onSuccess?: (url: string, path: string) => void;
+    onError?: (error: string) => void;
+    onDeleteSuccess?: () => void;
 }
 
-export function useStorageUploader({ onSuccess, onError, maxSizeMB = 5 }: UseStorageUploaderProps) {
+export function useImageUpload({ onSuccess, onError, onDeleteSuccess }: UseImageUploadProps = {}) {
     const firebaseApp = useFirebaseApp();
     const storage = getStorage(firebaseApp);
+    
     const [isUploading, setIsUploading] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
 
-    const uploadFile = (file: File, path: string) => {
-        // --- Validation ---
+    const upload = (file: File, path: string, maxSizeMB: number = 5) => {
         if (file.size > maxSizeMB * 1024 * 1024) {
             const errorMsg = `L'image ne doit pas dépasser ${maxSizeMB}MB.`;
             setError(errorMsg);
-            onError(errorMsg);
+            onError?.(errorMsg);
             return;
         }
 
         if (!file.type.startsWith('image/')) {
             const errorMsg = 'Le fichier doit être une image.';
             setError(errorMsg);
-            onError(errorMsg);
+            onError?.(errorMsg);
             return;
         }
         
-        // --- Reset State & Start Upload ---
         setIsUploading(true);
         setError(null);
         setProgress(0);
 
         const timestamp = Date.now();
         const filename = `${timestamp}_${file.name.replace(/\s+/g, '_')}`;
-        const storageRef = ref(storage, `${path}${filename}`);
+        const fullPath = `${path}${filename}`;
+        const storageRef = ref(storage, fullPath);
 
         const uploadTask = uploadBytesResumable(storageRef, file);
 
@@ -52,30 +53,63 @@ export function useStorageUploader({ onSuccess, onError, maxSizeMB = 5 }: UseSto
                 setProgress(currentProgress);
             },
             (uploadError) => {
-                console.error("Upload error:", uploadError);
                 const errorMsg = "Échec du téléversement. Vérifiez les règles de sécurité de Firebase Storage.";
                 setError(errorMsg);
-                onError(errorMsg);
+                onError?.(errorMsg);
                 setIsUploading(false);
             },
             () => {
                 getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                    onSuccess(downloadURL);
+                    onSuccess?.(downloadURL, fullPath);
                     setIsUploading(false);
                 }).catch(urlError => {
-                     console.error("Get URL error:", urlError);
                      const errorMsg = "Impossible de récupérer l'URL de l'image après le téléversement.";
                      setError(errorMsg);
-                     onError(errorMsg);
+                     onError?.(errorMsg);
                      setIsUploading(false);
                 });
             }
         );
     };
 
+    const remove = async (filePath: string) => {
+        setIsDeleting(true);
+        setError(null);
+        try {
+            const storageRef = ref(storage, filePath);
+            await deleteObject(storageRef);
+            onDeleteSuccess?.();
+        } catch(err: any) {
+             const errorMsg = "Échec de la suppression de l'image.";
+             setError(errorMsg);
+             onError?.(errorMsg);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+    
+    const getPathFromUrl = (url: string): string | null => {
+        try {
+            const urlObject = new URL(url);
+            if (urlObject.hostname === 'firebasestorage.googleapis.com') {
+                const decodedPath = decodeURIComponent(urlObject.pathname);
+                // The path starts with /v0/b/{bucket}/o/{path}
+                const path = decodedPath.substring(decodedPath.indexOf('/o/') + 3);
+                return path;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+
     return {
-        uploadFile,
+        upload,
+        remove,
+        getPathFromUrl,
         isUploading,
+        isDeleting,
         progress,
         error
     };
