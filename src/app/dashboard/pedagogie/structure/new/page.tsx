@@ -172,7 +172,7 @@ export default function NewClassPage() {
           createdBy: user.uid,
           mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
           teacherIds: formValues.mainTeacherId ? [formValues.mainTeacherId] : [],
-          grade: niveau.name || '', // Correction: Assurer que le nom du niveau est inclus
+          grade: niveau.name || '',
           studentCount: 0,
           isFull: false,
           createdAt: new Date(),

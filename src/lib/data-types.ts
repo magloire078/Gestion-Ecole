@@ -125,7 +125,6 @@ export type cycle = {
     code: string;
     order: number;
     description?: string;
-    color?: string;
     ageRange?: {
         min?: number;
         max?: number;
@@ -133,6 +132,7 @@ export type cycle = {
     createdAt?: string;
     updatedAt?: string;
     id?: string;
+    color?: string;
 };
 
 export type niveau = {
@@ -296,5 +296,3 @@ export type subject = {
     color?: string;
     id?: string;
 };
-
-    

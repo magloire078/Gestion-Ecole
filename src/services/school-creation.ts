@@ -8,6 +8,7 @@ import {
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
+import type { school, user_root, staff, cycle, niveau, subject } from '@/lib/data-types';
 
 interface SchoolCreationData {
     name: string;
@@ -46,7 +47,7 @@ export class SchoolCreationService {
     const batch = writeBatch(this.db);
 
     // 1. Create the main school document
-    batch.set(schoolRef, {
+    const schoolDocData: Partial<school> = {
       name: schoolData.name,
       address: `${schoolData.address}, ${schoolData.city}, ${schoolData.country}`,
       phone: schoolData.phone,
@@ -56,20 +57,22 @@ export class SchoolCreationService {
       directorFirstName: schoolData.directorFirstName,
       directorLastName: schoolData.directorLastName,
       directorPhone: '', // Can be added later
-      createdAt: serverTimestamp(),
+      createdAt: serverTimestamp() as unknown as string,
       subscription: {
         plan: 'Essentiel', // Start with a basic plan
         status: 'trialing',
       }
-    });
+    };
+    batch.set(schoolRef, schoolDocData);
 
     // 2. Add user to the /utilisateurs collection
     const userRef = doc(this.db, 'utilisateurs', userId);
-    batch.set(userRef, { schoolId });
+    const userRootData: user_root = { schoolId };
+    batch.set(userRef, userRootData);
 
     // 3. Create a staff profile for the director
     const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, userId);
-    batch.set(staffRef, {
+    const staffDocData: Omit<staff, 'id'> = {
         uid: userId,
         schoolId: schoolId,
         role: 'directeur',
@@ -79,37 +82,40 @@ export class SchoolCreationService {
         email: schoolData.directorEmail,
         hireDate: new Date().toISOString(), // Use ISO string for server compatibility
         baseSalary: 0, // Default base salary
-    });
+    };
+    batch.set(staffRef, staffDocData);
 
     // 4. Initialize school structure (Cycles and Niveaux)
     const template = SCHOOL_TEMPLATES.IVORIAN_SYSTEM;
 
     for (const cycle of template.cycles) {
         const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
-        batch.set(cycleRef, { ...cycle, schoolId });
+        const cycleData: Omit<cycle, 'id'> = { ...cycle, schoolId };
+        batch.set(cycleRef, cycleData);
         
         const niveauxForCycle = template.niveaux[cycle.name as keyof typeof template.niveaux] || [];
         
         for (const [index, niveauName] of niveauxForCycle.entries()) {
             const niveauRef = doc(collection(this.db, `ecoles/${schoolId}/niveaux`));
-            batch.set(niveauRef, {
+            const niveauData: Omit<niveau, 'id'> = {
                 name: niveauName,
                 code: niveauName.replace(/\s+/g, '').toUpperCase(),
                 cycleId: cycleRef.id,
                 schoolId: schoolId,
                 order: index + 1,
-                // Default values that can be edited later
                 ageMin: 5,
                 ageMax: 6,
                 capacity: 30,
-            });
+            };
+            batch.set(niveauRef, niveauData);
         }
     }
     
     // 5. Initialize default subjects
     for (const subject of template.subjects) {
       const subjectRef = doc(collection(this.db, `ecoles/${schoolId}/matieres`));
-      batch.set(subjectRef, { ...subject, schoolId });
+      const subjectData: Omit<subject, 'id'> = { ...subject, schoolId };
+      batch.set(subjectRef, subjectData);
     }
 
     await batch.commit();

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, updateDoc, Firestore } from "firebase/firestore";
@@ -7,6 +8,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 /**
  * Met à jour l'URL de la photo d'un élève dans Firestore.
  * @param firestore - L'instance de Firestore.
+ * @param schoolId - L'ID de l'école.
  * @param studentId - L'ID de l'élève.
  * @param photoUrl - La nouvelle URL de la photo.
  */
