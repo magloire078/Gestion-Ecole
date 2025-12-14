@@ -1,11 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, collection, query, where, getDocs, setDoc, limit } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 
@@ -29,6 +26,20 @@ interface SchoolData extends DocumentData {
     updatedByName?: string;
 }
 
+// Helper function to sync the user document
+async function updateUserSchoolId(firestore: any, userId: string, schoolId: string) {
+  const userRef = doc(firestore, 'utilisateurs', userId);
+  try {
+    const userDoc = await getDoc(userRef);
+    if (!userDoc.exists() || userDoc.data()?.schoolId !== schoolId) {
+      await setDoc(userRef, { schoolId }, { merge: true });
+    }
+  } catch (error) {
+    console.error("Failed to sync user's schoolId:", error);
+  }
+}
+
+
 export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
@@ -41,6 +52,7 @@ export function useSchoolData() {
             setLoading(true);
             return;
         }
+
         if (!user) {
             setSchoolId(null);
             setSchoolData(null);
@@ -48,67 +60,63 @@ export function useSchoolData() {
             return;
         }
 
-        const findSchoolForUser = async (userId: string) => {
-            setLoading(true);
-            try {
-                // Method 1: Check the user document for a schoolId
-                const userDocRef = doc(firestore, 'utilisateurs', userId);
-                const userDoc = await getDoc(userDocRef);
+        const userDocRef = doc(firestore, 'utilisateurs', user.uid);
 
-                if (userDoc.exists() && userDoc.data()?.schoolId) {
-                    const foundSchoolId = userDoc.data().schoolId;
+        const unsubscribeUser = onSnapshot(userDocRef, (userDoc) => {
+            if (userDoc.exists() && userDoc.data()?.schoolId) {
+                const foundSchoolId = userDoc.data().schoolId;
+                if (schoolId !== foundSchoolId) {
                     setSchoolId(foundSchoolId);
-                    return; // Exit early if found
                 }
-
-                // Method 2: If user doc has no schoolId, check if the user is a director of any school
-                const schoolsQuery = query(collection(firestore, 'ecoles'), where('directorId', '==', userId), limit(1));
-                const schoolsSnapshot = await getDocs(schoolsQuery);
-
-                if (!schoolsSnapshot.empty) {
-                    const foundSchoolDoc = schoolsSnapshot.docs[0];
-                    const foundSchoolId = foundSchoolDoc.id;
-                    setSchoolId(foundSchoolId);
-                    
-                    // Auto-correction: update the user document with the found schoolId
-                    await setDoc(userDocRef, { schoolId: foundSchoolId }, { merge: true });
-
-                } else {
-                    setSchoolId(null); // No school found for this user
-                }
-            } catch (error) {
-                console.error("Error fetching user's school association:", error);
-                setSchoolId(null);
-            } finally {
-                // The loading state will be properly handled by the second useEffect
+                 // setLoading will be handled by the school data listener
+            } else {
+                // If user document has no schoolId, check if they are a director somewhere
+                const schoolsQuery = query(collection(firestore, 'ecoles'), where('directorId', '==', user.uid), limit(1));
+                getDocs(schoolsQuery).then(schoolsSnapshot => {
+                    if (!schoolsSnapshot.empty) {
+                        const foundSchoolId = schoolsSnapshot.docs[0].id;
+                        setSchoolId(foundSchoolId);
+                        // Auto-correct: sync the found schoolId back to the user document
+                        updateUserSchoolId(firestore, user.uid, foundSchoolId);
+                    } else {
+                        // Truly no school associated
+                        setSchoolId(null);
+                        setLoading(false);
+                    }
+                }).catch(error => {
+                    console.error("Error searching for director's school:", error);
+                    setSchoolId(null);
+                    setLoading(false);
+                });
             }
-        };
+        }, (error) => {
+            console.error("Error listening to user document:", error);
+            setSchoolId(null);
+            setLoading(false);
+        });
 
-        findSchoolForUser(user.uid);
-    }, [user, userLoading, firestore]);
+        return () => unsubscribeUser();
+
+    }, [user, userLoading, firestore, schoolId]);
 
     useEffect(() => {
-        if (schoolId === null) { // Explicitly check for null (meaning search is complete and nothing was found)
+        if (!schoolId) {
             setSchoolData(null);
-            setLoading(false);
+            if (!userLoading) setLoading(false);
             document.title = DEFAULT_TITLE;
             return;
         }
         
-        if (!schoolId) { // schoolId is undefined, search is in progress
-            return;
-        }
-
+        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
-        const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
+        const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as SchoolData;
                 setSchoolData(data);
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
-                setSchoolId(null); // The referenced school does not exist, reset.
-                document.title = DEFAULT_TITLE;
+                setSchoolId(null); // The referenced school does not exist
             }
             setLoading(false);
         }, (error) => {
@@ -117,47 +125,15 @@ export function useSchoolData() {
              setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => unsubscribeSchool();
         
-    }, [schoolId, firestore]);
+    }, [schoolId, firestore, userLoading]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
-        if (!schoolId) {
-            throw new Error("ID de l'école non disponible. Impossible de mettre à jour.");
-        }
-        
+        if (!schoolId) throw new Error("ID de l'école non disponible.");
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
-        
-        const previousData = { ...schoolData };
-        const optimisticData = { ...schoolData, ...data };
-        setSchoolData(optimisticData as SchoolData);
-
-        const cleanData = Object.fromEntries(
-            Object.entries(data).filter(([_, value]) => value !== undefined)
-        );
-
-        const dataToUpdate = {
-            ...cleanData,
-            updatedAt: serverTimestamp(),
-            updatedBy: user?.uid,
-            updatedByName: user?.displayName || user?.email,
-        };
-
-        try {
-            await updateDoc(schoolDocRef, dataToUpdate);
-        } catch (serverError: any) {
-            setSchoolData(previousData);
-            
-            const permissionError = new FirestorePermissionError({ 
-                path: schoolDocRef.path, 
-                operation: 'update', 
-                requestResourceData: dataToUpdate 
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            
-            throw new Error(serverError.code || 'unknown-error');
-        }
-    }, [schoolId, firestore, user, schoolData]);
+        await updateDoc(schoolDocRef, data);
+    }, [schoolId, firestore]);
 
     return { 
         schoolId, 

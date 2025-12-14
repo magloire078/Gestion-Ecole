@@ -1,4 +1,4 @@
-// Re-synchronisation du 12 Décembre pour forcer le déploiement.
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -10,18 +10,24 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Pour l'instant, seul l'admin a ce claim.
+      // This claim is set via a Cloud Function for super admins.
       return request.auth.token.admin == true;
     }
 
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Check if the user belongs to the school they are trying to access
+    function belongsToSchool(schoolId) {
+        return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
+    }
+    
     // --- Global Collections ---
     
-    // Correction de sécurité pour /utilisateurs
+    // Users can read/write their own root document.
     match /utilisateurs/{userId} {
-      allow get: if isAuth() && request.auth.uid == userId;
-      allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-      allow update: if isAuth() && request.auth.uid == userId;
-      allow delete: if false; // La suppression directe est désactivée
+      allow read, write: if isOwner(userId);
       allow list: if isAdmin();
     }
 
@@ -30,13 +36,21 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
     
-    // --- School Collections (Règles intermédiaires plus sécurisées) ---
-    match /ecoles/{schoolId}/{allPaths=**} {
-       // La lecture et la mise à jour sont autorisées pour les utilisateurs authentifiés
-       allow read, create, update: if isAuth();
-       
-       // La suppression est réservée aux administrateurs pour éviter les pertes de données
-       allow delete: if isAdmin();
+    // --- School Collections ---
+
+    // Any authenticated user can read general school info (e.g. for joining)
+    // Write access is restricted to users associated with that school.
+    match /ecoles/{schoolId} {
+       allow get: if isAuth();
+       allow list: if isAuth(); // Allows querying for a school by code
+       allow create: if isAuth(); // For initial school creation
+       allow update: if isAuth() && belongsToSchool(schoolId);
+       allow delete: if isAdmin(); // Only admins can delete a whole school
+    }
+    
+    // Default-deny for all subcollections, with specific overrides below
+    match /ecoles/{schoolId}/{document=**} {
+      allow read, write: if isAuth() && belongsToSchool(schoolId);
     }
   }
 }
