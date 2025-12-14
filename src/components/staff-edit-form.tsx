@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useAuth } from "@/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -102,12 +103,18 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
                 const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
                 const docSnap = await getDoc(staffRef);
                 const fullData = docSnap.exists() ? docSnap.data() as Staff : {};
+                
+                const hireDate = fullData.hireDate || editingStaff.hireDate;
+                const formattedHireDate = hireDate && isValid(parseISO(hireDate)) 
+                    ? format(parseISO(hireDate), 'yyyy-MM-dd') 
+                    : todayDateString;
+
                 form.reset({
                     ...editingStaff,
                     ...fullData,
                     password: '',
                     baseSalary: fullData.baseSalary || 0,
-                    hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') : todayDateString,
+                    hireDate: formattedHireDate,
                 });
             } else {
                 form.reset({
@@ -129,6 +136,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
             schoolId,
             matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
             status: editingStaff?.status || 'Actif',
+            displayName: `${values.firstName} ${values.lastName}`
         };
 
         try {
@@ -145,10 +153,12 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
                 const newUid = userCredential.user.uid;
                 
                 const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}`);
-                await setDoc(staffDocRef, { ...dataToSave, uid: newUid });
-    
                 const userRootRef = doc(firestore, `utilisateurs/${newUid}`);
-                await setDoc(userRootRef, { schoolId });
+
+                const batch = writeBatch(firestore);
+                batch.set(staffDocRef, { ...dataToSave, uid: newUid });
+                batch.set(userRootRef, { schoolId });
+                await batch.commit();
     
                 toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) et peut maintenant se connecter.` });
             }
