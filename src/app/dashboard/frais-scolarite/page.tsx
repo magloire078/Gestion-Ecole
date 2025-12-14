@@ -124,6 +124,20 @@ export default function FeesPage() {
         return;
     }
     
+    // Check for duplicates
+    const isDuplicate = fees.some(fee => 
+        fee.grade.toLowerCase() === values.grade.toLowerCase() && 
+        (!editingFee || fee.id !== editingFee.id)
+    );
+
+    if (isDuplicate) {
+        feeForm.setError("grade", {
+            type: "manual",
+            message: "Une grille tarifaire existe déjà pour ce niveau.",
+        });
+        return;
+    }
+
     const feeData = {
         schoolId,
         grade: values.grade,
