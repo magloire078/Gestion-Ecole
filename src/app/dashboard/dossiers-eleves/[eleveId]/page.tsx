@@ -152,14 +152,12 @@ export default function StudentProfilePage() {
         </div>
     );
   }
-
+  
+  // This should only be called AFTER loading is false
   if (!student) {
     notFound();
   }
 
-  if (!eleveId) {
-    return <div>ID d'élève invalide ou manquant dans l'URL.</div>;
-  }
   
   const handlePhotoUploadComplete = async (url: string) => {
     if (!schoolId) {

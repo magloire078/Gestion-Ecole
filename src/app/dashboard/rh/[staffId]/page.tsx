@@ -59,10 +59,26 @@ export default function StaffProfilePage() {
   
   const isLoading = schoolLoading || staffLoading || classLoading || timetableLoading;
 
-  if (!staffId) {
-    return <div>ID du membre du personnel invalide ou manquant dans l'URL.</div>;
+  if (isLoading) {
+    return (
+        <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                    <Skeleton className="h-64 w-full" />
+                </div>
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                    <Skeleton className="h-40 w-full" />
+                </div>
+            </div>
+        </div>
+    );
   }
   
+  // This should only be called AFTER loading is false
+  if (!staffMember) {
+    notFound();
+  }
+
   const handlePhotoUploadComplete = async (url: string) => {
     if (!schoolId) {
         toast({ variant: 'destructive', title: "Erreur", description: "ID de l'école non trouvé." });
@@ -104,25 +120,6 @@ export default function StaffProfilePage() {
     }
   };
 
-
-  if (isLoading) {
-    return (
-        <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                    <Skeleton className="h-64 w-full" />
-                </div>
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                    <Skeleton className="h-40 w-full" />
-                </div>
-            </div>
-        </div>
-    );
-  }
-
-  if (!staffMember) {
-    notFound();
-  }
 
   const staffFullName = `${staffMember.firstName} ${staffMember.lastName}`;
   const fallback = staffFullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
