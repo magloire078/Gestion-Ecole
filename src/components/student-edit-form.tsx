@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Bot } from 'lucide-react';
+import { Bot, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
@@ -16,6 +17,8 @@ import { doc, writeBatch, increment } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DialogFooter } from './ui/dialog';
 
 const studentSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -46,6 +49,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
@@ -96,6 +100,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
 
   const handleEditStudent = async (values: StudentFormValues) => {
+    setIsSaving(true);
     const oldClassId = student.classId;
     const newClassId = values.classId;
     const classHasChanged = oldClassId !== newClassId;
@@ -123,17 +128,13 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
         feedback: values.feedback || '',
     };
     
-    // 1. Update the student document
     batch.update(studentDocRef, updatedData);
 
-    // 2. If the class has changed, update the counters
     if (classHasChanged) {
-        // Decrement the old class counter if it existed
         if (oldClassId) {
             const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${oldClassId}`);
             batch.update(oldClassRef, { studentCount: increment(-1) });
         }
-        // Increment the new class counter
         const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${newClassId}`);
         batch.update(newClassRef, { studentCount: increment(1) });
     }
@@ -149,6 +150,8 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
             requestResourceData: updatedData 
         });
         errorEmitter.emit('permission-error', permissionError);
+    }).finally(() => {
+      setIsSaving(false);
     });
   };
 
@@ -165,66 +168,73 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
   return (
     <Form {...form}>
-      <form id={`edit-student-form-${student.id}`} onSubmit={form.handleSubmit(handleEditStudent)} className="space-y-4 max-h-[70vh] overflow-y-auto px-2">
-        <div className="grid grid-cols-2 gap-4">
-          <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-          <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-        </div>
-        <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-        <FormField
-          control={form.control}
-          name="classId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Classe</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                <SelectContent>
-                  {classes.map((opt) => (<SelectItem key={opt.id} value={opt.id!}>{opt.name}</SelectItem>))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut Élève</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif</SelectItem><SelectItem value="En attente">En attente</SelectItem><SelectItem value="Radié">Radié</SelectItem></SelectContent></Select></FormItem>)} />
-        
-        <div className="p-4 border rounded-lg space-y-4 mt-4">
-            <h4 className="font-medium text-sm">Gestion de la Scolarité</h4>
-            <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
-             <FormField
-                control={form.control}
-                name="amountDue"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Solde dû (calculé)</FormLabel>
-                        <FormControl>
-                            <Input type="number" {...field} readOnly className="bg-muted" />
-                        </FormControl>
+      <form id={`edit-student-form-${student.id}`} onSubmit={form.handleSubmit(handleEditStudent)} className="space-y-4">
+        <Tabs defaultValue="general" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="general">Général</TabsTrigger>
+                <TabsTrigger value="tuition">Scolarité</TabsTrigger>
+                <TabsTrigger value="feedback">Appréciation</TabsTrigger>
+            </TabsList>
+            <div className="py-4 max-h-[60vh] overflow-y-auto px-1">
+                <TabsContent value="general" className="mt-0 space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField
+                    control={form.control}
+                    name="classId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Classe</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>
+                            {classes.map((opt) => (<SelectItem key={opt.id} value={opt.id!}>{opt.name}</SelectItem>))}
+                            </SelectContent>
+                        </Select>
                         <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField control={form.control} name="tuitionStatus" render={({ field }) => (<FormItem><FormLabel>Statut Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Soldé">Soldé</SelectItem><SelectItem value="En retard">En retard</SelectItem><SelectItem value="Partiel">Partiel</SelectItem></SelectContent></Select></FormItem>)} />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="feedback"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Appréciation</FormLabel>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <FormControl><Textarea {...field} /></FormControl>
-                  <Button type="button" variant="outline" size="icon" onClick={handleAnalyzeFeedback} disabled={isAnalyzing}><Bot className="h-4 w-4" /></Button>
-                </div>
-              </div>
-            </FormItem>
-          )}
-        />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut Élève</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif</SelectItem><SelectItem value="En attente">En attente</SelectItem><SelectItem value="Radié">Radié</SelectItem></SelectContent></Select></FormItem>)} />
+                </TabsContent>
+                <TabsContent value="tuition" className="mt-0 space-y-4">
+                    <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="amountDue" render={({ field }) => (<FormItem><FormLabel>Solde dû (calculé)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="tuitionStatus" render={({ field }) => (<FormItem><FormLabel>Statut Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Soldé">Soldé</SelectItem><SelectItem value="En retard">En retard</SelectItem><SelectItem value="Partiel">Partiel</SelectItem></SelectContent></Select></FormItem>)} />
+                </TabsContent>
+                <TabsContent value="feedback" className="mt-0">
+                    <FormField
+                        control={form.control}
+                        name="feedback"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Appréciation Générale</FormLabel>
+                            <div className="space-y-2">
+                                <div className="flex items-start gap-2">
+                                <FormControl><Textarea {...field} rows={8} /></FormControl>
+                                <Button type="button" variant="outline" size="icon" onClick={handleAnalyzeFeedback} disabled={isAnalyzing}>
+                                    {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+                                </Button>
+                                </div>
+                            </div>
+                            </FormItem>
+                        )}
+                    />
+                </TabsContent>
+            </div>
+        </Tabs>
+        <DialogFooter className="pt-4 border-t">
+          <Button variant="outline" onClick={onFormSubmit} type="button">Annuler</Button>
+          <Button type="submit" form={`edit-student-form-${student.id}`} disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Enregistrer
+          </Button>
+        </DialogFooter>
       </form>
     </Form>
   );

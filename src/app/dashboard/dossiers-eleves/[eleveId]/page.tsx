@@ -1,16 +1,17 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Percent, Sparkles, Tag } from 'lucide-react';
+import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -60,8 +61,7 @@ const calculateAverages = (grades: GradeEntry[]) => {
         if (subjectTotalCoeffs > 0) {
             const average = subjectTotalPoints / subjectTotalCoeffs;
             averages[subject] = { average, totalCoeffs: subjectTotalCoeffs };
-            totalPoints += subjectTotalPoints;
-            totalCoeffs += subjectTotalCoeffs;
+            totalPoints += studentAverage * studentTotalCoeffs;
         }
     }
     
@@ -185,7 +185,6 @@ export default function StudentProfilePage() {
                 <div className="lg:col-span-1 flex flex-col gap-6">
                     <Skeleton className="h-56 w-full" />
                     <Skeleton className="h-40 w-full" />
-                    <Skeleton className="h-48 w-full" />
                 </div>
                 <div className="lg:col-span-2 flex flex-col gap-6">
                     <Skeleton className="h-64 w-full" />
@@ -459,7 +458,7 @@ export default function StudentProfilePage() {
     
     {/* Edit Dialog */}
     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Modifier l'Élève</DialogTitle>
             <DialogDescription>
@@ -476,12 +475,6 @@ export default function StudentProfilePage() {
                 onFormSubmit={() => setIsEditDialogOpen(false)} 
               />
             )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Annuler</Button>
-            <Button type="submit" form={`edit-student-form-${student.id}`}>
-              Enregistrer
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
      
