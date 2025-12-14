@@ -92,8 +92,9 @@ export default function AdminRolesPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [roleToDelete, setRoleToDelete] = useState<AdminRole & { id: string } | null>(null);
 
+    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
 
-    const rolesQuery = useMemoFirebase(() => query(collection(firestore, 'admin_roles')), [firestore]);
+    const rolesQuery = useMemoFirebase(() => isAdmin ? query(collection(firestore, 'admin_roles')) : null, [firestore, isAdmin]);
     const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
     
     const roles: (AdminRole & { id: string })[] = useMemo(() => rolesData?.map(doc => ({ id: doc.id, ...doc.data() } as AdminRole & { id: string })) || [], [rolesData]);
@@ -107,8 +108,6 @@ export default function AdminRolesPage() {
             permissions: {},
         }
     });
-
-    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
 
     useEffect(() => {
         if (!userLoading && !isAdmin) {
