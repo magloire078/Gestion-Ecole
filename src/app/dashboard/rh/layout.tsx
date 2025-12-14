@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@/firebase";
 
 export default function RHLayout({
   children,
@@ -14,8 +15,14 @@ export default function RHLayout({
   children: React.ReactNode;
 }) {
     const { subscription, loading: subscriptionLoading } = useSubscription();
+    const { user, loading: userLoading } = useUser();
 
-    if (subscriptionLoading) {
+    const isLoading = subscriptionLoading || userLoading;
+
+    // Dev Only: Allow admin to bypass plan check
+    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
+
+    if (isLoading) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-12 w-1/3" />
@@ -31,8 +38,9 @@ export default function RHLayout({
             </div>
         );
     }
-
-    if (subscription?.plan !== 'Pro') {
+    
+    // If not admin and not on Pro plan, show the upgrade message
+    if (!isAdmin && subscription?.plan !== 'Pro') {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">
