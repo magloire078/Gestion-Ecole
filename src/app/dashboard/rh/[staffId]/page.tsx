@@ -14,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { staff as Staff, class_type as Class, school as OrganizationSettings, timetableEntry as TimetableEntry } from '@/lib/data-types';
-import { getPayslipDetails, type PayslipDetails } from '@/app/bulletin-de-paie';
+import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
