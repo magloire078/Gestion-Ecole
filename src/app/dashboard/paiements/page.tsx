@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -23,12 +23,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Pencil, MessageSquare, Bot } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, doc, writeBatch } from "firebase/firestore";
+import { collection, doc, writeBatch, increment } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -200,7 +199,7 @@ export default function PaymentsPage() {
             schoolName: schoolName || 'Votre École',
             studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
             studentMatricule: selectedStudent.matricule || 'N/A',
-            className: selectedStudent.class,
+            className: selectedStudent.class || 'N/A',
             date: new Date(values.paymentDate),
             description: values.paymentDescription,
             amountPaid: amountPaid,
@@ -269,6 +268,16 @@ export default function PaymentsPage() {
       </div>
       
       <div className="space-y-4">
+        <Card>
+            <CardHeader>
+                <CardTitle>Total dû (filtré)</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-3xl font-bold text-destructive">
+                    {isLoading ? <Skeleton className="h-8 w-48" /> : formatCurrency(totalDue)}
+                </p>
+            </CardContent>
+        </Card>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h2 className="text-xl font-semibold">Liste des Élèves</h2>
@@ -352,7 +361,7 @@ export default function PaymentsPage() {
                                       </span>
                                     </Button>
                                 )}
-                                <Button variant="outline" size="sm" onClick={() => handleOpenManageDialog(student)}>
+                                <Button variant="default" size="sm" onClick={() => handleOpenManageDialog(student)}>
                                   <span className="flex items-center gap-2">
                                     <Pencil className="h-3 w-3" /> Gérer
                                   </span>
@@ -368,13 +377,6 @@ export default function PaymentsPage() {
                         </TableCell>
                         </TableRow>
                     )}
-                    <TableRow className="font-bold bg-muted/50">
-                            <TableCell colSpan={3} className="text-right">Total dû (filtré)</TableCell>
-                            <TableCell className="text-right font-mono text-lg text-primary">
-                                {formatCurrency(totalDue)}
-                            </TableCell>
-                            <TableCell></TableCell>
-                        </TableRow>
                     </TableBody>
                 </Table>
             </CardContent>
@@ -533,11 +535,12 @@ export default function PaymentsPage() {
                         <span>Génération du message...</span>
                     </div>
                 ) : (
-                    <Textarea
+                    <textarea
                         id="reminder-message"
                         value={reminderMessage}
                         onChange={(e) => setReminderMessage(e.target.value)}
                         rows={6}
+                        className="w-full rounded-md border p-2 text-sm"
                     />
                 )}
             </div>
