@@ -1,14 +1,7 @@
 
 import type { Metadata } from 'next';
-import { PT_Sans } from 'next/font/google';
 import './globals.css';
 import { MainLayout } from './main-layout';
-
-const ptSans = PT_Sans({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-sans',
-});
 
 export const metadata: Metadata = {
   title: 'GèreEcole',
@@ -22,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${ptSans.variable} font-sans antialiased`}>
+      <body className={`font-sans antialiased`}>
         <MainLayout>{children}</MainLayout>
       </body>
     </html>
