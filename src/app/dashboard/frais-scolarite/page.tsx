@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -31,7 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
 import Image from "next/image";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
+import { collection, addDoc, doc, setDoc, deleteDoc, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,7 +79,7 @@ export default function FeesPage() {
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
   const { toast } = useToast();
   
-  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `frais_scolarite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
 
@@ -115,7 +116,7 @@ export default function FeesPage() {
     }
   }, [isFeeGridDialogOpen, editingFee, feeForm]);
 
-  const getFeeDocRef = (feeId: string) => doc(firestore, `frais_scolarite/${feeId}`);
+  const getFeeDocRef = (feeId: string) => doc(firestore, `ecoles/${schoolId}/frais_scolarite/${feeId}`);
 
   const onFeeFormSubmit = (values: FeeFormValues) => {
     if (!schoolId) {
@@ -133,7 +134,7 @@ export default function FeesPage() {
 
     if (editingFee) {
         // Update existing fee
-        const feeDocRef = getFeeDocRef(editingFee.id);
+        const feeDocRef = getFeeDocRef(editingFee.id!);
         setDoc(feeDocRef, feeData, { merge: true })
           .then(() => {
             toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${values.grade} a été mise à jour.` });
@@ -144,7 +145,7 @@ export default function FeesPage() {
           });
     } else {
         // Add new fee
-        const feesCollectionRef = collection(firestore, `frais_scolarite`);
+        const feesCollectionRef = collection(firestore, `ecoles/${schoolId}/frais_scolarite`);
         addDoc(feesCollectionRef, feeData)
           .then(() => {
             toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${values.grade} a été créée.` });
@@ -167,7 +168,7 @@ export default function FeesPage() {
   };
 
   const handleDeleteFeeGrid = () => {
-    if (!schoolId || !feeToDelete) return;
+    if (!schoolId || !feeToDelete || !feeToDelete.id) return;
     const feeDocRef = getFeeDocRef(feeToDelete.id);
     deleteDoc(feeDocRef)
       .then(() => {
