@@ -41,14 +41,14 @@ const navLinks = [
       links: [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, adminOnly: false },
         { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, adminOnly: false },
-        { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, adminOnly: false },
-        { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, adminOnly: false },
       ]
     },
     {
       group: "Pédagogie",
       icon: GraduationCap,
       links: [
+        { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, adminOnly: false },
+        { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, adminOnly: false },
         { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText, adminOnly: false },
         { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, adminOnly: false },
         { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, adminOnly: false },
