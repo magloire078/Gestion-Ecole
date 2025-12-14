@@ -402,7 +402,8 @@ const OnboardingDashboard = () => {
             color === 'blue' && 'bg-blue-100 text-blue-600 dark:bg-blue-900/50',
             color === 'green' && 'bg-green-100 text-green-600 dark:bg-green-900/50',
             color === 'purple' && 'bg-purple-100 text-purple-600 dark:bg-purple-900/50',
-            color === 'orange' && 'bg-orange-100 text-orange-600 dark:bg-orange-900/50'
+            color === 'orange' && 'bg-orange-100 text-orange-600 dark:bg-orange-900/50',
+            color === 'red' && 'bg-red-100 text-red-600 dark:bg-red-900/50'
           )}>
             {icon}
           </div>
@@ -507,8 +508,8 @@ const OnboardingDashboard = () => {
           <h3 className="text-xl font-bold mb-4">Actions rapides</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <QuickActionCard icon={<UserPlus />} title="Inscrire un élève" description="Via le formulaire complet" color="blue" href="/dashboard/inscription"/>
-            <QuickActionCard icon={<Calendar />} title="Créer une classe" description="Définir niveaux et frais" color="green" href="/dashboard/pedagogie/structure/new"/>
-            <QuickActionCard icon={<CreditCard />} title="Encaisser un paiement" description="Suivi de la scolarité" color="purple" href="/dashboard/paiements"/>
+            <QuickActionCard icon={<Calendar />} title="Créer une classe" description="Définir niveaux et effectifs" color="green" href="/dashboard/pedagogie/structure/new"/>
+            <QuickActionCard icon={<CreditCard />} title="Grille Tarifaire" description="Définir les frais de scolarité" color="red" href="/dashboard/frais-scolarite"/>
             <QuickActionCard icon={<BookOpen />} title="Ajouter des livres" description="Gestion de la bibliothèque" color="orange" href="/dashboard/bibliotheque"/>
           </div>
         </Card>
