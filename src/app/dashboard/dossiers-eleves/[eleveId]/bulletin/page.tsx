@@ -9,8 +9,6 @@ import { doc, collection, query, where } from 'firebase/firestore';
 import { ReportCard } from '@/components/report-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { staff as Staff, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 interface StudentWithClass extends Student {
     classId?: string;
@@ -19,20 +17,38 @@ interface StudentWithClass extends Student {
 export default function StudentReportPage() {
   const params = useParams();
   const eleveId = params.eleveId as string;
-  const firestore = useFirestore();
-  const { schoolData, loading: schoolLoading, schoolId } = useSchoolData();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
-  // --- Data Fetching ---
+  if (schoolLoading) {
+    return <StudentReportPageSkeleton />;
+  }
+  
+  if (!schoolId || !schoolData) {
+      return <div>École non trouvée.</div>;
+  }
+
+  return <StudentReportContent eleveId={eleveId} schoolId={schoolId} schoolData={schoolData} />
+}
+
+interface StudentReportContentProps {
+    eleveId: string;
+    schoolId: string;
+    schoolData: any;
+}
+
+function StudentReportContent({ eleveId, schoolId, schoolData }: StudentReportContentProps) {
+  const firestore = useFirestore();
+  
   const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+    doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`)
   , [firestore, schoolId, eleveId]);
   const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);
 
   const gradesQuery = useMemoFirebase(() =>
-    (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`)) : null
+    query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`))
   , [firestore, schoolId, eleveId]);
   
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')), [firestore, schoolId]);
 
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
@@ -41,19 +57,13 @@ export default function StudentReportPage() {
   const grades = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
 
-  const isLoading = schoolLoading || studentLoading || gradesLoading || teachersLoading;
+  const isLoading = studentLoading || gradesLoading || teachersLoading;
   
   if (isLoading) {
-    return (
-        <div className="space-y-4">
-            <Skeleton className="h-8 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
-        </div>
-    );
+    return <StudentReportPageSkeleton />;
   }
 
-  if (!student && !isLoading) {
+  if (!student) {
     notFound();
   }
 
@@ -85,4 +95,15 @@ export default function StudentReportPage() {
       />
     </div>
   );
+}
+
+
+function StudentReportPageSkeleton() {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
+        </div>
+    );
 }

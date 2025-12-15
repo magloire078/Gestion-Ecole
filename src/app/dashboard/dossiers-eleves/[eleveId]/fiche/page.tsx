@@ -8,44 +8,48 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StudentInfoSheet } from '@/components/student-info-sheet';
 import type { student as Student } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function StudentSheetPage() {
   const params = useParams();
   const eleveId = params.eleveId as string;
-  const firestore = useFirestore();
-  const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
+  if (schoolLoading) {
+    return <StudentSheetPageSkeleton />;
+  }
+
+  if (!schoolId) {
+    return <div>École non trouvée.</div>;
+  }
+  
+  if (!schoolData) {
+      return <div>Données de l'école non chargées.</div>
+  }
+
+  return <StudentSheetContent eleveId={eleveId} schoolId={schoolId} schoolData={schoolData} />;
+}
+
+interface StudentSheetContentProps {
+    eleveId: string;
+    schoolId: string;
+    schoolData: any;
+}
+
+function StudentSheetContent({ eleveId, schoolId, schoolData }: StudentSheetContentProps) {
+  const firestore = useFirestore();
   const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+    doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`)
   , [firestore, schoolId, eleveId]);
 
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
 
-  const isLoading = schoolLoading || studentLoading;
-
-  if (isLoading) {
-    return (
-        <div className="space-y-4 p-4">
-            <Skeleton className="h-8 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
-        </div>
-    );
+  if (studentLoading) {
+    return <StudentSheetPageSkeleton />;
   }
 
-  if (!studentData && !isLoading) {
+  if (!studentData) {
     notFound();
   }
-
-  const schoolInfo = {
-      name: schoolData?.name || 'Votre École',
-      address: schoolData?.address,
-      phone: schoolData?.phone,
-      website: schoolData?.website,
-      mainLogoUrl: schoolData?.mainLogoUrl,
-  };
 
   return (
     <div className="space-y-6">
@@ -55,8 +59,18 @@ export default function StudentSheetPage() {
       </div>
       <StudentInfoSheet 
         student={studentData as Student}
-        school={schoolInfo}
+        school={schoolData}
       />
     </div>
   );
+}
+
+function StudentSheetPageSkeleton() {
+    return (
+        <div className="space-y-4 p-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
+        </div>
+    );
 }

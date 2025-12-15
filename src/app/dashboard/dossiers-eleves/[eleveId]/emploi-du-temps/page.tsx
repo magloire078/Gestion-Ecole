@@ -9,8 +9,6 @@ import { doc, collection, query, where } from 'firebase/firestore';
 import { PrintableTimetable } from '@/components/printable-timetable';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { staff as Staff, student as Student } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 interface TimetableEntry {
   id: string;
@@ -25,12 +23,30 @@ interface TimetableEntry {
 export default function StudentTimetablePage() {
   const params = useParams();
   const eleveId = params.eleveId as string;
-  const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
 
-  // --- Data Fetching ---
+  if (schoolLoading) {
+    return <StudentTimetablePageSkeleton />;
+  }
+
+  if (!schoolId) {
+      return <div>École non trouvée.</div>;
+  }
+  
+  return <StudentTimetableContent eleveId={eleveId} schoolId={schoolId} schoolName={schoolName} />;
+}
+
+interface StudentTimetableContentProps {
+    eleveId: string;
+    schoolId: string;
+    schoolName: string | undefined;
+}
+
+function StudentTimetableContent({ eleveId, schoolId, schoolName }: StudentTimetableContentProps) {
+  const firestore = useFirestore();
+
   const studentRef = useMemoFirebase(() => 
-    (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null
+    doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`)
   , [firestore, schoolId, eleveId]);
 
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
@@ -38,10 +54,10 @@ export default function StudentTimetablePage() {
   const classId = student?.classId;
 
   const timetableQuery = useMemoFirebase(() =>
-    (schoolId && classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
+    (classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
   , [firestore, schoolId, classId]);
 
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')) : null, [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')), [firestore, schoolId]);
 
   const { data: timetableData, loading: timetableLoading } = useCollection<TimetableEntry>(timetableQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection<Staff & { id: string }>(teachersQuery);
@@ -49,16 +65,10 @@ export default function StudentTimetablePage() {
   const timetableEntries = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() })) || [], [timetableData]);
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
 
-  const isLoading = schoolLoading || studentLoading || timetableLoading || teachersLoading;
+  const isLoading = studentLoading || timetableLoading || teachersLoading;
 
   if (isLoading) {
-    return (
-        <div className="space-y-4">
-            <Skeleton className="h-8 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-[70vh] w-full" />
-        </div>
-    );
+    return <StudentTimetablePageSkeleton />;
   }
 
   if (!student) {
@@ -88,4 +98,14 @@ export default function StudentTimetablePage() {
       />
     </div>
   );
+}
+
+function StudentTimetablePageSkeleton() {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-[70vh] w-full" />
+        </div>
+    );
 }

@@ -8,34 +8,46 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import type { staff as Staff, school as School } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function TeacherSheetPage() {
   const params = useParams();
   const staffId = params.staffId as string;
-  const firestore = useFirestore();
-  const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
+  if (schoolLoading) {
+    return <TeacherSheetPageSkeleton />;
+  }
+  
+  if (!schoolId) {
+      return <div>École non trouvée</div>;
+  }
+  
+  if (!schoolData) {
+      return <div>Données de l'école non chargées.</div>
+  }
+
+  return <TeacherSheetContent staffId={staffId} schoolId={schoolId} schoolData={schoolData as School} />;
+}
+
+interface TeacherSheetContentProps {
+    staffId: string;
+    schoolId: string;
+    schoolData: School;
+}
+
+function TeacherSheetContent({ staffId, schoolId, schoolData }: TeacherSheetContentProps) {
+  const firestore = useFirestore();
   const staffRef = useMemoFirebase(() => 
-    (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null
+    doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`)
   , [firestore, schoolId, staffId]);
 
   const { data: staffData, loading: staffLoading } = useDoc<Staff>(staffRef);
 
-  const isLoading = schoolLoading || staffLoading;
-
-  if (isLoading) {
-    return (
-        <div className="space-y-4 p-4">
-            <Skeleton className="h-8 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
-        </div>
-    );
+  if (staffLoading) {
+    return <TeacherSheetPageSkeleton />;
   }
 
-  if (!staffData && !isLoading) {
+  if (!staffData) {
     notFound();
   }
 
@@ -47,8 +59,19 @@ export default function TeacherSheetPage() {
       </div>
       <TeacherInfoSheet 
         teacher={staffData as Staff & { id: string }}
-        school={schoolData as School}
+        school={schoolData}
       />
     </div>
   );
+}
+
+
+function TeacherSheetPageSkeleton() {
+    return (
+        <div className="space-y-4 p-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
+        </div>
+    );
 }

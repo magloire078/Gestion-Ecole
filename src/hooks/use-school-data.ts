@@ -31,25 +31,6 @@ interface SchoolData extends DocumentData {
     updatedByName?: string;
 }
 
-async function updateUserSchoolId(firestore: any, userId: string, schoolId: string) {
-  const userRef = doc(firestore, 'utilisateurs', userId);
-  try {
-    const userDoc = await getDoc(userRef);
-    if (!userDoc.exists() || userDoc.data()?.schoolId !== schoolId) {
-      await setDoc(userRef, { schoolId }, { merge: true });
-    }
-  } catch (error) {
-    console.error("Failed to sync user's schoolId:", error);
-    // Emit a permission error if that's the cause
-     const permissionError = new FirestorePermissionError({
-        path: userRef.path,
-        operation: 'write',
-        requestResourceData: { schoolId },
-    });
-    errorEmitter.emit('permission-error', permissionError);
-  }
-}
-
 export function useSchoolData() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
@@ -63,74 +44,65 @@ export function useSchoolData() {
             return;
         }
 
-        if (!user) {
+        if (!user || !firestore) {
             setSchoolId(null);
             setSchoolData(null);
             setLoading(false);
             return;
         }
 
-        const findSchoolForUser = async (userId: string) => {
-            // Method 1: Check user document directly.
-            const userRef = doc(firestore, 'utilisateurs', userId);
-            try {
-                const userDoc = await getDoc(userRef);
-                if (userDoc.exists() && userDoc.data()?.schoolId) {
-                    return userDoc.data().schoolId;
+        const findAndSetSchoolData = async (userId: string) => {
+            setLoading(true);
+            let foundSchoolId: string | null = null;
+
+            // 1. Try claims first (fastest)
+            const tokenResult = await user.getIdTokenResult();
+            if (tokenResult.claims.schoolId) {
+                foundSchoolId = tokenResult.claims.schoolId as string;
+            }
+
+            // 2. If no claim, check /utilisateurs/{uid} document
+            if (!foundSchoolId) {
+                try {
+                    const userRef = doc(firestore, 'utilisateurs', userId);
+                    const userDoc = await getDoc(userRef);
+                    if (userDoc.exists() && userDoc.data()?.schoolId) {
+                        foundSchoolId = userDoc.data().schoolId;
+                    }
+                } catch (e) {
+                     console.error("Error reading user root document:", e);
                 }
-            } catch (e) {
-                // This will catch permission errors on the user doc itself
-                console.error("Error reading user document:", e);
-                 const permissionError = new FirestorePermissionError({ path: userRef.path, operation: 'get' });
-                 errorEmitter.emit('permission-error', permissionError);
             }
+            
+            setSchoolId(foundSchoolId);
 
-            // Method 2: If user doc has no schoolId, check if the user is a director of any school
-            const schoolsQuery = query(collection(firestore, 'ecoles'), where('directorId', '==', userId), limit(1));
-            const schoolsSnapshot = await getDocs(schoolsQuery);
-
-            if (!schoolsSnapshot.empty) {
-                const foundSchoolId = schoolsSnapshot.docs[0].id;
-                // Auto-correct: sync the found schoolId back to the user document for future faster lookups.
-                await updateUserSchoolId(firestore, userId, foundSchoolId);
-                return foundSchoolId;
+            if (!foundSchoolId) {
+                setSchoolData(null);
+                setLoading(false);
+                document.title = DEFAULT_TITLE;
             }
-
-            return null; // No school found by any method
         };
 
-        findSchoolForUser(user.uid).then(id => {
-            setSchoolId(id);
-            if (!id) {
-                setLoading(false);
-            }
-            // If an ID is found, loading will be set to false by the school data listener
-        }).catch(error => {
-            console.error("Error in findSchoolForUser:", error);
-            setSchoolId(null);
-            setLoading(false);
-        });
+        findAndSetSchoolData(user.uid);
 
     }, [user, userLoading, firestore]);
-
+    
     useEffect(() => {
         if (!schoolId) {
-            setSchoolData(null);
-            if (!userLoading) setLoading(false);
-            document.title = DEFAULT_TITLE;
-            return;
+            // If schoolId becomes null after a check, ensure loading is false.
+             if(!userLoading) setLoading(false);
+             return;
         }
-        
-        setLoading(true);
+
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
-        const unsubscribeSchool = onSnapshot(schoolDocRef, (docSnap) => {
+        const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data() as SchoolData;
                 setSchoolData(data);
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
-                setSchoolId(null); // The referenced school does not exist
+                setSchoolId(null);
             }
             setLoading(false);
         }, (error) => {
@@ -141,8 +113,7 @@ export function useSchoolData() {
              setLoading(false);
         });
 
-        return () => unsubscribeSchool();
-        
+        return () => unsubscribe();
     }, [schoolId, firestore, userLoading]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
@@ -166,7 +137,6 @@ export function useSchoolData() {
                 requestResourceData: dataToUpdate,
             });
             errorEmitter.emit('permission-error', permissionError);
-            // Rethrow so the caller can handle it
             throw error;
         }
     }, [schoolId, firestore, user]);

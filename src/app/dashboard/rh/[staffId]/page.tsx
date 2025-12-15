@@ -19,28 +19,36 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
 import { SafeImage } from '@/components/ui/safe-image';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
-
-const getStatusBadgeVariant = (status: Staff['status']) => {
-    switch (status) {
-        case 'Actif':
-            return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
-        case 'Inactif':
-            return 'bg-destructive/80 text-destructive-foreground';
-        default:
-            return 'bg-secondary text-secondary-foreground';
-    }
-};
-
 
 export default function StaffProfilePage() {
-  const params = useParams();
+    const params = useParams();
+    const staffId = params.staffId as string;
+    const { schoolId, loading: schoolLoading } = useSchoolData();
+
+    if (schoolLoading) {
+        return <StaffDetailSkeleton />;
+    }
+    
+    if (!schoolId) {
+        return <p>Erreur: Aucune école n'est associée à votre compte.</p>;
+    }
+    
+    if (!staffId) {
+        return <p>Erreur: ID du membre du personnel manquant.</p>;
+    }
+
+    return <StaffProfileContent staffId={staffId} schoolId={schoolId} />;
+}
+
+interface StaffProfileContentProps {
+    staffId: string;
+    schoolId: string;
+}
+
+function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
   const router = useRouter();
-  const staffId = params.staffId as string;
-  
   const firestore = useFirestore();
-  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolData } = useSchoolData();
   const { user } = useUser();
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
@@ -50,62 +58,39 @@ export default function StaffProfilePage() {
   const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
   const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
   
-  // --- Data Fetching ---
-  const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId]);
-  const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef, {
-      onError: (error) => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: staffRef!.path,
-              operation: 'get'
-          }));
-      }
-  });
+  const staffRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`), [firestore, schoolId, staffId]);
+  const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
 
-  const classRef = useMemoFirebase(() => staffMemberData?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMemberData.classId}`) : null, [staffMemberData, schoolId, firestore]);
+  const staffMember = staffMemberData as Staff | null;
+
+  const classRef = useMemoFirebase(() => staffMember?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const timetableQuery = useMemoFirebase(() => (schoolId && staffId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
+  const timetableQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)), [firestore, schoolId, staffId]);
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as TimetableEntry) || [], [timetableData]);
   
-  const isLoading = schoolLoading || staffLoading || classLoading || timetableLoading;
+  const isLoading = staffLoading || classLoading || timetableLoading;
 
-  if (!isLoading && !staffMemberData && !schoolLoading) {
+  if (isLoading) {
+    return <StaffDetailSkeleton />;
+  }
+
+  if (!staffMember) {
     notFound();
   }
 
-  if (isLoading || !staffMemberData) {
-    return (
-        <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                    <Skeleton className="h-64 w-full" />
-                </div>
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                    <Skeleton className="h-40 w-full" />
-                </div>
-            </div>
-        </div>
-    );
-  }
-
-  const staffMember = staffMemberData as Staff;
-
   const handlePhotoUploadComplete = async (url: string) => {
-    if (!schoolId) {
-        toast({ variant: 'destructive', title: "Erreur", description: "ID de l'école non trouvé." });
-        return;
-    }
     try {
         await updateStaffPhoto(firestore, schoolId, staffId, url);
         toast({ title: 'Photo de profil mise à jour !' });
     } catch (error) {
-        // L'erreur est déjà gérée par le service.
+        // Error is handled by the service
     }
   };
 
   const handleGeneratePayslip = async () => {
-    if (!schoolData || !schoolId || !staffMember) return;
+    if (!schoolData || !staffMember) return;
 
     setIsGeneratingPayslip(true);
     setPayslipDetails(null);
@@ -162,6 +147,7 @@ export default function StaffProfilePage() {
                         <ImageUploader 
                             onUploadComplete={handlePhotoUploadComplete}
                             storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
+                            currentImageUrl={staffMember.photoURL}
                         >
                             <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
                                 <SafeImage src={staffMember.photoURL} alt={staffFullName} width={96} height={96} className="rounded-full" />
@@ -255,4 +241,17 @@ export default function StaffProfilePage() {
   );
 }
 
-    
+function StaffDetailSkeleton() {
+    return (
+         <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                    <Skeleton className="h-64 w-full" />
+                </div>
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                    <Skeleton className="h-40 w-full" />
+                </div>
+            </div>
+        </div>
+    )
+}

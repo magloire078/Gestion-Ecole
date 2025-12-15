@@ -19,23 +19,28 @@ type UseDocOptions = {
 export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOptions) {
   const [data, setData] = useState<DocumentData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<FirestoreError | null>(null);
   const firestore = useFirestore();
 
   useEffect(() => {
     if (!ref || !firestore) {
         setData(null);
         setLoading(false);
+        setError(null);
         return;
     }
     
+    setData(null);
+    setError(null);
     setLoading(true);
 
     const unsubscribe = onSnapshot(ref, (snapshot) => {
       setData(snapshot.exists() ? snapshot.data() : null);
       setLoading(false);
-    }, async (error) => {
+    }, async (err) => {
+        setError(err);
         if(options?.onError) {
-            options.onError(error);
+            options.onError(err);
         } else {
             const permissionError = new FirestorePermissionError({
                 path: ref.path,
@@ -50,5 +55,5 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
     return () => unsubscribe();
   }, [ref, firestore, options]);
 
-  return {data, loading};
+  return {data, loading, error};
 }

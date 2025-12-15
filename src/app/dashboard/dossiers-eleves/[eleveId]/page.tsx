@@ -5,7 +5,7 @@ import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag, CalendarCheck } from 'lucide-react';
+import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag, CalendarCheck, Loader2 } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -31,68 +31,46 @@ import { SafeImage } from '@/components/ui/safe-image';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
-const getStatusBadgeVariant = (status: Student['status']) => {
-    switch (status) {
-        case 'Actif':
-            return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
-        case 'Radié':
-            return 'bg-destructive/80 text-destructive-foreground';
-        case 'En attente':
-            return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
-        default:
-            return 'bg-secondary text-secondary-foreground';
-    }
-};
+// ====================================================================================
+// Main Page Component
+// ====================================================================================
+export default function StudentProfilePage() {
+  const params = useParams();
+  const eleveId = params.eleveId as string;
+  const { schoolId, loading: schoolLoading } = useSchoolData();
 
-const calculateAverages = (grades: GradeEntry[]) => {
-    const gradesBySubject: Record<string, { totalPoints: number; totalCoeffs: number }> = {};
+  if (schoolLoading) {
+    return <EmployeeDetailSkeleton />;
+  }
 
-    grades.forEach(g => {
-        if (!gradesBySubject[g.subject]) {
-            gradesBySubject[g.subject] = { totalPoints: 0, totalCoeffs: 0 };
-        }
-        gradesBySubject[g.subject].totalPoints += g.grade * g.coefficient;
-        gradesBySubject[g.subject].totalCoeffs += g.coefficient;
-    });
-    
-    const averages: Record<string, {average: number, totalCoeffs: number}> = {};
-    let totalPoints = 0;
-    let totalCoeffs = 0;
+  if (!schoolId) {
+    // This can happen if the user has no school associated.
+    // An AuthGuard should ideally handle this, but as a fallback:
+    return <p>Erreur: Aucune école n'est associée à votre compte.</p>;
+  }
+  
+  if (!eleveId) {
+    return <p>Erreur: ID de l'élève manquant.</p>;
+  }
 
-    for (const subject in gradesBySubject) {
-        const { totalPoints: subjectTotalPoints, totalCoeffs: subjectTotalCoeffs } = gradesBySubject[subject];
-        if (subjectTotalCoeffs > 0) {
-            const average = subjectTotalPoints / subjectTotalCoeffs;
-            averages[subject] = { average, totalCoeffs: subjectTotalCoeffs };
-            // Correct calculation for general average
-            totalPoints += subjectTotalPoints;
-            totalCoeffs += subjectTotalCoeffs;
-        }
-    }
-    
-    const generalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
-
-    return { subjectAverages: averages, generalAverage };
-};
-
-interface PaymentHistoryEntry extends Payment {
-  id: string;
+  return <StudentProfileContent eleveId={eleveId} schoolId={schoolId} />;
 }
 
-const formatCurrency = (value: number | undefined) => {
-    if (value === undefined) return 'N/A';
-    return `${value.toLocaleString('fr-FR')} CFA`;
-};
 
+// ====================================================================================
+// Content Component
+// ====================================================================================
+interface StudentProfileContentProps {
+  eleveId: string;
+  schoolId: string;
+}
 
-export default function StudentProfilePage() {
+function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps) {
   const isMounted = useHydrationFix();
-  const params = useParams();
   const router = useRouter();
-  const eleveId = params.eleveId as string;
   
   const firestore = useFirestore();
-  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+  const { schoolName } = useSchoolData();
   const { user } = useUser();
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
@@ -103,38 +81,29 @@ export default function StudentProfilePage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
-  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef, {
-      onError: (error) => {
-          errorEmitter.emit('permission-error', new FirestorePermissionError({
-              path: studentRef!.path,
-              operation: 'get'
-          }));
-      }
-  });
-
-  const gradesQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
-  const paymentsQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
+  const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId]);
+  const { data: studentData, loading: studentLoading, error } = useDoc<Student>(studentRef);
+  
+  const gradesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')), [firestore, schoolId, eleveId]);
+  const paymentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')), [firestore, schoolId, eleveId]);
   
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
-  const classRef = useMemoFirebase(() => studentData?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${studentData.classId}`) : null, [studentData, schoolId, firestore]);
+  const student = studentData as Student | null;
+  const classRef = useMemoFirebase(() => student?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId && schoolId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
+  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
-  // Queries for the edit form
-  const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+  const allSchoolClassesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
   const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
-  const feesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/frais_scolarite`), [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
-  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
+  const niveauxQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/niveaux`)), [firestore, schoolId]);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
 
-
-  // --- Data Memoization ---
   const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
   const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
   const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);
@@ -142,52 +111,29 @@ export default function StudentProfilePage() {
   const allNiveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
 
 
-  const studentFullName = studentData ? `${studentData.firstName} ${studentData.lastName}` : '';
+  const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
   
-  const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
+  const isLoading = studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
 
-  if (!isLoading && !studentData && !schoolLoading) {
+  if (isLoading) {
+    return <EmployeeDetailSkeleton />;
+  }
+
+  if (!student) {
     notFound();
   }
-
-  if (isLoading || !studentData) {
-    return (
-        <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                    <Skeleton className="h-56 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                </div>
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                    <Skeleton className="h-64 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                </div>
-            </div>
-        </div>
-    );
-  }
-  
-  // After loading and after check, we can assume studentData exists
-  const student = studentData as Student;
-
   
   const handlePhotoUploadComplete = async (url: string) => {
-    if (!schoolId) {
-        toast({ variant: 'destructive', title: "Erreur", description: "ID de l'école non trouvé." });
-        return;
-    }
     try {
         await updateStudentPhoto(firestore, schoolId, eleveId, url);
         toast({ title: 'Photo de profil mise à jour !' });
     } catch (error) {
-        // L'erreur est déjà gérée par le service.
+        // Error is handled by the service
     }
   };
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
-    if (!student) return;
-    
     const currentPaymentIndex = paymentHistory.findIndex(p => p.id === payment.id);
     const paymentsUpToThisOne = paymentHistory.slice(currentPaymentIndex);
     const totalPaidSinceThisPayment = paymentsUpToThisOne.reduce((sum, p) => sum + p.amount, 0);
@@ -241,6 +187,7 @@ export default function StudentProfilePage() {
                         <ImageUploader 
                             onUploadComplete={handlePhotoUploadComplete}
                             storagePath={`ecoles/${schoolId}/eleves/${eleveId}/avatars/`}
+                             currentImageUrl={student.photoUrl}
                         >
                             <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
                                 <SafeImage src={student.photoUrl} alt={studentFullName} width={64} height={64} className="rounded-full" />
@@ -473,7 +420,6 @@ export default function StudentProfilePage() {
         </div>
     </div>
     
-    {/* Edit Dialog */}
     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -482,7 +428,7 @@ export default function StudentProfilePage() {
                 Mettez à jour les informations de <strong>{student?.firstName} {student?.lastName}</strong>.
             </DialogDescription>
           </DialogHeader>
-            {student && schoolId && (
+            {student && (
               <StudentEditForm 
                 student={student} 
                 classes={allSchoolClasses} 
@@ -508,4 +454,64 @@ export default function StudentProfilePage() {
   );
 }
 
+// ====================================================================================
+// Helper & Skeleton Components
+// ====================================================================================
+interface PaymentHistoryEntry extends Payment {
+  id: string;
+}
+const formatCurrency = (value: number | undefined) => {
+    if (value === undefined) return 'N/A';
+    return `${value.toLocaleString('fr-FR')} CFA`;
+};
+const getStatusBadgeVariant = (status: Student['status']) => {
+    switch (status) {
+        case 'Actif': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+        case 'Radié': return 'bg-destructive/80 text-destructive-foreground';
+        case 'En attente': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
+        default: return 'bg-secondary text-secondary-foreground';
+    }
+};
+const calculateAverages = (grades: GradeEntry[]) => {
+    const gradesBySubject: Record<string, { totalPoints: number; totalCoeffs: number }> = {};
+    grades.forEach(g => {
+        if (!gradesBySubject[g.subject]) {
+            gradesBySubject[g.subject] = { totalPoints: 0, totalCoeffs: 0 };
+        }
+        gradesBySubject[g.subject].totalPoints += g.grade * g.coefficient;
+        gradesBySubject[g.subject].totalCoeffs += g.coefficient;
+    });
     
+    const averages: Record<string, {average: number, totalCoeffs: number}> = {};
+    let totalPoints = 0;
+    let totalCoeffs = 0;
+
+    for (const subject in gradesBySubject) {
+        const { totalPoints: subjectTotalPoints, totalCoeffs: subjectTotalCoeffs } = gradesBySubject[subject];
+        if (subjectTotalCoeffs > 0) {
+            const average = subjectTotalPoints / subjectTotalCoeffs;
+            averages[subject] = { average, totalCoeffs: subjectTotalCoeffs };
+            totalPoints += subjectTotalPoints;
+            totalCoeffs += subjectTotalCoeffs;
+        }
+    }
+    const generalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
+    return { subjectAverages: averages, generalAverage };
+};
+
+function EmployeeDetailSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-3">
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                    <Skeleton className="h-56 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                </div>
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                    <Skeleton className="h-64 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                </div>
+            </div>
+        </div>
+    );
+}
