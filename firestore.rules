@@ -145,5 +145,10 @@ service cloud.firestore {
       allow read: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
+    
+    match /ecoles/{schoolId}/cantine_abonnements/{subscriptionId} {
+      allow read: if belongsToSchool(schoolId);
+      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
   }
 }

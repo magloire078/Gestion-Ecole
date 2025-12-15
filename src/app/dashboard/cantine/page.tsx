@@ -6,6 +6,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { SubscriptionList } from '@/components/cantine/subscription-list';
 
 export default function CantinePage() {
   const { schoolId, loading } = useSchoolData();
@@ -54,15 +55,8 @@ export default function CantinePage() {
                     </CardContent>
                 </Card>
             </TabsContent>
-             <TabsContent value="abonnements">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Abonnements</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">La gestion des abonnements sera bientôt disponible.</p>
-                    </CardContent>
-                </Card>
+             <TabsContent value="abonnements" className="mt-6">
+                <SubscriptionList schoolId={schoolId} />
             </TabsContent>
         </Tabs>
     </div>

@@ -352,6 +352,7 @@ export type canteenReservation = {
     paidAmount?: number;
     attendanceTime?: string;
     notes?: string;
+    id?: string;
 };
 
 export type canteenSubscription = {
@@ -366,5 +367,5 @@ export type canteenSubscription = {
     autoRenew?: boolean;
     missedMeals?: number;
     remainingMeals?: number;
+    id?: string;
 };
-
