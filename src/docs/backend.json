@@ -573,6 +573,61 @@
           "status": { "type": "string", "enum": ["active", "inactive"] }
         },
         "required": ["studentId", "routeId", "stopId", "type", "period", "price", "status"]
+    },
+    "building": {
+        "title": "Bâtiment d'Internat",
+        "description": "Un bâtiment utilisé pour l'hébergement des internes.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string", "enum": ["garcons", "filles", "mixte"] },
+            "capacity": { "type": "number" },
+            "responsableId": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
+            "curfew": { "type": "object", "properties": { "weekdays": {"type": "string"}, "weekends": {"type": "string"} } }
+        },
+        "required": ["name", "type", "capacity", "responsableId", "status"]
+    },
+    "room": {
+        "title": "Chambre d'Internat",
+        "description": "Une chambre dans un bâtiment d'internat.",
+        "type": "object",
+        "properties": {
+            "buildingId": { "type": "string" },
+            "number": { "type": "string" },
+            "capacity": { "type": "number" },
+            "status": { "type": "string", "enum": ["available", "occupied", "maintenance"] },
+            "monthlyRate": { "type": "number" }
+        },
+        "required": ["buildingId", "number", "capacity", "status", "monthlyRate"]
+    },
+    "occupant": {
+        "title": "Occupant (Interne)",
+        "description": "Détaille l'occupation d'une chambre par un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "roomId": { "type": "string" },
+            "startDate": { "type": "string", "format": "date" },
+            "endDate": { "type": "string", "format": "date" },
+            "status": { "type": "string", "enum": ["active", "pending", "terminated", "suspended"] },
+            "nextPaymentDue": { "type": "string", "format": "date" }
+        },
+        "required": ["studentId", "roomId", "startDate", "status"]
+    },
+    "log": {
+        "title": "Journal des Entrées/Sorties",
+        "description": "Enregistre un mouvement d'un interne.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "type": { "type": "string", "enum": ["entree", "sortie"] },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "reason": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "authorized", "returned", "late", "cancelled"] },
+            "authorizedBy": { "type": "string" }
+        },
+        "required": ["studentId", "type", "timestamp", "reason", "status"]
     }
   },
   "auth": {
@@ -693,6 +748,26 @@
             "path": "transport_abonnements/{subscriptionId}",
             "schema": { "$ref": "#/entities/transportSubscription" },
             "description": "Stocke les abonnements au transport des élèves."
+        },
+         "internat_batiments": {
+            "path": "internat_batiments/{buildingId}",
+            "schema": { "$ref": "#/entities/building" },
+            "description": "Gère les bâtiments de l'internat."
+        },
+        "internat_chambres": {
+            "path": "internat_chambres/{roomId}",
+            "schema": { "$ref": "#/entities/room" },
+            "description": "Gère les chambres de l'internat."
+        },
+        "internat_occupants": {
+            "path": "internat_occupants/{occupationId}",
+            "schema": { "$ref": "#/entities/occupant" },
+            "description": "Gère les occupants (internes) des chambres."
+        },
+        "internat_entrees_sorties": {
+            "path": "internat_entrees_sorties/{logId}",
+            "schema": { "$ref": "#/entities/log" },
+            "description": "Journalise les entrées et sorties des internes."
         }
       }
     },

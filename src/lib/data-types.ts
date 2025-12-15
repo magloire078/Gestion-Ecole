@@ -426,3 +426,44 @@ export type transportSubscription = {
     status: "active" | "inactive";
     paymentStatus?: "unpaid" | "paid";
 };
+
+export type building = {
+    name: string;
+    type: "garcons" | "filles" | "mixte";
+    capacity: number;
+    responsableId: string;
+    status: "active" | "maintenance" | "full";
+    curfew?: {
+        weekdays?: string;
+        weekends?: string;
+    };
+    id?: string;
+    features?: string[];
+};
+
+export type room = {
+    buildingId: string;
+    number: string;
+    capacity: number;
+    status: "available" | "occupied" | "maintenance";
+    monthlyRate: number;
+};
+
+export type occupant = {
+    studentId: string;
+    roomId: string;
+    startDate: string;
+    status: "active" | "pending" | "terminated" | "suspended";
+    endDate?: string;
+    nextPaymentDue?: string;
+};
+
+export type log = {
+    studentId: string;
+    type: "entree" | "sortie";
+    timestamp: string;
+    reason: string;
+    status: "pending" | "authorized" | "returned" | "late" | "cancelled";
+    authorizedBy?: string;
+};
+
