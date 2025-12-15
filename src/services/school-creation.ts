@@ -61,8 +61,10 @@ export class SchoolCreationService {
       createdAt: serverTimestamp() as unknown as string,
       mainLogoUrl: schoolData.mainLogoUrl,
       subscription: {
-        plan: 'Essentiel', // Start with a basic plan
+        plan: 'Essentiel',
         status: 'trialing',
+        maxStudents: 50,
+        maxCycles: 2,
       }
     };
     batch.set(schoolRef, schoolDocData);

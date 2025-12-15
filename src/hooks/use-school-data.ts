@@ -10,8 +10,10 @@ import { errorEmitter } from '@/firebase/error-emitter';
 const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 
 interface Subscription {
-    plan: 'Essentiel' | 'Pro';
+    plan: 'Essentiel' | 'Pro' | 'Premium';
     status: 'active' | 'trialing' | 'past_due' | 'canceled';
+    maxStudents?: number;
+    maxCycles?: number;
 }
 
 interface SchoolData extends DocumentData {
