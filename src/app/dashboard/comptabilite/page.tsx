@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -50,7 +51,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -80,7 +81,9 @@ type TransactionFormValues = z.infer<typeof transactionSchema>;
 export default function AccountingPage() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
+  const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const canManageBilling = !!user?.profile?.permissions?.manageBilling;
 
   const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), orderBy("date", "desc")) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
@@ -331,11 +334,13 @@ export default function AccountingPage() {
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Transactions Récentes</h2>
-            <Button onClick={() => handleOpenFormDialog(null)}>
-              <span className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
-              </span>
-            </Button>
+            {canManageBilling && (
+              <Button onClick={() => handleOpenFormDialog(null)}>
+                <span className="flex items-center gap-2">
+                  <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
+                </span>
+              </Button>
+            )}
         </div>
 
         <Card>
@@ -347,7 +352,7 @@ export default function AccountingPage() {
                   <TableHead>Description</TableHead>
                   <TableHead>Catégorie</TableHead>
                   <TableHead className="text-right">Montant</TableHead>
-                  <TableHead className="w-[50px] text-right">Actions</TableHead>
+                  {canManageBilling && <TableHead className="w-[50px] text-right">Actions</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -358,7 +363,7 @@ export default function AccountingPage() {
                             <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+                            {canManageBilling && <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>}
                         </TableRow>
                     ))
                 ) : transactions.length > 0 ? (
@@ -370,24 +375,26 @@ export default function AccountingPage() {
                         <TableCell className={`text-right font-mono ${transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive'}`}>
                             {transaction.type === 'Revenu' ? '+' : '-'} {formatCurrency(transaction.amount)}
                         </TableCell>
-                        <TableCell className="text-right">
-                        <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon">
-                                        <MoreHorizontal />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
+                        {canManageBilling && (
+                          <TableCell className="text-right">
+                          <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon">
+                                          <MoreHorizontal />
+                                      </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
+                                      <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
+                                  </DropdownMenuContent>
+                              </DropdownMenu>
+                          </TableCell>
+                        )}
                     </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">Aucune transaction pour le moment.</TableCell>
+                        <TableCell colSpan={canManageBilling ? 5 : 4} className="h-24 text-center">Aucune transaction pour le moment.</TableCell>
                     </TableRow>
                 )}
               </TableBody>
