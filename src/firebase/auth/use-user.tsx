@@ -3,24 +3,25 @@
 
 import {useState, useEffect} from 'react';
 import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
-import {useAuth} from '../provider';
-import type { staff as AppUser } from '@/lib/data-types';
+import {useAuth, useFirestore} from '../provider';
+import type { staff as AppUser, admin_role as AdminRole } from '@/lib/data-types';
+import { doc, getDoc } from 'firebase/firestore';
 
-// Simplified User interface. The school data logic is now in useSchoolData.
 export interface User extends FirebaseUser {
     customClaims?: {
         [key: string]: any;
     }
-    profile?: AppUser; // Profile might still be useful for display name, role etc.
+    profile?: AppUser & { permissions?: AdminRole['permissions'] }; 
 }
 
 export function useUser() {
   const auth = useAuth();
+  const firestore = useFirestore();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth) {
+    if (!auth || !firestore) {
         setUser(null);
         setLoading(false);
         return;
@@ -28,12 +29,36 @@ export function useUser() {
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
-            // This is now simpler. We just get the user and their claims.
-            // The logic to fetch schoolId and profile is delegated.
             const tokenResult = await authUser.getIdTokenResult(true); // Force refresh
+            const schoolId = tokenResult.claims.schoolId;
+
+            let userProfile: (AppUser & { permissions?: AdminRole['permissions'] }) | undefined = undefined;
+
+            if (schoolId) {
+                // Fetch staff profile
+                const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
+                const profileSnap = await getDoc(profileRef);
+                
+                if (profileSnap.exists()) {
+                    const profileData = profileSnap.data() as AppUser;
+                    userProfile = { ...profileData };
+
+                    // If user has an admin role, fetch its permissions
+                    if (profileData.adminRole) {
+                        const roleRef = doc(firestore, 'admin_roles', profileData.adminRole);
+                        const roleSnap = await getDoc(roleRef);
+                        if (roleSnap.exists()) {
+                            const roleData = roleSnap.data() as AdminRole;
+                            userProfile.permissions = roleData.permissions;
+                        }
+                    }
+                }
+            }
+
             setUser({
                 ...authUser,
-                customClaims: tokenResult.claims
+                customClaims: tokenResult.claims,
+                profile: userProfile
             });
         } else {
             setUser(null);
@@ -42,9 +67,7 @@ export function useUser() {
     });
 
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, firestore]);
 
   return {user, loading};
 }
-
-    

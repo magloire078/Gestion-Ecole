@@ -26,56 +26,59 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import type { admin_role } from '@/lib/data-types';
+
+type PermissionKey = keyof admin_role['permissions'];
 
 const navLinks = [
     {
       group: "Principal",
       icon: LayoutDashboard,
       links: [
-        { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard, adminOnly: false },
+        { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
       ]
     },
     {
       group: "École",
       icon: School,
       links: [
-        { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, adminOnly: false },
-        { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, adminOnly: false },
+        { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' as PermissionKey },
+        { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, permission: 'viewUsers' as PermissionKey },
       ]
     },
     {
       group: "Pédagogie",
       icon: GraduationCap,
       links: [
-        { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, adminOnly: false },
-        { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, adminOnly: false },
-        { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText, adminOnly: false },
-        { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, adminOnly: false },
-        { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, adminOnly: false },
+        { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, permission: 'manageClasses' as PermissionKey },
+        { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, permission: 'manageClasses' as PermissionKey },
+        { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText, permission: 'manageGrades' as PermissionKey },
+        { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, permission: 'manageGrades' as PermissionKey },
+        { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, permission: 'manageContent' as PermissionKey },
       ]
     },
      {
       group: "Finance",
       icon: Wallet,
       links: [
-        { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus, adminOnly: false },
-        { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: GraduationCap, adminOnly: false },
-        { href: '/dashboard/paiements', label: 'Suivi des Paiements', icon: Wallet, adminOnly: false },
-        { href: '/dashboard/comptabilite', label: 'Comptabilité', icon: Landmark, adminOnly: false },
+        { href: '/dashboard/inscription', label: 'Inscriptions', icon: UserPlus, permission: 'manageUsers' as PermissionKey },
+        { href: '/dashboard/frais-scolarite', label: 'Frais de scolarité', icon: GraduationCap, permission: 'manageBilling' as PermissionKey },
+        { href: '/dashboard/paiements', label: 'Suivi des Paiements', icon: Wallet, permission: 'manageBilling' as PermissionKey },
+        { href: '/dashboard/comptabilite', label: 'Comptabilité', icon: Landmark, permission: 'manageBilling' as PermissionKey },
       ]
     },
     {
       group: "Communication",
       icon: Send,
       links: [
-        { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, adminOnly: false },
+        { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, permission: 'manageContent' as PermissionKey },
       ]
     },
      {
       group: "Configuration",
       icon: Settings,
       links: [
-        { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings, adminOnly: false },
+        { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings, permission: 'manageSettings' as PermissionKey },
       ]
     },
     {
@@ -131,16 +134,22 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
 
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
-  // DEV ONLY: Grant admin rights to a specific email for development
-  const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
+  const isAdmin = user?.customClaims?.admin === true || user?.email === "magloire078@gmail.com";
+  const userPermissions = user?.profile?.permissions || {};
   const pathname = usePathname();
+
+  const hasPermission = (permission?: PermissionKey) => {
+    if (isAdmin) return true; // Super admin sees everything
+    if (!permission) return true; // Link is public within the dashboard
+    return !!userPermissions[permission];
+  };
   
   if (collapsed) {
       return (
           <nav className="flex flex-col items-center gap-2 px-2 py-4">
                {navLinks.flatMap(group => {
                    if (group.adminOnly && !isAdmin) return [];
-                   return group.links.filter(link => !link.adminOnly || isAdmin).map(link => (
+                   return group.links.filter(link => hasPermission(link.permission)).map(link => (
                        <NavLink key={link.href} {...link} collapsed />
                    ));
                })}
@@ -148,15 +157,18 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
       );
   }
 
-  const defaultActiveGroup = navLinks.find(group => group.links.some(link => pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group || "Principal";
+  const defaultActiveGroup = navLinks.find(group => group.links.some(link => hasPermission(link.permission) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group || "Principal";
 
   return (
     <Accordion type="single" collapsible defaultValue={defaultActiveGroup} className="w-full">
       {navLinks.map((group) => {
           if (group.adminOnly && !isAdmin) return null;
           
-          if (group.links.length === 1 && (group.group === "Principal" || group.group === "Configuration")) {
-              return <NavLink key={group.links[0].href} {...group.links[0]} collapsed={false} />;
+          const visibleLinks = group.links.filter(link => hasPermission(link.permission));
+          if (visibleLinks.length === 0) return null;
+
+          if (visibleLinks.length === 1 && (group.group === "Principal" || group.group === "Configuration")) {
+              return <NavLink key={visibleLinks[0].href} {...visibleLinks[0]} collapsed={false} />;
           }
 
           return (
@@ -173,10 +185,9 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
                 </AccordionTrigger>
                 <AccordionContent className="pb-1 pl-4">
                     <div className="space-y-1">
-                        {group.links.map((link) => {
-                           if (link.adminOnly && !isAdmin) return null;
-                           return <NavLink key={link.href} {...link} collapsed={false} />;
-                        })}
+                        {visibleLinks.map((link) => (
+                           <NavLink key={link.href} {...link} collapsed={false} />
+                        ))}
                     </div>
                 </AccordionContent>
             </AccordionItem>
