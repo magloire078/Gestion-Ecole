@@ -163,31 +163,26 @@ export default function StructurePage() {
 
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading || userLoading;
   
-  const handleAddCycleSubmit = async (values: CycleFormValues) => {
+  const handleAddCycleSubmit = (values: CycleFormValues) => {
     if (!schoolId) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'ID de l\'école non trouvé. Rechargez la page.' });
         return;
     }
 
     const dataToSave = { ...values, schoolId: schoolId, color: values.color || '#3b82f6' };
+    const promise = editingCycle 
+      ? setDoc(doc(firestore, `ecoles/${schoolId}/cycles/${editingCycle.id}`), dataToSave, { merge: true })
+      : addDoc(collection(firestore, `ecoles/${schoolId}/cycles`), dataToSave);
     
-    try {
-      if (editingCycle) {
-        const cycleRef = doc(firestore, `ecoles/${schoolId}/cycles/${editingCycle.id}`);
-        await setDoc(cycleRef, dataToSave, { merge: true });
-        toast({ title: 'Cycle modifié', description: `Le cycle "${values.name}" a été mis à jour.`});
-      } else {
-        const cyclesCollectionRef = collection(firestore, `ecoles/${schoolId}/cycles`);
-        await addDoc(cyclesCollectionRef, dataToSave);
-        toast({ title: 'Cycle créé', description: `Le cycle "${values.name}" a été ajouté.`});
-      }
+    promise.then(() => {
+      toast({ title: `Cycle ${editingCycle ? 'modifié' : 'créé'}`, description: `Le cycle "${values.name}" a été enregistré.`});
       setIsCycleFormOpen(false);
-    } catch (error) {
-        const path = editingCycle ? `ecoles/${schoolId}/cycles/${editingCycle.id}` : `ecoles/${schoolId}/cycles`;
-        const operation = editingCycle ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
-    }
+    }).catch(error => {
+      const path = editingCycle ? `ecoles/${schoolId}/cycles/${editingCycle.id}` : `ecoles/${schoolId}/cycles`;
+      const operation = editingCycle ? 'update' : 'create';
+      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
+      errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
   const handleOpenCycleForm = (cycle: Cycle & {id: string} | null) => {
@@ -202,30 +197,26 @@ export default function StructurePage() {
       setIsCycleFormOpen(true);
   }
 
-  const handleAddNiveauSubmit = async (values: NiveauFormValues) => {
+  const handleAddNiveauSubmit = (values: NiveauFormValues) => {
     if (!schoolId) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'ID de l\'école non trouvé. Rechargez la page.' });
         return;
     }
+    const dataToSave = { ...values, schoolId: schoolId };
 
-    try {
-      const dataToSave = { ...values, schoolId: schoolId };
-      if (editingNiveau) {
-        const niveauRef = doc(firestore, `ecoles/${schoolId}/niveaux/${editingNiveau.id}`);
-        await setDoc(niveauRef, dataToSave, { merge: true });
-        toast({ title: 'Niveau modifié', description: `Le niveau "${values.name}" a été mis à jour.`});
-      } else {
-        const niveauxCollectionRef = collection(firestore, `ecoles/${schoolId}/niveaux`);
-        await addDoc(niveauxCollectionRef, dataToSave);
-        toast({ title: 'Niveau créé', description: `Le niveau "${values.name}" a été ajouté.`});
-      }
-      setIsNiveauFormOpen(false);
-    } catch (error) {
+    const promise = editingNiveau 
+        ? setDoc(doc(firestore, `ecoles/${schoolId}/niveaux/${editingNiveau.id}`), dataToSave, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/niveaux`), dataToSave);
+
+    promise.then(() => {
+        toast({ title: `Niveau ${editingNiveau ? 'modifié' : 'créé'}`, description: `Le niveau "${values.name}" a été enregistré.`});
+        setIsNiveauFormOpen(false);
+    }).catch(error => {
         const path = editingNiveau ? `ecoles/${schoolId}/niveaux/${editingNiveau.id}` : `ecoles/${schoolId}/niveaux`;
         const operation = editingNiveau ? 'update' : 'create';
         const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
         errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   };
 
   const handleOpenNiveauForm = (niveau: Niveau & {id: string} | null) => {

@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useFirestore, useAuth } from "@/firebase";
-import { doc, setDoc, getDoc, writeBatch } from "firebase/firestore";
+import { doc, setDoc, getDoc, writeBatch, collection } from "firebase/firestore";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -180,7 +180,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 form.setError("email", { type: "manual", message: "Cette adresse e-mail est déjà utilisée." });
             } else {
                 const operation = editingStaff ? 'update' : 'create';
-                const path = `ecoles/${schoolId}/personnel/${editingStaff?.id || ''}`;
+                const path = `ecoles/${schoolId}/personnel/${editingStaff?.id || '(new)'}`;
                 const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
                 errorEmitter.emit('permission-error', permissionError);
             }

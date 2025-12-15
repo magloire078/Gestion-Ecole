@@ -84,7 +84,7 @@ export default function HRPage() {
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const adminRolesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, 'admin_roles')) : null, [schoolId, firestore]);
+  const adminRolesQuery = useMemoFirebase(() => query(collection(firestore, 'admin_roles')), [firestore]);
   const { data: adminRolesData, loading: adminRolesLoading } = useCollection(adminRolesQuery);
   const adminRoles: (AdminRole & {id: string})[] = useMemo(() => adminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [adminRolesData]);
 
@@ -101,14 +101,16 @@ export default function HRPage() {
   const handleDelete = () => {
     if (!schoolId || !staffToDelete) return;
     const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffToDelete.id}`);
+    
     deleteDoc(staffDocRef)
       .then(() => {
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
-        setIsDeleteDialogOpen(false);
-        setStaffToDelete(null);
-      }).catch(async (serverError) => {
+      }).catch((serverError) => {
         const permissionError = new FirestorePermissionError({ path: staffDocRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
+      }).finally(() => {
+        setIsDeleteDialogOpen(false);
+        setStaffToDelete(null);
       });
   };
   
