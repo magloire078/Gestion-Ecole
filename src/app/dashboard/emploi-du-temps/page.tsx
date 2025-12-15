@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -46,7 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -82,6 +83,8 @@ export default function TimetablePage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
+  const { user } = useUser();
+  const canManageClasses = !!user?.profile?.permissions?.manageClasses;
 
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
 
@@ -382,27 +385,29 @@ export default function TimetablePage() {
                     {classes.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
             </Select>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => handleOpenFormDialog(null)}>
-                  <span className="flex items-center gap-2">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter
-                  </span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>{editingEntry ? "Modifier" : "Ajouter à"} l'Emploi du Temps</DialogTitle>
-                </DialogHeader>
-                {renderForm()}
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                  <Button type="submit" form="timetable-form" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+            {canManageClasses && (
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={() => handleOpenFormDialog(null)}>
+                    <span className="flex items-center gap-2">
+                      <PlusCircle className="mr-2 h-4 w-4" /> Ajouter
+                    </span>
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>{editingEntry ? "Modifier" : "Ajouter à"} l'Emploi du Temps</DialogTitle>
+                  </DialogHeader>
+                  {renderForm()}
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                    <Button type="submit" form="timetable-form" disabled={form.formState.isSubmitting}>
+                      {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
         </div>
         <Card>
@@ -438,21 +443,25 @@ export default function TimetablePage() {
                                                     <p className="font-bold" style={{ color: entry.color }}>{entry.subject}</p>
                                                     <p className="text-muted-foreground">{teacher ? `${teacher.firstName[0]}. ${teacher.lastName}` : 'N/A'}</p>
                                                     {selectedClassId === 'all' && <p className="font-semibold" style={{ color: entry.color }}>{classInfo?.name}</p>}
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100")}>
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent>
-                                                            <DropdownMenuItem onClick={() => handleOpenFormDialog(entry)}>Modifier</DropdownMenuItem>
-                                                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(entry)}>Supprimer</DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
+                                                    {canManageClasses && (
+                                                      <DropdownMenu>
+                                                          <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100")}>
+                                                              <MoreHorizontal className="h-4 w-4" />
+                                                          </DropdownMenuTrigger>
+                                                          <DropdownMenuContent>
+                                                              <DropdownMenuItem onClick={() => handleOpenFormDialog(entry)}>Modifier</DropdownMenuItem>
+                                                              <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(entry)}>Supprimer</DropdownMenuItem>
+                                                          </DropdownMenuContent>
+                                                      </DropdownMenu>
+                                                    )}
                                                 </div>
                                             );
                                         })}
-                                        <Button variant="ghost" size="icon" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100" onClick={() => handleOpenFormDialog(null, day, time)}>
-                                            <PlusCircle className="h-5 w-5 text-muted-foreground" />
-                                        </Button>
+                                        {canManageClasses && (
+                                          <Button variant="ghost" size="icon" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100" onClick={() => handleOpenFormDialog(null, day, time)}>
+                                              <PlusCircle className="h-5 w-5 text-muted-foreground" />
+                                          </Button>
+                                        )}
                                     </TableCell>
                                 ))}
                             </TableRow>
@@ -485,4 +494,6 @@ export default function TimetablePage() {
     </>
   );
 }
+    
+
     
