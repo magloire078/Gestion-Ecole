@@ -305,3 +305,66 @@ export type subject = {
     color?: string;
     id?: string;
 };
+
+export type canteenMenu = {
+    date: string;
+    mealType: "petit_dejeuner" | "dejeuner" | "gouter" | "diner";
+    status: "draft" | "published" | "archived";
+    categories: {
+        name?: string;
+        items?: {
+            name?: string;
+            description?: string;
+            allergens?: string[];
+            priceStudent?: number;
+            priceStaff?: number;
+            options?: string[];
+        }[];
+    }[];
+    specialMenus?: {
+        vegetarian?: {
+            available?: boolean;
+            mainCourse?: string;
+        };
+        halal?: {
+            available?: boolean;
+            mainCourse?: string;
+        };
+        allergies?: string[];
+    };
+};
+
+export type canteenReservation = {
+    studentId: string;
+    date: string;
+    mealType: "petit_dejeuner" | "dejeuner" | "gouter" | "diner";
+    status: "pending" | "confirmed" | "cancelled" | "attended";
+    paymentStatus: "unpaid" | "paid" | "partially_paid";
+    price: number;
+    menuChoice?: {
+        entree?: string;
+        mainCourse?: string;
+        dessert?: string;
+        option?: string;
+    };
+    specialRequirements?: string;
+    paidAmount?: number;
+    attendanceTime?: string;
+    notes?: string;
+};
+
+export type canteenSubscription = {
+    studentId: string;
+    type: "ponctuel" | "hebdomadaire" | "mensuel" | "trimestriel" | "annuel";
+    startDate: string;
+    endDate: string;
+    price: number;
+    status: "active" | "inactive" | "expired";
+    daysOfWeek?: string[];
+    mealType?: "petit_dejeuner" | "dejeuner" | "gouter" | "diner";
+    autoRenew?: boolean;
+    missedMeals?: number;
+    remainingMeals?: number;
+};
+
+    

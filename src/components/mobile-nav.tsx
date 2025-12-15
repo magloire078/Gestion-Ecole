@@ -22,6 +22,7 @@ import {
     UserX,
     Database,
     Shield,
+    Utensils,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -42,6 +43,7 @@ const navLinks = [
     links: [
       { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' as PermissionKey },
       { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, permission: 'viewUsers' as PermissionKey },
+      { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageContent' as PermissionKey },
     ]
   },
   {
@@ -144,3 +146,5 @@ export function MobileNav() {
     </div>
   );
 }
+
+    

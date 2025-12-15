@@ -85,7 +85,7 @@
         "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
         "firstName": { "type": "string", "description": "Le prénom du membre du personnel." },
         "lastName": { "type": "string", "description": "Le nom de famille du membre du personnel." },
-        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel", "coordinateur"], "description": "Le rôle de l'utilisateur dans l'école." },
+        "role": { "type": "string", "enum": ["directeur", "directeur_pedagogique", "secretaire", "enseignant", "enseignant_principal", "comptable", "bibliothecaire", "surveillant", "infirmier", "personnel"], "description": "Le rôle de l'utilisateur dans l'école." },
         "adminRole": { "type": "string", "description": "L'ID du rôle administratif si l'utilisateur est un admin." },
         "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." },
         "phone": { "type": "string", "description": "Le numéro de téléphone." },
@@ -393,6 +393,94 @@
             "color": { "type": "string" }
         },
         "required": ["schoolId", "name"]
+    },
+    "canteenMenu": {
+        "title": "Menu de Cantine",
+        "description": "Détaille le menu pour un jour et un type de repas spécifiques.",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date", "description": "Date du menu (YYYY-MM-DD)." },
+            "mealType": { "type": "string", "enum": ["petit_dejeuner", "dejeuner", "gouter", "diner"], "description": "Type de repas." },
+            "status": { "type": "string", "enum": ["draft", "published", "archived"], "description": "Statut du menu." },
+            "categories": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string", "description": "Nom de la catégorie (Entrée, Plat, etc.)." },
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "description": { "type": "string" },
+                                    "allergens": { "type": "array", "items": { "type": "string" } },
+                                    "priceStudent": { "type": "number" },
+                                    "priceStaff": { "type": "number" },
+                                    "options": { "type": "array", "items": { "type": "string" } }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "specialMenus": {
+                "type": "object",
+                "properties": {
+                    "vegetarian": { "type": "object", "properties": {"available": { "type": "boolean" }, "mainCourse": { "type": "string" }} },
+                    "halal": { "type": "object", "properties": {"available": { "type": "boolean" }, "mainCourse": { "type": "string" }} },
+                    "allergies": { "type": "array", "items": { "type": "string" } }
+                }
+            }
+        },
+        "required": ["date", "mealType", "status", "categories"]
+    },
+    "canteenReservation": {
+        "title": "Réservation de Cantine",
+        "description": "Une réservation de repas faite par un élève ou un membre du personnel.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "mealType": { "type": "string", "enum": ["petit_dejeuner", "dejeuner", "gouter", "diner"] },
+            "menuChoice": {
+                "type": "object",
+                "properties": {
+                    "entree": { "type": "string" },
+                    "mainCourse": { "type": "string" },
+                    "dessert": { "type": "string" },
+                    "option": { "type": "string" }
+                }
+            },
+            "specialRequirements": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled", "attended"] },
+            "paymentStatus": { "type": "string", "enum": ["unpaid", "paid", "partially_paid"] },
+            "price": { "type": "number" },
+            "paidAmount": { "type": "number" },
+            "attendanceTime": { "type": "string", "format": "time" },
+            "notes": { "type": "string" }
+        },
+        "required": ["studentId", "date", "mealType", "status", "paymentStatus", "price"]
+    },
+    "canteenSubscription": {
+        "title": "Abonnement Cantine",
+        "description": "Détaille un abonnement de cantine pour un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "type": { "type": "string", "enum": ["ponctuel", "hebdomadaire", "mensuel", "trimestriel", "annuel"] },
+            "startDate": { "type": "string", "format": "date" },
+            "endDate": { "type": "string", "format": "date" },
+            "daysOfWeek": { "type": "array", "items": { "type": "string" } },
+            "mealType": { "type": "string", "enum": ["petit_dejeuner", "dejeuner", "gouter", "diner"] },
+            "price": { "type": "number" },
+            "status": { "type": "string", "enum": ["active", "inactive", "expired"] },
+            "autoRenew": { "type": "boolean" },
+            "missedMeals": { "type": "number" },
+            "remainingMeals": { "type": "number" }
+        },
+        "required": ["studentId", "type", "startDate", "endDate", "price", "status"]
     }
   },
   "auth": {
@@ -483,6 +571,21 @@
             "path": "matieres/{subjectId}",
             "schema": { "$ref": "#/entities/subject" },
             "description": "Stocke les matières enseignées dans l'école."
+        },
+        "cantine_menus": {
+            "path": "cantine/menus/{menuId}",
+            "schema": { "$ref": "#/entities/canteenMenu" },
+            "description": "Stocke les menus de la cantine."
+        },
+        "cantine_reservations": {
+            "path": "cantine/reservations/{reservationId}",
+            "schema": { "$ref": "#/entities/canteenReservation" },
+            "description": "Stocke les réservations de repas."
+        },
+        "cantine_abonnements": {
+            "path": "cantine/abonnements/{subscriptionId}",
+            "schema": { "$ref": "#/entities/canteenSubscription" },
+            "description": "Stocke les abonnements à la cantine."
         }
       }
     },
