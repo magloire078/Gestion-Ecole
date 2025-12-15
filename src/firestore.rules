@@ -155,5 +155,19 @@ service cloud.firestore {
       allow read: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
+
+    // Transport Rules
+    match /ecoles/{schoolId}/transport_bus/{busId} {
+        allow read: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+    match /ecoles/{schoolId}/transport_lignes/{routeId} {
+        allow read: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+    match /ecoles/{schoolId}/transport_abonnements/{subscriptionId} {
+        allow read: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
   }
 }

@@ -680,17 +680,17 @@
             "description": "Stocke les abonnements à la cantine."
         },
         "transport_bus": {
-            "path": "transport/bus/{busId}",
+            "path": "transport_bus/{busId}",
             "schema": { "$ref": "#/entities/bus" },
             "description": "Stocke la flotte de bus de l'école."
         },
         "transport_lignes": {
-            "path": "transport/lignes/{routeId}",
+            "path": "transport_lignes/{routeId}",
             "schema": { "$ref": "#/entities/route" },
             "description": "Définit les lignes de transport et leurs arrêts."
         },
         "transport_abonnements": {
-            "path": "transport/abonnements/{subscriptionId}",
+            "path": "transport_abonnements/{subscriptionId}",
             "schema": { "$ref": "#/entities/transportSubscription" },
             "description": "Stocke les abonnements au transport des élèves."
         }
@@ -702,5 +702,3 @@
     }
   }
 }
-
-    

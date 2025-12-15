@@ -426,5 +426,3 @@ export type transportSubscription = {
     status: "active" | "inactive";
     paymentStatus?: "unpaid" | "paid";
 };
-
-    
