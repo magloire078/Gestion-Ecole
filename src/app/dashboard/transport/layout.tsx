@@ -4,13 +4,7 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bus, Ticket, Map } from 'lucide-react';
-
-const transportNavLinks = [
-  { href: '/dashboard/transport', label: 'Suivi', icon: Map },
-  { href: '/dashboard/transport/lignes', label: 'Lignes', icon: Bus },
-  { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket },
-];
+import { transportNavLinks } from './links';
 
 export default function TransportLayout({
   children,
@@ -44,5 +38,3 @@ export default function TransportLayout({
     </div>
   );
 }
-
-    
