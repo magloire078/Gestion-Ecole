@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -6,6 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +30,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, addDoc, setDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, addDoc, setDoc, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +57,8 @@ export default function BusManagementPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBus, setEditingBus] = useState<(Bus & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [busToDelete, setBusToDelete] = useState<(Bus & { id: string }) | null>(null);
 
   const busesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
   const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
@@ -86,6 +99,26 @@ export default function BusManagementPage() {
       errorEmitter.emit('permission-error', permissionError);
     }
   };
+
+  const handleOpenDeleteDialog = (bus: Bus & { id: string }) => {
+    setBusToDelete(bus);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteBus = async () => {
+    if (!schoolId || !busToDelete) return;
+    try {
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_bus`, busToDelete.id));
+      toast({ title: "Bus supprimé", description: `Le bus ${busToDelete.registrationNumber} a été supprimé.` });
+    } catch (error) {
+       const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/transport_bus/${busToDelete.id}`, operation: 'delete' });
+       errorEmitter.emit('permission-error', permissionError);
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setBusToDelete(null);
+    }
+  };
+
 
   const getStatusBadgeVariant = (status: string) => {
     switch(status) {
@@ -134,7 +167,7 @@ export default function BusManagementPage() {
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => { setEditingBus(bus); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(bus)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -170,6 +203,23 @@ export default function BusManagementPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce bus ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. Le bus avec l'immatriculation <strong>{busToDelete?.registrationNumber}</strong> sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBus} className="bg-destructive hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
