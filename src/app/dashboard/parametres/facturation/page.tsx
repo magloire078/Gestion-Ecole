@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
-import { BillingCalculator } from '@/lib/billing-calculator';
+import { applyPricing, calculateMonthlyUsage, TARIFAIRE } from '@/lib/billing-calculator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, TrendingUp, History } from 'lucide-react';
 import Link from 'next/link';
@@ -68,8 +68,8 @@ export default function BillingDashboard() {
 
         setIsLoading(true);
         try {
-            const usage = await BillingCalculator.calculateMonthlyUsage(firestore, schoolData.id);
-            const projection = BillingCalculator.applyPricing(subscription, usage);
+            const usage = await calculateMonthlyUsage(firestore, schoolData.id);
+            const projection = await applyPricing(subscription, usage);
             setBillingInfo({ subscription, usage, projection });
         } catch (error) {
             console.error("Error calculating billing:", error);
@@ -114,12 +114,6 @@ export default function BillingDashboard() {
 
   const { usage, projection } = billingInfo;
   
-  const TARIFAIRE = {
-    Essentiel: { prixMensuel: 0, cyclesInclus: 2, elevesInclus: 50, stockageInclus: 1 },
-    Pro: { prixMensuel: 49900, cyclesInclus: 5, elevesInclus: 250, stockageInclus: 10 },
-    Premium: { prixMensuel: 99900, cyclesInclus: 10, elevesInclus: 1000, stockageInclus: 50 },
-  };
-
   const planDetails = TARIFAIRE[subscription.plan as keyof typeof TARIFAIRE];
 
 
