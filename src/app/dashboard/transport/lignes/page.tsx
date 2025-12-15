@@ -2,26 +2,18 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { transportNavLinks } from './links';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { Bus } from 'lucide-react';
 
 export default function RoutesManagementPage() {
-  const transportLink = transportNavLinks.find(link => link.label === "Lignes");
-
-  if (!transportLink) {
-    return <p>Link not found</p>;
-  }
-  
-  const { icon: Icon } = transportLink;
-
   return (
     <div className="space-y-6">
        <Card>
         <CardHeader>
           <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-6 w-6" />
+                  <Bus className="h-6 w-6" />
               </div>
               <div>
                   <CardTitle>Gestion des Lignes</CardTitle>
