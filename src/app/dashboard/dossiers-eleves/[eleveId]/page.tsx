@@ -5,7 +5,7 @@ import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag } from 'lucide-react';
+import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag, CalendarCheck } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -251,7 +251,7 @@ export default function StudentProfilePage() {
                         </div>
                          <div className="flex items-center">
                             <Building className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Cycle: <strong>{studentClass?.cycle || student.cycle || 'N/A'}</strong></span>
+                            <span>Cycle: <strong>{studentClass?.cycleId || student.cycle || 'N/A'}</strong></span>
                         </div>
                     </CardContent>
                 </Card>
@@ -438,6 +438,10 @@ export default function StudentProfilePage() {
                                 <div className="flex items-center">
                                     <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />
                                     <span>Sexe: <strong>{student.gender || 'N/A'}</strong></span>
+                                </div>
+                                <div className="flex items-center">
+                                    <CalendarCheck className="mr-3 h-5 w-5 text-muted-foreground" />
+                                    <span>Année d'inscription: <strong>{student.inscriptionYear || 'N/A'}</strong></span>
                                 </div>
                                 <div className="flex items-start">
                                     <MapPin className="mr-3 h-5 w-5 text-muted-foreground flex-shrink-0" />

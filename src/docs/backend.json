@@ -145,7 +145,8 @@
             "amountDue": { "type": "number", "description": "Le montant restant à payer." },
             "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
-            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." }
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." },
+            "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
         },
         "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
     },
@@ -158,6 +159,7 @@
             "name": { "type": "string", "description": "Nom du cycle (ex: Maternelle)." },
             "code": { "type": "string", "description": "Code du cycle (ex: MAT)." },
             "order": { "type": "number", "description": "Ordre d'affichage." },
+            "isActive": { "type": "boolean", "description": "Indique si le cycle est actif pour l'année en cours." },
             "description": { "type": "string" },
             "ageRange": {
                 "type": "object",
