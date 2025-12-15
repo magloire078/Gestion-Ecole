@@ -1,7 +1,6 @@
 
 'use client';
 
-import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, DollarSign, AlertCircle, CheckCircle, Plus, CreditCard, Calendar, Check, TrendingUp } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
@@ -18,7 +17,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, classe as Classe, staff as Staff, fee as Fee } from '@/lib/data-types';
-import { BillingCalculator, TARIFAIRE } from '@/lib/billing-calculator';
+import { TARIFAIRE } from '@/lib/billing-calculator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // ====================================================================================
@@ -685,5 +684,3 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
-
-    
