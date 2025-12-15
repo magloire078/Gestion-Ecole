@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -15,30 +14,65 @@ import {
   Calendar, 
   Bell,
   UserCheck,
-  UserX
+  UserX,
+  PlusCircle,
+  Pencil
 } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import type { building, occupant, log } from '@/lib/data-types';
+import type { building, occupant, log, student as Student, room as Room } from '@/lib/data-types';
 import { RoomManagement } from './room-management';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
+import { OccupantForm } from './occupant-form';
+
+interface OccupantWithDetails extends occupant {
+  studentName?: string;
+  roomNumber?: string;
+}
 
 export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
+  const { user } = useUser();
+  const canManageContent = !!user?.profile?.permissions?.manageContent;
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
+  
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingOccupant, setEditingOccupant] = useState<(occupant & { id: string }) | null>(null);
 
   const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
   const occupantsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_occupants`)), [firestore, schoolId]);
+  const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+  const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)), [firestore, schoolId]);
   const logsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_entrees_sorties`), where('date', '==', format(new Date(), 'yyyy-MM-dd'))), [firestore, schoolId]);
 
   const { data: buildingsData } = useCollection(buildingsQuery);
   const { data: occupantsData } = useCollection(occupantsQuery);
+  const { data: studentsData } = useCollection(studentsQuery);
+  const { data: roomsData } = useCollection(roomsQuery);
   const { data: logsData } = useCollection(logsQuery);
   
   const buildings = useMemo(() => buildingsData?.map(doc => ({ id: doc.id, ...doc.data() } as building & {id: string})) || [], [buildingsData]);
-  const occupants = useMemo(() => occupantsData?.map(doc => ({ id: doc.id, ...doc.data() } as occupant)) || [], [occupantsData]);
+  const students = useMemo(() => studentsData?.map(doc => ({ id: doc.id, ...doc.data() } as Student & {id: string})) || [], [studentsData]);
+  const rooms = useMemo(() => roomsData?.map(doc => ({ id: doc.id, ...doc.data() } as Room & {id: string})) || [], [roomsData]);
+  
+  const occupants: OccupantWithDetails[] = useMemo(() => {
+    if (!occupantsData || !students || !rooms) return [];
+    const studentsMap = new Map(students.map(s => [s.id, `${s.firstName} ${s.lastName}`]));
+    const roomsMap = new Map(rooms.map(r => [r.id, r.number]));
+
+    return occupantsData.map(doc => {
+        const occupantData = { id: doc.id, ...doc.data() } as occupant & { id: string };
+        return {
+            ...occupantData,
+            studentName: studentsMap.get(occupantData.studentId) || 'Élève inconnu',
+            roomNumber: roomsMap.get(occupantData.roomId) || 'Chambre inconnue',
+        }
+    })
+  }, [occupantsData, students, rooms]);
+
   const todayLogs = useMemo(() => logsData?.map(doc => ({ id: doc.id, ...doc.data() } as log)) || [], [logsData]);
 
   useEffect(() => {
@@ -47,10 +81,22 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
     }
   }, [buildings, selectedBuilding]);
 
+  const occupantsInBuilding = useMemo(() => {
+    if (!selectedBuilding) return occupants;
+    const buildingRooms = rooms.filter(r => r.buildingId === selectedBuilding).map(r => r.id);
+    return occupants.filter(o => buildingRooms.includes(o.roomId));
+  }, [occupants, rooms, selectedBuilding]);
+
   
   const currentBuilding = buildings.find(b => b.id === selectedBuilding);
   
+  const handleOpenForm = (occupant: (occupant & {id:string}) | null) => {
+    setEditingOccupant(occupant);
+    setIsFormOpen(true);
+  }
+
   return (
+    <>
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -60,7 +106,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
         
         <Card>
           <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Chambres occupées</CardTitle><Bed className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
-          <CardContent><div className="text-2xl font-bold">84/120</div><div className="text-xs text-muted-foreground mt-1">70% de taux d'occupation</div></CardContent>
+          <CardContent><div className="text-2xl font-bold">{occupants.length}/{rooms.length}</div><div className="text-xs text-muted-foreground mt-1">{rooms.length > 0 ? Math.round((occupants.length / rooms.length) * 100) : 0}% d'occupation</div></CardContent>
         </Card>
         
         <Card>
@@ -107,13 +153,26 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
           
           {currentBuilding && (
             <Card>
-              <CardHeader><CardTitle>Internes - {currentBuilding.name}</CardTitle></CardHeader>
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                    <CardTitle>Internes - {currentBuilding.name}</CardTitle>
+                    {canManageContent && (
+                        <Button size="sm" onClick={() => handleOpenForm(null)}>
+                            <PlusCircle className="h-4 w-4 mr-2" />
+                            Assigner une chambre
+                        </Button>
+                    )}
+                </div>
+              </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {occupants.map(occupant => (
+                  {occupantsInBuilding.map(occupant => (
                     <div key={occupant.id} className="p-4 border rounded-lg">
                       <div className="flex justify-between items-start">
-                        <div><div className="font-semibold">{occupant.studentId}</div><div className="text-sm text-muted-foreground">Chambre {occupant.roomId}</div></div>
+                        <div>
+                          <div className="font-semibold">{occupant.studentName}</div>
+                          <div className="text-sm text-muted-foreground">Chambre {occupant.roomNumber}</div>
+                        </div>
                         <div className="text-right"><Badge variant={occupant.status === 'active' ? 'secondary' : 'outline'}>{occupant.status}</Badge></div>
                       </div>
                       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
@@ -121,9 +180,17 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
                         {occupant.endDate && <div><div className="text-muted-foreground">Départ</div><div>{format(new Date(occupant.endDate), 'dd/MM/yyyy')}</div></div>}
                         {occupant.nextPaymentDue && <div><div className="text-muted-foreground">Prochain paiement</div><div>{format(new Date(occupant.nextPaymentDue), 'dd/MM/yyyy')}</div></div>}
                       </div>
-                      <div className="mt-3 flex gap-2"><Button size="sm" variant="outline">Voir le dossier</Button><Button size="sm" variant="outline">Enregistrer sortie</Button><Button size="sm" variant="outline">Message au parent</Button></div>
+                      <div className="mt-3 flex gap-2">
+                        {canManageContent && <Button size="sm" variant="outline" onClick={() => handleOpenForm(occupant)}><Pencil className="h-3 w-3 mr-1"/>Gérer</Button>}
+                        <Button size="sm" variant="outline">Enregistrer sortie</Button>
+                      </div>
                     </div>
                   ))}
+                   {occupantsInBuilding.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        Aucun interne dans ce bâtiment.
+                      </div>
+                   )}
                 </div>
               </CardContent>
             </Card>
@@ -169,5 +236,23 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
         </TabsContent>
       </Tabs>
     </div>
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingOccupant ? "Modifier l'Occupation" : "Assigner une Chambre"}</DialogTitle>
+                <DialogDescription>
+                    {editingOccupant ? "Mettez à jour les détails de l'occupation." : "Assignez un élève à une chambre disponible."}
+                </DialogDescription>
+            </DialogHeader>
+            <OccupantForm 
+                schoolId={schoolId} 
+                students={students} 
+                rooms={rooms}
+                occupant={editingOccupant}
+                onSave={() => { setIsFormOpen(false); setEditingOccupant(null); }}
+            />
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
