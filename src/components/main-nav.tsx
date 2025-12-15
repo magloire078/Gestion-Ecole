@@ -26,9 +26,9 @@ import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import type { admin_role } from '@/lib/data-types';
+import type { admin_role, UserProfile } from '@/lib/data-types';
 
-type PermissionKey = keyof admin_role['permissions'];
+type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
 
 const navLinks = [
     {
@@ -134,7 +134,7 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
 
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
-  const isAdmin = user?.customClaims?.admin === true || user?.email === "magloire078@gmail.com";
+  const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
   const userPermissions = user?.profile?.permissions || {};
   const pathname = usePathname();
 

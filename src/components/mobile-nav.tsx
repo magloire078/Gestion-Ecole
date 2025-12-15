@@ -26,9 +26,9 @@ import {
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import { useUser } from '@/firebase';
-import type { admin_role } from '@/lib/data-types';
+import type { UserProfile } from '@/lib/data-types';
 
-type PermissionKey = keyof admin_role['permissions'];
+type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
 
 const navLinks = [
   {
@@ -107,7 +107,7 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MobileNav() {
   const { user } = useUser();
-  const isAdmin = user?.customClaims?.admin === true || user?.email === "magloire078@gmail.com";
+  const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
   const userPermissions = user?.profile?.permissions || {};
 
   const hasPermission = (permission?: PermissionKey) => {

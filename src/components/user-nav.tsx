@@ -60,11 +60,11 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
-  const displayName = user?.displayName || 'Utilisateur';
+  const displayName = user?.authUser?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
   // DEV ONLY: Grant admin rights to a specific email for development
-  const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
+  const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
   const userRole = isAdmin ? 'Admin' : user?.profile?.role;
 
   if (collapsed) {
@@ -73,7 +73,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
             <DropdownMenuTrigger asChild>
                  <button className="flex w-full items-center justify-center gap-2 rounded-full p-1 hover:bg-sidebar-accent">
                     <Avatar className="h-9 w-9">
-                         <SafeImage src={user?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
+                         <SafeImage src={user?.authUser?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
                         <AvatarFallback>{fallback}</AvatarFallback>
                     </Avatar>
                 </button>
@@ -84,7 +84,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                 <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">{displayName}</p>
                     <p className="text-xs leading-none text-muted-foreground">
-                    {user?.email}
+                    {user?.authUser?.email}
                     </p>
                     {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
                 </div>
@@ -142,7 +142,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
-            <SafeImage src={user?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
+            <SafeImage src={user?.authUser?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
         </Button>
@@ -152,7 +152,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{displayName}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              {user?.email}
+              {user?.authUser?.email}
             </p>
              {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
           </div>

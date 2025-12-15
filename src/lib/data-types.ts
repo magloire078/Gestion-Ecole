@@ -89,6 +89,11 @@ export type staff = {
     id?: string;
 };
 
+export interface UserProfile extends staff {
+    permissions?: admin_role['permissions'];
+}
+
+
 export type student = {
     schoolId: string;
     firstName: string;

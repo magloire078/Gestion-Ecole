@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, collection, query, where, getDocs, setDoc, limit } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, collection, query, where, getDocs, setDoc, limit, updateDoc as firestoreUpdateDoc } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -44,7 +44,7 @@ export function useSchoolData() {
             return;
         }
 
-        if (!user || !firestore) {
+        if (!user || !user.authUser || !firestore) {
             setSchoolId(null);
             setSchoolData(null);
             setLoading(false);
@@ -54,9 +54,9 @@ export function useSchoolData() {
         const findAndSetSchoolData = async (userId: string) => {
             setLoading(true);
             let foundSchoolId: string | null = null;
-
+            
             // 1. Try claims first (fastest)
-            const tokenResult = await user.getIdTokenResult();
+            const tokenResult = await user.authUser.getIdTokenResult();
             if (tokenResult.claims.schoolId) {
                 foundSchoolId = tokenResult.claims.schoolId as string;
             }
@@ -83,13 +83,12 @@ export function useSchoolData() {
             }
         };
 
-        findAndSetSchoolData(user.uid);
+        findAndSetSchoolData(user.authUser.uid);
 
     }, [user, userLoading, firestore]);
     
     useEffect(() => {
         if (!schoolId) {
-            // If schoolId becomes null after a check, ensure loading is false.
              if(!userLoading) setLoading(false);
              return;
         }
@@ -97,7 +96,7 @@ export function useSchoolData() {
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                const data = docSnap.data() as SchoolData;
+                const data = { id: docSnap.id, ...docSnap.data()} as SchoolData;
                 setSchoolData(data);
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
@@ -118,18 +117,18 @@ export function useSchoolData() {
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
         if (!schoolId) throw new Error("ID de l'école non disponible.");
-        if (!user) throw new Error("Utilisateur non authentifié.");
+        if (!user || !user.authUser) throw new Error("Utilisateur non authentifié.");
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const dataToUpdate = {
             ...data,
             updatedAt: serverTimestamp(),
-            updatedBy: user.uid,
-            updatedByName: user.displayName,
+            updatedBy: user.authUser.uid,
+            updatedByName: user.authUser.displayName,
         };
 
         try {
-            await updateDoc(schoolDocRef, dataToUpdate);
+            await firestoreUpdateDoc(schoolDocRef, dataToUpdate);
         } catch (error) {
             const permissionError = new FirestorePermissionError({
                 path: schoolDocRef.path,

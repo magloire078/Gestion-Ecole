@@ -7,17 +7,22 @@ import {useAuth, useFirestore} from '../provider';
 import type { staff as AppUser, admin_role as AdminRole } from '@/lib/data-types';
 import { doc, getDoc } from 'firebase/firestore';
 
-export interface User extends FirebaseUser {
+export interface UserProfile extends AppUser {
+    permissions?: AdminRole['permissions'];
+}
+
+export interface UserContext {
+    authUser: FirebaseUser;
     customClaims?: {
         [key: string]: any;
-    }
-    profile?: AppUser & { permissions?: AdminRole['permissions'] }; 
+    };
+    profile?: UserProfile;
 }
 
 export function useUser() {
   const auth = useAuth();
   const firestore = useFirestore();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +37,7 @@ export function useUser() {
             const tokenResult = await authUser.getIdTokenResult(true); // Force refresh
             const schoolId = tokenResult.claims.schoolId;
 
-            let userProfile: (AppUser & { permissions?: AdminRole['permissions'] }) | undefined = undefined;
+            let userProfile: UserProfile | undefined = undefined;
 
             if (schoolId) {
                 // Fetch staff profile
@@ -56,7 +61,7 @@ export function useUser() {
             }
 
             setUser({
-                ...authUser,
+                authUser,
                 customClaims: tokenResult.claims,
                 profile: userProfile
             });

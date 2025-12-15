@@ -45,7 +45,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
       
       // Non authentifié
-      if (!user) {
+      if (!user || !user.authUser) {
         if (!isAuthPage) {
           router.replace('/login');
           return;
