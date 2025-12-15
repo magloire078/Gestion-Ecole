@@ -56,7 +56,7 @@ export type staff = {
     uid: string;
     email: string;
     schoolId: string;
-    role: "directeur" | "directeur_pedagogique" | "secretaire" | "enseignant" | "enseignant_principal" | "comptable" | "bibliothecaire" | "surveillant" | "infirmier" | "personnel";
+    role: "directeur" | "directeur_pedagogique" | "secretaire" | "enseignant" | "enseignant_principal" | "comptable" | "bibliothecaire" | "surveillant" | "infirmier" | "personnel" | "chauffeur" | "accompagnateur";
     firstName: string;
     lastName: string;
     hireDate: string;
@@ -369,3 +369,62 @@ export type canteenSubscription = {
     remainingMeals?: number;
     id?: string;
 };
+
+export type bus = {
+    registrationNumber: string;
+    capacity: number;
+    type: "standard" | "minibus" | "adapted";
+    status: "active" | "maintenance" | "inactive";
+    features?: string[];
+    driverId?: string;
+    monitorId?: string;
+    lastMaintenance?: string;
+    nextMaintenance?: string;
+    insurance?: {
+        company?: string;
+        policyNumber?: string;
+        expiryDate?: string;
+    };
+};
+
+export type route = {
+    name: string;
+    busId: string;
+    driverId?: string;
+    schedule?: {
+        morning?: routeSchedule;
+        evening?: routeSchedule;
+    };
+    status?: "on_time" | "delayed" | "cancelled";
+    currentLocation?: {
+        lat?: number;
+        lng?: number;
+        timestamp?: string;
+    };
+};
+
+export type routeSchedule = {
+    startTime?: string;
+    arrivalTime?: string;
+    stops?: {
+        stopId?: string;
+        name?: string;
+        address?: string;
+        scheduledTime?: string;
+        actualTime?: string;
+        students?: string[];
+    }[];
+};
+
+export type transportSubscription = {
+    studentId: string;
+    routeId: string;
+    stopId: string;
+    type: "aller_seul" | "retour_seul" | "aller_retour";
+    period: "trimestriel" | "semestriel" | "annuel";
+    price: number;
+    status: "active" | "inactive";
+    paymentStatus?: "unpaid" | "paid";
+};
+
+    
