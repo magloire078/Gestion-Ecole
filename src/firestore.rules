@@ -143,17 +143,17 @@ service cloud.firestore {
     }
 
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
-      allow read: if belongsToSchool(schoolId);
+      allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
     
     match /ecoles/{schoolId}/cantine_abonnements/{subscriptionId} {
-      allow read: if belongsToSchool(schoolId);
+      allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
 
     match /ecoles/{schoolId}/cantine_reservations/{reservationId} {
-      allow read: if belongsToSchool(schoolId);
+      allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
 
@@ -186,7 +186,7 @@ service cloud.firestore {
     }
      match /ecoles/{schoolId}/internat_entrees_sorties/{logId} {
       allow read, list: if belongsToSchool(schoolId);
-      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
   }
 }
