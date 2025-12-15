@@ -1,24 +1,24 @@
 
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { LiveTransportTracking } from '@/components/transport/live-tracking';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TransportDashboardPage() {
+  const { schoolId, loading } = useSchoolData();
+
+  if (loading) {
+    return <Skeleton className="h-96 w-full" />;
+  }
+
+  if (!schoolId) {
+    return <p>ID de l'école non trouvé.</p>;
+  }
+
   return (
     <div className="space-y-6">
-       <Card>
-        <CardHeader>
-          <CardTitle>Suivi en Temps Réel</CardTitle>
-          <CardDescription>
-            Suivez la position de vos bus en temps réel. (Bientôt disponible)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Cette section est en cours de développement.</p>
-        </CardContent>
-      </Card>
+       <LiveTransportTracking schoolId={schoolId} />
     </div>
   );
 }
-
-    
