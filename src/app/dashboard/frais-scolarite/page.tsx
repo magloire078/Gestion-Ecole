@@ -31,7 +31,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
 import Image from "next/image";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -78,6 +78,8 @@ export default function FeesPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
   const { toast } = useToast();
+  const { user } = useUser();
+  const canManageBilling = !!user?.profile?.permissions?.manageBilling;
   
   const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
@@ -222,11 +224,13 @@ export default function FeesPage() {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Grille Tarifaire</h2>
-              <Button onClick={() => handleOpenFeeGridDialog(null)}>
-                <span className="flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" /> Ajouter une Grille
-                </span>
-              </Button>
+              {canManageBilling && (
+                <Button onClick={() => handleOpenFeeGridDialog(null)}>
+                  <span className="flex items-center gap-2">
+                      <PlusCircle className="h-4 w-4" /> Ajouter une Grille
+                  </span>
+                </Button>
+              )}
           </div>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {isLoading ? (
@@ -245,17 +249,19 @@ export default function FeesPage() {
                                       data-ai-hint={getImageHintForGrade(fee.grade)}
                                   />
                               </div>
-                              <div className="absolute top-2 right-2">
-                                  <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                          <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full"><MoreHorizontal className="h-4 w-4" /></Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                          <DropdownMenuItem onClick={() => handleOpenFeeGridDialog(fee)}>Modifier</DropdownMenuItem>
-                                          <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteFeeGridDialog(fee)}>Supprimer</DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                  </DropdownMenu>
-                              </div>
+                              {canManageBilling && (
+                                <div className="absolute top-2 right-2">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="secondary" size="icon" className="h-8 w-8 rounded-full"><MoreHorizontal className="h-4 w-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                            <DropdownMenuItem onClick={() => handleOpenFeeGridDialog(fee)}>Modifier</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteFeeGridDialog(fee)}>Supprimer</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                              )}
                           </CardHeader>
                           <CardContent className="p-4 flex-1 flex flex-col justify-between">
                               <div>
