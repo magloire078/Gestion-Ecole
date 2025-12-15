@@ -5,7 +5,7 @@ import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag, CalendarCheck, Loader2 } from 'lucide-react';
+import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag, CalendarCheck, Loader2, CreditCard } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
@@ -163,6 +163,9 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
     <>
     <div className="space-y-6">
         <div className="flex flex-wrap justify-end items-center gap-2">
+            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/carte`)}>
+              <CreditCard className="mr-2 h-4 w-4" />Carte Étudiant
+            </Button>
             <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/bulletin`)}>
               <FileText className="mr-2 h-4 w-4" />Bulletin
             </Button>

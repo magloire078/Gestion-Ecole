@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature, CreditCard } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -282,6 +282,10 @@ export default function StudentsPage() {
                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}`)}>
                                         <Eye className="mr-2 h-4 w-4" />
                                         Voir le Profil
+                                    </DropdownMenuItem>
+                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/carte`)}>
+                                        <CreditCard className="mr-2 h-4 w-4" />
+                                        Carte Étudiant
                                     </DropdownMenuItem>
                                      <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/bulletin`)}>
                                         <FileText className="mr-2 h-4 w-4" />
