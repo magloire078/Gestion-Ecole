@@ -8,6 +8,8 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StudentInfoSheet } from '@/components/student-info-sheet';
 import type { student as Student } from '@/lib/data-types';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function StudentSheetPage() {
   const params = useParams();

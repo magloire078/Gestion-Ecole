@@ -8,6 +8,8 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import type { staff as Staff, school as School } from '@/lib/data-types';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function TeacherSheetPage() {
   const params = useParams();

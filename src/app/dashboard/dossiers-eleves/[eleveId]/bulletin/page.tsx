@@ -9,6 +9,8 @@ import { doc, collection, query, where } from 'firebase/firestore';
 import { ReportCard } from '@/components/report-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { staff as Staff, student as Student, gradeEntry as GradeEntry } from '@/lib/data-types';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 interface StudentWithClass extends Student {
     classId?: string;

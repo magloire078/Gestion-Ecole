@@ -9,6 +9,8 @@ import { doc, collection, query, where } from 'firebase/firestore';
 import { PrintableTimetable } from '@/components/printable-timetable';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { staff as Staff, student as Student } from '@/lib/data-types';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 interface TimetableEntry {
   id: string;

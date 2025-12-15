@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
-import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,6 +39,9 @@ export default function StaffProfilePage() {
   
   const firestore = useFirestore();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const { user } = useUser();
+  const canManageUsers = !!user?.profile?.permissions?.manageUsers;
+
   const { toast } = useToast();
 
   const [isPayslipOpen, setIsPayslipOpen] = useState(false);
@@ -88,7 +91,7 @@ export default function StaffProfilePage() {
         await updateStaffPhoto(firestore, schoolId, staffId, url);
         toast({ title: 'Photo de profil mise à jour !' });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la photo de profil.' });
+        // L'erreur est déjà gérée par le service.
     }
   };
 
@@ -132,9 +135,11 @@ export default function StaffProfilePage() {
     <>
     <div className="space-y-6">
         <div className="flex flex-wrap justify-end items-center gap-2">
-             <Button variant="outline" onClick={handleGeneratePayslip}>
-              <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Bulletin de Paie</span>
-            </Button>
+            {canManageUsers && (
+                <Button variant="outline" onClick={handleGeneratePayslip}>
+                    <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Bulletin de Paie</span>
+                </Button>
+            )}
             <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
               <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
             </Button>

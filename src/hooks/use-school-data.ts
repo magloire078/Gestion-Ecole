@@ -136,6 +136,8 @@ export function useSchoolData() {
             setLoading(false);
         }, (error) => {
              console.error("Error fetching school data:", error);
+             const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
+             errorEmitter.emit('permission-error', permissionError);
              setSchoolData(null);
              setLoading(false);
         });
@@ -146,14 +148,28 @@ export function useSchoolData() {
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
         if (!schoolId) throw new Error("ID de l'école non disponible.");
+        if (!user) throw new Error("Utilisateur non authentifié.");
+        
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const dataToUpdate = {
             ...data,
             updatedAt: serverTimestamp(),
-            updatedBy: user?.uid,
-            updatedByName: user?.displayName
+            updatedBy: user.uid,
+            updatedByName: user.displayName,
         };
-        await updateDoc(schoolDocRef, dataToUpdate);
+
+        try {
+            await updateDoc(schoolDocRef, dataToUpdate);
+        } catch (error) {
+            const permissionError = new FirestorePermissionError({
+                path: schoolDocRef.path,
+                operation: 'update',
+                requestResourceData: dataToUpdate,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            // Rethrow so the caller can handle it
+            throw error;
+        }
     }, [schoolId, firestore, user]);
 
     return { 

@@ -9,6 +9,8 @@ import {
 import type { Firestore } from 'firebase/firestore';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { school, user_root, staff, cycle, niveau, subject } from '@/lib/data-types';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 interface SchoolCreationData {
     name: string;
@@ -121,9 +123,18 @@ export class SchoolCreationService {
       const subjectData: Omit<subject, 'id'> = { ...subject, schoolId };
       batch.set(subjectRef, subjectData);
     }
-
-    await batch.commit();
     
-    return { schoolId, schoolCode };
+    try {
+        await batch.commit();
+        return { schoolId, schoolCode };
+    } catch(e) {
+         const permissionError = new FirestorePermissionError({
+            path: `[BATCH WRITE] /ecoles/${schoolId}`,
+            operation: 'create',
+            requestResourceData: { schoolName: schoolData.name, director: userId },
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw e; // Rethrow original error after emitting our custom one
+    }
   }
 }

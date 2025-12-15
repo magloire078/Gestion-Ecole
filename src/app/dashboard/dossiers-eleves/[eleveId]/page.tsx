@@ -9,9 +9,9 @@ import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, V
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Separator } from '@/components/ui/separator';
-import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, collection, query, orderBy, writeBatch, increment } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -28,6 +28,8 @@ import { useToast } from '@/hooks/use-toast';
 import { StudentEditForm } from '@/components/student-edit-form';
 import { updateStudentPhoto } from '@/services/student-services';
 import { SafeImage } from '@/components/ui/safe-image';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -91,7 +93,9 @@ export default function StudentProfilePage() {
   
   const firestore = useFirestore();
   const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
-  
+  const { user } = useUser();
+  const canManageUsers = !!user?.profile?.permissions?.manageUsers;
+
   const { toast } = useToast();
 
   const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
@@ -170,7 +174,7 @@ export default function StudentProfilePage() {
         await updateStudentPhoto(firestore, schoolId, eleveId, url);
         toast({ title: 'Photo de profil mise à jour !' });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la photo de profil.' });
+        // L'erreur est déjà gérée par le service.
     }
   };
   
@@ -215,9 +219,11 @@ export default function StudentProfilePage() {
             <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)}>
               <FileSignature className="mr-2 h-4 w-4" />Fiche
             </Button>
-            <Button onClick={() => setIsEditDialogOpen(true)}>
-              <Pencil className="mr-2 h-4 w-4" /> Modifier
-            </Button>
+            {canManageUsers && (
+                <Button onClick={() => setIsEditDialogOpen(true)}>
+                    <Pencil className="mr-2 h-4 w-4" /> Modifier
+                </Button>
+            )}
         </div>
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
 
@@ -494,3 +500,4 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
