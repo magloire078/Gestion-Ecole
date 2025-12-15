@@ -45,7 +45,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -98,7 +98,10 @@ export default function GradeEntryPage() {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { user } = useUser();
   const { toast } = useToast();
+
+  const canManageGrades = !!user?.profile?.permissions?.manageGrades;
 
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
@@ -337,11 +340,13 @@ export default function GradeEntryPage() {
                     Liste de toutes les notes enregistrées pour cette matière.
                   </CardDescription>
                 </div>
-                <Button onClick={() => handleOpenFormDialog(null)}>
-                  <span className="flex items-center gap-2">
-                    <PlusCircle className="h-4 w-4" /> Ajouter une note
-                  </span>
-                </Button>
+                {canManageGrades && (
+                  <Button onClick={() => handleOpenFormDialog(null)}>
+                    <span className="flex items-center gap-2">
+                      <PlusCircle className="h-4 w-4" /> Ajouter une note
+                    </span>
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -353,7 +358,7 @@ export default function GradeEntryPage() {
                     <TableHead>Type</TableHead>
                     <TableHead>Note /20</TableHead>
                     <TableHead>Coeff.</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    {canManageGrades && <TableHead className="text-right">Actions</TableHead>}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -365,7 +370,7 @@ export default function GradeEntryPage() {
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-12" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>
+                        {canManageGrades && <TableCell className="text-right"><Skeleton className="h-9 w-20 ml-auto" /></TableCell>}
                       </TableRow>
                     ))
                   ) : allGradesForSubject.length > 0 ? (
@@ -376,19 +381,21 @@ export default function GradeEntryPage() {
                         <TableCell>{grade.type}</TableCell>
                         <TableCell className="font-mono">{grade.grade}</TableCell>
                         <TableCell className="font-mono">{grade.coefficient}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleOpenFormDialog(grade)}>
-                             <Pencil className="h-4 w-4" />
-                          </Button>
-                           <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleOpenDeleteDialog(grade)}>
-                             <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
+                        {canManageGrades && (
+                            <TableCell className="text-right space-x-2">
+                               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleOpenFormDialog(grade)}>
+                                 <Pencil className="h-4 w-4" />
+                              </Button>
+                               <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleOpenDeleteDialog(grade)}>
+                                 <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                        )}
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                      <TableCell colSpan={canManageGrades ? 6 : 5} className="text-center text-muted-foreground h-24">
                         Aucune note n'a été saisie pour cette matière.
                       </TableCell>
                     </TableRow>
