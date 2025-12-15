@@ -94,7 +94,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(staffSchema),
         defaultValues: {
-          firstName: '', lastName: '', role: '', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: '', subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+          firstName: '', lastName: '', role: '', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: '', subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
         },
     });
 
@@ -124,6 +124,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                     password: '',
                     baseSalary: fullData.baseSalary || 0,
                     hireDate: formattedHireDate,
+                    adminRole: fullData.adminRole || '',
                 });
                 setPhotoUrl(editingStaff.photoURL || null);
             } else {
@@ -226,7 +227,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                                 </div>
                             </div>
 
-                            <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="directeur_pedagogique">Directeur Pédagogique</SelectItem><SelectItem value="secretaire">Secrétaire</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="enseignant_principal">Enseignant Principal</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="bibliothecaire">Bibliothécaire</SelectItem><SelectItem value="surveillant">Surveillant</SelectItem><SelectItem value="infirmier">Infirmier(e)</SelectItem><SelectItem value="personnel">Autre Personnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="directeur_pedagogique">Directeur Pédagogique</SelectItem><SelectItem value="secretaire">Secrétaire</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="enseignant_principal">Enseignant Principal</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="bibliothecaire">Bibliothécaire</SelectItem><SelectItem value="surveillant">Surveillant</SelectItem><SelectItem value="infirmier">Infirmier(e)</SelectItem><SelectItem value="personnel">Autre Personnel</SelectItem><SelectItem value="chauffeur">Chauffeur</SelectItem><SelectItem value="accompagnateur">Accompagnateur</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                             <FormField control={form.control} name="adminRole" render={({ field }) => (<FormItem><FormLabel>Rôle Administratif (Permissions)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Aucun rôle admin" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">Aucun</SelectItem>{adminRoles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
                             {watchedRole === 'enseignant' && (
                                 <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
