@@ -147,7 +147,7 @@ export default function StudentProfilePage() {
   
   const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
 
-  if (!studentData && !isLoading && !!schoolId) {
+  if (!isLoading && !studentData && !schoolLoading) {
     notFound();
   }
 
@@ -507,3 +507,5 @@ export default function StudentProfilePage() {
     </>
   );
 }
+
+    

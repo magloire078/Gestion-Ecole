@@ -70,7 +70,11 @@ export default function StaffProfilePage() {
   
   const isLoading = schoolLoading || staffLoading || classLoading || timetableLoading;
 
-  if (isLoading && !staffMemberData) {
+  if (!isLoading && !staffMemberData && !schoolLoading) {
+    notFound();
+  }
+
+  if (isLoading || !staffMemberData) {
     return (
         <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-3">
@@ -83,10 +87,6 @@ export default function StaffProfilePage() {
             </div>
         </div>
     );
-  }
-  
-  if (!staffMemberData && !isLoading) {
-    notFound();
   }
 
   const staffMember = staffMemberData as Staff;
@@ -254,3 +254,5 @@ export default function StaffProfilePage() {
     </>
   );
 }
+
+    
