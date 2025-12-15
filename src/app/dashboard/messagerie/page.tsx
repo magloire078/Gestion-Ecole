@@ -115,13 +115,13 @@ export default function MessagingPage() {
   
 
   const handleMessageSubmit = (values: MessageFormValues) => {
-    if (!schoolId || !user) return;
+    if (!schoolId || !user?.authUser || !user.authUser.displayName) return;
 
     const messageData = {
         ...values,
         schoolId,
-        senderId: user.uid,
-        senderName: user.displayName,
+        senderId: user.authUser.uid,
+        senderName: user.authUser.displayName,
         createdAt: serverTimestamp(),
     };
 
