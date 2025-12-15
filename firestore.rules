@@ -142,34 +142,50 @@ service cloud.firestore {
     }
 
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
-      allow read: if belongsToSchool(schoolId);
+      allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
     
     match /ecoles/{schoolId}/cantine_abonnements/{subscriptionId} {
-      allow read: if belongsToSchool(schoolId);
+      allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
 
     match /ecoles/{schoolId}/cantine_reservations/{reservationId} {
-      allow read: if belongsToSchool(schoolId);
+      allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
 
     // Transport Rules
-    match /ecoles/{schoolId}/transport/bus/{busId} {
-        allow read: if belongsToSchool(schoolId);
+    match /ecoles/{schoolId}/transport_bus/{busId} {
+        allow read, list: if belongsToSchool(schoolId);
         allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
-    match /ecoles/{schoolId}/transport/lignes/{routeId} {
-        allow read: if belongsToSchool(schoolId);
+    match /ecoles/{schoolId}/transport_lignes/{routeId} {
+        allow read, list: if belongsToSchool(schoolId);
         allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
-    match /ecoles/{schoolId}/transport/abonnements/{subscriptionId} {
-        allow read: if belongsToSchool(schoolId);
+    match /ecoles/{schoolId}/transport_abonnements/{subscriptionId} {
+        allow read, list: if belongsToSchool(schoolId);
         allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+    
+    // Internat Rules
+    match /ecoles/{schoolId}/internat_batiments/{buildingId} {
+      allow read, list: if belongsToSchool(schoolId);
+      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/internat_chambres/{roomId} {
+      allow read, list: if belongsToSchool(schoolId);
+      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/internat_occupants/{occupationId} {
+      allow read, list: if belongsToSchool(schoolId);
+      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/internat_entrees_sorties/{logId} {
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
   }
 }
-
-    
