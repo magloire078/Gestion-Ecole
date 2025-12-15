@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 import type { building, occupant, log } from '@/lib/data-types';
+import { RoomManagement } from './room-management';
 
 export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
@@ -156,6 +157,15 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="chambres">
+            <RoomManagement schoolId={schoolId} />
+        </TabsContent>
+        <TabsContent value="reglement">
+            <Card>
+                <CardHeader><CardTitle>Règlement de l'internat</CardTitle></CardHeader>
+                <CardContent><p className="text-muted-foreground">La section du règlement sera bientôt disponible.</p></CardContent>
+            </Card>
         </TabsContent>
       </Tabs>
     </div>

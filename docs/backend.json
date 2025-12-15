@@ -85,7 +85,7 @@
         "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
         "firstName": { "type": "string", "description": "Le prénom du membre du personnel." },
         "lastName": { "type": "string", "description": "Le nom de famille du membre du personnel." },
-        "role": { "type": "string", "enum": ["directeur", "directeur_pedagogique", "secretaire", "enseignant", "enseignant_principal", "comptable", "bibliothecaire", "surveillant", "infirmier", "personnel"], "description": "Le rôle de l'utilisateur dans l'école." },
+        "role": { "type": "string", "enum": ["directeur", "directeur_pedagogique", "secretaire", "enseignant", "enseignant_principal", "comptable", "bibliothecaire", "surveillant", "infirmier", "personnel", "chauffeur", "accompagnateur"], "description": "Le rôle de l'utilisateur dans l'école." },
         "adminRole": { "type": "string", "description": "L'ID du rôle administratif si l'utilisateur est un admin." },
         "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." },
         "phone": { "type": "string", "description": "Le numéro de téléphone." },
@@ -481,6 +481,153 @@
             "remainingMeals": { "type": "number" }
         },
         "required": ["studentId", "type", "startDate", "endDate", "price", "status"]
+    },
+    "bus": {
+        "title": "Bus",
+        "description": "Un bus du service de transport scolaire.",
+        "type": "object",
+        "properties": {
+          "registrationNumber": { "type": "string" },
+          "capacity": { "type": "number" },
+          "type": { "type": "string", "enum": ["standard", "minibus", "adapted"] },
+          "features": { "type": "array", "items": { "type": "string" } },
+          "driverId": { "type": "string" },
+          "monitorId": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "maintenance", "inactive"] },
+          "lastMaintenance": { "type": "string", "format": "date" },
+          "nextMaintenance": { "type": "string", "format": "date" },
+          "insurance": {
+            "type": "object",
+            "properties": {
+              "company": { "type": "string" },
+              "policyNumber": { "type": "string" },
+              "expiryDate": { "type": "string", "format": "date" }
+            }
+          }
+        },
+        "required": ["registrationNumber", "capacity", "type", "status"]
+    },
+    "route": {
+        "title": "Ligne de Transport",
+        "description": "Une ligne de bus avec ses arrêts et son horaire.",
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "busId": { "type": "string" },
+          "driverId": { "type": "string" },
+          "schedule": {
+            "type": "object",
+            "properties": {
+              "morning": { "$ref": "#/entities/routeSchedule" },
+              "evening": { "$ref": "#/entities/routeSchedule" }
+            }
+          },
+          "status": { "type": "string", "enum": ["on_time", "delayed", "cancelled"] },
+          "currentLocation": {
+            "type": "object",
+            "properties": {
+              "lat": { "type": "number" },
+              "lng": { "type": "number" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "required": ["name", "busId"]
+    },
+     "routeSchedule": {
+      "title": "Horaire de Ligne",
+      "type": "object",
+      "properties": {
+        "startTime": { "type": "string", "format": "time" },
+        "arrivalTime": { "type": "string", "format": "time" },
+        "stops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stopId": { "type": "string" },
+              "name": { "type": "string" },
+              "address": { "type": "string" },
+              "scheduledTime": { "type": "string", "format": "time" },
+              "actualTime": { "type": "string", "format": "time" },
+              "students": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "transportSubscription": {
+        "title": "Abonnement Transport",
+        "description": "Un abonnement au service de transport pour un élève.",
+        "type": "object",
+        "properties": {
+          "studentId": { "type": "string" },
+          "routeId": { "type": "string" },
+          "stopId": { "type": "string" },
+          "type": { "type": "string", "enum": ["aller_seul", "retour_seul", "aller_retour"] },
+          "period": { "type": "string", "enum": ["trimestriel", "semestriel", "annuel"] },
+          "startDate": { "type": "string", "format": "date" },
+          "endDate": { "type": "string", "format": "date" },
+          "price": { "type": "number" },
+          "paymentStatus": { "type": "string", "enum": ["unpaid", "paid"] },
+          "status": { "type": "string", "enum": ["active", "inactive"] }
+        },
+        "required": ["studentId", "routeId", "stopId", "type", "period", "price", "status"]
+    },
+    "building": {
+        "title": "Bâtiment d'Internat",
+        "description": "Un bâtiment utilisé pour l'hébergement des internes.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string", "enum": ["garcons", "filles", "mixte"] },
+            "capacity": { "type": "number" },
+            "responsableId": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
+            "curfew": { "type": "object", "properties": { "weekdays": {"type": "string"}, "weekends": {"type": "string"} } }
+        },
+        "required": ["name", "type", "capacity", "responsableId", "status"]
+    },
+    "room": {
+        "title": "Chambre d'Internat",
+        "description": "Une chambre dans un bâtiment d'internat.",
+        "type": "object",
+        "properties": {
+            "buildingId": { "type": "string" },
+            "number": { "type": "string" },
+            "capacity": { "type": "number" },
+            "status": { "type": "string", "enum": ["available", "occupied", "maintenance"] },
+            "monthlyRate": { "type": "number" }
+        },
+        "required": ["buildingId", "number", "capacity", "status", "monthlyRate"]
+    },
+    "occupant": {
+        "title": "Occupant (Interne)",
+        "description": "Détaille l'occupation d'une chambre par un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "roomId": { "type": "string" },
+            "startDate": { "type": "string", "format": "date" },
+            "endDate": { "type": "string", "format": "date" },
+            "status": { "type": "string", "enum": ["active", "pending", "terminated", "suspended"] },
+            "nextPaymentDue": { "type": "string", "format": "date" }
+        },
+        "required": ["studentId", "roomId", "startDate", "status"]
+    },
+    "log": {
+        "title": "Journal des Entrées/Sorties",
+        "description": "Enregistre un mouvement d'un interne.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "type": { "type": "string", "enum": ["entree", "sortie"] },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "reason": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "authorized", "returned", "late", "cancelled"] },
+            "authorizedBy": { "type": "string" }
+        },
+        "required": ["studentId", "type", "timestamp", "reason", "status"]
     }
   },
   "auth": {
@@ -573,19 +720,54 @@
             "description": "Stocke les matières enseignées dans l'école."
         },
         "cantine_menus": {
-            "path": "cantine/menus/{menuId}",
+            "path": "cantine_menus/{menuId}",
             "schema": { "$ref": "#/entities/canteenMenu" },
             "description": "Stocke les menus de la cantine."
         },
         "cantine_reservations": {
-            "path": "cantine/reservations/{reservationId}",
+            "path": "cantine_reservations/{reservationId}",
             "schema": { "$ref": "#/entities/canteenReservation" },
             "description": "Stocke les réservations de repas."
         },
         "cantine_abonnements": {
-            "path": "cantine/abonnements/{subscriptionId}",
+            "path": "cantine_abonnements/{subscriptionId}",
             "schema": { "$ref": "#/entities/canteenSubscription" },
             "description": "Stocke les abonnements à la cantine."
+        },
+        "transport_bus": {
+            "path": "transport_bus/{busId}",
+            "schema": { "$ref": "#/entities/bus" },
+            "description": "Stocke la flotte de bus de l'école."
+        },
+        "transport_lignes": {
+            "path": "transport_lignes/{routeId}",
+            "schema": { "$ref": "#/entities/route" },
+            "description": "Définit les lignes de transport et leurs arrêts."
+        },
+        "transport_abonnements": {
+            "path": "transport_abonnements/{subscriptionId}",
+            "schema": { "$ref": "#/entities/transportSubscription" },
+            "description": "Stocke les abonnements au transport des élèves."
+        },
+         "internat_batiments": {
+            "path": "internat_batiments/{buildingId}",
+            "schema": { "$ref": "#/entities/building" },
+            "description": "Gère les bâtiments de l'internat."
+        },
+        "internat_chambres": {
+            "path": "internat_chambres/{roomId}",
+            "schema": { "$ref": "#/entities/room" },
+            "description": "Gère les chambres de l'internat."
+        },
+        "internat_occupants": {
+            "path": "internat_occupants/{occupationId}",
+            "schema": { "$ref": "#/entities/occupant" },
+            "description": "Gère les occupants (internes) des chambres."
+        },
+        "internat_entrees_sorties": {
+            "path": "internat_entrees_sorties/{logId}",
+            "schema": { "$ref": "#/entities/log" },
+            "description": "Journalise les entrées et sorties des internes."
         }
       }
     },
@@ -595,5 +777,3 @@
     }
   }
 }
-
-    
