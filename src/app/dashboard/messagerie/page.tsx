@@ -78,6 +78,7 @@ export default function MessagingPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const canManageContent = !!user?.profile?.permissions?.manageContent;
 
   const messagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy("createdAt", "desc")) : null, [firestore, schoolId]);
   const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
@@ -278,31 +279,33 @@ export default function MessagingPage() {
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Historique des envois</h2>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogTrigger asChild>
-                    <Button onClick={() => setIsFormOpen(true)}>
-                      <span className="flex items-center gap-2">
-                        <PlusCircle className="h-4 w-4" /> Nouveau Message
-                      </span>
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>Envoyer un nouveau message</DialogTitle>
-                        <DialogDescription>Rédigez votre message et choisissez les destinataires.</DialogDescription>
-                    </DialogHeader>
-                    {renderFormContent()}
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                        <Button type="submit" form="message-form" disabled={form.formState.isSubmitting}>
-                          <span className="flex items-center gap-2">
-                            <Send className="h-4 w-4" />
-                            {form.formState.isSubmitting ? 'Envoi...' : 'Envoyer'}
-                          </span>
+            {canManageContent && (
+                <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                    <DialogTrigger asChild>
+                        <Button onClick={() => setIsFormOpen(true)}>
+                        <span className="flex items-center gap-2">
+                            <PlusCircle className="h-4 w-4" /> Nouveau Message
+                        </span>
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Envoyer un nouveau message</DialogTitle>
+                            <DialogDescription>Rédigez votre message et choisissez les destinataires.</DialogDescription>
+                        </DialogHeader>
+                        {renderFormContent()}
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                            <Button type="submit" form="message-form" disabled={form.formState.isSubmitting}>
+                            <span className="flex items-center gap-2">
+                                <Send className="h-4 w-4" />
+                                {form.formState.isSubmitting ? 'Envoi...' : 'Envoyer'}
+                            </span>
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
 
         <Card>
