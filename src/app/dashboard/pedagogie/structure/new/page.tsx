@@ -183,7 +183,16 @@ export default function NewClassPage() {
       };
         
       const classesCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
-      await addDoc(classesCollectionRef, classData);
+      await addDoc(classesCollectionRef, classData)
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: classesCollectionRef.path,
+                operation: 'create',
+                requestResourceData: classData,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            throw serverError; // Rethrow to be caught by the outer try/catch
+        });
 
       toast({
           title: 'Classe créée !',
@@ -193,12 +202,7 @@ export default function NewClassPage() {
     
     } catch (error: any) {
         if(error.message !== 'Duplicate class code'){
-            const permissionError = new FirestorePermissionError({
-                path: `ecoles/${schoolId}/classes`,
-                operation: 'create',
-                requestResourceData: formValues,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+             toast({ variant: 'destructive', title: "Erreur", description: "La création de la classe a échoué."})
         }
     } finally {
         setIsSubmitting(false);

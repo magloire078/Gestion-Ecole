@@ -142,9 +142,8 @@ export default function StudentsPage() {
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
     } catch(serverError) {
         const permissionError = new FirestorePermissionError({
-            path: `[BATCH] /ecoles/${schoolId}/eleves/${studentToDelete.id} & /ecoles/${schoolId}/classes/${studentToDelete.classId}`,
-            operation: 'write',
-            requestResourceData: { studentDeletePath: studentDocRef.path, classUpdatePath: studentToDelete.classId ? `/ecoles/${schoolId}/classes/${studentToDelete.classId}` : 'N/A' }
+            path: `[BATCH WRITE] /ecoles/${schoolId}/eleves/${studentToDelete.id} and class update`,
+            operation: 'delete'
         });
         errorEmitter.emit('permission-error', permissionError);
     } finally {
