@@ -465,7 +465,7 @@ const OnboardingDashboard = () => {
     let completedSteps = 0;
     const totalSteps = 4;
 
-    const baseInfoDone = !!(schoolData.name && schoolData.directorFirstName && schoolData.mainLogoUrl && schoolData.address);
+    const baseInfoDone = !!(schoolData.name && schoolData.directorFirstName && schoolData.address);
     const structureDone = onboardingData.classesCount > 0;
     const staffDone = onboardingData.teachersCount > 0;
     const feesDone = onboardingData.feesCount > 0;
@@ -654,7 +654,7 @@ export default function DashboardPage() {
 
   const isSetupComplete = useMemo(() => {
     if (!schoolData) return false;
-    const baseInfoDone = !!(schoolData.address && schoolData.mainLogoUrl);
+    const baseInfoDone = !!(schoolData.name && schoolData.directorFirstName && schoolData.address);
     const structureDone = onboardingData.classesCount > 0;
     const staffDone = onboardingData.teachersCount > 0;
     const feesDone = onboardingData.feesCount > 0;

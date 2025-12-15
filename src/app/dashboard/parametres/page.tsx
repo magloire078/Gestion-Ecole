@@ -172,12 +172,12 @@ export default function SettingsPage() {
   };
 
   const handleResetAccount = async () => {
-    if (!user || !firestore) {
+    if (!user || !user.authUser || !firestore) {
       toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
       return;
     }
     try {
-      const userRootRef = doc(firestore, 'utilisateurs', user.uid);
+      const userRootRef = doc(firestore, 'utilisateurs', user.authUser.uid);
       await deleteDoc(userRootRef);
       await signOut(auth);
       toast({ title: "Compte réinitialisé", description: "Vous allez être redirigé vers la page de connexion." });
