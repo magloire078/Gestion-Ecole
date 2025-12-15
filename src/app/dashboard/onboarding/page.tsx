@@ -14,6 +14,7 @@ import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import type { staff } from '@/lib/data-types';
 
 type OnboardingMode = "create" | "join";
 
@@ -29,8 +30,8 @@ export default function OnboardingPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   const handleJoinSchool = async () => {
-    if (!user || !user.uid || !user.displayName) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié ou nom d\'affichage manquant.' });
+    if (!user || !user.uid || !user.displayName || !user.email) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié ou informations manquantes.' });
         return;
     }
     if (!schoolCode.trim()) {
@@ -54,24 +55,24 @@ export default function OnboardingPage() {
         const schoolDoc = querySnapshot.docs[0];
         const schoolId = schoolDoc.id;
         const nameParts = user.displayName.split(' ');
-        const firstName = nameParts[0];
-        const lastName = nameParts.slice(1).join(' ');
-
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
 
         const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
         const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
         
         const rootUserData = { schoolId: schoolId };
-        const staffProfileData = {
+        const staffProfileData: Omit<staff, 'id'> = {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
-            photoURL: user.photoURL,
+            photoURL: user.photoURL || '',
             schoolId: schoolId,
             role: 'enseignant', // Default role for joining users
             firstName: firstName,
             lastName: lastName,
             hireDate: new Date().toISOString().split('T')[0],
+            baseSalary: 0,
         };
 
         const batch = writeBatch(firestore);
