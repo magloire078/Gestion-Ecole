@@ -25,6 +25,7 @@ import {
     Utensils,
     Bus,
     Bed,
+    Building,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -48,6 +49,7 @@ const navLinks = [
       { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageContent' as PermissionKey },
       { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageContent' as PermissionKey },
       { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageContent' as PermissionKey },
+      { href: '/dashboard/immobilier', label: 'Immobilier', icon: Building, permission: 'manageContent' as PermissionKey },
     ]
   },
   {
@@ -157,5 +159,3 @@ export function MobileNav() {
     </div>
   );
 }
-
-    

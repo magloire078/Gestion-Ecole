@@ -423,8 +423,8 @@ export type transportSubscription = {
     period: "trimestriel" | "semestriel" | "annuel";
     price: number;
     status: "active" | "inactive";
-    paymentStatus?: "unpaid" | "paid";
     id?: string;
+    paymentStatus?: "unpaid" | "paid";
 };
 
 export type building = {
@@ -433,11 +433,11 @@ export type building = {
     capacity: number;
     responsableId: string;
     status: "active" | "maintenance" | "full";
+    id?: string;
     curfew?: {
         weekdays?: string;
         weekends?: string;
     };
-    id?: string;
     features?: string[];
 };
 
@@ -455,9 +455,9 @@ export type occupant = {
     roomId: string;
     startDate: string;
     status: "active" | "pending" | "terminated" | "suspended";
+    id?: string;
     endDate?: string;
     nextPaymentDue?: string;
-    id?: string;
 };
 
 export type log = {
@@ -466,6 +466,48 @@ export type log = {
     timestamp: string;
     reason: string;
     status: "pending" | "authorized" | "returned" | "late" | "cancelled";
+    id?: string;
     authorizedBy?: string;
+};
+
+export type materiel = {
+    name: string;
+    category: "Mobilier" | "Informatique" | "Pédagogique" | "Sportif" | "Autre";
+    quantity: number;
+    status: "neuf" | "bon" | "à réparer" | "hors_service";
+    locationId: string;
+    id?: string;
+    acquisitionDate?: string;
+    value?: number;
+};
+
+export type salle = {
+    name: string;
+    type: "salle_de_classe" | "salle_de_reunion" | "laboratoire" | "amphitheatre" | "gymnase";
+    capacity: number;
+    buildingId?: string;
+    equipments?: string[];
+    id?: string;
+};
+
+export type reservation_salle = {
+    salleId: string;
+    reservedBy: string;
+    eventName: string;
+    startTime: string;
+    endTime: string;
+    status: "confirmée" | "en_attente" | "annulée";
+    notes?: string;
+    id?: string;
+};
+
+export type tache_maintenance = {
+    title: string;
+    priority: "haute" | "moyenne" | "basse";
+    status: "à_faire" | "en_cours" | "terminée";
+    assignedTo?: string;
+    dueDate?: string;
+    description?: string;
+    location?: string;
     id?: string;
 };

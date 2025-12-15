@@ -188,5 +188,23 @@ service cloud.firestore {
       allow read, list: if belongsToSchool(schoolId);
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
+
+    // --- New Immobilier Rules ---
+    match /ecoles/{schoolId}/inventaire/{materielId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/salles/{salleId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/reservations_salles/{reservationId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/maintenance/{tacheId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
   }
 }

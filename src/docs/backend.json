@@ -584,7 +584,8 @@
             "capacity": { "type": "number" },
             "responsableId": { "type": "string" },
             "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
-            "curfew": { "type": "object", "properties": { "weekdays": {"type": "string"}, "weekends": {"type": "string"} } }
+            "curfew": { "type": "object", "properties": { "weekdays": {"type": "string"}, "weekends": {"type": "string"} } },
+            "features": { "type": "array", "items": { "type": "string" } }
         },
         "required": ["name", "type", "capacity", "responsableId", "status"]
     },
@@ -628,6 +629,64 @@
             "authorizedBy": { "type": "string" }
         },
         "required": ["studentId", "type", "timestamp", "reason", "status"]
+    },
+    "materiel": {
+        "title": "Matériel",
+        "description": "Un équipement ou un bien de l'école.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "category": { "type": "string", "enum": ["Mobilier", "Informatique", "Pédagogique", "Sportif", "Autre"] },
+            "quantity": { "type": "number" },
+            "status": { "type": "string", "enum": ["neuf", "bon", "à réparer", "hors_service"] },
+            "locationId": { "type": "string", "description": "ID de la salle ou du bâtiment où se trouve l'équipement." },
+            "acquisitionDate": { "type": "string", "format": "date" },
+            "value": { "type": "number" }
+        },
+        "required": ["name", "category", "quantity", "status", "locationId"]
+    },
+    "salle": {
+        "title": "Salle",
+        "description": "Une salle pouvant être réservée (salle de classe, réunion, etc.).",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string", "enum": ["salle_de_classe", "salle_de_reunion", "laboratoire", "amphitheatre", "gymnase"] },
+            "capacity": { "type": "number" },
+            "buildingId": { "type": "string" },
+            "equipments": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["name", "type", "capacity"]
+    },
+    "reservation_salle": {
+        "title": "Réservation de Salle",
+        "description": "Une réservation pour une salle spécifique.",
+        "type": "object",
+        "properties": {
+            "salleId": { "type": "string" },
+            "reservedBy": { "type": "string", "description": "UID de l'utilisateur qui réserve." },
+            "eventName": { "type": "string" },
+            "startTime": { "type": "string", "format": "date-time" },
+            "endTime": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["confirmée", "en_attente", "annulée"] },
+            "notes": { "type": "string" }
+        },
+        "required": ["salleId", "reservedBy", "eventName", "startTime", "endTime", "status"]
+    },
+    "tache_maintenance": {
+        "title": "Tâche de Maintenance",
+        "description": "Une tâche de maintenance préventive ou corrective.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string" },
+            "priority": { "type": "string", "enum": ["haute", "moyenne", "basse"] },
+            "status": { "type": "string", "enum": ["à_faire", "en_cours", "terminée"] },
+            "assignedTo": { "type": "string", "description": "UID du membre du personnel assigné." },
+            "dueDate": { "type": "string", "format": "date" },
+            "description": { "type": "string" },
+            "location": { "type": "string", "description": "Où la maintenance doit avoir lieu (ex: Salle B102, Bus-01)." }
+        },
+        "required": ["title", "priority", "status"]
     }
   },
   "auth": {
@@ -768,6 +827,26 @@
             "path": "internat_entrees_sorties/{logId}",
             "schema": { "$ref": "#/entities/log" },
             "description": "Journalise les entrées et sorties des internes."
+        },
+        "inventaire": {
+            "path": "inventaire/{materielId}",
+            "schema": { "$ref": "#/entities/materiel" },
+            "description": "Stocke l'inventaire du matériel de l'école."
+        },
+        "salles": {
+            "path": "salles/{salleId}",
+            "schema": { "$ref": "#/entities/salle" },
+            "description": "Définit les salles réservables de l'école."
+        },
+        "reservations_salles": {
+            "path": "reservations_salles/{reservationId}",
+            "schema": { "$ref": "#/entities/reservation_salle" },
+            "description": "Stocke les réservations des salles."
+        },
+        "maintenance": {
+            "path": "maintenance/{tacheId}",
+            "schema": { "$ref": "#/entities/tache_maintenance" },
+            "description": "Suit les tâches de maintenance de l'établissement."
         }
       }
     },
@@ -777,4 +856,3 @@
     }
   }
 }
-
