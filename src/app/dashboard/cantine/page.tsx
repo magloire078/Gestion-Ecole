@@ -4,6 +4,8 @@
 import { DailyMenu } from '@/components/cantine/daily-menu';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CantinePage() {
   const { schoolId, loading } = useSchoolData();
@@ -33,9 +35,36 @@ export default function CantinePage() {
                 Consultez les menus, gérez les réservations et les abonnements.
             </p>
         </div>
-        <DailyMenu schoolId={schoolId} />
+        <Tabs defaultValue="menu" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="menu">Menus</TabsTrigger>
+                <TabsTrigger value="reservations">Réservations</TabsTrigger>
+                <TabsTrigger value="abonnements">Abonnements</TabsTrigger>
+            </TabsList>
+            <TabsContent value="menu" className="mt-6">
+                <DailyMenu schoolId={schoolId} />
+            </TabsContent>
+            <TabsContent value="reservations">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Réservations</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">La gestion des réservations sera bientôt disponible.</p>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+             <TabsContent value="abonnements">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Abonnements</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-muted-foreground">La gestion des abonnements sera bientôt disponible.</p>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
-
-    

@@ -332,6 +332,7 @@ export type canteenMenu = {
         };
         allergies?: string[];
     };
+    id?: string;
 };
 
 export type canteenReservation = {
@@ -367,4 +368,3 @@ export type canteenSubscription = {
     remainingMeals?: number;
 };
 
-    

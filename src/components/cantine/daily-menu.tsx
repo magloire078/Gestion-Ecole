@@ -2,43 +2,42 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, getDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import type { canteenMenu as CanteenMenu } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Edit } from 'lucide-react';
+import { MenuForm } from './menu-form';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 
-export function DailyMenu({ schoolId, date }: { schoolId: string, date?: Date }) {
+export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, date?: Date }) {
   const firestore = useFirestore();
-  const [selectedDate, setSelectedDate] = useState(date || new Date());
+  const { user } = useUser();
+  const canManageContent = !!user?.profile?.permissions?.manageContent;
+
+  const [selectedDate, setSelectedDate] = useState(initialDate || new Date());
   const [menu, setMenu] = useState<CanteenMenu | null>(null);
   const [loading, setLoading] = useState(false);
-  
-  useEffect(() => {
-    loadMenuForDate(selectedDate);
-  }, [selectedDate, schoolId]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   
   const loadMenuForDate = async (date: Date) => {
     setLoading(true);
     setMenu(null);
     const dateStr = format(date, 'yyyy-MM-dd');
-    
-    // Pour l'exemple, nous allons utiliser un ID de menu fixe. Dans une vraie app, on ferait une query.
-    const menuId = `menu_${dateStr}_dejeuner`; 
-    const menuRef = doc(firestore, `ecoles/${schoolId}/cantine/menus/${menuId}`);
+    const menuRef = doc(firestore, `ecoles/${schoolId}/cantine_menus/${dateStr}_dejeuner`);
     
     try {
         const menuDoc = await getDoc(menuRef);
         if (menuDoc.exists()) {
-          setMenu(menuDoc.data() as CanteenMenu);
+          setMenu({ id: menuDoc.id, ...menuDoc.data() } as CanteenMenu);
         } else {
-            // Créer un menu par défaut pour la démo si aucun n'existe
-            createDemoMenu(dateStr);
+          setMenu(null); // No menu for this date
         }
     } catch(e) {
         console.error("Error loading menu:", e);
@@ -47,25 +46,17 @@ export function DailyMenu({ schoolId, date }: { schoolId: string, date?: Date })
     }
   };
   
-  const createDemoMenu = async (dateStr: string) => {
-    const demoMenu: CanteenMenu = {
-        date: dateStr,
-        mealType: "dejeuner",
-        status: "published",
-        categories: [
-            { name: "Entrées", items: [{ name: "Salade César", description: "Salade, poulet, croûtons, parmesan", allergens: ["lactose", "gluten"], priceStudent: 1500, priceStaff: 2000 }] },
-            { name: "Plats principaux", items: [{ name: "Thiéboudienne", description: "Plat national sénégalais à base de riz et de poisson.", allergens: [], priceStudent: 2500, priceStaff: 3500, options: ["portion normale"] }] },
-            { name: "Desserts", items: [{ name: "Salade de fruits frais", description: "Ananas, mangue, pastèque", allergens: [], priceStudent: 1000, priceStaff: 1500 }] }
-        ],
-        specialMenus: {
-            vegetarian: { available: true, mainCourse: "Curry de légumes" },
-            halal: { available: true, mainCourse: "Le plat principal est Halal" }
-        }
-    };
-    setMenu(demoMenu); // Afficher immédiatement le menu démo
-  }
+  useEffect(() => {
+    loadMenuForDate(selectedDate);
+  }, [selectedDate, schoolId]);
+  
+  const handleMenuSave = () => {
+    setIsFormOpen(false);
+    loadMenuForDate(selectedDate); // Reload the menu after saving
+  };
   
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       <Card className="md:col-span-1">
         <CardHeader>
@@ -97,42 +88,55 @@ export function DailyMenu({ schoolId, date }: { schoolId: string, date?: Date })
         ) : menu ? (
             <Card>
               <CardHeader>
-                <CardTitle>Menu du {format(selectedDate, 'EEEE d MMMM', { locale: fr })}</CardTitle>
-                <CardDescription>Découvrez le menu du déjeuner de votre école.</CardDescription>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Menu du {format(selectedDate, 'EEEE d MMMM', { locale: fr })}</CardTitle>
+                        <CardDescription>Découvrez le menu du déjeuner de votre école.</CardDescription>
+                    </div>
+                    {canManageContent && (
+                        <Button variant="outline" size="sm" onClick={() => setIsFormOpen(true)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Gérer le menu
+                        </Button>
+                    )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {menu.categories.map((category) => (
-                    <div key={category.name} className="space-y-3">
+                  {menu.categories.map((category, index) => (
+                    <div key={index} className="space-y-3">
                       <h3 className="text-lg font-semibold">{category.name}</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {category.items?.map((item) => (
-                          <div key={item.name} className="border rounded-lg p-4 flex flex-col justify-between">
-                            <div>
-                                <div className="flex justify-between items-start">
-                                    <h4 className="font-medium">{item.name}</h4>
-                                    <div className="text-right shrink-0 ml-2">
-                                        <div className="font-bold">{item.priceStudent?.toLocaleString('fr-FR')} CFA</div>
-                                        <div className="text-xs text-muted-foreground">élève</div>
-                                    </div>
-                                </div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {item.description}
-                                </p>
-                            </div>
-                            
-                            {item.allergens && item.allergens.length > 0 && (
-                              <div className="mt-2 flex flex-wrap gap-1">
-                                {item.allergens.map((allergen: string) => (
-                                  <Badge key={allergen} variant="outline" className="text-xs">
-                                    {allergen}
-                                  </Badge>
-                                ))}
+                      {category.items && category.items.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {category.items.map((item, itemIndex) => (
+                            <div key={itemIndex} className="border rounded-lg p-4 flex flex-col justify-between">
+                              <div>
+                                  <div className="flex justify-between items-start">
+                                      <h4 className="font-medium">{item.name}</h4>
+                                      {item.priceStudent != null && (
+                                        <div className="text-right shrink-0 ml-2">
+                                            <div className="font-bold">{item.priceStudent?.toLocaleString('fr-FR')} CFA</div>
+                                            <div className="text-xs text-muted-foreground">élève</div>
+                                        </div>
+                                      )}
+                                  </div>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    {item.description}
+                                  </p>
                               </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                              {item.allergens && item.allergens.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {item.allergens.map((allergen: string) => (
+                                    <Badge key={allergen} variant="outline" className="text-xs">
+                                      {allergen}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-sm text-muted-foreground">Aucun plat dans cette catégorie.</p>}
                     </div>
                   ))}
                   
@@ -163,16 +167,39 @@ export function DailyMenu({ schoolId, date }: { schoolId: string, date?: Date })
               </CardContent>
             </Card>
         ) : (
-             <Card className="flex items-center justify-center h-96">
-                <div className="text-center text-muted-foreground">
-                    <p>Aucun menu publié pour cette date.</p>
-                    <p className="text-xs mt-2">(Un menu de démo est affiché s'il n'y a pas de données réelles)</p>
-                </div>
+             <Card className="flex flex-col items-center justify-center h-96 text-center">
+                <CardHeader>
+                    <CardTitle>Aucun Menu</CardTitle>
+                    <CardDescription>Aucun menu n'a été publié pour le {format(selectedDate, 'd MMMM yyyy', { locale: fr })}.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {canManageContent && (
+                        <Button onClick={() => setIsFormOpen(true)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Créer le menu
+                        </Button>
+                    )}
+                </CardContent>
              </Card>
         )}
       </div>
     </div>
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent className="max-w-4xl">
+             <DialogHeader>
+                <DialogTitle>Gérer le menu du {format(selectedDate, 'EEEE d MMMM', { locale: fr })}</DialogTitle>
+                <DialogDescription>
+                    Ajoutez, modifiez ou supprimez les plats proposés pour le déjeuner.
+                </DialogDescription>
+            </DialogHeader>
+            <MenuForm 
+                schoolId={schoolId}
+                menu={menu}
+                date={selectedDate}
+                onSave={handleMenuSave}
+            />
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
-
-    
