@@ -37,6 +37,11 @@ service firebase.storage {
       allow write: if isDirector(schoolId);
     }
     
+    // Chemin temporaire pour le logo pendant la création de l'école
+    match /temp-logos/{userId}/{allPaths=**} {
+      allow write: if isAuth() && request.auth.uid == userId;
+    }
+    
     // Photos de profil des élèves: le directeur ou un enseignant peut écrire
     match /ecoles/{schoolId}/eleves/{studentId}/avatars/{imageId} {
        allow write: if isDirector(schoolId) || getStaffRole(request.auth.uid, schoolId) == 'enseignant';

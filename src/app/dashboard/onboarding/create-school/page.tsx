@@ -109,8 +109,10 @@ export default function CreateSchoolPage() {
   
   const handleLogoUploadComplete = (url: string) => {
     setLogoUrl(url);
-    form.setValue('logoUrl', url);
+    form.setValue('logoUrl', url, { shouldDirty: true });
   }
+
+  const storagePath = user?.uid ? `temp-logos/${user.uid}/` : 'temp-logos/unknown/';
 
   return (
     <div className="min-h-screen bg-muted/40 p-4 md:p-8">
@@ -135,7 +137,7 @@ export default function CreateSchoolPage() {
                 <div className="flex items-center gap-6">
                     <ImageUploader 
                         onUploadComplete={handleLogoUploadComplete}
-                        storagePath="ecoles/logos/"
+                        storagePath={storagePath}
                     >
                         <Avatar className={cn("h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity", logoUrl && "border-2 border-primary")}>
                             <AvatarImage src={logoUrl || undefined} alt="Logo de l'école" />
