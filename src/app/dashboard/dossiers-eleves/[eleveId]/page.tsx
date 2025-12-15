@@ -104,7 +104,14 @@ export default function StudentProfilePage() {
   
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => (schoolId && eleveId) ? doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) : null, [firestore, schoolId, eleveId]);
-  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+  const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef, {
+      onError: (error) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: studentRef!.path,
+              operation: 'get'
+          }));
+      }
+  });
 
   const gradesQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);
   const paymentsQuery = useMemoFirebase(() => (schoolId && eleveId) ? query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')) : null, [firestore, schoolId, eleveId]);

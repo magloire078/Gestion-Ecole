@@ -37,7 +37,6 @@ async function updateUserSchoolId(firestore: any, userId: string, schoolId: stri
     const userDoc = await getDoc(userRef);
     if (!userDoc.exists() || userDoc.data()?.schoolId !== schoolId) {
       await setDoc(userRef, { schoolId }, { merge: true });
-       console.log(`User document for ${userId} has been synced with schoolId: ${schoolId}`);
     }
   } catch (error) {
     console.error("Failed to sync user's schoolId:", error);

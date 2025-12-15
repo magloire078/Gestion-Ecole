@@ -124,10 +124,9 @@ export class SchoolCreationService {
       batch.set(subjectRef, subjectData);
     }
     
-    try {
-        await batch.commit();
+    return batch.commit().then(() => {
         return { schoolId, schoolCode };
-    } catch(e) {
+    }).catch(e => {
          const permissionError = new FirestorePermissionError({
             path: `[BATCH WRITE] /ecoles/${schoolId}`,
             operation: 'create',
@@ -135,6 +134,6 @@ export class SchoolCreationService {
         });
         errorEmitter.emit('permission-error', permissionError);
         throw e; // Rethrow original error after emitting our custom one
-    }
+    });
   }
 }

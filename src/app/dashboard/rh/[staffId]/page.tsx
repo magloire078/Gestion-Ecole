@@ -19,6 +19,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
 import { SafeImage } from '@/components/ui/safe-image';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const getStatusBadgeVariant = (status: Staff['status']) => {
     switch (status) {
@@ -50,7 +52,14 @@ export default function StaffProfilePage() {
   
   // --- Data Fetching ---
   const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId]);
-  const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
+  const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef, {
+      onError: (error) => {
+          errorEmitter.emit('permission-error', new FirestorePermissionError({
+              path: staffRef!.path,
+              operation: 'get'
+          }));
+      }
+  });
 
   const classRef = useMemoFirebase(() => staffMemberData?.classId && schoolId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMemberData.classId}`) : null, [staffMemberData, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
