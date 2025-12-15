@@ -25,9 +25,7 @@ export const deleteSchool = async (
     
     const schoolRef = doc(firestore, `ecoles/${schoolId}`);
 
-    try {
-        await deleteDoc(schoolRef);
-    } catch (error) {
+    return deleteDoc(schoolRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: schoolRef.path,
             operation: 'delete',
@@ -35,5 +33,5 @@ export const deleteSchool = async (
         errorEmitter.emit('permission-error', permissionError);
         // Rethrow pour que l'appelant puisse aussi gérer l'erreur
         throw permissionError;
-    }
+    });
 };

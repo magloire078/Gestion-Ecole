@@ -26,9 +26,7 @@ export const updateStaffPhoto = async (
     const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
     const dataToUpdate = { photoURL };
 
-    try {
-        await updateDoc(staffRef, dataToUpdate);
-    } catch (error) {
+    return updateDoc(staffRef, dataToUpdate).catch(error => {
         const permissionError = new FirestorePermissionError({
             path: staffRef.path,
             operation: 'update',
@@ -37,5 +35,5 @@ export const updateStaffPhoto = async (
         errorEmitter.emit('permission-error', permissionError);
         // Rethrow the original error or the custom one if you want the caller to handle it too
         throw permissionError;
-    }
+    });
 };
