@@ -16,6 +16,10 @@ const sidebarNavItems = [
     href: "/dashboard/parametres/abonnement",
   },
   {
+    title: "Facturation",
+    href: "/dashboard/parametres/facturation",
+  },
+  {
     title: "Fiche Établissement",
     href: "/dashboard/parametres/fiche-etablissement",
   },
@@ -65,3 +69,5 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
     </div>
   )
 }
+
+    

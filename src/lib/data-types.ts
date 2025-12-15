@@ -117,6 +117,7 @@ export type student = {
     discountReason?: string;
     feedback?: string;
     createdAt?: string;
+    inscriptionYear?: number;
     id?: string;
     name?: string;
 };
@@ -126,6 +127,7 @@ export type cycle = {
     name: string;
     code: string;
     order: number;
+    isActive?: boolean;
     description?: string;
     ageRange?: {
         min?: number;
@@ -298,3 +300,5 @@ export type subject = {
     color?: string;
     id?: string;
 };
+
+    

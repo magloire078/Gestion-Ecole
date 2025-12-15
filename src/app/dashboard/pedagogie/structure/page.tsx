@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -33,11 +34,13 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
+import { Switch } from '@/components/ui/switch';
 
 const cycleSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
   code: z.string().min(2, "Le code est requis.").max(5, "Le code ne peut excéder 5 caractères."),
   order: z.coerce.number().min(1, "L'ordre est requis."),
+  isActive: z.boolean().default(true),
   color: z.string().optional(),
 });
 type CycleFormValues = z.infer<typeof cycleSchema>;
@@ -97,7 +100,7 @@ export default function StructurePage() {
 
   const cycleForm = useForm<CycleFormValues>({
     resolver: zodResolver(cycleSchema),
-    defaultValues: { name: '', code: '', order: cycles.length + 1, color: '#3b82f6' }
+    defaultValues: { name: '', code: '', order: cycles.length + 1, isActive: true, color: '#3b82f6' }
   });
   
   const niveauForm = useForm<NiveauFormValues>({
@@ -191,8 +194,9 @@ export default function StructurePage() {
         name: cycle.name,
         code: cycle.code,
         order: cycle.order,
+        isActive: cycle.isActive ?? true,
         color: cycle.color || '#3b82f6'
-      } : { name: '', code: '', order: cycles.length + 1, color: '#3b82f6' });
+      } : { name: '', code: '', order: cycles.length + 1, isActive: true, color: '#3b82f6' });
       setIsCycleFormOpen(true);
   }
 
@@ -264,15 +268,16 @@ export default function StructurePage() {
             <CardContent className="space-y-4">
               <div className="border rounded-lg">
                 <Table>
-                  <TableHeader><TableRow><TableHead>Nom du Cycle</TableHead><TableHead>Code</TableHead><TableHead>Ordre</TableHead><TableHead className="text-right w-24">Actions</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Nom du Cycle</TableHead><TableHead>Code</TableHead><TableHead>Ordre</TableHead><TableHead>Statut</TableHead><TableHead className="text-right w-24">Actions</TableHead></TableRow></TableHeader>
                   <TableBody>
-                    {isLoading ? [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
-                    : filteredCycles.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Aucun cycle trouvé</TableCell></TableRow>
+                    {isLoading ? [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
+                    : filteredCycles.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Aucun cycle trouvé</TableCell></TableRow>
                     : filteredCycles.map((cycle) => (
                           <TableRow key={cycle.id} className="group hover:bg-muted/50">
                             <TableCell className="font-medium"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }} />{cycle.name}</div></TableCell>
                             <TableCell><Badge variant="outline">{cycle.code}</Badge></TableCell>
                             <TableCell>{cycle.order}</TableCell>
+                            <TableCell><Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell>
                             <TableCell className="text-right">
                               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                 <Button variant="ghost" size="icon" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4" /></Button>
@@ -395,6 +400,7 @@ export default function StructurePage() {
              <FormField control={cycleForm.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
              <FormField control={cycleForm.control} name="order" render={({ field }) => (<FormItem><FormLabel>Ordre d'affichage</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
              <FormField control={cycleForm.control} name="color" render={({ field }) => (<FormItem><FormLabel>Couleur</FormLabel><FormControl><Input type="color" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>)} />
+             <FormField control={cycleForm.control} name="isActive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Cycle Actif</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
           </form>
         </Form>
         <DialogFooter><Button variant="outline" onClick={() => setIsCycleFormOpen(false)}>Annuler</Button><Button type="submit" form="cycle-form" disabled={cycleForm.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
@@ -442,3 +448,5 @@ export default function StructurePage() {
     </>
   );
 }
+
+    

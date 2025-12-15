@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -144,6 +145,8 @@ export default function RegistrationPage() {
     const selectedNiveauInfo = niveaux.find(n => n.id === selectedClassInfo?.niveauId);
     
     const tuitionFee = getTuitionFeeForClass(values.classId);
+    const currentYear = new Date().getFullYear();
+
 
     const studentData = {
       schoolId,
@@ -174,6 +177,7 @@ export default function RegistrationPage() {
       tuitionStatus: tuitionFee > 0 ? 'Partiel' : 'Soldé' as const,
       feedback: '',
       createdAt: serverTimestamp(),
+      inscriptionYear: currentYear,
     };
     
     const batch = writeBatch(firestore);
@@ -330,3 +334,5 @@ export default function RegistrationPage() {
     </div>
   );
 }
+
+    
