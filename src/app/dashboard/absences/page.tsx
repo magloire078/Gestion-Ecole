@@ -75,6 +75,8 @@ export default function AbsencesPage() {
   const { user } = useUser();
   const { toast } = useToast();
 
+  const canManageGrades = !!user?.profile?.permissions?.manageGrades;
+
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -149,6 +151,7 @@ export default function AbsencesPage() {
   }, [todayDateString, form]);
 
   const handleOpenForm = (student: Student) => {
+    if (!canManageGrades) return;
     setSelectedStudent(student);
     form.reset({
       studentId: student.id,
@@ -224,7 +227,12 @@ export default function AbsencesPage() {
               <Card>
                 <CardHeader>
                   <CardTitle>Liste des Élèves - {classes.find(c => c.id === selectedClassId)?.name}</CardTitle>
-                  <CardDescription>Cliquez sur un élève pour enregistrer une absence pour aujourd'hui ({isMounted ? format(new Date(), 'd MMMM', {locale: fr}) : '...'}).</CardDescription>
+                  <CardDescription>
+                    {canManageGrades 
+                      ? `Cliquez sur un élève pour enregistrer une absence pour aujourd'hui (${isMounted ? format(new Date(), 'd MMMM', {locale: fr}) : '...'}).`
+                      : "Vue en lecture seule. Vous n'avez pas la permission d'enregistrer des absences."
+                    }
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -248,7 +256,7 @@ export default function AbsencesPage() {
                             key={student.id} 
                             onClick={() => !student.isAbsentToday && handleOpenForm(student)}
                             className={cn(
-                                !student.isAbsentToday && 'cursor-pointer hover:bg-muted/50',
+                                canManageGrades && !student.isAbsentToday && 'cursor-pointer hover:bg-muted/50',
                                 student.isAbsentToday && 'bg-red-50/50 dark:bg-red-900/20 text-muted-foreground'
                             )}
                           >
