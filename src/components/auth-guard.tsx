@@ -38,13 +38,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       const isAuthPage = pathname === '/login';
       const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
       
-      // Pages publiques
+      // Public pages are always allowed
       if (isPublicPage) {
         setIsChecking(false);
         return;
       }
       
-      // Non authentifié
+      // If user is not authenticated
       if (!user || !user.authUser) {
         if (!isAuthPage) {
           router.replace('/login');
@@ -54,31 +54,29 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // Authentifié
+      // User is authenticated
       if (!schoolId) {
-        // Pas d'école
+        // ... but has no school associated
         if (!isOnboardingPage) {
           router.replace('/dashboard/onboarding');
           return;
         }
       } else {
-        // A une école
+        // ... and has a school associated
         if (isAuthPage || isOnboardingPage) {
           router.replace('/dashboard');
           return;
         }
       }
       
-      // Tout est OK
+      // All checks passed, allow access
       setIsChecking(false);
     };
     
     checkAccess();
   }, [user, schoolId, isLoading, pathname, router]);
   
-  // Afficher le loader pendant les vérifications
   if (isLoading || isChecking) {
-    // Sauf pour les pages qui peuvent être affichées pendant le chargement
     if (pathname === '/login' || pathname.startsWith('/public') || pathname === '/') {
       return <>{children}</>;
     }

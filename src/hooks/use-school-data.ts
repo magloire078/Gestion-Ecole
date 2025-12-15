@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, collection, query, where, getDocs, setDoc, limit, updateDoc as firestoreUpdateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, updateDoc as firestoreUpdateDoc } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -39,60 +39,52 @@ export function useSchoolData() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (userLoading) {
-            setLoading(true);
+        if (userLoading || !firestore) {
             return;
         }
 
-        if (!user || !user.authUser || !firestore) {
+        if (!user || !user.authUser) {
             setSchoolId(null);
             setSchoolData(null);
             setLoading(false);
             return;
         }
 
-        const findAndSetSchoolData = async (userId: string) => {
-            setLoading(true);
-            let foundSchoolId: string | null = null;
-            
-            // 1. Try claims first (fastest)
+        const findAndSetSchoolId = async (userId: string) => {
             const tokenResult = await user.authUser.getIdTokenResult();
             if (tokenResult.claims.schoolId) {
-                foundSchoolId = tokenResult.claims.schoolId as string;
+                setSchoolId(tokenResult.claims.schoolId as string);
+                return;
             }
 
-            // 2. If no claim, check /utilisateurs/{uid} document
-            if (!foundSchoolId) {
-                try {
-                    const userRef = doc(firestore, 'utilisateurs', userId);
-                    const userDoc = await getDoc(userRef);
-                    if (userDoc.exists() && userDoc.data()?.schoolId) {
-                        foundSchoolId = userDoc.data().schoolId;
-                    }
-                } catch (e) {
-                     console.error("Error reading user root document:", e);
+            try {
+                const userRef = doc(firestore, 'utilisateurs', userId);
+                const userDoc = await getDoc(userRef);
+                if (userDoc.exists() && userDoc.data()?.schoolId) {
+                    setSchoolId(userDoc.data().schoolId);
+                } else {
+                    setSchoolId(null);
+                    setLoading(false);
                 }
-            }
-            
-            setSchoolId(foundSchoolId);
-
-            if (!foundSchoolId) {
-                setSchoolData(null);
-                setLoading(false);
-                document.title = DEFAULT_TITLE;
+            } catch (e) {
+                 console.error("Error reading user root document:", e);
+                 setSchoolId(null);
+                 setLoading(false);
             }
         };
 
-        findAndSetSchoolData(user.authUser.uid);
+        findAndSetSchoolId(user.authUser.uid);
 
     }, [user, userLoading, firestore]);
     
     useEffect(() => {
         if (!schoolId) {
              if(!userLoading) setLoading(false);
+             document.title = DEFAULT_TITLE;
              return;
         }
 
+        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -101,7 +93,7 @@ export function useSchoolData() {
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
-                setSchoolId(null);
+                setSchoolId(null); // The school document was deleted
             }
             setLoading(false);
         }, (error) => {
