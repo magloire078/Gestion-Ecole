@@ -148,7 +148,7 @@
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." },
             "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
         },
-        "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
+        "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus", "inscriptionYear"]
     },
     "cycle": {
         "title": "Cycle",
