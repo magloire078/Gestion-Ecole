@@ -48,7 +48,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { getPayslipDetails } from '@/lib/bulletin-de-paie';
 import type { PayslipDetails } from '@/lib/bulletin-de-paie';
-import type { staff as Staff, school as OrganizationSettings } from '@/lib/data-types';
+import type { staff as Staff, school as OrganizationSettings, admin_role as AdminRole } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import type { class_type as Class } from '@/lib/data-types';
@@ -80,6 +80,11 @@ export default function HRPage() {
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+  const adminRolesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, 'admin_roles')) : null, [schoolId, firestore]);
+  const { data: adminRolesData, loading: adminRolesLoading } = useCollection(adminRolesQuery);
+  const adminRoles: (AdminRole & {id: string})[] = useMemo(() => adminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [adminRolesData]);
+
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -142,7 +147,7 @@ export default function HRPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const isLoading = schoolLoading || staffLoading || classesLoading;
+  const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading;
 
   const renderStaffCard = (member: StaffMember) => {
     const fullName = `${member.firstName} ${member.lastName}`;
@@ -319,6 +324,7 @@ export default function HRPage() {
                   schoolId={schoolId}
                   editingStaff={editingStaff}
                   classes={classes}
+                  adminRoles={adminRoles}
                   onFormSubmit={() => {
                       setIsFormOpen(false);
                       setEditingStaff(null);

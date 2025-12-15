@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from "react";
@@ -9,7 +10,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { isValid, parseISO, format } from "date-fns";
-import type { staff as Staff, class_type as Class } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, admin_role as AdminRole } from '@/lib/data-types';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -44,6 +45,7 @@ const staffSchema = z.object({
   // --- Teacher-specific fields ---
   subject: z.string().optional(),
   classId: z.string().optional(),
+  adminRole: z.string().optional(),
   // --- Payroll fields ---
   situationMatrimoniale: z.string().optional(),
   enfants: z.coerce.number().min(0).optional(),
@@ -73,10 +75,11 @@ interface StaffEditFormProps {
     schoolId: string | null;
     editingStaff: (Staff & { id: string }) | null;
     classes: Class[];
+    adminRoles: (AdminRole & {id: string})[];
     onFormSubmit: () => void;
 }
 
-export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }: StaffEditFormProps) {
+export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onFormSubmit }: StaffEditFormProps) {
     const firestore = useFirestore();
     const auth = useAuth();
     const { toast } = useToast();
@@ -125,7 +128,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
                 setPhotoUrl(editingStaff.photoURL || null);
             } else {
                 form.reset({
-                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
                 });
                 setPhotoUrl(null);
             }
@@ -223,7 +226,8 @@ export function StaffEditForm({ schoolId, editingStaff, classes, onFormSubmit }:
                                 </div>
                             </div>
 
-                            <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="bibliothecaire">Bibliothécaire</SelectItem><SelectItem value="surveillant">Surveillant</SelectItem><SelectItem value="infirmier">Infirmier(e)</SelectItem><SelectItem value="personnel">Autre Personnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="directeur_pedagogique">Directeur Pédagogique</SelectItem><SelectItem value="secretaire">Secrétaire</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="enseignant_principal">Enseignant Principal</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="bibliothecaire">Bibliothécaire</SelectItem><SelectItem value="surveillant">Surveillant</SelectItem><SelectItem value="infirmier">Infirmier(e)</SelectItem><SelectItem value="personnel">Autre Personnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="adminRole" render={({ field }) => (<FormItem><FormLabel>Rôle Administratif (Permissions)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Aucun rôle admin" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">Aucun</SelectItem>{adminRoles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
                             {watchedRole === 'enseignant' && (
                                 <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
                                     <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{allSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />

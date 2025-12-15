@@ -56,7 +56,7 @@ export type staff = {
     uid: string;
     email: string;
     schoolId: string;
-    role: "directeur" | "enseignant" | "personnel" | "coordinateur" | "comptable" | "bibliothecaire" | "surveillant" | "infirmier";
+    role: "directeur" | "directeur_pedagogique" | "secretaire" | "enseignant" | "enseignant_principal" | "comptable" | "bibliothecaire" | "surveillant" | "infirmier" | "personnel";
     firstName: string;
     lastName: string;
     hireDate: string;
