@@ -112,14 +112,13 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
                   {occupants.map(occupant => (
                     <div key={occupant.id} className="p-4 border rounded-lg">
                       <div className="flex justify-between items-start">
-                        <div><div className="font-semibold">{occupant.studentId}</div><div className="text-sm text-muted-foreground">Chambre {occupant.roomId} • Lit {occupant.bedNumber}</div></div>
-                        <div className="text-right"><div className="font-bold">{occupant.monthlyRate}€/mois</div><Badge variant={occupant.status === 'active' ? 'secondary' : 'outline'}>{occupant.status}</Badge></div>
+                        <div><div className="font-semibold">{occupant.studentId}</div><div className="text-sm text-muted-foreground">Chambre {occupant.roomId}</div></div>
+                        <div className="text-right"><Badge variant={occupant.status === 'active' ? 'secondary' : 'outline'}>{occupant.status}</Badge></div>
                       </div>
                       <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div><div className="text-muted-foreground">Arrivée</div><div>{format(new Date(occupant.startDate), 'dd/MM/yyyy')}</div></div>
-                        <div><div className="text-muted-foreground">Départ</div><div>{format(new Date(occupant.endDate), 'dd/MM/yyyy')}</div></div>
-                        <div><div className="text-muted-foreground">Prochain paiement</div><div>{format(new Date(occupant.nextPaymentDue), 'dd/MM/yyyy')}</div></div>
-                        <div><div className="text-muted-foreground">Caution</div><div>{occupant.depositStatus}</div></div>
+                        {occupant.endDate && <div><div className="text-muted-foreground">Départ</div><div>{format(new Date(occupant.endDate), 'dd/MM/yyyy')}</div></div>}
+                        {occupant.nextPaymentDue && <div><div className="text-muted-foreground">Prochain paiement</div><div>{format(new Date(occupant.nextPaymentDue), 'dd/MM/yyyy')}</div></div>}
                       </div>
                       <div className="mt-3 flex gap-2"><Button size="sm" variant="outline">Voir le dossier</Button><Button size="sm" variant="outline">Enregistrer sortie</Button><Button size="sm" variant="outline">Message au parent</Button></div>
                     </div>
@@ -141,7 +140,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
                       {log.type === 'sortie' ? (<UserX className="h-5 w-5" />) : (<UserCheck className="h-5 w-5" />)}
                     </div>
                     <div className="flex-1"><div className="font-medium">{log.studentId}</div><div className="text-sm text-muted-foreground">{log.reason} • {format(new Date(log.timestamp), 'HH:mm')}</div></div>
-                    <div className="text-right"><Badge variant={log.status === 'returned' ? 'secondary' : log.status === 'late' ? 'destructive' : 'outline'}>{log.status === 'returned' ? 'Rentré' : log.status === 'late' ? 'En retard' : 'En cours'}</Badge>{log.expectedReturn && <div className="text-xs text-muted-foreground mt-1">Retour prévu: {format(new Date(log.expectedReturn), 'HH:mm')}</div>}</div>
+                    <div className="text-right"><Badge variant={log.status === 'returned' ? 'secondary' : log.status === 'late' ? 'destructive' : 'outline'}>{log.status === 'returned' ? 'Rentré' : log.status === 'late' ? 'En retard' : 'En cours'}</Badge>{log.status !== 'returned' && <div className="text-xs text-muted-foreground mt-1">Autorisé par: {log.authorizedBy}</div>}</div>
                   </div>
                 ))}
               </div>

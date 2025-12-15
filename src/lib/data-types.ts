@@ -456,6 +456,7 @@ export type occupant = {
     status: "active" | "pending" | "terminated" | "suspended";
     endDate?: string;
     nextPaymentDue?: string;
+    id?: string;
 };
 
 export type log = {
@@ -465,5 +466,5 @@ export type log = {
     reason: string;
     status: "pending" | "authorized" | "returned" | "late" | "cancelled";
     authorizedBy?: string;
+    id?: string;
 };
-
