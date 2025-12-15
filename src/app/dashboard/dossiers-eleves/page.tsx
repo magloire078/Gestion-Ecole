@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, doc, writeBatch, increment, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -74,8 +74,11 @@ export default function StudentsPage() {
   const isMounted = useHydrationFix();
   const router = useRouter();
   const firestore = useFirestore();
+  const { user, loading: userLoading } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
+
+  const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
   const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
@@ -169,7 +172,7 @@ export default function StudentsPage() {
     }
   }
 
-  const isLoading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading;
+  const isLoading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading || userLoading;
   
   const handlePrint = () => {
     window.print();
@@ -183,9 +186,11 @@ export default function StudentsPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Liste des Élèves ({students.length})</h1>
               <p className="text-muted-foreground">Consultez et gérez les élèves inscrits.</p>
             </div>
-            <Button onClick={() => router.push('/dashboard/inscription')}>
-                <PlusCircle className="mr-2 h-4 w-4" /> Nouvelle Inscription
-            </Button>
+            {canManageUsers && (
+              <Button onClick={() => router.push('/dashboard/inscription')}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Nouvelle Inscription
+              </Button>
+            )}
         </div>
         <div className="flex flex-col sm:flex-row items-center gap-2 print:hidden">
             <div className="relative w-full sm:max-w-xs">
@@ -291,14 +296,18 @@ export default function StudentsPage() {
                                         <FileSignature className="mr-2 h-4 w-4" />
                                         Fiche
                                     </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
-                                  <DropdownMenuItem 
-                                    className="text-destructive"
-                                    onClick={() => handleOpenDeleteDialog(student)}
-                                  >
-                                    Supprimer
-                                  </DropdownMenuItem>
+                                  {canManageUsers && (
+                                    <>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
+                                      <DropdownMenuItem 
+                                        className="text-destructive"
+                                        onClick={() => handleOpenDeleteDialog(student)}
+                                      >
+                                        Supprimer
+                                      </DropdownMenuItem>
+                                    </>
+                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
