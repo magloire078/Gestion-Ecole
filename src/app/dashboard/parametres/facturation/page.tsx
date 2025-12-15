@@ -240,5 +240,3 @@ export default function BillingDashboard() {
     </div>
   );
 }
-
-    
