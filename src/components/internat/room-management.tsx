@@ -8,14 +8,21 @@ import type { building, room } from '@/lib/data-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { BedDouble, PlusCircle } from 'lucide-react';
+import { BedDouble, PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { RoomForm } from './room-form';
+
 
 export function RoomManagement({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
   const canManageContent = !!user?.profile?.permissions?.manageContent;
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingRoom, setEditingRoom] = useState<(room & { id: string }) | null>(null);
 
   const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
   const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)), [firestore, schoolId]);
@@ -38,6 +45,16 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
   }, [rooms]);
 
   const isLoading = buildingsLoading || roomsLoading;
+
+  const handleOpenForm = (room: (room & { id: string }) | null) => {
+      setEditingRoom(room);
+      setIsFormOpen(true);
+  }
+  
+  const handleFormSave = () => {
+      setIsFormOpen(false);
+      setEditingRoom(null);
+  }
   
   if(isLoading) {
       return (
@@ -63,6 +80,7 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
@@ -71,7 +89,7 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
                 <CardDescription>Visualisez et gérez les chambres de chaque bâtiment.</CardDescription>
             </div>
             {canManageContent && (
-                <Button size="sm">
+                <Button size="sm" onClick={() => handleOpenForm(null)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Ajouter une chambre
                 </Button>
@@ -87,13 +105,22 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
                         <AccordionContent>
                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-2">
                                 {(roomsByBuilding[building.id] || []).map(room => (
-                                    <div key={room.id} className="p-4 border rounded-lg space-y-2">
-                                        <div className="flex justify-between items-start">
-                                            <div className="font-bold flex items-center gap-2"><BedDouble className="h-4 w-4" />Chambre {room.number}</div>
-                                            <Badge variant={getStatusBadgeVariant(room.status)}>{room.status}</Badge>
-                                        </div>
+                                    <div key={room.id} className="p-4 border rounded-lg space-y-2 relative group">
+                                        <div className="font-bold flex items-center gap-2"><BedDouble className="h-4 w-4" />Chambre {room.number}</div>
+                                        <Badge variant={getStatusBadgeVariant(room.status)} className="absolute top-4 right-4">{room.status}</Badge>
                                         <div className="text-sm text-muted-foreground">Capacité: {room.capacity} personnes</div>
                                         <div className="text-sm font-semibold">{formatCurrency(room.monthlyRate)} / mois</div>
+                                         {canManageContent && (
+                                            <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button></DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onClick={() => handleOpenForm(room)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+                                         )}
                                     </div>
                                 ))}
                                 {(!roomsByBuilding[building.id] || roomsByBuilding[building.id].length === 0) && (
@@ -109,5 +136,23 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
         )}
       </CardContent>
     </Card>
+
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+             <DialogHeader>
+                <DialogTitle>{editingRoom ? 'Modifier la' : 'Nouvelle'} Chambre</DialogTitle>
+                <DialogDescription>
+                    {editingRoom ? 'Mettez à jour les informations de cette chambre.' : 'Ajoutez une nouvelle chambre à un bâtiment.'}
+                </DialogDescription>
+            </DialogHeader>
+            <RoomForm
+                schoolId={schoolId}
+                buildings={buildings}
+                room={editingRoom}
+                onSave={handleFormSave}
+            />
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
