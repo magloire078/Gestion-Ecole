@@ -147,7 +147,11 @@ export default function StudentProfilePage() {
   
   const isLoading = schoolLoading || studentLoading || gradesLoading || paymentsLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
 
-  if (isLoading && !studentData) {
+  if (!studentData && !isLoading && !!schoolId) {
+    notFound();
+  }
+
+  if (isLoading || !studentData) {
     return (
         <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-3">
@@ -162,10 +166,6 @@ export default function StudentProfilePage() {
             </div>
         </div>
     );
-  }
-  
-  if (!studentData && !isLoading) {
-    notFound();
   }
   
   // After loading and after check, we can assume studentData exists
@@ -507,4 +507,3 @@ export default function StudentProfilePage() {
     </>
   );
 }
-
