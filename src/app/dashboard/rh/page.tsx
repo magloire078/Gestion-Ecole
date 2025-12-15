@@ -40,7 +40,7 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useAuth, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useAuth, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch, query, where, getDoc } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -63,8 +63,11 @@ export default function HRPage() {
   const firestore = useFirestore();
   const auth = useAuth();
   const router = useRouter();
+  const { user, loading: userLoading } = useUser();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
+  
+  const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
   const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
@@ -147,7 +150,7 @@ export default function HRPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading;
+  const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading || userLoading;
 
   const renderStaffCard = (member: StaffMember) => {
     const fullName = `${member.firstName} ${member.lastName}`;
@@ -203,16 +206,20 @@ export default function HRPage() {
                       <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>
                         <span className="flex items-center gap-2"><BookUser className="h-4 w-4" />Voir le Profil</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>
-                        <span className="flex items-center gap-2">Modifier</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleGeneratePayslip(member)}>
-                        <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Bulletin de Paie</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>
-                        <span className="flex items-center gap-2">Supprimer</span>
-                      </DropdownMenuItem>
+                      {canManageUsers && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>
+                            <span className="flex items-center gap-2">Modifier</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleGeneratePayslip(member)}>
+                            <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Bulletin de Paie</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>
+                            <span className="flex items-center gap-2">Supprimer</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
                   </DropdownMenuContent>
               </DropdownMenu>
             </CardFooter>
@@ -228,11 +235,13 @@ export default function HRPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Ressources Humaines</h1>
               <p className="text-muted-foreground">Gérez le personnel (enseignant et non-enseignant) de votre école.</p>
           </div>
+          {canManageUsers && (
             <Button onClick={() => handleOpenFormDialog(null)}>
               <span className="flex items-center gap-2">
                 <PlusCircle className="h-4 w-4" /> Ajouter un Membre
               </span>
             </Button>
+          )}
         </div>
         
         <Tabs defaultValue="teachers">
@@ -273,65 +282,69 @@ export default function HRPage() {
         </Tabs>
       </div>
       
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.firstName} {staffToDelete?.lastName}</strong> sera définitivement supprimé. Son compte utilisateur ne sera pas supprimé mais il n'aura plus accès à l'école.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {canManageUsers && (
+        <>
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Cette action est irréversible. Le membre du personnel <strong>{staffToDelete?.firstName} {staffToDelete?.lastName}</strong> sera définitivement supprimé. Son compte utilisateur ne sera pas supprimé mais il n'aura plus accès à l'école.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
 
-      <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
-        <DialogContent className="max-w-4xl p-0">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle>Bulletin de paie</DialogTitle>
-              <DialogDescription>
-                Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.firstName} {payslipDetails?.employeeInfo.lastName || "..."}.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="p-6 pt-2">
-              {isGeneratingPayslip ? (
-                  <div className="flex items-center justify-center h-96">
-                      <p>Génération du bulletin de paie...</p>
-                  </div>
-              ) : payslipDetails ? (
-                  <PayslipPreview details={payslipDetails} />
-              ) : (
-                  <div className="flex items-center justify-center h-96">
-                      <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
-                  </div>
-              )}
-            </div>
-        </DialogContent>
-      </Dialog>
-      
-       <Dialog open={isFormOpen} onOpenChange={() => { setIsFormOpen(false); setEditingStaff(null); }}>
-          <DialogContent className="sm:max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>{editingStaff ? "Modifier un Membre" : "Ajouter un Membre du Personnel"}</DialogTitle>
-                <DialogDescription>
-                  {editingStaff ? `Mettez à jour les informations de ${editingStaff.firstName} ${editingStaff.lastName}.` : "Renseignez les informations du nouveau membre."}
-                </DialogDescription>
-              </DialogHeader>
-              <StaffEditForm
-                  schoolId={schoolId}
-                  editingStaff={editingStaff}
-                  classes={classes}
-                  adminRoles={adminRoles}
-                  onFormSubmit={() => {
-                      setIsFormOpen(false);
-                      setEditingStaff(null);
-                  }}
-               />
-          </DialogContent>
-      </Dialog>
+          <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
+            <DialogContent className="max-w-4xl p-0">
+                <DialogHeader className="p-6 pb-0">
+                  <DialogTitle>Bulletin de paie</DialogTitle>
+                  <DialogDescription>
+                    Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.firstName} {payslipDetails?.employeeInfo.lastName || "..."}.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="p-6 pt-2">
+                  {isGeneratingPayslip ? (
+                      <div className="flex items-center justify-center h-96">
+                          <p>Génération du bulletin de paie...</p>
+                      </div>
+                  ) : payslipDetails ? (
+                      <PayslipPreview details={payslipDetails} />
+                  ) : (
+                      <div className="flex items-center justify-center h-96">
+                          <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
+                      </div>
+                  )}
+                </div>
+            </DialogContent>
+          </Dialog>
+          
+           <Dialog open={isFormOpen} onOpenChange={() => { setIsFormOpen(false); setEditingStaff(null); }}>
+              <DialogContent className="sm:max-w-3xl">
+                  <DialogHeader>
+                    <DialogTitle>{editingStaff ? "Modifier un Membre" : "Ajouter un Membre du Personnel"}</DialogTitle>
+                    <DialogDescription>
+                      {editingStaff ? `Mettez à jour les informations de ${editingStaff.firstName} ${editingStaff.lastName}.` : "Renseignez les informations du nouveau membre."}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <StaffEditForm
+                      schoolId={schoolId}
+                      editingStaff={editingStaff}
+                      classes={classes}
+                      adminRoles={adminRoles}
+                      onFormSubmit={() => {
+                          setIsFormOpen(false);
+                          setEditingStaff(null);
+                      }}
+                   />
+              </DialogContent>
+          </Dialog>
+        </>
+      )}
     </>
   );
 }
