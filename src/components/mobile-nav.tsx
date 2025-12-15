@@ -126,6 +126,13 @@ export function MobileNav() {
         <nav className="flex-1 overflow-y-auto p-4">
             {navLinks.map((group) => {
                 if (group.adminOnly && !isAdmin) return null;
+
+                // Special case for Cantine to point to the main page
+                if (group.group === 'École') {
+                    const cantineLink = group.links.find(l => l.label === 'Cantine');
+                    if(cantineLink) cantineLink.href = '/dashboard/cantine';
+                }
+
                 const visibleLinks = group.links.filter(link => hasPermission(link.permission));
                 if(visibleLinks.length === 0) return null;
 
@@ -146,5 +153,3 @@ export function MobileNav() {
     </div>
   );
 }
-
-    

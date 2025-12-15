@@ -5,8 +5,11 @@ import { DailyMenu } from '@/components/cantine/daily-menu';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { SubscriptionList } from '@/components/cantine/subscription-list';
+import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
 
 export default function CantinePage() {
   const { schoolId, loading } = useSchoolData();
@@ -46,12 +49,20 @@ export default function CantinePage() {
                 <DailyMenu schoolId={schoolId} />
             </TabsContent>
             <TabsContent value="reservations">
-                 <Card>
+                 <Card className="flex flex-col items-center justify-center h-64 text-center">
                     <CardHeader>
-                        <CardTitle>Réservations</CardTitle>
+                        <CardTitle>Gestion des Réservations</CardTitle>
+                        <CardDescription>
+                            Accédez à la page dédiée pour voir et gérer toutes les réservations de repas.
+                        </CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-muted-foreground">La gestion des réservations sera bientôt disponible.</p>
+                        <Button asChild>
+                            <Link href="/dashboard/cantine/reservations">
+                                Voir les réservations
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
                     </CardContent>
                 </Card>
             </TabsContent>

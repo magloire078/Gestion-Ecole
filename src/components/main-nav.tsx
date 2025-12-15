@@ -169,6 +169,12 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
           const visibleLinks = group.links.filter(link => hasPermission(link.permission));
           if (visibleLinks.length === 0) return null;
 
+          // Special case for Cantine to point to the main page
+          if (group.group === 'École') {
+              const cantineLink = visibleLinks.find(l => l.label === 'Cantine');
+              if(cantineLink) cantineLink.href = '/dashboard/cantine';
+          }
+
           if (visibleLinks.length === 1 && (group.group === "Principal" || group.group === "Configuration")) {
               return <NavLink key={visibleLinks[0].href} {...visibleLinks[0]} collapsed={false} />;
           }
@@ -198,5 +204,3 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
     </Accordion>
   );
 }
-
-    
