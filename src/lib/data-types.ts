@@ -424,6 +424,7 @@ export type transportSubscription = {
     price: number;
     status: "active" | "inactive";
     paymentStatus?: "unpaid" | "paid";
+    id?: string;
 };
 
 export type building = {
