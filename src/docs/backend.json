@@ -85,7 +85,7 @@
         "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
         "firstName": { "type": "string", "description": "Le prénom du membre du personnel." },
         "lastName": { "type": "string", "description": "Le nom de famille du membre du personnel." },
-        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel", "coordinateur"], "description": "Le rôle de l'utilisateur dans l'école." },
+        "role": { "type": "string", "enum": ["directeur", "enseignant", "personnel", "coordinateur", "comptable", "bibliothecaire", "surveillant", "infirmier"], "description": "Le rôle de l'utilisateur dans l'école." },
         "adminRole": { "type": "string", "description": "L'ID du rôle administratif si l'utilisateur est un admin." },
         "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." },
         "phone": { "type": "string", "description": "Le numéro de téléphone." },

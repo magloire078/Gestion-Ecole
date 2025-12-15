@@ -56,7 +56,7 @@ export type staff = {
     uid: string;
     email: string;
     schoolId: string;
-    role: "directeur" | "enseignant" | "personnel" | "coordinateur";
+    role: "directeur" | "enseignant" | "personnel" | "coordinateur" | "comptable" | "bibliothecaire" | "surveillant" | "infirmier";
     firstName: string;
     lastName: string;
     hireDate: string;
@@ -104,6 +104,7 @@ export type student = {
     tuitionFee: number;
     amountDue: number;
     tuitionStatus: "Soldé" | "En retard" | "Partiel";
+    inscriptionYear: number;
     photoUrl?: string;
     classId?: string;
     class?: string;
@@ -117,7 +118,6 @@ export type student = {
     discountReason?: string;
     feedback?: string;
     createdAt?: string;
-    inscriptionYear?: number;
     id?: string;
     name?: string;
 };
@@ -300,5 +300,3 @@ export type subject = {
     color?: string;
     id?: string;
 };
-
-    
