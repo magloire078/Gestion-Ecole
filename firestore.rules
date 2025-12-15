@@ -90,6 +90,10 @@ service cloud.firestore {
        allow read, list: if belongsToSchool(schoolId);
        allow write: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || hasPermission(schoolId, 'manageGrades'));
     }
+
+    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId}/{document=**} {
+        allow read, write: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || hasPermission(schoolId, 'manageContent'));
+    }
     
     match /ecoles/{schoolId}/classes/{classId} {
       allow read, list: if belongsToSchool(schoolId); 
@@ -186,6 +190,24 @@ service cloud.firestore {
      match /ecoles/{schoolId}/internat_entrees_sorties/{logId} {
       allow read, list: if belongsToSchool(schoolId);
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+
+    // --- New Immobilier Rules ---
+    match /ecoles/{schoolId}/inventaire/{materielId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/salles/{salleId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/reservations_salles/{reservationId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+     match /ecoles/{schoolId}/maintenance/{tacheId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
   }
 }
