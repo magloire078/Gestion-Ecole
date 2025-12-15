@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -74,6 +74,8 @@ export default function LibraryPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
+  const { user } = useUser();
+  const canManageContent = !!user?.profile?.permissions?.manageContent;
   
   const booksQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)) : null, [firestore, schoolId]);
   const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
@@ -234,30 +236,32 @@ export default function LibraryPage() {
             <h1 className="text-lg font-semibold md:text-2xl">Bibliothèque</h1>
             <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
           </div>
-          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => handleOpenFormDialog(null)}>
-                <span className="flex items-center gap-2">
-                  <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
-                </span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{editingBook ? "Modifier le" : "Ajouter un Nouveau"} Livre</DialogTitle>
-                <DialogDescription>
-                  {editingBook ? `Mettez à jour les informations du livre "${editingBook.title}".` : "Renseignez les informations du nouveau livre."}
-                </DialogDescription>
-              </DialogHeader>
-              {renderForm()}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                <Button type="submit" form="book-form" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+          {canManageContent && (
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => handleOpenFormDialog(null)}>
+                  <span className="flex items-center gap-2">
+                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
+                  </span>
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>{editingBook ? "Modifier le" : "Ajouter un Nouveau"} Livre</DialogTitle>
+                  <DialogDescription>
+                    {editingBook ? `Mettez à jour les informations du livre "${editingBook.title}".` : "Renseignez les informations du nouveau livre."}
+                  </DialogDescription>
+                </DialogHeader>
+                {renderForm()}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                  <Button type="submit" form="book-form" disabled={form.formState.isSubmitting}>
+                      {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
         
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -279,15 +283,17 @@ export default function LibraryPage() {
                  <div className="p-4">
                     <div className="flex items-start justify-between gap-2">
                          <CardTitle className="text-lg leading-tight font-bold">{book.title}</CardTitle>
-                         <DropdownMenu>
-                            <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0 h-8 w-8")}>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleOpenFormDialog(book)}>Modifier</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(book)}>Supprimer</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                         {canManageContent && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0 h-8 w-8")}>
+                                  <MoreHorizontal className="h-4 w-4" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenFormDialog(book)}>Modifier</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(book)}>Supprimer</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                         )}
                     </div>
                      <CardDescription className="flex items-center gap-2 text-sm mt-1">
                         <User className="h-4 w-4" />
