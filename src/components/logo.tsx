@@ -7,24 +7,12 @@ import { Skeleton } from './ui/skeleton';
 import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { SafeImage } from './ui/safe-image';
 import { cn } from '@/lib/utils';
+import { BookOpen } from 'lucide-react';
 
 const DefaultLogo = ({ compact }: { compact?: boolean }) => (
-    <svg
-        className={cn("h-7 w-7 transition-all duration-300", compact && "h-8 w-8")}
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
-        <path d="M2 6s1.5-2 5-2 5 2 5 2v14s-1.5-1-5-1-5 1-5 1V6z" />
-        <path d="M12 6s1.5-2 5-2 5 2 5 2v14s-1.5-1-5-1-5 1-5 1V6z" />
-        <path d="M8 12h8" />
-        <path d="M8 16h8" />
-        <path d="M12 2v2" />
-    </svg>
+    <div className={cn("flex items-center justify-center bg-primary/10 rounded-lg text-primary", compact ? "h-9 w-9" : "h-8 w-8")}>
+        <BookOpen className={cn(compact ? "h-6 w-6" : "h-5 w-5")} />
+    </div>
 );
 
 
@@ -35,7 +23,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
   if (!isMounted || loading) {
     return (
        <div className="flex items-center gap-2 text-primary font-semibold">
-          <DefaultLogo compact={compact} />
+          <Skeleton className={cn("rounded-lg", compact ? "h-9 w-9" : "h-8 w-8")} />
           {!compact && (
             <div className="flex flex-col">
               <Skeleton className="h-5 w-32" />
@@ -52,7 +40,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
             alt={schoolData?.name || 'Logo École'} 
             width={32} 
             height={32} 
-            className={cn("h-8 w-8 object-contain transition-all duration-300", compact && "h-9 w-9")}
+            className={cn("object-contain transition-all duration-300", compact ? "h-9 w-9" : "h-8 w-8")}
             fallback={<DefaultLogo compact={compact} />}
         />
         {!compact && (
