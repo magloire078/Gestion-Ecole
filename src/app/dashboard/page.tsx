@@ -3,7 +3,7 @@
 
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, DollarSign, AlertCircle, CheckCircle, Plus, CreditCard, Calendar, Check } from 'lucide-react';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, DollarSign, AlertCircle, CheckCircle, Plus, CreditCard, Calendar, Check, TrendingUp } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -18,7 +18,8 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, classe as Classe, staff as Staff, fee as Fee } from '@/lib/data-types';
-
+import { BillingCalculator, TARIFAIRE } from '@/lib/billing-calculator';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 // ====================================================================================
 // TYPES
@@ -39,7 +40,7 @@ type Activity = {
 const RegularDashboard = () => {
   const isMounted = useHydrationFix();
   const firestore = useFirestore();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, subscription, loading: schoolLoading } = useSchoolData();
 
   // --- State for Stats Cards ---
   const [stats, setStats] = useState({
@@ -47,6 +48,7 @@ const RegularDashboard = () => {
     teachers: 0,
     classes: 0,
     books: 0,
+    cycles: 0,
     tuitionPaid: 0,
     tuitionDue: 0,
   });
@@ -59,6 +61,8 @@ const RegularDashboard = () => {
   // --- Data for Performance Chart ---
   const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
   const [gradesLoading, setGradesLoading] = useState(true);
+  
+  const [billingAlerts, setBillingAlerts] = useState<any[]>([]);
 
 
   useEffect(() => {
@@ -82,16 +86,18 @@ const RegularDashboard = () => {
         const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
         const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
         const booksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
+        const cyclesQuery = query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true));
 
-        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot] = await Promise.all([
+
+        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot, cyclesSnapshot] = await Promise.all([
             getCountFromServer(studentsQuery),
             getCountFromServer(teachersQuery),
-            getDocs(classesQuery), // Changed to getDocs
-            getDocs(booksQuery)
+            getDocs(classesQuery),
+            getDocs(booksQuery),
+            getCountFromServer(cyclesQuery)
         ]);
 
         const totalBooks = booksSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as LibraryBook).quantity, 0);
-
         const studentsForTuitionSnapshot = await getDocs(studentsQuery);
         const { totalPaid, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
             const student = doc.data() as Student;
@@ -101,15 +107,41 @@ const RegularDashboard = () => {
             acc.totalDue += due;
             return acc;
         }, { totalPaid: 0, totalDue: 0 });
-
-        setStats({
+        
+        const currentStats = {
           students: studentsSnapshot.data().count,
           teachers: teachersSnapshot.data().count,
-          classes: classesSnapshot.size, // Use snapshot.size for direct count
+          classes: classesSnapshot.size,
+          cycles: cyclesSnapshot.data().count,
           books: totalBooks,
           tuitionPaid: totalPaid,
           tuitionDue: totalDue,
-        });
+        };
+        setStats(currentStats);
+
+        // Check for billing alerts
+        if (subscription && TARIFAIRE[subscription.plan]) {
+            const planDetails = TARIFAIRE[subscription.plan];
+            const newAlerts = [];
+            
+            const studentUsage = currentStats.students / planDetails.elevesInclus;
+            const cycleUsage = currentStats.cycles / planDetails.cyclesInclus;
+
+            if (studentUsage > 1) {
+                newAlerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.elevesInclus} élèves. Des frais supplémentaires s'appliquent.` });
+            } else if (studentUsage > 0.9) {
+                newAlerts.push({ type: 'warning', message: `Attention, vous approchez la limite d'élèves (${currentStats.students}/${planDetails.elevesInclus}).` });
+            }
+
+             if (cycleUsage > 1) {
+                newAlerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.cyclesInclus} cycles. Des frais supplémentaires s'appliquent.` });
+            } else if (cycleUsage > 0.9) {
+                newAlerts.push({ type: 'warning', message: `Attention, vous approchez la limite de cycles (${currentStats.cycles}/${planDetails.cyclesInclus}).` });
+            }
+            
+            setBillingAlerts(newAlerts);
+        }
+
         setStatsLoading(false);
 
 
@@ -183,7 +215,7 @@ const RegularDashboard = () => {
     };
     
     fetchAllData();
-  }, [schoolId, firestore, schoolLoading]);
+  }, [schoolId, firestore, schoolLoading, subscription]);
 
   const formatCurrency = (value: number) => {
     if (value > 1000000) {
@@ -239,7 +271,21 @@ const RegularDashboard = () => {
       <div className="flex items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tableau de Bord</h1>
       </div>
-      <AnnouncementBanner />
+      
+       {billingAlerts.length > 0 && (
+            <div className="space-y-2">
+                {billingAlerts.map((alert, index) => (
+                    <Alert key={index} variant={alert.type === 'error' ? 'destructive' : 'default'} className={cn(alert.type === 'warning' && 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 [&>svg]:text-amber-500')}>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle className="font-semibold">{alert.type === 'error' ? 'Limite dépassée' : 'Avertissement'}</AlertTitle>
+                        <AlertDescription>
+                            {alert.message}
+                            <Link href="/dashboard/parametres/abonnement" className="ml-2 font-bold underline">Mettre à niveau</Link>
+                        </AlertDescription>
+                    </Alert>
+                ))}
+            </div>
+        )}
     
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat) => (
@@ -639,3 +685,5 @@ export default function DashboardPage() {
   
   return <RegularDashboard />;
 }
+
+    

@@ -16,7 +16,7 @@ interface PricingSupplements {
     parGoStockage: number;
 }
 
-const TARIFAIRE: Record<string, any> = {
+export const TARIFAIRE: Record<string, any> = {
     Essentiel: { prixMensuel: 0, cyclesInclus: 2, elevesInclus: 50, stockageInclus: 1 },
     Pro: { prixMensuel: 49900, cyclesInclus: 5, elevesInclus: 250, stockageInclus: 10 },
     Premium: { prixMensuel: 99900, cyclesInclus: 10, elevesInclus: 1000, stockageInclus: 50 },
@@ -107,3 +107,5 @@ export class BillingCalculator {
     };
   }
 }
+
+    
