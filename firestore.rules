@@ -75,25 +75,24 @@ service cloud.firestore {
     // --- School Subcollections Rules ---
     
     match /ecoles/{schoolId}/personnel/{staffId} {
-      allow read: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
-      allow list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
+      allow read, list: if belongsToSchool(schoolId);
       allow create: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
       allow update: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || isOwner(staffId));
       allow delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
     match /ecoles/{schoolId}/eleves/{studentId} {
-      allow read, list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
+      allow read, list: if belongsToSchool(schoolId);
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
     match /ecoles/{schoolId}/eleves/{studentId}/{document=**} {
-       allow read: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
+       allow read, list: if belongsToSchool(schoolId);
        allow write: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || hasPermission(schoolId, 'manageGrades'));
     }
     
     match /ecoles/{schoolId}/classes/{classId} {
-      allow read, list: if belongsToSchool(schoolId); // Tout membre de l'école peut voir les classes
+      allow read, list: if belongsToSchool(schoolId); 
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
     }
     
@@ -118,7 +117,8 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-       allow read, list, create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
+       allow read, list: if belongsToSchool(schoolId);
+       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
     }
     
      match /ecoles/{schoolId}/frais_scolarite/{feeId} {
@@ -134,6 +134,11 @@ service cloud.firestore {
     match /ecoles/{schoolId}/messagerie/{messageId} {
        allow read, list: if belongsToSchool(schoolId);
        allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+
+     match /ecoles/{schoolId}/matieres/{subjectId} {
+       allow read, list: if belongsToSchool(schoolId);
+       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
     }
   }
 }
