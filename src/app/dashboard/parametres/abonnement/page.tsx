@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Zap, AlertCircle } from "lucide-react";
+import { CheckCircle, Zap, AlertCircle, Building, Users } from "lucide-react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -15,6 +15,8 @@ import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
+type PlanName = 'Essentiel' | 'Pro' | 'Premium';
+
 export default function SubscriptionPage() {
     const router = useRouter();
     const { schoolName, loading: schoolLoading } = useSchoolData();
@@ -23,7 +25,7 @@ export default function SubscriptionPage() {
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
 
-    const handleChoosePlan = (planName: 'Essentiel' | 'Pro', price: number) => {
+    const handleChoosePlan = (planName: PlanName, price: number) => {
         setError(null);
         if (!schoolName) {
             setError("Le nom de l'école n'est pas encore chargé. Veuillez patienter un instant.");
@@ -39,7 +41,7 @@ export default function SubscriptionPage() {
         router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
     };
     
-    const isCurrentPlan = (planName: 'Essentiel' | 'Pro') => {
+    const isCurrentPlan = (planName: PlanName) => {
         return subscription?.plan === planName;
     };
     
@@ -48,27 +50,51 @@ export default function SubscriptionPage() {
             name: "Essentiel",
             priceNumber: 0,
             price: "Gratuit",
+            priceDescription: "pour toujours",
             description: "Idéal pour les petites écoles qui débutent.",
             features: [
-                "Jusqu'à 50 élèves",
-                "Gestion des élèves, classes et professeurs",
-                "Suivi basique des notes",
-                "Gestion de la scolarité",
-                "Comptabilité de base",
+                "Gestion de base (élèves, classes, notes)",
+                "Comptabilité simplifiée",
+                "Support communautaire",
             ],
+            limits: [
+                { icon: Users, text: "Jusqu'à 50 élèves" },
+                { icon: Building, text: "Jusqu'à 2 cycles" },
+            ]
         },
         {
             name: "Pro",
             priceNumber: 49900,
-            price: "49 900 CFA / mois",
+            price: "49 900 CFA",
+            priceDescription: "/ mois",
             description: "Pour les écoles en croissance avec des besoins avancés.",
             features: [
-                "Toutes les fonctionnalités du plan Essentiel",
-                "Nombre d'élèves illimité",
-                "Gestion des RH et de la paie",
-                "Fonctionnalités IA (appréciations, etc.)",
-                "Support prioritaire",
+                "Toutes les fonctionnalités Essentiel",
+                "Gestion RH & Paie",
+                "Fonctionnalités IA (appréciations...)",
+                "Support prioritaire par email",
             ],
+             limits: [
+                { icon: Users, text: "Jusqu'à 250 élèves" },
+                { icon: Building, text: "Jusqu'à 5 cycles" },
+            ]
+        },
+        {
+            name: "Premium",
+            priceNumber: 99900,
+            price: "99 900 CFA",
+            priceDescription: "/ mois",
+            description: "La solution complète pour les grands établissements.",
+            features: [
+                "Toutes les fonctionnalités Pro",
+                "Portail Parents & Élèves (Bientôt)",
+                "Analyses et rapports avancés",
+                "Support dédié par téléphone",
+            ],
+             limits: [
+                { icon: Users, text: "Élèves illimités" },
+                { icon: Building, text: "Cycles illimités" },
+            ]
         }
     ];
 
@@ -81,7 +107,8 @@ export default function SubscriptionPage() {
                         Consultez et gérez votre formule d'abonnement GèreEcole.
                     </p>
                 </div>
-                <div className="grid gap-6 md:grid-cols-2">
+                <div className="grid gap-6 md:grid-cols-3">
+                    <Skeleton className="h-96 w-full" />
                     <Skeleton className="h-96 w-full" />
                     <Skeleton className="h-96 w-full" />
                 </div>
@@ -94,34 +121,48 @@ export default function SubscriptionPage() {
             <div>
                 <h1 className="text-lg font-semibold md:text-2xl">Abonnement</h1>
                 <p className="text-muted-foreground">
-                    Consultez et gérez votre formule d'abonnement pour <strong>{schoolName}</strong>.
+                    Choisissez le plan qui correspond le mieux à la taille et aux besoins de <strong>{schoolName}</strong>.
                 </p>
             </div>
             
-            <div className="grid gap-8 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {plans.map(plan => {
-                    const current = isCurrentPlan(plan.name as 'Essentiel' | 'Pro');
+                    const current = isCurrentPlan(plan.name as PlanName);
                     return (
-                        <Card key={plan.name} className={cn("flex flex-col", current ? "border-primary" : "")}>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
+                        <Card key={plan.name} className={cn("flex flex-col transform transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl", current && "border-2 border-primary shadow-2xl scale-[1.02]")}>
+                            <CardHeader className="text-center">
+                                <CardTitle className="text-2xl flex items-center justify-center gap-2">
                                     <span>{plan.name}</span>
-                                    {current && <Badge variant="default" className="text-xs">Plan Actuel</Badge>}
+                                    {current && <Badge variant="default" className="text-xs">Actuel</Badge>}
                                 </CardTitle>
                                 <CardDescription>{plan.description}</CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4 flex-1">
-                                 <div className="text-3xl font-bold">
-                                    {plan.price}
-                                 </div>
-                                 <ul className="space-y-2 text-sm text-muted-foreground">
-                                    {plan.features.map(feature => (
-                                        <li key={feature} className="flex items-start gap-2">
-                                            <CheckCircle className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
-                                            <span>{feature}</span>
-                                        </li>
-                                    ))}
-                                 </ul>
+                            <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div className="text-center mb-6">
+                                        <span className="text-4xl font-bold">{plan.price}</span>
+                                        <span className="text-muted-foreground">{plan.priceDescription}</span>
+                                    </div>
+                                    <ul className="space-y-3 text-sm">
+                                        {plan.features.map(feature => (
+                                            <li key={feature} className="flex items-start gap-3">
+                                                <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
+                                                <span>{feature}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <div className="pt-6 border-t">
+                                     <h4 className="text-sm font-semibold mb-3">Limites du plan :</h4>
+                                     <ul className="space-y-3 text-sm text-muted-foreground">
+                                        {plan.limits.map(limit => (
+                                            <li key={limit.text} className="flex items-center gap-3">
+                                                <limit.icon className="h-4 w-4" />
+                                                <span>{limit.text}</span>
+                                            </li>
+                                        ))}
+                                     </ul>
+                                </div>
                             </CardContent>
                             <CardFooter>
                                {current ? (
@@ -129,12 +170,12 @@ export default function SubscriptionPage() {
                                 ) : (
                                     <Button 
                                         className="w-full" 
-                                        variant={plan.name === 'Pro' ? 'default' : 'secondary'}
-                                        onClick={() => handleChoosePlan(plan.name as 'Essentiel' | 'Pro', plan.priceNumber)}
+                                        variant={plan.name === 'Essentiel' ? 'secondary' : 'default'}
+                                        onClick={() => handleChoosePlan(plan.name as PlanName, plan.priceNumber)}
                                         disabled={isLoading}
                                     >
-                                        {plan.name === 'Pro' && <Zap className="mr-2 h-4 w-4" />}
-                                        Passer au Plan {plan.name}
+                                        {plan.name !== 'Essentiel' && <Zap className="mr-2 h-4 w-4" />}
+                                        Choisir le Plan {plan.name}
                                     </Button>
                                 )}
                             </CardFooter>
@@ -154,3 +195,5 @@ export default function SubscriptionPage() {
         </div>
     )
 }
+
+    

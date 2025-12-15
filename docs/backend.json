@@ -33,8 +33,10 @@
                 "type": "object",
                 "description": "Détails de l'abonnement de l'école.",
                 "properties": {
-                    "plan": { "type": "string", "enum": ["Essentiel", "Pro"], "description": "Le nom du plan." },
-                    "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"], "description": "Le statut de l'abonnement." }
+                    "plan": { "type": "string", "enum": ["Essentiel", "Pro", "Premium"], "description": "Le nom du plan." },
+                    "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"], "description": "Le statut de l'abonnement." },
+                    "maxStudents": { "type": "number", "description": "Nombre maximum d'élèves autorisés." },
+                    "maxCycles": { "type": "number", "description": "Nombre maximum de cycles autorisés." }
                 }
             }
         },
@@ -165,7 +167,8 @@
                 }
             },
             "createdAt": { "type": "string", "format": "date-time" },
-            "updatedAt": { "type": "string", "format": "date-time" }
+            "updatedAt": { "type": "string", "format": "date-time" },
+            "color": { "type": "string" }
         },
         "required": ["schoolId", "name", "code", "order"]
     },
@@ -488,4 +491,4 @@
   }
 }
 
-  
+    

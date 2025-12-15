@@ -3,11 +3,13 @@
 
 import { useSchoolData } from './use-school-data';
 
-type SubscriptionPlan = 'Essentiel' | 'Pro';
+type SubscriptionPlan = 'Essentiel' | 'Pro' | 'Premium';
 
 export interface Subscription {
     plan: SubscriptionPlan;
     status: 'active' | 'trialing' | 'past_due' | 'canceled';
+    maxStudents?: number;
+    maxCycles?: number;
 }
 
 export function useSubscription() {
