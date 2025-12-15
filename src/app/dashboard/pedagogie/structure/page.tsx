@@ -15,7 +15,7 @@ import {
   Edit
 } from 'lucide-react';
 import Link from 'next/link';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -67,6 +67,8 @@ export default function StructurePage() {
   
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
+  const { user, loading: userLoading } = useUser();
+  const canManageClasses = !!user?.profile?.permissions?.manageClasses;
 
   const [isCycleFormOpen, setIsCycleFormOpen] = useState(false);
   const [isNiveauFormOpen, setIsNiveauFormOpen] = useState(false);
@@ -159,7 +161,7 @@ export default function StructurePage() {
   }, [cycles, searchQuery]);
 
 
-  const isLoading = schoolLoading || cyclesLoading || niveauxLoading;
+  const isLoading = schoolLoading || cyclesLoading || niveauxLoading || userLoading;
   
   const handleAddCycleSubmit = async (values: CycleFormValues) => {
     if (!schoolId) {
@@ -259,10 +261,12 @@ export default function StructurePage() {
                     Définissez les cycles d'enseignement de votre établissement.
                   </CardDescription>
                 </div>
-                <Button onClick={() => handleOpenCycleForm(null)} size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouveau Cycle
-                </Button>
+                {canManageClasses && (
+                  <Button onClick={() => handleOpenCycleForm(null)} size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouveau Cycle
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -279,9 +283,11 @@ export default function StructurePage() {
                             <TableCell>{cycle.order}</TableCell>
                             <TableCell><Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell>
                             <TableCell className="text-right">
-                              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4" /></Button>
-                              </div>
+                              {canManageClasses && (
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button variant="ghost" size="icon" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4" /></Button>
+                                </div>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
@@ -302,10 +308,12 @@ export default function StructurePage() {
                     Listes des niveaux d'enseignement, filtrables par cycle.
                   </CardDescription>
                 </div>
-                <Button onClick={() => handleOpenNiveauForm(null)} size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouveau Niveau
-                </Button>
+                {canManageClasses && (
+                  <Button onClick={() => handleOpenNiveauForm(null)} size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouveau Niveau
+                  </Button>
+                )}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -338,9 +346,11 @@ export default function StructurePage() {
                           <TableCell>{niveau.order}</TableCell>
                           <TableCell>{niveau.capacity}</TableCell>
                           <TableCell className="text-right">
-                             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
-                              </div>
+                             {canManageClasses && (
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button variant="ghost" size="icon" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
+                                </div>
+                             )}
                           </TableCell>
                         </TableRow>
                       )
@@ -357,7 +367,9 @@ export default function StructurePage() {
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Rechercher une classe..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>{viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}</Button>
-              <Button asChild><Link href="/dashboard/pedagogie/structure/new"><Plus className="mr-2 h-4 w-4" />Nouvelle Classe</Link></Button>
+              {canManageClasses && (
+                <Button asChild><Link href="/dashboard/pedagogie/structure/new"><Plus className="mr-2 h-4 w-4" />Nouvelle Classe</Link></Button>
+              )}
             </div>
           </div>
           <Tabs defaultValue="all" onValueChange={setActiveCycleFilter}>
@@ -448,5 +460,7 @@ export default function StructurePage() {
     </>
   );
 }
+
+    
 
     
