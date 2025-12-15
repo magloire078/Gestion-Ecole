@@ -59,11 +59,11 @@ function StudentTimetableContent({ eleveId, schoolId, schoolName }: StudentTimet
 
   const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')), [firestore, schoolId]);
 
-  const { data: timetableData, loading: timetableLoading } = useCollection<TimetableEntry>(timetableQuery);
-  const { data: teachersData, loading: teachersLoading } = useCollection<Staff & { id: string }>(teachersQuery);
+  const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
+  const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
 
-  const timetableEntries = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() })) || [], [timetableData]);
-  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() })) || [], [teachersData]);
+  const timetableEntries = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() } as TimetableEntry)) || [], [timetableData]);
+  const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
 
   const isLoading = studentLoading || timetableLoading || teachersLoading;
 

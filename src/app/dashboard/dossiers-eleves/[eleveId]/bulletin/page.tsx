@@ -24,7 +24,8 @@ export default function StudentReportPage() {
   }
   
   if (!schoolId || !schoolData) {
-      return <div>École non trouvée.</div>;
+      // This case should be handled by AuthGuard, but as a fallback
+      return <div>École non trouvée. Vérifiez votre association à une école.</div>;
   }
 
   return <StudentReportContent eleveId={eleveId} schoolId={schoolId} schoolData={schoolData} />
