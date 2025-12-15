@@ -26,7 +26,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Pencil, MessageSquare, Bot } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
-import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, doc, writeBatch, increment } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -56,7 +56,9 @@ type PaymentFormValues = z.infer<typeof paymentSchema>;
 
 export default function PaymentsPage() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
+  const canManageBilling = !!user?.profile?.permissions?.manageBilling;
 
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
@@ -320,7 +322,7 @@ export default function PaymentsPage() {
                         <TableHead>Classe</TableHead>
                         <TableHead className="text-center">Statut du Paiement</TableHead>
                         <TableHead className="text-right">Solde Dû</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                        {canManageBilling && <TableHead className="text-right">Actions</TableHead>}
                     </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -331,7 +333,7 @@ export default function PaymentsPage() {
                                <TableCell><Skeleton className="h-5 w-16"/></TableCell>
                                <TableCell className="text-center"><Skeleton className="h-6 w-24 mx-auto"/></TableCell>
                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
-                               <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto"/></TableCell>
+                               {canManageBilling && <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto"/></TableCell>}
                            </TableRow>
                         ))
                     ) : filteredStudents.length > 0 ? (
@@ -352,6 +354,7 @@ export default function PaymentsPage() {
                             <TableCell className="text-right font-mono">
                                 {formatCurrency(student.amountDue || 0)}
                             </TableCell>
+                            {canManageBilling && (
                             <TableCell className="text-right">
                                <div className="flex justify-end gap-2">
                                 {(student.amountDue || 0) > 0 && (
@@ -368,11 +371,12 @@ export default function PaymentsPage() {
                                 </Button>
                                </div>
                             </TableCell>
+                            )}
                         </TableRow>
                         ))
                     ) : (
                         <TableRow>
-                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                        <TableCell colSpan={canManageBilling ? 5 : 4} className="text-center h-24 text-muted-foreground">
                             Aucun élève ne correspond aux filtres sélectionnés.
                         </TableCell>
                         </TableRow>
