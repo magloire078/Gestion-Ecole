@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -223,6 +223,31 @@ export default function NewClassPage() {
         <div className="flex justify-end gap-2 pt-6"><Skeleton className="h-10 w-32" /></div>
       </div>
     );
+  }
+  
+  if (cycles.length === 0) {
+      return (
+           <div className="flex items-center justify-center h-[calc(100vh-200px)]">
+              <Card className="max-w-md text-center">
+                  <CardHeader>
+                      <CardTitle className="flex items-center justify-center gap-2">
+                        <AlertCircle className="h-6 w-6 text-destructive" />
+                        Action requise
+                      </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                      <p className="text-muted-foreground">
+                        Vous devez d'abord créer au moins un cycle (ex: Primaire, Secondaire) avant de pouvoir créer une classe.
+                      </p>
+                  </CardContent>
+                  <CardFooter>
+                      <Button asChild className="w-full">
+                          <Link href="/dashboard/pedagogie/structure">Retourner à la gestion de la structure</Link>
+                      </Button>
+                  </CardFooter>
+              </Card>
+          </div>
+      )
   }
 
   return (

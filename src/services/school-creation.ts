@@ -96,7 +96,7 @@ export class SchoolCreationService {
 
     for (const cycle of template.cycles) {
         const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
-        const cycleData: Omit<cycle, 'id'> = { ...cycle, schoolId };
+        const cycleData: Omit<cycle, 'id'> = { ...cycle, schoolId, isActive: true, createdAt: new Date().toISOString() };
         batch.set(cycleRef, cycleData);
         
         const niveauxForCycle = template.niveaux[cycle.name as keyof typeof template.niveaux] || [];
@@ -109,9 +109,10 @@ export class SchoolCreationService {
                 cycleId: cycleRef.id,
                 schoolId: schoolId,
                 order: index + 1,
-                ageMin: 5,
-                ageMax: 6,
-                capacity: 30,
+                ageMin: 5, // default value
+                ageMax: 6, // default value
+                capacity: 30, // default value
+                createdAt: new Date().toISOString()
             };
             batch.set(niveauRef, niveauData);
         }
