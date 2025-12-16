@@ -18,7 +18,7 @@ service cloud.firestore {
     }
 
     function belongsToSchool(schoolId) {
-        return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
+      return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
     }
     
     function getStaffProfile(schoolId) {
@@ -223,5 +223,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
