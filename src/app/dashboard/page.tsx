@@ -219,13 +219,7 @@ const RegularDashboard = () => {
   }, [schoolId, firestore, schoolLoading, subscription]);
 
   const formatCurrency = (value: number) => {
-    if (value > 1000000) {
-      return `${(value / 1000000).toFixed(1)}M CFA`;
-    }
-    if (value > 1000) {
-      return `${Math.round(value / 1000)}K CFA`;
-    }
-    return `${value} CFA`;
+    return `${value.toLocaleString('fr-FR')} CFA`;
   }
 
   const statsCards = [
