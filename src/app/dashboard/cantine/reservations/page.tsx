@@ -15,9 +15,18 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { canteenReservation as CanteenReservation, student as Student } from '@/lib/data-types';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ReservationForm } from '@/components/cantine/reservation-form';
 
 interface ReservationWithStudentName extends CanteenReservation {
     studentName?: string;
+    id: string;
 }
 
 export default function ReservationsPage() {
@@ -27,6 +36,8 @@ export default function ReservationsPage() {
   const canManageContent = !!user?.profile?.permissions?.manageContent;
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingReservation, setEditingReservation] = useState<ReservationWithStudentName | null>(null);
 
   const reservationsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cantine_reservations`)) : null, [firestore, schoolId]);
   const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
@@ -40,10 +51,10 @@ export default function ReservationsPage() {
     const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
     
     return reservationsData.map(doc => {
-      const sub = { id: doc.id, ...doc.data() } as CanteenReservation;
-      const student = studentsMap.get(sub.studentId);
+      const res = { id: doc.id, ...doc.data() } as CanteenReservation & { id: string };
+      const student = studentsMap.get(res.studentId);
       return {
-        ...sub,
+        ...res,
         studentName: student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu'
       };
     });
@@ -52,10 +63,20 @@ export default function ReservationsPage() {
   const filteredReservations = useMemo(() => {
     return reservations.filter(res => 
       res.studentName?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [reservations, searchQuery]);
 
   const isLoading = reservationsLoading || studentsLoading || schoolLoading;
+  
+  const handleOpenForm = (reservation: ReservationWithStudentName | null) => {
+    setEditingReservation(reservation);
+    setIsFormOpen(true);
+  };
+  
+  const handleFormSave = () => {
+    setIsFormOpen(false);
+    setEditingReservation(null);
+  };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -76,6 +97,7 @@ export default function ReservationsPage() {
   };
 
   return (
+    <>
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -85,7 +107,7 @@ export default function ReservationsPage() {
               <CardDescription>Liste de toutes les réservations de repas.</CardDescription>
             </div>
             {canManageContent && (
-              <Button onClick={() => {}}>
+              <Button onClick={() => handleOpenForm(null)}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Nouvelle Réservation
               </Button>
@@ -132,7 +154,7 @@ export default function ReservationsPage() {
                     <TableCell><Badge variant={getPaymentBadgeVariant(res.paymentStatus)}>{res.paymentStatus}</Badge></TableCell>
                     <TableCell className="text-right">
                         {canManageContent && (
-                            <Button variant="ghost" size="icon" onClick={() => {}}>
+                            <Button variant="ghost" size="icon" onClick={() => handleOpenForm(res)}>
                                 <Edit className="h-4 w-4" />
                             </Button>
                         )}
@@ -151,5 +173,23 @@ export default function ReservationsPage() {
         </CardContent>
       </Card>
     </div>
+    
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingReservation ? 'Modifier' : 'Nouvelle'} Réservation</DialogTitle>
+                <DialogDescription>
+                    {editingReservation ? 'Mettez à jour les détails de la réservation.' : 'Enregistrez un nouveau repas pour un élève.'}
+                </DialogDescription>
+            </DialogHeader>
+             <ReservationForm 
+                schoolId={schoolId!}
+                students={studentsData?.docs.map(d => ({id: d.id, ...d.data()} as Student)) || []}
+                reservation={editingReservation}
+                onSave={handleFormSave}
+            />
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
