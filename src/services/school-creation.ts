@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
-import type { school, user_root, staff, cycle, niveau, subject } from '@/lib/data-types';
+import type { school, user_root, staff, cycle, niveau, subject, admin_role } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -16,13 +16,8 @@ interface SchoolCreationData {
     name: string;
     address: string;
     mainLogoUrl: string;
-    city: string;
-    country: string;
     phone: string;
     email: string;
-    academicYear: string;
-    language: string;
-    currency: string;
     directorId: string;
     directorFirstName: string;
     directorLastName: string;
@@ -34,6 +29,51 @@ const generateSchoolCode = (name: string): string => {
     const randomNumber = Math.floor(1000 + Math.random() * 9000);
     return `${prefix}-${randomNumber}`;
 };
+
+const getAllPermissions = (value: boolean) => ({
+    manageUsers: value, viewUsers: value, manageSchools: value, viewSchools: value,
+    manageClasses: value, manageGrades: value, manageSystem: value, viewAnalytics: value,
+    manageSettings: value, manageBilling: value, manageCommunication: value,
+    manageSchedule: value, manageAttendance: value, manageLibrary: value, manageCantine: value,
+    manageTransport: value, manageInternat: value, manageInventory: value,
+    manageRooms: value, manageActivities: value, manageMedical: value,
+    viewSupportTickets: value, manageSupportTickets: value, apiAccess: value,
+    exportData: value
+});
+
+const DEFAULT_ROLES: Omit<admin_role, 'id' | 'schoolId'>[] = [
+  {
+    name: 'Directeur',
+    description: 'Accès complet à toutes les fonctionnalités',
+    permissions: getAllPermissions(true),
+    isSystem: true,
+  },
+  {
+    name: 'Enseignant Principal',
+    description: 'Gestion complète d\'une classe',
+    permissions: { viewStudents: true, manageGrades: true, manageAttendance: true, viewClasses: true, manageCommunication: true },
+    isSystem: true,
+  },
+  {
+    name: 'Enseignant',
+    description: 'Enseignant par matière spécifique',
+    permissions: { viewStudents: true, manageGrades: true, manageAttendance: true, viewClasses: true },
+    isSystem: true,
+  },
+  {
+    name: 'Secrétariat',
+    description: 'Gestion administrative des élèves et de la facturation',
+    permissions: { viewStudents: true, manageStudents: true, viewBilling: true, manageBilling: true, manageSchedule: true },
+    isSystem: true,
+  },
+  {
+    name: 'Comptable',
+    description: 'Gestion financière et facturation',
+    permissions: { viewBilling: true, manageBilling: true },
+    isSystem: true,
+  }
+];
+
 
 export class SchoolCreationService {
   private db: Firestore;
@@ -54,12 +94,11 @@ export class SchoolCreationService {
       name: schoolData.name,
       address: schoolData.address,
       phone: schoolData.phone,
-      website: '', // Can be added later
+      email: schoolData.email,
       schoolCode: schoolCode,
       directorId: userId,
       directorFirstName: schoolData.directorFirstName,
       directorLastName: schoolData.directorLastName,
-      directorPhone: '', // Can be added later
       createdAt: serverTimestamp() as any,
       mainLogoUrl: schoolData.mainLogoUrl,
       subscription: {
@@ -82,12 +121,14 @@ export class SchoolCreationService {
         uid: userId,
         schoolId: schoolId,
         role: 'directeur',
+        adminRole: 'directeur', // The ID for the director role
         firstName: schoolData.directorFirstName,
         lastName: schoolData.directorLastName,
         displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
         email: schoolData.directorEmail,
-        hireDate: new Date().toISOString(), // Use ISO string for server compatibility
-        baseSalary: 0, // Default base salary
+        hireDate: new Date().toISOString(),
+        baseSalary: 0,
+        status: 'Actif',
     };
     batch.set(staffRef, directorProfileData);
 
@@ -109,9 +150,9 @@ export class SchoolCreationService {
                 cycleId: cycleRef.id,
                 schoolId: schoolId,
                 order: index + 1,
-                ageMin: 5, // default value
-                ageMax: 6, // default value
-                capacity: 30, // default value
+                ageMin: 5,
+                ageMax: 6,
+                capacity: 30,
                 createdAt: new Date().toISOString()
             };
             batch.set(niveauRef, niveauData);
@@ -125,6 +166,12 @@ export class SchoolCreationService {
       batch.set(subjectRef, subjectData);
     }
     
+    // 6. Create default roles for the school
+    DEFAULT_ROLES.forEach(role => {
+        const roleRef = doc(this.db, `ecoles/${schoolId}/admin_roles`, role.name.toLowerCase().replace(/ /g, '_'));
+        batch.set(roleRef, { ...role, schoolId });
+    });
+    
     return batch.commit().then(() => {
         return { schoolId, schoolCode };
     }).catch(e => {
@@ -134,7 +181,9 @@ export class SchoolCreationService {
             requestResourceData: { schoolName: schoolData.name, director: userId },
         });
         errorEmitter.emit('permission-error', permissionError);
-        throw e; // Rethrow original error after emitting our custom one
+        throw e;
     });
   }
 }
+
+    

@@ -16,17 +16,17 @@ export interface UserContext {
     authUser: FirebaseUser;
     uid: string;
     profile?: UserProfile;
-    // customClaims are removed to rely on DB reads for permissions
 }
 
-// All permissions set to true for a director
 const directorPermissions: Required<AdminRole['permissions']> = {
     manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
     manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
     manageSettings: true, manageBilling: true, manageCommunication: true,
-    manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true,
-    manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true,
-    viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true
+    manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true,
+    manageTransport: true, manageInternat: true, manageInventory: true,
+    manageRooms: true, manageActivities: true, manageMedical: true,
+    viewSupportTickets: true, manageSupportTickets: true, apiAccess: true,
+    exportData: true
 };
 
 export function useUser() {
@@ -70,7 +70,7 @@ export function useUser() {
                         userProfile.permissions = directorPermissions;
                     } 
                     else if (profileData.adminRole) {
-                        const roleRef = doc(firestore, 'admin_roles', profileData.adminRole);
+                        const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
                         const roleSnap = await getDoc(roleRef);
                         if (roleSnap.exists()) {
                             const roleData = roleSnap.data() as AdminRole;
@@ -112,3 +112,5 @@ export function useUser() {
 
   return {user, loading};
 }
+
+    

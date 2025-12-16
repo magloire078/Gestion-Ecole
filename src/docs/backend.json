@@ -43,13 +43,14 @@
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
     },
      "admin_role": {
-      "title": "Rôle Administrateur",
-      "description": "Définit un ensemble de permissions pour un rôle administratif.",
+      "title": "Rôle Administratif",
+      "description": "Définit un ensemble de permissions pour un rôle administratif au sein d'une école.",
       "type": "object",
       "properties": {
+        "schoolId": { "type": "string", "description": "L'ID de l'école à laquelle ce rôle appartient."},
         "name": { "type": "string", "description": "Nom du rôle (ex: Super Admin, Admin École)." },
         "description": { "type": "string", "description": "Description des responsabilités du rôle." },
-        "level": { "type": "number", "description": "Niveau de permission (1 = le plus élevé)." },
+        "isSystem": { "type": "boolean", "description": "Indique si c'est un rôle système (non-modifiable)." },
         "permissions": {
           "type": "object",
           "properties": {
@@ -64,6 +65,8 @@
             "manageSettings": { "type": "boolean" },
             "manageBilling": { "type": "boolean" },
             "manageCommunication": { "type": "boolean" },
+            "manageSchedule": { "type": "boolean" },
+            "manageAttendance": { "type": "boolean" },
             "manageLibrary": { "type": "boolean" },
             "manageCantine": { "type": "boolean" },
             "manageTransport": { "type": "boolean" },
@@ -79,7 +82,7 @@
           }
         }
       },
-      "required": ["name", "level", "permissions"]
+      "required": ["schoolId", "name", "permissions"]
     },
     "staff": {
       "title": "Membre du Personnel",
@@ -833,6 +836,11 @@
           "schema": { "$ref": "#/entities/staff" },
           "description": "Stocke les profils du personnel pour cette école."
         },
+        "admin_roles": {
+          "path": "admin_roles/{roleId}",
+          "schema": { "$ref": "#/entities/admin_role" },
+          "description": "Définit les permissions pour les rôles administratifs de cette école."
+        },
         "eleves": {
             "path": "eleves/{studentId}",
             "schema": { "$ref": "#/entities/student" },
@@ -1023,10 +1031,6 @@
             "description": "Participations des élèves aux compétitions."
         }
       }
-    },
-    "/admin_roles/{roleId}": {
-        "schema": { "$ref": "#/entities/admin_role" },
-        "description": "Définit les permissions pour les rôles administratifs."
     }
   }
 }

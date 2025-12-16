@@ -90,8 +90,9 @@ export default function CreateSchoolPage() {
         directorLastName: values.directorLastName,
         directorEmail: user.authUser.email,
         // Default values for other fields
-        city: '', country: '', phone: '', email: '', academicYear: '2024-2025', language: 'fr', currency: 'XOF',
-      }, user.authUser.uid);
+        phone: '',
+        email: '',
+      });
       
       await auth.currentUser?.getIdToken(true); 
       
@@ -187,3 +188,5 @@ export default function CreateSchoolPage() {
     </div>
   );
 };
+
+    
