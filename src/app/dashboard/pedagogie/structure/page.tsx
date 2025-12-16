@@ -66,7 +66,8 @@ export default function StructurePage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const canManageClasses = !!user?.profile?.permissions?.manageClasses || user?.profile?.isAdmin;
+  
+  const isDirectorOrAdmin = user?.profile?.role === 'directeur' || user?.profile?.isAdmin === true;
 
   const [isCycleFormOpen, setIsCycleFormOpen] = useState(false);
   const [isNiveauFormOpen, setIsNiveauFormOpen] = useState(false);
@@ -138,7 +139,9 @@ export default function StructurePage() {
   }, [watchedCycleName, cycleForm]);
   
   useEffect(() => {
-      niveauForm.setValue('name', '');
+      if(watchedNiveauCycleId){
+        niveauForm.setValue('name', '');
+      }
   }, [watchedNiveauCycleId, niveauForm]);
 
   useEffect(() => {
@@ -230,7 +233,7 @@ export default function StructurePage() {
             Organisez les cycles, niveaux et classes de votre établissement.
           </p>
         </div>
-        {canManageClasses && (
+        {isDirectorOrAdmin && (
           <div className="flex items-center justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => handleOpenCycleForm(null)}>Nouveau Cycle</Button>
               <Button variant="outline" size="sm" onClick={() => handleOpenNiveauForm(null)}>Nouveau Niveau</Button>
@@ -250,7 +253,7 @@ export default function StructurePage() {
                            <Badge variant="outline">{cycle.code}</Badge>
                            <Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge>
                        </div>
-                       {canManageClasses && (
+                       {isDirectorOrAdmin && (
                         <div className="flex items-center gap-2 pr-4">
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleOpenCycleForm(cycle) }}><Edit className="h-4 w-4" /></Button>
                         </div>
@@ -270,7 +273,7 @@ export default function StructurePage() {
                                     <TableCell><Badge variant="outline">{niveau.code}</Badge></TableCell>
                                     <TableCell>{niveau.capacity}</TableCell>
                                     <TableCell className="text-right">
-                                         {canManageClasses && (
+                                         {isDirectorOrAdmin && (
                                             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
                                             </div>
@@ -301,7 +304,7 @@ export default function StructurePage() {
                 </div>
                  <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>{viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}</Button>
-                    {canManageClasses && (
+                    {isDirectorOrAdmin && (
                         <Button asChild><Link href="/dashboard/pedagogie/structure/new"><Plus className="mr-2 h-4 w-4" />Nouvelle Classe</Link></Button>
                     )}
                 </div>
