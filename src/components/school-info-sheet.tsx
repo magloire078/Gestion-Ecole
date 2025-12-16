@@ -103,7 +103,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
                     </main>
 
                      <footer className="flex justify-end mt-12 text-sm">
-                        <p>Fait à {school.address?.split(',')[0] || '...'}, le {isMounted ? format(new Date(), 'd MMMM yyyy', { locale: fr }) : '...'}</p>
+                        Fait à {school.address?.split(',')[0] || '...'}, le {isMounted ? format(new Date(), 'd MMMM yyyy', { locale: fr }) : '...'}
                      </footer>
                 </div>
 
