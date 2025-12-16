@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
@@ -9,8 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { getCinetPayPaymentLink } from '@/lib/cinetpay';
-import { createStripeCheckoutSession } from '@/lib/stripe';
+import { createCheckoutLink } from '@/services/payment-service';
 import { Loader2, AlertCircle, CreditCard } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
@@ -41,65 +39,28 @@ function PaymentPageContent() {
         }
     }, [plan, price, description, userLoading, schoolLoading, searchParams]);
 
-    const handleCinetPay = async () => {
-        setIsLoadingProvider('cinetpay');
+    const handlePayment = async (provider: 'cinetpay' | 'stripe') => {
+        setIsLoadingProvider(provider);
         setError(null);
-        if (!plan || !price || !description || !user || !schoolId) {
-             setError("Impossible de lancer le paiement. Données manquantes.");
-             setIsLoadingProvider(null);
-             return;
-        }
 
-        const transactionId = `${schoolId}_${new Date().getTime()}`;
-        const [firstName, ...lastNameParts] = user.displayName?.split(' ') || ['Utilisateur', 'Anonyme'];
-        const lastName = lastNameParts.join(' ');
-        
-        const paymentData = {
-            amount: parseInt(price, 10),
-            currency: 'XOF',
-            transaction_id: transactionId,
-            description: description,
-            customer_name: firstName,
-            customer_surname: lastName,
-            customer_email: user.email || 'no-email@example.com',
-        };
-
-        const paymentLink = await getCinetPayPaymentLink(paymentData);
-
-        if (paymentLink) {
-            window.location.href = paymentLink;
-        } else {
-            setError("Impossible de générer le lien de paiement CinetPay. Veuillez contacter le support.");
-            setIsLoadingProvider(null);
-        }
-    };
-    
-    const handleStripe = async () => {
-        setIsLoadingProvider('stripe');
-        setError(null);
         if (!plan || !price || !description || !user || !schoolId) {
             setError("Impossible de lancer le paiement. Données manquantes.");
             setIsLoadingProvider(null);
             return;
         }
 
-        // Stripe works with cents, and prefers EUR for CIV
-        const priceInCents = Math.round(parseInt(price, 10) / 655.957 * 100);
-
-        const sessionData = {
-            priceInCents: priceInCents,
-            planName: plan,
-            description: description,
-            clientReferenceId: schoolId,
-            customerEmail: user.email,
-        };
-        
-        const { url, error: stripeError } = await createStripeCheckoutSession(sessionData);
+        const { url, error: serviceError } = await createCheckoutLink(provider, {
+            plan,
+            price,
+            description,
+            user: user.authUser,
+            schoolId,
+        });
 
         if (url) {
             window.location.href = url;
         } else {
-            setError(stripeError || "Impossible de générer le lien de paiement Stripe. Veuillez contacter le support.");
+            setError(serviceError);
             setIsLoadingProvider(null);
         }
     };
@@ -152,7 +113,7 @@ function PaymentPageContent() {
                     <div className="space-y-4">
                         <Button 
                             className="w-full h-16 text-lg" 
-                            onClick={handleCinetPay} 
+                            onClick={() => handlePayment('cinetpay')}
                             disabled={!!isLoadingProvider}
                         >
                             {isLoadingProvider === 'cinetpay' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
@@ -171,7 +132,7 @@ function PaymentPageContent() {
                          <Button 
                             variant="outline" 
                             className="w-full h-16 text-lg"
-                            onClick={handleStripe}
+                            onClick={() => handlePayment('stripe')}
                             disabled={!!isLoadingProvider}
                         >
                              {isLoadingProvider === 'stripe' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
