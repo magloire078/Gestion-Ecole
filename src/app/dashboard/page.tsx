@@ -19,6 +19,7 @@ import { useRouter } from 'next/navigation';
 import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, classe as Classe, staff as Staff, fee as Fee } from '@/lib/data-types';
 import { TARIFAIRE } from '@/lib/billing-calculator';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { BillingAlerts } from '@/components/billing-alerts';
 
 // ====================================================================================
 // TYPES
@@ -285,6 +286,8 @@ const RegularDashboard = () => {
                 ))}
             </div>
         )}
+        
+        {schoolId && <BillingAlerts schoolId={schoolId} />}
     
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat) => (
