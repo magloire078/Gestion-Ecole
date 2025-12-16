@@ -16,20 +16,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -72,10 +62,6 @@ export default function NewClassPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
-
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [formValues, setFormValues] = useState<ClassFormValues | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // --- Data Fetching ---
   const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
@@ -143,37 +129,35 @@ export default function NewClassPage() {
     return !snapshot.empty;
   };
   
-  const handleSubmit = (values: ClassFormValues) => {
-    setFormValues(values);
-    setShowConfirmDialog(true);
-  };
-  
-  const handleConfirmCreate = async () => {
-    if (!formValues || !schoolId || !user) {
-        setShowConfirmDialog(false);
+  const handleSubmit = async (values: ClassFormValues) => {
+    if (!schoolId || !user) {
+        toast({ variant: 'destructive', title: "Erreur d'authentification", description: "Impossible de créer la classe." });
         return;
     }
     
-    setIsSubmitting(true);
+    form.clearErrors();
 
     try {
-      const isDuplicate = await checkClassDuplicate(formValues.code, formValues.academicYear);
+      const isDuplicate = await checkClassDuplicate(values.code, values.academicYear);
       if(isDuplicate){
           form.setError('code', { message: 'Une classe avec ce code existe déjà pour cette année scolaire.' });
-          throw new Error("Duplicate class code");
+          return;
       }
 
-      const teacher = teachers.find(t => t.id === formValues.mainTeacherId);
-      const niveau = niveaux.find(n => n.id === formValues.niveauId);
+      const teacher = teachers.find(t => t.id === values.mainTeacherId);
+      const niveau = niveaux.find(n => n.id === values.niveauId);
         
-      if (!niveau) throw new Error('Niveau non trouvé. La création ne peut continuer.');
+      if (!niveau) {
+        toast({ variant: 'destructive', title: "Erreur de données", description: 'Le niveau sélectionné est invalide.' });
+        return;
+      }
 
       const classData = {
-          ...formValues,
+          ...values,
           schoolId,
           createdBy: user.uid,
           mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
-          teacherIds: formValues.mainTeacherId ? [formValues.mainTeacherId] : [],
+          teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
           grade: niveau.name || '',
           studentCount: 0,
           isFull: false,
@@ -183,30 +167,21 @@ export default function NewClassPage() {
         
       const classesCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
       await addDoc(classesCollectionRef, classData)
-        .catch(serverError => {
-            const permissionError = new FirestorePermissionError({
-                path: classesCollectionRef.path,
-                operation: 'create',
-                requestResourceData: classData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            throw serverError; // Rethrow to be caught by the outer try/catch
-        });
 
       toast({
           title: 'Classe créée !',
-          description: `La classe ${formValues.name} a été ajoutée avec succès.`,
+          description: `La classe ${values.name} a été ajoutée avec succès.`,
       });
       router.push('/dashboard/pedagogie/structure');
     
     } catch (error: any) {
-        if(error.message !== 'Duplicate class code'){
-             toast({ variant: 'destructive', title: "Erreur", description: "La création de la classe a échoué."})
-        }
-    } finally {
-        setIsSubmitting(false);
-        setShowConfirmDialog(false);
-        setFormValues(null);
+      const permissionError = new FirestorePermissionError({
+          path: `ecoles/${schoolId}/classes`,
+          operation: 'create',
+          requestResourceData: values,
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      toast({ variant: 'destructive', title: "Échec de la création", description: "Une erreur est survenue. Vérifiez vos permissions et réessayez."})
     }
   };
 
@@ -249,8 +224,9 @@ export default function NewClassPage() {
       )
   }
 
+  const { formState: { isSubmitting } } = form;
+
   return (
-    <>
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild><Link href="/dashboard/pedagogie/structure"><ArrowLeft className="h-4 w-4" /></Link></Button>
@@ -282,18 +258,6 @@ export default function NewClassPage() {
         </form>
       </Form>
     </div>
-
-    <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent>
-            <AlertDialogHeader><AlertDialogTitle>Confirmer la création</AlertDialogTitle><AlertDialogDescription>Vous êtes sur le point de créer la classe <strong>{formValues?.name}</strong> pour l'année scolaire <strong>{formValues?.academicYear}</strong>. Voulez-vous continuer ?</AlertDialogDescription></AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel disabled={isSubmitting}>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmCreate} disabled={isSubmitting}>
-                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</> : "Confirmer"}
-                </AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
