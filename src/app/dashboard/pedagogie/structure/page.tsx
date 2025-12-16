@@ -229,7 +229,6 @@ export default function StructurePage() {
         <div className="flex items-center justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => handleOpenCycleForm(null)}>Nouveau Cycle</Button>
             <Button variant="outline" size="sm" onClick={() => handleOpenNiveauForm(null)}>Nouveau Niveau</Button>
-            <Button size="sm" asChild><Link href="/dashboard/pedagogie/structure/new">Nouvelle Classe</Link></Button>
         </div>
 
       <Accordion type="multiple" defaultValue={cycles.map(c => c.id)} className="w-full space-y-4">
@@ -387,4 +386,3 @@ export default function StructurePage() {
     </>
   );
 }
-
