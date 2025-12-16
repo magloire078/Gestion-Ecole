@@ -1,19 +1,24 @@
+
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, query, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Syringe, Stethoscope, HeartPulse, FileText, User, Users } from 'lucide-react';
+import { PlusCircle, Syringe, Stethoscope, HeartPulse, Users } from 'lucide-react';
 import type { student as Student, dossierMedical as DossierMedical, vaccination as Vaccination, consultation as Consultation } from '@/lib/data-types';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import { ConsultationForm } from '@/components/sante/consultation-form';
+import { VaccinationForm } from '@/components/sante/vaccination-form';
+import { DossierMedicalForm } from '@/components/sante/dossier-medical-form';
 
 function HealthRecordSkeleton() {
     return (
@@ -56,23 +61,35 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
   const { user } = useUser();
   const canManageContent = !!user?.profile?.permissions?.manageContent;
 
+  const [isVaccinFormOpen, setIsVaccinFormOpen] = useState(false);
+  const [isConsultationFormOpen, setIsConsultationFormOpen] = useState(false);
+  const [isDossierFormOpen, setIsDossierFormOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Used to force-reload data
+
+  const handleSave = () => {
+    setIsVaccinFormOpen(false);
+    setIsConsultationFormOpen(false);
+    setIsDossierFormOpen(false);
+    setRefreshKey(prev => prev + 1); // Trigger data refetch
+  }
+
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId]);
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
 
-  const dossierRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}`), [firestore, schoolId, eleveId]);
+  const dossierRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}`), [firestore, schoolId, eleveId, refreshKey]);
   const { data: dossierData, loading: dossierLoading } = useDoc<DossierMedical>(dossierRef);
 
-  const vaccinsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/vaccins`)), [firestore, schoolId, eleveId]);
+  const vaccinsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/vaccins`)), [firestore, schoolId, eleveId, refreshKey]);
   const { data: vaccinsData, loading: vaccinsLoading } = useCollection(vaccinsQuery);
   
-  const consultationsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/consultations`)), [firestore, schoolId, eleveId]);
+  const consultationsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/consultations`)), [firestore, schoolId, eleveId, refreshKey]);
   const { data: consultationsData, loading: consultationsLoading } = useCollection(consultationsQuery);
 
   const student = studentData as Student | null;
   const dossier = dossierData as DossierMedical | null;
-  const vaccins = useMemo(() => vaccinsData?.map(d => d.data() as Vaccination) || [], [vaccinsData]);
-  const consultations = useMemo(() => consultationsData?.map(d => d.data() as Consultation) || [], [consultationsData]);
+  const vaccins = useMemo(() => vaccinsData?.map(d => ({id: d.id, ...d.data()} as Vaccination)) || [], [vaccinsData]);
+  const consultations = useMemo(() => consultationsData?.map(d => ({id: d.id, ...d.data()} as Consultation)) || [], [consultationsData]);
 
   const isLoading = studentLoading || dossierLoading || vaccinsLoading || consultationsLoading;
 
@@ -88,6 +105,7 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
   const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   
   return (
+    <>
     <div className="space-y-6">
         <div className="flex items-center gap-4">
              <Avatar className="h-24 w-24 border">
@@ -102,7 +120,12 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
 
          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><HeartPulse className="h-5 w-5" />Informations Générales</CardTitle></CardHeader>
+                <CardHeader>
+                    <div className="flex justify-between items-center">
+                        <CardTitle className="flex items-center gap-2"><HeartPulse className="h-5 w-5" />Informations Générales</CardTitle>
+                        {canManageContent && <Button variant="outline" size="sm" onClick={() => setIsDossierFormOpen(true)}>Modifier</Button>}
+                    </div>
+                </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                     <p><strong>Groupe Sanguin:</strong> {dossier?.groupeSanguin || 'Non renseigné'}</p>
                     <p><strong>Allergies:</strong> {dossier?.allergies?.join(', ') || 'Aucune connue'}</p>
@@ -124,13 +147,13 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <CardTitle className="flex items-center gap-2"><Syringe className="h-5 w-5" />Carnet de Vaccination</CardTitle>
-                    {canManageContent && <Button size="sm"><PlusCircle className="h-4 w-4 mr-2" />Ajouter un vaccin</Button>}
+                    {canManageContent && <Button size="sm" onClick={() => setIsVaccinFormOpen(true)}><PlusCircle className="h-4 w-4 mr-2" />Ajouter un vaccin</Button>}
                 </div>
             </CardHeader>
             <CardContent>
                 {vaccins.length > 0 ? (
                     <ul className="space-y-2">
-                        {vaccins.map(v => <li key={v.nom} className="flex justify-between items-center p-2 rounded-md bg-muted/50"><span>{v.nom} (fait le {format(new Date(v.date), 'dd/MM/yyyy', { locale: fr })})</span>{v.rappel && <Badge>Rappel: {format(new Date(v.rappel), 'dd/MM/yyyy', { locale: fr })}</Badge>}</li>)}
+                        {vaccins.map(v => <li key={v.id} className="flex justify-between items-center p-2 rounded-md bg-muted/50"><span>{v.nom} (fait le {format(new Date(v.date), 'dd/MM/yyyy', { locale: fr })})</span>{v.rappel && <Badge>Rappel: {format(new Date(v.rappel), 'dd/MM/yyyy', { locale: fr })}</Badge>}</li>)}
                     </ul>
                 ) : <p className="text-muted-foreground text-center py-4">Aucun vaccin enregistré.</p>}
             </CardContent>
@@ -140,14 +163,14 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
             <CardHeader>
                  <div className="flex justify-between items-center">
                     <CardTitle className="flex items-center gap-2"><Stethoscope className="h-5 w-5" />Historique des Consultations</CardTitle>
-                    {canManageContent && <Button size="sm"><PlusCircle className="h-4 w-4 mr-2" />Ajouter une consultation</Button>}
+                    {canManageContent && <Button size="sm" onClick={() => setIsConsultationFormOpen(true)}><PlusCircle className="h-4 w-4 mr-2" />Ajouter une consultation</Button>}
                 </div>
             </CardHeader>
             <CardContent>
                 {consultations.length > 0 ? (
                      <ul className="space-y-4">
                         {consultations.map((c, i) => (
-                            <li key={i} className="p-3 border rounded-lg">
+                            <li key={c.id} className="p-3 border rounded-lg">
                                 <p className="font-semibold">{format(new Date(c.date), 'd MMMM yyyy', { locale: fr })} - {c.medecin}</p>
                                 <p><strong>Motif:</strong> {c.motif}</p>
                                 <p><strong>Diagnostic:</strong> {c.diagnostic}</p>
@@ -159,5 +182,33 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
             </CardContent>
         </Card>
     </div>
+
+     <Dialog open={isDossierFormOpen} onOpenChange={setIsDossierFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Mettre à jour le dossier médical</DialogTitle>
+          </DialogHeader>
+          <DossierMedicalForm schoolId={schoolId} studentId={eleveId} dossier={dossier} onSave={handleSave} />
+        </DialogContent>
+      </Dialog>
+    
+    <Dialog open={isVaccinFormOpen} onOpenChange={setIsVaccinFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter un vaccin</DialogTitle>
+          </DialogHeader>
+          <VaccinationForm schoolId={schoolId} studentId={eleveId} onSave={handleSave} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConsultationFormOpen} onOpenChange={setIsConsultationFormOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajouter une consultation</DialogTitle>
+          </DialogHeader>
+          <ConsultationForm schoolId={schoolId} studentId={eleveId} onSave={handleSave} />
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
