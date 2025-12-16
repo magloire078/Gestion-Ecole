@@ -12,6 +12,9 @@ export default function ImmobilierLayout({
 }) {
   const pathname = usePathname();
 
+  // Find the correct tab value. If on a sub-path like /reservations/new, it should still select "Reservations".
+  const activeTab = immobilierNavLinks.find(link => pathname.startsWith(link.href))?.href || pathname;
+
   return (
     <div className="space-y-6">
         <div>
@@ -20,8 +23,8 @@ export default function ImmobilierLayout({
                 Gérez l'inventaire, la maintenance et les réservations des locaux.
             </p>
         </div>
-        <Tabs value={pathname} className="w-full">
-            <TabsList>
+        <Tabs value={activeTab} className="w-full">
+            <TabsList className="overflow-x-auto whitespace-nowrap h-auto justify-start">
                 {immobilierNavLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>
