@@ -14,10 +14,9 @@ export interface UserProfile extends AppUser {
 
 export interface UserContext {
     authUser: FirebaseUser;
-    customClaims?: {
-        [key: string]: any;
-    };
+    uid: string;
     profile?: UserProfile;
+    // customClaims are removed to rely on DB reads for permissions
 }
 
 // All permissions set to true for a director
@@ -46,8 +45,11 @@ export function useUser() {
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             const tokenResult = await authUser.getIdTokenResult();
-            const schoolId = tokenResult.claims.schoolId;
             const isAdminClaim = tokenResult.claims.admin === true;
+
+            const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
+            const userRootSnap = await getDoc(userRootRef);
+            const schoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
 
             let userProfile: UserProfile | undefined = undefined;
 
@@ -96,7 +98,7 @@ export function useUser() {
 
             setUser({
                 authUser,
-                customClaims: tokenResult.claims,
+                uid: authUser.uid,
                 profile: userProfile
             });
         } else {
@@ -110,5 +112,3 @@ export function useUser() {
 
   return {user, loading};
 }
-
-    
