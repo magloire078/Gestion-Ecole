@@ -682,11 +682,104 @@
             "priority": { "type": "string", "enum": ["haute", "moyenne", "basse"] },
             "status": { "type": "string", "enum": ["à_faire", "en_cours", "terminée"] },
             "assignedTo": { "type": "string", "description": "UID du membre du personnel assigné." },
+            "createdAt": { "type": "string", "format": "date-time" },
             "dueDate": { "type": "string", "format": "date" },
             "description": { "type": "string" },
             "location": { "type": "string", "description": "Où la maintenance doit avoir lieu (ex: Salle B102, Bus-01)." }
         },
-        "required": ["title", "priority", "status"]
+        "required": ["title", "priority", "status", "createdAt"]
+    },
+    "dossierMedical": {
+        "title": "Dossier Médical",
+        "description": "Le dossier médical principal d'un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "groupeSanguin": { "type": "string" },
+            "allergies": { "type": "array", "items": { "type": "string" } },
+            "maladiesChroniques": { "type": "array", "items": { "type": "string" } },
+            "urgences": {
+                "type": "object",
+                "properties": {
+                    "contact1": { "type": "string" },
+                    "assurance": { "type": "string" },
+                    "numeroPolice": { "type": "string" }
+                }
+            }
+        },
+        "required": ["studentId"]
+    },
+    "vaccination": {
+        "title": "Vaccination",
+        "description": "Un enregistrement de vaccination.",
+        "type": "object",
+        "properties": {
+            "nom": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "rappel": { "type": "string", "format": "date" }
+        },
+        "required": ["nom", "date"]
+    },
+    "consultation": {
+        "title": "Consultation",
+        "description": "Une consultation médicale enregistrée.",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date" },
+            "motif": { "type": "string" },
+            "diagnostic": { "type": "string" },
+            "traitement": { "type": "string" },
+            "medecin": { "type": "string" }
+        },
+        "required": ["date", "motif", "diagnostic"]
+    },
+    "activite": {
+        "title": "Activité Parascolaire",
+        "description": "Une activité sportive, culturelle ou un club.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Nom de l'activité." },
+            "type": { "type": "string", "enum": ["sportive", "culturelle", "club"] },
+            "description": { "type": "string" },
+            "teacherInChargeId": { "type": "string", "description": "ID de l'enseignant responsable." },
+            "schedule": { "type": "string", "description": "Horaire (ex: Mardi 16h-17h)." }
+        },
+        "required": ["name", "type", "teacherInChargeId"]
+    },
+    "inscriptionActivite": {
+        "title": "Inscription à une Activité",
+        "description": "Lie un élève à une activité pour une année donnée.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "activiteId": { "type": "string" },
+            "academicYear": { "type": "string" }
+        },
+        "required": ["studentId", "activiteId", "academicYear"]
+    },
+    "competition": {
+        "title": "Compétition / Événement",
+        "description": "Un événement ou une compétition ponctuelle.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Nom de la compétition." },
+            "date": { "type": "string", "format": "date" },
+            "description": { "type": "string" },
+            "results": { "type": "string", "description": "Résultats globaux de l'événement." }
+        },
+        "required": ["name", "date"]
+    },
+    "participationCompetition": {
+        "title": "Participation à une Compétition",
+        "description": "Détaille la participation d'un élève à une compétition.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "competitionId": { "type": "string" },
+            "rank": { "type": "string", "description": "Classement ou résultat de l'élève." },
+            "notes": { "type": "string" }
+        },
+        "required": ["studentId", "competitionId"]
     }
   },
   "auth": {
@@ -725,6 +818,23 @@
                     "path": "affectations/{assignmentId}",
                     "schema": { "$ref": "#/entities/studentClassAssignment" },
                     "description": "Stocke l'historique des affectations de classe pour un élève."
+                },
+                "dossier_medical": {
+                    "path": "dossier_medical/{dossierId}",
+                    "schema": { "$ref": "#/entities/dossierMedical" },
+                    "description": "Contient le dossier médical de l'élève.",
+                    "subcollections": {
+                        "vaccins": {
+                            "path": "vaccins/{vaccinId}",
+                            "schema": { "$ref": "#/entities/vaccination" },
+                            "description": "Enregistrements des vaccins de l'élève."
+                        },
+                        "consultations": {
+                            "path": "consultations/{consultationId}",
+                            "schema": { "$ref": "#/entities/consultation" },
+                            "description": "Historique des consultations médicales."
+                        }
+                    }
                 }
             }
         },
@@ -847,6 +957,26 @@
             "path": "maintenance/{tacheId}",
             "schema": { "$ref": "#/entities/tache_maintenance" },
             "description": "Suit les tâches de maintenance de l'établissement."
+        },
+        "activites": {
+            "path": "activites/{activiteId}",
+            "schema": { "$ref": "#/entities/activite" },
+            "description": "Liste des activités parascolaires."
+        },
+        "inscriptions_activites": {
+            "path": "inscriptions_activites/{inscriptionId}",
+            "schema": { "$ref": "#/entities/inscriptionActivite" },
+            "description": "Inscriptions des élèves aux activités."
+        },
+        "competitions": {
+            "path": "competitions/{competitionId}",
+            "schema": { "$ref": "#/entities/competition" },
+            "description": "Liste des compétitions et événements."
+        },
+        "participations_competitions": {
+            "path": "participations_competitions/{participationId}",
+            "schema": { "$ref": "#/entities/participationCompetition" },
+            "description": "Participations des élèves aux compétitions."
         }
       }
     },

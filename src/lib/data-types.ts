@@ -506,11 +506,12 @@ export type tache_maintenance = {
     title: string;
     priority: "haute" | "moyenne" | "basse";
     status: "à_faire" | "en_cours" | "terminée";
+    createdAt: string;
+    id?: string;
     assignedTo?: string;
     dueDate?: string;
     description?: string;
     location?: string;
-    id?: string;
 };
 
 export type dossierMedical = {
