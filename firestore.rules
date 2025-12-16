@@ -10,7 +10,8 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return request.auth.token.admin == true;
+      // Uniquement pour le super admin de la plateforme, si nécessaire.
+      return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
     }
 
     function isOwner(userId) {
@@ -58,7 +59,7 @@ service cloud.firestore {
     // --- School Collections ---
 
     match /ecoles/{schoolId} {
-       allow get: if isAuth();
+       allow get: if isAuth(); 
        allow list: if isAuth(); 
        allow create: if isAuth();
                          
@@ -95,7 +96,7 @@ service cloud.firestore {
         allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
     }
     
-    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId} {
+    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId=**} {
         allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageMedical');
     }
 
@@ -148,7 +149,7 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
        allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageLibrary');
+       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageLibrary');
     }
     
     match /ecoles/{schoolId}/messagerie/{messageId} {

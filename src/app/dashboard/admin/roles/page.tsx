@@ -33,6 +33,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 const permissionsSchema = z.object({
     manageUsers: z.boolean().default(false),
@@ -45,7 +46,15 @@ const permissionsSchema = z.object({
     viewAnalytics: z.boolean().default(false),
     manageSettings: z.boolean().default(false),
     manageBilling: z.boolean().default(false),
-    manageContent: z.boolean().default(false),
+    manageCommunication: z.boolean().default(false),
+    manageLibrary: z.boolean().default(false),
+    manageCantine: z.boolean().default(false),
+    manageTransport: z.boolean().default(false),
+    manageInternat: z.boolean().default(false),
+    manageInventory: z.boolean().default(false),
+    manageRooms: z.boolean().default(false),
+    manageActivities: z.boolean().default(false),
+    manageMedical: z.boolean().default(false),
     viewSupportTickets: z.boolean().default(false),
     manageSupportTickets: z.boolean().default(false),
     apiAccess: z.boolean().default(false),
@@ -54,47 +63,51 @@ const permissionsSchema = z.object({
 
 const roleSchema = z.object({
   name: z.string().min(1, { message: "Le nom du rôle est requis." }),
-  description: z.string().min(1, { message: "La description est requise." }),
-  level: z.coerce.number().min(1, "Le niveau doit être d'au moins 1."),
+  description: z.string().optional(),
   permissions: permissionsSchema,
 });
 
 type RoleFormValues = z.infer<typeof roleSchema>;
 
 const allPermissions: {id: keyof z.infer<typeof permissionsSchema>, label: string, group: string}[] = [
-    { id: 'manageUsers', label: 'Gérer les utilisateurs', group: 'Utilisateurs' },
-    { id: 'viewUsers', label: 'Voir les utilisateurs', group: 'Utilisateurs' },
-    { id: 'manageSchools', label: 'Gérer les écoles', group: 'Écoles' },
-    { id: 'viewSchools', label: 'Voir les écoles', group: 'Écoles' },
-    { id: 'manageClasses', label: 'Gérer les classes', group: 'Pédagogie' },
-    { id: 'manageGrades', label: 'Gérer les notes', group: 'Pédagogie' },
-    { id: 'manageBilling', label: 'Gérer la facturation', group: 'Finance' },
-    { id: 'viewAnalytics', label: 'Voir les statistiques', group: 'Analyse' },
-    { id: 'manageContent', label: 'Gérer le contenu', group: 'Contenu' },
-    { id: 'manageSupportTickets', label: 'Gérer les tickets de support', group: 'Support' },
-    { id: 'viewSupportTickets', label: 'Voir les tickets de support', group: 'Support' },
-    { id: 'manageSystem', label: 'Gérer le système', group: 'Système' },
-    { id: 'manageSettings', label: 'Gérer les paramètres', group: 'Système' },
-    { id: 'apiAccess', label: 'Accès API', group: 'Avancé' },
-    { id: 'exportData', label: 'Exporter les données', group: 'Avancé' },
+    { id: 'manageUsers', label: 'Gérer utilisateurs', group: 'Utilisateurs' },
+    { id: 'viewUsers', label: 'Voir utilisateurs', group: 'Utilisateurs' },
+    { id: 'manageClasses', label: 'Gérer classes/notes', group: 'Pédagogie' },
+    { id: 'manageGrades', label: 'Gérer notes', group: 'Pédagogie' },
+    { id: 'manageSchedule', label: 'Gérer emploi du temps', group: 'Pédagogie' },
+    { id: 'manageAttendance', label: 'Gérer absences', group: 'Pédagogie' },
+    { id: 'manageBilling', label: 'Gérer facturation', group: 'Finance' },
+    { id: 'viewAnalytics', label: 'Voir statistiques', group: 'Analyse' },
+    { id: 'manageCommunication', label: 'Gérer communication', group: 'Communication' },
+    { id: 'manageLibrary', label: 'Gérer bibliothèque', group: 'Modules' },
+    { id: 'manageCantine', label: 'Gérer cantine', group: 'Modules' },
+    { id: 'manageTransport', label: 'Gérer transport', group: 'Modules' },
+    { id: 'manageInternat', label: 'Gérer internat', group: 'Modules' },
+    { id: 'manageInventory', label: 'Gérer inventaire', group: 'Modules' },
+    { id: 'manageRooms', label: 'Gérer salles', group: 'Modules' },
+    { id: 'manageActivities', label: 'Gérer activités', group: 'Modules' },
+    { id: 'manageMedical', label: 'Gérer santé', group: 'Modules' },
+    { id: 'manageSettings', label: 'Gérer paramètres école', group: 'Administration' },
+    { id: 'exportData', label: 'Exporter les données', group: 'Administration' },
 ];
 
-const permissionGroups = ['Utilisateurs', 'Écoles', 'Pédagogie', 'Finance', 'Analyse', 'Contenu', 'Support', 'Système', 'Avancé'];
+const permissionGroups = ['Utilisateurs', 'Pédagogie', 'Finance', 'Analyse', 'Communication', 'Modules', 'Administration'];
 
 export default function AdminRolesPage() {
     const { user, loading: userLoading } = useUser();
     const router = useRouter();
     const firestore = useFirestore();
     const { toast } = useToast();
+    const { schoolId, loading: schoolLoading } = useSchoolData();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingRole, setEditingRole] = useState<AdminRole & { id: string } | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [roleToDelete, setRoleToDelete] = useState<AdminRole & { id: string } | null>(null);
+    
+    const isDirectorOrAdmin = user?.profile?.role === 'directeur' || user?.profile?.isAdmin;
 
-    const isAdmin = user?.profile?.isAdmin === true;
-
-    const rolesQuery = useMemoFirebase(() => isAdmin ? query(collection(firestore, 'admin_roles')) : null, [firestore, isAdmin]);
+    const rolesQuery = useMemoFirebase(() => (schoolId && isDirectorOrAdmin) ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [firestore, schoolId, isDirectorOrAdmin]);
     const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
     
     const roles: (AdminRole & { id: string })[] = useMemo(() => rolesData?.map(doc => ({ id: doc.id, ...doc.data() } as AdminRole & { id: string })) || [], [rolesData]);
@@ -104,13 +117,12 @@ export default function AdminRolesPage() {
         defaultValues: {
             name: '',
             description: '',
-            level: 3,
             permissions: {},
         }
     });
-
+    
     useEffect(() => {
-        if (!userLoading && !isAdmin) {
+        if (!userLoading && !isDirectorOrAdmin) {
             toast({
                 variant: 'destructive',
                 title: 'Accès non autorisé',
@@ -118,18 +130,18 @@ export default function AdminRolesPage() {
             });
             router.push('/dashboard');
         }
-    }, [user, userLoading, router, toast, isAdmin]);
+    }, [user, userLoading, router, toast, isDirectorOrAdmin]);
+
 
     useEffect(() => {
         if (isFormOpen) {
             form.reset(editingRole ? {
-                ...editingRole,
-                level: editingRole.level || 3,
+                name: editingRole.name,
+                description: editingRole.description || '',
                 permissions: editingRole.permissions || {},
             } : {
                 name: '',
                 description: '',
-                level: 3,
                 permissions: {},
             });
         }
@@ -146,19 +158,24 @@ export default function AdminRolesPage() {
     };
 
     const handleSaveRole = async (values: RoleFormValues) => {
+        if (!schoolId) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'ID de l\'école non trouvé.'});
+            return;
+        }
+
         try {
             if (editingRole) {
-                const roleRef = doc(firestore, 'admin_roles', editingRole.id);
+                const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, editingRole.id);
                 await setDoc(roleRef, values, { merge: true });
                 toast({ title: 'Rôle modifié' });
             } else {
-                const rolesCollectionRef = collection(firestore, `admin_roles`);
-                await addDoc(rolesCollectionRef, values);
+                const rolesCollectionRef = collection(firestore, `ecoles/${schoolId}/admin_roles`);
+                await addDoc(rolesCollectionRef, { ...values, schoolId });
                 toast({ title: 'Rôle créé' });
             }
             setIsFormOpen(false);
         } catch (e) {
-            const path = editingRole ? `admin_roles/${editingRole.id}` : 'admin_roles';
+            const path = `ecoles/${schoolId}/admin_roles/${editingRole?.id || ''}`;
             const operation = editingRole ? 'update' : 'create';
             const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
             errorEmitter.emit('permission-error', permissionError);
@@ -166,17 +183,17 @@ export default function AdminRolesPage() {
     };
     
     const handleDeleteRole = async () => {
-        if (!roleToDelete) return;
+        if (!roleToDelete || !schoolId) return;
         
         try {
-            const roleRef = doc(firestore, 'admin_roles', roleToDelete.id);
+            const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id);
             await deleteDoc(roleRef);
             toast({
                 title: "Rôle supprimé",
                 description: `Le rôle "${roleToDelete.name}" a été supprimé.`,
             });
         } catch (error) {
-            const permissionError = new FirestorePermissionError({ path: `admin_roles/${roleToDelete.id}`, operation: 'delete' });
+            const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/admin_roles/${roleToDelete.id}`, operation: 'delete' });
             errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsDeleteDialogOpen(false);
@@ -184,10 +201,9 @@ export default function AdminRolesPage() {
         }
     };
 
+    const isLoading = userLoading || rolesLoading || schoolLoading;
 
-    const isLoading = userLoading || rolesLoading;
-
-    if (isLoading || !isAdmin) {
+    if (isLoading || !isDirectorOrAdmin) {
         return (
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -215,7 +231,7 @@ export default function AdminRolesPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-lg font-semibold md:text-2xl">Gestion des Rôles</h1>
-                        <p className="text-muted-foreground">Créez et gérez les rôles administratifs de la plateforme.</p>
+                        <p className="text-muted-foreground">Créez et gérez les rôles administratifs de votre école.</p>
                     </div>
                     <Button onClick={() => handleOpenForm(null)}>
                       <span className="flex items-center gap-2">
@@ -234,7 +250,6 @@ export default function AdminRolesPage() {
                                 <TableRow>
                                     <TableHead>Nom du Rôle</TableHead>
                                     <TableHead>Description</TableHead>
-                                    <TableHead>Niveau</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
@@ -243,12 +258,11 @@ export default function AdminRolesPage() {
                                     <TableRow key={role.id}>
                                         <TableCell className="font-medium">{role.name}</TableCell>
                                         <TableCell>{role.description}</TableCell>
-                                        <TableCell><Badge>{role.level}</Badge></TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="icon" onClick={() => handleOpenForm(role)}>
                                                 <Edit className="h-4 w-4" />
                                             </Button>
-                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleOpenDeleteDialog(role)}>
+                                            <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleOpenDeleteDialog(role)} disabled={role.isSystem}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
@@ -271,11 +285,8 @@ export default function AdminRolesPage() {
                     </DialogHeader>
                     <Form {...form}>
                         <form id="role-form" onSubmit={form.handleSubmit(handleSaveRole)} className="space-y-4 max-h-[70vh] overflow-y-auto px-1 py-4">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du rôle</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="level" render={({ field }) => (<FormItem><FormLabel>Niveau</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            </div>
+                            <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du rôle</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                             
                             <Card>
                                 <CardHeader>
@@ -344,3 +355,4 @@ export default function AdminRolesPage() {
         </>
     );
 }
+
