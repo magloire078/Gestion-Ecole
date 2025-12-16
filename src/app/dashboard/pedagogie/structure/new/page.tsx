@@ -155,14 +155,14 @@ export default function NewClassPage() {
       const classData = {
           ...values,
           schoolId,
-          createdBy: user.uid,
-          mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
-          teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
           grade: niveau.name || '',
           studentCount: 0,
           isFull: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdBy: user.uid,
+          mainTeacherName: teacher ? `${teacher.firstName} ${teacher.lastName}` : '',
+          teacherIds: values.mainTeacherId ? [values.mainTeacherId] : [],
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
       };
         
       const classesCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
@@ -181,7 +181,7 @@ export default function NewClassPage() {
           requestResourceData: values,
       });
       errorEmitter.emit('permission-error', permissionError);
-      toast({ variant: 'destructive', title: "Échec de la création", description: "Une erreur est survenue. Vérifiez vos permissions et réessayez."})
+      toast({ variant: "destructive", title: "Échec de la création", description: "Une erreur est survenue. Vérifiez vos permissions et réessayez."})
     }
   };
 
