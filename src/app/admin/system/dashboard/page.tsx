@@ -2,6 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, getCountFromServer, query, where, collectionGroup } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -31,14 +33,16 @@ const SystemMaintenance = () => <p>Le composant de maintenance système sera bie
 
 
 export default function SystemAdminDashboard() {
+  const firestore = useFirestore();
   const [metrics, setMetrics] = useState({
     totalSchools: 0,
     activeSchools: 0,
     totalUsers: 0,
-    storageUsed: 0,
-    revenue: 0,
+    storageUsed: 2.5, // Mock value
+    revenue: 0, // Mock value
     activeSubscriptions: 0
   });
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
   
   const [systemHealth, setSystemHealth] = useState({
     status: 'healthy',
@@ -47,6 +51,40 @@ export default function SystemAdminDashboard() {
     database: 'connected',
     storage: 'normal'
   });
+  
+  useEffect(() => {
+    if (!firestore) return;
+
+    const fetchMetrics = async () => {
+        setLoadingMetrics(true);
+        try {
+            const schoolsQuery = collection(firestore, 'ecoles');
+            const activeSchoolsQuery = query(schoolsQuery, where('subscription.status', 'in', ['active', 'trialing']));
+            const usersQuery = collectionGroup(firestore, 'personnel');
+
+            const [schoolsSnap, activeSchoolsSnap, usersSnap] = await Promise.all([
+                getCountFromServer(schoolsQuery),
+                getCountFromServer(activeSchoolsQuery),
+                getCountFromServer(usersQuery),
+            ]);
+
+            setMetrics(prev => ({
+                ...prev,
+                totalSchools: schoolsSnap.data().count,
+                activeSchools: activeSchoolsSnap.data().count,
+                totalUsers: usersSnap.data().count,
+            }));
+
+        } catch (error) {
+            console.error("Failed to fetch system metrics:", error);
+        } finally {
+            setLoadingMetrics(false);
+        }
+    };
+
+    fetchMetrics();
+}, [firestore]);
+
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-background">
@@ -156,7 +194,7 @@ export default function SystemAdminDashboard() {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
-            <SystemMetrics metrics={metrics} />
+            <SystemMetrics metrics={metrics} loading={loadingMetrics}/>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
@@ -262,5 +300,3 @@ export default function SystemAdminDashboard() {
     </div>
   );
 }
-
-    
