@@ -21,12 +21,14 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
     }
     
-    function getStaffProfile(schoolId) {
-      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
+    // Corrected function to allow reading any staff profile within the school
+    function getStaffProfile(userId, schoolId) {
+      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId)).data;
     }
     
     function hasPermission(schoolId, permission) {
-      let staffProfile = getStaffProfile(schoolId);
+      // Use request.auth.uid to check the current user's profile
+      let staffProfile = getStaffProfile(request.auth.uid, schoolId);
       // Director has all permissions implicitly
       if (staffProfile.role == 'directeur') {
           return true;
@@ -222,3 +224,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
