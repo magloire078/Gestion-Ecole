@@ -92,25 +92,25 @@ export default function InscriptionsPage() {
   const handleFormSubmit = async (values: InscriptionFormValues) => {
     if (!schoolId) return;
 
-    try {
-      await addDoc(collection(firestore, `ecoles/${schoolId}/inscriptions_activites`), values);
+    const inscriptionCollectionRef = collection(firestore, `ecoles/${schoolId}/inscriptions_activites`);
+    addDoc(inscriptionCollectionRef, values).then(() => {
       toast({ title: 'Inscription réussie', description: 'L\'élève a été inscrit à l\'activité.' });
       setIsFormOpen(false);
-    } catch (error) {
+    }).catch(error => {
       const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/inscriptions_activites`, operation: 'create', requestResourceData: values });
       errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   };
 
   const handleDelete = async (inscriptionId: string) => {
     if (!schoolId) return;
-    try {
-        await deleteDoc(doc(firestore, `ecoles/${schoolId}/inscriptions_activites`, inscriptionId));
-        toast({ title: "Inscription annulée", description: "L'inscription a été supprimée." });
-    } catch (e) {
+    const inscriptionDocRef = doc(firestore, `ecoles/${schoolId}/inscriptions_activites`, inscriptionId);
+    deleteDoc(inscriptionDocRef).then(() => {
+      toast({ title: "Inscription annulée", description: "L'inscription a été supprimée." });
+    }).catch(e => {
         const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/inscriptions_activites/${inscriptionId}`, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   }
 
   const isLoading = schoolLoading || inscriptionsLoading || activitesLoading || studentsLoading;

@@ -85,24 +85,21 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
     
     const dataToSave = { ...values };
 
-    try {
-        if (occupant && occupant.id) {
-            const occupantRef = doc(firestore, `ecoles/${schoolId}/internat_occupants/${occupant.id}`);
-            await setDoc(occupantRef, dataToSave, { merge: true });
-        } else {
-            const occupantsCollectionRef = collection(firestore, `ecoles/${schoolId}/internat_occupants`);
-            await addDoc(occupantsCollectionRef, dataToSave);
-        }
+    const promise = occupant && occupant.id
+        ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants/${occupant.id}`), dataToSave, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/internat_occupants`), dataToSave);
+    
+    promise.then(() => {
         toast({ title: 'Occupation enregistrée', description: "L'assignation de la chambre a été enregistrée." });
         onSave();
-    } catch (e) {
+    }).catch(e => {
         const path = `ecoles/${schoolId}/internat_occupants/${occupant?.id || '(new)'}`;
         const operation = occupant ? 'update' : 'create';
         const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
         errorEmitter.emit('permission-error', permissionError);
-    } finally {
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   };
 
   return (

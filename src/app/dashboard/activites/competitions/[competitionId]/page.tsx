@@ -74,26 +74,26 @@ export default function CompetitionParticipantsPage() {
         rank: rank || 'Participant',
         notes: ''
     };
-    try {
-        await addDoc(collection(firestore, `ecoles/${schoolId}/participations_competitions`), dataToSave);
+    const participantsCollectionRef = collection(firestore, `ecoles/${schoolId}/participations_competitions`);
+    addDoc(participantsCollectionRef, dataToSave).then(() => {
         toast({ title: 'Participant ajouté', description: "L'élève a été ajouté à la compétition." });
         setSelectedStudent('');
         setRank('');
-    } catch(e) {
+    }).catch(error => {
         const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/participations_competitions`, operation: 'create', requestResourceData: dataToSave });
         errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   };
 
   const handleDeleteParticipant = async (participantId: string) => {
     if (!schoolId) return;
-    try {
-        await deleteDoc(doc(firestore, `ecoles/${schoolId}/participations_competitions`, participantId));
-        toast({ title: 'Participant retiré', description: "L'élève a été retiré de la compétition." });
-    } catch(e) {
+    const participantDocRef = doc(firestore, `ecoles/${schoolId}/participations_competitions`, participantId);
+    deleteDoc(participantDocRef).then(() => {
+      toast({ title: 'Participant retiré', description: "L'élève a été retiré de la compétition." });
+    }).catch(error => {
         const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/participations_competitions/${participantId}`, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
-    }
+    });
   }
 
   const isLoading = schoolLoading || competitionLoading || studentsLoading || participantsLoading;

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -104,25 +105,22 @@ export function ReservationForm({ schoolId, salles, staff, reservation, preselec
         status: values.status,
         notes: values.notes || '',
     };
+    
+    const promise = reservation
+        ? setDoc(doc(firestore, `ecoles/${schoolId}/reservations_salles/${reservation.id}`), dataToSave, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/reservations_salles`), dataToSave);
 
-    try {
-        if (reservation && reservation.id) {
-            const resRef = doc(firestore, `ecoles/${schoolId}/reservations_salles/${reservation.id}`);
-            await setDoc(resRef, dataToSave, { merge: true });
-        } else {
-            const resCollectionRef = collection(firestore, `ecoles/${schoolId}/reservations_salles`);
-            await addDoc(resCollectionRef, dataToSave);
-        }
+    promise.then(() => {
         toast({ title: 'Réservation enregistrée', description: 'La réservation a été enregistrée avec succès.' });
         onSave();
-    } catch (e) {
+    }).catch(e => {
         const path = `ecoles/${schoolId}/reservations_salles/${reservation?.id || '(new)'}`;
         const operation = reservation ? 'update' : 'create';
         const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
         errorEmitter.emit('permission-error', permissionError);
-    } finally {
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   };
 
   return (

@@ -75,24 +75,21 @@ export function RoomForm({ schoolId, buildings, room, onSave }: RoomFormProps) {
         ...values,
     };
 
-    try {
-        if (room && room.id) {
-            const roomRef = doc(firestore, `ecoles/${schoolId}/internat_chambres/${room.id}`);
-            await setDoc(roomRef, dataToSave, { merge: true });
-        } else {
-            const roomsCollectionRef = collection(firestore, `ecoles/${schoolId}/internat_chambres`);
-            await addDoc(roomsCollectionRef, dataToSave);
-        }
+    const promise = room && room.id
+        ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_chambres/${room.id}`), dataToSave, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/internat_chambres`), dataToSave);
+    
+    promise.then(() => {
         toast({ title: 'Chambre enregistrée', description: `La chambre ${values.number} a été enregistrée.` });
         onSave();
-    } catch (e) {
+    }).catch(e => {
         const path = `ecoles/${schoolId}/internat_chambres/${room?.id || '(new)'}`;
         const operation = room ? 'update' : 'create';
         const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
         errorEmitter.emit('permission-error', permissionError);
-    } finally {
+    }).finally(() => {
         setIsSubmitting(false);
-    }
+    });
   };
 
   return (
