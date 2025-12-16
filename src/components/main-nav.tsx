@@ -60,7 +60,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = usePathname();
 
   const hasPermission = (permission?: PermissionKey) => {
-    if (isAdmin) return true; // Super admin sees everything
+    if (isAdmin) return true; // Super admin always has permission
     if (!permission) return true; // Link is public within the dashboard
     return !!userPermissions[permission];
   };
@@ -117,7 +117,3 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
     </Accordion>
   );
 }
-
-    
-
-    

@@ -37,7 +37,7 @@ export function MobileNav() {
   const userPermissions = user?.profile?.permissions || {};
 
   const hasPermission = (permission?: PermissionKey) => {
-    if (isAdmin) return true; // Super admin sees everything
+    if (isAdmin) return true; // Super admin always has permission
     if (!permission) return true; // Link is public within the dashboard
     return !!userPermissions[permission];
   };
@@ -71,5 +71,3 @@ export function MobileNav() {
     </div>
   );
 }
-
-    
