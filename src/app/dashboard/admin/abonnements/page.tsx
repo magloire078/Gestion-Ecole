@@ -32,7 +32,7 @@ interface School {
     name: string;
     createdAt: { seconds: number; nanoseconds: number };
     subscription: {
-        plan: 'Essentiel' | 'Pro';
+        plan: 'Essentiel' | 'Pro' | 'Premium';
         status: 'active' | 'trialing' | 'past_due' | 'canceled';
     };
 }
@@ -53,7 +53,7 @@ export default function AdminSubscriptionsPage() {
 
     const schools: School[] = schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [];
 
-    const isAdmin = user?.profile?.isAdmin === true;
+    const isAdmin = user?.customClaims?.admin === true;
 
     useEffect(() => {
         if (!userLoading && !isAdmin) {

@@ -1,4 +1,5 @@
 
+
 import {
     LayoutDashboard,
     Users,
@@ -90,13 +91,14 @@ export const NAV_LINKS = [
       group: "Super Admin",
       icon: Shield,
       links: [
-        { href: '/dashboard/admin/abonnements', label: 'Abonnements', icon: CreditCard, adminOnly: true },
-        { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield, adminOnly: true },
+        { href: '/dashboard/admin/abonnements', label: 'Abonnements', icon: CreditCard },
+        { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield },
       ],
       adminOnly: true,
     }
   ];
 export const transportNavLinks = [
+  { href: '/dashboard/transport/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/dashboard/transport/lignes', label: 'Lignes', icon: Map },
   { href: '/dashboard/transport/bus', label: 'Flotte de Bus', icon: Bus },
   { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket },
