@@ -23,7 +23,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +44,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { materiel as Materiel } from '@/lib/data-types';
+import type { materiel as Materiel, salle as Salle } from '@/lib/data-types';
 import { format } from 'date-fns';
 
 const materielSchema = z.object({
@@ -74,6 +74,11 @@ export default function InventairePage() {
   const inventaireQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/inventaire`)) : null, [firestore, schoolId]);
   const { data: inventaireData, loading: inventaireLoading } = useCollection(inventaireQuery);
   const inventaire: (Materiel & { id: string })[] = useMemo(() => inventaireData?.map(d => ({ id: d.id, ...d.data() } as Materiel & { id: string })) || [], [inventaireData]);
+
+  const sallesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
+  const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
+  const salles = useMemo(() => sallesData?.map(doc => ({ id: doc.id, ...doc.data() } as Salle & {id: string})) || [], [sallesData]);
+  const salleMap = useMemo(() => new Map(salles.map(s => [s.id, s.name])), [salles]);
 
   const form = useForm<MaterielFormValues>({
     resolver: zodResolver(materielSchema),
@@ -138,7 +143,7 @@ export default function InventairePage() {
     }
   };
   
-  const isLoading = schoolLoading || inventaireLoading;
+  const isLoading = schoolLoading || inventaireLoading || sallesLoading;
 
   return (
     <>
@@ -169,7 +174,7 @@ export default function InventairePage() {
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.category}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{item.locationId}</TableCell>
+                    <TableCell>{salleMap.get(item.locationId) || item.locationId}</TableCell>
                     <TableCell><Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge></TableCell>
                     <TableCell className="text-right">
                        <DropdownMenu>
@@ -203,7 +208,7 @@ export default function InventairePage() {
                 <FormField control={form.control} name="quantity" render={({ field }) => <FormItem><FormLabel>Quantité</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>} />
                 <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="neuf">Neuf</SelectItem><SelectItem value="bon">Bon</SelectItem><SelectItem value="à réparer">À réparer</SelectItem><SelectItem value="hors_service">Hors service</SelectItem></SelectContent></Select></FormItem>} />
               </div>
-              <FormField control={form.control} name="locationId" render={({ field }) => <FormItem><FormLabel>Emplacement</FormLabel><FormControl><Input placeholder="Ex: Salle B102, Bibliothèque" {...field} /></FormControl><FormMessage /></FormItem>} />
+              <FormField control={form.control} name="locationId" render={({ field }) => <FormItem><FormLabel>Emplacement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir une salle..."/></SelectTrigger></FormControl><SelectContent>{salles.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
               <FormField control={form.control} name="acquisitionDate" render={({ field }) => <FormItem><FormLabel>Date d'acquisition</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>} />
             </form>
           </Form>
