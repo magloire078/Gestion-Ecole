@@ -21,7 +21,6 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
     }
     
-    // Corrected function to allow reading any staff profile within the school
     function getStaffProfile(userId, schoolId) {
       return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId)).data;
     }
