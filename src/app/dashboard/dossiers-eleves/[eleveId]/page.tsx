@@ -331,6 +331,10 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                                         <span className="text-muted-foreground">Remise:</span>
                                         <span className="font-semibold text-emerald-600">{`-${formatCurrency(student.discountAmount)}`}</span>
                                     </div>
+                                     <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground">Total Payé:</span>
+                                        <span className="font-semibold text-emerald-600">{formatCurrency((student.tuitionFee || 0) - (student.amountDue || 0))}</span>
+                                    </div>
                                     <Separator />
                                      <div className="flex justify-between items-center font-bold">
                                         <span>Total à payer:</span>
@@ -566,12 +570,11 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
     const handleClose = () => {
         if (showReceipt) { // If we were showing a receipt, it means a save happened
             onSave();
-        } else {
-            onClose();
         }
         // Reset state for next time
         setShowReceipt(false);
         setReceiptData(null);
+        onClose();
     }
 
     return (
