@@ -15,16 +15,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { route as Route, bus as Bus } from '@/lib/data-types';
 import { RouteForm } from '@/components/transport/route-form';
+import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function RoutesManagementPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageContent;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -49,6 +53,20 @@ export default function RoutesManagementPage() {
     setIsFormOpen(false);
     setEditingRoute(null);
   };
+  
+  const handleDeleteRoute = async (routeId: string) => {
+    if (!schoolId) return;
+    try {
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_lignes`, routeId));
+      toast({ title: 'Ligne supprimée', description: 'La ligne de transport a été supprimée.' });
+    } catch(e) {
+      const permissionError = new FirestorePermissionError({
+        path: `ecoles/${schoolId}/transport_lignes/${routeId}`,
+        operation: 'delete',
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    }
+  }
 
   const getStatusBadgeVariant = (status?: string) => {
     switch(status) {
@@ -95,7 +113,7 @@ export default function RoutesManagementPage() {
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenForm(route)}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteRoute(route.id)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
