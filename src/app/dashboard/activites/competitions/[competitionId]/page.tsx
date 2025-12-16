@@ -30,7 +30,7 @@ export default function CompetitionParticipantsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageActivities = !!user?.profile?.permissions?.manageActivities;
 
   const [selectedStudent, setSelectedStudent] = useState('');
   const [rank, setRank] = useState('');
@@ -115,7 +115,7 @@ export default function CompetitionParticipantsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {canManageContent && (
+            {canManageActivities && (
               <div className="flex flex-col sm:flex-row items-end gap-4 p-4 border rounded-lg bg-muted/50">
                 <div className="flex-1 w-full">
                     <label className="text-sm font-medium">Inscrire un élève</label>

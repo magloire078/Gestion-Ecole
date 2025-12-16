@@ -93,7 +93,7 @@ function ActivitesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageActivities = !!user?.profile?.permissions?.manageActivities;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingActivite, setEditingActivite] = useState<(Activite & { id: string }) | null>(null);
@@ -133,7 +133,7 @@ function ActivitesPage() {
     <>
        <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-semibold">Liste des activités</h2>
-          {canManageContent && (
+          {canManageActivities && (
             <Button onClick={() => { setEditingActivite(null); form.reset({ type: 'sportive', name: '', description: '', schedule: '', teacherInChargeId: '' }); setIsFormOpen(true); }}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Ajouter une activité
@@ -149,7 +149,7 @@ function ActivitesPage() {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <Trophy className="h-8 w-8 text-amber-500" />
-                  {canManageContent && (
+                  {canManageActivities && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -196,7 +196,7 @@ function InscriptionsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageActivities = !!user?.profile?.permissions?.manageActivities;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   
@@ -250,7 +250,7 @@ function InscriptionsPage() {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div><CardTitle>Inscriptions aux Activités</CardTitle><CardDescription>Gérez les élèves inscrits aux activités.</CardDescription></div>
-            {canManageContent && (<Button onClick={() => setIsFormOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Inscrire un élève</Button>)}
+            {canManageActivities && (<Button onClick={() => setIsFormOpen(true)}><PlusCircle className="mr-2 h-4 w-4" />Inscrire un élève</Button>)}
           </div>
         </CardHeader>
         <CardContent>
@@ -263,7 +263,7 @@ function InscriptionsPage() {
                     <TableCell className="font-medium">{inscription.studentName}</TableCell>
                     <TableCell>{inscription.activiteName}</TableCell>
                     <TableCell>{inscription.academicYear}</TableCell>
-                    <TableCell className="text-right">{canManageContent && <Button variant="ghost" size="icon" onClick={() => handleDelete(inscription.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}</TableCell>
+                    <TableCell className="text-right">{canManageActivities && <Button variant="ghost" size="icon" onClick={() => handleDelete(inscription.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}</TableCell>
                   </TableRow>
                 )))
               : (<TableRow><TableCell colSpan={4} className="h-24 text-center">Aucune inscription.</TableCell></TableRow>)}
@@ -292,7 +292,7 @@ function CompetitionsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageActivities = !!user?.profile?.permissions?.manageActivities;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<(Competition & { id: string }) | null>(null);
@@ -341,7 +341,7 @@ function CompetitionsPage() {
           <CardHeader>
             <div className="flex justify-between items-center">
               <div><CardTitle>Compétitions et Événements</CardTitle><CardDescription>Gérez les événements sportifs et culturels.</CardDescription></div>
-              {canManageContent && (<Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Nouvel Événement</Button>)}
+              {canManageActivities && (<Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Nouvel Événement</Button>)}
             </div>
           </CardHeader>
           <CardContent>

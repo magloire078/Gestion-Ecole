@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -12,6 +13,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,9 +35,6 @@ const permissionsSchema = z.object({
     manageClasses: z.boolean().default(false), manageGrades: z.boolean().default(false),
     manageSystem: z.boolean().default(false), viewAnalytics: z.boolean().default(false),
     manageSettings: z.boolean().default(false), manageBilling: z.boolean().default(false),
-    manageContent: z.boolean().default(false), viewSupportTickets: z.boolean().default(false),
-    manageSupportTickets: z.boolean().default(false), apiAccess: z.boolean().default(false),
-    exportData: z.boolean().default(false),
     manageCommunication: z.boolean().default(false),
     manageSchedule: z.boolean().default(false),
     manageAttendance: z.boolean().default(false),
@@ -47,6 +46,10 @@ const permissionsSchema = z.object({
     manageRooms: z.boolean().default(false),
     manageActivities: z.boolean().default(false),
     manageMedical: z.boolean().default(false),
+    viewSupportTickets: z.boolean().default(false),
+    manageSupportTickets: z.boolean().default(false),
+    apiAccess: z.boolean().default(false),
+    exportData: z.boolean().default(false),
 });
 
 
@@ -62,7 +65,8 @@ const permissionLabels: { id: keyof z.infer<typeof permissionsSchema>; label: st
     { id: 'viewUsers', label: 'Voir Personnel & Élèves', category: 'Utilisateurs' },
     { id: 'manageBilling', label: 'Gérer Facturation & Comptabilité', category: 'Finances' },
     { id: 'manageClasses', label: 'Gérer Structure & Emploi du temps', category: 'Pédagogie' },
-    { id: 'manageGrades', label: 'Gérer Notes & Absences', category: 'Pédagogie' },
+    { id: 'manageGrades', label: 'Gérer Notes', category: 'Pédagogie' },
+    { id: 'manageAttendance', label: 'Gérer Absences', category: 'Pédagogie' },
     { id: 'manageCommunication', label: 'Gérer la Communication', category: 'Communication' },
     { id: 'manageLibrary', label: 'Gérer la Bibliothèque', category: 'Modules' },
     { id: 'manageCantine', label: 'Gérer la Cantine', category: 'Modules' },
