@@ -57,7 +57,7 @@ function StudentTimetableContent({ eleveId, schoolId, schoolName }: StudentTimet
     (classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
   , [firestore, schoolId, classId]);
 
-  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'Enseignant')), [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')), [firestore, schoolId]);
 
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);

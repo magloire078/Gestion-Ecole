@@ -128,7 +128,7 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
             <TableBody>
               {timeSlots.map((slot) => (
                 <TableRow key={slot}>
-                  <TableCell className="font-semibold border text-center align-middle">{slot} - {timetableEntries.find(e => e.startTime === slot)?.endTime}</TableCell>
+                  <TableCell className="font-semibold border text-center align-middle">{slot} - {timetableGrid[slot]?.[days[0]]?.endTime || '...'}</TableCell>
                   {days.map(day => {
                     const entry = timetableGrid[slot]?.[day];
                     return (
