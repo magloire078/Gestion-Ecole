@@ -8,7 +8,7 @@ import type { staff as AppUser, admin_role as AdminRole } from '@/lib/data-types
 import { doc, getDoc } from 'firebase/firestore';
 
 export interface UserProfile extends AppUser {
-    permissions?: AdminRole['permissions'];
+    permissions?: Partial<AdminRole['permissions']>;
     isAdmin?: boolean;
 }
 
@@ -19,6 +19,16 @@ export interface UserContext {
     };
     profile?: UserProfile;
 }
+
+// All permissions set to true for a director
+const directorPermissions: Required<AdminRole['permissions']> = {
+    manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
+    manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
+    manageSettings: true, manageBilling: true, manageCommunication: true,
+    manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true,
+    manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true,
+    viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true
+};
 
 export function useUser() {
   const auth = useAuth();
@@ -55,12 +65,7 @@ export function useUser() {
                     };
 
                     if (isDirector) {
-                        userProfile.permissions = {
-                            manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
-                            manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
-                            manageSettings: true, manageBilling: true, manageContent: true,
-                            viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true,
-                        };
+                        userProfile.permissions = directorPermissions;
                     } 
                     else if (profileData.adminRole) {
                         const roleRef = doc(firestore, 'admin_roles', profileData.adminRole);
@@ -69,6 +74,8 @@ export function useUser() {
                             const roleData = roleSnap.data() as AdminRole;
                             userProfile.permissions = roleData.permissions;
                         }
+                    } else {
+                        userProfile.permissions = {}; // No specific permissions
                     }
                 }
             } else if (isAdminClaim) {
@@ -83,6 +90,7 @@ export function useUser() {
                     hireDate: '',
                     baseSalary: 0,
                     isAdmin: true,
+                    permissions: directorPermissions,
                 };
             }
 
@@ -102,3 +110,5 @@ export function useUser() {
 
   return {user, loading};
 }
+
+    

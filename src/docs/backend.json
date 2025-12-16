@@ -63,7 +63,15 @@
             "viewAnalytics": { "type": "boolean" },
             "manageSettings": { "type": "boolean" },
             "manageBilling": { "type": "boolean" },
-            "manageContent": { "type": "boolean" },
+            "manageCommunication": { "type": "boolean" },
+            "manageLibrary": { "type": "boolean" },
+            "manageCantine": { "type": "boolean" },
+            "manageTransport": { "type": "boolean" },
+            "manageInternat": { "type": "boolean" },
+            "manageInventory": { "type": "boolean" },
+            "manageRooms": { "type": "boolean" },
+            "manageActivities": { "type": "boolean" },
+            "manageMedical": { "type": "boolean" },
             "viewSupportTickets": { "type": "boolean" },
             "manageSupportTickets": { "type": "boolean" },
             "apiAccess": { "type": "boolean" },
@@ -1022,3 +1030,5 @@
     }
   }
 }
+
+    

@@ -43,7 +43,15 @@ export type admin_role = {
         viewAnalytics?: boolean;
         manageSettings?: boolean;
         manageBilling?: boolean;
-        manageContent?: boolean;
+        manageCommunication?: boolean;
+        manageLibrary?: boolean;
+        manageCantine?: boolean;
+        manageTransport?: boolean;
+        manageInternat?: boolean;
+        manageInventory?: boolean;
+        manageRooms?: boolean;
+        manageActivities?: boolean;
+        manageMedical?: boolean;
         viewSupportTickets?: boolean;
         manageSupportTickets?: boolean;
         apiAccess?: boolean;
@@ -90,7 +98,8 @@ export type staff = {
 };
 
 export interface UserProfile extends staff {
-    permissions?: admin_role['permissions'];
+    permissions?: Partial<admin_role['permissions']>;
+    isAdmin?: boolean;
 }
 
 
@@ -594,3 +603,5 @@ export type participationCompetition = {
     rank?: string;
     notes?: string;
 };
+
+    
