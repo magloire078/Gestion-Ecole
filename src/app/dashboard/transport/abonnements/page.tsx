@@ -6,18 +6,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { PlusCircle, MoreHorizontal } from 'lucide-react';
+import { PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { transportSubscription as TransportSubscription, student as Student, route as Route } from '@/lib/data-types';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { SubscriptionForm } from '@/components/transport/subscription-form';
+import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 interface SubscriptionWithDetails extends TransportSubscription {
     studentName?: string;
@@ -28,24 +33,32 @@ export default function TransportSubscriptionsPage() {
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
     const { user } = useUser();
+    const { toast } = useToast();
     const canManageContent = !!user?.profile?.permissions?.manageContent;
+    
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [editingSubscription, setEditingSubscription] = useState<(TransportSubscription & { id: string }) | null>(null);
 
     const subscriptionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_abonnements`)) : null, [firestore, schoolId]);
     const { data: subscriptionsData, loading: subscriptionsLoading } = useCollection(subscriptionsQuery);
 
     const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+    
+    const students = useMemo(() => studentsData?.map(doc => ({ id: doc.id, ...doc.data() } as Student & { id: string })) || [], [studentsData]);
 
     const routesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_lignes`)) : null, [firestore, schoolId]);
     const { data: routesData, loading: routesLoading } = useCollection(routesQuery);
+    
+    const routes = useMemo(() => routesData?.map(doc => ({ id: doc.id, ...doc.data() } as Route & { id: string })) || [], [routesData]);
 
-    const subscriptions: SubscriptionWithDetails[] = useMemo(() => {
+    const subscriptions: (SubscriptionWithDetails & {id: string})[] = useMemo(() => {
         if (!subscriptionsData || !studentsData || !routesData) return [];
         const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
         const routesMap = new Map(routesData.map(doc => [doc.id, doc.data() as Route]));
 
         return subscriptionsData.map(doc => {
-            const sub = { id: doc.id, ...doc.data() } as TransportSubscription;
+            const sub = { id: doc.id, ...doc.data() } as TransportSubscription & { id: string };
             const student = studentsMap.get(sub.studentId);
             const route = routesMap.get(sub.routeId);
             return {
@@ -57,6 +70,30 @@ export default function TransportSubscriptionsPage() {
     }, [subscriptionsData, studentsData, routesData]);
     
     const isLoading = schoolLoading || subscriptionsLoading || studentsLoading || routesLoading;
+    
+    const handleOpenForm = (subscription: (TransportSubscription & { id: string }) | null) => {
+        setEditingSubscription(subscription);
+        setIsFormOpen(true);
+    };
+
+    const handleFormSave = () => {
+        setIsFormOpen(false);
+        setEditingSubscription(null);
+    };
+    
+    const handleDeleteSubscription = async (subscriptionId: string) => {
+        if (!schoolId) return;
+        try {
+            await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements`, subscriptionId));
+            toast({ title: 'Abonnement supprimé', description: "L'abonnement a bien été supprimé." });
+        } catch (e) {
+             const permissionError = new FirestorePermissionError({
+                path: `ecoles/${schoolId}/transport_abonnements/${subscriptionId}`,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        }
+    }
 
     const getStatusBadgeVariant = (status: string) => {
         switch(status) {
@@ -75,6 +112,7 @@ export default function TransportSubscriptionsPage() {
     };
 
   return (
+    <>
     <div className="space-y-6">
        <Card>
         <CardHeader>
@@ -86,7 +124,7 @@ export default function TransportSubscriptionsPage() {
                   </CardDescription>
                 </div>
                 {canManageContent && (
-                    <Button>
+                    <Button onClick={() => handleOpenForm(null)}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Ajouter un abonnement
                     </Button>
@@ -111,8 +149,8 @@ export default function TransportSubscriptionsPage() {
                        <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleOpenForm(sub)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteSubscription(sub.id)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -126,5 +164,22 @@ export default function TransportSubscriptionsPage() {
         </CardContent>
       </Card>
     </div>
+    
+    <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{editingSubscription ? "Modifier l'abonnement" : "Nouvel Abonnement"}</DialogTitle>
+                <DialogDescription>Renseignez les informations de l'abonnement au transport.</DialogDescription>
+            </DialogHeader>
+            <SubscriptionForm 
+                schoolId={schoolId!}
+                students={students}
+                routes={routes}
+                subscription={editingSubscription}
+                onSave={handleFormSave}
+            />
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }

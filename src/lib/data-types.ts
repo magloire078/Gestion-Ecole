@@ -424,8 +424,10 @@ export type transportSubscription = {
     period: "trimestriel" | "semestriel" | "annuel";
     price: number;
     status: "active" | "inactive";
+    startDate: string;
+    endDate: string;
+    paymentStatus: "unpaid" | "paid";
     id?: string;
-    paymentStatus?: "unpaid" | "paid";
 };
 
 export type building = {
@@ -574,4 +576,5 @@ export type participationCompetition = {
     notes?: string;
     id?: string;
 };
+
 
