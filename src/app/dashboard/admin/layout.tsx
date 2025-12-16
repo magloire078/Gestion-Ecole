@@ -17,8 +17,8 @@ export default function AdminLayout({
 
     const isLoading = userLoading;
 
-    // DEV ONLY: Allow a specific email to bypass the admin check for development
-    const isAdmin = user?.customClaims?.admin === true || user?.email === "magloire078@gmail.com";
+    // Allow the hardcoded super admin email OR any user with the `admin` custom claim.
+    const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
 
     if (isLoading) {
         return (

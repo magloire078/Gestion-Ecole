@@ -48,8 +48,17 @@ export function useUser() {
                     const profileData = profileSnap.data() as AppUser;
                     userProfile = { ...profileData };
 
-                    // If user has an admin role, fetch its permissions
-                    if (profileData.adminRole) {
+                    // If user is director, grant all permissions for UI purposes
+                    if (profileData.role === 'directeur') {
+                        userProfile.permissions = {
+                            manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
+                            manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
+                            manageSettings: true, manageBilling: true, manageContent: true,
+                            viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true,
+                        };
+                    } 
+                    // If user has a specific admin role, fetch its permissions
+                    else if (profileData.adminRole) {
                         const roleRef = doc(firestore, 'admin_roles', profileData.adminRole);
                         const roleSnap = await getDoc(roleRef);
                         if (roleSnap.exists()) {
