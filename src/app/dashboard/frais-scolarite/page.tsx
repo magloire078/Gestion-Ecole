@@ -30,7 +30,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
-import Image from "next/image";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -238,17 +237,8 @@ export default function FeesPage() {
               ) : (
                   fees.map((fee: Fee) => (
                       <Card key={fee.id} className="flex flex-col">
-                          <CardHeader className="p-0 relative">
-                              <div className="relative h-40 w-full">
-                                  <Image 
-                                      src={`https://picsum.photos/seed/${fee.id}/400/200`} 
-                                      alt={fee.grade}
-                                      fill
-                                      style={{objectFit: 'cover'}}
-                                      className="rounded-t-lg"
-                                      data-ai-hint={getImageHintForGrade(fee.grade)}
-                                  />
-                              </div>
+                          <CardHeader className="p-0 relative bg-muted/50 rounded-t-xl h-24 flex items-center justify-center">
+                              <GraduationCap className="h-12 w-12 text-muted-foreground/50" />
                               {canManageBilling && (
                                 <div className="absolute top-2 right-2">
                                     <DropdownMenu>
@@ -266,7 +256,6 @@ export default function FeesPage() {
                           <CardContent className="p-4 flex-1 flex flex-col justify-between">
                               <div>
                                   <CardTitle className="flex items-center gap-2 text-xl">
-                                      <GraduationCap className="h-5 w-5" />
                                       {fee.grade}
                                   </CardTitle>
                                   <div className="flex items-baseline gap-2 mt-2">
