@@ -124,6 +124,7 @@ export default function PaymentsPage() {
                         <TableHead>Nom de l'Élève</TableHead>
                         <TableHead>Classe</TableHead>
                         <TableHead className="text-center">Statut du Paiement</TableHead>
+                        <TableHead className="text-right">Montant Payé</TableHead>
                         <TableHead className="text-right">Solde Dû</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -135,6 +136,7 @@ export default function PaymentsPage() {
                                <TableCell><Skeleton className="h-5 w-24"/></TableCell>
                                <TableCell><Skeleton className="h-5 w-16"/></TableCell>
                                <TableCell className="text-center"><Skeleton className="h-6 w-24 mx-auto"/></TableCell>
+                               <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto"/></TableCell>
                                <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto"/></TableCell>
                            </TableRow>
@@ -153,7 +155,10 @@ export default function PaymentsPage() {
                                     status={student.tuitionStatus || 'Partiel'} 
                                 />
                             </TableCell>
-                            <TableCell className="text-right font-mono">
+                            <TableCell className="text-right font-mono text-emerald-600">
+                                {formatCurrency((student.tuitionFee || 0) - (student.amountDue || 0))}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-destructive">
                                 {formatCurrency(student.amountDue || 0)}
                             </TableCell>
                             <TableCell className="text-right">
@@ -169,7 +174,7 @@ export default function PaymentsPage() {
                         ))
                     ) : (
                         <TableRow>
-                        <TableCell colSpan={5} className="text-center h-24 text-muted-foreground">
+                        <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
                             Aucun élève ne correspond aux filtres sélectionnés.
                         </TableCell>
                         </TableRow>
