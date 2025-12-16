@@ -213,6 +213,7 @@ export default function StructurePage() {
       const defaultCycle = cycleId || (niveau ? niveau.cycleId : '');
       niveauForm.reset(niveau ? {
           ...niveau,
+          capacity: niveau.capacity || 30,
           ageMin: niveau.ageMin || undefined,
           ageMax: niveau.ageMax || undefined,
       } : { name: '', code: '', order: 1, cycleId: defaultCycle, capacity: 30 });
