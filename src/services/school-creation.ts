@@ -41,7 +41,7 @@ const getAllPermissions = (value: boolean) => ({
     exportData: value
 });
 
-const DEFAULT_ROLES: Omit<admin_role, 'id' | 'schoolId'>[] = [
+const DEFAULT_ROLES: Omit<admin_role, 'id' | 'schoolId' | 'level'>[] = [
   {
     name: 'Directeur',
     description: 'Accès complet à toutes les fonctionnalités',
@@ -51,25 +51,25 @@ const DEFAULT_ROLES: Omit<admin_role, 'id' | 'schoolId'>[] = [
   {
     name: 'Enseignant Principal',
     description: 'Gestion complète d\'une classe',
-    permissions: { viewStudents: true, manageGrades: true, manageAttendance: true, viewClasses: true, manageCommunication: true },
+    permissions: { viewUsers: true, manageGrades: true, manageAttendance: true, manageCommunication: true },
     isSystem: true,
   },
   {
     name: 'Enseignant',
     description: 'Enseignant par matière spécifique',
-    permissions: { viewStudents: true, manageGrades: true, manageAttendance: true, viewClasses: true },
+    permissions: { viewUsers: true, manageGrades: true, manageAttendance: true },
     isSystem: true,
   },
   {
     name: 'Secrétariat',
     description: 'Gestion administrative des élèves et de la facturation',
-    permissions: { viewStudents: true, manageStudents: true, viewBilling: true, manageBilling: true, manageSchedule: true },
+    permissions: { viewUsers: true, manageUsers: true, manageBilling: true, manageSchedule: true },
     isSystem: true,
   },
   {
     name: 'Comptable',
     description: 'Gestion financière et facturation',
-    permissions: { viewBilling: true, manageBilling: true },
+    permissions: { manageBilling: true },
     isSystem: true,
   }
 ];
@@ -82,7 +82,7 @@ export class SchoolCreationService {
     this.db = firestore;
   }
 
-  async createSchool(schoolData: SchoolCreationData, userId: string) {
+  async createSchool(schoolData: SchoolCreationData) {
     const schoolRef = doc(collection(this.db, 'ecoles'));
     const schoolId = schoolRef.id;
     const schoolCode = generateSchoolCode(schoolData.name);
@@ -96,7 +96,7 @@ export class SchoolCreationService {
       phone: schoolData.phone,
       email: schoolData.email,
       schoolCode: schoolCode,
-      directorId: userId,
+      directorId: schoolData.directorId,
       directorFirstName: schoolData.directorFirstName,
       directorLastName: schoolData.directorLastName,
       createdAt: serverTimestamp() as any,
@@ -111,14 +111,14 @@ export class SchoolCreationService {
     batch.set(schoolRef, schoolDocData);
 
     // 2. Add user to the /utilisateurs collection
-    const userRef = doc(this.db, 'utilisateurs', userId);
+    const userRef = doc(this.db, 'utilisateurs', schoolData.directorId);
     const userRootData: user_root = { schoolId };
     batch.set(userRef, userRootData);
 
     // 3. Create a staff profile for the director
-    const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, userId);
+    const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
     const directorProfileData: Omit<staff, 'id'> = {
-        uid: userId,
+        uid: schoolData.directorId,
         schoolId: schoolId,
         role: 'directeur',
         adminRole: 'directeur', // The ID for the director role
@@ -168,8 +168,9 @@ export class SchoolCreationService {
     
     // 6. Create default roles for the school
     DEFAULT_ROLES.forEach(role => {
-        const roleRef = doc(this.db, `ecoles/${schoolId}/admin_roles`, role.name.toLowerCase().replace(/ /g, '_'));
-        batch.set(roleRef, { ...role, schoolId });
+        const roleId = role.name.toLowerCase().replace(/ /g, '_');
+        const roleRef = doc(this.db, `ecoles/${schoolId}/admin_roles`, roleId);
+        batch.set(roleRef, { ...role, schoolId, level: 0 });
     });
     
     return batch.commit().then(() => {
@@ -178,12 +179,10 @@ export class SchoolCreationService {
          const permissionError = new FirestorePermissionError({
             path: `[BATCH WRITE] /ecoles/${schoolId}`,
             operation: 'create',
-            requestResourceData: { schoolName: schoolData.name, director: userId },
+            requestResourceData: { schoolName: schoolData.name, director: schoolData.directorId },
         });
         errorEmitter.emit('permission-error', permissionError);
         throw e;
     });
   }
 }
-
-    

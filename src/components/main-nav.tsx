@@ -87,9 +87,18 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
           
           const visibleLinks = group.links.filter(link => hasPermission(link.permission));
           if (visibleLinks.length === 0) return null;
+          
+          const isGroupActive = visibleLinks.some(link => pathname.startsWith(link.href) && link.href !== '/dashboard');
 
-          if (visibleLinks.length === 1 && (group.group === "Principal" || group.group === "Configuration")) {
-              return <NavLink key={visibleLinks[0].href} {...visibleLinks[0]} collapsed={false} />;
+          // Render direct links for Principal and Configuration group
+          if (group.group === "Principal" || group.group === "Configuration") {
+              return (
+                  <div key={group.group} className="py-1">
+                      {visibleLinks.map(link => (
+                          <NavLink key={link.href} {...link} collapsed={false} />
+                      ))}
+                  </div>
+              )
           }
 
           return (
