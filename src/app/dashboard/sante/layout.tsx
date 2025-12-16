@@ -7,52 +7,37 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "@/firebase";
 
-export default function RHLayout({
+export default function SanteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-    const { subscription, loading: subscriptionLoading } = useSubscription();
-    const { user, loading: userLoading } = useUser();
+    const { subscription, loading } = useSubscription();
 
-    const isLoading = subscriptionLoading || userLoading;
-
-    // Allow the hardcoded super admin email OR any user with the `admin` custom claim.
-    const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
-
-    if (isLoading) {
+    if (loading) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-12 w-1/3" />
                 <Skeleton className="h-4 w-2/3" />
-                <Card>
-                    <CardHeader>
-                        <Skeleton className="h-6 w-1/4" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-64 w-full" />
-                    </CardContent>
-                </Card>
+                <Skeleton className="h-64 w-full" />
             </div>
         );
     }
     
-    // If not admin and not on Pro/Premium plan, show the upgrade message
-    if (!isAdmin && subscription?.plan !== 'Pro' && subscription?.plan !== 'Premium') {
+    if (subscription?.plan === 'Essentiel') {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center justify-center gap-2">
                             <Lock className="h-6 w-6 text-primary" />
-                            Fonctionnalité du Plan Pro
+                            Module Santé (Plan Pro)
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            La gestion des ressources humaines et de la paie est une fonctionnalité avancée. Pour y accéder, veuillez mettre à niveau votre abonnement.
+                            Le suivi médical détaillé des élèves est une fonctionnalité avancée. Pour y accéder, veuillez mettre à niveau votre abonnement.
                         </p>
                     </CardContent>
                     <CardFooter>
