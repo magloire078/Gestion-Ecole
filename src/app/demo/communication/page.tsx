@@ -18,6 +18,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const DEMO_MESSAGES = [
     { id: 'msg1', title: 'Réunion des parents d\'élèves - CM2', date: '2024-05-18T10:00:00Z', sender: 'M. Diallo', recipients: 'Classe CM2-A, CM2-B' },
@@ -101,9 +103,9 @@ export default function DemoCommunicationPage() {
                 <div className="space-y-2">
                     <label className="text-sm font-medium">Destinataires</label>
                     <div className="p-4 border rounded-md space-y-3">
-                        <div className="flex items-center gap-2"><Checkbox disabled /><label className="text-sm">Toute l'école</label></div>
-                        <div className="flex items-center gap-2"><Checkbox disabled /><label className="text-sm">Tous les enseignants</label></div>
-                        <div className="flex items-center gap-2"><Checkbox disabled /><label className="text-sm">Personnel non-enseignant</label></div>
+                        <div className="flex items-center gap-2"><Checkbox disabled id="demo-check-1" /><label htmlFor="demo-check-1" className="text-sm">Toute l'école</label></div>
+                        <div className="flex items-center gap-2"><Checkbox disabled id="demo-check-2" /><label htmlFor="demo-check-2" className="text-sm">Tous les enseignants</label></div>
+                        <div className="flex items-center gap-2"><Checkbox disabled id="demo-check-3" /><label htmlFor="demo-check-3" className="text-sm">Personnel non-enseignant</label></div>
                         <div className="space-y-1">
                             <label className="text-sm">Classes spécifiques</label>
                             <div className="flex flex-wrap gap-2">
