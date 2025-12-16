@@ -203,5 +203,3 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     </DropdownMenu>
   );
 }
-
-    
