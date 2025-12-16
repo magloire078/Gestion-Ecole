@@ -78,7 +78,7 @@ export class SchoolCreationService {
 
     // 3. Create a staff profile for the director
     const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, userId);
-    const staffDocData: Omit<staff, 'id'> = {
+    const directorProfileData: Omit<staff, 'id'> = {
         uid: userId,
         schoolId: schoolId,
         role: 'directeur',
@@ -89,7 +89,7 @@ export class SchoolCreationService {
         hireDate: new Date().toISOString(), // Use ISO string for server compatibility
         baseSalary: 0, // Default base salary
     };
-    batch.set(staffRef, staffDocData);
+    batch.set(staffRef, directorProfileData);
 
     // 4. Initialize school structure (Cycles and Niveaux)
     const template = SCHOOL_TEMPLATES.IVORIAN_SYSTEM;
