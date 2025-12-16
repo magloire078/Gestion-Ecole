@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, FormEvent, Suspense } from 'react';
+import { useState, FormEvent, Suspense, useReducer } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,15 +22,11 @@ const TIME_SLOTS = [
 
 async function sendContactRequest(data: any) {
     console.log("Sending contact request:", data);
-    // This would typically be an API call to a serverless function
     await new Promise(resolve => setTimeout(resolve, 1500));
     return { success: true };
 }
 
-
-function DemoContactPageContent() {
-  const router = useRouter();
-  const [formData, setFormData] = useState({
+const initialState = {
     firstName: '',
     lastName: '',
     email: '',
@@ -43,26 +39,62 @@ function DemoContactPageContent() {
     meetingDate: new Date(),
     meetingTime: '10:00',
     newsletter: true
-  });
+};
 
+type FormState = typeof initialState;
+type FormAction = { type: 'SET_FIELD'; field: keyof FormState; value: any } | { type: 'TOGGLE_NEED'; need: string };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+    switch (action.type) {
+        case 'SET_FIELD':
+            return { ...state, [action.field]: action.value };
+        case 'TOGGLE_NEED':
+            const needs = state.needs.includes(action.need)
+                ? state.needs.filter(n => n !== action.need)
+                : [...state.needs, action.need];
+            return { ...state, needs };
+        default:
+            return state;
+    }
+}
+
+
+function DemoContactPageContent() {
+  const router = useRouter();
+  const [state, dispatch] = useReducer(formReducer, initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handleFieldChange = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      dispatch({ type: 'SET_FIELD', field, value: e.target.value });
+  };
+  
+  const handleSelectChange = (field: keyof FormState) => (value: string) => {
+      dispatch({ type: 'SET_FIELD', field, value });
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+      if (date) {
+        dispatch({ type: 'SET_FIELD', field: 'meetingDate', value: date });
+      }
+  }
+
+  const handleNeedsChange = (need: string) => (checked: boolean | 'indeterminate') => {
+      dispatch({ type: 'TOGGLE_NEED', need });
+  }
+
+  const handleNewsletterChange = (checked: boolean | 'indeterminate') => {
+      dispatch({ type: 'SET_FIELD', field: 'newsletter', value: checked === true });
+  }
+
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
-      // Envoyer la demande à votre CRM/email
-      await sendContactRequest(formData);
+      await sendContactRequest(state);
       setIsSubmitted(true);
-      
-      // Rediriger vers une page de confirmation
-      setTimeout(() => {
-        // In a real app, you might have a /demo/thank-you page
-        router.push('/demo'); 
-      }, 2000);
-      
+      setTimeout(() => router.push('/demo'), 2000);
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
@@ -103,7 +135,6 @@ function DemoContactPageContent() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Formulaire */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle>Planifiez votre démo</CardTitle>
@@ -114,158 +145,39 @@ function DemoContactPageContent() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="firstName">Prénom *</Label>
-                      <Input id="firstName" value={formData.firstName} onChange={(e) => setFormData({...formData, firstName: e.target.value})} required/>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="lastName">Nom *</Label>
-                      <Input id="lastName" value={formData.lastName} onChange={(e) => setFormData({...formData, lastName: e.target.value})} required/>
-                    </div>
+                    <div className="space-y-2"><Label htmlFor="firstName">Prénom *</Label><Input id="firstName" value={state.firstName} onChange={handleFieldChange('firstName')} required/></div>
+                    <div className="space-y-2"><Label htmlFor="lastName">Nom *</Label><Input id="lastName" value={state.lastName} onChange={handleFieldChange('lastName')} required/></div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email professionnel *</Label>
-                      <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} required/>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Téléphone</Label>
-                      <Input id="phone" type="tel" value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})}/>
-                    </div>
+                    <div className="space-y-2"><Label htmlFor="email">Email professionnel *</Label><Input id="email" type="email" value={state.email} onChange={handleFieldChange('email')} required/></div>
+                    <div className="space-y-2"><Label htmlFor="phone">Téléphone</Label><Input id="phone" type="tel" value={state.phone} onChange={handleFieldChange('phone')}/></div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="schoolName">Nom de votre établissement *</Label>
-                    <Input id="schoolName" value={formData.schoolName} onChange={(e) => setFormData({...formData, schoolName: e.target.value})} required/>
-                  </div>
-
+                  <div className="space-y-2"><Label htmlFor="schoolName">Nom de votre établissement *</Label><Input id="schoolName" value={state.schoolName} onChange={handleFieldChange('schoolName')} required/></div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Type d'établissement</Label>
-                      <Select value={formData.schoolType} onValueChange={(value) => setFormData({...formData, schoolType: value})}>
-                        <SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="primary">École primaire</SelectItem>
-                          <SelectItem value="middle">Collège</SelectItem>
-                          <SelectItem value="high">Lycée</SelectItem>
-                          <SelectItem value="international">École internationale</SelectItem>
-                          <SelectItem value="group">Groupe scolaire</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Nombre d'élèves</Label>
-                      <Select value={formData.studentCount} onValueChange={(value) => setFormData({...formData, studentCount: value})}>
-                        <SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="0-100">0-100 élèves</SelectItem>
-                          <SelectItem value="100-500">100-500 élèves</SelectItem>
-                          <SelectItem value="500-1000">500-1000 élèves</SelectItem>
-                          <SelectItem value="1000+">Plus de 1000 élèves</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <div className="space-y-2"><Label>Type d'établissement</Label><Select value={state.schoolType} onValueChange={handleSelectChange('schoolType')}><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger><SelectContent><SelectItem value="primary">École primaire</SelectItem><SelectItem value="middle">Collège</SelectItem><SelectItem value="high">Lycée</SelectItem><SelectItem value="international">École internationale</SelectItem><SelectItem value="group">Groupe scolaire</SelectItem></SelectContent></Select></div>
+                    <div className="space-y-2"><Label>Nombre d'élèves</Label><Select value={state.studentCount} onValueChange={handleSelectChange('studentCount')}><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger><SelectContent><SelectItem value="0-100">0-100 élèves</SelectItem><SelectItem value="100-500">100-500 élèves</SelectItem><SelectItem value="500-1000">500-1000 élèves</SelectItem><SelectItem value="1000+">Plus de 1000 élèves</SelectItem></SelectContent></Select></div>
                   </div>
-
                   <div className="space-y-2">
                     <Label>Vos besoins principaux</Label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                       {['Gestion administrative','Pédagogie et notes','Communication parents','Finances et paiements','Transport scolaire','Cantine/internat'].map((need) => (
-                        <div key={need} className="flex items-center space-x-2">
-                          <Checkbox id={need} checked={formData.needs.includes(need)} onCheckedChange={(checked) => {
-                              if (checked) { setFormData({ ...formData, needs: [...formData.needs, need] });
-                              } else { setFormData({ ...formData, needs: formData.needs.filter(n => n !== need) }); }
-                            }}
-                          />
-                          <label htmlFor={need} className="text-sm font-normal">{need}</label>
-                        </div>
+                        <div key={need} className="flex items-center space-x-2"><Checkbox id={need} checked={state.needs.includes(need)} onCheckedChange={handleNeedsChange(need)}/><label htmlFor={need} className="text-sm font-normal">{need}</label></div>
                       ))}
                     </div>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Date de rendez-vous souhaitée</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="outline" className="w-full justify-start font-normal">
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {formData.meetingDate ? format(formData.meetingDate, 'PPP', { locale: fr }) : <span>Choisir une date</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar mode="single" selected={formData.meetingDate} onSelect={(date) => date && setFormData({...formData, meetingDate: date})} initialFocus/>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Créneau horaire</Label>
-                      <Select value={formData.meetingTime} onValueChange={(value) => setFormData({...formData, meetingTime: value})}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{TIME_SLOTS.map((time) => (<SelectItem key={time} value={time}>{time}</SelectItem>))}</SelectContent>
-                      </Select>
-                    </div>
+                    <div className="space-y-2"><Label>Date de rendez-vous souhaitée</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{state.meetingDate ? format(state.meetingDate, 'PPP', { locale: fr }) : <span>Choisir une date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={state.meetingDate} onSelect={handleDateChange} initialFocus/></PopoverContent></Popover></div>
+                    <div className="space-y-2"><Label>Créneau horaire</Label><Select value={state.meetingTime} onValueChange={handleSelectChange('meetingTime')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{TIME_SLOTS.map((time) => (<SelectItem key={time} value={time}>{time}</SelectItem>))}</SelectContent></Select></div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="message">Message additionnel</Label>
-                    <Textarea id="message" placeholder="Questions spécifiques, besoins particuliers..." value={formData.message} onChange={(e) => setFormData({...formData, message: e.target.value})} rows={4}/>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="newsletter" checked={formData.newsletter} onCheckedChange={(checked) => setFormData({...formData, newsletter: checked === true})}/>
-                    <label htmlFor="newsletter" className="text-sm font-normal">Je souhaite recevoir les actualités et conseils</label>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : null}
-                    {isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}
-                  </Button>
+                  <div className="space-y-2"><Label htmlFor="message">Message additionnel</Label><Textarea id="message" placeholder="Questions spécifiques, besoins particuliers..." value={state.message} onChange={handleFieldChange('message')} rows={4}/></div>
+                  <div className="flex items-center space-x-2"><Checkbox id="newsletter" checked={state.newsletter} onCheckedChange={handleNewsletterChange}/><label htmlFor="newsletter" className="text-sm font-normal">Je souhaite recevoir les actualités et conseils</label></div>
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : null}{isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}</Button>
                 </form>
               </CardContent>
             </Card>
-
-            {/* Infos côté */}
             <div className="space-y-6">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <Video className="h-8 w-8 text-primary" />
-                      <div><h3 className="font-semibold">Démo en visio</h3><p className="text-sm text-muted-foreground">Présentation interactive en direct</p></div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-8 w-8 text-primary" />
-                      <div><h3 className="font-semibold">45 minutes</h3><p className="text-sm text-muted-foreground">Découverte complète des fonctionnalités</p></div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Users className="h-8 w-8 text-primary" />
-                      <div><h3 className="font-semibold">Expert dédié</h3><p className="text-sm text-muted-foreground">Réponses à toutes vos questions</p></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader><CardTitle className="text-lg">Prochaines étapes</CardTitle></CardHeader>
-                <CardContent>
-                  <ol className="space-y-4">
-                    <li className="flex items-start gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">1</div>
-                      <div><h4 className="font-medium">Confirmation</h4><p className="text-sm text-muted-foreground">Vous recevez un email de confirmation avec le lien de la visio.</p></div>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">2</div>
-                      <div><h4 className="font-medium">Démo personnalisée</h4><p className="text-sm text-muted-foreground">Présentation adaptée à votre établissement.</p></div>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">3</div>
-                      <div><h4 className="font-medium">Devis personnalisé</h4><p className="text-sm text-muted-foreground">Proposition commerciale adaptée à vos besoins.</p></div>
-                    </li>
-                  </ol>
-                </CardContent>
-              </Card>
+              <Card><CardContent className="pt-6"><div className="space-y-4"><div className="flex items-center gap-3"><Video className="h-8 w-8 text-primary" /><div><h3 className="font-semibold">Démo en visio</h3><p className="text-sm text-muted-foreground">Présentation interactive en direct</p></div></div><div className="flex items-center gap-3"><Clock className="h-8 w-8 text-primary" /><div><h3 className="font-semibold">45 minutes</h3><p className="text-sm text-muted-foreground">Découverte complète des fonctionnalités</p></div></div><div className="flex items-center gap-3"><Users className="h-8 w-8 text-primary" /><div><h3 className="font-semibold">Expert dédié</h3><p className="text-sm text-muted-foreground">Réponses à toutes vos questions</p></div></div></div></CardContent></Card>
+              <Card><CardHeader><CardTitle className="text-lg">Prochaines étapes</CardTitle></CardHeader><CardContent><ol className="space-y-4"><li className="flex items-start gap-3"><div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">1</div><div><h4 className="font-medium">Confirmation</h4><p className="text-sm text-muted-foreground">Vous recevez un email de confirmation avec le lien de la visio.</p></div></li><li className="flex items-start gap-3"><div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">2</div><div><h4 className="font-medium">Démo personnalisée</h4><p className="text-sm text-muted-foreground">Présentation adaptée à votre établissement.</p></div></li><li className="flex items-start gap-3"><div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">3</div><div><h4 className="font-medium">Devis personnalisé</h4><p className="text-sm text-muted-foreground">Proposition commerciale adaptée à vos besoins.</p></div></li></ol></CardContent></Card>
             </div>
           </div>
         </div>
