@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams, notFound, useRouter } from 'next/navigation';
@@ -42,6 +43,7 @@ export default function ClassDetailsPage() {
     const router = useRouter();
     const classId = params.classId as string;
     const { schoolId, loading: schoolLoading } = useSchoolData();
+    const firestore = useFirestore();
 
     // Fetch Class Details
     const classRef = useMemoFirebase(() => 
