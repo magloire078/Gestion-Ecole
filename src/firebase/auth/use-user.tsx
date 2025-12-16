@@ -18,7 +18,7 @@ export interface UserContext {
     profile?: UserProfile;
 }
 
-const directorPermissions: Required<AdminRole['permissions']> = {
+const allPermissions: Required<AdminRole['permissions']> = {
     manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
     manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
     manageSettings: true, manageBilling: true, manageCommunication: true,
@@ -28,6 +28,21 @@ const directorPermissions: Required<AdminRole['permissions']> = {
     viewSupportTickets: true, manageSupportTickets: true, apiAccess: true,
     exportData: true
 };
+
+const rolePermissions: Record<string, Partial<AdminRole['permissions']>> = {
+    'directeur': allPermissions,
+    'directeur_pedagogique': { manageClasses: true, manageSchedule: true, viewUsers: true, manageGrades: true },
+    'enseignant': { viewUsers: true, manageGrades: true, manageAttendance: true },
+    'enseignant_principal': { viewUsers: true, manageGrades: true, manageAttendance: true, manageCommunication: true },
+    'secretaire': { manageUsers: true, viewUsers: true, manageBilling: true, manageSchedule: true },
+    'comptable': { manageBilling: true, viewUsers: true },
+    'bibliothecaire': { manageLibrary: true },
+    'surveillant': { manageAttendance: true, manageInternat: true },
+    'infirmier': { manageMedical: true },
+    'chauffeur': { manageTransport: true },
+    // Les autres rôles n'ont pas de permissions spéciales par défaut
+};
+
 
 export function useUser() {
   const auth = useAuth();
@@ -60,20 +75,12 @@ export function useUser() {
                 if (profileSnap.exists()) {
                     const profileData = profileSnap.data() as AppUser;
                     
-                    userProfile = { ...profileData, isAdmin: isAdmin };
+                    userProfile = { 
+                        ...profileData, 
+                        isAdmin: isAdmin,
+                        permissions: rolePermissions[profileData.role] || {}
+                    };
 
-                    if (profileData.role === 'directeur') {
-                        userProfile.permissions = directorPermissions;
-                        userProfile.isAdmin = true; // Un directeur est admin de son école
-                    } 
-                    else if (profileData.adminRole) {
-                        const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
-                        const roleSnap = await getDoc(roleRef);
-                        if (roleSnap.exists()) {
-                            const roleData = roleSnap.data() as AdminRole;
-                            userProfile.permissions = roleData.permissions;
-                        }
-                    }
                 }
             } else if (isAdmin) {
                 // Gérer le cas d'un admin de plateforme sans école spécifique
@@ -87,7 +94,7 @@ export function useUser() {
                     hireDate: '',
                     baseSalary: 0,
                     isAdmin: true,
-                    permissions: directorPermissions,
+                    permissions: allPermissions,
                 };
             }
 
@@ -107,5 +114,3 @@ export function useUser() {
 
   return {user, loading};
 }
-
-    

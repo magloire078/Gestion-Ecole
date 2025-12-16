@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -10,40 +9,48 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      // Uniquement pour le super admin de la plateforme, si nécessaire.
-      return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+      // Uniquement pour le super admin de la plateforme
+      return request.auth.token.admin == true;
     }
 
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    function getSchoolId() {
-        return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId;
+    function getSchoolIdForUser(userId) {
+        return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
     }
 
     function belongsToSchool(schoolId) {
-        return isAuth() && getSchoolId() == schoolId;
-    }
-    
-    function hasStaffProfile(schoolId) {
-      return exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+        return isAuth() && getSchoolIdForUser(request.auth.uid) == schoolId;
     }
     
     function getStaffProfile(schoolId) {
       return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
-    
+
+    // --- NOUVELLE FONCTION DE PERMISSION ---
+    // Vérifie les permissions en se basant sur le rôle de l'utilisateur
     function hasPermission(schoolId, permission) {
-      let staffProfile = getStaffProfile(schoolId);
-      
-      // Admin système a tous les accès
-      return isAdmin() ||
-             // Le directeur de l'école a tous les accès
-             (staffProfile.role == 'directeur') ||
-             // Vérifier les permissions via le rôle admin assigné
-             (staffProfile.adminRole != null &&
-              get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true);
+        let role = getStaffProfile(schoolId).role;
+
+        return isAdmin() ||
+               role == 'directeur' || // Le directeur a toutes les permissions
+               (permission == 'manageGrades' && (role == 'enseignant' || role == 'enseignant_principal')) ||
+               (permission == 'manageAttendance' && (role == 'enseignant' || role == 'enseignant_principal' || role == 'surveillant')) ||
+               (permission == 'manageBilling' && (role == 'comptable' || role == 'secretaire')) ||
+               (permission == 'manageUsers' && role == 'secretaire') ||
+               (permission == 'viewUsers' && (role == 'enseignant' || role == 'enseignant_principal' || role == 'secretaire' || role == 'comptable')) ||
+               (permission == 'manageClasses' && (role == 'directeur_pedagogique' || role == 'secretaire')) ||
+               (permission == 'manageSchedule' && (role == 'directeur_pedagogique' || role == 'secretaire')) ||
+               (permission == 'manageLibrary' && role == 'bibliothecaire') ||
+               (permission == 'manageCantine' && role == 'personnel') ||
+               (permission == 'manageTransport' && (role == 'personnel' || role == 'chauffeur')) ||
+               (permission == 'manageInternat' && role == 'surveillant') ||
+               (permission == 'manageInventory' && role == 'personnel') ||
+               (permission == 'manageRooms' && role == 'secretaire') ||
+               (permission == 'manageActivities' && (role == 'enseignant' || role == 'enseignant_principal')) ||
+               (permission == 'manageMedical' && role == 'infirmier');
     }
     
     // --- Global Collections ---
@@ -51,26 +58,24 @@ service cloud.firestore {
     match /utilisateurs/{userId} {
       allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
-      allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
+      allow create: if isAuth() && 
+        request.auth.uid == userId && 
+        !exists(/databases/$(database)/documents/$(request.path));
       allow update: if isOwner(userId);
-      allow delete: if false;
+      allow delete: if false; // La suppression doit être gérée par une fonction cloud
     }
-    
+
     // --- School Collections ---
 
     match /ecoles/{schoolId} {
        allow get: if isAuth(); 
        allow list: if isAuth(); 
        allow create: if isAuth();
-                         
-       allow update: if (belongsToSchool(schoolId) && 
-                         hasPermission(schoolId, 'manageSettings')) || 
-                        isAdmin();
-                         
+       allow update: if belongsToSchool(schoolId) && getStaffProfile(schoolId).role == 'directeur';
        allow delete: if isAdmin();
     }
     
-    // --- School Subcollections ---
+    // --- School Subcollections Rules ---
     
     match /ecoles/{schoolId}/personnel/{staffId} {
       allow read, list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
@@ -101,8 +106,8 @@ service cloud.firestore {
     }
 
     match /ecoles/{schoolId}/admin_roles/{roleId} {
-      allow read, list: if belongsToSchool(schoolId) || isAdmin();
-      allow create, update, delete: if (belongsToSchool(schoolId) && hasPermission(schoolId, 'manageSettings')) || isAdmin();
+        allow read, list: if belongsToSchool(schoolId);
+        allow create, update, delete: if belongsToSchool(schoolId) && getStaffProfile(schoolId).role == 'directeur';
     }
     
     match /ecoles/{schoolId}/classes/{classId} {
@@ -154,7 +159,7 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/messagerie/{messageId} {
        allow read, list: if belongsToSchool(schoolId);
-       allow create: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageCommunication');
+       allow create: if belongsToSchool(schoolId); // Tout membre peut envoyer un message
     }
 
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
