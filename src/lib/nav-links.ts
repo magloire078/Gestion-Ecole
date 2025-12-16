@@ -1,3 +1,4 @@
+
 import {
     LayoutDashboard,
     Users,
@@ -21,6 +22,8 @@ import {
     Building,
     HeartPulse,
     Trophy,
+    Map,
+    Ticket,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -93,3 +96,8 @@ export const NAV_LINKS = [
       adminOnly: true,
     }
   ];
+export const transportNavLinks = [
+  { href: '/dashboard/transport/lignes', label: 'Lignes', icon: Map },
+  { href: '/dashboard/transport/bus', label: 'Flotte de Bus', icon: Bus },
+  { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket },
+];

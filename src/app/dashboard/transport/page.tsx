@@ -1,24 +1,15 @@
 
 'use client';
 
-import { LiveTransportTracking } from '@/components/transport/live-tracking';
-import { useSchoolData } from '@/hooks/use-school-data';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function TransportDashboardPage() {
-  const { schoolId, loading } = useSchoolData();
+  const router = useRouter();
 
-  if (loading) {
-    return <Skeleton className="h-96 w-full" />;
-  }
+  useEffect(() => {
+    router.replace('/dashboard/transport/lignes');
+  }, [router]);
 
-  if (!schoolId) {
-    return <p>ID de l'école non trouvé.</p>;
-  }
-
-  return (
-    <div className="space-y-6">
-       <LiveTransportTracking schoolId={schoolId} />
-    </div>
-  );
+  return null;
 }
