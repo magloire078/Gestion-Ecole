@@ -1,10 +1,10 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag, CalendarCheck, Loader2, CreditCard } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
@@ -102,12 +102,12 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId]);
   const { data: studentData, loading: studentLoading, error } = useDoc<Student>(studentRef);
   
-  const gradesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')), [firestore, schoolId, eleveId]);
   const paymentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')), [firestore, schoolId, eleveId]);
-  
-  const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
+  const gradesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')), [firestore, schoolId, eleveId]);
+  const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
+  
   const student = studentData as Student | null;
   const classRef = useMemoFirebase(() => student?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
@@ -152,11 +152,24 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   };
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
-    const currentPaymentIndex = paymentHistory.findIndex(p => p.id === payment.id);
-    const paymentsUpToThisOne = paymentHistory.slice(currentPaymentIndex);
-    const totalPaidSinceThisPayment = paymentsUpToThisOne.reduce((sum, p) => sum + p.amount, 0);
-    const amountDueAtTimeOfPayment = (student.amountDue ?? 0) + totalPaidSinceThisPayment;
+    if (!student) return;
 
+    // Calculer le montant total payé par l'élève.
+    const totalPaid = (student.tuitionFee ?? 0) - (student.amountDue ?? 0);
+    
+    // Identifier tous les paiements effectués APRES le paiement actuel.
+    const paymentsAfterCurrent = paymentHistory
+        .filter(p => new Date(p.date) > new Date(payment.date) || (new Date(p.date).getTime() === new Date(payment.date).getTime() && p.id !== payment.id));
+    
+    // Calculer la somme de ces paiements postérieurs.
+    const sumOfPaymentsAfter = paymentsAfterCurrent.reduce((sum, p) => sum + p.amount, 0);
+
+    // Le total payé *avant* ce paiement spécifique.
+    const totalPaidBeforeThisPayment = totalPaid - sumOfPaymentsAfter - payment.amount;
+
+    // Le solde dû *avant* ce paiement spécifique.
+    const amountDueBeforeThisPayment = (student.tuitionFee ?? 0) - totalPaidBeforeThisPayment;
+    
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
         studentName: studentFullName,
@@ -165,7 +178,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
         date: new Date(payment.date),
         description: payment.description,
         amountPaid: payment.amount,
-        amountDue: amountDueAtTimeOfPayment - payment.amount,
+        amountDue: amountDueBeforeThisPayment - payment.amount,
         payerName: `${payment.payerFirstName} ${payment.payerLastName}`,
         payerContact: payment.payerContact,
         paymentMethod: payment.method,
