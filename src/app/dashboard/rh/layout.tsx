@@ -20,7 +20,7 @@ export default function RHLayout({
     const isLoading = subscriptionLoading || userLoading;
 
     // Dev Only: Allow admin to bypass plan check
-    const isAdmin = user?.customClaims?.role === 'admin' || user?.email === "magloire078@gmail.com";
+    const isAdmin = user?.customClaims?.admin === true || user?.email === "magloire078@gmail.com";
 
     if (isLoading) {
         return (
@@ -40,7 +40,7 @@ export default function RHLayout({
     }
     
     // If not admin and not on Pro plan, show the upgrade message
-    if (!isAdmin && subscription?.plan !== 'Pro') {
+    if (!isAdmin && subscription?.plan !== 'Pro' && subscription?.plan !== 'Premium') {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">
