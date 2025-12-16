@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -564,9 +565,9 @@ const OnboardingDashboard = () => {
           <p className="text-muted-foreground text-sm mb-4">
              Définissez l'organisation pédagogique. (Au moins 1 classe requise)
           </p>
-          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/pedagogie/structure')}>
+          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/pedagogie/structure/new')}>
             <Plus className="w-5 h-5 inline mr-2" />
-            Gérer la structure
+            Créer une classe
           </Button>
         </StepCard>
 
