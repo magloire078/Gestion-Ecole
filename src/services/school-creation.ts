@@ -50,7 +50,7 @@ export class SchoolCreationService {
     const batch = writeBatch(this.db);
 
     // 1. Create the main school document
-    const schoolDocData: Partial<school> = {
+    const schoolDocData: Omit<school, 'id'> = {
       name: schoolData.name,
       address: schoolData.address,
       phone: schoolData.phone,
@@ -60,7 +60,7 @@ export class SchoolCreationService {
       directorFirstName: schoolData.directorFirstName,
       directorLastName: schoolData.directorLastName,
       directorPhone: '', // Can be added later
-      createdAt: serverTimestamp() as unknown as string,
+      createdAt: serverTimestamp() as any,
       mainLogoUrl: schoolData.mainLogoUrl,
       subscription: {
         plan: 'Essentiel',

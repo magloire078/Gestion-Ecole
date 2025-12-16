@@ -114,7 +114,7 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
         toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.' });
-        setActiveTab("login"); // Switch to login tab after successful sign-up
+        router.push('/dashboard');
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Cette adresse e-mail est déjà utilisée.' });
