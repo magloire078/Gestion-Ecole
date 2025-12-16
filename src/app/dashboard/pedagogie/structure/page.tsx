@@ -210,7 +210,7 @@ export default function StructurePage() {
     });
   };
 
-  const handleOpenNiveauForm = (niveau: Niveau & {id: string} | null, cycleId?: string) => {
+  const handleOpenNiveauForm = (niveau: (Niveau & {id: string}) | null, cycleId?: string) => {
       setEditingNiveau(niveau);
       const defaultCycle = cycleId || (niveau ? niveau.cycleId : '');
       niveauForm.reset(niveau || { name: '', code: '', order: 1, cycleId: defaultCycle, capacity: 30 });
