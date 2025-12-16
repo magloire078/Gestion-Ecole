@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { 
   School, Users, BookOpen, Clock, Sparkles, PlayCircle, Eye, Zap, Loader2,
   LucideProps,
+  Utensils,
+  Building,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
