@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -173,7 +174,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
             batch.commit()
                 .then(() => {
                     toast({ title: "Membre du personnel ajouté (Simulation)", description: `${values.firstName} ${values.lastName} a été ajouté(e).` });
-                    onFormSplit();
+                    onFormSubmit();
                 })
                 .catch(serverError => {
                     const permissionError = new FirestorePermissionError({
@@ -297,5 +298,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         </Form>
     );
 }
+
+    
 
     
