@@ -91,6 +91,10 @@ service cloud.firestore {
        allow read, list: if belongsToSchool(schoolId);
        allow write: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || hasPermission(schoolId, 'manageGrades'));
     }
+
+    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId}/{document=**} {
+        allow read, write: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || hasPermission(schoolId, 'manageContent'));
+    }
     
     match /ecoles/{schoolId}/classes/{classId} {
       allow read, list: if belongsToSchool(schoolId); 
@@ -189,7 +193,7 @@ service cloud.firestore {
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
 
-    // --- New Immobilier Rules ---
+    // --- Immobilier Rules ---
     match /ecoles/{schoolId}/inventaire/{materielId} {
         allow read, list: if belongsToSchool(schoolId);
         allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
@@ -203,6 +207,24 @@ service cloud.firestore {
         allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
      match /ecoles/{schoolId}/maintenance/{tacheId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+
+    // --- Extracurricular Rules ---
+    match /ecoles/{schoolId}/activites/{activiteId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+    match /ecoles/{schoolId}/inscriptions_activites/{inscriptionId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+    match /ecoles/{schoolId}/competitions/{competitionId} {
+        allow read, list: if belongsToSchool(schoolId);
+        allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+    match /ecoles/{schoolId}/participations_competitions/{participationId} {
         allow read, list: if belongsToSchool(schoolId);
         allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }

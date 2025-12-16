@@ -26,6 +26,7 @@ import {
     Bus,
     Bed,
     Building,
+    HeartPulse,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
@@ -46,6 +47,7 @@ const navLinks = [
     links: [
       { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' as PermissionKey },
       { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, permission: 'viewUsers' as PermissionKey },
+      { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageContent' as PermissionKey },
       { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageContent' as PermissionKey },
       { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageContent' as PermissionKey },
       { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageContent' as PermissionKey },
