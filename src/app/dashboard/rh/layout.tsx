@@ -19,8 +19,9 @@ export default function RHLayout({
 
     const isLoading = subscriptionLoading || userLoading;
 
-    // Allow the hardcoded super admin email OR any user with the `admin` custom claim.
-    const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
+    // Allow platform admins OR users on Pro/Premium plan.
+    const isAdmin = user?.profile?.isAdmin === true;
+    const isProOrPremium = subscription?.plan === 'Pro' || subscription?.plan === 'Premium';
 
     if (isLoading) {
         return (
@@ -40,7 +41,7 @@ export default function RHLayout({
     }
     
     // If not admin and not on Pro/Premium plan, show the upgrade message
-    if (!isAdmin && subscription?.plan !== 'Pro' && subscription?.plan !== 'Premium') {
+    if (!isAdmin && !isProOrPremium) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">

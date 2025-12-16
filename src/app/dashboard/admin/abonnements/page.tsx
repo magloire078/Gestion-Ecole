@@ -53,7 +53,7 @@ export default function AdminSubscriptionsPage() {
 
     const schools: School[] = schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [];
 
-    const isAdmin = user?.customClaims?.admin === true;
+    const isAdmin = user?.profile?.isAdmin === true;
 
     useEffect(() => {
         if (!userLoading && !isAdmin) {
