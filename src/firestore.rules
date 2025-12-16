@@ -80,7 +80,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/eleves/{studentId} {
-      allow read, list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
+      allow read, list: if belongsToSchool(schoolId); // Permet à tous les membres de l'école de voir les élèves
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
 
