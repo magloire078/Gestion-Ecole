@@ -2,7 +2,7 @@
 'use client';
 
 import React from 'react';
-import type { PayslipDetails } from '@/app/bulletin-de-paie';
+import type { PayslipDetails } from '@/lib/bulletin-de-paie';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import Image from 'next/image';
