@@ -3,7 +3,8 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { GanttChartSquare, Wrench, Building, CalendarCheck } from 'lucide-react';
-import { useFirestore, useSchoolData } from '@/firebase';
+import { useFirestore } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, getCountFromServer, query, where } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
