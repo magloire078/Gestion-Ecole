@@ -33,12 +33,11 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MobileNav() {
   const { user } = useUser();
-  const isDirector = user?.profile?.role === 'directeur';
-  const isAdmin = user?.profile?.isAdmin === true || isDirector;
+  const isAdmin = user?.profile?.isAdmin === true;
   const userPermissions = user?.profile?.permissions || {};
 
   const hasPermission = (permission?: PermissionKey) => {
-    if (isAdmin || isDirector) return true;
+    if (isAdmin) return true;
     if (!permission) return true; 
     return !!userPermissions[permission];
   };

@@ -55,13 +55,12 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
 
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
-  const isDirector = user?.profile?.role === 'directeur';
-  const isAdmin = user?.profile?.isAdmin === true || isDirector;
+  const isAdmin = user?.profile?.isAdmin === true;
   const userPermissions = user?.profile?.permissions || {};
   const pathname = usePathname();
 
   const hasPermission = (permission?: PermissionKey) => {
-    if (isAdmin || isDirector) return true; // Super admin and directors have all permissions
+    if (isAdmin) return true;
     if (!permission) return true; // Link is public within the dashboard
     return !!userPermissions[permission];
   };
