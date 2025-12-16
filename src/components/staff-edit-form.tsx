@@ -2,34 +2,28 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { useToast } from "@/hooks/use-toast";
-import { useFirestore, useAuth } from "@/firebase";
-import { doc, setDoc, getDoc, writeBatch, collection } from "firebase/firestore";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { isValid, parseISO, format } from "date-fns";
-import type { staff as Staff, class_type as Class, admin_role as AdminRole } from '@/lib/data-types';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { DialogFooter } from '@/components/ui/dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { allSubjects } from '@/lib/data';
-import { DialogFooter } from "./ui/dialog";
-import { ImageUploader } from "./image-uploader";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
+import { useFirestore, useAuth } from '@/firebase';
+import { doc, setDoc, getDoc, writeBatch, collection, addDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import type { staff as Staff, class_type as Class, admin_role as AdminRole } from '@/lib/data-types';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { format, parseISO, isValid } from 'date-fns';
+import { ImageUploader } from './image-uploader';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Upload } from 'lucide-react';
 
 const staffSchema = z.object({
@@ -86,7 +80,6 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     const [todayDateString, setTodayDateString] = useState('');
     const [photoUrl, setPhotoUrl] = useState<string | null>(editingStaff?.photoURL || null);
 
-
     useEffect(() => {
         setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
     }, []);
@@ -97,14 +90,6 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
           firstName: '', lastName: '', role: '', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: '', subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
         },
     });
-
-    useEffect(() => {
-        if (todayDateString && !form.getValues('hireDate')) {
-          form.reset({ ...form.getValues(), hireDate: todayDateString });
-        }
-    }, [todayDateString, form]);
-
-    const watchedRole = form.watch('role');
 
     useEffect(() => {
         async function loadPrivateData() {
@@ -137,6 +122,8 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         loadPrivateData();
     }, [editingStaff, schoolId, firestore, form, todayDateString]);
     
+    const watchedRole = form.watch('role');
+
     const handleSubmit = async (values: StaffFormValues) => {
         if (!schoolId) {
           toast({ variant: 'destructive', title: 'Erreur', description: "ID de l'école non trouvé." });
@@ -294,3 +281,5 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         </Form>
     );
 }
+
+    

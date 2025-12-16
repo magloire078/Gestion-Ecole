@@ -63,9 +63,8 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const displayName = user?.authUser?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  // DEV ONLY: Grant admin rights to a specific email for development
   const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
-  const userRole = isAdmin ? 'Admin' : user?.profile?.role;
+  const userRole = isAdmin ? 'Super Administrateur' : user?.profile?.role;
 
   if (collapsed) {
     return (
@@ -204,3 +203,5 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     </DropdownMenu>
   );
 }
+
+    
