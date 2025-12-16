@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -24,7 +23,8 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { format, parseISO, isValid } from 'date-fns';
 import { ImageUploader } from './image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Upload } from 'lucide-react';
+import { Upload, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
 const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -33,7 +33,7 @@ const staffSchema = z.object({
   role: z.string().min(1, { message: "Le rôle est requis." }),
   email: z.string().email({ message: "L'adresse email est invalide." }),
   phone: z.string().optional(),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères.").optional(),
+  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères.").optional().or(z.literal('')),
   baseSalary: z.coerce.number().min(0, { message: 'Le salaire doit être positif.' }),
   hireDate: z.string().min(1, { message: "La date d'embauche est requise." }),
   // --- Teacher-specific fields ---
@@ -152,6 +152,8 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 const userCredential = await createUserWithEmailAndPassword(auth, values.email, password);
                 const newUid = userCredential.user.uid;
                 
+                await updateProfile(userCredential.user, { displayName: `${values.firstName} ${values.lastName}`, photoURL: photoUrl || undefined });
+
                 const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}`);
                 const userRootRef = doc(firestore, `utilisateurs/${newUid}`);
 
@@ -186,7 +188,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                         <TabsTrigger value="banking">Bancaire</TabsTrigger>
                     </TabsList>
                     <div className="py-6 max-h-[60vh] overflow-y-auto px-1">
-                        <TabsContent value="general" className="space-y-4">
+                        <TabsContent value="general" className="mt-0 space-y-4">
                             <div className="flex items-center gap-6">
                                 <FormField control={form.control} name="photoURL" render={({ field }) => (
                                     <FormItem>
@@ -231,7 +233,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                              <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="hireDate" render={({ field }) => (<FormItem><FormLabel>Date d'embauche</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         </TabsContent>
-                        <TabsContent value="payroll" className="space-y-4">
+                        <TabsContent value="payroll" className="mt-0 space-y-4">
                             <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             <Accordion type="single" collapsible className="w-full">
                               <AccordionItem value="indemnities">
@@ -250,7 +252,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                               </AccordionItem>
                             </Accordion>
                         </TabsContent>
-                         <TabsContent value="personal" className="space-y-4">
+                         <TabsContent value="personal" className="mt-0 space-y-4">
                              <div className="grid grid-cols-2 gap-4">
                                 <FormField control={form.control} name="situationMatrimoniale" render={({ field }) => (<FormItem><FormLabel>Situation Matrimoniale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="Célibataire">Célibataire</SelectItem><SelectItem value="Marié(e)">Marié(e)</SelectItem><SelectItem value="Divorcé(e)">Divorcé(e)</SelectItem><SelectItem value="Veuf(ve)">Veuf(ve)</SelectItem></SelectContent></Select></FormItem>)} />
                                 <FormField control={form.control} name="enfants" render={({ field }) => (<FormItem><FormLabel>Enfants à charge</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
@@ -260,7 +262,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                             <FormField control={form.control} name="cnpsEmploye" render={({ field }) => (<FormItem><FormLabel>N° CNPS Employé</FormLabel><FormControl><Input placeholder="Numéro CNPS" {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="CNPS" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Soumis aux cotisations CNPS</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
                         </TabsContent>
-                        <TabsContent value="banking" className="space-y-4">
+                        <TabsContent value="banking" className="mt-0 space-y-4">
                              <FormField control={form.control} name="banque" render={({ field }) => (<FormItem><FormLabel>Banque</FormLabel><FormControl><Input placeholder="Nom de la banque" {...field} /></FormControl></FormItem>)} />
                              <div className="grid grid-cols-3 gap-4">
                                 <FormField control={form.control} name="CB" render={({ field }) => (<FormItem><FormLabel>Code Banque</FormLabel><FormControl><Input placeholder="CB" {...field} /></FormControl></FormItem>)} />
@@ -274,7 +276,12 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 <DialogFooter className="pt-4 border-t">
                     <Button type="button" variant="outline" onClick={onFormSubmit}>Annuler</Button>
                     <Button type="submit" form="staff-form" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                        {form.formState.isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Enregistrement...
+                          </>
+                        ) : 'Enregistrer'}
                     </Button>
                 </DialogFooter>
             </form>
