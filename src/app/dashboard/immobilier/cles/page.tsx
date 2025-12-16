@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -21,13 +21,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MoreHorizontal, PlusCircle, Trash2, Edit, KeyRound } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, addDoc, setDoc, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, addDoc, setDoc, deleteDoc, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -46,6 +47,12 @@ const keyTrousseauSchema = z.object({
 
 type KeyTrousseauFormValues = z.infer<typeof keyTrousseauSchema>;
 
+interface LogWithDetails extends KeyLog {
+  id: string;
+  trousseauName?: string;
+  staffName?: string;
+}
+
 export default function ClesPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
@@ -61,7 +68,6 @@ export default function ClesPage() {
   const [selectedTrousseauForLog, setSelectedTrousseauForLog] = useState<string>('');
   const [selectedStaffForLog, setSelectedStaffForLog] = useState<string>('');
 
-
   const trousseauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_trousseaux`)) : null, [firestore, schoolId]);
   const { data: trousseauxData, loading: trousseauxLoading } = useCollection(trousseauxQuery);
   const trousseaux = useMemo(() => trousseauxData?.map(d => ({ id: d.id, ...d.data() } as KeyTrousseau & { id: string })) || [], [trousseauxData]);
@@ -69,6 +75,22 @@ export default function ClesPage() {
   const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   const staffMembers = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as staff & { id: string })) || [], [staffData]);
+  
+  const logsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_log`), orderBy('timestamp', 'desc')) : null, [firestore, schoolId]);
+  const { data: logsData, loading: logsLoading } = useCollection(logsQuery);
+  
+  const trousseauxMap = useMemo(() => new Map(trousseaux.map(t => [t.id, t.name])), [trousseaux]);
+  const staffMap = useMemo(() => new Map(staffMembers.map(s => [s.id, s.displayName])), [staffMembers]);
+
+  const logs: LogWithDetails[] = useMemo(() => logsData?.map(doc => {
+      const data = doc.data() as KeyLog;
+      return {
+          id: doc.id,
+          ...data,
+          trousseauName: trousseauxMap.get(data.trousseauId) || 'Inconnu',
+          staffName: staffMap.get(data.staffId) || 'Inconnu'
+      };
+  }) || [], [logsData, trousseauxMap, staffMap]);
 
 
   const form = useForm<KeyTrousseauFormValues>({
@@ -88,9 +110,13 @@ export default function ClesPage() {
     if (!schoolId) return;
 
     const keysArray = values.keys ? values.keys.map(k => k.value).filter(Boolean) : [];
-    const dataToSave = { ...values, schoolId, keys: keysArray };
+    const dataToSave: Partial<KeyTrousseau> = { 
+        ...values, 
+        schoolId, 
+        keys: keysArray 
+    };
     if (!editingTrousseau) {
-      (dataToSave as any).status = 'disponible';
+      dataToSave.status = 'disponible';
     }
 
     const promise = editingTrousseau
@@ -129,46 +155,72 @@ export default function ClesPage() {
         toast({ title: "Mouvement enregistré"});
         setIsLogFormOpen(false);
     } catch (e) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: '', operation: 'write', requestResourceData: logData }));
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: '', operation: 'create', requestResourceData: logData }));
     }
   };
 
-  const isLoading = schoolLoading || trousseauxLoading;
+  const isLoading = schoolLoading || trousseauxLoading || logsLoading || staffLoading;
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <div>
-              <CardTitle>Gestion des Trousseaux de Clés</CardTitle>
-              <CardDescription>Suivez les trousseaux de clés de l'établissement.</CardDescription>
+      <div className="space-y-6">
+        <Card>
+            <CardHeader>
+            <div className="flex justify-between items-center">
+                <div>
+                <CardTitle>Gestion des Trousseaux de Clés</CardTitle>
+                <CardDescription>Suivez les trousseaux de clés de l'établissement.</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                    <Button onClick={() => setIsLogFormOpen(true)}>Enregistrer un mouvement</Button>
+                    <Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Ajouter un Trousseau</Button>
+                </div>
             </div>
-            <div className="flex gap-2">
-                <Button onClick={() => setIsLogFormOpen(true)}>Enregistrer un mouvement</Button>
-                <Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Ajouter</Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader><TableRow><TableHead>Nom du Trousseau</TableHead><TableHead>Description</TableHead><TableHead>Statut</TableHead><TableHead>Dernier Détenteur</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
-              ) : trousseaux.map(t => (
-                  <TableRow key={t.id}>
-                    <TableCell className="font-medium">{t.name}</TableCell>
-                    <TableCell>{t.description}</TableCell>
-                    <TableCell><Badge variant={t.status === 'disponible' ? 'secondary' : 'outline'}>{t.status}</Badge></TableCell>
-                    <TableCell>{t.lastHolderId ? (staffMembers.find(s => s.id === t.lastHolderId)?.displayName || 'N/A') : 'N/A'}</TableCell>
-                    <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => handleOpenForm(t)}><Edit className="h-4 w-4"/></Button></TableCell>
-                  </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </CardHeader>
+            <CardContent>
+            <Table>
+                <TableHeader><TableRow><TableHead>Nom du Trousseau</TableHead><TableHead>Description</TableHead><TableHead>Statut</TableHead><TableHead>Dernier Détenteur</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                <TableBody>
+                {isLoading ? (
+                    [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
+                ) : trousseaux.map(t => (
+                    <TableRow key={t.id}>
+                        <TableCell className="font-medium">{t.name}</TableCell>
+                        <TableCell>{t.description}</TableCell>
+                        <TableCell><Badge variant={t.status === 'disponible' ? 'secondary' : 'outline'}>{t.status}</Badge></TableCell>
+                        <TableCell>{t.lastHolderId ? (staffMembers.find(s => s.id === t.lastHolderId)?.displayName || 'N/A') : 'N/A'}</TableCell>
+                        <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => handleOpenForm(t)}><Edit className="h-4 w-4"/></Button></TableCell>
+                    </TableRow>
+                ))}
+                </TableBody>
+            </Table>
+            </CardContent>
+        </Card>
+        
+        <Card>
+            <CardHeader>
+                <CardTitle>Journal des Mouvements</CardTitle>
+                <CardDescription>Historique des emprunts et retours de clés.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Table>
+                    <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Mouvement</TableHead><TableHead>Trousseau</TableHead><TableHead>Personnel</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                         {isLoading ? (
+                            [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
+                         ) : logs.map(log => (
+                            <TableRow key={log.id}>
+                                <TableCell>{format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm', { locale: fr })}</TableCell>
+                                <TableCell><Badge variant={log.type === 'emprunt' ? 'outline' : 'secondary'}>{log.type}</Badge></TableCell>
+                                <TableCell>{log.trousseauName}</TableCell>
+                                <TableCell>{log.staffName}</TableCell>
+                            </TableRow>
+                         ))}
+                    </TableBody>
+                 </Table>
+            </CardContent>
+        </Card>
+      </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
