@@ -10,24 +10,26 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return request.auth.token.admin == true;
+      // Uniquement pour le super admin de la plateforme, si nécessaire.
+      return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
     }
 
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    // Utilise les custom claims - plus performant
+    function getSchoolId() {
+        return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId;
+    }
+
     function belongsToSchool(schoolId) {
-        return isAuth() && request.auth.token.schoolId == schoolId;
+        return isAuth() && getSchoolId() == schoolId;
     }
     
-    // Vérifie si l'utilisateur a un profil dans l'école
     function hasStaffProfile(schoolId) {
       return exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
     }
     
-    // Récupère le profil du personnel pour les vérifications
     function getStaffProfile(schoolId) {
       return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
@@ -47,28 +49,17 @@ service cloud.firestore {
     // --- Global Collections ---
     
     match /utilisateurs/{userId} {
-      // Lecture: seulement son propre profil ou admin
       allow get: if isOwner(userId) || isAdmin();
-      
-      // Liste: seulement admin (évite l'énumération)
       allow list: if isAdmin();
-      
-      // Création: uniquement si le document n'existe pas encore
-      allow create: if isAuth() && 
-        request.auth.uid == userId && 
-        !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-        
-      // Modification: seulement son propre profil
+      allow create: if isAuth() && request.auth.uid == userId && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
       allow update: if isOwner(userId);
-      
-      // Suppression: désactivée (gérée par admin)
       allow delete: if false;
     }
     
     // --- School Collections ---
 
     match /ecoles/{schoolId} {
-       allow get: if isAuth(); // Permet à tout utilisateur authentifié de lire les données de base de l'école.
+       allow get: if isAuth(); 
        allow list: if isAuth(); 
        allow create: if isAuth();
                          
@@ -81,15 +72,10 @@ service cloud.firestore {
     
     // --- School Subcollections ---
     
-    // Règles pour les sous-collections de l'école
-    match /ecoles/{schoolId}/{collection}/{docId} {
-      allow read, list, write, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent'); // Règle par défaut
-    }
-    
     match /ecoles/{schoolId}/personnel/{staffId} {
       allow read, list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
-      allow create, update: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
-      allow update: if belongsToSchool(schoolId) && isOwner(staffId); // Permet à l'utilisateur de modifier son propre profil
+      allow create: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
+      allow update: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || isOwner(staffId));
       allow delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
@@ -98,7 +84,7 @@ service cloud.firestore {
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
 
-    match /ecoles/{schoolId}/eleves/{studentId}/{collection}/{docId} {
+    match /ecoles/{schoolId}/eleves/{studentId}/{document=**} {
       allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
@@ -110,13 +96,14 @@ service cloud.firestore {
         allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
     }
     
-    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId} {
+    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId=**} {
         allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageMedical');
     }
 
     match /ecoles/{schoolId}/admin_roles/{roleId} {
-      allow read, list: if belongsToSchool(schoolId);
-      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageSettings');
+      allow read, list: if belongsToSchool(schoolId) || isAdmin();
+      // Seul le directeur (qui a manageSettings) ou un admin peut gérer les rôles.
+      allow create, update, delete: if (belongsToSchool(schoolId) && hasPermission(schoolId, 'manageSettings')) || isAdmin();
     }
     
     match /ecoles/{schoolId}/classes/{classId} {
@@ -163,7 +150,7 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
        allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageLibrary');
+       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageLibrary');
     }
     
     match /ecoles/{schoolId}/messagerie/{messageId} {
