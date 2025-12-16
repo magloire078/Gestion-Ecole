@@ -21,13 +21,13 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
     }
     
-    function getStaffProfile(userId, schoolId) {
-      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId)).data;
+    function getStaffProfile(schoolId) {
+      // Allows reading the staff profile of the currently authenticated user.
+      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
     
     function hasPermission(schoolId, permission) {
-      // Use request.auth.uid to check the current user's profile
-      let staffProfile = getStaffProfile(request.auth.uid, schoolId);
+      let staffProfile = getStaffProfile(schoolId);
       // Director has all permissions implicitly
       if (staffProfile.role == 'directeur') {
           return true;
