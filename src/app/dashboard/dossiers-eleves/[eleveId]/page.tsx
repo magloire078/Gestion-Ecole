@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
@@ -30,6 +30,21 @@ import { updateStudentPhoto } from '@/services/student-services';
 import { SafeImage } from '@/components/ui/safe-image';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+
+const paymentSchema = z.object({
+  paymentDate: z.string().min(1, "La date est requise."),
+  paymentDescription: z.string().min(1, "La description est requise."),
+  paymentAmount: z.coerce.number().positive("Le montant doit être un nombre positif."),
+  payerFirstName: z.string().min(1, "Le prénom du payeur est requis."),
+  payerLastName: z.string().min(1, "Le nom de famille du payeur est requis."),
+  payerContact: z.string().optional(),
+  paymentMethod: z.string().min(1, "Le mode de paiement est requis."),
+});
+type PaymentFormValues = z.infer<typeof paymentSchema>;
 
 // ====================================================================================
 // Main Page Component
@@ -70,7 +85,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   const router = useRouter();
   
   const firestore = useFirestore();
-  const { schoolName } = useSchoolData();
+  const { schoolName, schoolData } = useSchoolData();
   const { user } = useUser();
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
@@ -79,6 +94,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   
   // --- Data Fetching ---
   const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId]);
@@ -246,7 +262,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                     </TabsList>
                     
                     {/* Grades Tab */}
-                    <TabsContent value="grades" className="space-y-4">
+                    <TabsContent value="grades" className="space-y-4 mt-6">
                          <Card>
                             <CardHeader>
                                 <div className="flex justify-between items-center">
@@ -300,7 +316,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                     </TabsContent>
                     
                     {/* Payments Tab */}
-                     <TabsContent value="payments" className="space-y-4">
+                     <TabsContent value="payments" className="space-y-4 mt-6">
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Card>
                                 <CardHeader><CardTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /><span>Scolarité</span></CardTitle></CardHeader>
@@ -339,6 +355,9 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                                         </Card>
                                     )}
                                 </CardContent>
+                                <CardFooter>
+                                    <Button className="w-full" onClick={() => setIsPaymentDialogOpen(true)}>Enregistrer un paiement</Button>
+                                </CardFooter>
                             </Card>
                              <Card>
                                 <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-amber-500" /><span>Appréciations</span></CardTitle></CardHeader>
@@ -388,7 +407,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                     </TabsContent>
                     
                     {/* Info Tab */}
-                    <TabsContent value="info">
+                    <TabsContent value="info" className="mt-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle>Informations Administratives</CardTitle>
@@ -453,8 +472,138 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
           {receiptToView && <TuitionReceipt receiptData={receiptToView} />}
         </DialogContent>
       </Dialog>
+
+      <PaymentDialog
+        isOpen={isPaymentDialogOpen}
+        onClose={() => setIsPaymentDialogOpen(false)}
+        student={student}
+        schoolData={schoolData}
+      />
     </>
   );
+}
+
+function PaymentDialog({ isOpen, onClose, student, schoolData }: { isOpen: boolean, onClose: () => void, student: Student, schoolData: any }) {
+    const { toast } = useToast();
+    const firestore = useFirestore();
+    const [isSaving, setIsSaving] = useState(false);
+    const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
+    const [showReceipt, setShowReceipt] = useState(false);
+    
+    const [todayDateString, setTodayDateString] = useState('');
+    useEffect(() => { setTodayDateString(format(new Date(), 'yyyy-MM-dd')); }, []);
+
+    const paymentForm = useForm<PaymentFormValues>({
+        resolver: zodResolver(paymentSchema),
+    });
+
+    useEffect(() => {
+        if (student && isOpen) {
+            paymentForm.reset({
+                paymentAmount: 0,
+                paymentDescription: `Scolarité - ${student.firstName} ${student.lastName}`,
+                paymentDate: todayDateString,
+                payerFirstName: student.parent1FirstName || '',
+                payerLastName: student.parent1LastName || '',
+                payerContact: student.parent1Contact || '',
+                paymentMethod: 'Espèces',
+            });
+        }
+    }, [student, isOpen, paymentForm, todayDateString]);
+    
+    const handleSaveChanges = async (values: PaymentFormValues) => {
+        if (!student || !schoolData?.id || !student.id) return;
+        
+        setIsSaving(true);
+        
+        const amountPaid = values.paymentAmount;
+        const newAmountDue = Math.max(0, (student.amountDue || 0) - amountPaid);
+        const newStatus: "Soldé" | "Partiel" = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
+        
+        const batch = writeBatch(firestore);
+
+        const studentRef = doc(firestore, `ecoles/${schoolData.id}/eleves/${student.id}`);
+        batch.update(studentRef, { amountDue: newAmountDue, tuitionStatus: newStatus });
+
+        const accountingColRef = collection(firestore, `ecoles/${schoolData.id}/comptabilite`);
+        const newTransactionRef = doc(accountingColRef);
+        batch.set(newTransactionRef, {
+            schoolId: schoolData.id, date: values.paymentDate,
+            description: values.paymentDescription || `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
+            category: 'Scolarité', type: 'Revenu', amount: amountPaid,
+        });
+        
+        const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolData.id}/eleves/${student.id}/paiements`));
+        batch.set(paymentHistoryRef, {
+            date: values.paymentDate, amount: amountPaid, description: values.paymentDescription,
+            accountingTransactionId: newTransactionRef.id, payerFirstName: values.payerFirstName,
+            payerLastName: values.payerLastName, payerContact: values.payerContact, method: values.paymentMethod,
+        });
+        
+        batch.commit().then(() => {
+            toast({ title: "Paiement enregistré" });
+            setReceiptData({
+                schoolName: schoolData?.name || "Votre École", studentName: `${student.firstName} ${student.lastName}`,
+                studentMatricule: student.matricule || 'N/A', className: student.class || 'N/A',
+                date: new Date(values.paymentDate), description: values.paymentDescription,
+                amountPaid: amountPaid, amountDue: newAmountDue, payerName: `${values.payerFirstName} ${values.payerLastName}`,
+                payerContact: values.payerContact, paymentMethod: values.paymentMethod,
+            });
+            setShowReceipt(true); // Show receipt view
+        }).catch((serverError) => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `[BATCH]`, operation: 'write'}));
+        }).finally(() => {
+            setIsSaving(false);
+        });
+    };
+
+    const handleClose = () => {
+        setShowReceipt(false);
+        setReceiptData(null);
+        onClose();
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+            <DialogContent className="sm:max-w-lg">
+                {!showReceipt ? (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Enregistrer un paiement pour {student.firstName}</DialogTitle>
+                            <DialogDescription>Le solde actuel est de <strong>{formatCurrency(student?.amountDue || 0)}</strong>.</DialogDescription>
+                        </DialogHeader>
+                        <Form {...paymentForm}>
+                            <form id="payment-form" onSubmit={paymentForm.handleSubmit(handleSaveChanges)} className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+                                <FormField control={paymentForm.control} name="paymentDate" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={paymentForm.control} name="paymentDescription" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={paymentForm.control} name="paymentAmount" render={({ field }) => (<FormItem><FormLabel>Montant Payé</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={paymentForm.control} name="paymentMethod" render={({ field }) => (<FormItem><FormLabel>Mode de paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Espèces">Espèces</SelectItem><SelectItem value="Chèque">Chèque</SelectItem><SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem><SelectItem value="Paiement Mobile">Paiement Mobile</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                                <FormField control={paymentForm.control} name="payerFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={paymentForm.control} name="payerLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={paymentForm.control} name="payerContact" render={({ field }) => (<FormItem><FormLabel>Contact Payeur</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                            </form>
+                        </Form>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={onClose}>Annuler</Button>
+                            <Button type="submit" form="payment-form" disabled={isSaving}>
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                                Enregistrer
+                            </Button>
+                        </DialogFooter>
+                    </>
+                ) : (
+                    <>
+                        <DialogHeader>
+                            <DialogTitle>Reçu de Paiement</DialogTitle>
+                            <DialogDescription>Aperçu du reçu. Vous pouvez l'imprimer.</DialogDescription>
+                        </DialogHeader>
+                        {receiptData && <TuitionReceipt receiptData={receiptData} />}
+                        <DialogFooter><Button onClick={handleClose}>Fermer</Button></DialogFooter>
+                    </>
+                )}
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 // ====================================================================================
