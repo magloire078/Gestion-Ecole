@@ -372,7 +372,7 @@ export default function AccountingPage() {
                         <TableCell>{isMounted ? format(new Date(transaction.date), 'd MMM yyyy', { locale: fr }) : '...'}</TableCell>
                         <TableCell className="font-medium">{transaction.description}</TableCell>
                         <TableCell>{transaction.category}</TableCell>
-                        <TableCell className={`text-right font-mono ${transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive'}`}>
+                        <TableCell className={cn('text-right font-mono', transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive')}>
                             {transaction.type === 'Revenu' ? '+' : '-'} {formatCurrency(transaction.amount)}
                         </TableCell>
                         {canManageBilling && (
