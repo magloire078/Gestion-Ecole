@@ -46,7 +46,7 @@ export const NAV_LINKS = [
         { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, permission: 'viewUsers' as PermissionKey },
         { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageContent' as PermissionKey },
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageContent' as PermissionKey },
-        { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageContent' as PermissionKey },
+        { href: '/dashboard/transport/dashboard', label: 'Transport', icon: Bus, permission: 'manageContent' as PermissionKey },
         { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageContent' as PermissionKey },
         { href: '/dashboard/immobilier', label: 'Immobilier', icon: Building, permission: 'manageContent' as PermissionKey },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageContent' as PermissionKey },

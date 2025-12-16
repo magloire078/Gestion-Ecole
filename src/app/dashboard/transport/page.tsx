@@ -2,5 +2,5 @@
 import { redirect } from 'next/navigation';
 
 export default function TransportPage() {
-    redirect('/dashboard/transport/lignes');
+    redirect('/dashboard/transport/dashboard');
 }
