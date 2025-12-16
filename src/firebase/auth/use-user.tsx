@@ -47,10 +47,12 @@ export function useUser() {
                 
                 if (profileSnap.exists()) {
                     const profileData = profileSnap.data() as AppUser;
-                    userProfile = { ...profileData };
-
                     const isDirector = profileData.role === 'directeur';
-                    userProfile.isAdmin = isAdminClaim || isDirector;
+                    
+                    userProfile = { 
+                        ...profileData,
+                        isAdmin: isAdminClaim || isDirector, // Grant admin if director
+                    };
 
                     if (isDirector) {
                         userProfile.permissions = {

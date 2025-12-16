@@ -64,7 +64,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
   const isAdmin = user?.profile?.isAdmin === true;
-  const userRole = isAdmin ? 'Super Administrateur' : user?.profile?.role;
+  const userRole = isAdmin && user?.profile?.role !== 'directeur' ? 'Super Administrateur' : user?.profile?.role;
 
   if (collapsed) {
     return (
