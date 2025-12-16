@@ -1,20 +1,20 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useAuth } from '@/firebase';
 import { 
   School, 
   User as UserIcon,
-  Upload
+  Upload,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { SchoolCreationService } from '@/services/school-creation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -42,7 +42,7 @@ export default function CreateSchoolPage() {
   const { user, loading: userLoading } = useUser();
   const { toast } = useToast();
 
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   const form = useForm<CreateSchoolFormValues>({
@@ -50,22 +50,26 @@ export default function CreateSchoolPage() {
     defaultValues: {
       schoolName: '',
       address: '',
-      directorFirstName: user?.displayName?.split(' ')[0] || '',
-      directorLastName: user?.displayName?.split(' ').slice(1).join(' ') || '',
+      directorFirstName: '',
+      directorLastName: '',
       logoUrl: '',
     }
   });
   
   // Sync user name to form once loaded
-  useState(() => {
-    if (user && !userLoading) {
+  useEffect(() => {
+    if (user && !userLoading && user.displayName) {
+      const nameParts = user.displayName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      
       form.reset({
-        directorFirstName: user.displayName?.split(' ')[0] || '',
-        directorLastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+        ...form.getValues(),
+        directorFirstName: firstName,
+        directorLastName: lastName,
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, userLoading, form.reset]);
+  }, [user, userLoading, form]);
 
 
   const handleSubmit = async (values: CreateSchoolFormValues) => {
@@ -73,7 +77,7 @@ export default function CreateSchoolPage() {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide.' });
         return;
     }
-    setLoading(true);
+    setIsSubmitting(true);
 
     const schoolCreationService = new SchoolCreationService(firestore);
     try {
@@ -103,7 +107,7 @@ export default function CreateSchoolPage() {
       console.error(error);
       toast({ variant: 'destructive', title: 'Erreur', description: `La création de l'école a échoué. ${error.message}` });
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
   
@@ -115,8 +119,8 @@ export default function CreateSchoolPage() {
   const storagePath = user?.uid ? `temp-logos/${user.uid}/` : 'temp-logos/unknown/';
 
   return (
-    <div className="min-h-screen bg-muted/40 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-muted/40 p-4 md:p-8 flex items-center justify-center">
+      <div className="w-full max-w-3xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
             Créer votre établissement
@@ -134,20 +138,28 @@ export default function CreateSchoolPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 
-                <div className="flex items-center gap-6">
-                    <ImageUploader 
-                        onUploadComplete={handleLogoUploadComplete}
-                        storagePath={storagePath}
-                    >
-                        <Avatar className={cn("h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity", logoUrl && "border-2 border-primary")}>
-                            <AvatarImage src={logoUrl || undefined} alt="Logo de l'école" />
-                            <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
-                                <Upload className="h-6 w-6 text-muted-foreground" />
-                                <span className="text-xs text-muted-foreground">Logo</span>
-                            </AvatarFallback>
-                        </Avatar>
-                    </ImageUploader>
-                    <div className="flex-1 space-y-2">
+                <div className="flex flex-col sm:flex-row items-center gap-6">
+                    <FormField control={form.control} name="logoUrl" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Logo de l'école</FormLabel>
+                         <FormControl>
+                            <ImageUploader 
+                                onUploadComplete={handleLogoUploadComplete}
+                                storagePath={storagePath}
+                                currentImageUrl={field.value}
+                            >
+                                <Avatar className={cn("h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity", logoUrl && "border-2 border-primary")}>
+                                    <AvatarImage src={logoUrl || undefined} alt="Logo de l'école" />
+                                    <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
+                                        <Upload className="h-6 w-6 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground">Logo</span>
+                                    </AvatarFallback>
+                                </Avatar>
+                            </ImageUploader>
+                          </FormControl>
+                      </FormItem>
+                    )} />
+                    <div className="flex-1 w-full space-y-4">
                         <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de l'établissement *</FormLabel><FormControl><Input placeholder="Ex: École Les Lauréats" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse</FormLabel><FormControl><Input placeholder="Ex: Abidjan, Cocody Angré" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
@@ -163,8 +175,9 @@ export default function CreateSchoolPage() {
 
               </CardContent>
               <CardFooter className="flex justify-end">
-                <Button type="submit" disabled={loading || userLoading}>
-                  {loading ? 'Création en cours...' : 'Créer mon école'}
+                <Button type="submit" disabled={isSubmitting || userLoading}>
+                  {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  {isSubmitting ? 'Création en cours...' : 'Créer mon école'}
                 </Button>
               </CardFooter>
             </form>
