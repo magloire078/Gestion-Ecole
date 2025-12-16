@@ -516,6 +516,24 @@ export type tache_maintenance = {
     location?: string;
 };
 
+export type key_trousseau = {
+    name: string;
+    status: "disponible" | "emprunté";
+    description?: string;
+    keys?: string[];
+    lastHolderId?: string;
+    id?: string;
+};
+
+export type key_log = {
+    trousseauId: string;
+    staffId: string;
+    type: "emprunt" | "retour";
+    timestamp: string;
+    notes?: string;
+    id?: string;
+};
+
 export type dossierMedical = {
     studentId: string;
     groupeSanguin?: string;

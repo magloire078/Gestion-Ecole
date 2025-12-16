@@ -209,6 +209,16 @@ service cloud.firestore {
         allow read, list: if belongsToSchool(schoolId);
         allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
     }
+    
+    match /ecoles/{schoolId}/cles_trousseaux/{trousseauId} {
+      allow read, list: if belongsToSchool(schoolId);
+      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
+    
+    match /ecoles/{schoolId}/cles_log/{logId} {
+       allow read, list: if belongsToSchool(schoolId);
+       allow create: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageContent');
+    }
 
     // --- Extracurricular Rules ---
     match /ecoles/{schoolId}/activites/{activiteId} {
