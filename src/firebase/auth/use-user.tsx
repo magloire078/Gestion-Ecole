@@ -34,7 +34,7 @@ export function useUser() {
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
-            const tokenResult = await authUser.getIdTokenResult(true); // Force refresh
+            const tokenResult = await authUser.getIdTokenResult(); // No longer forcing refresh
             const schoolId = tokenResult.claims.schoolId;
 
             let userProfile: UserProfile | undefined = undefined;
@@ -85,5 +85,3 @@ export function useUser() {
 
   return {user, loading};
 }
-
-    
