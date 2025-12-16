@@ -35,6 +35,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import { Switch } from '@/components/ui/switch';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const cycleSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
@@ -61,7 +62,6 @@ const ivorianNiveaux = SCHOOL_TEMPLATES.IVORIAN_SYSTEM.niveaux;
 
 export default function StructurePage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [activeCycleFilter, setActiveCycleFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   
@@ -91,7 +91,7 @@ export default function StructurePage() {
 
   // Transform data
   const cycles: (Cycle & {id: string})[] = useMemo(() => 
-    cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle & {id: string})) || [], 
+    cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle & {id: string})).sort((a, b) => a.order - b.order) || [], 
     [cyclesData]
   );
   
@@ -99,6 +99,21 @@ export default function StructurePage() {
     niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & {id: string})) || [], 
     [niveauxData]
   );
+
+  const niveauxByCycle = useMemo(() => {
+    const grouped: Record<string, (Niveau & {id: string})[]> = {};
+    for (const niveau of niveaux) {
+        if (!grouped[niveau.cycleId]) {
+            grouped[niveau.cycleId] = [];
+        }
+        grouped[niveau.cycleId].push(niveau);
+    }
+    // Sort niveaux within each cycle
+    for(const cycleId in grouped) {
+        grouped[cycleId].sort((a, b) => a.order - b.order);
+    }
+    return grouped;
+  }, [niveaux]);
 
   const cycleForm = useForm<CycleFormValues>({
     resolver: zodResolver(cycleSchema),
@@ -110,8 +125,6 @@ export default function StructurePage() {
     defaultValues: { name: '', code: '', order: 1, cycleId: '', capacity: 30 }
   });
 
-  const cycleMap = useMemo(() => new Map(cycles.map(c => [c.id, c])), [cycles]);
-  
   const watchedCycleName = cycleForm.watch('name');
   const watchedNiveauCycleId = niveauForm.watch('cycleId');
   const selectedCycleForNiveau = cycles.find(c => c.id === watchedNiveauCycleId);
@@ -137,28 +150,6 @@ export default function StructurePage() {
         niveauForm.setValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
     }
   }, [niveauForm.watch('name'), niveauxOptionsForSelectedCycle, niveauForm]);
-
-
-  const filteredNiveaux = useMemo(() => {
-    let filtered = niveaux;
-
-    if (searchQuery) {
-        filtered = filtered.filter(niveau => 
-          niveau.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          niveau.code.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }
-    return filtered.sort((a, b) => a.order - b.order);
-  }, [niveaux, searchQuery]);
-
-
-  const filteredCycles = useMemo(() => {
-    if (!searchQuery) return cycles.sort((a,b) => a.order - b.order);
-    return cycles.filter(cycle => 
-      cycle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (cycle.code && cycle.code.toLowerCase().includes(searchQuery.toLowerCase()))
-    ).sort((a,b) => a.order - b.order);
-  }, [cycles, searchQuery]);
 
 
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading || userLoading;
@@ -219,9 +210,10 @@ export default function StructurePage() {
     });
   };
 
-  const handleOpenNiveauForm = (niveau: Niveau & {id: string} | null) => {
+  const handleOpenNiveauForm = (niveau: Niveau & {id: string} | null, cycleId?: string) => {
       setEditingNiveau(niveau);
-      niveauForm.reset(niveau || { name: '', code: '', order: 1, cycleId: '', capacity: 30 });
+      const defaultCycle = cycleId || (niveau ? niveau.cycleId : '');
+      niveauForm.reset(niveau || { name: '', code: '', order: 1, cycleId: defaultCycle, capacity: 30 });
       setIsNiveauFormOpen(true);
   }
 
@@ -234,150 +226,89 @@ export default function StructurePage() {
           Organisez les cycles, niveaux et classes de votre établissement.
         </p>
       </div>
+        <div className="flex items-center justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => handleOpenCycleForm(null)}>Nouveau Cycle</Button>
+            <Button variant="outline" size="sm" onClick={() => handleOpenNiveauForm(null)}>Nouveau Niveau</Button>
+            <Button size="sm" asChild><Link href="/dashboard/pedagogie/structure/new">Nouvelle Classe</Link></Button>
+        </div>
 
-      <Tabs defaultValue="cycles" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="cycles">Cycles</TabsTrigger>
-          <TabsTrigger value="niveaux">Niveaux</TabsTrigger>
-          <TabsTrigger value="classes">Classes</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="cycles" className="mt-6 space-y-6">
-           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Gestion des Cycles</CardTitle>
-                  <CardDescription>
-                    Définissez les cycles d'enseignement de votre établissement.
-                  </CardDescription>
-                </div>
-                {canManageClasses && (
-                  <Button onClick={() => handleOpenCycleForm(null)} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau Cycle
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader><TableRow><TableHead>Nom du Cycle</TableHead><TableHead>Code</TableHead><TableHead>Ordre</TableHead><TableHead>Statut</TableHead><TableHead className="text-right w-24">Actions</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {isLoading ? [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
-                    : filteredCycles.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Aucun cycle trouvé</TableCell></TableRow>
-                    : filteredCycles.map((cycle) => (
-                          <TableRow key={cycle.id} className="group hover:bg-muted/50">
-                            <TableCell className="font-medium"><div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }} />{cycle.name}</div></TableCell>
-                            <TableCell><Badge variant="outline">{cycle.code}</Badge></TableCell>
-                            <TableCell>{cycle.order}</TableCell>
-                            <TableCell><Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell>
-                            <TableCell className="text-right">
-                              {canManageClasses && (
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4" /></Button>
-                                </div>
+      <Accordion type="multiple" defaultValue={cycles.map(c => c.id)} className="w-full space-y-4">
+        {cycles.map(cycle => (
+          <AccordionItem value={cycle.id} key={cycle.id} className="border-0">
+             <Card>
+                <AccordionTrigger className="p-4 hover:no-underline">
+                   <div className="flex justify-between items-center w-full">
+                       <div className="flex items-center gap-4">
+                           <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }} />
+                           <h3 className="text-lg font-semibold">{cycle.name}</h3>
+                           <Badge variant="outline">{cycle.code}</Badge>
+                           <Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge>
+                       </div>
+                       {canManageClasses && (
+                        <div className="flex items-center gap-2 pr-4">
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleOpenCycleForm(cycle) }}><Edit className="h-4 w-4" /></Button>
+                        </div>
+                       )}
+                   </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="p-4 pt-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow><TableHead>Niveau</TableHead><TableHead>Code</TableHead><TableHead>Capacité</TableHead><TableHead className="text-right">Actions</TableHead></TableRow>
+                        </TableHeader>
+                         <TableBody>
+                             {(niveauxByCycle[cycle.id] || []).map(niveau => (
+                                 <TableRow key={niveau.id} className="group">
+                                    <TableCell>{niveau.name}</TableCell>
+                                    <TableCell><Badge variant="outline">{niveau.code}</Badge></TableCell>
+                                    <TableCell>{niveau.capacity}</TableCell>
+                                    <TableCell className="text-right">
+                                         {canManageClasses && (
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Button variant="ghost" size="icon" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
+                                            </div>
+                                        )}
+                                    </TableCell>
+                                 </TableRow>
+                             ))}
+                              {(!niveauxByCycle[cycle.id] || niveauxByCycle[cycle.id].length === 0) && (
+                                <TableRow><TableCell colSpan={4} className="text-center py-4 text-muted-foreground">Aucun niveau dans ce cycle.</TableCell></TableRow>
                               )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="niveaux" className="mt-6 space-y-6">
-           <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
+                         </TableBody>
+                    </Table>
+                  </div>
+                </AccordionContent>
+             </Card>
+          </AccordionItem>
+        ))}
+      </Accordion>
+      
+      <Card>
+        <CardHeader>
+           <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>Gestion des Niveaux</CardTitle>
+                  <CardTitle>Toutes les Classes</CardTitle>
                   <CardDescription>
-                    Listes des niveaux d'enseignement, filtrables par cycle.
+                    Vue d'ensemble de toutes les classes de l'établissement.
                   </CardDescription>
                 </div>
-                {canManageClasses && (
-                  <Button onClick={() => handleOpenNiveauForm(null)} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau Niveau
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Rechercher un niveau..." 
-                    className="pl-10"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="border rounded-lg">
-                <Table>
-                  <TableHeader><TableRow><TableHead>Nom du Niveau</TableHead><TableHead>Code</TableHead><TableHead>Cycle</TableHead><TableHead>Ordre</TableHead><TableHead>Capacité</TableHead><TableHead className="text-right w-24">Actions</TableHead></TableRow></TableHeader>
-                  <TableBody>
-                    {isLoading ? [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
-                    : filteredNiveaux.length === 0 ? <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Aucun niveau trouvé pour les filtres actuels</TableCell></TableRow>
-                    : filteredNiveaux.map((niveau) => {
-                      const cycle = cycleMap.get(niveau.cycleId);
-                      return (
-                        <TableRow key={niveau.id} className="group hover:bg-muted/50">
-                          <TableCell className="font-medium">{niveau.name}</TableCell>
-                          <TableCell><Badge variant="outline">{niveau.code}</Badge></TableCell>
-                          <TableCell>
-                            {cycle ? <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }}/><span>{cycle.name}</span></div> : <Badge variant="destructive">N/A</Badge>}
-                          </TableCell>
-                          <TableCell>{niveau.order}</TableCell>
-                          <TableCell>{niveau.capacity}</TableCell>
-                          <TableCell className="text-right">
-                             {canManageClasses && (
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button variant="ghost" size="icon" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
-                                </div>
-                             )}
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="classes" className="mt-6 space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Rechercher une classe..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                </div>
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>{viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}</Button>
                     {canManageClasses && (
                         <Button asChild><Link href="/dashboard/pedagogie/structure/new"><Plus className="mr-2 h-4 w-4" />Nouvelle Classe</Link></Button>
                     )}
                 </div>
             </div>
-            <Tabs defaultValue="all" onValueChange={setActiveCycleFilter}>
-                <TabsList>
-                    <TabsTrigger value="all">Toutes</TabsTrigger>
-                    {isLoading ? [...Array(3)].map((_, i) => <Skeleton key={i} className="h-8 w-24" />) : cycles.sort((a, b) => a.order - b.order).map(cycle => <TabsTrigger key={cycle.id} value={cycle.id}>{cycle.name}</TabsTrigger>)}
-                </TabsList>
-                <TabsContent value={activeCycleFilter} className="mt-6">
-                    {viewMode === 'grid' ? <ClassesGridView cycleId={activeCycleFilter} searchQuery={searchQuery} /> : <ClassesListView cycleId={activeCycleFilter} searchQuery={searchQuery} />}
-                </TabsContent>
-            </Tabs>
-        </TabsContent>
-        
-      </Tabs>
+            <div className="relative flex-1 mt-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Rechercher une classe..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+        </CardHeader>
+        <CardContent>
+            {viewMode === 'grid' ? <ClassesGridView cycleId="all" searchQuery={searchQuery} /> : <ClassesListView cycleId="all" searchQuery={searchQuery} />}
+        </CardContent>
+      </Card>
     </div>
     
     <Dialog open={isCycleFormOpen} onOpenChange={setIsCycleFormOpen}>
@@ -457,6 +388,3 @@ export default function StructurePage() {
   );
 }
 
-    
-
-    
