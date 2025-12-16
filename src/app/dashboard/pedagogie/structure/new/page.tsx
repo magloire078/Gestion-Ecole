@@ -178,8 +178,8 @@ export default function NewClassPage() {
           grade: niveau.name || '',
           studentCount: 0,
           isFull: false,
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
       };
         
       const classesCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
