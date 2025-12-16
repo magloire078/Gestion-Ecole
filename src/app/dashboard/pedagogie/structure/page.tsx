@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -212,7 +211,11 @@ export default function StructurePage() {
   const handleOpenNiveauForm = (niveau: (Niveau & {id: string}) | null, cycleId?: string) => {
       setEditingNiveau(niveau);
       const defaultCycle = cycleId || (niveau ? niveau.cycleId : '');
-      niveauForm.reset(niveau || { name: '', code: '', order: 1, cycleId: defaultCycle, capacity: 30 });
+      niveauForm.reset(niveau ? {
+          ...niveau,
+          ageMin: niveau.ageMin || undefined,
+          ageMax: niveau.ageMax || undefined,
+      } : { name: '', code: '', order: 1, cycleId: defaultCycle, capacity: 30 });
       setIsNiveauFormOpen(true);
   }
 
