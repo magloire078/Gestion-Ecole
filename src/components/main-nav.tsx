@@ -26,6 +26,7 @@ import {
     Bed,
     Building,
     HeartPulse,
+    Trophy,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUser } from '@/firebase';
@@ -54,6 +55,7 @@ const navLinks = [
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageContent' as PermissionKey },
         { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageContent' as PermissionKey },
         { href: '/dashboard/immobilier', label: 'Immobilier', icon: Building, permission: 'manageContent' as PermissionKey },
+        { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageContent' as PermissionKey },
       ]
     },
     {
@@ -214,3 +216,4 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
 }
 
     
+
