@@ -42,7 +42,7 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
     },
-     "admin_role": {
+    "admin_role": {
       "title": "Rôle Administratif",
       "description": "Définit un ensemble de permissions pour un rôle administratif au sein d'une école.",
       "type": "object",
@@ -1034,5 +1034,3 @@
     }
   }
 }
-
-    

@@ -52,13 +52,15 @@ export function useUser() {
                     
                     let permissions: Partial<AdminRole['permissions']> = {};
 
+                    // Always grant all permissions to the director, regardless of adminRole
                     if (profileData.role === 'directeur') {
-                        permissions.manageSettings = true;
-                        permissions.manageUsers = true;
-                        permissions.viewUsers = true;
-                        permissions.manageBilling = true;
-                        permissions.manageClasses = true;
-                        permissions.manageGrades = true;
+                        permissions = {
+                            manageSettings: true, manageUsers: true, viewUsers: true,
+                            manageBilling: true, manageClasses: true, manageGrades: true,
+                            manageCommunication: true, manageLibrary: true, manageCantine: true,
+                            manageTransport: true, manageInternat: true, manageInventory: true,
+                            manageRooms: true, manageActivities: true, manageMedical: true,
+                        };
                     }
 
                     if (profileData.adminRole) {
@@ -67,7 +69,8 @@ export function useUser() {
                             const roleSnap = await getDoc(roleRef);
                             if(roleSnap.exists()){
                                 const roleData = roleSnap.data() as AdminRole;
-                                permissions = { ...permissions, ...roleData.permissions };
+                                // Merge permissions, director's base permissions take precedence
+                                permissions = { ...roleData.permissions, ...permissions };
                             }
                         } catch (e) {
                             console.error("Error fetching admin role:", e);

@@ -33,25 +33,17 @@ service cloud.firestore {
     // --- NOUVELLE FONCTION DE PERMISSION ---
     // Vérifie les permissions en se basant sur le rôle de l'utilisateur
     function hasPermission(schoolId, permission) {
-        let role = getStaffProfile(schoolId).role;
-
-        return isAdmin() ||
-               role == 'directeur' || // Le directeur a toutes les permissions
-               (permission == 'manageGrades' && (role == 'enseignant' || role == 'enseignant_principal')) ||
-               (permission == 'manageAttendance' && (role == 'enseignant' || role == 'enseignant_principal' || role == 'surveillant')) ||
-               (permission == 'manageBilling' && (role == 'comptable' || role == 'secretaire')) ||
-               (permission == 'manageUsers' && role == 'secretaire') ||
-               (permission == 'viewUsers' && (role == 'enseignant' || role == 'enseignant_principal' || role == 'secretaire' || role == 'comptable')) ||
-               (permission == 'manageClasses' && (role == 'directeur_pedagogique' || role == 'secretaire')) ||
-               (permission == 'manageSchedule' && (role == 'directeur_pedagogique' || role == 'secretaire')) ||
-               (permission == 'manageLibrary' && role == 'bibliothecaire') ||
-               (permission == 'manageCantine' && role == 'personnel') ||
-               (permission == 'manageTransport' && (role == 'personnel' || role == 'chauffeur')) ||
-               (permission == 'manageInternat' && role == 'surveillant') ||
-               (permission == 'manageInventory' && role == 'personnel') ||
-               (permission == 'manageRooms' && role == 'secretaire') ||
-               (permission == 'manageActivities' && (role == 'enseignant' || role == 'enseignant_principal')) ||
-               (permission == 'manageMedical' && role == 'infirmier');
+        let staffProfile = getStaffProfile(schoolId);
+        // Director has all school-level permissions
+        if (staffProfile.role == 'directeur') {
+          return true;
+        }
+        // If user has an admin role assigned, check permissions on that role
+        if (staffProfile.adminRole != null) {
+          let rolePermissions = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions;
+          return rolePermissions[permission] == true;
+        }
+        return false;
     }
     
     // --- Global Collections ---
@@ -143,8 +135,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-       allow read, list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
+       allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
     }
     
     match /ecoles/{schoolId}/frais_scolarite/{feeId} {

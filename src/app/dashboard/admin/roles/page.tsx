@@ -35,14 +35,24 @@ const permissionsSchema = z.object({
     manageSettings: z.boolean().default(false), manageBilling: z.boolean().default(false),
     manageContent: z.boolean().default(false), viewSupportTickets: z.boolean().default(false),
     manageSupportTickets: z.boolean().default(false), apiAccess: z.boolean().default(false),
-    exportData: z.boolean().default(false)
+    exportData: z.boolean().default(false),
+    manageCommunication: z.boolean().default(false),
+    manageSchedule: z.boolean().default(false),
+    manageAttendance: z.boolean().default(false),
+    manageLibrary: z.boolean().default(false),
+    manageCantine: z.boolean().default(false),
+    manageTransport: z.boolean().default(false),
+    manageInternat: z.boolean().default(false),
+    manageInventory: z.boolean().default(false),
+    manageRooms: z.boolean().default(false),
+    manageActivities: z.boolean().default(false),
+    manageMedical: z.boolean().default(false),
 });
 
 
 const roleSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
   description: z.string().optional(),
-  level: z.coerce.number().min(1, "Le niveau est requis."),
   permissions: permissionsSchema
 });
 type RoleFormValues = z.infer<typeof roleSchema>;
@@ -50,12 +60,20 @@ type RoleFormValues = z.infer<typeof roleSchema>;
 const permissionLabels: { id: keyof z.infer<typeof permissionsSchema>; label: string, category: string }[] = [
     { id: 'manageUsers', label: 'Gérer Personnel & Élèves', category: 'Utilisateurs' },
     { id: 'viewUsers', label: 'Voir Personnel & Élèves', category: 'Utilisateurs' },
-    { id: 'manageBilling', label: 'Gérer Facturation', category: 'Finances' },
+    { id: 'manageBilling', label: 'Gérer Facturation & Comptabilité', category: 'Finances' },
     { id: 'manageClasses', label: 'Gérer Structure & Emploi du temps', category: 'Pédagogie' },
     { id: 'manageGrades', label: 'Gérer Notes & Absences', category: 'Pédagogie' },
-    { id: 'manageContent', label: 'Gérer Contenu (Transport, Cantine...)' , category: 'Contenu'},
+    { id: 'manageCommunication', label: 'Gérer la Communication', category: 'Communication' },
+    { id: 'manageLibrary', label: 'Gérer la Bibliothèque', category: 'Modules' },
+    { id: 'manageCantine', label: 'Gérer la Cantine', category: 'Modules' },
+    { id: 'manageTransport', label: 'Gérer le Transport', category: 'Modules' },
+    { id: 'manageInternat', label: 'Gérer l\'Internat', category: 'Modules' },
+    { id: 'manageInventory', label: 'Gérer l\'Inventaire & Maintenance', category: 'Modules' },
+    { id: 'manageRooms', label: 'Gérer Salles & Réservations', category: 'Modules' },
+    { id: 'manageActivities', label: 'Gérer Activités & Compétitions', category: 'Modules' },
+    { id: 'manageMedical', label: 'Gérer Dossiers Médicaux', category: 'Modules' },
     { id: 'manageSettings', label: 'Gérer Paramètres École', category: 'Administration' },
-    { id: 'manageSystem', label: 'Gérer Système', category: 'Administration' },
+    { id: 'manageSystem', label: 'Gérer Système (Super Admin)', category: 'Administration' },
 ];
 
 
@@ -75,7 +93,7 @@ export default function AdminRolesPage() {
 
   const form = useForm<RoleFormValues>({
     resolver: zodResolver(roleSchema),
-    defaultValues: { name: '', description: '', level: 1, permissions: {} },
+    defaultValues: { name: '', description: '', permissions: {} },
   });
 
   const handleOpenForm = (role: (AdminRole & { id: string }) | null) => {
@@ -83,9 +101,8 @@ export default function AdminRolesPage() {
     form.reset(role ? {
         name: role.name,
         description: role.description,
-        level: role.level || 1,
         permissions: role.permissions || {}
-    } : { name: '', description: '', level: roles.length + 1, permissions: {} });
+    } : { name: '', description: '', permissions: {} });
     setIsFormOpen(true);
   };
 
@@ -93,17 +110,15 @@ export default function AdminRolesPage() {
     if (!schoolId) return;
 
     try {
-        if (editingRole) {
-            const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, editingRole.id);
-            await setDoc(roleRef, { ...values, schoolId }, { merge: true });
-        } else {
-            const rolesCollectionRef = collection(firestore, `ecoles/${schoolId}/admin_roles`);
-            await addDoc(rolesCollectionRef, { ...values, schoolId });
-        }
+        const roleId = editingRole ? editingRole.id : values.name.toLowerCase().replace(/ /g, '_');
+        const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, roleId);
+        
+        await setDoc(roleRef, { ...values, schoolId, level: 0 }, { merge: true });
+
         toast({ title: 'Rôle enregistré', description: `Le rôle "${values.name}" a été sauvegardé.` });
         setIsFormOpen(false);
     } catch (error) {
-        const path = editingRole ? `admin_roles/${editingRole.id}` : 'admin_roles';
+        const path = `admin_roles/${editingRole ? editingRole.id : '(new)'}`;
         const operation = editingRole ? 'update' : 'create';
         const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: values });
         errorEmitter.emit('permission-error', permissionError);
@@ -186,13 +201,10 @@ export default function AdminRolesPage() {
             </DialogHeader>
              <Form {...form}>
                 <form id="role-form" onSubmit={form.handleSubmit(handleSaveRole)} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du rôle</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem>)} />
-                        <FormField control={form.control} name="level" render={({ field }) => (<FormItem><FormLabel>Niveau</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage/></FormItem>)} />
-                    </div>
-                     <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom du rôle</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage/></FormItem>)} />
+                    <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                      
-                     <div className="space-y-4 pt-4 border-t">
+                     <div className="space-y-4 pt-4 border-t max-h-[50vh] overflow-y-auto p-1">
                         <h3 className="font-semibold">Permissions</h3>
                         {Object.entries(groupedPermissions).map(([category, perms]) => (
                             <div key={category}>
