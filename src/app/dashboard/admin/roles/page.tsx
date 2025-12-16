@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -91,7 +92,7 @@ export default function AdminRolesPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [roleToDelete, setRoleToDelete] = useState<AdminRole & { id: string } | null>(null);
 
-    const isAdmin = user?.customClaims?.admin === true || user?.email === "magloire078@gmail.com";
+    const isAdmin = user?.profile?.isAdmin === true;
 
     const rolesQuery = useMemoFirebase(() => isAdmin ? query(collection(firestore, 'admin_roles')) : null, [firestore, isAdmin]);
     const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);

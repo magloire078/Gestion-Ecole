@@ -17,8 +17,7 @@ export default function AdminLayout({
 
     const isLoading = userLoading;
 
-    // Allow the hardcoded super admin email OR any user with the `admin` custom claim.
-    const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
+    const isAdmin = user?.profile?.isAdmin === true;
 
     if (isLoading) {
         return (

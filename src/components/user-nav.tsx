@@ -63,7 +63,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const displayName = user?.authUser?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
+  const isAdmin = user?.profile?.isAdmin === true;
   const userRole = isAdmin ? 'Super Administrateur' : user?.profile?.role;
 
   if (collapsed) {

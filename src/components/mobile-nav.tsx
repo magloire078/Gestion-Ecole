@@ -33,7 +33,7 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MobileNav() {
   const { user } = useUser();
-  const isAdmin = user?.customClaims?.admin === true || user?.authUser?.email === "magloire078@gmail.com";
+  const isAdmin = user?.profile?.isAdmin === true;
   const userPermissions = user?.profile?.permissions || {};
 
   const hasPermission = (permission?: PermissionKey) => {

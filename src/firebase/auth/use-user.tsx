@@ -9,6 +9,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 export interface UserProfile extends AppUser {
     permissions?: AdminRole['permissions'];
+    isAdmin?: boolean;
 }
 
 export interface UserContext {
@@ -34,13 +35,13 @@ export function useUser() {
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
-            const tokenResult = await authUser.getIdTokenResult(); // No longer forcing refresh
+            const tokenResult = await authUser.getIdTokenResult();
             const schoolId = tokenResult.claims.schoolId;
+            const isAdminClaim = tokenResult.claims.admin === true;
 
             let userProfile: UserProfile | undefined = undefined;
 
             if (schoolId) {
-                // Fetch staff profile
                 const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
                 const profileSnap = await getDoc(profileRef);
                 
@@ -48,8 +49,10 @@ export function useUser() {
                     const profileData = profileSnap.data() as AppUser;
                     userProfile = { ...profileData };
 
-                    // If user is director, grant all permissions for UI purposes
-                    if (profileData.role === 'directeur') {
+                    const isDirector = profileData.role === 'directeur';
+                    userProfile.isAdmin = isAdminClaim || isDirector;
+
+                    if (isDirector) {
                         userProfile.permissions = {
                             manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
                             manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
@@ -57,7 +60,6 @@ export function useUser() {
                             viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true,
                         };
                     } 
-                    // If user has a specific admin role, fetch its permissions
                     else if (profileData.adminRole) {
                         const roleRef = doc(firestore, 'admin_roles', profileData.adminRole);
                         const roleSnap = await getDoc(roleRef);
@@ -67,6 +69,19 @@ export function useUser() {
                         }
                     }
                 }
+            } else if (isAdminClaim) {
+                // Handle platform admin without a specific school
+                userProfile = {
+                    uid: authUser.uid,
+                    email: authUser.email || '',
+                    schoolId: '',
+                    role: 'directeur', // Consider platform admin as a director-level
+                    firstName: authUser.displayName || 'Admin',
+                    lastName: 'Platform',
+                    hireDate: '',
+                    baseSalary: 0,
+                    isAdmin: true,
+                };
             }
 
             setUser({
