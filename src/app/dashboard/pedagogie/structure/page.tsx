@@ -354,22 +354,27 @@ export default function StructurePage() {
         </TabsContent>
         
         <TabsContent value="classes" className="mt-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="relative flex-1"><Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Rechercher une classe..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} /></div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>{viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}</Button>
-              {canManageClasses && (
-                <Button asChild><Link href="/dashboard/pedagogie/structure/new"><Plus className="mr-2 h-4 w-4" />Nouvelle Classe</Link></Button>
-              )}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Rechercher une classe..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>{viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}</Button>
+                    {canManageClasses && (
+                        <Button asChild><Link href="/dashboard/pedagogie/structure/new"><Plus className="mr-2 h-4 w-4" />Nouvelle Classe</Link></Button>
+                    )}
+                </div>
             </div>
-          </div>
-          <Tabs defaultValue="all" onValueChange={setActiveCycleFilter}>
-            <TabsList>
-              <TabsTrigger value="all">Toutes</TabsTrigger>
-              {isLoading ? [...Array(3)].map((_, i) => <Skeleton key={i} className="h-8 w-24" />) : cycles.sort((a, b) => a.order - b.order).map(cycle => <TabsTrigger key={cycle.id} value={cycle.id}>{cycle.name}</TabsTrigger>)}
-            </TabsList>
-            <TabsContent value={activeCycleFilter} className="mt-6">{viewMode === 'grid' ? <ClassesGridView cycleId={activeCycleFilter} searchQuery={searchQuery} /> : <ClassesListView cycleId={activeCycleFilter} searchQuery={searchQuery} />}</TabsContent>
-          </Tabs>
+            <Tabs defaultValue="all" onValueChange={setActiveCycleFilter}>
+                <TabsList>
+                    <TabsTrigger value="all">Toutes</TabsTrigger>
+                    {isLoading ? [...Array(3)].map((_, i) => <Skeleton key={i} className="h-8 w-24" />) : cycles.sort((a, b) => a.order - b.order).map(cycle => <TabsTrigger key={cycle.id} value={cycle.id}>{cycle.name}</TabsTrigger>)}
+                </TabsList>
+                <TabsContent value={activeCycleFilter} className="mt-6">
+                    {viewMode === 'grid' ? <ClassesGridView cycleId={activeCycleFilter} searchQuery={searchQuery} /> : <ClassesListView cycleId={activeCycleFilter} searchQuery={searchQuery} />}
+                </TabsContent>
+            </Tabs>
         </TabsContent>
         
       </Tabs>
