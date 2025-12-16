@@ -73,14 +73,15 @@ service cloud.firestore {
     // --- School Subcollections ---
     
     match /ecoles/{schoolId}/personnel/{staffId} {
-      allow read, list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
+      allow get: if belongsToSchool(schoolId); // Permet de lire un profil spécifique (ex: prof principal)
+      allow list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
       allow create: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
       allow update: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || isOwner(staffId));
       allow delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
     match /ecoles/{schoolId}/eleves/{studentId} {
-      allow read, list: if belongsToSchool(schoolId); // Permet à tous les membres de l'école de voir les élèves
+      allow read, list: if belongsToSchool(schoolId); 
       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
 
