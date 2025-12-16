@@ -245,21 +245,21 @@ export default function StructurePage() {
         {cycles.map(cycle => (
           <AccordionItem value={cycle.id} key={cycle.id} className="border-0">
              <Card>
-                <AccordionTrigger className="p-4 hover:no-underline">
-                   <div className="flex justify-between items-center w-full">
+                <div className="flex justify-between items-center w-full p-4">
+                    <AccordionTrigger className="flex-1 p-0 hover:no-underline">
                        <div className="flex items-center gap-4">
                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: cycle.color || '#3b82f6' }} />
                            <h3 className="text-lg font-semibold">{cycle.name}</h3>
                            <Badge variant="outline">{cycle.code}</Badge>
                            <Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge>
                        </div>
-                       {isDirectorOrAdmin && (
-                        <div className="flex items-center gap-2 pr-4">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleOpenCycleForm(cycle) }}><Edit className="h-4 w-4" /></Button>
-                        </div>
-                       )}
-                   </div>
-                </AccordionTrigger>
+                    </AccordionTrigger>
+                   {isDirectorOrAdmin && (
+                    <div className="flex items-center gap-2 pl-4">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4" /></Button>
+                    </div>
+                   )}
+               </div>
                 <AccordionContent>
                   <div className="p-4 pt-0">
                     <Table>
