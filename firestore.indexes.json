@@ -15,7 +15,7 @@
       "collectionGroup": "eleves",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
-        { "fieldPath": "__name__", "order": "ASCENDING" }
+        { "fieldPath": "classId", "order": "ASCENDING" }
       ]
     }
   ],
