@@ -176,8 +176,8 @@ export default function CreateSchoolPage() {
               </CardContent>
               <CardFooter className="flex justify-end">
                 <Button type="submit" disabled={isSubmitting || userLoading}>
-                  {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-                  {isSubmitting ? 'Création en cours...' : 'Créer mon école'}
+                  {isSubmitting || userLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                  {isSubmitting || userLoading ? 'Vérification...' : 'Créer mon école'}
                 </Button>
               </CardFooter>
             </form>
