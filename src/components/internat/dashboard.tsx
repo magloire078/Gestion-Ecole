@@ -15,7 +15,8 @@ import {
   UserCheck,
   UserX,
   PlusCircle,
-  Pencil
+  Pencil,
+  Bell
 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, addDoc } from 'firebase/firestore';
