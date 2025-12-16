@@ -161,12 +161,12 @@ export default function NewClassPage() {
           grade: niveau.name || '',
           studentCount: 0,
           isFull: false,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
       };
         
       const classesCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
-      await addDoc(classesCollectionRef, classData)
+      await addDoc(classesCollectionRef, classData);
 
       toast({
           title: 'Classe créée !',
@@ -227,6 +227,7 @@ export default function NewClassPage() {
   const { formState: { isSubmitting } } = form;
 
   return (
+    <>
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild><Link href="/dashboard/pedagogie/structure"><ArrowLeft className="h-4 w-4" /></Link></Button>
