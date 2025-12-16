@@ -9,7 +9,7 @@ import {
   CardDescription, 
   CardHeader, 
   CardTitle 
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -38,15 +38,15 @@ const DEMO_TOUR_STEPS = [
 ];
 
 const WIDGETS = [
-    { id: 'students-widget', title: 'Élèves', icon: Users, color: 'blue', badgeText: '120', description: 'Gestion complète des dossiers', button1Text: 'Voir tous les élèves', button2Text: 'Simuler une inscription' },
-    { id: 'grades-widget', title: 'Pédagogie', icon: BookOpen, color: 'green', badgeText: '450 notes', description: 'Notes, bulletins, compétences', button1Text: 'Saisir des notes fictives', button2Text: 'Générer un bulletin' },
-    { id: 'finance-widget', title: 'Finances', icon: Wallet, color: 'amber', badgeText: '85% payés', description: 'Frais, paiements, comptabilité', button1Text: 'Voir les statistiques', button2Text: 'Simuler un paiement' },
+    { id: 'students-widget', title: 'Élèves', icon: Users, color: 'blue', badgeText: '120', description: 'Gestion complète des dossiers', button1Text: 'Voir tous les élèves', button2Text: 'Simuler une inscription', href: '/demo/eleves' },
+    { id: 'grades-widget', title: 'Pédagogie', icon: BookOpen, color: 'green', badgeText: '450 notes', description: 'Notes, bulletins, compétences', button1Text: 'Saisir des notes fictives', button2Text: 'Générer un bulletin', href: '/demo/pedagogie' },
+    { id: 'finance-widget', title: 'Finances', icon: Wallet, color: 'amber', badgeText: '85% payés', description: 'Frais, paiements, comptabilité', button1Text: 'Voir les statistiques', button2Text: 'Simuler un paiement', href: '/demo/finance' },
 ];
 
 const SECONDARY_WIDGETS = [
-    { id: 'communication-widget', title: 'Communication', icon: MessageSquare, color: 'purple', description: 'Parents, notifications, messages', buttonText: 'Envoyer un message test' },
-    { id: 'analytics-widget', title: 'Analytics', icon: BarChart3, color: 'red', description: 'Tableaux de bord interactifs', buttonText: 'Explorer les données' },
-    { id: 'settings-widget', title: 'Configuration', icon: Settings, color: 'gray', description: 'Personnalisez l\'application', buttonText: 'Voir les paramètres' },
+    { id: 'communication-widget', title: 'Communication', icon: MessageSquare, color: 'purple', description: 'Parents, notifications, messages', buttonText: 'Envoyer un message test', href: '/demo/communication' },
+    { id: 'analytics-widget', title: 'Analytics', icon: BarChart3, color: 'red', description: 'Tableaux de bord interactifs', buttonText: 'Explorer les données', href: '/demo/analytics' },
+    { id: 'settings-widget', title: 'Configuration', icon: Settings, color: 'gray', description: 'Personnalisez l\'application', buttonText: 'Voir les paramètres', href: '/demo/parametres' },
 ];
 
 
@@ -112,7 +112,7 @@ export default function DemoDashboardPage() {
           {WIDGETS.map((widget, index) => (
              <Card key={widget.id} id={widget.id} className={cn("cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1", isTourActive && currentStep === index + 1 && "ring-2 ring-primary")}>
               <CardHeader><div className="flex items-center justify-between"><CardTitle className="flex items-center gap-2 text-primary">{React.createElement(widget.icon, {className: "h-5 w-5"})} {widget.title}</CardTitle><Badge variant="secondary">{widget.badgeText}</Badge></div><CardDescription>{widget.description}</CardDescription></CardHeader>
-              <CardContent><div className="space-y-2"><Button className="w-full" onClick={() => router.push(`/demo/${widget.title.toLowerCase()}`)}>{widget.button1Text}</Button><Button variant="outline" className="w-full">{widget.button2Text}</Button></div></CardContent>
+              <CardContent><div className="space-y-2"><Button className="w-full" onClick={() => router.push(widget.href)}>{widget.button1Text}</Button><Button variant="outline" className="w-full">{widget.button2Text}</Button></div></CardContent>
             </Card>
           ))}
         </div>
@@ -121,7 +121,7 @@ export default function DemoDashboardPage() {
            {SECONDARY_WIDGETS.map((widget, index) => (
              <Card key={widget.id} id={widget.id} className={cn("cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1", isTourActive && currentStep === index + 4 && "ring-2 ring-primary")}>
                 <CardHeader><CardTitle className="flex items-center gap-2 text-primary">{React.createElement(widget.icon, {className: "h-5 w-5"})} {widget.title}</CardTitle><CardDescription>{widget.description}</CardDescription></CardHeader>
-                <CardContent><Button className="w-full" onClick={() => router.push(`/demo/${widget.title.toLowerCase()}`)}>{widget.buttonText}</Button></CardContent>
+                <CardContent><Button className="w-full" onClick={() => router.push(widget.href)}>{widget.buttonText}</Button></CardContent>
             </Card>
            ))}
         </div>
