@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Trophy } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Trophy, List, UserPlus } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +33,8 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { activite as Activite, staff as Staff } from '@/lib/data-types';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import Link from 'next/link';
 
 const activiteSchema = z.object({
   name: z.string().min(2, "Le nom de l'activité est requis."),
@@ -97,58 +99,69 @@ export default function ActivitesPage() {
   return (
     <>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
-              <p className="text-muted-foreground">Gérez les clubs et activités sportives ou culturelles de l'école.</p>
-            </div>
-            {canManageContent && (
-              <Button onClick={() => { setEditingActivite(null); setIsFormOpen(true); }}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ajouter une activité
-              </Button>
-            )}
+        <div>
+            <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
+            <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
         </div>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading ? (
-            [...Array(3)].map((_, i) => <Skeleton key={i} className="h-56 w-full" />)
-          ) : activites.length > 0 ? (
-            activites.map(activite => (
-              <Card key={activite.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <Trophy className="h-8 w-8 text-amber-500" />
+        
+        <Tabs defaultValue="activites" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="activites"><Trophy className="mr-2 h-4 w-4" />Activités</TabsTrigger>
+                <TabsTrigger value="inscriptions" asChild>
+                    <Link href="/dashboard/activites/inscriptions"><UserPlus className="mr-2 h-4 w-4" />Inscriptions</Link>
+                </TabsTrigger>
+            </TabsList>
+            <TabsContent value="activites" className="mt-6">
+                 <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-semibold">Liste des activités</h2>
                     {canManageContent && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => { setEditingActivite(activite); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <Button onClick={() => { setEditingActivite(null); setIsFormOpen(true); }}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Ajouter une activité
+                      </Button>
                     )}
-                  </div>
-                  <CardTitle>{activite.name}</CardTitle>
-                  <CardDescription className="capitalize">{activite.type}</CardDescription>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <p className="text-sm text-muted-foreground">{activite.description}</p>
-                </CardContent>
-                <CardFooter className="flex flex-col items-start text-sm">
-                   <p><span className="font-semibold">Responsable:</span> {teacherMap.get(activite.teacherInChargeId) || 'N/A'}</p>
-                   <p><span className="font-semibold">Horaire:</span> {activite.schedule || 'Non défini'}</p>
-                </CardFooter>
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-full">
-              <Card className="flex items-center justify-center h-48">
-                <p className="text-muted-foreground">Aucune activité n'a été créée pour le moment.</p>
-              </Card>
-            </div>
-          )}
-        </div>
+                </div>
+                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {isLoading ? (
+                    [...Array(3)].map((_, i) => <Skeleton key={i} className="h-56 w-full" />)
+                  ) : activites.length > 0 ? (
+                    activites.map(activite => (
+                      <Card key={activite.id} className="flex flex-col">
+                        <CardHeader>
+                          <div className="flex justify-between items-start">
+                            <Trophy className="h-8 w-8 text-amber-500" />
+                            {canManageContent && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => { setEditingActivite(activite); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
+                                  <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
+                          </div>
+                          <CardTitle>{activite.name}</CardTitle>
+                          <CardDescription className="capitalize">{activite.type}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex-1">
+                          <p className="text-sm text-muted-foreground">{activite.description}</p>
+                        </CardContent>
+                        <CardFooter className="flex flex-col items-start text-sm">
+                           <p><span className="font-semibold">Responsable:</span> {teacherMap.get(activite.teacherInChargeId) || 'N/A'}</p>
+                           <p><span className="font-semibold">Horaire:</span> {activite.schedule || 'Non défini'}</p>
+                        </CardFooter>
+                      </Card>
+                    ))
+                  ) : (
+                    <div className="col-span-full">
+                      <Card className="flex items-center justify-center h-48">
+                        <p className="text-muted-foreground">Aucune activité n'a été créée pour le moment.</p>
+                      </Card>
+                    </div>
+                  )}
+                </div>
+            </TabsContent>
+        </Tabs>
       </div>
       
        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

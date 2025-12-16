@@ -241,13 +241,13 @@
             "classeId": { "type": "string" },
             "academicYear": { "type": "string" },
             "startDate": { "type": "string", "format": "date-time" },
+            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
+            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
+            "createdBy": { "type": "string" },
             "endDate": { "type": "string", "format": "date-time" },
             "previousClass": { "type": "string" },
-            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
             "notes": { "type": "string" },
-            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "createdBy": { "type": "string" }
+            "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["schoolId", "studentId", "classeId", "academicYear", "startDate", "promotionType", "status", "createdBy"]
     },
@@ -610,8 +610,8 @@
             "studentId": { "type": "string" },
             "roomId": { "type": "string" },
             "startDate": { "type": "string", "format": "date" },
-            "endDate": { "type": "string", "format": "date" },
             "status": { "type": "string", "enum": ["active", "pending", "terminated", "suspended"] },
+            "endDate": { "type": "string", "format": "date" },
             "nextPaymentDue": { "type": "string", "format": "date" }
         },
         "required": ["studentId", "roomId", "startDate", "status"]
@@ -681,12 +681,13 @@
             "title": { "type": "string" },
             "priority": { "type": "string", "enum": ["haute", "moyenne", "basse"] },
             "status": { "type": "string", "enum": ["à_faire", "en_cours", "terminée"] },
+            "createdAt": { "type": "string", "format": "date-time" },
             "assignedTo": { "type": "string", "description": "UID du membre du personnel assigné." },
             "dueDate": { "type": "string", "format": "date" },
             "description": { "type": "string" },
             "location": { "type": "string", "description": "Où la maintenance doit avoir lieu (ex: Salle B102, Bus-01)." }
         },
-        "required": ["title", "priority", "status"]
+        "required": ["title", "priority", "status", "createdAt"]
     },
     "dossierMedical": {
         "title": "Dossier Médical",
