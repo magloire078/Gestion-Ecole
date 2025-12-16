@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { ReservationForm } from './reservation-form';
 import type { salle as Salle, reservation_salle as Reservation, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '../ui/skeleton';
+import Link from 'next/link';
 
 const timeSlots = Array.from({ length: 11 }, (_, i) => `${String(i + 7).padStart(2, '0')}:00`);
 
@@ -133,7 +134,7 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
                 )}
                  {!isLoading && salles.length === 0 && (
                     <TableRow>
-                        <TableCell colSpan={7} className="h-48 text-center text-muted-foreground">Aucune salle n'a été créée. <Link href="/dashboard/immobilier/reservations" className="text-primary underline">Ajoutez-en une</Link> pour commencer.</TableCell>
+                        <TableCell colSpan={7} className="h-48 text-center text-muted-foreground">Aucune salle n'a été créée. <Link href="/dashboard/immobilier/salles" className="text-primary underline">Ajoutez-en une</Link> pour commencer.</TableCell>
                     </TableRow>
                  )}
               </tbody>
