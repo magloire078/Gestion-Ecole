@@ -541,3 +541,35 @@ export type consultation = {
     medecin?: string;
     id?: string;
 };
+
+export type activite = {
+    name: string;
+    type: "sportive" | "culturelle" | "club";
+    teacherInChargeId: string;
+    description?: string;
+    schedule?: string;
+    id?: string;
+};
+
+export type inscriptionActivite = {
+    studentId: string;
+    activiteId: string;
+    academicYear: string;
+    id?: string;
+};
+
+export type competition = {
+    name: string;
+    date: string;
+    description?: string;
+    results?: string;
+    id?: string;
+};
+
+export type participationCompetition = {
+    studentId: string;
+    competitionId: string;
+    rank?: string;
+    notes?: string;
+    id?: string;
+};
