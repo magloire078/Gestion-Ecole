@@ -1,12 +1,13 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, getDocs, query } from 'firebase/firestore';
+import type { route as Route, bus as Bus, staff as Staff } from '@/lib/data-types';
 
 // Mocks - à remplacer par de vraies données Leaflet si nécessaire.
 // Pour le rendu côté serveur et les tests, nous n'utiliserons pas de carte réelle.
@@ -18,58 +19,50 @@ const Popup = ({ children }: { children: React.ReactNode }) => <div>{children}</
 
 export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
-  const [routes, setRoutes] = useState<any[]>([]);
-  const [selectedRoute, setSelectedRoute] = useState<string | null>(null);
-  const [livePositions, setLivePositions] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
+  const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
+
+  const routesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/transport_lignes`)), [firestore, schoolId]);
+  const busesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/transport_bus`)), [firestore, schoolId]);
+  const driversQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+
+  const { data: routesData, loading: routesLoading } = useCollection(routesQuery);
+  const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
+  const { data: driversData, loading: driversLoading } = useCollection(driversQuery);
+  
+  const routes: (Route & { id: string })[] = useMemo(() => routesData?.map(doc => ({ id: doc.id, ...doc.data() } as Route & { id: string })) || [], [routesData]);
+  const buses: (Bus & { id: string })[] = useMemo(() => busesData?.map(doc => ({ id: doc.id, ...doc.data() } as Bus & { id: string })) || [], [busesData]);
+  const drivers: (Staff & { id: string })[] = useMemo(() => driversData?.map(doc => ({ id: doc.id, ...doc.data() } as Staff & { id: string })) || [], [driversData]);
+
+  const busMap = useMemo(() => new Map(buses.map(b => [b.id, b])), [buses]);
+  const driverMap = useMemo(() => new Map(drivers.map(d => [d.id, d])), [drivers]);
   
   useEffect(() => {
-    loadRoutes();
-    // La simulation du live tracking sera retirée pour l'instant
-  }, [schoolId]);
-  
-  const loadRoutes = async () => {
-    setLoading(true);
-    // Simuler des routes pour l'instant
-    const mockRoutes = [
-      {
-        id: 'route_001',
-        name: 'Ligne Nord',
-        busId: 'BUS-01',
-        status: 'on_time',
-        driverId: 'driver_001',
-        currentLocation: { lat: 48.86, lng: 2.35 },
-        schedule: { morning: { startTime: '07:00', stops: [{ stopId: 'stop_001', name: 'Mairie'}, {stopId: 'stop_002', name: 'Gare'}] } }
-      },
-      {
-        id: 'route_002',
-        name: 'Ligne Sud',
-        busId: 'BUS-02',
-        status: 'delayed',
-        driverId: 'driver_002',
-        currentLocation: { lat: 48.84, lng: 2.34 },
-        schedule: { morning: { startTime: '07:10', stops: [{ stopId: 'stop_003', name: 'Marché'}, {stopId: 'stop_004', name: 'Parc'}]} }
+      if(routes.length > 0 && !selectedRouteId) {
+          setSelectedRouteId(routes[0].id);
       }
-    ];
-    setRoutes(mockRoutes);
-    
-    // Simuler les positions live
-    const mockLivePositions: Record<string, any> = {};
-    mockRoutes.forEach(route => {
-        mockLivePositions[route.id] = { ...route.currentLocation, timestamp: new Date().toISOString() };
-    });
-    setLivePositions(mockLivePositions);
+  }, [routes, selectedRouteId]);
 
-    if (mockRoutes.length > 0) {
-      setSelectedRoute(mockRoutes[0].id);
-    }
-    setLoading(false);
-  };
+  const loading = routesLoading || busesLoading || driversLoading;
   
-  const currentRoute = routes.find(r => r.id === selectedRoute);
+  const currentRoute = routes.find(r => r.id === selectedRouteId);
+  const currentBus = currentRoute ? busMap.get(currentRoute.busId) : null;
+  const currentDriver = currentRoute ? driverMap.get(currentRoute.driverId || '') : null;
   
   if(loading) {
-      return <Skeleton className="h-96 w-full" />
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+          </div>
+           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+               <Skeleton className="lg:col-span-1 h-96 w-full" />
+               <Skeleton className="lg:col-span-2 h-96 w-full" />
+           </div>
+        </div>
+      )
   }
 
   return (
@@ -77,8 +70,8 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Bus actifs</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{routes.length}</div></CardContent></Card>
         <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">En retard</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-amber-600">{routes.filter(r => r.status === 'delayed').length}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Élèves transportés</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">245</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Ponctualité</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">94%</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Élèves transportés</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">...</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Ponctualité</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">...%</div></CardContent></Card>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -87,21 +80,19 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
           <CardContent>
             <div className="space-y-3">
               {routes.map(route => (
-                <div key={route.id} className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedRoute === route.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted'}`} onClick={() => setSelectedRoute(route.id)}>
+                <div key={route.id} className={`p-3 rounded-lg border cursor-pointer transition-colors ${selectedRouteId === route.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted'}`} onClick={() => setSelectedRouteId(route.id)}>
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-semibold">{route.name}</div>
-                      <div className="text-sm text-muted-foreground">Bus: {route.busId} • {route.schedule.morning.startTime}</div>
+                      <div className="text-sm text-muted-foreground">Bus: {busMap.get(route.busId)?.registrationNumber || 'N/A'} • {route.schedule?.morning?.startTime}</div>
                     </div>
                     <Badge variant={route.status === 'on_time' ? 'secondary' : route.status === 'delayed' ? 'destructive' : 'outline'}>
                       {route.status === 'on_time' ? 'À l\'heure' : route.status === 'delayed' ? 'Retard' : 'Annulé'}
                     </Badge>
                   </div>
-                  <div className="mt-2 flex items-center justify-between text-sm">
-                    <span>{route.schedule.morning.stops.length} arrêts</span>
-                  </div>
                 </div>
               ))}
+              {routes.length === 0 && <p className="text-muted-foreground text-center py-4">Aucune ligne de transport définie.</p>}
             </div>
           </CardContent>
         </Card>
@@ -110,22 +101,14 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
           <CardHeader><CardTitle>{currentRoute ? `Trajet: ${currentRoute.name}` : 'Sélectionnez une ligne'}</CardTitle></CardHeader>
           <CardContent>
             <div className="h-[400px] rounded-lg overflow-hidden bg-muted">
-              {currentRoute && livePositions[currentRoute.id] && (
+              {currentRoute && (
                 <MapContainer>
                   <TileLayer />
                   <Marker>
                     <Popup>
-                      <div className="font-semibold">Bus {currentRoute.busId}</div>
+                      <div className="font-semibold">Bus {currentBus?.registrationNumber}</div>
                     </Popup>
                   </Marker>
-                  
-                  {currentRoute.schedule.morning.stops.map((stop: any, index: number) => (
-                    <Marker key={stop.stopId}>
-                      <Popup>
-                        <div className="font-semibold">{stop.name}</div>
-                      </Popup>
-                    </Marker>
-                  ))}
                 </MapContainer>
               )}
             </div>
@@ -133,12 +116,8 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
             {currentRoute && (
               <div className="mt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div><div className="text-sm text-muted-foreground">Conducteur</div><div className="font-medium">{currentRoute.driverId}</div></div>
-                  <div><div className="text-sm text-muted-foreground">Capacité</div><div className="font-medium">50 places</div></div>
-                </div>
-                <div>
-                  <div className="text-sm text-muted-foreground mb-2">Prochain arrêt</div>
-                  <div className="p-3 bg-muted rounded-lg"><div className="font-medium">Place de la Mairie</div><div className="text-sm">Heure prévue: 07:15 • 5 élèves à embarquer</div></div>
+                  <div><div className="text-sm text-muted-foreground">Conducteur</div><div className="font-medium">{currentDriver ? `${currentDriver.firstName} ${currentDriver.lastName}`: 'Non assigné'}</div></div>
+                  <div><div className="text-sm text-muted-foreground">Capacité Bus</div><div className="font-medium">{currentBus?.capacity || 'N/A'} places</div></div>
                 </div>
               </div>
             )}

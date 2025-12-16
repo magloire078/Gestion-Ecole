@@ -689,6 +689,32 @@
         },
         "required": ["title", "priority", "status", "createdAt"]
     },
+    "key_trousseau": {
+        "title": "Trousseau de Clés",
+        "description": "Un ensemble de clés identifié pour une zone ou un usage spécifique.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Nom du trousseau (ex: Clés Bâtiment A)." },
+            "description": { "type": "string", "description": "Description (ex: Accès à toutes les salles du 1er étage)." },
+            "keys": { "type": "array", "items": { "type": "string" }, "description": "Liste des identifiants de clés individuelles." },
+            "status": { "type": "string", "enum": ["disponible", "emprunté"], "description": "Statut actuel du trousseau." },
+            "lastHolderId": { "type": "string", "description": "UID du dernier détenteur." }
+        },
+        "required": ["name", "status"]
+    },
+    "key_log": {
+        "title": "Journal des Clés",
+        "description": "Enregistre un emprunt ou un retour de trousseau de clés.",
+        "type": "object",
+        "properties": {
+            "trousseauId": { "type": "string" },
+            "staffId": { "type": "string", "description": "UID du membre du personnel." },
+            "type": { "type": "string", "enum": ["emprunt", "retour"] },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "notes": { "type": "string" }
+        },
+        "required": ["trousseauId", "staffId", "type", "timestamp"]
+    },
     "dossierMedical": {
         "title": "Dossier Médical",
         "description": "Le dossier médical principal d'un élève.",
@@ -942,6 +968,16 @@
             "path": "inventaire/{materielId}",
             "schema": { "$ref": "#/entities/materiel" },
             "description": "Stocke l'inventaire du matériel de l'école."
+        },
+        "cles_trousseaux": {
+            "path": "cles_trousseaux/{trousseauId}",
+            "schema": { "$ref": "#/entities/key_trousseau" },
+            "description": "Liste des trousseaux de clés de l'établissement."
+        },
+        "cles_log": {
+            "path": "cles_log/{logId}",
+            "schema": { "$ref": "#/entities/key_log" },
+            "description": "Journal des mouvements des clés."
         },
         "salles": {
             "path": "salles/{salleId}",
