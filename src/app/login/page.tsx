@@ -22,10 +22,11 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/logo';
+import { Logo } from '@/components/ui/logo';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import Link from 'next/link';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -181,14 +182,6 @@ export default function LoginPage() {
                     <Button className="w-full" onClick={handleEmailPasswordSignIn} disabled={isProcessing}>
                         {isProcessing ? 'Connexion...' : 'Se connecter'}
                     </Button>
-                    <div className="relative w-full">
-                        <Separator />
-                        <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
-                    </div>
-                    <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
-                        <GoogleIcon className="mr-2 h-4 w-4" />
-                        Continuer avec Google
-                    </Button>
                 </CardFooter>
             </TabsContent>
             <TabsContent value="signup">
@@ -213,6 +206,19 @@ export default function LoginPage() {
                 </CardFooter>
             </TabsContent>
         </Tabs>
+        <div className="relative p-6 pt-0">
+            <Separator />
+            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
+        </div>
+        <div className="px-6 pb-6 flex flex-col gap-4">
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
+                <GoogleIcon className="mr-2 h-4 w-4" />
+                Continuer avec Google
+            </Button>
+            <Button variant="secondary" className="w-full" asChild>
+                <Link href="/demo">Explorer la version démo</Link>
+            </Button>
+        </div>
       </Card>
     </div>
   );
