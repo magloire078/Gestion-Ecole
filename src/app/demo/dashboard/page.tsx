@@ -38,15 +38,15 @@ const DEMO_TOUR_STEPS = [
 ];
 
 const WIDGETS = [
-    { id: 'students-widget', title: 'Élèves', icon: Users, color: 'blue', badgeText: '120', description: 'Gestion complète des dossiers', button1Text: 'Voir tous les élèves', button2Text: 'Simuler une inscription', href: '/demo/eleves' },
-    { id: 'grades-widget', title: 'Pédagogie', icon: BookOpen, color: 'green', badgeText: '450 notes', description: 'Notes, bulletins, compétences', button1Text: 'Saisir des notes fictives', button2Text: 'Générer un bulletin', href: '/demo/pedagogie' },
-    { id: 'finance-widget', title: 'Finances', icon: Wallet, color: 'amber', badgeText: '85% payés', description: 'Frais, paiements, comptabilité', button1Text: 'Voir les statistiques', button2Text: 'Simuler un paiement', href: '/demo/finance' },
+    { id: 'students-widget', title: 'Élèves', icon: Users, color: 'blue', badgeText: '120', description: 'Gestion complète des dossiers', button1Text: 'Voir tous les élèves', button2Text: 'Simuler une inscription', href: '/demo/dashboard/eleves' },
+    { id: 'grades-widget', title: 'Pédagogie', icon: BookOpen, color: 'green', badgeText: '450 notes', description: 'Notes, bulletins, compétences', button1Text: 'Saisir des notes fictives', button2Text: 'Générer un bulletin', href: '/demo/dashboard/pedagogie' },
+    { id: 'finance-widget', title: 'Finances', icon: Wallet, color: 'amber', badgeText: '85% payés', description: 'Frais, paiements, comptabilité', button1Text: 'Voir les statistiques', button2Text: 'Simuler un paiement', href: '/demo/dashboard/finance' },
 ];
 
 const SECONDARY_WIDGETS = [
-    { id: 'communication-widget', title: 'Communication', icon: MessageSquare, color: 'purple', description: 'Parents, notifications, messages', buttonText: 'Envoyer un message test', href: '/demo/communication' },
-    { id: 'analytics-widget', title: 'Analytics', icon: BarChart3, color: 'red', description: 'Tableaux de bord interactifs', buttonText: 'Explorer les données', href: '/demo/analytics' },
-    { id: 'settings-widget', title: 'Configuration', icon: Settings, color: 'gray', description: 'Personnalisez l\'application', buttonText: 'Voir les paramètres', href: '/demo/parametres' },
+    { id: 'communication-widget', title: 'Communication', icon: MessageSquare, color: 'purple', description: 'Parents, notifications, messages', buttonText: 'Envoyer un message test', href: '/demo/dashboard/communication' },
+    { id: 'analytics-widget', title: 'Analytics', icon: BarChart3, color: 'red', description: 'Tableaux de bord interactifs', buttonText: 'Explorer les données', href: '/demo/dashboard/analytics' },
+    { id: 'settings-widget', title: 'Configuration', icon: Settings, color: 'gray', description: 'Personnalisez l\'application', buttonText: 'Voir les paramètres', href: '/demo/dashboard/parametres' },
 ];
 
 
@@ -133,3 +133,5 @@ export default function DemoDashboardPage() {
     </div>
   );
 }
+
+    
