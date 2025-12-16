@@ -42,7 +42,63 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
     },
-     "admin_role": {
+    "super_admin": {
+      "title": "Super Administrateur",
+      "description": "Un utilisateur avec les droits les plus élevés sur toute la plateforme.",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "locked"] },
+        "lastLogin": { "type": "string", "format": "date-time" },
+        "mfaEnabled": { "type": "boolean" },
+        "ipWhitelist": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "manage_all_schools": { "type": "boolean" },
+            "manage_super_admins": { "type": "boolean" },
+            "system_settings": { "type": "boolean" },
+            "billing_overview": { "type": "boolean" },
+            "data_export_all": { "type": "boolean" },
+            "audit_logs": { "type": "boolean" },
+            "api_management": { "type": "boolean" },
+            "backup_restore": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "system_log": {
+      "title": "Journal Système",
+      "description": "Trace toutes les actions critiques effectuées par les super admins.",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "details": { "type": "object" },
+        "ipAddress": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "system_setting": {
+      "title": "Paramètre Système",
+      "description": "Configuration globale de la plateforme.",
+      "type": "object",
+      "properties": {
+        "maintenanceMode": { "type": "boolean" },
+        "registrationEnabled": { "type": "boolean" },
+        "defaultSchoolPlan": { "type": "string" },
+        "smtpSettings": { "type": "object" },
+        "storageQuota": { "type": "number" },
+        "backupFrequency": { "type": "string" },
+        "apiRateLimit": { "type": "number" }
+      }
+    },
+    "admin_role": {
       "title": "Rôle Administratif",
       "description": "Définit un ensemble de permissions pour un rôle administratif au sein d'une école.",
       "type": "object",
@@ -826,6 +882,18 @@
     "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+    },
+    "/super_admins/{adminId}": {
+        "schema": { "$ref": "#/entities/super_admin" },
+        "description": "Stocke les profils des super administrateurs de la plateforme."
+    },
+    "/system_logs/{logId}": {
+        "schema": { "$ref": "#/entities/system_log" },
+        "description": "Journalise toutes les actions critiques effectuées sur la plateforme."
+    },
+    "/system_settings/{settingId}": {
+        "schema": { "$ref": "#/entities/system_setting" },
+        "description": "Stocke la configuration globale de la plateforme."
     },
     "/ecoles/{schoolId}": {
       "schema": { "$ref": "#/entities/school" },
