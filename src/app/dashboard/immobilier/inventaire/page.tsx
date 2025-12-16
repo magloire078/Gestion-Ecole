@@ -98,19 +98,28 @@ export default function InventairePage() {
 
     const dataToSave = { ...values, schoolId };
 
-    const promise = editingMateriel
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/inventaire/${editingMateriel.id}`), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/inventaire`), dataToSave);
-
-    try {
-      await promise;
-      toast({ title: `Matériel ${editingMateriel ? 'modifié' : 'ajouté'}`, description: `L'équipement ${values.name} a été enregistré.` });
-      setIsFormOpen(false);
-    } catch (error) {
-      const path = `ecoles/${schoolId}/inventaire/${editingMateriel?.id || '(new)'}`;
-      const operation = editingMateriel ? 'update' : 'create';
-      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-      errorEmitter.emit('permission-error', permissionError);
+    if (editingMateriel) {
+        const docRef = doc(firestore, `ecoles/${schoolId}/inventaire`, editingMateriel.id);
+        setDoc(docRef, dataToSave, { merge: true })
+            .then(() => {
+                toast({ title: `Matériel modifié`, description: `L'équipement ${values.name} a été enregistré.` });
+                setIsFormOpen(false);
+            })
+            .catch(error => {
+                const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'update', requestResourceData: dataToSave });
+                errorEmitter.emit('permission-error', permissionError);
+            });
+    } else {
+        const collectionRef = collection(firestore, `ecoles/${schoolId}/inventaire`);
+        addDoc(collectionRef, dataToSave)
+            .then(() => {
+                toast({ title: `Matériel ajouté`, description: `L'équipement ${values.name} a été enregistré.` });
+                setIsFormOpen(false);
+            })
+            .catch(error => {
+                const permissionError = new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: dataToSave });
+                errorEmitter.emit('permission-error', permissionError);
+            });
     }
   };
 
@@ -121,16 +130,17 @@ export default function InventairePage() {
   
   const handleDeleteMateriel = async () => {
     if (!schoolId || !materielToDelete) return;
-    try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/inventaire`, materielToDelete.id));
-      toast({ title: "Équipement supprimé", description: `L'équipement ${materielToDelete.name} a été retiré de l'inventaire.` });
-    } catch (error) {
-       const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/inventaire/${materielToDelete.id}`, operation: 'delete' });
-       errorEmitter.emit('permission-error', permissionError);
-    } finally {
-        setIsDeleteDialogOpen(false);
-        setMaterielToDelete(null);
-    }
+    const docRef = doc(firestore, `ecoles/${schoolId}/inventaire`, materielToDelete.id);
+    deleteDoc(docRef)
+        .then(() => {
+            toast({ title: "Équipement supprimé", description: `L'équipement ${materielToDelete.name} a été retiré de l'inventaire.` });
+            setIsDeleteDialogOpen(false);
+            setMaterielToDelete(null);
+        })
+        .catch(error => {
+            const permissionError = new FirestorePermissionError({ path: docRef.path, operation: 'delete' });
+            errorEmitter.emit('permission-error', permissionError);
+        });
   };
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
