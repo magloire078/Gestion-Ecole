@@ -24,7 +24,7 @@ service cloud.firestore {
     
     function getStaffProfile(schoolId) {
       let staffDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
-      return staffDoc.exists ? staffDoc.data() : null;
+      return staffDoc.exists ? staffDoc.data : null;
     }
     
     function hasPermission(schoolId, permission) {
@@ -32,7 +32,7 @@ service cloud.firestore {
       if (isAdmin()) return true;
       
       let staffProfile = getStaffProfile(schoolId);
-      if (!staffProfile) return false;
+      if (staffProfile == null) return false;
       
       // Directeur a tous les accès dans son école
       if (staffProfile.role == 'directeur') {
@@ -47,7 +47,7 @@ service cloud.firestore {
       let roleDoc = get(/databases/$(database)/documents/admin_roles/$(staffProfile.adminRole));
       if (!roleDoc.exists) return false;
       
-      let rolePermissions = roleDoc.data().permissions;
+      let rolePermissions = roleDoc.data.permissions;
       return rolePermissions[permission] == true;
     }
     
@@ -338,3 +338,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
