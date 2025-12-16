@@ -16,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
@@ -480,12 +480,16 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
         onClose={() => setIsPaymentDialogOpen(false)}
         student={student}
         schoolData={schoolData}
+        onSave={() => {
+            setIsPaymentDialogOpen(false);
+            router.refresh();
+        }}
       />
     </>
   );
 }
 
-function PaymentDialog({ isOpen, onClose, student, schoolData }: { isOpen: boolean, onClose: () => void, student: Student, schoolData: any }) {
+function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpen: boolean, onClose: () => void, onSave: () => void, student: Student, schoolData: any }) {
     const { toast } = useToast();
     const firestore = useFirestore();
     const [isSaving, setIsSaving] = useState(false);
@@ -562,7 +566,11 @@ function PaymentDialog({ isOpen, onClose, student, schoolData }: { isOpen: boole
     const handleClose = () => {
         setShowReceipt(false);
         setReceiptData(null);
-        onClose();
+        if (showReceipt) { // If we were showing a receipt, it means a save happened
+            onSave();
+        } else {
+            onClose();
+        }
     }
 
     return (
