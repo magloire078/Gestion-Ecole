@@ -572,9 +572,7 @@ export type competition = {
 export type participationCompetition = {
     studentId: string;
     competitionId: string;
+    id?: string;
     rank?: string;
     notes?: string;
-    id?: string;
 };
-
-

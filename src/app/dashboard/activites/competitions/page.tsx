@@ -1,11 +1,16 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { MoreHorizontal, PlusCircle, Edit, Trash2, Trophy } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { MoreHorizontal, PlusCircle, Edit, Trash2, Users } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, addDoc, setDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -23,6 +28,7 @@ import { fr } from 'date-fns/locale';
 import type { competition as Competition } from '@/lib/data-types';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import Link from 'next/link';
 
 const competitionSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
@@ -77,6 +83,17 @@ export default function CompetitionsPage() {
       errorEmitter.emit('permission-error', permissionError);
     }
   };
+  
+  const handleDeleteCompetition = async (id: string, name: string) => {
+    if (!schoolId) return;
+    try {
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/competitions`, id));
+      toast({ title: 'Événement supprimé', description: `L'événement ${name} a été supprimé.` });
+    } catch (error) {
+       const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/competitions/${id}`, operation: 'delete' });
+       errorEmitter.emit('permission-error', permissionError);
+    }
+  }
 
   const isLoading = schoolLoading || competitionsLoading;
 
@@ -114,8 +131,11 @@ export default function CompetitionsPage() {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                               <Link href={`/dashboard/activites/competitions/${comp.id}`}><Users className="mr-2 h-4 w-4"/>Gérer les participants</Link>
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleOpenForm(comp)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteCompetition(comp.id, comp.name)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
