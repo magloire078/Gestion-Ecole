@@ -34,10 +34,11 @@ export function useUser() {
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             
+            const tokenResult = await authUser.getIdTokenResult();
+            const isAdmin = tokenResult.claims.admin === true;
+
             const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
             const userRootSnap = await getDoc(userRootRef);
-            
-            const isAdmin = userRootSnap.exists() && userRootSnap.data().isAdmin === true;
             const schoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
 
             let userProfile: UserProfile | undefined = undefined;
