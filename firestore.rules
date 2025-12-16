@@ -1,6 +1,5 @@
-rules_version = '2';
 
-// Règle mise à jour pour forcer le redéploiement.
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -10,41 +9,90 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    // Super Admin vérifié via custom claims + collection
     function isAdmin() {
-      // Un super admin est un utilisateur dont l'UID existe dans la collection /super_admins
-      return isAuth() && exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+      return isAuth() && 
+        (request.auth.token.superAdmin == true || 
+         exists(/databases/$(database)/documents/super_admins/$(request.auth.uid)));
     }
 
     function isOwner(userId) {
       return isAuth() && request.auth.uid == userId;
     }
 
-    function getSchoolIdForUser(userId) {
-        return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
-    }
-
+    // OPTIMISÉ : Utilise les custom claims (configurez-les via Cloud Function)
     function belongsToSchool(schoolId) {
-        return isAuth() && getSchoolIdForUser(request.auth.uid) == schoolId;
+      return isAuth() && request.auth.token.schoolId == schoolId;
     }
     
-    function getStaffProfile(schoolId) {
-      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
+    // Fonction de secours si custom claims non configurés
+    function belongsToSchoolFallback(schoolId) {
+      if (!isAuth()) return false;
+      let userDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
+      return userDoc.exists && userDoc.data().schoolId == schoolId;
+    }
+    
+    // Vérifie si l'utilisateur a un profil personnel
+    function hasStaffProfile(schoolId) {
+      return exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+    }
+    
+    // Récupère le rôle du personnel
+    function getStaffRole(schoolId) {
+      let staffDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+      return staffDoc.exists ? staffDoc.data().role : null;
     }
 
-    // --- NOUVELLE FONCTION DE PERMISSION ---
-    // Vérifie les permissions en se basant sur le rôle de l'utilisateur
+    // NOUVELLE FONCTION : Vérification robuste des permissions
     function hasPermission(schoolId, permission) {
-        let staffProfile = getStaffProfile(schoolId);
-        // Director has all school-level permissions
-        if (staffProfile.role == 'directeur') {
-          return true;
-        }
-        // If user has an admin role assigned, check permissions on that role
-        if (staffProfile.adminRole != null) {
-          let rolePermissions = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions;
-          return rolePermissions[permission] == true;
-        }
+      // Super admin a tous les accès
+      if (isAdmin()) return true;
+      
+      // Vérifier l'appartenance à l'école
+      if (!belongsToSchool(schoolId)) return false;
+      
+      let staffDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+      if (!staffDoc.exists) return false;
+      
+      let staffProfile = staffDoc.data();
+      
+      // Directeur a tous les accès dans son école
+      if (staffProfile.role == 'directeur') {
+        return true;
+      }
+      
+      // Si pas de rôle admin, pas de permissions spéciales
+      if (staffProfile.adminRole == null) {
         return false;
+      }
+      
+      // Vérifier les permissions du rôle
+      let roleDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole));
+      if (!roleDoc.exists) return false;
+      
+      let rolePermissions = roleDoc.data().permissions;
+      return rolePermissions[permission] == true;
+    }
+    
+    // Fonctions helper pour les permissions courantes
+    function canViewUsers(schoolId) {
+      return hasPermission(schoolId, 'viewUsers') || hasPermission(schoolId, 'manageUsers');
+    }
+    
+    function canManageUsers(schoolId) {
+      return hasPermission(schoolId, 'manageUsers');
+    }
+    
+    function canManageGrades(schoolId) {
+      return hasPermission(schoolId, 'manageGrades');
+    }
+    
+    function canManageBilling(schoolId) {
+      return hasPermission(schoolId, 'manageBilling');
+    }
+    
+    function canManageMedical(schoolId) {
+      return hasPermission(schoolId, 'manageMedical');
     }
     
     // --- Global Collections ---
@@ -56,68 +104,85 @@ service cloud.firestore {
         request.auth.uid == userId && 
         !exists(/databases/$(database)/documents/$(request.path));
       allow update: if isOwner(userId);
-      allow delete: if false; // La suppression doit être gérée par une fonction cloud
+      allow delete: if false;
     }
     
     // --- System-level collections for Super Admins ---
     match /super_admins/{adminId} {
       allow read, write: if isAdmin();
     }
+    
     match /system_logs/{logId} {
       allow read: if isAdmin();
-      allow create: if true; // Permettre aux fonctions de log d'écrire
+      allow create: if true;
     }
-     match /system_settings/{settingId} {
+    
+    match /system_settings/{settingId} {
       allow read, write: if isAdmin();
     }
-
 
     // --- School Collections ---
 
     match /ecoles/{schoolId} {
-       allow get: if isAuth(); 
-       allow list: if isAdmin(); 
-       allow create: if isAuth();
-       allow update: if belongsToSchool(schoolId) && getStaffProfile(schoolId).role == 'directeur';
-       allow delete: if isAdmin();
+      // Lecture: seulement si on appartient à l'école ou admin
+      allow get: if belongsToSchool(schoolId) || isAdmin();
+      
+      // Liste: seulement admin (évite l'énumération)
+      allow list: if isAdmin();
+      
+      // Création: tout utilisateur authentifié
+      allow create: if isAuth();
+      
+      // Modification: directeur ou admin
+      allow update: if (belongsToSchool(schoolId) && getStaffRole(schoolId) == 'directeur') || isAdmin();
+      
+      // Suppression: seulement admin
+      allow delete: if isAdmin();
     }
     
     // --- School Subcollections Rules ---
     
     match /ecoles/{schoolId}/personnel/{staffId} {
-      allow read: if belongsToSchool(schoolId);
-      allow list: if belongsToSchool(schoolId) && hasPermission(schoolId, 'viewUsers');
-      allow create: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
-      allow update: if belongsToSchool(schoolId) && (hasPermission(schoolId, 'manageUsers') || isOwner(staffId));
-      allow delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
+      allow read: if belongsToSchool(schoolId) && canViewUsers(schoolId);
+      allow list: if belongsToSchool(schoolId) && canViewUsers(schoolId);
+      allow create: if belongsToSchool(schoolId) && canManageUsers(schoolId);
+      allow update: if belongsToSchool(schoolId) && (canManageUsers(schoolId) || isOwner(staffId));
+      allow delete: if belongsToSchool(schoolId) && canManageUsers(schoolId);
     }
     
     match /ecoles/{schoolId}/eleves/{studentId} {
-      allow read: if belongsToSchool(schoolId);
-      allow list: if belongsToSchool(schoolId);
-      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
+      allow read: if belongsToSchool(schoolId) && canViewUsers(schoolId);
+      allow list: if belongsToSchool(schoolId) && canViewUsers(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && canManageUsers(schoolId);
     }
 
-    match /ecoles/{schoolId}/eleves/{studentId}/{document=**} {
-      allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageUsers');
-    }
-    
+    // Sous-collections élèves avec règles spécifiques
     match /ecoles/{schoolId}/eleves/{studentId}/notes/{gradeId} {
-        allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageGrades');
+      allow read: if belongsToSchool(schoolId) && canViewUsers(schoolId);
+      allow write: if belongsToSchool(schoolId) && canManageGrades(schoolId);
     }
 
     match /ecoles/{schoolId}/eleves/{studentId}/paiements/{paymentId} {
-        allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
+      allow read: if belongsToSchool(schoolId) && (canViewUsers(schoolId) || canManageBilling(schoolId));
+      allow write: if belongsToSchool(schoolId) && canManageBilling(schoolId);
     }
     
-    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId=**} {
-        allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageMedical');
+    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId} {
+      allow read, write: if belongsToSchool(schoolId) && canManageMedical(schoolId);
+    }
+    
+    // Règle générique pour autres sous-documents élèves
+    match /ecoles/{schoolId}/eleves/{studentId}/{otherDocument}/{docId} {
+      allow read: if belongsToSchool(schoolId) && canViewUsers(schoolId);
+      allow write: if belongsToSchool(schoolId) && canManageUsers(schoolId);
     }
 
     match /ecoles/{schoolId}/admin_roles/{roleId} {
-        allow read, list: if belongsToSchool(schoolId);
-        allow create, update, delete: if belongsToSchool(schoolId) && getStaffProfile(schoolId).role == 'directeur';
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && getStaffRole(schoolId) == 'directeur';
     }
+    
+    // --- Gestion Pédagogique ---
     
     match /ecoles/{schoolId}/classes/{classId} {
       allow read, list: if belongsToSchool(schoolId);
@@ -125,51 +190,57 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/cycles/{cycleId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
     }
     
     match /ecoles/{schoolId}/niveaux/{niveauId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
     }
 
     match /ecoles/{schoolId}/matieres/{subjectId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageClasses');
     }
     
     match /ecoles/{schoolId}/emploi_du_temps/{entryId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageSchedule');
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageSchedule');
     }
     
     match /ecoles/{schoolId}/absences/{absenceId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageAttendance');
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageAttendance');
     }
     
+    // --- Gestion Financière ---
+    
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-       allow read, write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
+      allow read, write: if belongsToSchool(schoolId) && canManageBilling(schoolId);
     }
     
     match /ecoles/{schoolId}/frais_scolarite/{feeId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow create, update, delete: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageBilling');
+      allow read, list: if belongsToSchool(schoolId);
+      allow create, update, delete: if belongsToSchool(schoolId) && canManageBilling(schoolId);
     }
     
     // --- MODULES SPECIFIQUES ---
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageLibrary');
+      allow read, list: if belongsToSchool(schoolId);
+      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageLibrary');
     }
     
     match /ecoles/{schoolId}/messagerie/{messageId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow create: if belongsToSchool(schoolId); // Tout membre peut envoyer un message
+      allow read: if belongsToSchool(schoolId);
+      allow list: if belongsToSchool(schoolId);
+      allow create: if belongsToSchool(schoolId);
+      allow update, delete: if belongsToSchool(schoolId) && 
+        (request.auth.uid == resource.data.senderId || hasPermission(schoolId, 'manageCommunication'));
     }
 
+    // Cantine
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageCantine');
@@ -185,6 +256,7 @@ service cloud.firestore {
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageCantine');
     }
     
+    // Transport
     match /ecoles/{schoolId}/transport_bus/{busId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageTransport');
@@ -200,56 +272,59 @@ service cloud.firestore {
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageTransport');
     }
 
+    // Internat
     match /ecoles/{schoolId}/internat_batiments/{buildingId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInternat');
     }
     
-     match /ecoles/{schoolId}/internat_chambres/{roomId} {
+    match /ecoles/{schoolId}/internat_chambres/{roomId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInternat');
     }
     
-     match /ecoles/{schoolId}/internat_occupants/{occupationId} {
+    match /ecoles/{schoolId}/internat_occupants/{occupationId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInternat');
     }
     
-     match /ecoles/{schoolId}/internat_entrees_sorties/{logId} {
+    match /ecoles/{schoolId}/internat_entrees_sorties/{logId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInternat');
     }
 
+    // Inventaire
     match /ecoles/{schoolId}/inventaire/{materielId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInventory');
     }
     
-     match /ecoles/{schoolId}/salles/{salleId} {
+    match /ecoles/{schoolId}/salles/{salleId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageRooms');
     }
     
-     match /ecoles/{schoolId}/reservations_salles/{reservationId} {
+    match /ecoles/{schoolId}/reservations_salles/{reservationId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageRooms');
     }
     
-     match /ecoles/{schoolId}/maintenance/{tacheId} {
+    match /ecoles/{schoolId}/maintenance/{tacheId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInventory');
     }
 
-     match /ecoles/{schoolId}/cles_trousseaux/{trousseauId} {
+    match /ecoles/{schoolId}/cles_trousseaux/{trousseauId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInventory');
     }
     
     match /ecoles/{schoolId}/cles_log/{logId} {
-       allow read, list: if belongsToSchool(schoolId);
-       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInventory');
+      allow read, list: if belongsToSchool(schoolId);
+      allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageInventory');
     }
 
+    // Activités
     match /ecoles/{schoolId}/activites/{activiteId} {
       allow read, list: if belongsToSchool(schoolId);
       allow write: if belongsToSchool(schoolId) && hasPermission(schoolId, 'manageActivities');
