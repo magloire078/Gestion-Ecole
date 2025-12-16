@@ -34,8 +34,9 @@ export function useUser() {
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             
-            const tokenResult = await authUser.getIdTokenResult();
-            const isAdmin = tokenResult.claims.admin === true;
+            const adminRef = doc(firestore, 'super_admins', authUser.uid);
+            const adminSnap = await getDoc(adminRef);
+            const isAdmin = adminSnap.exists();
 
             const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
             const userRootSnap = await getDoc(userRootRef);
@@ -60,6 +61,7 @@ export function useUser() {
                             manageCommunication: true, manageLibrary: true, manageCantine: true,
                             manageTransport: true, manageInternat: true, manageInventory: true,
                             manageRooms: true, manageActivities: true, manageMedical: true,
+                            manageSchedule: true,
                         };
                     }
 
@@ -114,3 +116,5 @@ export function useUser() {
 
   return {user, loading};
 }
+
+    

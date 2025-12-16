@@ -54,20 +54,7 @@
         "lastLogin": { "type": "string", "format": "date-time" },
         "mfaEnabled": { "type": "boolean" },
         "ipWhitelist": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "permissions": {
-          "type": "object",
-          "properties": {
-            "manage_all_schools": { "type": "boolean" },
-            "manage_super_admins": { "type": "boolean" },
-            "system_settings": { "type": "boolean" },
-            "billing_overview": { "type": "boolean" },
-            "data_export_all": { "type": "boolean" },
-            "audit_logs": { "type": "boolean" },
-            "api_management": { "type": "boolean" },
-            "backup_restore": { "type": "boolean" }
-          }
-        }
+        "createdAt": { "type": "string", "format": "date-time" }
       }
     },
     "system_log": {
@@ -1102,5 +1089,6 @@
     }
   }
 }
+
 
     
