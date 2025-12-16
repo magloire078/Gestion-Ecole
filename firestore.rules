@@ -22,7 +22,6 @@ service cloud.firestore {
     }
     
     function getStaffProfile(schoolId) {
-      // Allow reading own profile, or if admin.
       return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
     
