@@ -58,8 +58,8 @@ export default function CreateSchoolPage() {
   
   // Sync user name to form once loaded
   useEffect(() => {
-    if (user && !userLoading && user.displayName) {
-      const nameParts = user.displayName.split(' ');
+    if (user && user.authUser && !userLoading && user.authUser.displayName) {
+      const nameParts = user.authUser.displayName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
@@ -73,7 +73,7 @@ export default function CreateSchoolPage() {
 
 
   const handleSubmit = async (values: CreateSchoolFormValues) => {
-    if (!user || !user.uid || !user.email) {
+    if (!user || !user.authUser || !user.authUser.uid || !user.authUser.email) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide.' });
         return;
     }
@@ -85,13 +85,13 @@ export default function CreateSchoolPage() {
         name: values.schoolName,
         address: values.address || '',
         mainLogoUrl: logoUrl || '',
-        directorId: user.uid,
+        directorId: user.authUser.uid,
         directorFirstName: values.directorFirstName,
         directorLastName: values.directorLastName,
-        directorEmail: user.email,
+        directorEmail: user.authUser.email,
         // Default values for other fields
         city: '', country: '', phone: '', email: '', academicYear: '2024-2025', language: 'fr', currency: 'XOF',
-      }, user.uid);
+      }, user.authUser.uid);
       
       await auth.currentUser?.getIdToken(true); 
       
@@ -116,7 +116,7 @@ export default function CreateSchoolPage() {
     form.setValue('logoUrl', url, { shouldDirty: true });
   }
 
-  const storagePath = user?.uid ? `temp-logos/${user.uid}/` : 'temp-logos/unknown/';
+  const storagePath = user?.authUser?.uid ? `temp-logos/${user.authUser.uid}/` : 'temp-logos/unknown/';
 
   return (
     <div className="min-h-screen bg-muted/40 p-4 md:p-8 flex items-center justify-center">

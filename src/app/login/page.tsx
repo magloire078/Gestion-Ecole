@@ -96,7 +96,7 @@ export default function LoginPage() {
     try {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: 'Connexion réussie', description: 'Vous êtes maintenant connecté(e).' });
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Erreur de connexion', description: 'Email ou mot de passe incorrect.' });
     } finally {
@@ -114,7 +114,7 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
         toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.' });
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Cette adresse e-mail est déjà utilisée.' });
@@ -136,7 +136,7 @@ export default function LoginPage() {
         title: 'Connexion réussie',
         description: 'Vous allez être redirigé vers le tableau de bord.',
       });
-      router.push('/dashboard');
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast({
         variant: 'destructive',
