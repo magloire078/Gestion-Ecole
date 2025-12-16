@@ -47,14 +47,13 @@ export function useUser() {
                 
                 if (profileSnap.exists()) {
                     const profileData = profileSnap.data() as AppUser;
-                    const isDirector = profileData.role === 'directeur';
                     
                     userProfile = { 
                         ...profileData,
-                        isAdmin: isAdminClaim || isDirector, // Grant admin if director
+                        isAdmin: isAdminClaim,
                     };
 
-                    if (isDirector) {
+                    if (profileData.role === 'directeur') {
                         userProfile.permissions = {
                             manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
                             manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,

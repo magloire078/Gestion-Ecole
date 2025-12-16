@@ -63,7 +63,8 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const displayName = user?.authUser?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  const isAdmin = user?.profile?.isAdmin === true;
+  const isDirector = user?.profile?.role === 'directeur';
+  const isAdmin = user?.profile?.isAdmin === true || isDirector;
   const userRole = isAdmin && user?.profile?.role !== 'directeur' ? 'Super Administrateur' : user?.profile?.role;
 
   if (collapsed) {

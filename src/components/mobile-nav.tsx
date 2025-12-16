@@ -33,12 +33,13 @@ const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.Elemen
 
 export function MobileNav() {
   const { user } = useUser();
-  const isAdmin = user?.profile?.isAdmin === true;
+  const isDirector = user?.profile?.role === 'directeur';
+  const isAdmin = user?.profile?.isAdmin === true || isDirector;
   const userPermissions = user?.profile?.permissions || {};
 
   const hasPermission = (permission?: PermissionKey) => {
-    if (isAdmin) return true; // Super admin always has permission
-    if (!permission) return true; // Link is public within the dashboard
+    if (isAdmin || isDirector) return true;
+    if (!permission) return true; 
     return !!userPermissions[permission];
   };
 
