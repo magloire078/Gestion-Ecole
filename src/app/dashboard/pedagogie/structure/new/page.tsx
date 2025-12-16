@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Save, Loader2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
@@ -17,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -178,8 +177,8 @@ export default function NewClassPage() {
           grade: niveau.name || '',
           studentCount: 0,
           isFull: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
       };
         
       const classesCollectionRef = collection(firestore, `ecoles/${schoolId}/classes`);
@@ -260,40 +259,25 @@ export default function NewClassPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Tabs defaultValue="informations" className="space-y-6">
-                <TabsList className="grid w-full grid-cols-3"><TabsTrigger value="informations">Informations</TabsTrigger><TabsTrigger value="effectif">Effectif</TabsTrigger><TabsTrigger value="options">Options</TabsTrigger></TabsList>
-                <TabsContent value="informations">
-                    <Card><CardHeader><CardTitle>Informations de la classe</CardTitle><CardDescription>Définissez les caractéristiques principales de la classe.</CardDescription></CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <FormField control={form.control} name="cycleId" render={({ field }) => (<FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un cycle" /></SelectTrigger></FormControl><SelectContent>{cycles.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="niveauId" render={({ field }) => (<FormItem><FormLabel>Niveau *</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!watchedCycleId || filteredNiveaux.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={!watchedCycleId ? "Choisissez un cycle" : "Sélectionnez un niveau"} /></SelectTrigger></FormControl><SelectContent>{filteredNiveaux.map((n) => (<SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="section" render={({ field }) => (<FormItem><FormLabel>Section</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{['A', 'B', 'C', 'D', 'E'].map(s => <SelectItem key={s} value={s}>Section {s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année scolaire *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="2024-2025">2024-2025</SelectItem><SelectItem value="2025-2026">2025-2026</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la classe *</FormLabel><FormControl><Input placeholder="Auto-généré" {...field} readOnly /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code *</FormLabel><FormControl><Input placeholder="Auto-généré" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="mainTeacherId" render={({ field }) => (<FormItem><FormLabel>Enseignant principal</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un enseignant" /></SelectTrigger></FormControl><SelectContent>{teachers.map((t) => (<SelectItem key={t.id} value={t.id}>{`${t.firstName} ${t.lastName}`}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="classroom" render={({ field }) => (<FormItem><FormLabel>Salle de classe</FormLabel><FormControl><Input placeholder="Ex: Salle 101" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="building" render={({ field }) => (<FormItem><FormLabel>Bâtiment</FormLabel><FormControl><Input placeholder="Ex: Bâtiment A" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="effectif">
-                    <Card><CardHeader><CardTitle>Configuration de l'effectif</CardTitle><CardDescription>Définissez les limites d'effectif pour cette classe.</CardDescription></CardHeader>
-                        <CardContent>
-                           <FormField control={form.control} name="maxStudents" render={({ field }) => (<FormItem><FormLabel>Nombre maximum d'élèves *</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-                <TabsContent value="options">
-                    <Card><CardHeader><CardTitle>Options supplémentaires</CardTitle><CardDescription>Paramètres avancés et notes.</CardDescription></CardHeader>
-                        <CardContent className="space-y-6">
-                            <FormField control={form.control} name="status" render={({ field }) => (<FormItem className="flex items-center justify-between"><FormLabel>Classe active</FormLabel><FormControl><Switch checked={field.value === 'active'} onCheckedChange={(checked) => field.onChange(checked ? 'active' : 'inactive')} /></FormControl></FormItem>)} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+            <Card>
+                <CardHeader><CardTitle>Informations de la classe</CardTitle><CardDescription>Définissez les caractéristiques principales de la classe.</CardDescription></CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="cycleId" render={({ field }) => (<FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un cycle" /></SelectTrigger></FormControl><SelectContent>{cycles.map((c) => (<SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="niveauId" render={({ field }) => (<FormItem><FormLabel>Niveau *</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!watchedCycleId || filteredNiveaux.length === 0}><FormControl><SelectTrigger><SelectValue placeholder={!watchedCycleId ? "Choisissez un cycle" : "Sélectionnez un niveau"} /></SelectTrigger></FormControl><SelectContent>{filteredNiveaux.map((n) => (<SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="section" render={({ field }) => (<FormItem><FormLabel>Section</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{['A', 'B', 'C', 'D', 'E'].map(s => <SelectItem key={s} value={s}>Section {s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année scolaire *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="2024-2025">2024-2025</SelectItem><SelectItem value="2025-2026">2025-2026</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la classe *</FormLabel><FormControl><Input placeholder="Auto-généré" {...field} readOnly /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code *</FormLabel><FormControl><Input placeholder="Auto-généré" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="mainTeacherId" render={({ field }) => (<FormItem><FormLabel>Enseignant principal</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un enseignant" /></SelectTrigger></FormControl><SelectContent>{teachers.map((t) => (<SelectItem key={t.id} value={t.id}>{`${t.firstName} ${t.lastName}`}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="classroom" render={({ field }) => (<FormItem><FormLabel>Salle de classe</FormLabel><FormControl><Input placeholder="Ex: Salle 101" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="building" render={({ field }) => (<FormItem><FormLabel>Bâtiment</FormLabel><FormControl><Input placeholder="Ex: Bâtiment A" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="maxStudents" render={({ field }) => (<FormItem><FormLabel>Nombre maximum d'élèves *</FormLabel><FormControl><Input type="number" min="1" {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="status" render={({ field }) => (<FormItem className="flex items-center justify-between"><FormLabel>Classe active</FormLabel><FormControl><Switch checked={field.value === 'active'} onCheckedChange={(checked) => field.onChange(checked ? 'active' : 'inactive')} /></FormControl></FormItem>)} />
+
+                    </div>
+                </CardContent>
+            </Card>
             <div className="flex items-center justify-end pt-6"><Button type="submit" disabled={isSubmitting}><Save className="mr-2 h-4 w-4" />Créer la classe</Button></div>
         </form>
       </Form>
