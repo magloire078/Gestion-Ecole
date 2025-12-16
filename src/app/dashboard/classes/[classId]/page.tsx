@@ -15,7 +15,7 @@ import { ArrowLeft, User, Users } from 'lucide-react';
 import Link from 'next/link';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 
-import type { class_type as Class, student as Student, staff as Staff } from '@/lib/data-types';
+import type { class_type as Class, student as Student } from '@/lib/data-types';
 
 function ClassDetailsSkeleton() {
   return (
@@ -57,16 +57,9 @@ export default function ClassDetailsPage() {
     , [firestore, schoolId, classId]);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
     
-    // Fetch Main Teacher Info
-    const teacherRef = useMemoFirebase(() => 
-        (schoolId && classData?.mainTeacherId) ? doc(firestore, `ecoles/${schoolId}/personnel/${classData.mainTeacherId}`) : null
-    , [firestore, schoolId, classData]);
-    const { data: teacherData, loading: teacherLoading } = useDoc<Staff>(teacherRef);
-
     const students = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
-    const teacher = useMemo(() => teacherData ? { id: teacherData.id, ...teacherData } as Staff : null, [teacherData]);
 
-    const isLoading = schoolLoading || classLoading || studentsLoading || teacherLoading;
+    const isLoading = schoolLoading || classLoading || studentsLoading;
 
     if (isLoading) {
         return <ClassDetailsSkeleton />;
@@ -100,7 +93,7 @@ export default function ClassDetailsPage() {
                         <CardDescription>Enseignant Principal</CardDescription>
                         <CardTitle className="text-xl flex items-center gap-2">
                           <User className="h-5 w-5" />
-                          {teacher?.firstName} {teacher?.lastName}
+                          {classData.mainTeacherName || 'Non assigné'}
                         </CardTitle>
                     </CardHeader>
                 </Card>
