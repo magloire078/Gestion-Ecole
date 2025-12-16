@@ -564,13 +564,13 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
     };
 
     const handleClose = () => {
-        setShowReceipt(false);
-        setReceiptData(null);
         if (showReceipt) { // If we were showing a receipt, it means a save happened
             onSave();
         } else {
             onClose();
         }
+        setShowReceipt(false);
+        setReceiptData(null);
     }
 
     return (
