@@ -153,23 +153,19 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   
   const handleViewReceipt = (payment: PaymentHistoryEntry) => {
     if (!student) return;
-
-    // Calculer le montant total payé par l'élève.
+  
     const totalPaid = (student.tuitionFee ?? 0) - (student.amountDue ?? 0);
-    
-    // Identifier tous les paiements effectués APRES le paiement actuel.
+  
+    // Identifier tous les paiements effectués STRICTEMENT APRES le paiement actuel.
     const paymentsAfterCurrent = paymentHistory
-        .filter(p => new Date(p.date) > new Date(payment.date) || (new Date(p.date).getTime() === new Date(payment.date).getTime() && p.id !== payment.id));
-    
-    // Calculer la somme de ces paiements postérieurs.
+        .filter(p => new Date(p.date) > new Date(payment.date));
+  
     const sumOfPaymentsAfter = paymentsAfterCurrent.reduce((sum, p) => sum + p.amount, 0);
-
-    // Le total payé *avant* ce paiement spécifique.
+  
     const totalPaidBeforeThisPayment = totalPaid - sumOfPaymentsAfter - payment.amount;
-
-    // Le solde dû *avant* ce paiement spécifique.
-    const amountDueBeforeThisPayment = (student.tuitionFee ?? 0) - totalPaidBeforeThisPayment;
-    
+  
+    const amountDueBeforeThisPayment = (student.tuitionFee ?? 0) - (student.discountAmount || 0) - totalPaidBeforeThisPayment;
+  
     const receipt: ReceiptData = {
         schoolName: schoolName || "Votre École",
         studentName: studentFullName,
@@ -565,11 +561,12 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
         
         batch.commit().then(() => {
             toast({ title: "Paiement enregistré" });
+            const amountDueBeforePayment = (student.amountDue || 0);
             setReceiptData({
                 schoolName: schoolData?.name || "Votre École", studentName: `${student.firstName} ${student.lastName}`,
                 studentMatricule: student.matricule || 'N/A', className: student.class || 'N/A',
                 date: new Date(values.paymentDate), description: values.paymentDescription,
-                amountPaid: amountPaid, amountDue: newAmountDue, payerName: `${values.payerFirstName} ${values.payerLastName}`,
+                amountPaid: amountPaid, amountDue: amountDueBeforePayment - amountPaid, payerName: `${values.payerFirstName} ${values.payerLastName}`,
                 payerContact: values.payerContact, paymentMethod: values.paymentMethod,
             });
             setShowReceipt(true); // Show receipt view
@@ -583,11 +580,12 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
     const handleClose = () => {
         if (showReceipt) { // If we were showing a receipt, it means a save happened
             onSave();
+        } else {
+            onClose();
         }
         // Reset state for next time
         setShowReceipt(false);
         setReceiptData(null);
-        onClose();
     }
 
     return (
