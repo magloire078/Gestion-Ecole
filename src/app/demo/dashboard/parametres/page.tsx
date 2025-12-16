@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Copy, Settings, Users, School, Briefcase } from 'lucide-react';
+import { Copy, Settings, Users, School, Briefcase, ArrowLeft } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function DemoSettingsPage() {
@@ -21,7 +21,10 @@ export default function DemoSettingsPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Démo: Paramètres</h1>
               <p className="text-muted-foreground">Simulation de la page de configuration de l'établissement.</p>
             </div>
-            <Button variant="outline" onClick={() => router.back()}>Retour au tableau de bord</Button>
+            <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+            </Button>
         </div>
 
         <Card>
@@ -90,5 +93,3 @@ export default function DemoSettingsPage() {
     </TooltipProvider>
   );
 }
-
-    

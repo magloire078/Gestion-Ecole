@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, ArrowLeft } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DEMO_STUDENTS } from '@/lib/demo-data';
 
@@ -60,7 +60,10 @@ export default function DemoGradesPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Démo: Saisie des Notes</h1>
               <p className="text-muted-foreground">Voici une simulation de l'interface de saisie des notes.</p>
             </div>
-            <Button variant="outline" onClick={() => router.back()}>Retour au tableau de bord</Button>
+            <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+            </Button>
         </div>
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -161,5 +164,3 @@ export default function DemoGradesPage() {
     </TooltipProvider>
   );
 }
-
-    

@@ -17,7 +17,8 @@ import {
   Users,
   FileText,
   CalendarDays,
-  Filter
+  Filter,
+  ArrowLeft
 } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -55,7 +56,10 @@ export default function DemoAnalyticsPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Démo: Analytics & Rapports</h1>
               <p className="text-muted-foreground">Simulation du tableau de bord analytique.</p>
             </div>
-             <Button variant="outline" onClick={() => router.back()}>Retour au tableau de bord</Button>
+             <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+            </Button>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -152,5 +156,3 @@ export default function DemoAnalyticsPage() {
     </div>
   );
 }
-
-    

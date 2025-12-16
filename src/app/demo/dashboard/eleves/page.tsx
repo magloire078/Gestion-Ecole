@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, PlusCircle, Eye, MoreHorizontal } from "lucide-react";
+import { Search, PlusCircle, Eye, MoreHorizontal, ArrowLeft } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -63,7 +63,10 @@ export default function DemoStudentsPage() {
                   <p className="text-muted-foreground">Ceci est une simulation de la page de gestion des élèves.</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => router.back()}>Retour au tableau de bord</Button>
+                    <Button variant="outline" onClick={() => router.back()}>
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Retour
+                    </Button>
                     <Button disabled>
                         <PlusCircle className="mr-2 h-4 w-4" /> Nouvelle Inscription
                     </Button>
@@ -148,5 +151,3 @@ export default function DemoStudentsPage() {
     </div>
   );
 }
-
-    

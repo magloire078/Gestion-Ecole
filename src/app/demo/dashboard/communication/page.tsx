@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PlusCircle, Send, Users, User, BookUser } from "lucide-react";
+import { PlusCircle, Send, Users, User, BookUser, ArrowLeft } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -40,7 +40,10 @@ export default function DemoCommunicationPage() {
               <h1 className="text-lg font-semibold md:text-2xl">Démo: Messagerie</h1>
               <p className="text-muted-foreground">Simulation de l'envoi de messages et notifications.</p>
             </div>
-             <Button variant="outline" onClick={() => router.back()}>Retour au tableau de bord</Button>
+             <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+            </Button>
         </div>
         
         <Card>
@@ -126,5 +129,3 @@ export default function DemoCommunicationPage() {
     </TooltipProvider>
   );
 }
-
-    

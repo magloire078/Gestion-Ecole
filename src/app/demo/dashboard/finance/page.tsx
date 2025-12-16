@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PlusCircle, TrendingUp, TrendingDown, Wallet } from "lucide-react";
+import { PlusCircle, TrendingUp, TrendingDown, Wallet, ArrowLeft } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -45,7 +45,10 @@ export default function DemoFinancePage() {
               <h1 className="text-lg font-semibold md:text-2xl">Démo: Comptabilité</h1>
               <p className="text-muted-foreground">Simulation du tableau de bord financier.</p>
             </div>
-             <Button variant="outline" onClick={() => router.back()}>Retour au tableau de bord</Button>
+             <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Retour
+            </Button>
         </div>
         
         <div className="grid gap-4 md:grid-cols-3">
@@ -130,5 +133,3 @@ export default function DemoFinancePage() {
     </TooltipProvider>
   );
 }
-
-    
