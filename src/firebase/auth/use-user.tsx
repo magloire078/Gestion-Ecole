@@ -44,11 +44,20 @@ export function useUser() {
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
-            const tokenResult = await authUser.getIdTokenResult();
-            const isAdminClaim = tokenResult.claims.admin === true;
+            
+            // Note: We are not using claims for now for simplicity and robustness.
+            // Direct document reads are more reliable at this stage.
+            // const tokenResult = await authUser.getIdTokenResult();
+            // const isAdminClaim = tokenResult.claims.admin === true;
 
             const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
             const userRootSnap = await getDoc(userRootRef);
+            
+            // Check for admin status from a separate, more secure source if possible,
+            // or fall back to a specific field in the user's profile for simplicity.
+            // Here, we'll assume a field on the user_root for platform-wide admin status.
+            const isAdmin = userRootSnap.exists() && userRootSnap.data().isAdmin === true;
+
             const schoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
 
             let userProfile: UserProfile | undefined = undefined;
@@ -63,7 +72,7 @@ export function useUser() {
                     
                     userProfile = { 
                         ...profileData,
-                        isAdmin: isAdminClaim || isDirector,
+                        isAdmin: isAdmin || isDirector, // A director is an admin of their school
                     };
 
                     if (isDirector) {
@@ -77,10 +86,10 @@ export function useUser() {
                             userProfile.permissions = roleData.permissions;
                         }
                     } else {
-                        userProfile.permissions = {}; // No specific permissions
+                        userProfile.permissions = {}; // No specific permissions if no adminRole
                     }
                 }
-            } else if (isAdminClaim) {
+            } else if (isAdmin) {
                 // Handle platform admin without a specific school
                 userProfile = {
                     uid: authUser.uid,
