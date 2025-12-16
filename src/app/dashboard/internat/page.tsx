@@ -11,8 +11,6 @@ export default function InternatPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-10 w-1/3" />
-        <Skeleton className="h-4 w-2/3" />
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />

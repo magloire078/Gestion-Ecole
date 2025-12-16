@@ -12,15 +12,13 @@ import {
   Building, 
   Bed, 
   Users, 
-  Calendar, 
-  Bell,
   UserCheck,
   UserX,
   PlusCircle,
   Pencil
 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where, addDoc, serverTimestamp, doc } from 'firebase/firestore';
+import { collection, query, where, addDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -30,7 +28,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { OccupantForm } from './occupant-form';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '../..//firebase/error-emitter';
+import { errorEmitter } from '../../firebase/error-emitter';
 
 interface OccupantWithDetails extends occupant {
   id: string;
