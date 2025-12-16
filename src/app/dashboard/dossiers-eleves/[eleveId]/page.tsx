@@ -36,6 +36,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 const paymentSchema = z.object({
   paymentDate: z.string().min(1, "La date est requise."),
@@ -156,7 +158,6 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   
     const totalPaid = (student.tuitionFee ?? 0) - (student.amountDue ?? 0);
   
-    // Identifier tous les paiements effectués STRICTEMENT APRES le paiement actuel.
     const paymentsAfterCurrent = paymentHistory
         .filter(p => new Date(p.date) > new Date(payment.date));
   
@@ -580,9 +581,8 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
     const handleClose = () => {
         if (showReceipt) { // If we were showing a receipt, it means a save happened
             onSave();
-        } else {
-            onClose();
         }
+        onClose(); // Always call onClose to ensure dialog state is managed by parent
         // Reset state for next time
         setShowReceipt(false);
         setReceiptData(null);
