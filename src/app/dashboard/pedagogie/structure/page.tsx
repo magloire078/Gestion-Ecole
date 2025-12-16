@@ -66,7 +66,7 @@ export default function StructurePage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const canManageClasses = !!user?.profile?.permissions?.manageClasses;
+  const canManageClasses = !!user?.profile?.permissions?.manageClasses || user?.profile?.isAdmin;
 
   const [isCycleFormOpen, setIsCycleFormOpen] = useState(false);
   const [isNiveauFormOpen, setIsNiveauFormOpen] = useState(false);
@@ -223,16 +223,20 @@ export default function StructurePage() {
   return (
     <>
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Structure Pédagogique</h1>
-        <p className="text-muted-foreground">
-          Organisez les cycles, niveaux et classes de votre établissement.
-        </p>
-      </div>
-        <div className="flex items-center justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => handleOpenCycleForm(null)}>Nouveau Cycle</Button>
-            <Button variant="outline" size="sm" onClick={() => handleOpenNiveauForm(null)}>Nouveau Niveau</Button>
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold">Structure Pédagogique</h1>
+          <p className="text-muted-foreground">
+            Organisez les cycles, niveaux et classes de votre établissement.
+          </p>
         </div>
+        {canManageClasses && (
+          <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => handleOpenCycleForm(null)}>Nouveau Cycle</Button>
+              <Button variant="outline" size="sm" onClick={() => handleOpenNiveauForm(null)}>Nouveau Niveau</Button>
+          </div>
+        )}
+      </div>
 
       <Accordion type="multiple" defaultValue={cycles.map(c => c.id)} className="w-full space-y-4">
         {cycles.map(cycle => (
