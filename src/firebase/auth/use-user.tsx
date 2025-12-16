@@ -18,32 +18,6 @@ export interface UserContext {
     profile?: UserProfile;
 }
 
-const allPermissions: Required<AdminRole['permissions']> = {
-    manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
-    manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
-    manageSettings: true, manageBilling: true, manageCommunication: true,
-    manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true,
-    manageTransport: true, manageInternat: true, manageInventory: true,
-    manageRooms: true, manageActivities: true, manageMedical: true,
-    viewSupportTickets: true, manageSupportTickets: true, apiAccess: true,
-    exportData: true
-};
-
-const rolePermissions: Record<string, Partial<AdminRole['permissions']>> = {
-    'directeur': allPermissions,
-    'directeur_pedagogique': { manageClasses: true, manageSchedule: true, viewUsers: true, manageGrades: true },
-    'enseignant': { viewUsers: true, manageGrades: true, manageAttendance: true },
-    'enseignant_principal': { viewUsers: true, manageGrades: true, manageAttendance: true, manageCommunication: true },
-    'secretaire': { manageUsers: true, viewUsers: true, manageBilling: true, manageSchedule: true },
-    'comptable': { manageBilling: true, viewUsers: true },
-    'bibliothecaire': { manageLibrary: true },
-    'surveillant': { manageAttendance: true, manageInternat: true },
-    'infirmier': { manageMedical: true },
-    'chauffeur': { manageTransport: true },
-    // Les autres rôles n'ont pas de permissions spéciales par défaut
-};
-
-
 export function useUser() {
   const auth = useAuth();
   const firestore = useFirestore();
@@ -75,26 +49,48 @@ export function useUser() {
                 if (profileSnap.exists()) {
                     const profileData = profileSnap.data() as AppUser;
                     
+                    let permissions: Partial<AdminRole['permissions']> = {};
+
+                    if (profileData.role === 'directeur') {
+                        permissions.manageSettings = true;
+                        permissions.manageUsers = true;
+                        permissions.viewUsers = true;
+                        permissions.manageBilling = true;
+                        permissions.manageClasses = true;
+                        permissions.manageGrades = true;
+                    }
+
+                    if (profileData.adminRole) {
+                        try {
+                            const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
+                            const roleSnap = await getDoc(roleRef);
+                            if(roleSnap.exists()){
+                                const roleData = roleSnap.data() as AdminRole;
+                                permissions = { ...permissions, ...roleData.permissions };
+                            }
+                        } catch (e) {
+                            console.error("Error fetching admin role:", e);
+                        }
+                    }
+
                     userProfile = { 
                         ...profileData, 
                         isAdmin: isAdmin,
-                        permissions: rolePermissions[profileData.role] || {}
+                        permissions: permissions
                     };
-
                 }
             } else if (isAdmin) {
-                // Gérer le cas d'un admin de plateforme sans école spécifique
                 userProfile = {
                     uid: authUser.uid,
                     email: authUser.email || '',
                     schoolId: '',
-                    role: 'directeur', // Traité comme un directeur au niveau de la plateforme
-                    firstName: authUser.displayName || 'Admin',
+                    role: 'directeur', // Treated as platform-wide director
+                    firstName: 'Admin',
                     lastName: 'Platform',
                     hireDate: '',
                     baseSalary: 0,
                     isAdmin: true,
-                    permissions: allPermissions,
+                    permissions: { manageSystem: true, manageSchools: true }
                 };
             }
 

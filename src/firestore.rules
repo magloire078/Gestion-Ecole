@@ -103,7 +103,7 @@ service cloud.firestore {
     match /ecoles/{schoolId}/admin_roles/{roleId} {
       allow read, list: if belongsToSchool(schoolId) || isAdmin();
       // Seul le directeur (qui a manageSettings) ou un admin peut gérer les rôles.
-      allow create, update, delete: if (belongsToSchool(schoolId) && hasPermission(schoolId, 'manageSettings')) || isAdmin();
+      allow create, update, delete: if (getStaffProfile(schoolId).role == 'directeur') || isAdmin();
     }
     
     match /ecoles/{schoolId}/classes/{classId} {
@@ -259,5 +259,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
