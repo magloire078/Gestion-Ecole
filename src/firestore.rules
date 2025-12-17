@@ -20,7 +20,7 @@ service cloud.firestore {
       return isAuth() && request.auth.uid == userId;
     }
 
-    // Utilise la fonction de secours pour assurer la compatibilité
+    // Fonction de secours si custom claims non configurés
     function belongsToSchool(schoolId) {
       if (!isAuth()) return false;
       let userDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
@@ -108,7 +108,7 @@ service cloud.firestore {
     }
     
     match /system_logs/{logId} {
-      allow read: if isAdmin();
+      allow read, list: if isAdmin();
       allow create: if true;
     }
     
@@ -341,3 +341,4 @@ service cloud.firestore {
     }
   }
 }
+  
