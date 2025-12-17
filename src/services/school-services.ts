@@ -1,18 +1,16 @@
 
 'use client';
 
-import { doc, deleteDoc, writeBatch, collection, serverTimestamp, Firestore } from "firebase/firestore";
+import { doc, writeBatch, serverTimestamp, Firestore, updateDoc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
 /**
- * Supprime un document d'école de Firestore et enregistre l'action dans les logs système.
- * NOTE: Cette fonction ne supprime pas les sous-collections (élèves, personnel, etc.).
- * Celles-ci deviendront inaccessibles mais ne seront pas supprimées. Une suppression
- * complète nécessiterait une Cloud Function.
+ * Marque une école comme "supprimée" (soft delete) dans Firestore et enregistre l'action dans les logs système.
+ * Les données ne sont pas supprimées définitivement mais deviennent inaccessibles.
  *
  * @param firestore - L'instance de Firestore.
- * @param schoolId - L'ID de l'école à supprimer.
+ * @param schoolId - L'ID de l'école à marquer comme supprimée.
  * @param adminId - L'ID de l'administrateur qui effectue l'action.
  */
 export const deleteSchool = async (
@@ -29,30 +27,35 @@ export const deleteSchool = async (
     }
     
     const schoolRef = doc(firestore, `ecoles/${schoolId}`);
-    const logRef = doc(collection(firestore, 'system_logs'));
+    const logRef = doc(firestore.collection('system_logs'));
 
     const batch = writeBatch(firestore);
 
     // Étape 1: Créer le log d'audit
     batch.set(logRef, {
         adminId: adminId,
-        action: 'school.deleted',
+        action: 'school.soft-deleted',
         target: schoolRef.path,
-        details: { schoolId: schoolId },
+        details: { schoolId: schoolId, status: 'deleted' },
         ipAddress: 'N/A (client-side)',
         timestamp: serverTimestamp(),
     });
     
-    // Étape 2: Supprimer l'école
-    batch.delete(schoolRef);
+    // Étape 2: Mettre à jour l'école pour la marquer comme supprimée
+    batch.update(schoolRef, {
+      status: 'deleted',
+      deletedAt: serverTimestamp()
+    });
 
     return batch.commit().catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: `[BATCH] ${schoolRef.path}`,
-            operation: 'delete',
+            operation: 'write',
         });
         errorEmitter.emit('permission-error', permissionError);
         // Rethrow pour que l'appelant puisse aussi gérer l'erreur
         throw permissionError;
     });
 };
+
+    

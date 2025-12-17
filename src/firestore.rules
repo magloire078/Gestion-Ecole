@@ -26,6 +26,12 @@ service cloud.firestore {
       let userDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
       return userDoc.exists && userDoc.data().schoolId == schoolId;
     }
+
+    // NOUVELLE FONCTION : Vérifie si l'école est active
+    function isSchoolActive(schoolId) {
+      let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+      return schoolDoc.exists && schoolDoc.data.status != 'deleted';
+    }
     
     // Vérifie si l'utilisateur a un profil personnel
     function hasStaffProfile(schoolId) {
@@ -43,8 +49,8 @@ service cloud.firestore {
       // Super admin a tous les accès
       if (isAdmin()) return true;
       
-      // Vérifier l'appartenance à l'école
-      if (!belongsToSchool(schoolId)) return false;
+      // Vérifier l'appartenance à l'école ET si l'école est active
+      if (!belongsToSchool(schoolId) || !isSchoolActive(schoolId)) return false;
       
       let staffDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
       if (!staffDoc.exists) return false;
@@ -119,8 +125,8 @@ service cloud.firestore {
     // --- School Collections ---
 
     match /ecoles/{schoolId} {
-      // Lecture: seulement si on appartient à l'école ou admin
-      allow get: if belongsToSchool(schoolId) || isAdmin();
+      // Lecture: admin ou si on appartient à une école active
+      allow get: if isAdmin() || (belongsToSchool(schoolId) && isSchoolActive(schoolId));
       
       // Liste: seulement admin (évite l'énumération)
       allow list: if isAdmin();
@@ -128,14 +134,19 @@ service cloud.firestore {
       // Création: tout utilisateur authentifié
       allow create: if isAuth();
       
-      // Modification: directeur ou admin
-      allow update: if (belongsToSchool(schoolId) && getStaffRole(schoolId) == 'directeur') || isAdmin();
+      // Modification: directeur de l'école active ou admin
+      allow update: if (belongsToSchool(schoolId) && isSchoolActive(schoolId) && getStaffRole(schoolId) == 'directeur') || isAdmin();
       
-      // Suppression: seulement admin
-      allow delete: if isAdmin();
+      // Suppression (soft delete): seulement admin
+      // Hard delete n'est plus permis par les règles
+      allow delete: if false;
     }
     
     // --- School Subcollections Rules ---
+    // La règle principale pour toutes les sous-collections : l'école doit être active
+    match /ecoles/{schoolId}/{subcollection}/{docId} {
+        allow read, write, list, create, update, delete: if isAdmin() || isSchoolActive(schoolId);
+    }
     
     match /ecoles/{schoolId}/personnel/{staffId} {
       allow read: if belongsToSchool(schoolId) && canViewUsers(schoolId);
@@ -341,4 +352,5 @@ service cloud.firestore {
     }
   }
 }
-  
+
+    

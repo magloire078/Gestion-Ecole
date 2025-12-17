@@ -16,6 +16,8 @@
         "type": "object",
         "properties": {
             "name": { "type": "string", "description": "Le nom de l'établissement." },
+            "status": { "type": "string", "enum": ["active", "suspended", "deleted"], "description": "Le statut de l'école." },
+            "deletedAt": { "type": "string", "format": "date-time", "description": "Date à laquelle l'école a été marquée comme supprimée." },
             "matricule": { "type": "string", "description": "Le numéro matricule de l'établissement." },
             "cnpsEmployeur": { "type": "string", "description": "Le numéro d'immatriculation CNPS de l'école." },
             "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
@@ -1090,5 +1092,7 @@
   }
 }
 
+
+    
 
     

@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Edit, Database, Trash2 } from 'lucide-react';
+import { Plus, Eye, Edit, Database, Trash2, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
@@ -27,6 +27,7 @@ interface School {
     id: string;
     name: string;
     createdAt: { seconds: number; nanoseconds: number };
+    status?: 'active' | 'suspended' | 'deleted';
     subscription: {
         plan: 'Essentiel' | 'Pro' | 'Premium';
         status: 'active' | 'trialing' | 'past_due' | 'canceled';
@@ -60,14 +61,14 @@ export function SchoolsTable() {
     try {
         await deleteSchool(firestore, schoolToDelete.id, user.uid);
         toast({
-            title: "École supprimée",
-            description: `L'école "${schoolToDelete.name}" a été supprimée.`,
+            title: "École mise à la corbeille",
+            description: `L'école "${schoolToDelete.name}" a été marquée comme supprimée.`,
         });
     } catch (error) {
         toast({
             variant: "destructive",
             title: "Erreur de suppression",
-            description: "Une erreur est survenue lors de la suppression.",
+            description: "Une erreur est survenue lors de la mise à la corbeille.",
         });
     } finally {
         setIsDeleting(false);
@@ -84,13 +85,12 @@ export function SchoolsTable() {
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadgeVariant = (status?: string) => {
       switch (status) {
           case 'active':
-          case 'trialing':
               return 'secondary';
-          case 'past_due':
-          case 'canceled':
+          case 'suspended':
+          case 'deleted':
               return 'destructive';
           default:
               return 'outline';
@@ -120,20 +120,20 @@ export function SchoolsTable() {
                 </TableRow>
               ))
             ) : schools.length > 0 ? schools.map(school => (
-              <TableRow key={school.id}>
+              <TableRow key={school.id} className={school.status === 'deleted' ? 'bg-muted/50 text-muted-foreground' : ''}>
                 <TableCell>
                   <div className="font-medium">{school.name}</div>
                 </TableCell>
                 <TableCell>
                   <div>{school.directorFirstName} {school.directorLastName}</div>
-                  <div className="text-sm text-muted-foreground">{school.directorEmail}</div>
+                  <div className="text-sm">{school.directorEmail}</div>
                 </TableCell>
                 <TableCell>
                   <Badge variant={getPlanBadgeVariant(school.subscription?.plan)}>{school.subscription?.plan}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={getStatusBadgeVariant(school.subscription?.status)}>
-                    {school.subscription?.status}
+                  <Badge variant={getStatusBadgeVariant(school.status)}>
+                    {school.status || 'active'}
                   </Badge>
                 </TableCell>
                 <TableCell>
@@ -141,15 +141,23 @@ export function SchoolsTable() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(school)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    {school.status === 'deleted' ? (
+                       <Button variant="ghost" size="sm">
+                          <RotateCcw className="h-4 w-4 mr-2" /> Restaurer
+                        </Button>
+                    ) : (
+                      <>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(school)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
@@ -164,15 +172,15 @@ export function SchoolsTable() {
        <AlertDialog open={!!schoolToDelete} onOpenChange={(open) => !open && setSchoolToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous absolument sûr(e) ?</AlertDialogTitle>
+                <AlertDialogTitle>Mettre à la corbeille ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Cette action est irréversible. L'école <strong>"{schoolToDelete?.name}"</strong> sera supprimée définitivement, ainsi que toutes ses données associées (élèves, personnel, etc.). Un log de cette action sera enregistré.
+                    L'école <strong>"{schoolToDelete?.name}"</strong> sera marquée comme supprimée et deviendra inaccessible pour ses utilisateurs. Vous pourrez la restaurer pendant 30 jours.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Annuler</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteSchool} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
-                    {isDeleting ? "Suppression..." : "Oui, supprimer cette école"}
+                    {isDeleting ? "Mise à la corbeille..." : "Oui, mettre à la corbeille"}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
@@ -180,3 +188,5 @@ export function SchoolsTable() {
     </>
   );
 }
+
+    
