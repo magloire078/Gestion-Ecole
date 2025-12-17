@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Eye, Edit, Database, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -39,6 +39,7 @@ interface School {
 export function SchoolsTable() {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser();
 
   const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,14 +51,14 @@ export function SchoolsTable() {
 
   const handleOpenDeleteDialog = (school: School) => {
     setSchoolToDelete(school);
-    setIsDeleting(true);
   };
   
   const handleDeleteSchool = async () => {
-    if (!schoolToDelete) return;
+    if (!schoolToDelete || !user?.uid) return;
     
+    setIsDeleting(true);
     try {
-        await deleteSchool(firestore, schoolToDelete.id);
+        await deleteSchool(firestore, schoolToDelete.id, user.uid);
         toast({
             title: "École supprimée",
             description: `L'école "${schoolToDelete.name}" a été supprimée.`,
@@ -160,18 +161,18 @@ export function SchoolsTable() {
           </TableBody>
         </Table>
       </div>
-       <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
+       <AlertDialog open={!!schoolToDelete} onOpenChange={(open) => !open && setSchoolToDelete(null)}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Êtes-vous absolument sûr(e) ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                    Cette action est irréversible. L'école <strong>"{schoolToDelete?.name}"</strong> sera supprimée définitivement, ainsi que toutes ses données associées (élèves, personnel, etc.).
+                    Cette action est irréversible. L'école <strong>"{schoolToDelete?.name}"</strong> sera supprimée définitivement, ainsi que toutes ses données associées (élèves, personnel, etc.). Un log de cette action sera enregistré.
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteSchool} className="bg-destructive hover:bg-destructive/90">
-                    Oui, supprimer cette école
+                <AlertDialogAction onClick={handleDeleteSchool} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
+                    {isDeleting ? "Suppression..." : "Oui, supprimer cette école"}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
