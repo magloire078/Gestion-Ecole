@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book } from 'lucide-react';
+import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -12,7 +13,7 @@ import { doc, collection, query, where, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import type { staff as Staff, class_type as Class, school as OrganizationSettings, timetableEntry as TimetableEntry } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, school as OrganizationSettings, timetableEntry as TimetableEntry, admin_role as AdminRole } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +63,10 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
   const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
 
   const staffMember = staffMemberData as Staff | null;
+  
+  const adminRoleRef = useMemoFirebase(() => staffMember?.adminRole ? doc(firestore, `ecoles/${schoolId}/admin_roles/${staffMember.adminRole}`) : null, [staffMember, schoolId, firestore]);
+  const { data: adminRoleData, loading: adminRoleLoading } = useDoc<AdminRole>(adminRoleRef);
+  const adminRole = adminRoleData as AdminRole | null;
 
   const classRef = useMemoFirebase(() => staffMember?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
@@ -70,7 +75,7 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as TimetableEntry) || [], [timetableData]);
   
-  const isLoading = staffLoading || classLoading || timetableLoading;
+  const isLoading = staffLoading || classLoading || timetableLoading || adminRoleLoading;
 
   if (isLoading) {
     return <StaffDetailSkeleton />;
@@ -172,6 +177,12 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
                             <Briefcase className="mr-3 h-4 w-4 text-muted-foreground" />
                             <span className="capitalize">{staffMember.role}</span>
                         </div>
+                         {adminRole && (
+                            <div className="flex items-center">
+                                <Shield className="mr-3 h-4 w-4 text-muted-foreground" />
+                                <span>Rôle Admin: <strong>{adminRole.name}</strong></span>
+                            </div>
+                         )}
                          {staffMember.role === 'enseignant' && (
                             <div className="flex items-center">
                                 <Building className="mr-3 h-4 w-4 text-muted-foreground" />
