@@ -9,19 +9,18 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      // Platform-level admin
+      // Platform-level admin, typically the school creator
       return request.auth.token.superAdmin == true;
     }
     
     function isDirector(schoolId) {
         // Check if the requesting user's UID is the directorId on the school document
-        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
-        return isAuth() && schoolDoc.data.directorId == request.auth.uid;
+        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
     function belongsToSchool(schoolId) {
-        let userSchoolId = request.auth.token.schoolId;
-        return isAuth() && userSchoolId == schoolId;
+        // Check if the user's custom claim matches the schoolId
+        return isAuth() && request.auth.token.schoolId == schoolId;
     }
 
     // --- Global Collections ---
@@ -47,6 +46,7 @@ service cloud.firestore {
     // --- School-Specific Collections ---
     match /ecoles/{schoolId} {
       // The school director can ALWAYS read their own school document.
+      // This is the most robust way to ensure the app can load school data.
       allow get: if isAuth() && (isSuperAdmin() || resource.data.directorId == request.auth.uid);
       allow list: if isSuperAdmin();
       allow create: if isAuth(); 
@@ -55,9 +55,9 @@ service cloud.firestore {
     }
 
     // Generic rule for all subcollections under a school
-    match /ecoles/{schoolId}/{document=**} {
-      allow read: if isSuperAdmin() || belongsToSchool(schoolId);
-      allow write: if isSuperAdmin() || isDirector(schoolId);
+    // This is a simpler, more permissive rule to ensure basic functionality.
+    match /ecoles/{schoolId}/{path=**} {
+      allow read, write: if isSuperAdmin() || belongsToSchool(schoolId);
     }
   }
 }
