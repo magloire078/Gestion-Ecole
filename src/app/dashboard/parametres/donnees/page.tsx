@@ -41,6 +41,13 @@ export default function DataIntegrityPage() {
 
   return (
     <div className="space-y-6">
+        <CardHeader className="px-0">
+            <CardTitle>Vérification de l'Intégrité des Données</CardTitle>
+            <CardDescription>
+                Cet outil analyse les relations entre vos données pour détecter les liens "cassés"
+                (par exemple, un élève assigné à une classe supprimée).
+            </CardDescription>
+        </CardHeader>
       {isLoading ? (
           <div className="space-y-6">
               <Skeleton className="h-64 w-full" />
