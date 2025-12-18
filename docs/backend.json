@@ -16,6 +16,8 @@
         "type": "object",
         "properties": {
             "name": { "type": "string", "description": "Le nom de l'établissement." },
+            "status": { "type": "string", "enum": ["active", "suspended", "deleted"], "description": "Le statut de l'école." },
+            "deletedAt": { "type": "string", "format": "date-time", "description": "Date à laquelle l'école a été marquée comme supprimée." },
             "matricule": { "type": "string", "description": "Le numéro matricule de l'établissement." },
             "cnpsEmployeur": { "type": "string", "description": "Le numéro d'immatriculation CNPS de l'école." },
             "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
@@ -41,6 +43,34 @@
             }
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
+    },
+    "system_log": {
+      "title": "Journal Système",
+      "description": "Trace toutes les actions critiques effectuées par les super admins.",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "details": { "type": "object" },
+        "ipAddress": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "system_setting": {
+      "title": "Paramètre Système",
+      "description": "Configuration globale de la plateforme.",
+      "type": "object",
+      "properties": {
+        "maintenanceMode": { "type": "boolean" },
+        "registrationEnabled": { "type": "boolean" },
+        "defaultSchoolPlan": { "type": "string" },
+        "smtpSettings": { "type": "object" },
+        "storageQuota": { "type": "number" },
+        "backupFrequency": { "type": "string" },
+        "apiRateLimit": { "type": "number" }
+      }
     },
     "admin_role": {
       "title": "Rôle Administratif",
@@ -826,6 +856,18 @@
     "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+    },
+    "/super_admins/{adminId}": {
+        "schema": { "$ref": "#/entities/staff" },
+        "description": "Stocke les profils des super administrateurs de la plateforme."
+    },
+    "/system_logs/{logId}": {
+        "schema": { "$ref": "#/entities/system_log" },
+        "description": "Journalise toutes les actions critiques effectuées sur la plateforme."
+    },
+    "/system_settings/{settingId}": {
+        "schema": { "$ref": "#/entities/system_setting" },
+        "description": "Stocke la configuration globale de la plateforme."
     },
     "/ecoles/{schoolId}": {
       "schema": { "$ref": "#/entities/school" },
