@@ -1,3 +1,4 @@
+
 'use client';
 import { 
   collection, 
@@ -6,8 +7,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import { SCHOOL_TEMPLATES } from '@/lib/templates';
-import type { school, user_root, staff, cycle, niveau, subject, admin_role, system_log } from '@/lib/data-types';
+import type { school, user_root, staff, admin_role, system_log } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -41,51 +41,6 @@ const generateSchoolCode = (name: string): string => {
     const randomNumber = Math.floor(1000 + Math.random() * 9000);
     return `${prefix}-${randomNumber}`;
 };
-
-const getAllPermissions = (value: boolean) => ({
-    manageUsers: value, viewUsers: value, manageSchools: value, viewSchools: value,
-    manageClasses: value, manageGrades: value, manageSystem: value, viewAnalytics: value,
-    manageSettings: value, manageBilling: value, manageCommunication: value,
-    manageSchedule: value, manageAttendance: value, manageLibrary: value, manageCantine: value,
-    manageTransport: value, manageInternat: value, manageInventory: value,
-    manageRooms: value, manageActivities: value, manageMedical: value,
-    viewSupportTickets: value, manageSupportTickets: value, apiAccess: true,
-    exportData: value
-});
-
-const DEFAULT_ROLES: Omit<admin_role, 'id' | 'schoolId' | 'level'>[] = [
-  {
-    name: 'Directeur',
-    description: 'Accès complet à toutes les fonctionnalités',
-    permissions: getAllPermissions(true),
-    isSystem: true,
-  },
-  {
-    name: 'Enseignant Principal',
-    description: 'Gestion complète d\'une classe',
-    permissions: { viewUsers: true, manageGrades: true, manageAttendance: true, manageCommunication: true },
-    isSystem: true,
-  },
-  {
-    name: 'Enseignant',
-    description: 'Enseignant par matière spécifique',
-    permissions: { viewUsers: true, manageGrades: true, manageAttendance: true },
-    isSystem: true,
-  },
-  {
-    name: 'Secrétariat',
-    description: 'Gestion administrative des élèves et de la facturation',
-    permissions: { viewUsers: true, manageUsers: true, manageBilling: true, manageSchedule: true },
-    isSystem: true,
-  },
-  {
-    name: 'Comptable',
-    description: 'Gestion financière et facturation',
-    permissions: { manageBilling: true },
-    isSystem: true,
-  }
-];
-
 
 export class SchoolCreationService {
   private db: Firestore;
@@ -124,7 +79,7 @@ export class SchoolCreationService {
     };
     batch.set(schoolRef, schoolDocData);
 
-    // 2. Add user to the /utilisateurs collection (still useful for some queries)
+    // 2. Add user to the /utilisateurs collection
     const userRef = doc(this.db, 'utilisateurs', schoolData.directorId);
     const userRootData: user_root = { schoolId };
     batch.set(userRef, userRootData);
@@ -132,14 +87,11 @@ export class SchoolCreationService {
     // 3. Create a staff profile for the director
     const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
     
-    const directorRole = DEFAULT_ROLES.find(r => r.name === 'Directeur');
-    const directorRoleId = directorRole ? directorRole.name.toLowerCase().replace(/ /g, '_') : 'directeur';
-    
     const directorProfileData: staff = {
         uid: schoolData.directorId,
         schoolId: schoolId,
         role: 'directeur',
-        adminRole: directorRoleId,
+        adminRole: 'directeur', // Assign a default adminRole name
         firstName: schoolData.directorFirstName,
         lastName: schoolData.directorLastName,
         displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
@@ -149,68 +101,6 @@ export class SchoolCreationService {
         status: 'Actif',
     };
     batch.set(staffRef, directorProfileData);
-    
-    // Add to super_admins collection
-    const superAdminRef = doc(this.db, `super_admins`, schoolData.directorId);
-    batch.set(superAdminRef, {
-        uid: schoolData.directorId,
-        displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
-        email: schoolData.directorEmail,
-        assignedAt: serverTimestamp(),
-    });
-
-
-    // 4. Initialize school structure
-    const template = SCHOOL_TEMPLATES.IVORIAN_SYSTEM;
-    for (const cycle of template.cycles) {
-        const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
-        const cycleData: Omit<cycle, 'id'> = { ...cycle, schoolId, isActive: true, createdAt: new Date().toISOString() };
-        batch.set(cycleRef, cycleData);
-        
-        const niveauxForCycle = template.niveaux[cycle.name as keyof typeof template.niveaux] || [];
-        for (const [index, niveauName] of niveauxForCycle.entries()) {
-            const niveauRef = doc(collection(this.db, `ecoles/${schoolId}/niveaux`));
-            const niveauData: Omit<niveau, 'id'> = {
-                name: niveauName,
-                code: niveauName.replace(/\s+/g, '').toUpperCase(),
-                cycleId: cycleRef.id,
-                schoolId: schoolId,
-                order: index + 1,
-                ageMin: 5,
-                ageMax: 6,
-                capacity: 30,
-                createdAt: new Date().toISOString()
-            };
-            batch.set(niveauRef, niveauData);
-        }
-    }
-    
-    // 5. Initialize default subjects
-    for (const subject of template.subjects) {
-      const subjectRef = doc(collection(this.db, `ecoles/${schoolId}/matieres`));
-      const subjectData: Omit<subject, 'id'> = { ...subject, schoolId };
-      batch.set(subjectRef, subjectData);
-    }
-    
-    // 6. Create default roles
-    DEFAULT_ROLES.forEach(role => {
-        const roleId = role.name.toLowerCase().replace(/ /g, '_');
-        const roleRef = doc(this.db, `ecoles/${schoolId}/admin_roles`, roleId);
-        batch.set(roleRef, { ...role, schoolId, level: 0 });
-    });
-
-    // 7. Log the creation
-    const logRef = doc(collection(this.db, 'system_logs'));
-    const logData: Omit<system_log, 'id'> = {
-        adminId: schoolData.directorId,
-        action: 'school.created',
-        target: schoolRef.path,
-        details: { name: schoolData.name, schoolId },
-        ipAddress: 'N/A (client-side)',
-        userAgent: 'N/A (client-side)',
-        timestamp: serverTimestamp() as any,
-    };
-    batch.set(logRef, logData);
     
     // This is the CRITICAL new step: setting custom claims.
     await setDirectorClaims(schoolData.directorId, schoolId);
