@@ -3,75 +3,78 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // --- Fonctions d'aide de base ---
     function isAuth() {
       return request.auth != null;
     }
 
     function isSuperAdmin() {
-      return request.auth.token.superAdmin == true;
+      // Le custom claim 'superAdmin' est défini via une fonction Cloud pour les administrateurs de la plateforme
+      return request.auth != null && request.auth.token.superAdmin == true;
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-    
-    // --- NOUVELLE FONCTION FIABILISÉE ---
-    function getSchoolId() {
-        // Priorité 1: Le custom claim dans le token (le plus rapide et le plus sûr)
-        if (request.auth.token.schoolId != null) {
-            return request.auth.token.schoolId;
-        }
-        // Priorité 2: Le document racine de l'utilisateur
-        let userRootDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
-        if (userRootDoc != null) {
-            return userRootDoc.data.schoolId;
-        }
-        return null;
-    }
-    
-    function isDirector() {
-        let schoolId = getSchoolId();
-        return schoolId != null && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
-    }
-    
-    function isStaffOfSchool(schoolId) {
-       return exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
-    }
-    
-    // --- NOUVELLE FONCTION DE PERMISSION ---
-    function belongsToSchool(schoolId) {
-      return isAuth() && getSchoolId() == schoolId;
+      return request.auth != null && request.auth.uid == userId;
     }
 
-    // --- System-level collections for Super Admins ---
+    function getSchoolId() {
+      // La source de vérité la plus fiable pour l'ID de l'école est le custom claim.
+      if (request.auth != null && request.auth.token.schoolId != null) {
+        return request.auth.token.schoolId;
+      }
+      // En fallback, on peut lire le document racine de l'utilisateur.
+      let userRootDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
+      if (userRootDoc != null && userRootDoc.data.schoolId != null) {
+        return userRootDoc.data.schoolId;
+      }
+      return null;
+    }
+    
+    function belongsToSchool(schoolId) {
+        return getSchoolId() == schoolId;
+    }
+
+    function isDirector() {
+      let schoolId = getSchoolId();
+      return schoolId != null && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    }
+
+    // --- Collections Globales ---
+
     match /super_admins/{adminId} {
       allow read, write: if isSuperAdmin();
     }
+    
     match /system_logs/{logId} {
-      allow read, create: if isSuperAdmin() || isAuth();
+      allow read, create: if isSuperAdmin();
     }
+    
     match /system_settings/{settingId} {
       allow read, write: if isSuperAdmin();
     }
 
-    // --- User root document ---
     match /utilisateurs/{userId} {
       allow read, update: if isOwner(userId) || isSuperAdmin();
       allow create: if isAuth() && isOwner(userId);
     }
-
-    // --- School Collections ---
-    match /ecoles/{schoolId} {
-      allow get: if belongsToSchool(schoolId) || isSuperAdmin();
-      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
-      allow update: if isDirector() || isSuperAdmin();
-      allow delete: if isSuperAdmin();
-    }
     
-    // --- School Subcollections ---
+    // --- Collections des Écoles ---
+
+    match /ecoles/{schoolId} {
+      allow get: if isSuperAdmin() || belongsToSchool(schoolId);
+      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
+      allow update: if isSuperAdmin() || isDirector();
+      allow delete: if isSuperAdmin(); // Seul un super admin peut supprimer une école.
+    }
+
+    // --- Règle Générique pour toutes les sous-collections d'une école ---
+    // Cette règle est un "catch-all". Si une règle plus spécifique n'est pas définie ci-dessous,
+    // celle-ci s'applique.
     match /ecoles/{schoolId}/{document=**} {
-      allow read, write: if isDirector() || isSuperAdmin() || belongsToSchool(schoolId);
+      // Le directeur et le super admin ont un accès total.
+      // Les membres de l'école peuvent lire.
+      allow read: if isSuperAdmin() || belongsToSchool(schoolId);
+      allow write: if isSuperAdmin() || isDirector();
     }
   }
 }
