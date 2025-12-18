@@ -150,7 +150,7 @@ service cloud.firestore {
     // La règle principale pour toutes les sous-collections : l'école doit être active
     match /ecoles/{schoolId}/{subcollection}/{docId} {
         allow read, list: if isAdmin() || (isSchoolActive(schoolId) && belongsToSchool(schoolId));
-        allow write, create, update, delete: if isAdmin() || isAuth(); // Permet la création initiale
+        allow write: if isAdmin() || isAuth(); // Règle simplifiée pour la création
     }
     
     match /ecoles/{schoolId}/personnel/{staffId} {
