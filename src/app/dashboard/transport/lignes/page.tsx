@@ -29,7 +29,7 @@ export default function RoutesManagementPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageTransport;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<(Route & { id: string }) | null>(null);
