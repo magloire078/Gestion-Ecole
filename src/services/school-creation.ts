@@ -4,7 +4,8 @@ import {
   collection, 
   doc, 
   writeBatch, 
-  serverTimestamp
+  serverTimestamp,
+  setDoc
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { school, user_root, staff, admin_role, system_log } from '@/lib/data-types';
@@ -54,8 +55,6 @@ export class SchoolCreationService {
     const schoolId = schoolRef.id;
     const schoolCode = generateSchoolCode(schoolData.name);
     
-    const batch = writeBatch(this.db);
-
     // 1. Create the main school document
     const schoolDocData: school = {
       name: schoolData.name,
@@ -77,44 +76,20 @@ export class SchoolCreationService {
       },
       status: 'active',
     };
-    batch.set(schoolRef, schoolDocData);
 
-    // 2. Add user to the /utilisateurs collection
-    const userRef = doc(this.db, 'utilisateurs', schoolData.directorId);
-    const userRootData: user_root = { schoolId };
-    batch.set(userRef, userRootData);
-
-    // 3. Create a staff profile for the director
-    const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
-    
-    const directorProfileData: staff = {
-        uid: schoolData.directorId,
-        schoolId: schoolId,
-        role: 'directeur',
-        adminRole: 'directeur', // Assign a default adminRole name
-        firstName: schoolData.directorFirstName,
-        lastName: schoolData.directorLastName,
-        displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
-        email: schoolData.directorEmail,
-        hireDate: new Date().toISOString(),
-        baseSalary: 0,
-        status: 'Actif',
-    };
-    batch.set(staffRef, directorProfileData);
-    
-    // This is the CRITICAL new step: setting custom claims.
-    await setDirectorClaims(schoolData.directorId, schoolId);
-    
-    return batch.commit().then(() => {
+    try {
+        await setDoc(schoolRef, schoolDocData);
+        await setDirectorClaims(schoolData.directorId, schoolId);
         return { schoolId, schoolCode };
-    }).catch(e => {
-         const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}`,
+
+    } catch (e) {
+        const permissionError = new FirestorePermissionError({
+            path: schoolRef.path,
             operation: 'create',
             requestResourceData: { schoolName: schoolData.name, director: schoolData.directorId },
         });
         errorEmitter.emit('permission-error', permissionError);
         throw e;
-    });
+    }
   }
 }

@@ -8,52 +8,45 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // New, more robust function using custom claims from the auth token
     function isSchoolMember(schoolId) {
+      // Check if the user has a schoolId claim matching the schoolId in the path
       return isAuth() && request.auth.token.schoolId == schoolId;
     }
     
-    // New function to check if the user is a director of the school via claims
     function isDirector(schoolId) {
         return isSchoolMember(schoolId) && request.auth.token.isDirector == true;
     }
 
-    // New function to check if user is a Super Admin via claims
     function isSuperAdmin() {
-        return isAuth() && request.auth.token.superAdmin == true;
+      return isAuth() && request.auth.token.superAdmin == true;
     }
     
-    // Super Admins collection is restricted to the user themselves
     match /super_admins/{adminId} {
       allow read, write: if isAuth() && request.auth.uid == adminId;
     }
 
-    // System settings and logs can only be read/written by super admins
-    match /system_logs/{logId} {
-       allow read, write: if isSuperAdmin();
-    }
-    
     match /system_settings/{settingId} {
        allow read, write: if isSuperAdmin();
     }
     
-    // School documents can be read by their members.
-    // They can only be CREATED by an authenticated user.
-    // They can only be UPDATED/DELETED by Super Admins or their Director.
-    match /ecoles/{schoolId} {
-      allow read: if isSchoolMember(schoolId);
-      allow create: if isAuth();
-      allow update, delete: if isSuperAdmin() || isDirector(schoolId);
+    match /system_logs/{logId} {
+       allow create: if isSuperAdmin();
+       allow read: if isAuth();
     }
     
-     // User root document is only accessible by the user themselves or a super admin
     match /utilisateurs/{userId} {
-        allow read, update, delete: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
-        allow create: if isAuth() && request.auth.uid == userId;
+        allow read, write: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+    }
+    
+    match /ecoles/{schoolId} {
+      allow read: if isSchoolMember(schoolId);
+      // Any authenticated user can create a school document
+      allow create: if isAuth(); 
+      // Only the director or a super admin can update/delete the school
+      allow update, delete: if isDirector(schoolId) || isSuperAdmin();
     }
 
-    // All subcollections of a school are accessible by its members.
-    // This rule is general and covers all subcollections like personnel, admin_roles, eleves, etc.
+    // This rule is more general and covers all subcollections like personnel, admin_roles, eleves, etc.
     match /ecoles/{schoolId}/{document=**} {
       allow read, write: if isSchoolMember(schoolId);
     }

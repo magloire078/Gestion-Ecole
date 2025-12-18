@@ -5,7 +5,7 @@ import {useState, useEffect} from 'react';
 import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
 import type { staff as AppUser, admin_role as AdminRole, school as School } from '@/lib/data-types';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface UserProfile extends AppUser {
     permissions?: Partial<AdminRole['permissions']>;
@@ -77,25 +77,71 @@ export function useUser() {
 
 
             if (!currentSchoolId) {
-                // Authenticated but no school association yet
-                setUser({ authUser, uid: authUser.uid, profile: undefined });
-                setIsDirector(false);
-                setLoading(false);
-                return;
+                // Authenticated but no school association yet.
+                // This can happen right after school creation, before the custom claim is refreshed.
+                // Try to read from /utilisateurs as a fallback.
+                const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
+                const userRootSnap = await getDoc(userRootRef).catch(() => null);
+                if (userRootSnap && userRootSnap.exists()) {
+                    const userRootData = userRootSnap.data() as user_root;
+                    if(userRootData.schoolId) {
+                        setSchoolId(userRootData.schoolId);
+                        // Don't return, let the next block handle profile loading with this new schoolId
+                    }
+                } else {
+                    setUser({ authUser, uid: authUser.uid, profile: undefined });
+                    setIsDirector(false);
+                    setLoading(false);
+                    return;
+                }
             }
             
+            const effectiveSchoolId = currentSchoolId || schoolId;
+            if (!effectiveSchoolId) {
+                 setUser({ authUser, uid: authUser.uid, profile: undefined });
+                 setLoading(false);
+                 return;
+            }
+
             // User is associated with a school
-            const profileRef = doc(firestore, `ecoles/${currentSchoolId}/personnel`, authUser.uid);
+            const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
             
             const unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
-                const schoolRef = doc(firestore, 'ecoles', currentSchoolId);
+                const schoolRef = doc(firestore, 'ecoles', effectiveSchoolId);
                 const schoolSnap = await getDoc(schoolRef);
                 const schoolData = schoolSnap.exists() ? schoolSnap.data() as School : null;
                 const isDirectorFlag = schoolData?.directorId === authUser.uid;
                 setIsDirector(isDirectorFlag);
+                
+                let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
 
-                if (profileSnap.exists()) {
-                    const profileData = profileSnap.data() as AppUser;
+                // If user is director but has no profile yet (e.g. right after school creation), create one.
+                if (isDirectorFlag && !profileData) {
+                    const nameParts = authUser.displayName?.split(' ') || [];
+                    const firstName = nameParts[0] || 'Directeur';
+                    const lastName = nameParts.slice(1).join(' ') || 'Principal';
+
+                    profileData = {
+                        uid: authUser.uid,
+                        schoolId: effectiveSchoolId,
+                        role: 'directeur',
+                        firstName,
+                        lastName,
+                        displayName: authUser.displayName || `${firstName} ${lastName}`,
+                        email: authUser.email || '',
+                        hireDate: format(new Date(), 'yyyy-MM-dd'),
+                        baseSalary: 0,
+                        status: 'Actif',
+                        photoURL: authUser.photoURL || ''
+                    };
+                    await setDoc(profileRef, profileData);
+                    // Also set the root doc just in case
+                    const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
+                    await setDoc(userRootRef, { schoolId: effectiveSchoolId });
+                }
+
+
+                if (profileData) {
                     let permissions: Partial<AdminRole['permissions']> = {};
 
                     if (isDirectorFlag) {
@@ -103,7 +149,7 @@ export function useUser() {
                     }
                     
                     if (profileData.adminRole) {
-                        const roleRef = doc(firestore, `ecoles/${currentSchoolId}/admin_roles`, profileData.adminRole);
+                        const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
                         try {
                            const roleSnap = await getDoc(roleRef);
                             if (roleSnap.exists()) {
@@ -136,7 +182,7 @@ export function useUser() {
     });
 
     return () => unsubscribeFromAuth();
-  }, [auth, firestore]);
+  }, [auth, firestore, schoolId]); // Rerun if schoolId is found via fallback
 
   return {user, loading, schoolId, isDirector};
 }
