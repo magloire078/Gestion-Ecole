@@ -1,16 +1,9 @@
 
 'use client';
 
-import { useSchoolData } from './use-school-data';
+import { useSchoolData, type Subscription } from './use-school-data';
 
-type SubscriptionPlan = 'Essentiel' | 'Pro' | 'Premium';
-
-export interface Subscription {
-    plan: SubscriptionPlan;
-    status: 'active' | 'trialing' | 'past_due' | 'canceled';
-    maxStudents?: number;
-    maxCycles?: number;
-}
+export type { Subscription };
 
 export function useSubscription() {
     const { schoolData, loading, updateSchoolData } = useSchoolData();
