@@ -88,8 +88,9 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
           const visibleLinks = group.links.filter(link => hasPermission(link.permission));
           if (visibleLinks.length === 0) return null;
           
-          // Render direct links for specified groups
-          if (group.group === "Principal" || group.group === "Configuration") {
+          const isAccordion = group.group !== "Principal" && group.group !== "Configuration";
+
+          if (!isAccordion) {
               return (
                   <div key={group.group} className="py-1">
                       {visibleLinks.map(link => (
@@ -99,7 +100,6 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               )
           }
 
-          // Render accordion for other groups
           return (
             <AccordionItem value={group.group} key={group.group} className="border-b-0">
                 <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline [&[data-state=open]>div>svg.chevron]:rotate-180">
