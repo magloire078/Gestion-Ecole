@@ -36,10 +36,13 @@ service cloud.firestore {
        allow read, write: if isSuperAdmin();
     }
     
-    // School documents can be read by their members, but only written by Super Admins or their Director
+    // School documents can be read by their members.
+    // They can only be CREATED by an authenticated user.
+    // They can only be UPDATED/DELETED by Super Admins or their Director.
     match /ecoles/{schoolId} {
       allow read: if isSchoolMember(schoolId);
-      allow write: if isSuperAdmin() || isDirector(schoolId);
+      allow create: if isAuth();
+      allow update, delete: if isSuperAdmin() || isDirector(schoolId);
     }
     
      // User root document is only accessible by the user themselves or a super admin
