@@ -3,7 +3,7 @@
 
 import { useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 function AuthProtectionLoader() {
   return (
@@ -17,77 +17,59 @@ function AuthProtectionLoader() {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading: userLoading, schoolId, isDirector } = useUser();
+  const { user, schoolId, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [isChecking, setIsChecking] = useState(true);
-  
-  const isLoading = userLoading;
-  
+
   useEffect(() => {
-    if (isLoading) {
+    if (loading) {
+      return; // Ne rien faire tant que l'état d'authentification n'est pas résolu.
+    }
+
+    const isAuthPage = pathname === '/login';
+    const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
+    const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+
+    // Si l'utilisateur n'est pas connecté
+    if (!user) {
+      if (!isPublicPage) {
+        router.replace('/login');
+      }
+      return;
+    }
+
+    // Si l'utilisateur est connecté
+    if (isAuthPage) {
+      router.replace('/dashboard');
       return;
     }
     
-    const checkAccess = () => {
-      setIsChecking(true);
-      
-      const isPublicPage = pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
-      const isAuthPage = pathname === '/login';
-      const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
-      
-      if (isPublicPage) {
-        setIsChecking(false);
-        return;
+    // Si l'utilisateur est connecté mais n'a pas d'école
+    if (!schoolId) {
+      if (!isOnboardingPage) {
+        router.replace('/dashboard/onboarding');
       }
-      
-      if (!user || !user.authUser) {
-        if (!isAuthPage) {
-          router.replace('/login');
-          return;
-        }
-        setIsChecking(false);
-        return;
-      }
-      
-      const isSuperAdmin = user.profile?.isAdmin === true;
-
-      // Super Admins and Directors have access to everything, except they should be redirected from onboarding if already set up.
-      if (isSuperAdmin || isDirector) {
-        if (isOnboardingPage && schoolId) {
-          router.replace('/dashboard');
-          return;
-        }
-        setIsChecking(false);
-        return;
-      }
-      
-      if (!schoolId) {
-        if (!isOnboardingPage) {
-          router.replace('/dashboard/onboarding');
-          return;
-        }
-      } else {
-        if (isAuthPage || isOnboardingPage) {
-          router.replace('/dashboard');
-          return;
-        }
-      }
-      
-      setIsChecking(false);
-    };
-    
-    checkAccess();
-  }, [user, schoolId, isDirector, isLoading, pathname, router]);
-  
-  if (isLoading || isChecking) {
-    if (pathname === '/login' || pathname.startsWith('/public') || pathname === '/' || pathname === '/contact') {
-      return <>{children}</>;
+      return;
     }
-    return <AuthProtectionLoader />;
-  }
+
+    // Si l'utilisateur est connecté, a une école, mais se trouve sur la page d'onboarding
+    if (schoolId && isOnboardingPage) {
+      router.replace('/dashboard');
+      return;
+    }
+
+  }, [user, schoolId, loading, pathname, router]);
   
+  // Affiche un loader uniquement pour les pages protégées pendant la vérification
+  if (loading && !['/login', '/', '/contact'].includes(pathname) && !pathname.startsWith('/public')) {
+      return <AuthProtectionLoader />;
+  }
+
+  // Si l'utilisateur est non-nul mais que schoolId est encore en cours de détermination,
+  // et qu'on est sur une page protégée, on peut vouloir attendre.
+  if (user && schoolId === undefined && !pathname.startsWith('/dashboard/onboarding')) {
+      // Potentiellement afficher un loader ici aussi si on voit des flashs de contenu non désiré
+  }
+
   return <>{children}</>;
 }
-
-    
