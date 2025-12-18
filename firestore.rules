@@ -12,27 +12,22 @@ service cloud.firestore {
       // Platform-level admin
       return request.auth.token.superAdmin == true;
     }
-
-    function getSchoolIdFromToken() {
-        return request.auth.token.schoolId;
-    }
-
-    function belongsToSchool(schoolId) {
-        return isAuth() && getSchoolIdFromToken() == schoolId;
-    }
-
+    
     function isDirector(schoolId) {
         // Check if the requesting user's UID is the directorId on the school document
         let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
         return isAuth() && schoolDoc.data.directorId == request.auth.uid;
     }
 
+    function belongsToSchool(schoolId) {
+        let userSchoolId = request.auth.token.schoolId;
+        return isAuth() && userSchoolId == schoolId;
+    }
+
     // --- Global Collections ---
     match /utilisateurs/{userId} {
-      // Anyone can create their own user root doc, but not overwrite it
-      allow create: if isAuth() && request.auth.uid == userId && !exists(path);
-      // Only the user or a super admin can read or update it
       allow read, update: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+      allow create: if isAuth() && request.auth.uid == userId && !exists(path);
     }
 
     match /super_admins/{adminId} {
@@ -51,7 +46,8 @@ service cloud.firestore {
 
     // --- School-Specific Collections ---
     match /ecoles/{schoolId} {
-      allow get: if isSuperAdmin() || belongsToSchool(schoolId) || isDirector(schoolId);
+      // The school director can ALWAYS read their own school document.
+      allow get: if isAuth() && (isSuperAdmin() || resource.data.directorId == request.auth.uid);
       allow list: if isSuperAdmin();
       allow create: if isAuth(); 
       allow update: if isSuperAdmin() || isDirector(schoolId);
