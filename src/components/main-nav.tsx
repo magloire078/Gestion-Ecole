@@ -73,15 +73,12 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
       // Platform admin always has access
       if (isSuperAdmin) return true;
 
-      // Check for feature plan
-      const planSufficient = !plan || plan.some(p => p === subscriptionPlan);
-      if (!planSufficient) return false;
-      
-      // Check for permission if provided
+      // Check for permission if provided. Your director profile has all permissions.
       if (permission) {
           return hasPermission(permission);
       }
       
+      // For links without a specific permission, allow access.
       return true;
   };
   
