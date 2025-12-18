@@ -16,7 +16,7 @@ import { format, addMonths, addYears, startOfYear, endOfYear } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '../../firebase/error-emitter';
+import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const subscriptionFormSchema = z.object({
@@ -141,6 +141,7 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
               />
         </div>
         <DialogFooter>
+            <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>
             <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
             </Button>
