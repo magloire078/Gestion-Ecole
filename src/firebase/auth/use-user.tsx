@@ -62,6 +62,7 @@ export function useUser() {
                             manageTransport: true, manageInternat: true, manageInventory: true,
                             manageRooms: true, manageActivities: true, manageMedical: true,
                             manageSchedule: true,
+                            manageAttendance: true,
                         };
                     }
 

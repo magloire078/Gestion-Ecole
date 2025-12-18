@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { deleteSchool } from '@/services/school-services';
+import { deleteSchool, restoreSchool } from '@/services/school-services';
 
 interface School {
     id: string;
@@ -44,6 +44,8 @@ export function SchoolsTable() {
 
   const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [schoolToRestore, setSchoolToRestore] = useState<School | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const schoolsQuery = useMemoFirebase(() => query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc')), [firestore]);
   const { data: schoolsData, loading: schoolsLoading } = useCollection(schoolsQuery);
@@ -75,6 +77,28 @@ export function SchoolsTable() {
         setSchoolToDelete(null);
     }
   };
+
+  const handleRestoreSchool = async (school: School) => {
+    if (!user?.uid) return;
+    setSchoolToRestore(school);
+    setIsRestoring(true);
+    try {
+        await restoreSchool(firestore, school.id, user.uid);
+        toast({
+            title: "École restaurée",
+            description: `L'école "${school.name}" est à nouveau active.`,
+        });
+    } catch (error) {
+         toast({
+            variant: "destructive",
+            title: "Erreur de restauration",
+            description: "Une erreur est survenue lors de la restauration.",
+        });
+    } finally {
+        setIsRestoring(false);
+        setSchoolToRestore(null);
+    }
+  }
 
   const getPlanBadgeVariant = (plan: string) => {
     switch (plan) {
@@ -142,8 +166,9 @@ export function SchoolsTable() {
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">
                     {school.status === 'deleted' ? (
-                       <Button variant="ghost" size="sm">
-                          <RotateCcw className="h-4 w-4 mr-2" /> Restaurer
+                       <Button variant="ghost" size="sm" onClick={() => handleRestoreSchool(school)} disabled={isRestoring && schoolToRestore?.id === school.id}>
+                          <RotateCcw className="h-4 w-4 mr-2" /> 
+                          {isRestoring && schoolToRestore?.id === school.id ? 'Restauration...' : 'Restaurer'}
                         </Button>
                     ) : (
                       <>

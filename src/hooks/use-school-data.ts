@@ -64,11 +64,11 @@ export function useSchoolData() {
                     setSchoolId(userDoc.data().schoolId);
                 } else {
                     setSchoolId(null);
-                    setLoading(false);
                 }
             } catch (e) {
                  console.error("Error reading user root document:", e);
                  setSchoolId(null);
+            } finally {
                  setLoading(false);
             }
         };
