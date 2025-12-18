@@ -85,6 +85,7 @@ interface StudentProfileContentProps {
 
 function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps) {
   const router = useRouter();
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // State to force re-render
   
   const firestore = useFirestore();
   const { schoolName, schoolData } = useSchoolData();
@@ -99,10 +100,10 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId]);
+  const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId, refreshTrigger]);
   const { data: studentData, loading: studentLoading, error } = useDoc<Student>(studentRef);
   
-  const paymentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')), [firestore, schoolId, eleveId]);
+  const paymentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/paiements`), orderBy('date', 'desc')), [firestore, schoolId, eleveId, refreshTrigger]);
   const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
   const gradesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`), orderBy('date', 'desc')), [firestore, schoolId, eleveId]);
@@ -492,7 +493,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
         schoolData={schoolData}
         onSave={() => {
             setIsPaymentDialogOpen(false);
-            router.refresh();
+            setRefreshTrigger(prev => prev + 1);
         }}
       />
     </>
@@ -599,9 +600,9 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                                 <FormField control={paymentForm.control} name="paymentDescription" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={paymentForm.control} name="paymentAmount" render={({ field }) => (<FormItem><FormLabel>Montant Payé</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={paymentForm.control} name="paymentMethod" render={({ field }) => (<FormItem><FormLabel>Mode de paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Espèces">Espèces</SelectItem><SelectItem value="Chèque">Chèque</SelectItem><SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem><SelectItem value="Paiement Mobile">Paiement Mobile</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="payerFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="payerLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="payerContact" render={({ field }) => (<FormItem><FormLabel>Contact Payeur</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                                <FormField control={form.control} name="payerFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="payerLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="payerContact" render={({ field }) => (<FormItem><FormLabel>Contact Payeur</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             </form>
                         </Form>
                         <DialogFooter>
@@ -688,3 +689,5 @@ function EmployeeDetailSkeleton() {
         </div>
     );
 }
+
+    
