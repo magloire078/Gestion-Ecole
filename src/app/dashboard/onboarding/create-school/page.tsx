@@ -25,7 +25,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 
 
 const createSchoolSchema = z.object({
-  schoolName: z.string().min(3, "Le nom de l'école doit avoir au moins 3 caractères."),
+  name: z.string().min(3, "Le nom de l'école doit avoir au moins 3 caractères."),
   address: z.string().optional(),
   directorFirstName: z.string().min(2, "Le prénom est requis."),
   directorLastName: z.string().min(2, "Le nom est requis."),
@@ -48,7 +48,7 @@ export default function CreateSchoolPage() {
   const form = useForm<CreateSchoolFormValues>({
     resolver: zodResolver(createSchoolSchema),
     defaultValues: {
-      schoolName: '',
+      name: '',
       address: '',
       directorFirstName: '',
       directorLastName: '',
@@ -82,7 +82,7 @@ export default function CreateSchoolPage() {
     const schoolCreationService = new SchoolCreationService(firestore);
     try {
       const result = await schoolCreationService.createSchool({
-        name: values.schoolName,
+        name: values.name,
         address: values.address || '',
         mainLogoUrl: logoUrl || '',
         directorId: user.authUser.uid,
@@ -160,7 +160,7 @@ export default function CreateSchoolPage() {
                       </FormItem>
                     )} />
                     <div className="flex-1 w-full space-y-4">
-                        <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de l'établissement *</FormLabel><FormControl><Input placeholder="Ex: École Les Lauréats" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'établissement *</FormLabel><FormControl><Input placeholder="Ex: École Les Lauréats" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse</FormLabel><FormControl><Input placeholder="Ex: Abidjan, Cocody Angré" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                 </div>

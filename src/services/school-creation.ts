@@ -90,7 +90,7 @@ export class SchoolCreationService {
     const batch = writeBatch(this.db);
 
     // 1. Create the main school document
-    const schoolDocData: Omit<school, 'id'> = {
+    const schoolDocData: school = {
       name: schoolData.name,
       address: schoolData.address,
       phone: schoolData.phone,
@@ -116,11 +116,10 @@ export class SchoolCreationService {
     const userRootData: user_root = { schoolId };
     batch.set(userRef, userRootData);
 
-    // 3. Create a staff profile for the director and make them a Super Admin
+    // 3. Create a staff profile for the director
     const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
-    const superAdminRef = doc(this.db, `super_admins`, schoolData.directorId);
-
-    const directorProfileData: Omit<staff, 'id'> = {
+    
+    const directorProfileData: staff = {
         uid: schoolData.directorId,
         schoolId: schoolId,
         role: 'directeur',
@@ -136,6 +135,7 @@ export class SchoolCreationService {
     batch.set(staffRef, directorProfileData);
     
     // Add to super_admins collection
+    const superAdminRef = doc(this.db, `super_admins`, schoolData.directorId);
     batch.set(superAdminRef, {
         uid: schoolData.directorId,
         displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
