@@ -25,7 +25,7 @@ export default function InternatLayout({
         );
     }
     
-    if (subscription?.plan !== 'Premium') {
+    if (!subscription || !['Premium'].includes(subscription.plan)) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">

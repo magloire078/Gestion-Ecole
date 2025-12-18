@@ -43,13 +43,13 @@ export const NAV_LINKS = [
       icon: School,
       links: [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' as PermissionKey },
-        { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, permission: 'viewUsers' as PermissionKey },
-        { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageContent' as PermissionKey },
-        { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageContent' as PermissionKey },
-        { href: '/dashboard/transport/dashboard', label: 'Transport', icon: Bus, permission: 'manageContent' as PermissionKey },
-        { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageContent' as PermissionKey },
-        { href: '/dashboard/immobilier', label: 'Immobilier', icon: Building, permission: 'manageContent' as PermissionKey },
-        { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageContent' as PermissionKey },
+        { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, permission: 'viewUsers' as PermissionKey, plans: ['Pro', 'Premium'] as const },
+        { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageMedical' as PermissionKey, plans: ['Pro', 'Premium'] as const },
+        { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine' as PermissionKey, plans: ['Pro', 'Premium'] as const },
+        { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport' as PermissionKey, plans: ['Pro', 'Premium'] as const },
+        { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat' as PermissionKey, plans: ['Premium'] as const },
+        { href: '/dashboard/immobilier', label: 'Immobilier', icon: Building, permission: 'manageInventory' as PermissionKey, plans: ['Premium'] as const },
+        { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities' as PermissionKey, plans: ['Pro', 'Premium'] as const },
       ]
     },
     {
@@ -57,10 +57,10 @@ export const NAV_LINKS = [
       icon: GraduationCap,
       links: [
         { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, permission: 'manageClasses' as PermissionKey },
-        { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, permission: 'manageClasses' as PermissionKey },
+        { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, permission: 'manageSchedule' as PermissionKey },
         { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText, permission: 'manageGrades' as PermissionKey },
-        { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, permission: 'manageGrades' as PermissionKey },
-        { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, permission: 'manageContent' as PermissionKey },
+        { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, permission: 'manageAttendance' as PermissionKey },
+        { href: '/dashboard/bibliotheque', label: 'Bibliothèque', icon: BookOpen, permission: 'manageLibrary' as PermissionKey },
       ]
     },
      {
@@ -77,7 +77,7 @@ export const NAV_LINKS = [
       group: "Communication",
       icon: Send,
       links: [
-        { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, permission: 'manageContent' as PermissionKey },
+        { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, permission: 'manageCommunication' as PermissionKey },
       ]
     },
      {
@@ -95,3 +95,4 @@ export const transportNavLinks = [
   { href: '/dashboard/transport/bus', label: 'Flotte de Bus', icon: Bus },
   { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket },
 ];
+

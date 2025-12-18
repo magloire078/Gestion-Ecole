@@ -9,6 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 import type { UserProfile } from '@/lib/data-types';
 import { NAV_LINKS } from '@/lib/nav-links';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
 
@@ -55,22 +56,41 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
 
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
-  const isAdmin = user?.profile?.isAdmin === true;
+  const { schoolData } = useSchoolData();
+
+  const isSuperAdmin = user?.profile?.isAdmin === true;
   const userPermissions = user?.profile?.permissions || {};
+  const subscriptionPlan = schoolData?.subscription?.plan;
   const pathname = usePathname();
 
   const hasPermission = (permission?: PermissionKey) => {
-    if (isAdmin) return true;
-    if (!permission) return true; // Link is public within the dashboard
+    if (isSuperAdmin) return true;
+    if (!permission) return true;
     return !!userPermissions[permission];
+  };
+
+  const hasAccess = (plan?: ('Pro' | 'Premium')[], permission?: PermissionKey) => {
+      // Platform admin always has access
+      if (isSuperAdmin) return true;
+
+      // Check for feature plan
+      const planSufficient = !plan || plan.some(p => p === subscriptionPlan);
+      if (!planSufficient) return false;
+      
+      // Check for permission if provided
+      if (permission) {
+          return hasPermission(permission);
+      }
+      
+      return true;
   };
   
   if (collapsed) {
       return (
           <nav className="flex flex-col items-center gap-2 px-2 py-4">
                {NAV_LINKS.flatMap(group => {
-                   if (group.adminOnly && !isAdmin) return [];
-                   return group.links.filter(link => hasPermission(link.permission)).map(link => (
+                   if (group.adminOnly && !isSuperAdmin) return [];
+                   return group.links.filter(link => hasAccess(link.plans, link.permission)).map(link => (
                        <NavLink key={link.href} {...link} collapsed />
                    ));
                })}
@@ -78,14 +98,14 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
       );
   }
 
-  const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasPermission(link.permission) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
+  const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasAccess(link.plans, link.permission) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
 
   return (
     <Accordion type="multiple" defaultValue={defaultActiveGroup ? [defaultActiveGroup] : []} className="w-full">
       {NAV_LINKS.map((group) => {
-          if (group.adminOnly && !isAdmin) return null;
+          if (group.adminOnly && !isSuperAdmin) return null;
           
-          const visibleLinks = group.links.filter(link => hasPermission(link.permission));
+          const visibleLinks = group.links.filter(link => hasAccess(link.plans, link.permission));
           if (visibleLinks.length === 0) return null;
           
           const isAccordion = group.group !== "Principal" && group.group !== "Configuration";

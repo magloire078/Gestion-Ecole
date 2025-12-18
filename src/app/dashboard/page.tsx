@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, DollarSign, AlertCircle, CheckCircle, Plus, CreditCard, Calendar, Check, TrendingUp } from 'lucide-react';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, AlertCircle, CheckCircle, Plus, CreditCard, Calendar, Check, TrendingUp, Wallet, Activity } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -17,15 +16,13 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, classe as Classe, staff as Staff, fee as Fee } from '@/lib/data-types';
-import { TARIFAIRE } from '@/lib/billing-calculator';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { BillingAlerts } from '@/components/billing-alerts';
 
 // ====================================================================================
 // TYPES
 // ====================================================================================
 
-type Activity = {
+type ActivityItem = {
   id: string;
   type: 'student' | 'book' | 'message';
   icon: React.ComponentType<{ className?: string }>;
@@ -50,20 +47,18 @@ const RegularDashboard = () => {
     cycles: 0,
     tuitionPaid: 0,
     tuitionDue: 0,
+    totalTuition: 0,
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
   // --- Data for Recent Activity ---
-  const [recentActivity, setRecentActivity] = useState<Activity[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
 
   // --- Data for Performance Chart ---
   const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
   const [gradesLoading, setGradesLoading] = useState(true);
   
-  const [billingAlerts, setBillingAlerts] = useState<any[]>([]);
-
-
   useEffect(() => {
     if (!schoolId || !firestore) {
       if (!schoolLoading) {
@@ -98,54 +93,32 @@ const RegularDashboard = () => {
 
         const totalBooks = booksSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as LibraryBook).quantity, 0);
         const studentsForTuitionSnapshot = await getDocs(studentsQuery);
-        const { totalPaid, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
+        
+        const { totalTuition, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
             const student = doc.data() as Student;
             const tuition = student.tuitionFee || 0;
             const due = student.amountDue || 0;
-            acc.totalPaid += (tuition - due);
+            acc.totalTuition += tuition;
             acc.totalDue += due;
             return acc;
-        }, { totalPaid: 0, totalDue: 0 });
+        }, { totalTuition: 0, totalDue: 0 });
         
-        const currentStats = {
+        setStats({
           students: studentsSnapshot.data().count,
           teachers: teachersSnapshot.data().count,
           classes: classesSnapshot.size,
           cycles: cyclesSnapshot.data().count,
           books: totalBooks,
-          tuitionPaid: totalPaid,
+          tuitionPaid: totalTuition - totalDue,
           tuitionDue: totalDue,
-        };
-        setStats(currentStats);
-
-        // Check for billing alerts
-        if (subscription && TARIFAIRE[subscription.plan]) {
-            const planDetails = TARIFAIRE[subscription.plan];
-            const newAlerts = [];
-            
-            const studentUsage = currentStats.students / planDetails.elevesInclus;
-            const cycleUsage = currentStats.cycles / planDetails.cyclesInclus;
-
-            if (studentUsage > 1) {
-                newAlerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.elevesInclus} élèves. Des frais supplémentaires s'appliquent.` });
-            } else if (studentUsage > 0.9) {
-                newAlerts.push({ type: 'warning', message: `Attention, vous approchez la limite d'élèves (${currentStats.students}/${planDetails.elevesInclus}).` });
-            }
-
-             if (cycleUsage > 1) {
-                newAlerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.cyclesInclus} cycles. Des frais supplémentaires s'appliquent.` });
-            } else if (cycleUsage > 0.9) {
-                newAlerts.push({ type: 'warning', message: `Attention, vous approchez la limite de cycles (${currentStats.cycles}/${planDetails.cyclesInclus}).` });
-            }
-            
-            setBillingAlerts(newAlerts);
-        }
+          totalTuition: totalTuition,
+        });
 
         setStatsLoading(false);
 
 
         // --- Fetch Recent Activity ---
-        const activities: Activity[] = [];
+        const activities: ActivityItem[] = [];
         
         const recentStudentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(2));
         const recentMessagesQuery = query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(2));
@@ -214,11 +187,13 @@ const RegularDashboard = () => {
     };
     
     fetchAllData();
-  }, [schoolId, firestore, schoolLoading, subscription]);
+  }, [schoolId, firestore, schoolLoading]);
 
   const formatCurrency = (value: number) => {
     return `${value.toLocaleString('fr-FR')} CFA`;
   }
+  
+  const paymentRate = stats.totalTuition > 0 ? (stats.tuitionPaid / stats.totalTuition) * 100 : 0;
 
   const statsCards = [
     { 
@@ -265,22 +240,7 @@ const RegularDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tableau de Bord</h1>
       </div>
       
-       {billingAlerts.length > 0 && (
-            <div className="space-y-2">
-                {billingAlerts.map((alert, index) => (
-                    <Alert key={index} variant={alert.type === 'error' ? 'destructive' : 'default'} className={cn(alert.type === 'warning' && 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 [&>svg]:text-amber-500')}>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle className="font-semibold">{alert.type === 'error' ? 'Limite dépassée' : 'Avertissement'}</AlertTitle>
-                        <AlertDescription>
-                            {alert.message}
-                            <Link href="/dashboard/parametres/abonnement" className="ml-2 font-bold underline">Mettre à niveau</Link>
-                        </AlertDescription>
-                    </Alert>
-                ))}
-            </div>
-        )}
-        
-        {schoolId && <BillingAlerts schoolId={schoolId} />}
+       {schoolId && <BillingAlerts schoolId={schoolId} studentCount={stats.students} cycleCount={stats.cycles} />}
     
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat) => (
@@ -310,7 +270,7 @@ const RegularDashboard = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Activité Récente</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Activity />Activité Récente</CardTitle>
               <CardDescription>Dernières actions au sein de l'école.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -352,28 +312,22 @@ const RegularDashboard = () => {
         <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Finances Scolarité</CardTitle>
-              <CardDescription>Vue d'ensemble des frais de scolarité.</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Wallet />Statistiques</CardTitle>
+              <CardDescription>Vue d'ensemble des finances et plus.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-lg">
-                <div className="p-3 rounded-full bg-emerald-100 dark:bg-emerald-800/50 mr-4">
-                  <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-300" />
+            <CardContent className="space-y-4 text-sm">
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Cycles Actifs:</span>
+                    <span className="font-semibold">{stats.cycles}</span>
                 </div>
-                <div>
-                  <p className="text-sm text-emerald-800 dark:text-emerald-400">Total Versé</p>
-                  {statsLoading ? <Skeleton className="h-6 w-24" /> : <p className="text-xl font-bold text-emerald-700 dark:text-emerald-200">{formatCurrency(stats.tuitionPaid)}</p>}
+                <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Total Dû (scolarité):</span>
+                    <span className="font-semibold text-destructive">{formatCurrency(stats.tuitionDue)}</span>
                 </div>
-              </div>
-              <div className="flex items-center p-4 bg-amber-50 dark:bg-amber-900/30 rounded-lg">
-                <div className="p-3 rounded-full bg-amber-100 dark:bg-amber-800/50 mr-4">
-                  <DollarSign className="h-6 w-6 text-amber-600 dark:text-amber-300" />
+                 <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Taux de Paiement:</span>
+                    <span className="font-semibold text-emerald-600">{paymentRate.toFixed(1)}%</span>
                 </div>
-                <div>
-                  <p className="text-sm text-amber-800 dark:text-amber-400">Total Dû</p>
-                  {statsLoading ? <Skeleton className="h-6 w-24" /> : <p className="text-xl font-bold text-amber-700 dark:text-amber-200">{formatCurrency(stats.tuitionDue)}</p>}
-                </div>
-              </div>
             </CardContent>
           </Card>
           

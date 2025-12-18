@@ -21,7 +21,7 @@ export default function RHLayout({
 
     // Allow platform admins OR users on Pro/Premium plan.
     const isAdmin = user?.profile?.isAdmin === true;
-    const isProOrPremium = subscription?.plan === 'Pro' || subscription?.plan === 'Premium';
+    const isProOrPremium = !subscription || ['Pro', 'Premium'].includes(subscription.plan);
 
     if (isLoading) {
         return (
