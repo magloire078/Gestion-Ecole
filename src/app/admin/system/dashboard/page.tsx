@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
-import { collection, getCountFromServer, query, where, collectionGroup, doc, setDoc } from 'firebase/firestore';
+import { collection, getCountFromServer, query, where, collectionGroup, doc, setDoc, getDocs } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,8 @@ import {
   Server,
   Wrench,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  CreditCard
 } from 'lucide-react';
 import { SystemMetrics } from '@/components/admin/system-metrics';
 import { AuditLog } from '@/components/admin/audit-log';
@@ -30,7 +31,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import type { school as School } from '@/lib/data-types';
 
+const TARIFAIRE = {
+    Essentiel: 0,
+    Pro: 49900,
+    Premium: 99900,
+};
 
 const SystemSettings = () => {
     const firestore = useFirestore();
@@ -110,7 +117,7 @@ export default function SystemAdminDashboard() {
     activeSchools: 0,
     totalUsers: 0,
     storageUsed: 2.5, // Mock value
-    revenue: 0, // Mock value
+    revenue: 0,
     activeSubscriptions: 0
   });
   const [loadingMetrics, setLoadingMetrics] = useState(true);
@@ -130,19 +137,38 @@ export default function SystemAdminDashboard() {
         setLoadingMetrics(true);
         try {
             const schoolsQuery = collection(firestore, 'ecoles');
-            const activeSchoolsQuery = query(schoolsQuery, where('subscription.status', 'in', ['active', 'trialing']));
             const usersQuery = collectionGroup(firestore, 'personnel');
 
-            const [schoolsSnap, activeSchoolsSnap, usersSnap] = await Promise.all([
-                getCountFromServer(schoolsQuery),
-                getCountFromServer(activeSchoolsQuery),
+            const [schoolsSnap, usersSnap] = await Promise.all([
+                getDocs(schoolsQuery),
                 getCountFromServer(usersQuery),
             ]);
+            
+            let totalRevenue = 0;
+            let activeSchoolCount = 0;
+            let activeSubscriptionCount = 0;
+
+            schoolsSnap.forEach(doc => {
+                const school = doc.data() as School;
+                if (school.status !== 'deleted') {
+                    activeSchoolCount++;
+                    if (school.subscription && school.subscription.status === 'active') {
+                        activeSubscriptionCount++;
+                        const plan = school.subscription.plan as keyof typeof TARIFAIRE;
+                        if (plan && TARIFAIRE[plan]) {
+                            totalRevenue += TARIFAIRE[plan];
+                        }
+                    }
+                }
+            });
+
 
             setMetrics(prev => ({
                 ...prev,
-                totalSchools: schoolsSnap.data().count,
-                activeSchools: activeSchoolsSnap.data().count,
+                totalSchools: schoolsSnap.size,
+                activeSchools: activeSchoolCount,
+                activeSubscriptions: activeSubscriptionCount,
+                revenue: totalRevenue,
                 totalUsers: usersSnap.data().count,
             }));
 
@@ -209,14 +235,14 @@ export default function SystemAdminDashboard() {
             </CardContent>
           </Card>
           
-          <Card>
+           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Stockage utilisé</p>
-                  <p className="text-2xl font-bold">{metrics.storageUsed} Go</p>
+                  <p className="text-sm text-muted-foreground">Abonnements</p>
+                  <p className="text-2xl font-bold">{metrics.activeSubscriptions}</p>
                 </div>
-                <Database className="h-8 w-8 text-amber-500" />
+                <CreditCard className="h-8 w-8 text-green-500" />
               </div>
             </CardContent>
           </Card>

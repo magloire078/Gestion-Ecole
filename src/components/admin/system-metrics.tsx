@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '../ui/skeleton';
@@ -48,6 +49,7 @@ export const SystemMetrics = ({ metrics, loading }: { metrics: any, loading: boo
         </CardHeader>
         <CardContent>
           <p className="text-3xl font-bold">{formatNumber(metrics.revenue)} CFA</p>
+           <p className="text-xs text-muted-foreground">Revenu Mensuel Récurrent</p>
         </CardContent>
       </Card>
     </div>
