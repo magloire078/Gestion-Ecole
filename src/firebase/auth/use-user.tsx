@@ -12,12 +12,6 @@ export interface UserProfile extends AppUser {
     isAdmin?: boolean;
 }
 
-export interface UserContext {
-    authUser: FirebaseUser;
-    uid: string;
-    profile?: UserProfile;
-}
-
 const allPermissions = {
     manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
     manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
@@ -79,9 +73,7 @@ export function useUser() {
 
                             if (profileData.role === 'directeur') {
                                permissions = getAllPermissions(true);
-                            }
-
-                            if (profileData.adminRole) {
+                            } else if (profileData.adminRole) {
                                 const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
                                 const roleSnap = await getDoc(roleRef);
                                 if (roleSnap.exists()) {
@@ -121,4 +113,3 @@ export function useUser() {
 
   return {user, loading};
 }
-
