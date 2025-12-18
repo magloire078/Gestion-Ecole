@@ -58,11 +58,57 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
   }
   
-  const displayName = user?.authUser?.displayName || 'Utilisateur';
+  const isSuperAdmin = user?.profile?.isAdmin === true;
+  
+  const displayName = isSuperAdmin 
+    ? (user?.profile?.firstName && user?.profile?.lastName ? `${user.profile.firstName} ${user.profile.lastName}` : user?.authUser?.displayName || 'Super Admin')
+    : user?.authUser?.displayName || 'Utilisateur';
+
+  const userRole = isSuperAdmin ? 'Super Administrateur' : user?.profile?.role;
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  const isSuperAdmin = user?.profile?.isAdmin === true;
-  const userRole = isSuperAdmin ? 'Super Administrateur' : user?.profile?.role;
+  const UserMenuContent = () => (
+    <>
+      <DropdownMenuLabel className="font-normal">
+        <div className="flex flex-col space-y-1">
+          <p className="text-sm font-medium leading-none">{displayName}</p>
+          {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
+          <p className="text-xs leading-none text-muted-foreground pt-1">
+            {user?.authUser?.email}
+          </p>
+        </div>
+      </DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>Profil & Paramètres</DropdownMenuItem>
+      </DropdownMenuGroup>
+       <DropdownMenuSub>
+          <DropdownMenuSubTrigger>
+            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="ml-2">Thème</span>
+          </DropdownMenuSubTrigger>
+          <DropdownMenuPortal>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem onClick={() => setTheme("light")}>
+                Clair
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("dark")}>
+                Sombre
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme("system")}>
+                Système
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuPortal>
+      </DropdownMenuSub>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={handleLogout}>
+      Se déconnecter
+      </DropdownMenuItem>
+    </>
+  );
+
 
   if (collapsed) {
     return (
@@ -75,45 +121,8 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                     </Avatar>
                 </button>
             </DropdownMenuTrigger>
-            {/* Same content as non-collapsed */}
             <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel className="font-normal">
-                <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{displayName}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                    {user?.authUser?.email}
-                    </p>
-                    {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
-                </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>Profil & Paramètres</DropdownMenuItem>
-                </DropdownMenuGroup>
-                 <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                        <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                        <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                        <span className="ml-2">Thème</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                        <DropdownMenuSubContent>
-                        <DropdownMenuItem onClick={() => setTheme("light")}>
-                            Clair
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme("dark")}>
-                            Sombre
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setTheme("system")}>
-                            Système
-                        </DropdownMenuItem>
-                        </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>
-                Se déconnecter
-                </DropdownMenuItem>
+                <UserMenuContent />
             </DropdownMenuContent>
         </DropdownMenu>
     );
@@ -130,43 +139,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">{displayName}</p>
-            <p className="text-xs leading-none text-muted-foreground">
-              {user?.authUser?.email}
-            </p>
-             {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
-          </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>Profil & Paramètres</DropdownMenuItem>
-           <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                <span className="ml-2">Thème</span>
-              </DropdownMenuSubTrigger>
-              <DropdownMenuPortal>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => setTheme("light")}>
-                    Clair
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("dark")}>
-                    Sombre
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setTheme("system")}>
-                    Système
-                  </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuPortal>
-            </DropdownMenuSub>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout}>
-          Se déconnecter
-        </DropdownMenuItem>
+        <UserMenuContent />
       </DropdownMenuContent>
     </DropdownMenu>
   );
