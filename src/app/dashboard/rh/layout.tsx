@@ -19,9 +19,10 @@ export default function RHLayout({
 
     const isLoading = subscriptionLoading || userLoading;
 
-    // Allow platform admins OR users on Pro/Premium plan.
-    const isSuperAdmin = user?.profile?.isAdmin === true;
-    const isProOrPremium = subscription && ['Pro', 'Premium'].includes(subscription.plan);
+    // Si l'utilisateur est un super admin, il a toujours accès.
+    if (user?.profile?.isAdmin) {
+        return <>{children}</>;
+    }
 
     if (isLoading) {
         return (
@@ -40,8 +41,10 @@ export default function RHLayout({
         );
     }
     
-    // If not admin and not on Pro/Premium plan, show the upgrade message
-    if (!isSuperAdmin && !isProOrPremium) {
+    const isProOrPremium = subscription && ['Pro', 'Premium'].includes(subscription.plan);
+    
+    // Si l'utilisateur n'est pas admin et pas sur le bon plan, on bloque.
+    if (!isProOrPremium) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">

@@ -18,7 +18,10 @@ export default function SanteLayout({
     const { user, loading: userLoading } = useUser();
 
     const isLoading = subscriptionLoading || userLoading;
-    const isSuperAdmin = user?.profile?.isAdmin === true;
+
+    if (user?.profile?.isAdmin) {
+        return <>{children}</>;
+    }
 
     if (isLoading) {
         return (
@@ -30,8 +33,7 @@ export default function SanteLayout({
         );
     }
     
-    // Si l'utilisateur n'est pas un super admin et que l'abonnement ne le permet pas, on bloque.
-    if (!isSuperAdmin && (!subscription || ['Essentiel'].includes(subscription.plan))) {
+    if (!subscription || ['Essentiel'].includes(subscription.plan)) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">
