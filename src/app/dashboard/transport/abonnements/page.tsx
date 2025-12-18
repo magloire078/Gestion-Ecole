@@ -34,7 +34,7 @@ export default function TransportSubscriptionsPage() {
     const firestore = useFirestore();
     const { user } = useUser();
     const { toast } = useToast();
-    const canManageContent = !!user?.profile?.permissions?.manageContent;
+    const canManageContent = !!user?.profile?.permissions?.manageTransport;
     
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingSubscription, setEditingSubscription] = useState<(TransportSubscription & { id: string }) | null>(null);
