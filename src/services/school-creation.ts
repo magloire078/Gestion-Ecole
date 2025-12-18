@@ -116,8 +116,10 @@ export class SchoolCreationService {
     const userRootData: user_root = { schoolId };
     batch.set(userRef, userRootData);
 
-    // 3. Create a staff profile for the director
+    // 3. Create a staff profile for the director and make them a Super Admin
     const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
+    const superAdminRef = doc(this.db, `super_admins`, schoolData.directorId);
+
     const directorProfileData: Omit<staff, 'id'> = {
         uid: schoolData.directorId,
         schoolId: schoolId,
@@ -132,6 +134,15 @@ export class SchoolCreationService {
         status: 'Actif',
     };
     batch.set(staffRef, directorProfileData);
+    
+    // Add to super_admins collection
+    batch.set(superAdminRef, {
+        uid: schoolData.directorId,
+        displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
+        email: schoolData.directorEmail,
+        assignedAt: serverTimestamp(),
+    });
+
 
     // 4. Initialize school structure (Cycles and Niveaux)
     const template = SCHOOL_TEMPLATES.IVORIAN_SYSTEM;

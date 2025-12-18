@@ -89,16 +89,15 @@ export default function CreateSchoolPage() {
         directorFirstName: values.directorFirstName,
         directorLastName: values.directorLastName,
         directorEmail: user.authUser.email,
-        // Default values for other fields
-        phone: '',
-        email: '',
+        phone: user.authUser.phoneNumber || '',
+        email: user.authUser.email || '',
       });
       
       await auth.currentUser?.getIdToken(true); 
       
       toast({
         title: 'École créée avec succès !',
-        description: `Le code de votre établissement est : ${result.schoolCode}. Vous allez être redirigé...`,
+        description: `Le code de votre établissement est : ${result.schoolCode}. Vous êtes maintenant Super Admin. Redirection...`,
         duration: 5000,
       });
 
@@ -188,5 +187,3 @@ export default function CreateSchoolPage() {
     </div>
   );
 };
-
-    
