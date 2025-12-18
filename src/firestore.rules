@@ -116,6 +116,8 @@ service cloud.firestore {
     // --- System-level collections for Super Admins ---
     match /super_admins/{adminId} {
       allow get, write: if isAdmin();
+    }
+    match /super_admins {
       allow list: if isAdmin();
     }
     
@@ -356,3 +358,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
