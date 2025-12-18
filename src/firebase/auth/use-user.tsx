@@ -84,7 +84,7 @@ export function useUser() {
 
                         if (profileData.adminRole) {
                             const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
-                            const unsubscribeFromRole = onSnapshot(roleRef, (roleSnap) => {
+                            onSnapshot(roleRef, (roleSnap) => {
                                 if (roleSnap.exists()) {
                                     const roleData = roleSnap.data() as AdminRole;
                                     // Merge base permissions with role-specific permissions
@@ -96,7 +96,6 @@ export function useUser() {
                                     }));
                                 }
                             });
-                             return () => unsubscribeFromRole();
                         }
                     } else {
                          setUser({ authUser, uid: authUser.uid, profile: undefined });

@@ -23,7 +23,8 @@ service cloud.firestore {
 
     function isDirector(schoolId) {
         // Check if the requesting user's UID is the directorId on the school document
-        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+        let schoolDoc = get(/databases/$(database)/documents/ecoles/$(schoolId));
+        return isAuth() && schoolDoc.data.directorId == request.auth.uid;
     }
 
     // --- Global Collections ---
@@ -50,9 +51,6 @@ service cloud.firestore {
 
     // --- School-Specific Collections ---
     match /ecoles/{schoolId} {
-      // The user creating the school is the director. The director can always read it.
-      // Any authenticated user can attempt to create a school.
-      // SuperAdmins can do anything.
       allow get: if isSuperAdmin() || belongsToSchool(schoolId) || isDirector(schoolId);
       allow list: if isSuperAdmin();
       allow create: if isAuth(); 
