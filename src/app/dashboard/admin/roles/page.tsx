@@ -94,7 +94,7 @@ export default function RolesPage() {
                                 <div className="p-4 bg-muted/50 rounded-lg">
                                     <h4 className="font-semibold mb-3">Permissions accordées :</h4>
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                                        {Object.entries(role.permissions).map(([key, value]) => value ? (
+                                        {Object.entries(role.permissions || {}).map(([key, value]) => value ? (
                                             <Badge key={key} variant="outline" className="font-normal">{formatPermissionName(key)}</Badge>
                                         ) : null)}
                                     </div>
