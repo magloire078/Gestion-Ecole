@@ -22,7 +22,6 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { staff as Staff, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment, fee as Fee, niveau as Niveau } from '@/lib/data-types';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
 import { StudentEditForm } from '@/components/student-edit-form';
@@ -85,7 +84,6 @@ interface StudentProfileContentProps {
 }
 
 function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps) {
-  const isMounted = useHydrationFix();
   const router = useRouter();
   
   const firestore = useFirestore();
@@ -298,9 +296,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                                       </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        {!isMounted ? (
-                                            <TableRow><TableCell colSpan={3} className="py-8"><Skeleton className="h-24 w-full" /></TableCell></TableRow>
-                                        ) : Object.keys(subjectAverages).length > 0 ? Object.entries(subjectAverages).map(([subject, subjectData]) => {
+                                        {Object.keys(subjectAverages).length > 0 ? Object.entries(subjectAverages).map(([subject, subjectData]) => {
                                             const subjectGrades = grades.filter(g => g.subject === subject);
                                             return (
                                                 <React.Fragment key={subject}>
@@ -311,7 +307,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                                                     </TableRow>
                                                     {subjectGrades.map(grade => (
                                                         <TableRow key={grade.id} className="bg-muted/50">
-                                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{isMounted ? format(new Date(grade.date), 'd MMM', { locale: fr }) : '...' }</TableCell>
+                                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{format(new Date(grade.date), 'd MMM', { locale: fr }) }</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
                                                             <TableCell className="py-1 text-xs text-right text-muted-foreground">{grade.grade}/20</TableCell>
                                                         </TableRow>
@@ -400,7 +396,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                                         {paymentHistory.length > 0 ? (
                                             paymentHistory.map(payment => (
                                                 <TableRow key={payment.id}>
-                                                    <TableCell>{isMounted ? format(new Date(payment.date), 'd MMMM yyyy', {locale: fr}) : <Skeleton className="h-5 w-24"/>}</TableCell>
+                                                    <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
                                                     <TableCell>{payment.description}</TableCell>
                                                     <TableCell>{payment.method}</TableCell>
                                                     <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
@@ -431,7 +427,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                             <CardContent className="space-y-3 text-sm">
                                  <div className="flex items-center">
                                     <Cake className="mr-3 h-5 w-5 text-muted-foreground" />
-                                    <span>Né(e) le <strong>{isMounted && student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : <Skeleton className="h-4 w-32 inline-block"/>}</strong> à <strong>{student.placeOfBirth}</strong></span>
+                                    <span>Né(e) le <strong>{student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'}</strong> à <strong>{student.placeOfBirth}</strong></span>
                                 </div>
                                 <div className="flex items-center">
                                     <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />

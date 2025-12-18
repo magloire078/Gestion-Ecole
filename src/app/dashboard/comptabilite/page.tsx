@@ -65,7 +65,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AccountingCharts } from './charts';
 import { cn } from "@/lib/utils";
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 
 const transactionSchema = z.object({
@@ -79,7 +78,6 @@ const transactionSchema = z.object({
 type TransactionFormValues = z.infer<typeof transactionSchema>;
 
 export default function AccountingPage() {
-  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -369,7 +367,7 @@ export default function AccountingPage() {
                 ) : transactions.length > 0 ? (
                     transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
-                        <TableCell>{isMounted ? format(new Date(transaction.date), 'd MMM yyyy', { locale: fr }) : '...'}</TableCell>
+                        <TableCell>{format(new Date(transaction.date), 'd MMM yyyy', { locale: fr })}</TableCell>
                         <TableCell className="font-medium">{transaction.description}</TableCell>
                         <TableCell>{transaction.category}</TableCell>
                         <TableCell className={cn('text-right font-mono', transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive')}>

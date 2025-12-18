@@ -24,12 +24,10 @@ import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "./ui/skeleton";
-import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { cn } from "@/lib/utils";
 import { SafeImage } from "./ui/safe-image";
 
 export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
-  const isMounted = useHydrationFix();
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
   const { user, loading: userLoading } = useUser();
@@ -54,7 +52,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     }
   };
 
-  const isLoading = userLoading || !isMounted;
+  const isLoading = userLoading;
 
   if (isLoading) {
     return <Skeleton className="h-9 w-9 rounded-full" />;
@@ -116,13 +114,9 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
-                      <DropdownMenuItem onClick={() => router.push('/dashboard/admin/abonnements')}>
+                      <DropdownMenuItem onClick={() => router.push('/admin/system/dashboard')}>
                         <ShieldCheck className="mr-2 h-4 w-4" />
-                        <span>Admin Abonnements</span>
-                      </DropdownMenuItem>
-                       <DropdownMenuItem onClick={() => router.push('/dashboard/admin/roles')}>
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                        <span>Gestion des Rôles</span>
+                        <span>Admin Système</span>
                       </DropdownMenuItem>
                     </DropdownMenuGroup>
                   </>
@@ -184,13 +178,9 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push('/dashboard/admin/abonnements')}>
+              <DropdownMenuItem onClick={() => router.push('/admin/system/dashboard')}>
                 <ShieldCheck className="mr-2 h-4 w-4" />
-                <span>Admin Abonnements</span>
-              </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => router.push('/dashboard/admin/roles')}>
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                <span>Gestion des Rôles</span>
+                <span>Admin Système</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </>

@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { staff as Staff } from '@/lib/data-types';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface Student {
   name: string;
@@ -35,7 +34,6 @@ interface PrintableTimetableProps {
 }
 
 export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student, school, timetableEntries, teachers }) => {
-  const isMounted = useHydrationFix();
   const printRef = React.useRef<HTMLDivElement>(null);
 
   const { timeSlots, days, timetableGrid } = useMemo(() => {
@@ -114,7 +112,7 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
         <div ref={printRef}>
           <div className="text-center mb-6">
             <h1 className="text-xl font-bold">{school.name}</h1>
-            <p className="text-muted-foreground">Année scolaire: {isMounted ? `${new Date().getFullYear() - 1}-${new Date().getFullYear()}` : '-'}</p>
+            <p className="text-muted-foreground">Année scolaire: {`${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}</p>
             <h2 className="text-lg font-semibold mt-4">Emploi du Temps - Classe: {student.class}</h2>
           </div>
 

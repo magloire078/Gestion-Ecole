@@ -50,7 +50,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
 import { differenceInYears, differenceInMonths, addYears } from "date-fns";
-import { useHydrationFix } from "@/hooks/use-hydration-fix";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -71,7 +70,6 @@ const getStatusBadgeVariant = (status: Student['status']) => {
 };
 
 export default function StudentsPage() {
-  const isMounted = useHydrationFix();
   const router = useRouter();
   const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
@@ -262,7 +260,7 @@ export default function StudentsPage() {
                             </div>
                           </TableCell>
                           <TableCell>{student.class}</TableCell>
-                          <TableCell>{isMounted ? getAge(student.dateOfBirth) : <Skeleton className="h-5 w-16"/>}</TableCell>
+                          <TableCell>{getAge(student.dateOfBirth)}</TableCell>
                           <TableCell>{student.gender?.charAt(0)}</TableCell>
                           <TableCell className="text-center">
                             <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>

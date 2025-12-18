@@ -8,7 +8,6 @@ import { Printer, Download } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import QRCode from "react-qr-code";
 import type { student as Student } from '@/lib/data-types';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { SafeImage } from './ui/safe-image';
 
 interface SchoolInfo {
@@ -22,7 +21,6 @@ interface StudentIdCardProps {
 }
 
 export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school }) => {
-  const isMounted = useHydrationFix();
   const cardRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -31,7 +29,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
   
   const studentFullName = `${student.firstName} ${student.lastName}`;
   const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const currentYear = isMounted ? new Date().getFullYear() : '...';
+  const currentYear = new Date().getFullYear();
 
   // Le contenu du QR Code peut être l'ID de l'élève ou son matricule
   const qrCodeValue = student.id || student.matricule;
@@ -46,7 +44,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
                              {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={40} height={40} className="object-contain" />}
                             <h1 className="font-bold text-lg">{school.name}</h1>
                         </div>
-                        <p className="text-xs font-mono">Année {isMounted ? `${Number(currentYear) - 1}-${currentYear}` : '...'}</p>
+                        <p className="text-xs font-mono">Année {`${currentYear - 1}-${currentYear}`}</p>
                     </header>
 
                     <div className="flex items-center gap-6">

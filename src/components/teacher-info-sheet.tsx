@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { staff as Teacher } from '@/lib/data-types';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface SchoolInfo {
   name: string;
@@ -26,7 +25,6 @@ interface TeacherInfoSheetProps {
 }
 
 export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, school }) => {
-  const isMounted = useHydrationFix();
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -49,7 +47,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
 
   const teacherFullName = `${teacher.firstName} ${teacher.lastName}`;
   const fallback = teacherFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const currentYear = isMounted ? new Date().getFullYear() : '...';
+  const currentYear = new Date().getFullYear();
   const directorFullName = `${school.directorFirstName || ''} ${school.directorLastName || ''}`.trim();
 
   return (
@@ -67,7 +65,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                         </div>
                         <div className="text-right">
                              <h2 className="text-2xl font-bold tracking-tight">FICHE ENSEIGNANT</h2>
-                             <p className="text-muted-foreground">Année scolaire: {isMounted ? `${Number(currentYear) - 1}-${currentYear}` : '...'}</p>
+                             <p className="text-muted-foreground">Année scolaire: {`${currentYear - 1}-${currentYear}`}</p>
                         </div>
                     </header>
 

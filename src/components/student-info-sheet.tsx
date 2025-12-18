@@ -11,7 +11,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { student as Student } from '@/lib/data-types';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { SafeImage } from './ui/safe-image';
 
 interface SchoolInfo {
@@ -28,7 +27,6 @@ interface StudentInfoSheetProps {
 }
 
 export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, school }) => {
-  const isMounted = useHydrationFix();
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -47,7 +45,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
 
   const studentFullName = `${student.firstName} ${student.lastName}`;
   const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const currentYear = isMounted ? new Date().getFullYear() : '...';
+  const currentYear = new Date().getFullYear();
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -68,7 +66,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
 
                     <div className="text-center mb-6">
                         <h1 className="text-2xl font-bold tracking-tight">FICHE DE RENSEIGNEMENTS</h1>
-                        <p className="text-muted-foreground">Année scolaire: {isMounted ? `${Number(currentYear) - 1}-${currentYear}` : '...'}</p>
+                        <p className="text-muted-foreground">Année scolaire: {`${currentYear - 1}-${currentYear}`}</p>
                     </div>
 
                     {/* Student Identity */}
@@ -88,7 +86,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                         <div className="space-y-4">
                             <h4 className="font-bold text-lg border-b pb-1">Informations Personnelles</h4>
-                            <InfoRow icon={Cake} label="Date de naissance" value={isMounted && student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'} />
+                            <InfoRow icon={Cake} label="Date de naissance" value={student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'} />
                             <InfoRow icon={MapPin} label="Lieu de naissance" value={student.placeOfBirth} />
                             <InfoRow icon={VenetianMask} label="Sexe" value={student.gender} />
                             <InfoRow icon={MapPin} label="Adresse" value={student.address} />
@@ -116,7 +114,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                         </div>
                     </div>
                      <div className="flex justify-end mt-12 text-sm">
-                        Fait à {school.address?.split(',')[0] || '...'}, le {isMounted ? format(new Date(), 'd MMMM yyyy', { locale: fr }) : '...'}
+                        Fait à {school.address?.split(',')[0] || '...'}, le {format(new Date(), 'd MMMM yyyy', { locale: fr })}
                      </div>
                 </div>
 

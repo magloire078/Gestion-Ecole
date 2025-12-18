@@ -52,7 +52,6 @@ import type { class_type as Class, student as Student, absence as Absence } from
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 
 interface StudentWithAbsence extends Student {
@@ -69,7 +68,6 @@ const absenceSchema = z.object({
 type AbsenceFormValues = z.infer<typeof absenceSchema>;
 
 export default function AbsencesPage() {
-  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { user } = useUser();
@@ -122,13 +120,12 @@ export default function AbsencesPage() {
 
 
   const studentsWithAbsenceStatus = useMemo<StudentWithAbsence[]>(() => {
-      if (!isMounted) return studentsInClass.map(s => ({...s, isAbsentToday: false}));
       const absentStudentIds = new Set(todayAbsences.map(absence => absence.studentId));
       return studentsInClass.map(student => ({
           ...student,
           isAbsentToday: absentStudentIds.has(student.id!)
       }));
-  }, [studentsInClass, todayAbsences, isMounted]);
+  }, [studentsInClass, todayAbsences]);
 
 
   const form = useForm<AbsenceFormValues>({
@@ -229,7 +226,7 @@ export default function AbsencesPage() {
                   <CardTitle>Liste des Élèves - {classes.find(c => c.id === selectedClassId)?.name}</CardTitle>
                   <CardDescription>
                     {canManageGrades 
-                      ? `Cliquez sur un élève pour enregistrer une absence pour aujourd'hui (${isMounted ? format(new Date(), 'd MMMM', {locale: fr}) : '...'}).`
+                      ? `Cliquez sur un élève pour enregistrer une absence pour aujourd'hui (${format(new Date(), 'd MMMM', {locale: fr})}).`
                       : "Vue en lecture seule. Vous n'avez pas la permission d'enregistrer des absences."
                     }
                   </CardDescription>
@@ -317,7 +314,7 @@ export default function AbsencesPage() {
                       ) : historicAbsences.length > 0 ? (
                         historicAbsences.map(absence => (
                           <TableRow key={absence.id}>
-                            <TableCell>{isMounted ? format(new Date(absence.date), 'd MMM yyyy', { locale: fr }) : '...'}</TableCell>
+                            <TableCell>{format(new Date(absence.date), 'd MMM yyyy', { locale: fr })}</TableCell>
                             <TableCell>{absence.studentName}</TableCell>
                             <TableCell>{absence.type}</TableCell>
                             <TableCell>
