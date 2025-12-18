@@ -1,33 +1,28 @@
-// app/admin/system/dashboard/page.tsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { collection, getCountFromServer, query, where, collectionGroup, doc, setDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
   Building, 
   Users, 
   Wallet, 
-  BarChart3, 
   Settings,
   Shield,
   Database,
   Bell,
   Cpu,
   Globe,
-  Lock,
   Server,
   Wrench,
   Loader2,
   ShieldCheck
 } from 'lucide-react';
 import { SystemMetrics } from '@/components/admin/system-metrics';
-import { SchoolsTable } from '@/components/admin/schools-table';
-import { BillingOverview } from '@/components/admin/billing-overview';
 import { AuditLog } from '@/components/admin/audit-log';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -35,8 +30,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import Link from 'next/link';
-import { AdminsTable } from '@/components/admin/admins-table';
 
 
 const SystemSettings = () => {
@@ -165,34 +158,21 @@ export default function SystemAdminDashboard() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-background">
-      {/* Header */}
-      <header className="border-b bg-white dark:bg-background">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <ShieldCheck className="h-8 w-8 text-purple-600" />
-              <div>
-                <h1 className="text-2xl font-bold">Administration Système</h1>
-                <p className="text-sm text-muted-foreground">
-                  Panneau de contrôle global de la plateforme
-                </p>
-              </div>
+    <div className="space-y-6">
+      
+        <div className="flex justify-between items-center">
+            <div>
+                <h1 className="text-2xl font-bold">Tableau de Bord Système</h1>
+                <p className="text-muted-foreground">Vue d'ensemble de la santé et des métriques de la plateforme.</p>
             </div>
-            
-            <div className="flex items-center gap-3">
-              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                 <Server className="h-3 w-3 mr-1" />
                 Production
               </Badge>
-            </div>
-          </div>
         </div>
-      </header>
 
-      <main className="container mx-auto px-4 py-8">
         {/* Health Status */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className={systemHealth.status === 'healthy' ? 'border-green-200' : 'border-amber-200'}>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -241,123 +221,52 @@ export default function SystemAdminDashboard() {
             </CardContent>
           </Card>
         </div>
-
-        {/* Main Dashboard */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Vue d'ensemble
-            </TabsTrigger>
-            <TabsTrigger value="schools">
-              <Building className="h-4 w-4 mr-2" />
-              Écoles
-            </TabsTrigger>
-            <TabsTrigger value="admins">
-              <ShieldCheck className="h-4 w-4 mr-2" />
-              Admins
-            </TabsTrigger>
-            <TabsTrigger value="billing">
-              <Wallet className="h-4 w-4 mr-2" />
-              Facturation
-            </TabsTrigger>
-            <TabsTrigger value="audit">
-              <Shield className="h-4 w-4 mr-2" />
-              Audit
-            </TabsTrigger>
-            <TabsTrigger value="system">
-              <Settings className="h-4 w-4 mr-2" />
-              Système
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview" className="space-y-6">
-            <SystemMetrics metrics={metrics} loading={loadingMetrics}/>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Activité récente</CardTitle>
-                  <CardDescription>Dernières actions système</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <AuditLog limit={10} />
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Alertes système</CardTitle>
-                  <CardDescription>Notifications importantes</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="p-3 border rounded-lg bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
-                      <div className="flex items-start gap-3">
-                        <Bell className="h-5 w-5 text-amber-600 mt-0.5" />
-                        <div>
-                          <p className="font-medium">Backup hebdomadaire requis</p>
-                          <p className="text-sm text-muted-foreground">Dernier backup: il y a 6 jours</p>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="p-3 border rounded-lg bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                      <div className="flex items-start gap-3">
-                        <Users className="h-5 w-5 text-blue-600 mt-0.5" />
-                        <div>
-                          <p className="font-medium">3 nouvelles écoles en attente</p>
-                          <p className="text-sm text-muted-foreground">Validation requise</p>
-                        </div>
-                      </div>
+        
+        <SystemMetrics metrics={metrics} loading={loadingMetrics}/>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Activité récente</CardTitle>
+              <CardDescription>Dernières actions critiques sur le système.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AuditLog limit={10} />
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Alertes système</CardTitle>
+              <CardDescription>Notifications importantes.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="p-3 border rounded-lg bg-amber-50 border-amber-200 dark:bg-amber-950 dark:border-amber-800">
+                  <div className="flex items-start gap-3">
+                    <Bell className="h-5 w-5 text-amber-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium">Backup hebdomadaire requis</p>
+                      <p className="text-sm text-muted-foreground">Dernier backup: il y a 6 jours</p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
+                </div>
+                
+                <div className="p-3 border rounded-lg bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                  <div className="flex items-start gap-3">
+                    <Users className="h-5 w-5 text-blue-600 mt-0.5" />
+                    <div>
+                      <p className="font-medium">3 nouvelles écoles en attente</p>
+                      <p className="text-sm text-muted-foreground">Validation requise</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          <TabsContent value="schools">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestion des Écoles</CardTitle>
-                <CardDescription>
-                  Liste complète de toutes les écoles et leur statut
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SchoolsTable />
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="admins">
-            <AdminsTable />
-          </TabsContent>
-
-          <TabsContent value="billing">
-            <BillingOverview />
-          </TabsContent>
-
-          <TabsContent value="audit">
-            <Card>
-              <CardHeader>
-                <CardTitle>Journal d'Audit Complet</CardTitle>
-                <CardDescription>
-                  Toutes les actions effectuées sur le système
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <AuditLog limit={50} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="system">
-            <SystemSettings />
-          </TabsContent>
-        </Tabs>
-      </main>
+        <SystemSettings />
     </div>
   );
 }

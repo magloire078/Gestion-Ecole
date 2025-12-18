@@ -1,13 +1,12 @@
 
 'use client';
 
-import Link from "next/link";
 import { useUser } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 import { AuthGuard } from "@/components/auth-guard";
+import Link from 'next/link';
 
 function AdminLayoutContent({
   children,
@@ -16,10 +15,7 @@ function AdminLayoutContent({
 }) {
     const { user, loading: userLoading } = useUser();
 
-    const isLoading = userLoading;
-    const isSuperAdmin = user?.profile?.isAdmin === true;
-
-    if (isLoading) {
+    if (userLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
                <p>Vérification des permissions d'administrateur...</p>
@@ -27,7 +23,7 @@ function AdminLayoutContent({
         );
     }
     
-    if (!isSuperAdmin) {
+    if (!user?.profile?.isAdmin) {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-muted text-center p-8">
                 <Card className="max-w-lg">
