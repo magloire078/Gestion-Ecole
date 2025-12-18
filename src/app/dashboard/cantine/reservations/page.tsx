@@ -33,7 +33,7 @@ export default function ReservationsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageCantine;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);

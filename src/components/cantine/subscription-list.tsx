@@ -23,10 +23,10 @@ interface SubscriptionWithStudentName extends CanteenSubscription {
 export function SubscriptionList({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageCantine;
   
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingSubscription, setEditingSubscription] = useState<CanteenSubscription | null>(null);
+  const [editingSubscription, setEditingSubscription] = useState<(CanteenSubscription & { id: string }) | null>(null);
 
   const subscriptionsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`)), [firestore, schoolId]);
   const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
@@ -40,7 +40,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
     const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
     
     return subscriptionsData.map(doc => {
-      const sub = { id: doc.id, ...doc.data() } as CanteenSubscription;
+      const sub = { id: doc.id, ...doc.data() } as CanteenSubscription & { id: string };
       const student = studentsMap.get(sub.studentId);
       return {
         ...sub,
@@ -49,7 +49,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
     });
   }, [subscriptionsData, studentsData]);
 
-  const handleOpenForm = (subscription: CanteenSubscription | null) => {
+  const handleOpenForm = (subscription: (CanteenSubscription & { id: string }) | null) => {
     setEditingSubscription(subscription);
     setIsFormOpen(true);
   };

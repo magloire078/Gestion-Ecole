@@ -15,7 +15,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
+import { errorEmitter } from '../../firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const reservationFormSchema = z.object({

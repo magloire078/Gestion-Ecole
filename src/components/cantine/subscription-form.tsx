@@ -16,7 +16,7 @@ import { format, addMonths, addYears, startOfYear, endOfYear } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
+import { errorEmitter } from '../../firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const subscriptionFormSchema = z.object({
@@ -34,7 +34,7 @@ type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 interface SubscriptionFormProps {
   schoolId: string;
   students: Student[];
-  subscription: CanteenSubscription | null;
+  subscription: (CanteenSubscription & { id: string }) | null;
   onSave: () => void;
 }
 

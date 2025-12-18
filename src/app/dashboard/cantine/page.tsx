@@ -48,7 +48,7 @@ export default function CantinePage() {
             <TabsContent value="menu" className="mt-6">
                 <DailyMenu schoolId={schoolId} />
             </TabsContent>
-            <TabsContent value="reservations">
+            <TabsContent value="reservations" className="mt-6">
                  <Card className="flex flex-col items-center justify-center h-64 text-center">
                     <CardHeader>
                         <CardTitle>Gestion des Réservations</CardTitle>
