@@ -23,9 +23,6 @@ const allPermissions = {
     exportData: true
 };
 
-const getAllPermissions = (value: boolean) => (value ? allPermissions : {});
-
-
 export function useUser() {
   const auth = useAuth();
   const firestore = useFirestore();
@@ -45,13 +42,6 @@ export function useUser() {
                 let tokenResult = await authUser.getIdTokenResult();
                 let claims = tokenResult.claims;
 
-                // If essential claims are missing, force a refresh.
-                // This typically happens only on the very first login after account creation/claims change.
-                // if (!claims.schoolId && !claims.superAdmin) {
-                //     tokenResult = await authUser.getIdTokenResult(true); 
-                //     claims = tokenResult.claims;
-                // }
-                
                 const isSuperAdmin = claims.superAdmin === true;
                 const schoolId = claims.schoolId as string | undefined;
 
@@ -59,7 +49,7 @@ export function useUser() {
                     const adminProfile: UserProfile = {
                         uid: authUser.uid, email: authUser.email || '', schoolId: schoolId || 'SUPER_ADMIN',
                         role: 'directeur', firstName: 'Admin', lastName: 'Platform',
-                        hireDate: '', baseSalary: 0, isAdmin: true, permissions: getAllPermissions(true),
+                        hireDate: '', baseSalary: 0, isAdmin: true, permissions: { ...allPermissions },
                     };
                     setUser({ authUser, uid: authUser.uid, profile: adminProfile });
                     setLoading(false);
@@ -71,13 +61,19 @@ export function useUser() {
                             const profileData = profileSnap.data() as AppUser;
                             let permissions: Partial<AdminRole['permissions']> = {};
 
+                            // If the user is a director, grant all permissions immediately.
                             if (profileData.role === 'directeur') {
-                               permissions = getAllPermissions(true);
-                            } else if (profileData.adminRole) {
+                                permissions = { ...allPermissions };
+                            }
+
+                            // If the user also has a specific admin role, merge its permissions.
+                            if (profileData.adminRole) {
                                 const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
                                 const roleSnap = await getDoc(roleRef);
                                 if (roleSnap.exists()) {
                                     const roleData = roleSnap.data() as AdminRole;
+                                    // Merge permissions, with role-specific ones taking precedence if needed,
+                                    // but here we just add them.
                                     permissions = { ...permissions, ...roleData.permissions };
                                 }
                             }
