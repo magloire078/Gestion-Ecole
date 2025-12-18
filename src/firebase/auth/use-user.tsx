@@ -1,10 +1,9 @@
-
 'use client';
 
 import {useState, useEffect} from 'react';
 import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
-import type { staff as AppUser, admin_role as AdminRole, school as School } from '@/lib/data-types';
+import type { staff as AppUser, admin_role as AdminRole, school as School, user_root } from '@/lib/data-types';
 import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface UserProfile extends AppUser {
@@ -52,7 +51,7 @@ export function useUser() {
              const currentSchoolId = (claims.schoolId as string) || null;
              const isSuperAdmin = (claims.superAdmin as boolean) || false;
              
-             setSchoolId(currentSchoolId);
+             let effectiveSchoolId = currentSchoolId;
 
              // Super admin case
              if (isSuperAdmin) {
@@ -70,33 +69,26 @@ export function useUser() {
                      isAdmin: true,
                  }
                  setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
+                 setSchoolId(null);
                  setIsDirector(false);
                  setLoading(false);
                  return;
              }
-
-
-            if (!currentSchoolId) {
-                // Authenticated but no school association yet.
-                // This can happen right after school creation, before the custom claim is refreshed.
-                // Try to read from /utilisateurs as a fallback.
+             
+            if (!effectiveSchoolId) {
+                // Fallback for just-created schools where claim might not be set yet
                 const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
                 const userRootSnap = await getDoc(userRootRef).catch(() => null);
                 if (userRootSnap && userRootSnap.exists()) {
                     const userRootData = userRootSnap.data() as user_root;
                     if(userRootData.schoolId) {
-                        setSchoolId(userRootData.schoolId);
-                        // Don't return, let the next block handle profile loading with this new schoolId
+                        effectiveSchoolId = userRootData.schoolId;
                     }
-                } else {
-                    setUser({ authUser, uid: authUser.uid, profile: undefined });
-                    setIsDirector(false);
-                    setLoading(false);
-                    return;
                 }
             }
             
-            const effectiveSchoolId = currentSchoolId || schoolId;
+            setSchoolId(effectiveSchoolId);
+
             if (!effectiveSchoolId) {
                  setUser({ authUser, uid: authUser.uid, profile: undefined });
                  setLoading(false);
@@ -107,7 +99,7 @@ export function useUser() {
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
             
             const unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
-                const schoolRef = doc(firestore, 'ecoles', effectiveSchoolId);
+                const schoolRef = doc(firestore, 'ecoles', effectiveSchoolId!);
                 const schoolSnap = await getDoc(schoolRef);
                 const schoolData = schoolSnap.exists() ? schoolSnap.data() as School : null;
                 const isDirectorFlag = schoolData?.directorId === authUser.uid;
@@ -115,31 +107,17 @@ export function useUser() {
                 
                 let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
 
-                // If user is director but has no profile yet (e.g. right after school creation), create one.
                 if (isDirectorFlag && !profileData) {
                     const nameParts = authUser.displayName?.split(' ') || [];
-                    const firstName = nameParts[0] || 'Directeur';
-                    const lastName = nameParts.slice(1).join(' ') || 'Principal';
-
                     profileData = {
-                        uid: authUser.uid,
-                        schoolId: effectiveSchoolId,
-                        role: 'directeur',
-                        firstName,
-                        lastName,
-                        displayName: authUser.displayName || `${firstName} ${lastName}`,
-                        email: authUser.email || '',
-                        hireDate: format(new Date(), 'yyyy-MM-dd'),
-                        baseSalary: 0,
-                        status: 'Actif',
-                        photoURL: authUser.photoURL || ''
+                        uid: authUser.uid, schoolId: effectiveSchoolId!, role: 'directeur',
+                        firstName: nameParts[0] || 'Directeur', lastName: nameParts.slice(1).join(' ') || 'Principal',
+                        displayName: authUser.displayName || `${nameParts[0]} ${nameParts.slice(1).join(' ')}`,
+                        email: authUser.email || '', hireDate: format(new Date(), 'yyyy-MM-dd'),
+                        baseSalary: 0, status: 'Actif', photoURL: authUser.photoURL || ''
                     };
                     await setDoc(profileRef, profileData);
-                    // Also set the root doc just in case
-                    const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
-                    await setDoc(userRootRef, { schoolId: effectiveSchoolId });
                 }
-
 
                 if (profileData) {
                     let permissions: Partial<AdminRole['permissions']> = {};
@@ -149,19 +127,13 @@ export function useUser() {
                     }
                     
                     if (profileData.adminRole) {
-                        const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
-                        try {
-                           const roleSnap = await getDoc(roleRef);
-                            if (roleSnap.exists()) {
-                                const roleData = roleSnap.data() as AdminRole;
-                                // Merge role permissions, director permissions take precedence
-                                permissions = { ...roleData.permissions, ...permissions };
-                            }
-                        } catch (e) {
-                             console.error("Could not fetch admin role, permissions may be incomplete.", e);
+                        const roleRef = doc(firestore, `ecoles/${effectiveSchoolId!}/admin_roles`, profileData.adminRole);
+                        const roleSnap = await getDoc(roleRef).catch(() => null);
+                        if (roleSnap && roleSnap.exists()) {
+                            permissions = { ...roleSnap.data().permissions, ...permissions };
                         }
                     }
-                    setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions } });
+                    setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
                 } else {
                      setUser({ authUser, uid: authUser.uid, profile: undefined });
                 }
@@ -182,7 +154,7 @@ export function useUser() {
     });
 
     return () => unsubscribeFromAuth();
-  }, [auth, firestore, schoolId]); // Rerun if schoolId is found via fallback
+  }, [auth, firestore]);
 
   return {user, loading, schoolId, isDirector};
 }

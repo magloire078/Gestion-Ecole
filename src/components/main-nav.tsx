@@ -5,8 +5,10 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import type { UserProfile, Subscription } from '@/lib/data-types';
+import type { UserProfile } from '@/lib/data-types';
 import { NAV_LINKS } from '@/lib/nav-links';
+import type { Subscription } from '@/hooks/use-school-data';
+
 
 type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
 type Module = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
