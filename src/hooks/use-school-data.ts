@@ -6,6 +6,7 @@ import { useUser, useFirestore } from '@/firebase';
 import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, updateDoc as firestoreUpdateDoc } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { getAuth } from 'firebase/auth';
 
 const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 
@@ -33,7 +34,7 @@ interface SchoolData extends DocumentData {
 }
 
 export function useSchoolData() {
-    const { user, loading: userLoading } = useUser();
+    const { user: authUser, loading: userLoading } = useUser();
     const firestore = useFirestore();
     const [schoolId, setSchoolId] = useState<string | null>(null);
     const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
@@ -44,7 +45,7 @@ export function useSchoolData() {
             return;
         }
 
-        if (!user || !user.authUser) {
+        if (!authUser || !authUser.authUser) {
             setSchoolId(null);
             setSchoolData(null);
             setLoading(false);
@@ -52,10 +53,10 @@ export function useSchoolData() {
         }
 
         const findAndSetSchoolId = async (userId: string) => {
-            const tokenResult = await user.authUser.getIdTokenResult();
+            const tokenResult = await authUser.authUser.getIdTokenResult();
             if (tokenResult.claims.schoolId) {
                 setSchoolId(tokenResult.claims.schoolId as string);
-                setLoading(false); // Make sure loading is set to false if we find it in claims
+                setLoading(false);
                 return;
             }
 
@@ -71,13 +72,13 @@ export function useSchoolData() {
                  console.error("Error reading user root document:", e);
                  setSchoolId(null);
             } finally {
-                 setLoading(false); // This was missing, causing the loading to never finish for users without a schoolId
+                 setLoading(false);
             }
         };
 
-        findAndSetSchoolId(user.authUser.uid);
+        findAndSetSchoolId(authUser.authUser.uid);
 
-    }, [user, userLoading, firestore]);
+    }, [authUser, userLoading, firestore]);
     
     useEffect(() => {
         if (!schoolId) {
@@ -110,15 +111,17 @@ export function useSchoolData() {
     }, [schoolId, firestore, userLoading]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
         if (!schoolId) throw new Error("ID de l'école non disponible.");
-        if (!user || !user.authUser) throw new Error("Utilisateur non authentifié.");
+        if (!currentUser) throw new Error("Utilisateur non authentifié.");
         
         const schoolDocRef = doc(firestore, 'ecoles', schoolId);
         const dataToUpdate = {
             ...data,
             updatedAt: serverTimestamp(),
-            updatedBy: user.authUser.uid,
-            updatedByName: user.authUser.displayName,
+            updatedBy: currentUser.uid,
+            updatedByName: currentUser.displayName,
         };
 
         try {
@@ -132,7 +135,7 @@ export function useSchoolData() {
             errorEmitter.emit('permission-error', permissionError);
             throw error;
         }
-    }, [schoolId, firestore, user]);
+    }, [schoolId, firestore]);
 
     return { 
         schoolId, 

@@ -6,11 +6,16 @@ import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
 import type { staff as AppUser, admin_role as AdminRole, school } from '@/lib/data-types';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { useSchoolData } from '@/hooks/use-school-data';
 
 export interface UserProfile extends AppUser {
     permissions?: Partial<AdminRole['permissions']>;
     isAdmin?: boolean;
+}
+
+export interface UserContext {
+  uid: string;
+  authUser: FirebaseUser;
+  profile?: UserProfile;
 }
 
 const allPermissions = {
@@ -27,7 +32,6 @@ const allPermissions = {
 export function useUser() {
   const auth = useAuth();
   const firestore = useFirestore();
-  const { schoolData } = useSchoolData();
   const [user, setUser] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -63,8 +67,12 @@ export function useUser() {
                             const profileData = profileSnap.data() as AppUser;
                             let permissions: Partial<AdminRole['permissions']> = {};
 
-                            // Critical check: If the user's ID matches the school's directorId, grant all permissions.
-                            // This ensures the school creator always has full control.
+                            // Fetch school data once to check for directorId
+                            const schoolRef = doc(firestore, `ecoles/${schoolId}`);
+                            const schoolSnap = await getDoc(schoolRef);
+                            const schoolData = schoolSnap.data() as school | undefined;
+
+                            // Grant all permissions if user is the director
                             if (schoolData?.directorId === authUser.uid) {
                                 permissions = { ...allPermissions };
                             }
@@ -75,7 +83,6 @@ export function useUser() {
                                 const roleSnap = await getDoc(roleRef);
                                 if (roleSnap.exists()) {
                                     const roleData = roleSnap.data() as AdminRole;
-                                    // Merge permissions, director's full access takes precedence.
                                     permissions = { ...permissions, ...roleData.permissions };
                                 }
                             }
@@ -89,7 +96,6 @@ export function useUser() {
                         setLoading(false);
                     });
 
-                    // Returning this function will be called on cleanup.
                     return () => unsubscribeFromProfile();
                 } else {
                      setUser({ authUser, uid: authUser.uid, profile: undefined });
@@ -107,7 +113,7 @@ export function useUser() {
     });
 
     return () => unsubscribeFromAuth();
-  }, [auth, firestore, schoolData]);
+  }, [auth, firestore]);
 
   return {user, loading};
 }
