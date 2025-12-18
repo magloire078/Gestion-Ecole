@@ -1,3 +1,4 @@
+
 'use client';
 
 import { InternatDashboard } from '@/components/internat/dashboard';
@@ -16,7 +17,10 @@ export default function InternatDashboardPage() {
           <Skeleton className="h-32" />
           <Skeleton className="h-32" />
         </div>
-        <Skeleton className="h-96" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+           <Skeleton className="h-96" />
+           <Skeleton className="h-96" />
+        </div>
       </div>
     );
   }
@@ -31,3 +35,5 @@ export default function InternatDashboardPage() {
     </div>
   );
 }
+
+    
