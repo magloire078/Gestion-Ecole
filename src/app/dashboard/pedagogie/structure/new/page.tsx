@@ -83,7 +83,15 @@ export default function NewClassPage() {
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
-    defaultValues: { academicYear: academicYear, maxStudents: 30 },
+    defaultValues: { 
+      academicYear: academicYear, 
+      maxStudents: 30,
+      cycleId: '',
+      niveauId: '',
+      section: '',
+      mainTeacherId: '',
+      classroom: '',
+    },
   });
   
   const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
