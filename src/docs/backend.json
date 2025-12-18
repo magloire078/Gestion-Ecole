@@ -38,11 +38,16 @@
                     "plan": { "type": "string", "enum": ["Essentiel", "Pro", "Premium"], "description": "Le nom du plan." },
                     "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"], "description": "Le statut de l'abonnement." },
                     "maxStudents": { "type": "number", "description": "Nombre maximum d'élèves autorisés." },
-                    "maxCycles": { "type": "number", "description": "Nombre maximum de cycles autorisés." }
+                    "maxCycles": { "type": "number", "description": "Nombre maximum de cycles autorisés." },
+                    "activeModules": {
+                        "type": "array",
+                        "description": "Liste des modules complémentaires activés.",
+                        "items": { "type": "string" }
+                    }
                 }
             }
         },
-        "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
+        "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
     },
     "system_log": {
       "title": "Journal Système",
@@ -651,8 +656,8 @@
             "studentId": { "type": "string" },
             "roomId": { "type": "string" },
             "startDate": { "type": "string", "format": "date" },
-            "endDate": { "type": "string", "format": "date" },
             "status": { "type": "string", "enum": ["active", "pending", "terminated", "suspended"] },
+            "endDate": { "type": "string", "format": "date" },
             "nextPaymentDue": { "type": "string", "format": "date" }
         },
         "required": ["studentId", "roomId", "startDate", "status"]

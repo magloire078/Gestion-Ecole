@@ -3,7 +3,7 @@
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Zap, AlertCircle, Building, Users } from "lucide-react";
+import { CheckCircle, Zap, AlertCircle, Building, Users, Utensils, Bus, Bed, HeartPulse, Trophy, Briefcase, LandPlot, Loader2 } from "lucide-react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -14,16 +14,31 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from 'next/link';
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 type PlanName = 'Essentiel' | 'Pro' | 'Premium';
+type ModuleName = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
+
+const MODULES_CONFIG = [
+    { id: 'sante', name: 'Santé', icon: HeartPulse, price: 5000, desc: 'Suivi médical, carnet de vaccination...' },
+    { id: 'cantine', name: 'Cantine', icon: Utensils, price: 10000, desc: 'Gestion des menus et réservations.' },
+    { id: 'transport', name: 'Transport', icon: Bus, price: 10000, desc: 'Suivi de flotte et abonnements.' },
+    { id: 'internat', name: 'Internat', icon: Bed, price: 15000, desc: 'Gestion des dortoirs et occupants.' },
+    { id: 'rh', name: 'RH & Paie', icon: Briefcase, price: 15000, desc: 'Gestion du personnel et des salaires.' },
+    { id: 'immobilier', name: 'Immobilier', icon: LandPlot, price: 10000, desc: 'Inventaire, maintenance, salles.' },
+    { id: 'activites', name: 'Activités', icon: Trophy, price: 5000, desc: 'Clubs et compétitions.' },
+] as const;
+
 
 export default function SubscriptionPage() {
     const router = useRouter();
-    const { schoolName, loading: schoolLoading } = useSchoolData();
-    const { subscription, loading: subscriptionLoading } = useSubscription();
+    const { schoolName, loading: schoolLoading, schoolData } = useSchoolData();
+    const { subscription, updateSubscription, loading: subscriptionLoading } = useSubscription();
     const { toast } = useToast();
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const handleChoosePlan = (planName: PlanName, price: number) => {
         setError(null);
@@ -39,6 +54,28 @@ export default function SubscriptionPage() {
         }).toString();
 
         router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
+    };
+    
+    const handleModuleToggle = async (moduleId: ModuleName, checked: boolean) => {
+        if (!subscription || isUpdating) return;
+
+        setIsUpdating(true);
+        const currentModules = subscription.activeModules || [];
+        const newModules = checked 
+            ? [...currentModules, moduleId]
+            : currentModules.filter(m => m !== moduleId);
+            
+        try {
+            await updateSubscription({ ...subscription, activeModules: newModules });
+            toast({
+                title: "Module mis à jour",
+                description: `Le module ${MODULES_CONFIG.find(m => m.id === moduleId)?.name} a été ${checked ? 'activé' : 'désactivé'}. La modification sera prise en compte sur votre prochaine facture.`,
+            });
+        } catch (e) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour les modules.' });
+        } finally {
+            setIsUpdating(false);
+        }
     };
     
     const isCurrentPlan = (planName: PlanName) => {
@@ -70,8 +107,7 @@ export default function SubscriptionPage() {
             description: "Pour les écoles en croissance avec des besoins avancés.",
             features: [
                 "Toutes les fonctionnalités Essentiel",
-                "Gestion RH & Paie",
-                "Fonctionnalités IA (appréciations...)",
+                "Accès aux modules complémentaires",
                 "Support prioritaire par email",
             ],
              limits: [
@@ -87,7 +123,7 @@ export default function SubscriptionPage() {
             description: "La solution complète pour les grands établissements.",
             features: [
                 "Toutes les fonctionnalités Pro",
-                "Portail Parents & Élèves (Bientôt)",
+                "Tous les modules complémentaires inclus",
                 "Analyses et rapports avancés",
                 "Support dédié par téléphone",
             ],
@@ -112,9 +148,12 @@ export default function SubscriptionPage() {
                     <Skeleton className="h-96 w-full" />
                     <Skeleton className="h-96 w-full" />
                 </div>
+                 <Skeleton className="h-64 w-full" />
             </div>
         )
     }
+
+    const isPaidPlan = subscription?.plan === 'Pro' || subscription?.plan === 'Premium';
 
     return (
         <div className="space-y-6">
@@ -192,6 +231,50 @@ export default function SubscriptionPage() {
                     </AlertDescription>
                 </Alert>
             )}
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Modules Complémentaires</CardTitle>
+                    <CardDescription>
+                        Activez des fonctionnalités additionnelles pour votre établissement. 
+                        {isPaidPlan ? " La facturation sera ajustée en conséquence." : " Requiert un plan Pro ou Premium."}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {MODULES_CONFIG.map(module => {
+                        const Icon = module.icon;
+                        const isChecked = subscription?.activeModules?.includes(module.id) || subscription?.plan === 'Premium';
+                        const isDisabled = !isPaidPlan || isUpdating || subscription?.plan === 'Premium';
+
+                        return (
+                             <div key={module.id} className={cn("flex items-center justify-between rounded-lg border p-4", isDisabled && "opacity-50")}>
+                                <div className="space-y-0.5">
+                                    <Label htmlFor={module.id} className="text-base flex items-center gap-2">
+                                        <Icon className="h-5 w-5 text-primary" />
+                                        {module.name}
+                                    </Label>
+                                    <div className="text-xs text-muted-foreground">{module.desc}</div>
+                                    <div className="text-sm font-semibold">{module.price.toLocaleString('fr-FR')} CFA/mois</div>
+                                </div>
+                                <Switch
+                                    id={module.id}
+                                    checked={isChecked}
+                                    onCheckedChange={(checked) => handleModuleToggle(module.id, checked)}
+                                    disabled={isDisabled}
+                                />
+                            </div>
+                        )
+                    })}
+                </CardContent>
+                 {isUpdating && (
+                    <CardFooter>
+                       <div className="flex items-center text-sm text-muted-foreground">
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                            Mise à jour des modules...
+                        </div>
+                    </CardFooter>
+                )}
+            </Card>
         </div>
     )
 }

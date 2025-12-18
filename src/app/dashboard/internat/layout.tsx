@@ -61,25 +61,27 @@ export default function InternatLayout({
         );
     }
     
-    if (!subscription || !['Premium'].includes(subscription.plan)) {
+    const hasAccess = subscription?.activeModules?.includes('internat') || subscription?.plan === 'Premium';
+    
+    if (!hasAccess) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center justify-center gap-2">
                             <Lock className="h-6 w-6 text-primary" />
-                            Module Internat (Plan Premium)
+                            Module Internat
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                           La gestion complète de l'internat (bâtiments, chambres, occupants) est une fonctionnalité du plan Premium.
+                           La gestion de l'internat est un module complémentaire. Pour y accéder, veuillez l'activer depuis la page d'abonnement.
                         </p>
                     </CardContent>
                     <CardFooter>
                         <Button asChild className="w-full">
                             <Link href="/dashboard/parametres/abonnement">
-                                Découvrir le Plan Premium
+                                Activer le module
                             </Link>
                         </Button>
                     </CardFooter>
