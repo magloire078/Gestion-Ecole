@@ -61,8 +61,8 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const displayName = user?.authUser?.displayName || 'Utilisateur';
   const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
   
-  const isAdmin = user?.profile?.isAdmin === true;
-  const userRole = isAdmin && user?.profile?.role !== 'directeur' ? 'Super Administrateur' : user?.profile?.role;
+  const isSuperAdmin = user?.profile?.isAdmin === true;
+  const userRole = isSuperAdmin ? 'Super Administrateur' : user?.profile?.role;
 
   if (collapsed) {
     return (
@@ -110,7 +110,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                         </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                 </DropdownMenuSub>
-                {isAdmin && (
+                {isSuperAdmin && (
                   <>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
@@ -174,7 +174,7 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
               </DropdownMenuPortal>
             </DropdownMenuSub>
         </DropdownMenuGroup>
-        {isAdmin && (
+        {isSuperAdmin && (
           <>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>

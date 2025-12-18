@@ -7,8 +7,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AuthGuard } from "@/components/auth-guard";
 
-export default function AdminLayout({
+function AdminLayoutContent({
   children,
 }: {
   children: React.ReactNode;
@@ -17,29 +18,21 @@ export default function AdminLayout({
 
     const isLoading = userLoading;
 
-    const isAdmin = user?.profile?.isAdmin === true;
+    // This check is important because useUser() can return a non-admin user
+    // while still loading the final admin claims.
+    const isPotentiallyAdmin = user?.profile?.isAdmin === true || user?.profile?.role === 'directeur';
 
     if (isLoading) {
         return (
-            <div className="space-y-6">
-                <Skeleton className="h-12 w-1/3" />
-                <Skeleton className="h-4 w-2/3" />
-                <Card>
-                    <CardHeader>
-                        <Skeleton className="h-6 w-1/4" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-64 w-full" />
-                    </CardContent>
-                </Card>
+            <div className="flex h-screen w-full items-center justify-center">
+               <p>Vérification des permissions d'administrateur...</p>
             </div>
         );
     }
     
-    // If not an admin, show the access denied message
-    if (!isAdmin) {
+    if (!isPotentiallyAdmin) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
+            <div className="flex flex-col items-center justify-center h-screen bg-muted text-center p-8">
                 <Card className="max-w-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center justify-center gap-2">
@@ -65,4 +58,19 @@ export default function AdminLayout({
     }
     
     return <>{children}</>;
+}
+
+
+export default function RootAdminLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+    return (
+        <AuthGuard>
+            <AdminLayoutContent>
+                {children}
+            </AdminLayoutContent>
+        </AuthGuard>
+    )
 }

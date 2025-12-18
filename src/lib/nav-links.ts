@@ -85,17 +85,9 @@ export const NAV_LINKS = [
       icon: Settings,
       links: [
         { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings, permission: 'manageSettings' as PermissionKey },
+        { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield, permission: 'manageSettings' as PermissionKey },
       ]
     },
-    {
-      group: "Super Admin",
-      icon: Shield,
-      links: [
-        { href: '/dashboard/admin/abonnements', label: 'Abonnements', icon: CreditCard },
-        { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield },
-      ],
-      adminOnly: true,
-    }
   ];
 export const transportNavLinks = [
   { href: '/dashboard/transport/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
