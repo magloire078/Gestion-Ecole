@@ -22,7 +22,8 @@ import {
   Lock,
   Server,
   Wrench,
-  Loader2
+  Loader2,
+  ShieldCheck
 } from 'lucide-react';
 import { SystemMetrics } from '@/components/admin/system-metrics';
 import { SchoolsTable } from '@/components/admin/schools-table';
@@ -34,6 +35,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import Link from 'next/link';
+import { AdminsTable } from '@/components/admin/admins-table';
 
 
 const SystemSettings = () => {
@@ -168,11 +171,11 @@ export default function SystemAdminDashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-purple-600" />
+              <ShieldCheck className="h-8 w-8 text-purple-600" />
               <div>
                 <h1 className="text-2xl font-bold">Administration Système</h1>
                 <p className="text-sm text-muted-foreground">
-                  Panneau de contrôle global • v2.1.4
+                  Panneau de contrôle global de la plateforme
                 </p>
               </div>
             </div>
@@ -182,10 +185,6 @@ export default function SystemAdminDashboard() {
                 <Server className="h-3 w-3 mr-1" />
                 Production
               </Badge>
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-2" />
-                Configuration
-              </Button>
             </div>
           </div>
         </div>
@@ -245,7 +244,7 @@ export default function SystemAdminDashboard() {
 
         {/* Main Dashboard */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid grid-cols-5 w-full">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">
               <BarChart3 className="h-4 w-4 mr-2" />
               Vue d'ensemble
@@ -253,6 +252,10 @@ export default function SystemAdminDashboard() {
             <TabsTrigger value="schools">
               <Building className="h-4 w-4 mr-2" />
               Écoles
+            </TabsTrigger>
+            <TabsTrigger value="admins">
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Admins
             </TabsTrigger>
             <TabsTrigger value="billing">
               <Wallet className="h-4 w-4 mr-2" />
@@ -326,6 +329,10 @@ export default function SystemAdminDashboard() {
                 <SchoolsTable />
               </CardContent>
             </Card>
+          </TabsContent>
+          
+          <TabsContent value="admins">
+            <AdminsTable />
           </TabsContent>
 
           <TabsContent value="billing">
