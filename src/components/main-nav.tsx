@@ -3,16 +3,21 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { useUser } from '@/firebase';
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import type { UserProfile } from '@/lib/data-types';
+import type { UserProfile, Subscription } from '@/lib/data-types';
 import { NAV_LINKS } from '@/lib/nav-links';
-import { useSchoolData } from '@/hooks/use-school-data';
 
 type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
 type Module = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
 
+interface NavProps {
+    isSuperAdmin: boolean;
+    isDirector: boolean;
+    userPermissions: Partial<Record<PermissionKey, boolean>>;
+    subscription?: Subscription | null;
+    collapsed?: boolean;
+}
 
 const NavLink = ({ href, icon: Icon, label, collapsed, pathname }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean, pathname: string }) => {
     const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
@@ -53,14 +58,8 @@ const NavLink = ({ href, icon: Icon, label, collapsed, pathname }: { href: strin
     );
 };
 
-export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
-  const { user } = useUser();
-  const { schoolData, subscription } = useSchoolData();
+export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscription, collapsed = false }: NavProps) {
   const pathname = usePathname();
-
-  const isSuperAdmin = user?.profile?.isAdmin === true;
-  const isDirector = schoolData?.directorId === user?.uid;
-  const userPermissions = user?.profile?.permissions || {};
 
   const hasAccess = (permission?: PermissionKey, module?: Module) => {
     // Super admin and school director have access to everything.

@@ -21,6 +21,7 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbS
 import { SearchModal } from '@/components/search-modal';
 import { NotificationsPanel } from '@/components/notifications-panel';
 import { Home } from 'lucide-react';
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -28,10 +29,10 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
-  const { theme, toggleTheme } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
+  const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
 
   // Mock notifications - à remplacer par votre logique
   useEffect(() => {
@@ -91,6 +92,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     // router.push(`/dashboard/recherche?q=${encodeURIComponent(query)}`);
     setIsSearchOpen(false);
   }, [router]);
+  
+  const navProps = {
+    isSuperAdmin: user?.profile?.isAdmin === true,
+    isDirector: schoolData?.directorId === user?.uid,
+    userPermissions: user?.profile?.permissions || {},
+    subscription: subscription,
+    collapsed: false,
+  };
+
 
   return (
       <TooltipProvider>
@@ -100,7 +110,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               <Logo />
             </div>
             <nav className="flex-1 overflow-y-auto p-4">
-              <MainNav collapsed={false} />
+              {userLoading || schoolLoading ? (
+                  <div className="space-y-2 p-2">
+                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-8 w-full" />
+                      <Skeleton className="h-8 w-full" />
+                  </div>
+              ) : (
+                  <MainNav {...navProps} />
+              )}
             </nav>
           </aside>
 

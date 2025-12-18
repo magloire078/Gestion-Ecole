@@ -6,40 +6,19 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import { useUser } from '@/firebase';
-import type { UserProfile } from '@/lib/data-types';
-import { NAV_LINKS } from '@/lib/nav-links';
-
-type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
-
-const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ElementType; label: string }) => {
-    const pathname = usePathname();
-    const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
-    return (
-        <Link
-            href={href}
-            className={cn(
-                "group flex items-center gap-x-3 rounded-md p-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                isActive && "bg-accent text-accent-foreground"
-            )}
-        >
-            <div className="flex h-6 w-6 items-center justify-center">
-                <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
-             </div>
-            <span>{label}</span>
-        </Link>
-    );
-};
-
+import { useSchoolData } from '@/hooks/use-school-data';
+import { MainNav } from './main-nav';
 
 export function MobileNav() {
   const { user } = useUser();
-  const isAdmin = user?.profile?.isAdmin === true;
-  const userPermissions = user?.profile?.permissions || {};
+  const { schoolData, subscription } = useSchoolData();
 
-  const hasPermission = (permission?: PermissionKey) => {
-    if (isAdmin) return true;
-    if (!permission) return true; 
-    return !!userPermissions[permission];
+  const navProps = {
+    isSuperAdmin: user?.profile?.isAdmin === true,
+    isDirector: schoolData?.directorId === user?.uid,
+    userPermissions: user?.profile?.permissions || {},
+    subscription: subscription,
+    collapsed: false,
   };
 
   return (
@@ -48,25 +27,7 @@ export function MobileNav() {
             <Logo />
         </div>
         <nav className="flex-1 overflow-y-auto p-4">
-            {NAV_LINKS.map((group) => {
-                if (group.adminOnly && !isAdmin) return null;
-
-                const visibleLinks = group.links.filter(link => hasPermission(link.permission));
-                if(visibleLinks.length === 0) return null;
-
-                return (
-                  <div key={group.group} className="mb-4">
-                      <h3 className="mb-2 px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/80">
-                          {group.group}
-                      </h3>
-                       <div className="space-y-1">
-                          {visibleLinks.map((link) => (
-                             <NavLink key={link.href} {...link} />
-                          ))}
-                      </div>
-                  </div>
-                );
-            })}
+            <MainNav {...navProps} />
         </nav>
     </div>
   );
