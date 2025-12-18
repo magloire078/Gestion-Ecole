@@ -116,6 +116,7 @@ export const NAV_LINKS: NavGroup[] = [
       ]
     },
   ];
+
 export const transportNavLinks = [
   { href: '/dashboard/transport/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/dashboard/transport/lignes', label: 'Lignes', icon: Map },
