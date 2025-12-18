@@ -2,11 +2,55 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règle temporaire et très permissive pour le débogage.
-    // N'importe quel utilisateur authentifié peut lire et écrire toutes les données.
-    // ATTENTION: Ce n'est pas sécurisé pour un environnement de production.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+  
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // New, more robust function using custom claims from the auth token
+    function isSchoolMember(schoolId) {
+      return isAuth() && request.auth.token.schoolId == schoolId;
+    }
+    
+    // New function to check if the user is a director of the school via claims
+    function isDirector(schoolId) {
+        return isSchoolMember(schoolId) && request.auth.token.isDirector == true;
+    }
+
+    // New function to check if user is a Super Admin via claims
+    function isSuperAdmin() {
+        return isAuth() && request.auth.token.superAdmin == true;
+    }
+    
+    // Super Admins collection is restricted to the user themselves
+    match /super_admins/{adminId} {
+      allow read, write: if isAuth() && request.auth.uid == adminId;
+    }
+
+    // System settings and logs can only be read/written by super admins
+    match /system_logs/{logId} {
+       allow read, write: if isSuperAdmin();
+    }
+    
+    match /system_settings/{settingId} {
+       allow read, write: if isSuperAdmin();
+    }
+    
+    // School documents can be read by their members, but only written by Super Admins or their Director
+    match /ecoles/{schoolId} {
+      allow read: if isSchoolMember(schoolId);
+      allow write: if isSuperAdmin() || isDirector(schoolId);
+    }
+    
+     // User root document is only accessible by the user themselves or a super admin
+    match /utilisateurs/{userId} {
+        allow read, write: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    // All subcollections of a school are accessible by its members.
+    // This rule is general and covers all subcollections like personnel, admin_roles, eleves, etc.
+    match /ecoles/{schoolId}/{document=**} {
+      allow read, write: if isSchoolMember(schoolId);
     }
   }
 }

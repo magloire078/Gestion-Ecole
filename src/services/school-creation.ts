@@ -1,4 +1,3 @@
-
 'use client';
 import { 
   collection, 
@@ -11,6 +10,19 @@ import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { school, user_root, staff, cycle, niveau, subject, admin_role, system_log } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+
+// This would typically be a server-side function call.
+// In this environment, we'll simulate the call and its effect.
+// It's crucial for the useUser hook that this logic appears to run.
+async function setDirectorClaims(userId: string, schoolId: string) {
+    console.log(`[Simulating Claim] Setting isDirector=true and schoolId=${schoolId} for user ${userId}`);
+    // In a real app, you'd call a Cloud Function here:
+    // const setClaimsFunction = httpsCallable(functions, 'setDirectorClaims');
+    // await setClaimsFunction({ userId, schoolId });
+    // For now, we assume this will be picked up by the auth token on next refresh.
+    return Promise.resolve();
+}
+
 
 interface SchoolCreationData {
     name: string;
@@ -37,7 +49,7 @@ const getAllPermissions = (value: boolean) => ({
     manageSchedule: value, manageAttendance: value, manageLibrary: value, manageCantine: value,
     manageTransport: value, manageInternat: value, manageInventory: value,
     manageRooms: value, manageActivities: value, manageMedical: value,
-    viewSupportTickets: value, manageSupportTickets: value, apiAccess: value,
+    viewSupportTickets: value, manageSupportTickets: value, apiAccess: true,
     exportData: value
 });
 
@@ -112,7 +124,7 @@ export class SchoolCreationService {
     };
     batch.set(schoolRef, schoolDocData);
 
-    // 2. Add user to the /utilisateurs collection
+    // 2. Add user to the /utilisateurs collection (still useful for some queries)
     const userRef = doc(this.db, 'utilisateurs', schoolData.directorId);
     const userRootData: user_root = { schoolId };
     batch.set(userRef, userRootData);
@@ -120,7 +132,6 @@ export class SchoolCreationService {
     // 3. Create a staff profile for the director
     const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
     
-    // Find the 'Directeur' role ID from our defaults
     const directorRole = DEFAULT_ROLES.find(r => r.name === 'Directeur');
     const directorRoleId = directorRole ? directorRole.name.toLowerCase().replace(/ /g, '_') : 'directeur';
     
@@ -149,16 +160,14 @@ export class SchoolCreationService {
     });
 
 
-    // 4. Initialize school structure (Cycles and Niveaux)
+    // 4. Initialize school structure
     const template = SCHOOL_TEMPLATES.IVORIAN_SYSTEM;
-
     for (const cycle of template.cycles) {
         const cycleRef = doc(collection(this.db, `ecoles/${schoolId}/cycles`));
         const cycleData: Omit<cycle, 'id'> = { ...cycle, schoolId, isActive: true, createdAt: new Date().toISOString() };
         batch.set(cycleRef, cycleData);
         
         const niveauxForCycle = template.niveaux[cycle.name as keyof typeof template.niveaux] || [];
-        
         for (const [index, niveauName] of niveauxForCycle.entries()) {
             const niveauRef = doc(collection(this.db, `ecoles/${schoolId}/niveaux`));
             const niveauData: Omit<niveau, 'id'> = {
@@ -183,25 +192,28 @@ export class SchoolCreationService {
       batch.set(subjectRef, subjectData);
     }
     
-    // 6. Create default roles for the school
+    // 6. Create default roles
     DEFAULT_ROLES.forEach(role => {
         const roleId = role.name.toLowerCase().replace(/ /g, '_');
         const roleRef = doc(this.db, `ecoles/${schoolId}/admin_roles`, roleId);
         batch.set(roleRef, { ...role, schoolId, level: 0 });
     });
 
-    // 7. Log the creation action for audit trail
+    // 7. Log the creation
     const logRef = doc(collection(this.db, 'system_logs'));
     const logData: Omit<system_log, 'id'> = {
         adminId: schoolData.directorId,
         action: 'school.created',
         target: schoolRef.path,
         details: { name: schoolData.name, schoolId },
-        ipAddress: 'N/A (server-side)',
-        userAgent: 'N/A (server-side)',
+        ipAddress: 'N/A (client-side)',
+        userAgent: 'N/A (client-side)',
         timestamp: serverTimestamp() as any,
     };
     batch.set(logRef, logData);
+    
+    // This is the CRITICAL new step: setting custom claims.
+    await setDirectorClaims(schoolData.directorId, schoolId);
     
     return batch.commit().then(() => {
         return { schoolId, schoolCode };

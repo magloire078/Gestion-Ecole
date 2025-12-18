@@ -45,15 +45,16 @@ export function useUser() {
     const unsubscribeFromAuth = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             try {
-                let tokenResult = await authUser.getIdTokenResult();
+                let tokenResult = await authUser.getIdTokenResult(true); // Force refresh to get latest claims
                 let claims = tokenResult.claims;
 
                 const isSuperAdmin = claims.superAdmin === true;
                 const schoolId = claims.schoolId as string | undefined;
+                const isDirectorClaim = claims.isDirector === true;
 
                 if (isSuperAdmin) {
                     const adminProfile: UserProfile = {
-                        uid: authUser.uid, email: authUser.email || '', schoolId: schoolId || 'SUPER_ADMIN',
+                        uid: authUser.uid, email: authUser.email || '', schoolId: 'SUPER_ADMIN',
                         role: 'directeur', firstName: 'Admin', lastName: 'Platform',
                         hireDate: '', baseSalary: 0, isAdmin: true, permissions: { ...allPermissions },
                     };
@@ -67,24 +68,20 @@ export function useUser() {
                             const profileData = profileSnap.data() as AppUser;
                             let permissions: Partial<AdminRole['permissions']> = {};
 
-                            // Fetch school data once to check for directorId
-                            const schoolRef = doc(firestore, `ecoles/${schoolId}`);
-                            const schoolSnap = await getDoc(schoolRef);
-                            const schoolData = schoolSnap.data() as school | undefined;
-
-                            // Grant all permissions if user is the director
-                            if (schoolData?.directorId === authUser.uid) {
+                            // If the user has the isDirector claim, grant all permissions.
+                            // This is the most reliable check.
+                            if (isDirectorClaim) {
                                 permissions = { ...allPermissions };
                             }
 
                             // If the user also has a specific admin role, merge its permissions.
-                            // This allows a director to also have a specific role without losing their base director perms.
                             if (profileData.adminRole) {
                                 const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
                                 const roleSnap = await getDoc(roleRef);
                                 if (roleSnap.exists()) {
                                     const roleData = roleSnap.data() as AdminRole;
-                                    permissions = { ...permissions, ...roleData.permissions };
+                                    // Merge permissions, director's permissions take precedence
+                                    permissions = { ...roleData.permissions, ...permissions };
                                 }
                             }
                              setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
@@ -99,6 +96,7 @@ export function useUser() {
 
                     return () => unsubscribeFromProfile();
                 } else {
+                     // User is authenticated but has no school claim, needs onboarding
                      setUser({ authUser, uid: authUser.uid, profile: undefined });
                      setLoading(false);
                 }
