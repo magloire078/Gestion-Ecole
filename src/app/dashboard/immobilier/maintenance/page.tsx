@@ -65,7 +65,7 @@ export default function MaintenancePage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageInventory;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTache, setEditingTache] = useState<(TacheMaintenance & { id: string }) | null>(null);

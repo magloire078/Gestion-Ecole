@@ -14,16 +14,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, KeyRound } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -58,7 +52,7 @@ export default function ClesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageInventory;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTrousseau, setEditingTrousseau] = useState<(KeyTrousseau & { id: string }) | null>(null);
@@ -112,7 +106,6 @@ export default function ClesPage() {
     const keysArray = values.keys ? values.keys.map(k => k.value).filter(Boolean) : [];
     const dataToSave: Partial<KeyTrousseau> = { 
         ...values, 
-        schoolId, 
         keys: keysArray 
     };
     if (!editingTrousseau) {
@@ -128,7 +121,7 @@ export default function ClesPage() {
       toast({ title: `Trousseau ${editingTrousseau ? 'modifié' : 'ajouté'}` });
       setIsFormOpen(false);
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: '', operation: 'write', requestResourceData: dataToSave }));
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/cles_trousseaux`, operation: 'write', requestResourceData: dataToSave }));
     }
   };
 
@@ -155,7 +148,7 @@ export default function ClesPage() {
         toast({ title: "Mouvement enregistré"});
         setIsLogFormOpen(false);
     } catch (e) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: '', operation: 'create', requestResourceData: logData }));
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/cles_log`, operation: 'create', requestResourceData: logData }));
     }
   };
 
@@ -171,10 +164,12 @@ export default function ClesPage() {
                 <CardTitle>Gestion des Trousseaux de Clés</CardTitle>
                 <CardDescription>Suivez les trousseaux de clés de l'établissement.</CardDescription>
                 </div>
-                <div className="flex gap-2">
-                    <Button onClick={() => setIsLogFormOpen(true)}>Enregistrer un mouvement</Button>
-                    <Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Ajouter un Trousseau</Button>
-                </div>
+                {canManageContent && (
+                    <div className="flex gap-2">
+                        <Button onClick={() => setIsLogFormOpen(true)}>Enregistrer un mouvement</Button>
+                        <Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Ajouter un Trousseau</Button>
+                    </div>
+                )}
             </div>
             </CardHeader>
             <CardContent>
@@ -189,7 +184,9 @@ export default function ClesPage() {
                         <TableCell>{t.description}</TableCell>
                         <TableCell><Badge variant={t.status === 'disponible' ? 'secondary' : 'outline'}>{t.status}</Badge></TableCell>
                         <TableCell>{t.lastHolderId ? (staffMembers.find(s => s.id === t.lastHolderId)?.displayName || 'N/A') : 'N/A'}</TableCell>
-                        <TableCell className="text-right"><Button variant="ghost" size="icon" onClick={() => handleOpenForm(t)}><Edit className="h-4 w-4"/></Button></TableCell>
+                        <TableCell className="text-right">
+                          {canManageContent && <Button variant="ghost" size="icon" onClick={() => handleOpenForm(t)}><Edit className="h-4 w-4"/></Button>}
+                        </TableCell>
                     </TableRow>
                 ))}
                 </TableBody>
@@ -283,7 +280,9 @@ export default function ClesPage() {
             </div>
             <DialogFooter>
                 <Button variant="outline" onClick={() => setIsLogFormOpen(false)}>Annuler</Button>
-                <Button onClick={handleLogSubmit}>Enregistrer</Button>
+                <Button onClick={handleLogSubmit} disabled={isSavingLog}>
+                  {isSavingLog ? 'Enregistrement...' : 'Enregistrer'}
+                </Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>
