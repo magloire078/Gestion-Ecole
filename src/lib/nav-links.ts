@@ -31,6 +31,8 @@ import {
     KeyRound,
     CalendarCheck,
     DoorOpen,
+    Users2,
+    BedDouble
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -103,8 +105,10 @@ export const transportNavLinks = [
 ];
 
 export const internatNavLinks = [
-  { href: '/dashboard/internat', label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/dashboard/internat/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { href: '/dashboard/internat/batiments', label: 'Bâtiments', icon: Building2 },
+  { href: '/dashboard/internat/chambres', label: 'Chambres', icon: BedDouble },
+  { href: '/dashboard/internat/occupants', label: 'Occupants', icon: Users2 },
 ];
 
 export const immobilierNavLinks = [
