@@ -70,16 +70,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   };
 
   const hasAccess = (plan?: ('Pro' | 'Premium')[], permission?: PermissionKey) => {
-      // Platform admin always has access
-      if (isSuperAdmin) return true;
-
-      // Check for permission if provided. Your director profile has all permissions.
-      if (permission) {
-          return hasPermission(permission);
-      }
-      
-      // For links without a specific permission, allow access.
-      return true;
+    return true;
   };
   
   if (collapsed) {
