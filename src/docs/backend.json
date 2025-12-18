@@ -44,21 +44,6 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
     },
-    "super_admin": {
-      "title": "Super Administrateur",
-      "description": "Un utilisateur avec les droits les plus élevés sur toute la plateforme.",
-      "type": "object",
-      "properties": {
-        "adminId": { "type": "string" },
-        "email": { "type": "string", "format": "email" },
-        "displayName": { "type": "string" },
-        "status": { "type": "string", "enum": ["active", "inactive", "locked"] },
-        "lastLogin": { "type": "string", "format": "date-time" },
-        "mfaEnabled": { "type": "boolean" },
-        "ipWhitelist": { "type": "array", "items": { "type": "string" } },
-        "createdAt": { "type": "string", "format": "date-time" }
-      }
-    },
     "system_log": {
       "title": "Journal Système",
       "description": "Trace toutes les actions critiques effectuées par les super admins.",
@@ -873,7 +858,7 @@
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
     "/super_admins/{adminId}": {
-        "schema": { "$ref": "#/entities/super_admin" },
+        "schema": { "$ref": "#/entities/staff" },
         "description": "Stocke les profils des super administrateurs de la plateforme."
     },
     "/system_logs/{logId}": {
@@ -1091,8 +1076,3 @@
     }
   }
 }
-
-
-    
-
-    

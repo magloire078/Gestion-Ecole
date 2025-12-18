@@ -8,7 +8,7 @@ import {
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
-import type { school, user_root, staff, cycle, niveau, subject, admin_role } from '@/lib/data-types';
+import type { school, user_root, staff, cycle, niveau, subject, admin_role, system_log } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -106,7 +106,8 @@ export class SchoolCreationService {
         status: 'trialing',
         maxStudents: 50,
         maxCycles: 2,
-      }
+      },
+      status: 'active',
     };
     batch.set(schoolRef, schoolDocData);
 
@@ -172,6 +173,19 @@ export class SchoolCreationService {
         const roleRef = doc(this.db, `ecoles/${schoolId}/admin_roles`, roleId);
         batch.set(roleRef, { ...role, schoolId, level: 0 });
     });
+
+    // 7. Log the creation action for audit trail
+    const logRef = doc(collection(this.db, 'system_logs'));
+    const logData: Omit<system_log, 'id'> = {
+        adminId: schoolData.directorId,
+        action: 'school.created',
+        target: schoolRef.path,
+        details: { name: schoolData.name, schoolId },
+        ipAddress: 'N/A (server-side)',
+        userAgent: 'N/A (server-side)',
+        timestamp: serverTimestamp() as any,
+    };
+    batch.set(logRef, logData);
     
     return batch.commit().then(() => {
         return { schoolId, schoolCode };
