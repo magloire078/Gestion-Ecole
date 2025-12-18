@@ -5,7 +5,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
   DialogContent,
@@ -61,7 +60,7 @@ export default function SallesPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageRooms;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSalle, setEditingSalle] = useState<(Salle & { id: string }) | null>(null);
@@ -95,22 +94,22 @@ export default function SallesPage() {
 
     const dataToSave = { 
         ...values,
+        schoolId,
         equipments: values.equipments ? values.equipments.split(',').map(e => e.trim()).filter(Boolean) : []
     };
 
     const promise = editingSalle
       ? setDoc(doc(firestore, `ecoles/${schoolId}/salles/${editingSalle.id}`), dataToSave, { merge: true })
       : addDoc(collection(firestore, `ecoles/${schoolId}/salles`), dataToSave);
-
     try {
       await promise;
       toast({ title: `Salle ${editingSalle ? 'modifiée' : 'ajoutée'}`, description: `La salle ${values.name} a été enregistrée.` });
       setIsFormOpen(false);
-    } catch (error) {
-      const path = `ecoles/${schoolId}/salles/${editingSalle?.id || '(new)'}`;
-      const operation = editingSalle ? 'update' : 'create';
-      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-      errorEmitter.emit('permission-error', permissionError);
+    } catch (e) {
+        const path = `ecoles/${schoolId}/salles/${editingSalle?.id || '(new)'}`;
+        const operation = editingSalle ? 'update' : 'create';
+        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
+        errorEmitter.emit('permission-error', permissionError);
     }
   };
 
@@ -124,7 +123,7 @@ export default function SallesPage() {
     try {
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/salles`, salleToDelete.id));
       toast({ title: "Salle supprimée", description: `La salle ${salleToDelete.name} a été supprimée.` });
-    } catch (error) {
+    } catch (e) {
        const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/salles/${salleToDelete.id}`, operation: 'delete' });
        errorEmitter.emit('permission-error', permissionError);
     } finally {
