@@ -16,10 +16,20 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
+    // --- NOUVELLE FONCTION FIABILISÉE ---
     function getSchoolId() {
-        return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId;
+        // Priorité 1: Le custom claim dans le token (le plus rapide et le plus sûr)
+        if (request.auth.token.schoolId != null) {
+            return request.auth.token.schoolId;
+        }
+        // Priorité 2: Le document racine de l'utilisateur
+        let userRootDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
+        if (userRootDoc != null) {
+            return userRootDoc.data.schoolId;
+        }
+        return null;
     }
-
+    
     function isDirector() {
         let schoolId = getSchoolId();
         return schoolId != null && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
@@ -29,10 +39,10 @@ service cloud.firestore {
        return exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
     }
     
-     function getStaffRole(schoolId) {
-      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.role;
+    // --- NOUVELLE FONCTION DE PERMISSION ---
+    function belongsToSchool(schoolId) {
+      return isAuth() && getSchoolId() == schoolId;
     }
-
 
     // --- System-level collections for Super Admins ---
     match /super_admins/{adminId} {
@@ -53,7 +63,7 @@ service cloud.firestore {
 
     // --- School Collections ---
     match /ecoles/{schoolId} {
-      allow get: if isStaffOfSchool(schoolId) || isSuperAdmin();
+      allow get: if belongsToSchool(schoolId) || isSuperAdmin();
       allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
       allow update: if isDirector() || isSuperAdmin();
       allow delete: if isSuperAdmin();
@@ -61,7 +71,7 @@ service cloud.firestore {
     
     // --- School Subcollections ---
     match /ecoles/{schoolId}/{document=**} {
-      allow read, write: if isDirector() || isSuperAdmin();
+      allow read, write: if isDirector() || isSuperAdmin() || belongsToSchool(schoolId);
     }
   }
 }
