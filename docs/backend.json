@@ -42,7 +42,7 @@
                 }
             }
         },
-        "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode"]
+        "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
     },
     "system_log": {
       "title": "Journal Système",
