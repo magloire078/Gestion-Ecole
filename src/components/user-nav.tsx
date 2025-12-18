@@ -60,12 +60,10 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   
   const isSuperAdmin = user?.profile?.isAdmin === true;
   
-  const displayName = isSuperAdmin 
-    ? (user?.profile?.firstName && user?.profile?.lastName ? `${user.profile.firstName} ${user.profile.lastName}` : user?.authUser?.displayName || 'Super Admin')
-    : user?.authUser?.displayName || 'Utilisateur';
-
+  const displayName = user?.authUser?.displayName || 'Utilisateur';
+  
   const userRole = isSuperAdmin ? 'Super Administrateur' : user?.profile?.role;
-  const fallback = displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+  const fallback = displayName ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'U';
   
   const UserMenuContent = () => (
     <>
