@@ -12,6 +12,8 @@ import { NAV_LINKS } from '@/lib/nav-links';
 import { useSchoolData } from '@/hooks/use-school-data';
 
 type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
+type Plan = 'Pro' | 'Premium';
+type Module = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
 
 
 const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean }) => {
@@ -60,11 +62,22 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
 
   const isSuperAdmin = user?.profile?.isAdmin === true;
   const userPermissions = user?.profile?.permissions || {};
-  const subscriptionPlan = schoolData?.subscription?.plan;
-  const pathname = usePathname();
+  const subscription = schoolData?.subscription;
 
-  const hasAccess = (plan?: ('Pro' | 'Premium')[], permission?: PermissionKey) => {
-    // This is the corrected, simplified logic that ensures all links are visible for now.
+  const hasAccess = (permission?: PermissionKey, module?: Module) => {
+    if (isSuperAdmin) return true;
+
+    // Check permission
+    const hasPerm = permission ? !!userPermissions[permission] : true;
+    if (!hasPerm) return false;
+
+    // Check module activation
+    if (module) {
+        const isPremium = subscription?.plan === 'Premium';
+        const isModuleActive = subscription?.activeModules?.includes(module);
+        return isPremium || isModuleActive;
+    }
+    
     return true;
   };
   
@@ -73,7 +86,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
           <nav className="flex flex-col items-center gap-2 px-2 py-4">
                {NAV_LINKS.flatMap(group => {
                    if (group.adminOnly && !isSuperAdmin) return [];
-                   return group.links.filter(link => hasAccess(link.plans, link.permission)).map(link => (
+                   return group.links.filter(link => hasAccess(link.permission, link.module)).map(link => (
                        <NavLink key={link.href} {...link} collapsed />
                    ));
                })}
@@ -81,14 +94,14 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
       );
   }
 
-  const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasAccess(link.plans, link.permission) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
+  const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasAccess(link.permission, link.module) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
 
   return (
     <Accordion type="multiple" defaultValue={defaultActiveGroup ? [defaultActiveGroup] : []} className="w-full">
       {NAV_LINKS.map((group) => {
           if (group.adminOnly && !isSuperAdmin) return null;
           
-          const visibleLinks = group.links.filter(link => hasAccess(link.plans, link.permission));
+          const visibleLinks = group.links.filter(link => hasAccess(link.permission, link.module));
           if (visibleLinks.length === 0) return null;
           
           const isAccordion = group.group !== "Principal" && group.group !== "Configuration";
