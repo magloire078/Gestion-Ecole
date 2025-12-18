@@ -18,6 +18,17 @@ export interface UserContext {
     profile?: UserProfile;
 }
 
+const allPermissions = {
+    manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
+    manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
+    manageSettings: true, manageBilling: true, manageCommunication: true,
+    manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true,
+    manageTransport: true, manageInternat: true, manageInventory: true,
+    manageRooms: true, manageActivities: true, manageMedical: true,
+    viewSupportTickets: true, manageSupportTickets: true, apiAccess: true,
+    exportData: true
+};
+
 export function useUser() {
   const auth = useAuth();
   const firestore = useFirestore();
@@ -35,10 +46,27 @@ export function useUser() {
         if (authUser) {
             const tokenResult = await authUser.getIdTokenResult();
             const claims = tokenResult.claims;
-            const isAdmin = claims.superAdmin === true;
+            const isSuperAdmin = claims.superAdmin === true;
             const schoolId = claims.schoolId as string | undefined;
 
-            if (schoolId) {
+            if (isSuperAdmin) {
+                // If user is a super admin, grant all permissions immediately without waiting for Firestore.
+                const adminProfile: UserProfile = {
+                    uid: authUser.uid,
+                    email: authUser.email || '',
+                    schoolId: schoolId || '',
+                    role: 'directeur',
+                    firstName: 'Admin',
+                    lastName: 'Platform',
+                    hireDate: '',
+                    baseSalary: 0,
+                    isAdmin: true,
+                    permissions: allPermissions,
+                };
+                setUser({ authUser, uid: authUser.uid, profile: adminProfile });
+                setLoading(false);
+            } else if (schoolId) {
+                // For regular users, proceed with Firestore lookup.
                 const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
                 
                 const unsubscribeFromProfile = onSnapshot(profileRef, (profileSnap) => {
@@ -46,36 +74,29 @@ export function useUser() {
                         const profileData = profileSnap.data() as AppUser;
                         let permissions: Partial<AdminRole['permissions']> = {};
 
-                        if (profileData.role === 'directeur' || isAdmin) {
-                            permissions = {
-                                manageSettings: true, manageUsers: true, viewUsers: true,
-                                manageBilling: true, manageClasses: true, manageGrades: true,
-                                manageCommunication: true, manageLibrary: true, manageCantine: true,
-                                manageTransport: true, manageInternat: true, manageInventory: true,
-                                manageRooms: true, manageActivities: true, manageMedical: true,
-                                manageSchedule: true, manageAttendance: true,
-                            };
+                        // The user's base role is "directeur" of their school
+                        if (profileData.role === 'directeur') {
+                           permissions = allPermissions;
                         }
                         
-                        const currentUserData = { authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin } };
+                        const currentUserData = { authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } };
                         setUser(currentUserData);
 
                         if (profileData.adminRole) {
                             const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
-                            // Switch to onSnapshot for roles as well
                             const unsubscribeFromRole = onSnapshot(roleRef, (roleSnap) => {
                                 if (roleSnap.exists()) {
                                     const roleData = roleSnap.data() as AdminRole;
+                                    // Merge base permissions with role-specific permissions
                                     const finalPermissions = { ...permissions, ...roleData.permissions };
                                     
                                     setUser(prevUser => ({
                                         ...prevUser!,
-                                        profile: { ...prevUser!.profile!, ...profileData, permissions: finalPermissions, isAdmin }
+                                        profile: { ...prevUser!.profile!, ...profileData, permissions: finalPermissions, isAdmin: isSuperAdmin }
                                     }));
                                 }
                             });
-                             // Return the role unsubscriber when profile unsubscribes
-                            return () => unsubscribeFromRole();
+                             return () => unsubscribeFromRole();
                         }
                     } else {
                          setUser({ authUser, uid: authUser.uid, profile: undefined });
@@ -87,21 +108,6 @@ export function useUser() {
                 });
                 return () => unsubscribeFromProfile();
 
-            } else if (isAdmin) {
-                const userProfile: UserProfile = {
-                    uid: authUser.uid,
-                    email: authUser.email || '',
-                    schoolId: '',
-                    role: 'directeur',
-                    firstName: 'Admin',
-                    lastName: 'Platform',
-                    hireDate: '',
-                    baseSalary: 0,
-                    isAdmin: true,
-                    permissions: { manageSystem: true, manageSchools: true }
-                };
-                setUser({ authUser, uid: authUser.uid, profile: userProfile });
-                setLoading(false);
             } else {
                  setUser({ authUser, uid: authUser.uid, profile: undefined });
                  setLoading(false);
