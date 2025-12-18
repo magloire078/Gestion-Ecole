@@ -140,7 +140,7 @@ export default function CompetitionParticipantsPage() {
                             <TableCell className="font-medium">{p.studentName}</TableCell>
                             <TableCell>{p.rank}</TableCell>
                             <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" onClick={() => handleDeleteParticipant(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                {canManageActivities && <Button variant="ghost" size="icon" onClick={() => handleDeleteParticipant(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
                             </TableCell>
                         </TableRow>
                     ))
