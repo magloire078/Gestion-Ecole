@@ -32,7 +32,8 @@ service cloud.firestore {
       allow write: if exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
     }
 
-    // All subcollections of a school
+    // All subcollections of a school are accessible by its members.
+    // This rule is more general and covers all subcollections like personnel, admin_roles, eleves, etc.
     match /ecoles/{schoolId}/{document=**} {
       allow read, write: if isSchoolMember(schoolId);
     }
