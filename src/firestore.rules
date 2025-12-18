@@ -122,11 +122,11 @@ service cloud.firestore {
     }
     
     match /system_logs/{logId} {
-        allow get: if isAdmin();
-        allow create: if true; 
+      allow get: if isAdmin();
+      allow create: if true;
     }
     match /system_logs {
-        allow list: if isAdmin();
+      allow list: if isAdmin();
     }
     
     match /system_settings/{settingId} {
@@ -361,5 +361,3 @@ service cloud.firestore {
     }
   }
 }
-
-  
