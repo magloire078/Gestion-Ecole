@@ -4,9 +4,104 @@
 import { useUser } from '@/firebase';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
+import { Lock, ShieldAlert, Loader2 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import Link from 'next/link';
+import { useState, useEffect, FormEvent } from 'react';
+import { getAuth, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+
+function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
+    const { user } = useUser();
+    const { toast } = useToast();
+    const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setIsLoading(true);
+
+        if (!user?.authUser?.email) {
+            setError("Impossible de vérifier l'utilisateur. E-mail non trouvé.");
+            setIsLoading(false);
+            return;
+        }
+
+        const credential = EmailAuthProvider.credential(user.authUser.email, password);
+
+        try {
+            await reauthenticateWithCredential(user.authUser, credential);
+            toast({ title: 'Accès autorisé', description: "Identité vérifiée avec succès." });
+            onVerified();
+        } catch (authError: any) {
+            console.error("Re-authentication failed", authError);
+            setError("Mot de passe incorrect. Veuillez réessayer.");
+             toast({
+                variant: "destructive",
+                title: "Accès refusé",
+                description: "Le mot de passe fourni est incorrect.",
+            });
+        } finally {
+            setIsLoading(false);
+            setPassword('');
+        }
+    };
+    
+    return (
+        <Dialog open={true} >
+            <DialogContent hideCloseButton={true} className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <ShieldAlert className="h-5 w-5 text-primary"/>
+                        Vérification Requise
+                    </DialogTitle>
+                    <DialogDescription>
+                        Pour accéder à la section d'administration, veuillez confirmer votre mot de passe.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleSubmit}>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid w-full items-center gap-1.5">
+                            <Label htmlFor="password">Mot de Passe</Label>
+                            <Input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                            {error && <p className="text-sm text-destructive">{error}</p>}
+                        </div>
+                    </div>
+                    <DialogFooter className="sm:justify-between gap-2">
+                        <Button type="button" variant="outline" asChild>
+                            <Link href="/dashboard">Quitter</Link>
+                        </Button>
+                         <Button type="submit" disabled={isLoading}>
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Confirmer et Entrer
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
+}
+
 
 function AdminLayoutContent({
   children,
@@ -14,7 +109,38 @@ function AdminLayoutContent({
   children: React.ReactNode;
 }) {
     const { user, loading: userLoading } = useUser();
+    const [isVerified, setIsVerified] = useState(false);
+    
+    // Check session storage on initial load
+    useEffect(() => {
+        try {
+            const verificationTimestamp = sessionStorage.getItem('adminVerificationTimestamp');
+            if (verificationTimestamp) {
+                const lastVerified = parseInt(verificationTimestamp, 10);
+                const now = new Date().getTime();
+                // Session valid for 15 minutes
+                if (now - lastVerified < 15 * 60 * 1000) {
+                    setIsVerified(true);
+                } else {
+                    sessionStorage.removeItem('adminVerificationTimestamp');
+                }
+            }
+        } catch (e) {
+            console.error("Could not access session storage:", e);
+        }
+    }, []);
 
+    const handleVerification = () => {
+        try {
+            sessionStorage.setItem('adminVerificationTimestamp', new Date().getTime().toString());
+            setIsVerified(true);
+        } catch (e) {
+             console.error("Could not access session storage:", e);
+             // If session storage is not available, just allow for the current session in memory
+             setIsVerified(true);
+        }
+    };
+    
     if (userLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
@@ -48,6 +174,10 @@ function AdminLayoutContent({
                 </Card>
             </div>
         );
+    }
+
+    if (!isVerified) {
+        return <AdminPasswordGate onVerified={handleVerification} />;
     }
     
     return <>{children}</>;
