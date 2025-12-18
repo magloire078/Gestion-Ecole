@@ -36,6 +36,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { bus as Bus, staff as Staff } from '@/lib/data-types';
 
 const busSchema = z.object({
@@ -53,7 +54,7 @@ export default function BusManagementPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageTransport;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBus, setEditingBus] = useState<(Bus & { id: string }) | null>(null);
@@ -76,13 +77,13 @@ export default function BusManagementPage() {
   });
 
   useEffect(() => {
-    form.reset(editingBus ? { ...editingBus, driverId: editingBus.driverId || '' } : { type: 'standard', status: 'active', capacity: 50 });
+    form.reset(editingBus ? { ...editingBus, driverId: editingBus.driverId || '' } : { registrationNumber: '', type: 'standard', status: 'active', capacity: 50, driverId: '' });
   }, [isFormOpen, editingBus, form]);
 
   const handleFormSubmit = async (values: BusFormValues) => {
     if (!schoolId) return;
 
-    const dataToSave = { ...values, schoolId };
+    const dataToSave = { ...values };
 
     const promise = editingBus
       ? setDoc(doc(firestore, `ecoles/${schoolId}/transport_bus/${editingBus.id}`), dataToSave, { merge: true })
