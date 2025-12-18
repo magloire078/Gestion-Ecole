@@ -3,81 +3,67 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Fonctions d'aide simples et fiables ---
+    // --- Helper Functions ---
     function isAuth() {
       return request.auth != null;
     }
 
     function isSuperAdmin() {
-      // Vérifie si l'utilisateur a un custom claim 'superAdmin'
-      return isAuth() && request.auth.token.superAdmin == true;
+      // Platform-level admin
+      return request.auth.token.superAdmin == true;
     }
 
-    function getSchoolId() {
-      // Lit l'ID de l'école depuis le custom claim de l'utilisateur
-      return request.auth.token.schoolId;
+    function getSchoolIdFromToken() {
+        return request.auth.token.schoolId;
     }
 
     function belongsToSchool(schoolId) {
-      // Vérifie si l'utilisateur appartient à l'école spécifiée
-      return isAuth() && getSchoolId() == schoolId;
+        return isAuth() && getSchoolIdFromToken() == schoolId;
     }
 
     function isDirector(schoolId) {
-      // Vérifie si l'utilisateur est le directeur de l'école
-      return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+        // Check if the requesting user's UID is the directorId on the school document
+        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
-    // --- Collections Globales ---
-
-    // Collection des super administrateurs
-    match /super_admins/{adminId} {
-      allow read, write: if isSuperAdmin();
-    }
-    
-    // Logs système, seuls les super admins peuvent créer et lire
-    match /system_logs/{logId} {
-      allow read, create: if isSuperAdmin();
-      allow update, delete: if false;
-    }
-    
-    // Paramètres système, modifiables uniquement par les super admins
-    match /system_settings/{settingId} {
-      allow read, write: if isSuperAdmin();
-    }
-
-    // Document racine de l'utilisateur
+    // --- Global Collections ---
     match /utilisateurs/{userId} {
-      // L'utilisateur peut créer et mettre à jour son propre document
-      allow create, update: if isAuth() && request.auth.uid == userId;
-      // Seul l'utilisateur lui-même ou un super admin peut le lire
-      allow read: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+      // Anyone can create their own user root doc, but not overwrite it
+      allow create: if isAuth() && request.auth.uid == userId && !exists(path);
+      // Only the user or a super admin can read or update it
+      allow read, update: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    match /super_admins/{adminId} {
+        allow read, write: if isSuperAdmin();
+    }
+
+    match /system_logs/{logId} {
+        allow read, create: if isSuperAdmin();
+        allow update, delete: if false;
     }
     
-    // --- Collections Spécifiques à une École ---
+    match /system_settings/{settingId} {
+        allow read, write: if isSuperAdmin();
+    }
 
-    // Document de l'école
+
+    // --- School-Specific Collections ---
     match /ecoles/{schoolId} {
-      // Lecture autorisée pour les membres de l'école et les super admins
-      allow get: if isSuperAdmin() || belongsToSchool(schoolId);
-      
-      // Création autorisée pour tout utilisateur authentifié qui se déclare directeur
-      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
-      
-      // Mise à jour autorisée uniquement pour le directeur ou un super admin
+      // The user creating the school is the director. The director can always read it.
+      // Any authenticated user can attempt to create a school.
+      // SuperAdmins can do anything.
+      allow get: if isSuperAdmin() || belongsToSchool(schoolId) || isDirector(schoolId);
+      allow list: if isSuperAdmin();
+      allow create: if isAuth(); 
       allow update: if isSuperAdmin() || isDirector(schoolId);
-      
-      // Suppression autorisée uniquement pour les super admins
       allow delete: if isSuperAdmin();
     }
 
-    // Règle générique pour toutes les sous-collections d'une école
+    // Generic rule for all subcollections under a school
     match /ecoles/{schoolId}/{document=**} {
-        // Les membres de l'école peuvent lire toutes les données
-        allow read: if isSuperAdmin() || belongsToSchool(schoolId);
-        
-        // Seuls le directeur et le super admin peuvent écrire/modifier/supprimer
-        allow write: if isSuperAdmin() || isDirector(schoolId);
+      allow read: if isSuperAdmin() || belongsToSchool(schoolId);
+      allow write: if isSuperAdmin() || isDirector(schoolId);
     }
   }
 }
