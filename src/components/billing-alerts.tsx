@@ -98,4 +98,3 @@ export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAle
     </div>
   );
 }
-
