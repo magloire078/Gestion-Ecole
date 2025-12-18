@@ -102,10 +102,11 @@ export class SchoolCreationService {
       createdAt: serverTimestamp() as any,
       mainLogoUrl: schoolData.mainLogoUrl,
       subscription: {
-        plan: 'Premium',
+        plan: 'Pro',
         status: 'trialing',
-        maxStudents: 1000,
-        maxCycles: 10,
+        maxStudents: 250,
+        maxCycles: 5,
+        activeModules: [],
       },
       status: 'active',
     };
