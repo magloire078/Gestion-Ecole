@@ -8,19 +8,47 @@ import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/firebase";
+import { usePathname } from 'next/navigation';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { internatNavLinks } from '@/lib/nav-links';
 
 export default function InternatLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+    const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
     const isLoading = subscriptionLoading || userLoading;
 
+    const layoutContent = (
+      <div className="space-y-6">
+        <div>
+            <h1 className="text-2xl font-bold">Gestion de l'Internat</h1>
+            <p className="text-muted-foreground">
+                Gérez les dortoirs, les chambres et les occupants.
+            </p>
+        </div>
+        <Tabs value={pathname} className="w-full">
+            <TabsList>
+                {internatNavLinks.map(link => (
+                    <Link href={link.href} key={link.href} passHref legacyBehavior>
+                        <TabsTrigger value={link.href}>
+                            <link.icon className="mr-2 h-4 w-4" />
+                            {link.label}
+                        </TabsTrigger>
+                    </Link>
+                ))}
+            </TabsList>
+        </Tabs>
+        <div className="mt-6">{children}</div>
+    </div>
+    );
+
     if (user?.profile?.isAdmin) {
-        return <>{children}</>;
+        return layoutContent;
     }
 
     if (isLoading) {
@@ -60,5 +88,5 @@ export default function InternatLayout({
         );
     }
     
-    return <>{children}</>;
+    return layoutContent;
 }

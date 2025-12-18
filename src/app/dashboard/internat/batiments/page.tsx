@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -97,7 +96,7 @@ export default function BatimentsPage() {
     <>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold">Gestion des Bâtiments</h2>
+          <h2 className="text-xl font-semibold">Gestion des Bâtiments de l'Internat</h2>
           <p className="text-muted-foreground">Gérez les bâtiments et dortoirs de l'internat.</p>
         </div>
         {canManageContent && (

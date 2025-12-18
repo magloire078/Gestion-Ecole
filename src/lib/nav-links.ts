@@ -25,6 +25,12 @@ import {
     Trophy,
     Map,
     Ticket,
+    Building2,
+    GanttChartSquare,
+    Wrench,
+    KeyRound,
+    CalendarCheck,
+    DoorOpen,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -96,3 +102,15 @@ export const transportNavLinks = [
   { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket },
 ];
 
+export const internatNavLinks = [
+  { href: '/dashboard/internat', label: 'Tableau de bord', icon: LayoutDashboard },
+  { href: '/dashboard/internat/batiments', label: 'Bâtiments', icon: Building2 },
+];
+
+export const immobilierNavLinks = [
+  { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare },
+  { href: '/dashboard/immobilier/salles', label: 'Salles', icon: DoorOpen },
+  { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarCheck },
+  { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench },
+  { href: '/dashboard/immobilier/cles', label: 'Gestion des clés', icon: KeyRound },
+];
