@@ -46,7 +46,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="ghost" asChild>
-                    <Link href="/demo/contact">Contact</Link>
+                    <Link href="/contact">Contact</Link>
                 </Button>
                 <Button asChild>
                     <Link href="/login">Se connecter</Link>
@@ -62,8 +62,8 @@ export default function LandingPage() {
             <p className="text-xl text-muted-foreground mb-8">Simplifiez l'administration, optimisez la pédagogie et améliorez la communication au sein de votre établissement.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Button size="lg" asChild>
-                <Link href="/demo" className="gap-2">
-                  <PlayCircle className="h-5 w-5" />Explorer la Démo
+                <Link href="/contact" className="gap-2">
+                  <PlayCircle className="h-5 w-5" />Demander une Démo
                 </Link>
               </Button>
               <Button size="lg" variant="outline" asChild>

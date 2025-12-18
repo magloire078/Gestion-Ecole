@@ -59,7 +59,7 @@ function formReducer(state: FormState, action: FormAction): FormState {
 }
 
 
-function DemoContactPageContent() {
+function ContactPageContent() {
   const router = useRouter();
   const [state, dispatch] = useReducer(formReducer, initialState);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,7 +94,7 @@ function DemoContactPageContent() {
     try {
       await sendContactRequest(state);
       setIsSubmitted(true);
-      setTimeout(() => router.push('/demo'), 2000);
+      setTimeout(() => router.push('/'), 2000);
     } catch (error) {
       console.error('Error submitting form:', error);
     } finally {
@@ -186,10 +186,10 @@ function DemoContactPageContent() {
   );
 }
 
-export default function DemoContactPage() {
+export default function ContactPage() {
     return (
         <Suspense fallback={<div>Chargement du formulaire...</div>}>
-            <DemoContactPageContent />
+            <ContactPageContent />
         </Suspense>
     );
 }
