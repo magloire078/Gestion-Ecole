@@ -2,7 +2,6 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { useSchoolData } from '@/hooks/use-school-data';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -18,13 +17,12 @@ function AuthProtectionLoader() {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading: userLoading } = useUser();
-  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const { user, loading: userLoading, schoolId, isDirector } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   const [isChecking, setIsChecking] = useState(true);
   
-  const isLoading = userLoading || schoolLoading;
+  const isLoading = userLoading;
   
   useEffect(() => {
     if (isLoading) {
@@ -38,13 +36,11 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       const isAuthPage = pathname === '/login';
       const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
       
-      // Public pages are always allowed
       if (isPublicPage) {
         setIsChecking(false);
         return;
       }
       
-      // If user is not authenticated
       if (!user || !user.authUser) {
         if (!isAuthPage) {
           router.replace('/login');
@@ -53,11 +49,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         setIsChecking(false);
         return;
       }
-
+      
       const isSuperAdmin = user.profile?.isAdmin === true;
-      const isDirector = schoolData?.directorId === user.uid;
 
-      // If user is Super Admin or the school director, they have access to everything.
+      // Super Admins and Directors have access to everything, except they should be redirected from onboarding if already set up.
       if (isSuperAdmin || isDirector) {
         if (isOnboardingPage && schoolId) {
           router.replace('/dashboard');
@@ -67,27 +62,23 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         return;
       }
       
-      // User is authenticated but not a super admin or director
       if (!schoolId) {
-        // ... but has no school associated
         if (!isOnboardingPage) {
           router.replace('/dashboard/onboarding');
           return;
         }
       } else {
-        // ... and has a school associated
         if (isAuthPage || isOnboardingPage) {
           router.replace('/dashboard');
           return;
         }
       }
       
-      // All checks passed, allow access for regular users to their permitted pages.
       setIsChecking(false);
     };
     
     checkAccess();
-  }, [user, schoolId, schoolData, isLoading, pathname, router]);
+  }, [user, schoolId, isDirector, isLoading, pathname, router]);
   
   if (isLoading || isChecking) {
     if (pathname === '/login' || pathname.startsWith('/public') || pathname === '/' || pathname === '/contact') {
@@ -98,3 +89,5 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   
   return <>{children}</>;
 }
+
+    

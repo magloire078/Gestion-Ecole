@@ -34,61 +34,20 @@ interface SchoolData extends DocumentData {
 }
 
 export function useSchoolData() {
-    const { user: authUser, loading: userLoading } = useUser();
+    const { user: authUser, loading: userLoading, schoolId: authSchoolId } = useUser();
     const firestore = useFirestore();
-    const [schoolId, setSchoolId] = useState<string | null>(null);
     const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (userLoading || !firestore) {
-            return;
-        }
-
-        if (!authUser || !authUser.authUser) {
-            setSchoolId(null);
-            setSchoolData(null);
-            setLoading(false);
-            return;
-        }
-
-        const findAndSetSchoolId = async (userId: string) => {
-            const tokenResult = await authUser.authUser.getIdTokenResult();
-            if (tokenResult.claims.schoolId) {
-                setSchoolId(tokenResult.claims.schoolId as string);
-                setLoading(false);
-                return;
-            }
-
-            try {
-                const userRef = doc(firestore, 'utilisateurs', userId);
-                const userDoc = await getDoc(userRef);
-                if (userDoc.exists() && userDoc.data()?.schoolId) {
-                    setSchoolId(userDoc.data().schoolId);
-                } else {
-                    setSchoolId(null);
-                }
-            } catch (e) {
-                 console.error("Error reading user root document:", e);
-                 setSchoolId(null);
-            } finally {
-                 setLoading(false);
-            }
-        };
-
-        findAndSetSchoolId(authUser.authUser.uid);
-
-    }, [authUser, userLoading, firestore]);
-    
-    useEffect(() => {
-        if (!schoolId) {
+        if (!authSchoolId || !firestore) {
              if(!userLoading) setLoading(false);
              document.title = DEFAULT_TITLE;
              return;
         }
 
         setLoading(true);
-        const schoolDocRef = doc(firestore, 'ecoles', schoolId);
+        const schoolDocRef = doc(firestore, 'ecoles', authSchoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
                 const data = { id: docSnap.id, ...docSnap.data()} as SchoolData;
@@ -96,7 +55,6 @@ export function useSchoolData() {
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
-                setSchoolId(null); // The school document was deleted
             }
             setLoading(false);
         }, (error) => {
@@ -108,15 +66,15 @@ export function useSchoolData() {
         });
 
         return () => unsubscribe();
-    }, [schoolId, firestore, userLoading]);
+    }, [authSchoolId, firestore, userLoading]);
 
     const updateSchoolData = useCallback(async (data: Partial<SchoolData>) => {
         const auth = getAuth();
         const currentUser = auth.currentUser;
-        if (!schoolId) throw new Error("ID de l'école non disponible.");
+        if (!authSchoolId) throw new Error("ID de l'école non disponible.");
         if (!currentUser) throw new Error("Utilisateur non authentifié.");
         
-        const schoolDocRef = doc(firestore, 'ecoles', schoolId);
+        const schoolDocRef = doc(firestore, 'ecoles', authSchoolId);
         const dataToUpdate = {
             ...data,
             updatedAt: serverTimestamp(),
@@ -135,10 +93,10 @@ export function useSchoolData() {
             errorEmitter.emit('permission-error', permissionError);
             throw error;
         }
-    }, [schoolId, firestore]);
+    }, [authSchoolId, firestore]);
 
     return { 
-        schoolId, 
+        schoolId: authSchoolId, 
         schoolData,
         schoolName: schoolData?.name,
         directorName: `${schoolData?.directorFirstName || ''} ${schoolData?.directorLastName || ''}`.trim(),
@@ -148,3 +106,5 @@ export function useSchoolData() {
         updateSchoolData 
     };
 }
+
+    

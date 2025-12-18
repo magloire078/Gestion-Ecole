@@ -4,7 +4,7 @@
 import {useState, useEffect} from 'react';
 import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
-import type { staff as AppUser, admin_role as AdminRole, school } from '@/lib/data-types';
+import type { staff as AppUser, admin_role as AdminRole } from '@/lib/data-types';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 export interface UserProfile extends AppUser {
@@ -34,6 +34,8 @@ export function useUser() {
   const firestore = useFirestore();
   const [user, setUser] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [isDirector, setIsDirector] = useState(false);
 
   useEffect(() => {
     if (!auth || !firestore) {
@@ -43,14 +45,18 @@ export function useUser() {
     }
     
     const unsubscribeFromAuth = onIdTokenChanged(auth, async (authUser) => {
+        setLoading(true);
         if (authUser) {
             try {
-                let tokenResult = await authUser.getIdTokenResult(true); // Force refresh to get latest claims
+                let tokenResult = await authUser.getIdTokenResult(true);
                 let claims = tokenResult.claims;
 
                 const isSuperAdmin = claims.superAdmin === true;
-                const schoolId = claims.schoolId as string | undefined;
-                const isDirectorClaim = claims.isDirector === true;
+                const currentSchoolId = claims.schoolId as string | undefined;
+                const directorClaim = claims.isDirector === true;
+                
+                setSchoolId(currentSchoolId || null);
+                setIsDirector(directorClaim);
 
                 if (isSuperAdmin) {
                     const adminProfile: UserProfile = {
@@ -60,31 +66,30 @@ export function useUser() {
                     };
                     setUser({ authUser, uid: authUser.uid, profile: adminProfile });
                     setLoading(false);
-                } else if (schoolId) {
-                    const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
+                    return; // Stop further processing
+                } 
+                
+                if (currentSchoolId) {
+                    const profileRef = doc(firestore, `ecoles/${currentSchoolId}/personnel`, authUser.uid);
                     
                     const unsubscribeFromProfile = onSnapshot(profileRef, async (profileSnap) => {
                         if (profileSnap.exists()) {
                             const profileData = profileSnap.data() as AppUser;
                             let permissions: Partial<AdminRole['permissions']> = {};
 
-                            // If the user has the isDirector claim, grant all permissions.
-                            // This is the most reliable check.
-                            if (isDirectorClaim) {
+                            if (directorClaim) {
                                 permissions = { ...allPermissions };
                             }
 
-                            // If the user also has a specific admin role, merge its permissions.
                             if (profileData.adminRole) {
-                                const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
+                                const roleRef = doc(firestore, `ecoles/${currentSchoolId}/admin_roles`, profileData.adminRole);
                                 const roleSnap = await getDoc(roleRef);
                                 if (roleSnap.exists()) {
                                     const roleData = roleSnap.data() as AdminRole;
-                                    // Merge permissions, director's permissions take precedence
-                                    permissions = { ...roleData.permissions, ...permissions };
+                                    permissions = { ...permissions, ...roleData.permissions };
                                 }
                             }
-                             setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
+                            setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
                         } else {
                              setUser({ authUser, uid: authUser.uid, profile: undefined });
                         }
@@ -96,7 +101,6 @@ export function useUser() {
 
                     return () => unsubscribeFromProfile();
                 } else {
-                     // User is authenticated but has no school claim, needs onboarding
                      setUser({ authUser, uid: authUser.uid, profile: undefined });
                      setLoading(false);
                 }
@@ -107,6 +111,8 @@ export function useUser() {
             }
         } else {
             setUser(null);
+            setSchoolId(null);
+            setIsDirector(false);
             setLoading(false);
         }
     });
@@ -114,5 +120,7 @@ export function useUser() {
     return () => unsubscribeFromAuth();
   }, [auth, firestore]);
 
-  return {user, loading};
+  return {user, loading, schoolId, isDirector};
 }
+
+    

@@ -16,7 +16,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { SearchModal } from '@/components/search-modal';
 import { NotificationsPanel } from '@/components/notifications-panel';
@@ -31,8 +31,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
-  const { user, loading: userLoading } = useUser();
-  const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
+  const { user, loading: userLoading, isDirector } = useUser();
+  const { subscription, loading: schoolLoading } = useSchoolData();
 
   // Mock notifications - à remplacer par votre logique
   useEffect(() => {
@@ -95,7 +95,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   
   const navProps = {
     isSuperAdmin: user?.profile?.isAdmin === true,
-    isDirector: schoolData?.directorId === user?.uid,
+    isDirector: isDirector,
     userPermissions: user?.profile?.permissions || {},
     subscription: subscription,
     collapsed: false,
@@ -241,3 +241,5 @@ export default function DashboardLayout({
     </AuthGuard>
   );
 }
+
+    

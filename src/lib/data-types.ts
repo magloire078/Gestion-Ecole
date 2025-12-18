@@ -12,6 +12,8 @@ export type school = {
     directorFirstName: string;
     directorLastName: string;
     schoolCode: string;
+    status: 'active' | 'suspended' | 'deleted';
+    deletedAt?: string;
     matricule?: string;
     cnpsEmployeur?: string;
     directorPhone?: string;
@@ -26,12 +28,14 @@ export type school = {
         status?: "active" | "trialing" | "past_due" | "canceled";
         maxStudents?: number;
         maxCycles?: number;
+        activeModules?: string[];
     };
+    id?: string;
 };
 
 export type admin_role = {
+    schoolId: string;
     name: string;
-    level: number;
     permissions: {
         manageUsers?: boolean;
         viewUsers?: boolean;
@@ -44,6 +48,8 @@ export type admin_role = {
         manageSettings?: boolean;
         manageBilling?: boolean;
         manageCommunication?: boolean;
+        manageSchedule?: boolean;
+        manageAttendance?: boolean;
         manageLibrary?: boolean;
         manageCantine?: boolean;
         manageTransport?: boolean;
@@ -58,6 +64,7 @@ export type admin_role = {
         exportData?: boolean;
     };
     description?: string;
+    isSystem?: boolean;
 };
 
 export type staff = {
@@ -603,5 +610,7 @@ export type participationCompetition = {
     rank?: string;
     notes?: string;
 };
+
+    
 
     

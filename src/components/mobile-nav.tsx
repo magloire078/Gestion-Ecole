@@ -1,21 +1,18 @@
 
 
 "use client";
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { MainNav } from './main-nav';
 
 export function MobileNav() {
-  const { user } = useUser();
-  const { schoolData, subscription } = useSchoolData();
+  const { user, isDirector } = useUser();
+  const { subscription } = useSchoolData();
 
   const navProps = {
     isSuperAdmin: user?.profile?.isAdmin === true,
-    isDirector: schoolData?.directorId === user?.uid,
+    isDirector: isDirector,
     userPermissions: user?.profile?.permissions || {},
     subscription: subscription,
     collapsed: false,
@@ -32,3 +29,5 @@ export function MobileNav() {
     </div>
   );
 }
+
+    
