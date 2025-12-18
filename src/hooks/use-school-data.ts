@@ -54,6 +54,7 @@ export function useSchoolData() {
             const tokenResult = await user.authUser.getIdTokenResult();
             if (tokenResult.claims.schoolId) {
                 setSchoolId(tokenResult.claims.schoolId as string);
+                setLoading(false); // Make sure loading is set to false if we find it in claims
                 return;
             }
 
@@ -69,7 +70,7 @@ export function useSchoolData() {
                  console.error("Error reading user root document:", e);
                  setSchoolId(null);
             } finally {
-                 setLoading(false);
+                 setLoading(false); // This was missing, causing the loading to never finish for users without a schoolId
             }
         };
 
