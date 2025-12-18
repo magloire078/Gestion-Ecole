@@ -5,7 +5,7 @@ import {useState, useEffect} from 'react';
 import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
 import type { staff as AppUser, admin_role as AdminRole } from '@/lib/data-types';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 export interface UserProfile extends AppUser {
     permissions?: Partial<AdminRole['permissions']>;
@@ -33,65 +33,70 @@ export function useUser() {
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
-            
-            const adminRef = doc(firestore, 'super_admins', authUser.uid);
-            const adminSnap = await getDoc(adminRef);
-            const isAdmin = adminSnap.exists();
+            const tokenResult = await authUser.getIdTokenResult();
+            const claims = tokenResult.claims;
 
-            const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
-            const userRootSnap = await getDoc(userRootRef);
-            const schoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
+            const isAdmin = claims.superAdmin === true;
+            const schoolId = claims.schoolId as string | undefined;
 
             let userProfile: UserProfile | undefined = undefined;
 
             if (schoolId) {
                 const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
-                const profileSnap = await getDoc(profileRef);
                 
-                if (profileSnap.exists()) {
-                    const profileData = profileSnap.data() as AppUser;
-                    
-                    let permissions: Partial<AdminRole['permissions']> = {};
+                // Utiliser onSnapshot pour écouter les changements de profil en temps réel
+                onSnapshot(profileRef, (profileSnap) => {
+                    if (profileSnap.exists()) {
+                        const profileData = profileSnap.data() as AppUser;
+                        
+                        let permissions: Partial<AdminRole['permissions']> = {};
 
-                    // Always grant all permissions to the director, regardless of adminRole
-                    if (profileData.role === 'directeur') {
-                        permissions = {
-                            manageSettings: true, manageUsers: true, viewUsers: true,
-                            manageBilling: true, manageClasses: true, manageGrades: true,
-                            manageCommunication: true, manageLibrary: true, manageCantine: true,
-                            manageTransport: true, manageInternat: true, manageInventory: true,
-                            manageRooms: true, manageActivities: true, manageMedical: true,
-                            manageSchedule: true,
-                            manageAttendance: true,
-                        };
-                    }
-
-                    if (profileData.adminRole) {
-                        try {
-                            const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
-                            const roleSnap = await getDoc(roleRef);
-                            if(roleSnap.exists()){
-                                const roleData = roleSnap.data() as AdminRole;
-                                // Merge permissions, director's base permissions take precedence
-                                permissions = { ...roleData.permissions, ...permissions };
-                            }
-                        } catch (e) {
-                            console.error("Error fetching admin role:", e);
+                        if (profileData.role === 'directeur' || isAdmin) {
+                            permissions = {
+                                manageSettings: true, manageUsers: true, viewUsers: true,
+                                manageBilling: true, manageClasses: true, manageGrades: true,
+                                manageCommunication: true, manageLibrary: true, manageCantine: true,
+                                manageTransport: true, manageInternat: true, manageInventory: true,
+                                manageRooms: true, manageActivities: true, manageMedical: true,
+                                manageSchedule: true, manageAttendance: true,
+                            };
                         }
-                    }
 
-                    userProfile = { 
-                        ...profileData, 
-                        isAdmin: isAdmin,
-                        permissions: permissions
-                    };
-                }
+                        if (profileData.adminRole) {
+                            const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
+                            getDoc(roleRef).then(roleSnap => {
+                                if(roleSnap.exists()){
+                                    const roleData = roleSnap.data() as AdminRole;
+                                    permissions = { ...roleData.permissions, ...permissions };
+                                    
+                                    // Update user profile with new permissions
+                                    setUser(prevUser => ({
+                                        ...prevUser!,
+                                        profile: { ...prevUser!.profile!, ...profileData, permissions, isAdmin }
+                                    }));
+                                }
+                            });
+                        }
+
+                        userProfile = { ...profileData, permissions, isAdmin };
+                        setUser({ authUser, uid: authUser.uid, profile: userProfile });
+
+                    } else {
+                         setUser({ authUser, uid: authUser.uid, profile: undefined });
+                    }
+                    setLoading(false);
+
+                }, (error) => {
+                    console.error("Error fetching user profile with onSnapshot:", error);
+                    setLoading(false);
+                });
+
             } else if (isAdmin) {
                 userProfile = {
                     uid: authUser.uid,
                     email: authUser.email || '',
                     schoolId: '',
-                    role: 'directeur', // Treated as platform-wide director
+                    role: 'directeur', // Super admin is treated as a platform-wide director
                     firstName: 'Admin',
                     lastName: 'Platform',
                     hireDate: '',
@@ -99,17 +104,18 @@ export function useUser() {
                     isAdmin: true,
                     permissions: { manageSystem: true, manageSchools: true }
                 };
+                setUser({ authUser, uid: authUser.uid, profile: userProfile });
+                setLoading(false);
+            } else {
+                 // User is authenticated but has no schoolId claim and is not a super admin
+                 setUser({ authUser, uid: authUser.uid, profile: undefined });
+                 setLoading(false);
             }
 
-            setUser({
-                authUser,
-                uid: authUser.uid,
-                profile: userProfile
-            });
         } else {
             setUser(null);
+            setLoading(false);
         }
-        setLoading(false);
     });
 
     return () => unsubscribe();
@@ -117,5 +123,3 @@ export function useUser() {
 
   return {user, loading};
 }
-
-    

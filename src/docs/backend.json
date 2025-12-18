@@ -651,8 +651,8 @@
             "studentId": { "type": "string" },
             "roomId": { "type": "string" },
             "startDate": { "type": "string", "format": "date" },
-            "status": { "type": "string", "enum": ["active", "pending", "terminated", "suspended"] },
             "endDate": { "type": "string", "format": "date" },
+            "status": { "type": "string", "enum": ["active", "pending", "terminated", "suspended"] },
             "nextPaymentDue": { "type": "string", "format": "date" }
         },
         "required": ["studentId", "roomId", "startDate", "status"]
