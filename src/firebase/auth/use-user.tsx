@@ -78,6 +78,7 @@ export function useUser() {
                             }
 
                             // If the user also has a specific admin role, merge its permissions.
+                            // This allows a director to also have a specific role without losing their base director perms.
                             if (profileData.adminRole) {
                                 const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
                                 const roleSnap = await getDoc(roleRef);

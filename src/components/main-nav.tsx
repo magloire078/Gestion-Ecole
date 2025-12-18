@@ -1,5 +1,4 @@
 
-
 "use client";
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -12,7 +11,6 @@ import { NAV_LINKS } from '@/lib/nav-links';
 import { useSchoolData } from '@/hooks/use-school-data';
 
 type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
-type Plan = 'Pro' | 'Premium';
 type Module = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
 
 
@@ -57,18 +55,18 @@ const NavLink = ({ href, icon: Icon, label, collapsed, pathname }: { href: strin
 
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
-  const { schoolData } = useSchoolData();
+  const { schoolData, subscription } = useSchoolData();
   const pathname = usePathname();
 
   const isSuperAdmin = user?.profile?.isAdmin === true;
+  const isDirector = schoolData?.directorId === user?.uid;
   const userPermissions = user?.profile?.permissions || {};
-  const subscription = schoolData?.subscription;
 
   const hasAccess = (permission?: PermissionKey, module?: Module) => {
-    // Super admin always has access
-    if (isSuperAdmin) return true;
+    // Super admin and school director have access to everything.
+    if (isSuperAdmin || isDirector) return true;
 
-    // Check module access first
+    // Check module access first for non-admins
     if (module) {
         const isPremium = subscription?.plan === 'Premium';
         const isModuleActive = subscription?.activeModules?.includes(module);
