@@ -93,14 +93,14 @@ export default function CreateSchoolPage() {
         email: user.authUser.email || '',
       });
       
-      await auth.currentUser?.getIdToken(true); 
-      
       toast({
         title: 'École créée avec succès !',
         description: `Le code de votre établissement est : ${result.schoolCode}. Vous êtes maintenant Super Admin. Redirection...`,
         duration: 5000,
       });
 
+      // Instead of direct redirection, we let the AuthGuard handle it after token refresh.
+      // A full page reload is often the most reliable way to ensure all states are new.
       window.location.assign('/dashboard');
 
     } catch (error: any) {
