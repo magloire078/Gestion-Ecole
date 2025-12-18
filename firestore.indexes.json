@@ -1,13 +1,5 @@
 
 {
-  "indexes": [
-     {
-      "collectionGroup": "eleves",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        { "fieldPath": "classId", "order": "ASCENDING" }
-      ]
-    }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }

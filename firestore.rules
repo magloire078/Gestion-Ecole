@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -12,27 +13,40 @@ service cloud.firestore {
       return isAuth() && get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
     }
     
-    // Super Admins can do anything
+    function isDirector(schoolId) {
+        return isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    }
+
+    function isSuperAdmin() {
+      // In the future, this could check for a custom claim
+      return exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+    }
+    
     match /super_admins/{adminId} {
       allow read, write: if isAuth() && request.auth.uid == adminId;
     }
 
-    // System settings can only be read/written by super admins
     match /system_settings/{settingId} {
-       allow read, write: if exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+       allow read, write: if isSuperAdmin();
     }
     
     match /system_logs/{logId} {
-       allow read, write: if exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+       allow create: if isSuperAdmin();
+       allow read: if isAuth();
     }
     
-    // Schools can be read by anyone, but only written by super admins
+    match /utilisateurs/{userId} {
+        allow read, write: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+    }
+    
     match /ecoles/{schoolId} {
-      allow read: if isAuth();
-      allow write: if exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+      allow read: if isSchoolMember(schoolId);
+      // Any authenticated user can create a school document
+      allow create: if isAuth(); 
+      // Only the director or a super admin can update/delete the school
+      allow update, delete: if isDirector(schoolId) || isSuperAdmin();
     }
 
-    // All subcollections of a school are accessible by its members.
     // This rule is more general and covers all subcollections like personnel, admin_roles, eleves, etc.
     match /ecoles/{schoolId}/{document=**} {
       allow read, write: if isSchoolMember(schoolId);
