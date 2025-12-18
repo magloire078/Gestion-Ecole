@@ -65,20 +65,24 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const subscription = schoolData?.subscription;
 
   const hasAccess = (permission?: PermissionKey, module?: Module) => {
+    // Super admin always has access
     if (isSuperAdmin) return true;
 
-    // 1. Vérifier la permission de base
-    const hasPermission = permission ? !!userPermissions[permission] : true;
-    if (!hasPermission) return false;
-
-    // 2. Si le lien est lié à un module, vérifier l'abonnement
+    // Check module access first
     if (module) {
         const isPremium = subscription?.plan === 'Premium';
         const isModuleActive = subscription?.activeModules?.includes(module);
-        return isPremium || isModuleActive;
+        if (!isPremium && !isModuleActive) {
+            return false;
+        }
     }
-    
-    // 3. Si pas de module, la permission suffit
+
+    // Check specific permission if required
+    if (permission) {
+        return !!userPermissions[permission];
+    }
+
+    // If no specific permission is required for a link (and module check passed), grant access.
     return true;
   };
   
