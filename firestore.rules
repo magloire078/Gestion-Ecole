@@ -3,44 +3,41 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Fonctions d'aide de base ---
+    // --- Helper Functions ---
     function isAuth() {
       return request.auth != null;
     }
 
     function isSuperAdmin() {
-      // Le custom claim 'superAdmin' est défini via une fonction Cloud pour les administrateurs de la plateforme
       return request.auth != null && request.auth.token.superAdmin == true;
     }
 
     function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
+      return isAuth() && request.auth.uid == userId;
     }
 
     function getSchoolId() {
-      // La source de vérité la plus fiable pour l'ID de l'école est le custom claim.
-      if (request.auth != null && request.auth.token.schoolId != null) {
-        return request.auth.token.schoolId;
-      }
-      // En fallback, on peut lire le document racine de l'utilisateur.
-      let userRootDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
-      if (userRootDoc != null && userRootDoc.data.schoolId != null) {
-        return userRootDoc.data.schoolId;
-      }
-      return null;
+        // Tries to get schoolId from the most reliable sources first.
+        if (request.auth != null && request.auth.token.schoolId != null) {
+            return request.auth.token.schoolId;
+        }
+        let userRootDoc = get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
+        if (userRootDoc != null && userRootDoc.data.schoolId != null) {
+            return userRootDoc.data.schoolId;
+        }
+        return null;
     }
-    
+
     function belongsToSchool(schoolId) {
         return getSchoolId() == schoolId;
     }
 
-    function isDirector() {
-      let schoolId = getSchoolId();
-      return schoolId != null && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    function isDirector(schoolId) {
+      let directorId = get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+      return isAuth() && request.auth.uid == directorId;
     }
 
-    // --- Collections Globales ---
-
+    // --- Global Collections ---
     match /super_admins/{adminId} {
       allow read, write: if isSuperAdmin();
     }
@@ -58,23 +55,18 @@ service cloud.firestore {
       allow create: if isAuth() && isOwner(userId);
     }
     
-    // --- Collections des Écoles ---
-
+    // --- School Collections ---
     match /ecoles/{schoolId} {
       allow get: if isSuperAdmin() || belongsToSchool(schoolId);
       allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
-      allow update: if isSuperAdmin() || isDirector();
-      allow delete: if isSuperAdmin(); // Seul un super admin peut supprimer une école.
+      allow update: if isSuperAdmin() || isDirector(schoolId);
+      allow delete: if isSuperAdmin();
     }
 
-    // --- Règle Générique pour toutes les sous-collections d'une école ---
-    // Cette règle est un "catch-all". Si une règle plus spécifique n'est pas définie ci-dessous,
-    // celle-ci s'applique.
+    // Generic rule for all subcollections within a school
     match /ecoles/{schoolId}/{document=**} {
-      // Le directeur et le super admin ont un accès total.
-      // Les membres de l'école peuvent lire.
       allow read: if isSuperAdmin() || belongsToSchool(schoolId);
-      allow write: if isSuperAdmin() || isDirector();
+      allow write: if isSuperAdmin() || isDirector(schoolId);
     }
   }
 }
