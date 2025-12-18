@@ -149,7 +149,9 @@ service cloud.firestore {
     // --- School Subcollections Rules ---
     // La règle principale pour toutes les sous-collections : l'école doit être active
     match /ecoles/{schoolId}/{subcollection}/{docId} {
-        allow read, write, list, create, update, delete: if isAdmin() || (isSchoolActive(schoolId) && belongsToSchool(schoolId));
+        allow read: if isAdmin() || (isSchoolActive(schoolId) && belongsToSchool(schoolId));
+        allow list: if isAdmin() || (isSchoolActive(schoolId) && belongsToSchool(schoolId));
+        allow write: if isAdmin() || (isSchoolActive(schoolId) && belongsToSchool(schoolId));
     }
     
     match /ecoles/{schoolId}/personnel/{staffId} {
@@ -354,3 +356,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
