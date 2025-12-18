@@ -1,16 +1,6 @@
 
 {
   "indexes": [
-    {
-      "collectionGroup": "utilisateurs",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "uid",
-          "order": "ASCENDING"
-        }
-      ]
-    },
      {
       "collectionGroup": "eleves",
       "queryScope": "COLLECTION_GROUP",
