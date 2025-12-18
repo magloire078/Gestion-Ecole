@@ -9,24 +9,18 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      // Platform-level admin, typically the school creator
       return request.auth.token.superAdmin == true;
     }
-    
-    function isDirector(schoolId) {
-        // Check if the requesting user's UID is the directorId on the school document
-        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
-    }
 
-    function belongsToSchool(schoolId) {
-        // Check if the user's custom claim matches the schoolId
-        return isAuth() && request.auth.token.schoolId == schoolId;
+    // Checks if the requesting user is the director of the given school.
+    function isDirector(schoolId) {
+        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
     // --- Global Collections ---
     match /utilisateurs/{userId} {
       allow read, update: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
-      allow create: if isAuth() && request.auth.uid == userId && !exists(path);
+      allow create: if isAuth() && request.auth.uid == userId;
     }
 
     match /super_admins/{adminId} {
@@ -42,22 +36,23 @@ service cloud.firestore {
         allow read, write: if isSuperAdmin();
     }
 
-
     // --- School-Specific Collections ---
     match /ecoles/{schoolId} {
       // The school director can ALWAYS read their own school document.
-      // This is the most robust way to ensure the app can load school data.
       allow get: if isAuth() && (isSuperAdmin() || resource.data.directorId == request.auth.uid);
       allow list: if isSuperAdmin();
+      // Allow creation by any authenticated user (first step of onboarding)
       allow create: if isAuth(); 
+      // Only the director or a super admin can update/delete the school document
       allow update: if isSuperAdmin() || isDirector(schoolId);
-      allow delete: if isSuperAdmin();
+      allow delete: if isSuperAdmin() || isDirector(schoolId);
     }
-
-    // Generic rule for all subcollections under a school
-    // This is a simpler, more permissive rule to ensure basic functionality.
+    
+    // Generic rule for all subcollections under a school.
+    // The director or a super admin has full access.
+    // Other roles will be denied by default, but this ensures admins can operate.
     match /ecoles/{schoolId}/{path=**} {
-      allow read, write: if isSuperAdmin() || belongsToSchool(schoolId);
+      allow read, write: if isDirector(schoolId) || isSuperAdmin();
     }
   }
 }
