@@ -12,9 +12,20 @@ service cloud.firestore {
       return request.auth.token.superAdmin == true;
     }
 
-    // Checks if the requesting user is the director of the given school.
     function isDirector(schoolId) {
         return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    }
+
+    function getUserRole(schoolId) {
+      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole;
+    }
+
+    function hasPermission(schoolId, permission) {
+      let roleId = getUserRole(schoolId);
+      if (roleId == null) {
+        return false;
+      }
+      return get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(roleId)).data.permissions[permission] == true;
     }
 
     // --- Global Collections ---
@@ -38,21 +49,73 @@ service cloud.firestore {
 
     // --- School-Specific Collections ---
     match /ecoles/{schoolId} {
-      // The school director can ALWAYS read their own school document.
-      allow get: if isAuth() && (isSuperAdmin() || resource.data.directorId == request.auth.uid);
+      allow get: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'viewSchools'));
       allow list: if isSuperAdmin();
-      // Allow creation by any authenticated user (first step of onboarding)
       allow create: if isAuth(); 
-      // Only the director or a super admin can update/delete the school document
-      allow update: if isSuperAdmin() || isDirector(schoolId);
-      allow delete: if isSuperAdmin() || isDirector(schoolId);
-    }
-    
-    // Generic rule for all subcollections under a school.
-    // The director or a super admin has full access.
-    // Other roles will be denied by default, but this ensures admins can operate.
-    match /ecoles/{schoolId}/{path=**} {
-      allow read, write: if isDirector(schoolId) || isSuperAdmin();
+      allow update: if isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageSettings');
+      allow delete: if false; // Soft delete is handled by status update
+
+        // --- School Subcollections ---
+        
+        match /personnel/{staffId} {
+          allow read: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'viewUsers'));
+          allow write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageUsers'));
+        }
+        
+        match /admin_roles/{roleId} {
+          allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId));
+        }
+
+        match /eleves/{studentId} {
+          allow read: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'viewUsers'));
+          allow write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageUsers'));
+
+          // Sub-subcollections of eleves
+          match /{path=**} {
+             allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageUsers'));
+          }
+        }
+
+        match /cycles/{cycleId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageClasses'));
+        }
+        
+        match /niveaux/{niveauId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageClasses'));
+        }
+        
+        match /classes/{classeId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageClasses'));
+        }
+        
+        match /emploi_du_temps/{entryId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageSchedule'));
+        }
+        
+        match /frais_scolarite/{feeId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageBilling'));
+        }
+        
+        match /absences/{absenceId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageAttendance'));
+        }
+        
+        match /comptabilite/{transactionId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageBilling'));
+        }
+        
+        match /bibliotheque/{bookId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageLibrary'));
+        }
+        
+        match /messagerie/{messageId} {
+           allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId) || hasPermission(schoolId, 'manageCommunication'));
+        }
+
+        // Generic fallback for all other subcollections
+        match /{document=**} {
+            allow read, write: if isAuth() && (isSuperAdmin() || isDirector(schoolId));
+        }
     }
   }
 }

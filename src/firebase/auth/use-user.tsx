@@ -76,7 +76,7 @@ export function useUser() {
 
                         // The user's base role is "directeur" of their school
                         if (profileData.role === 'directeur') {
-                           permissions = allPermissions;
+                           permissions = getAllPermissions(true);
                         }
                         
                         const currentUserData = { authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } };
