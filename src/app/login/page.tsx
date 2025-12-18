@@ -216,7 +216,7 @@ export default function LoginPage() {
                 Continuer avec Google
             </Button>
             <Button variant="secondary" className="w-full" asChild>
-                <Link href="/demo">Explorer la version démo</Link>
+                <Link href="/">Retour à l'accueil</Link>
             </Button>
         </div>
       </Card>
