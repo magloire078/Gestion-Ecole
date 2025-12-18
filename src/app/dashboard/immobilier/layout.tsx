@@ -1,7 +1,6 @@
 
 'use client';
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { immobilierNavLinks } from './links';
@@ -10,6 +9,8 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
 
 export default function ImmobilierLayout({
   children,
@@ -18,9 +19,6 @@ export default function ImmobilierLayout({
 }) {
   const pathname = usePathname();
   const { subscription, loading } = useSubscription();
-
-  // Find the correct tab value. If on a sub-path like /reservations/new, it should still select "Reservations".
-  const activeTab = immobilierNavLinks.find(link => pathname.startsWith(link.href))?.href || pathname;
 
   if (loading) {
       return (
@@ -67,18 +65,25 @@ export default function ImmobilierLayout({
                 Gérez l'inventaire, la maintenance et les réservations des locaux.
             </p>
         </div>
-        <Tabs value={activeTab} className="w-full">
-            <TabsList className="overflow-x-auto whitespace-nowrap h-auto justify-start">
-                {immobilierNavLinks.map(link => (
-                    <Link href={link.href} key={link.href} passHref legacyBehavior>
-                        <TabsTrigger value={link.href}>
-                            <link.icon className="mr-2 h-4 w-4" />
-                            {link.label}
-                        </TabsTrigger>
+        <nav className="flex space-x-2 border-b">
+            {immobilierNavLinks.map(link => {
+                const isActive = pathname.startsWith(link.href);
+                return (
+                    <Link 
+                        href={link.href} 
+                        key={link.href}
+                        className={cn(
+                            "inline-flex items-center shrink-0 justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                            "border-b-2 border-transparent",
+                            isActive ? "border-primary text-primary" : "text-muted-foreground hover:text-foreground"
+                        )}
+                    >
+                        <link.icon className="mr-2 h-4 w-4" />
+                        {link.label}
                     </Link>
-                ))}
-            </TabsList>
-        </Tabs>
+                );
+            })}
+        </nav>
         <div className="mt-6">{children}</div>
     </div>
   );
