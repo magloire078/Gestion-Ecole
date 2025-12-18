@@ -1,8 +1,9 @@
 
-import { Building, GanttChartSquare, Wrench, KeyRound, CalendarCheck, DoorOpen } from 'lucide-react';
+import { GanttChartSquare, Wrench, KeyRound, CalendarCheck, DoorOpen, Building2 } from 'lucide-react';
 
 export const immobilierNavLinks = [
   { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare },
+  { href: '/dashboard/immobilier/batiments', label: 'Bâtiments', icon: Building2 },
   { href: '/dashboard/immobilier/salles', label: 'Salles', icon: DoorOpen },
   { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarCheck },
   { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench },
