@@ -102,10 +102,10 @@ export class SchoolCreationService {
       createdAt: serverTimestamp() as any,
       mainLogoUrl: schoolData.mainLogoUrl,
       subscription: {
-        plan: 'Essentiel',
+        plan: 'Premium',
         status: 'trialing',
-        maxStudents: 50,
-        maxCycles: 2,
+        maxStudents: 1000,
+        maxCycles: 10,
       },
       status: 'active',
     };
@@ -119,11 +119,15 @@ export class SchoolCreationService {
     // 3. Create a staff profile for the director
     const staffRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
     
+    // Find the 'Directeur' role ID from our defaults
+    const directorRole = DEFAULT_ROLES.find(r => r.name === 'Directeur');
+    const directorRoleId = directorRole ? directorRole.name.toLowerCase().replace(/ /g, '_') : 'directeur';
+    
     const directorProfileData: staff = {
         uid: schoolData.directorId,
         schoolId: schoolId,
         role: 'directeur',
-        adminRole: 'directeur', // The ID for the director role
+        adminRole: directorRoleId,
         firstName: schoolData.directorFirstName,
         lastName: schoolData.directorLastName,
         displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
