@@ -110,17 +110,6 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
                         </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                 </DropdownMenuSub>
-                {isSuperAdmin && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuGroup>
-                      <DropdownMenuItem onClick={() => router.push('/admin/system/dashboard')}>
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                        <span>Admin Système</span>
-                      </DropdownMenuItem>
-                    </DropdownMenuGroup>
-                  </>
-                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
                 Se déconnecter
@@ -174,17 +163,6 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
               </DropdownMenuPortal>
             </DropdownMenuSub>
         </DropdownMenuGroup>
-        {isSuperAdmin && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => router.push('/admin/system/dashboard')}>
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                <span>Admin Système</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-          </>
-        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           Se déconnecter
