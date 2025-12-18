@@ -48,9 +48,16 @@ export function useUser() {
     const unsubscribeFromAuth = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             try {
-                // Force refresh to get latest claims. Crucial for first login.
-                const tokenResult = await authUser.getIdTokenResult(true); 
-                const claims = tokenResult.claims;
+                let tokenResult = await authUser.getIdTokenResult();
+                let claims = tokenResult.claims;
+
+                // If essential claims are missing, force a refresh.
+                // This typically happens only on the very first login after account creation/claims change.
+                if (!claims.schoolId && !claims.superAdmin) {
+                    tokenResult = await authUser.getIdTokenResult(true); 
+                    claims = tokenResult.claims;
+                }
+                
                 const isSuperAdmin = claims.superAdmin === true;
                 const schoolId = claims.schoolId as string | undefined;
 
@@ -114,3 +121,4 @@ export function useUser() {
 
   return {user, loading};
 }
+
