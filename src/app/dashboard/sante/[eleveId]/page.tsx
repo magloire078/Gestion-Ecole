@@ -59,7 +59,7 @@ export default function HealthRecordPage() {
 function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageMedical;
 
   const [isVaccinFormOpen, setIsVaccinFormOpen] = useState(false);
   const [isConsultationFormOpen, setIsConsultationFormOpen] = useState(false);
@@ -88,8 +88,8 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
 
   const student = studentData as Student | null;
   const dossier = dossierData as DossierMedical | null;
-  const vaccins = useMemo(() => vaccinsData?.map(d => ({id: d.id, ...d.data()} as Vaccination)) || [], [vaccinsData]);
-  const consultations = useMemo(() => consultationsData?.map(d => ({id: d.id, ...d.data()} as Consultation)) || [], [consultationsData]);
+  const vaccins = useMemo(() => vaccinsData?.map(d => ({id: d.id, ...d.data()} as Vaccination & {id: string})) || [], [vaccinsData]);
+  const consultations = useMemo(() => consultationsData?.map(d => ({id: d.id, ...d.data()} as Consultation & {id: string})) || [], [consultationsData]);
 
   const isLoading = studentLoading || dossierLoading || vaccinsLoading || consultationsLoading;
 
