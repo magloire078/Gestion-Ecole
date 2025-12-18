@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from './ui/skeleton';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { SafeImage } from './ui/safe-image';
 import { cn } from '@/lib/utils';
 import { BookOpen } from 'lucide-react';
@@ -17,10 +16,9 @@ const DefaultLogo = ({ compact }: { compact?: boolean }) => (
 
 
 export function Logo({ compact = false }: { compact?: boolean }) {
-  const isMounted = useHydrationFix();
   const { schoolData, loading } = useSchoolData();
 
-  if (!isMounted || loading) {
+  if (loading) {
     return (
        <div className="flex items-center gap-2 text-primary font-semibold">
           <Skeleton className={cn("rounded-lg", compact ? "h-9 w-9" : "h-8 w-8")} />

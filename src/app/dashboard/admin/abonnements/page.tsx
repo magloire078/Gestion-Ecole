@@ -6,12 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { SchoolsTable } from '@/components/admin/schools-table';
 
 
 export default function AdminSubscriptionsPage() {
-    const isMounted = useHydrationFix();
     const { user, loading: userLoading } = useUser();
     const router = useRouter();
 
@@ -25,7 +23,7 @@ export default function AdminSubscriptionsPage() {
 
     const isLoading = userLoading;
 
-    if (!isMounted || isLoading || !isAdmin) {
+    if (isLoading || !isAdmin) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-8 w-1/2" />

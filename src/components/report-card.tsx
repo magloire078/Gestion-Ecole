@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Bot, Printer } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { SafeImage } from './ui/safe-image';
@@ -66,7 +65,6 @@ interface ReportCardProps {
 }
 
 export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades, teachers }) => {
-    const isMounted = useHydrationFix();
     const { toast } = useToast();
     const printRef = useRef<HTMLDivElement>(null);
     const firestore = useFirestore();
@@ -198,7 +196,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     </div>
                 </div>
                 <div className="text-right">
-                    <p>Année scolaire: {isMounted ? `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`: '...'}</p>
+                    <p>Année scolaire: {`${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}</p>
                     <h1 className="text-lg font-bold">BULLETIN DE NOTES</h1>
                     <p>PREMIER TRIMESTRE</p>
                 </div>

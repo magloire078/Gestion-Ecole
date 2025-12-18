@@ -12,7 +12,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -39,7 +38,6 @@ type Activity = {
 // Regular Dashboard Component
 // ====================================================================================
 const RegularDashboard = () => {
-  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId, schoolData, subscription, loading: schoolLoading } = useSchoolData();
 
@@ -336,7 +334,7 @@ const RegularDashboard = () => {
                       <div className="text-sm">
                         <p className="text-muted-foreground">{activity.description}</p>
                         <p className="text-xs text-muted-foreground/70">
-                          {isMounted ? `il y a ${formatDistanceToNow(activity.date, { locale: fr, addSuffix: false })}` : '...'}
+                          {`il y a ${formatDistanceToNow(activity.date, { locale: fr, addSuffix: false })}`}
                         </p>
                       </div>
                     </div>
@@ -610,7 +608,6 @@ const OnboardingDashboard = () => {
 // ====================================================================================
 export default function DashboardPage() {
   const { schoolData, loading } = useSchoolData();
-  const isMounted = useHydrationFix();
   const firestore = useFirestore();
   const { schoolId } = useSchoolData();
 
@@ -659,7 +656,7 @@ export default function DashboardPage() {
     return baseInfoDone && structureDone && staffDone && feesDone;
   }, [schoolData, onboardingData]);
 
-  if (!isMounted || loading || dataLoading) {
+  if (loading || dataLoading) {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-48" />

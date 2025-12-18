@@ -8,14 +8,12 @@ import { Printer, User, Phone, Map, Globe, Building, Hash } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { school as School } from '@/lib/data-types';
-import { useHydrationFix } from '@/hooks/use-hydration-fix';
 
 interface SchoolInfoSheetProps {
   school: School;
 }
 
 export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
-  const isMounted = useHydrationFix();
   const printRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
@@ -57,6 +55,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
   );
 
   const directorFullName = `${school.directorFirstName || ''} ${school.directorLastName || ''}`.trim();
+  const currentYear = new Date().getFullYear();
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -73,7 +72,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
                         </div>
                         <div className="text-right">
                              <h2 className="text-2xl font-bold tracking-tight">FICHE D'INFORMATION</h2>
-                             <p className="text-muted-foreground">Année scolaire: {isMounted ? `${new Date().getFullYear() - 1}-${new Date().getFullYear()}` : '...'}</p>
+                             <p className="text-muted-foreground">Année scolaire: {`${currentYear - 1}-${currentYear}`}</p>
                         </div>
                     </header>
 
@@ -103,7 +102,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
                     </main>
 
                      <footer className="flex justify-end mt-12 text-sm">
-                        Fait à {school.address?.split(',')[0] || '...'}, le {isMounted ? format(new Date(), 'd MMMM yyyy', { locale: fr }) : '...'}
+                        Fait à {school.address?.split(',')[0] || '...'}, le {format(new Date(), 'd MMMM yyyy', { locale: fr })}
                      </footer>
                 </div>
 
