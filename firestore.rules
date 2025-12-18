@@ -2,11 +2,39 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règle temporaire et très permissive pour le débogage.
-    // N'importe quel utilisateur authentifié peut lire et écrire toutes les données.
-    // ATTENTION: Ce n'est pas sécurisé pour un environnement de production.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+  
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    function isSchoolMember(schoolId) {
+      // Check if the user has a schoolId claim matching the schoolId in the path
+      return isAuth() && get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
+    }
+    
+    // Super Admins can do anything
+    match /super_admins/{adminId} {
+      allow read, write: if isAuth() && request.auth.uid == adminId;
+    }
+
+    // System settings can only be read/written by super admins
+    match /system_settings/{settingId} {
+       allow read, write: if exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+    }
+    
+    match /system_logs/{logId} {
+       allow read, write: if exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+    }
+    
+    // Schools can be read by anyone, but only written by super admins
+    match /ecoles/{schoolId} {
+      allow read: if isAuth();
+      allow write: if exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+    }
+
+    // All subcollections of a school
+    match /ecoles/{schoolId}/{document=**} {
+      allow read, write: if isSchoolMember(schoolId);
     }
   }
 }
