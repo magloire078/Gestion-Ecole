@@ -19,7 +19,7 @@ interface PricingSupplements {
 export const TARIFAIRE: Record<string, any> = {
     Essentiel: { prixMensuel: 0, cyclesInclus: 2, elevesInclus: 50, stockageInclus: 1 },
     Pro: { prixMensuel: 49900, cyclesInclus: 5, elevesInclus: 250, stockageInclus: 10 },
-    Premium: { prixMensuel: 99900, cyclesInclus: 10, elevesInclus: 1000, stockageInclus: 50 },
+    Premium: { prixMensuel: 99900, cyclesInclus: Infinity, elevesInclus: Infinity, stockageInclus: Infinity },
 };
 
 const SUPPLEMENTS: PricingSupplements = {
@@ -27,6 +27,17 @@ const SUPPLEMENTS: PricingSupplements = {
     parEleve: 250,
     parGoStockage: 1000,
 }
+
+export const MODULE_PRICES = {
+    sante: 5000,
+    cantine: 10000,
+    transport: 10000,
+    internat: 15000,
+    rh: 15000,
+    immobilier: 10000,
+    activites: 5000,
+} as const;
+
 
 export async function calculateMonthlyUsage(firestore: Firestore, schoolId: string): Promise<UsageData> {
   const currentYear = new Date().getFullYear();
@@ -74,7 +85,8 @@ export async function applyPricing(subscription: School['subscription'], usage: 
   const supplements = {
     cycles: 0,
     students: 0,
-    storage: 0
+    storage: 0,
+    modules: 0,
   };
 
   // Supplément cycles
@@ -95,7 +107,17 @@ export async function applyPricing(subscription: School['subscription'], usage: 
     supplements.storage = Math.ceil(extraStorage) * SUPPLEMENTS.parGoStockage;
   }
 
-  total += supplements.cycles + supplements.students + supplements.storage;
+  // Coût des modules complémentaires (sauf si Premium)
+  if (subscription.plan !== 'Premium' && subscription.activeModules) {
+    for (const moduleId of subscription.activeModules) {
+        if (moduleId in MODULE_PRICES) {
+            supplements.modules += MODULE_PRICES[moduleId as keyof typeof MODULE_PRICES];
+        }
+    }
+  }
+
+
+  total += supplements.cycles + supplements.students + supplements.storage + supplements.modules;
 
   return {
     base: prixMensuel,

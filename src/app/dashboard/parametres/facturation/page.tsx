@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
-import { applyPricing, calculateMonthlyUsage, TARIFAIRE } from '@/lib/billing-calculator';
+import { applyPricing, calculateMonthlyUsage, TARIFAIRE, MODULE_PRICES } from '@/lib/billing-calculator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, TrendingUp, History } from 'lucide-react';
 import Link from 'next/link';
@@ -21,8 +21,8 @@ function UsageProgress({ label, current, max, unit, overageCost, overageUnit }: 
     overageCost: number,
     overageUnit: string,
 }) {
-  const percentage = max > 0 ? (current / max) * 100 : (current > 0 ? 101 : 0);
-  const isOverLimit = current > max;
+  const percentage = max > 0 && max !== Infinity ? (current / max) * 100 : (current > 0 ? 0 : 0);
+  const isOverLimit = max !== Infinity && current > max;
   const extraUsage = current - max;
 
   const formatCurrency = (value: number) => {
@@ -34,7 +34,7 @@ function UsageProgress({ label, current, max, unit, overageCost, overageUnit }: 
       <div className="flex justify-between text-sm">
         <span className="font-medium">{label}</span>
         <span className={isOverLimit ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-muted-foreground'}>
-          {current} / {max} {unit}
+          {current} / {max === Infinity ? '∞' : max} {unit}
           {isOverLimit && ' (dépassement)'}
         </span>
       </div>
@@ -191,6 +191,12 @@ export default function BillingDashboard() {
                 <span>Plan de base:</span>
                 <span>{formatCurrency(projection.base)}</span>
               </div>
+              {projection?.supplements.modules > 0 && (
+                <div className="flex justify-between text-indigo-600 dark:text-indigo-400">
+                  <span>+ Modules complémentaires:</span>
+                  <span>+{formatCurrency(projection.supplements.modules)}</span>
+                </div>
+              )}
               {projection?.supplements.cycles > 0 && (
                 <div className="flex justify-between text-amber-600 dark:text-amber-400">
                   <span>+ Cycles supplémentaires:</span>
