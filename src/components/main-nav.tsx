@@ -70,7 +70,11 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   };
 
   const hasAccess = (plan?: ('Pro' | 'Premium')[], permission?: PermissionKey) => {
-    return true;
+    if (isSuperAdmin) return true;
+
+    const planSufficient = !plan || (subscriptionPlan && plan.includes(subscriptionPlan));
+    
+    return planSufficient && hasPermission(permission);
   };
   
   if (collapsed) {
