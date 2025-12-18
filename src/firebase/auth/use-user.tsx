@@ -31,24 +31,19 @@ export function useUser() {
         return;
     }
     
-    const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
+    const unsubscribeFromAuth = onIdTokenChanged(auth, async (authUser) => {
         if (authUser) {
             const tokenResult = await authUser.getIdTokenResult();
             const claims = tokenResult.claims;
-
             const isAdmin = claims.superAdmin === true;
             const schoolId = claims.schoolId as string | undefined;
-
-            let userProfile: UserProfile | undefined = undefined;
 
             if (schoolId) {
                 const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
                 
-                // Utiliser onSnapshot pour écouter les changements de profil en temps réel
-                onSnapshot(profileRef, (profileSnap) => {
+                const unsubscribeFromProfile = onSnapshot(profileRef, (profileSnap) => {
                     if (profileSnap.exists()) {
                         const profileData = profileSnap.data() as AppUser;
-                        
                         let permissions: Partial<AdminRole['permissions']> = {};
 
                         if (profileData.role === 'directeur' || isAdmin) {
@@ -61,42 +56,43 @@ export function useUser() {
                                 manageSchedule: true, manageAttendance: true,
                             };
                         }
+                        
+                        const currentUserData = { authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin } };
+                        setUser(currentUserData);
 
                         if (profileData.adminRole) {
                             const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
-                            getDoc(roleRef).then(roleSnap => {
-                                if(roleSnap.exists()){
+                            // Switch to onSnapshot for roles as well
+                            const unsubscribeFromRole = onSnapshot(roleRef, (roleSnap) => {
+                                if (roleSnap.exists()) {
                                     const roleData = roleSnap.data() as AdminRole;
-                                    permissions = { ...roleData.permissions, ...permissions };
+                                    const finalPermissions = { ...permissions, ...roleData.permissions };
                                     
-                                    // Update user profile with new permissions
                                     setUser(prevUser => ({
                                         ...prevUser!,
-                                        profile: { ...prevUser!.profile!, ...profileData, permissions, isAdmin }
+                                        profile: { ...prevUser!.profile!, ...profileData, permissions: finalPermissions, isAdmin }
                                     }));
                                 }
                             });
+                             // Return the role unsubscriber when profile unsubscribes
+                            return () => unsubscribeFromRole();
                         }
-
-                        userProfile = { ...profileData, permissions, isAdmin };
-                        setUser({ authUser, uid: authUser.uid, profile: userProfile });
-
                     } else {
                          setUser({ authUser, uid: authUser.uid, profile: undefined });
                     }
                     setLoading(false);
-
                 }, (error) => {
                     console.error("Error fetching user profile with onSnapshot:", error);
                     setLoading(false);
                 });
+                return () => unsubscribeFromProfile();
 
             } else if (isAdmin) {
-                userProfile = {
+                const userProfile: UserProfile = {
                     uid: authUser.uid,
                     email: authUser.email || '',
                     schoolId: '',
-                    role: 'directeur', // Super admin is treated as a platform-wide director
+                    role: 'directeur',
                     firstName: 'Admin',
                     lastName: 'Platform',
                     hireDate: '',
@@ -107,18 +103,16 @@ export function useUser() {
                 setUser({ authUser, uid: authUser.uid, profile: userProfile });
                 setLoading(false);
             } else {
-                 // User is authenticated but has no schoolId claim and is not a super admin
                  setUser({ authUser, uid: authUser.uid, profile: undefined });
                  setLoading(false);
             }
-
         } else {
             setUser(null);
             setLoading(false);
         }
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeFromAuth();
   }, [auth, firestore]);
 
   return {user, loading};
