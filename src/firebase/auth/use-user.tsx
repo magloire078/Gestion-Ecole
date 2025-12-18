@@ -53,10 +53,10 @@ export function useUser() {
 
                 // If essential claims are missing, force a refresh.
                 // This typically happens only on the very first login after account creation/claims change.
-                if (!claims.schoolId && !claims.superAdmin) {
-                    tokenResult = await authUser.getIdTokenResult(true); 
-                    claims = tokenResult.claims;
-                }
+                // if (!claims.schoolId && !claims.superAdmin) {
+                //     tokenResult = await authUser.getIdTokenResult(true); 
+                //     claims = tokenResult.claims;
+                // }
                 
                 const isSuperAdmin = claims.superAdmin === true;
                 const schoolId = claims.schoolId as string | undefined;
