@@ -7,15 +7,20 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useUser } from "@/firebase";
 
 export default function SanteLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-    const { subscription, loading } = useSubscription();
+    const { subscription, loading: subscriptionLoading } = useSubscription();
+    const { user, loading: userLoading } = useUser();
 
-    if (loading) {
+    const isLoading = subscriptionLoading || userLoading;
+    const isSuperAdmin = user?.profile?.isAdmin === true;
+
+    if (isLoading) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-12 w-1/3" />
@@ -25,7 +30,8 @@ export default function SanteLayout({
         );
     }
     
-    if (!subscription || ['Essentiel'].includes(subscription.plan)) {
+    // Si l'utilisateur n'est pas un super admin et que l'abonnement ne le permet pas, on bloque.
+    if (!isSuperAdmin && (!subscription || ['Essentiel'].includes(subscription.plan))) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
                 <Card className="max-w-lg">
