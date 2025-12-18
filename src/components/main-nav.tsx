@@ -16,8 +16,7 @@ type Plan = 'Pro' | 'Premium';
 type Module = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
 
 
-const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean }) => {
-    const pathname = usePathname();
+const NavLink = ({ href, icon: Icon, label, collapsed, pathname }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean, pathname: string }) => {
     const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href));
 
     if (collapsed) {
@@ -59,6 +58,7 @@ const NavLink = ({ href, icon: Icon, label, collapsed }: { href: string; icon: R
 export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const { user } = useUser();
   const { schoolData } = useSchoolData();
+  const pathname = usePathname();
 
   const isSuperAdmin = user?.profile?.isAdmin === true;
   const userPermissions = user?.profile?.permissions || {};
@@ -87,7 +87,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
                {NAV_LINKS.flatMap(group => {
                    if (group.adminOnly && !isSuperAdmin) return [];
                    return group.links.filter(link => hasAccess(link.permission, link.module)).map(link => (
-                       <NavLink key={link.href} {...link} collapsed />
+                       <NavLink key={link.href} {...link} collapsed pathname={pathname} />
                    ));
                })}
           </nav>
@@ -110,7 +110,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               return (
                   <div key={group.group} className="py-1">
                       {visibleLinks.map(link => (
-                          <NavLink key={link.href} {...link} collapsed={false} />
+                          <NavLink key={link.href} {...link} collapsed={false} pathname={pathname} />
                       ))}
                   </div>
               )
@@ -131,7 +131,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
                 <AccordionContent className="pb-1 pl-4">
                     <div className="space-y-1">
                         {visibleLinks.map((link) => (
-                           <NavLink key={link.href} {...link} collapsed={false} />
+                           <NavLink key={link.href} {...link} collapsed={false} pathname={pathname} />
                         ))}
                     </div>
                 </AccordionContent>
