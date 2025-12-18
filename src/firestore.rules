@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -47,7 +48,8 @@ service cloud.firestore {
     
      // User root document is only accessible by the user themselves or a super admin
     match /utilisateurs/{userId} {
-        allow read, write: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+        allow read, update, delete: if isAuth() && (request.auth.uid == userId || isSuperAdmin());
+        allow create: if isAuth() && request.auth.uid == userId;
     }
 
     // All subcollections of a school are accessible by its members.
