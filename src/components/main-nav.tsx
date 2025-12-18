@@ -64,10 +64,10 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
   const pathname = usePathname();
 
   const hasAccess = (permission?: PermissionKey, module?: Module) => {
-    // Super admin and school director have access to everything.
-    if (isSuperAdmin || isDirector) return true;
+    if (isSuperAdmin || isDirector) {
+      return true;
+    }
 
-    // Check module access first for non-admins
     if (module) {
         const isPremium = subscription?.plan === 'Premium';
         const isModuleActive = subscription?.activeModules?.includes(module);
@@ -75,14 +75,8 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
             return false;
         }
     }
-
-    // Check specific permission if required
-    if (permission) {
-        return !!userPermissions[permission];
-    }
-
-    // If no specific permission is required for a link (and module check passed), grant access.
-    return true;
+    
+    return permission ? !!userPermissions[permission] : true;
   };
   
   if (collapsed) {
