@@ -78,19 +78,17 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
       );
   }
 
-  const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasPermission(link.permission) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group || "Principal";
+  const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasPermission(link.permission) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
 
   return (
-    <Accordion type="single" collapsible defaultValue={defaultActiveGroup} className="w-full">
+    <Accordion type="multiple" defaultValue={defaultActiveGroup ? [defaultActiveGroup] : []} className="w-full">
       {NAV_LINKS.map((group) => {
           if (group.adminOnly && !isAdmin) return null;
           
           const visibleLinks = group.links.filter(link => hasPermission(link.permission));
           if (visibleLinks.length === 0) return null;
           
-          const isGroupActive = visibleLinks.some(link => pathname.startsWith(link.href) && link.href !== '/dashboard');
-
-          // Render direct links for Principal and Configuration group
+          // Render direct links for specified groups
           if (group.group === "Principal" || group.group === "Configuration") {
               return (
                   <div key={group.group} className="py-1">
@@ -101,6 +99,7 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
               )
           }
 
+          // Render accordion for other groups
           return (
             <AccordionItem value={group.group} key={group.group} className="border-b-0">
                 <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline [&[data-state=open]>div>svg.chevron]:rotate-180">
