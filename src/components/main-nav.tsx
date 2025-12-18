@@ -67,17 +67,18 @@ export function MainNav({ collapsed = false }: { collapsed?: boolean }) {
   const hasAccess = (permission?: PermissionKey, module?: Module) => {
     if (isSuperAdmin) return true;
 
-    // Check permission
-    const hasPerm = permission ? !!userPermissions[permission] : true;
-    if (!hasPerm) return false;
+    // 1. Vérifier la permission de base
+    const hasPermission = permission ? !!userPermissions[permission] : true;
+    if (!hasPermission) return false;
 
-    // Check module activation
+    // 2. Si le lien est lié à un module, vérifier l'abonnement
     if (module) {
         const isPremium = subscription?.plan === 'Premium';
         const isModuleActive = subscription?.activeModules?.includes(module);
         return isPremium || isModuleActive;
     }
     
+    // 3. Si pas de module, la permission suffit
     return true;
   };
   
