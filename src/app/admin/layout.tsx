@@ -17,10 +17,7 @@ function AdminLayoutContent({
     const { user, loading: userLoading } = useUser();
 
     const isLoading = userLoading;
-
-    // This check is important because useUser() can return a non-admin user
-    // while still loading the final admin claims.
-    const isPotentiallyAdmin = user?.profile?.isAdmin === true || user?.profile?.role === 'directeur';
+    const isSuperAdmin = user?.profile?.isAdmin === true;
 
     if (isLoading) {
         return (
@@ -30,7 +27,7 @@ function AdminLayoutContent({
         );
     }
     
-    if (!isPotentiallyAdmin) {
+    if (!isSuperAdmin) {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-muted text-center p-8">
                 <Card className="max-w-lg">
@@ -42,7 +39,7 @@ function AdminLayoutContent({
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            Vous n'avez pas les permissions nécessaires pour accéder à cette section. Elle est réservée aux administrateurs de la plateforme.
+                            Vous n'avez pas les permissions nécessaires pour accéder à cette section. Elle est réservée aux super-administrateurs de la plateforme.
                         </p>
                     </CardContent>
                     <CardFooter>

@@ -34,7 +34,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     const checkAccess = () => {
       setIsChecking(true);
       
-      const isPublicPage = pathname === '/' || pathname.startsWith('/public');
+      const isPublicPage = pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
       const isAuthPage = pathname === '/login';
       const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
       
@@ -53,8 +53,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         setIsChecking(false);
         return;
       }
+
+      // If user is Super Admin, they have access to everything, no redirects needed.
+      if (user.profile?.isAdmin) {
+        setIsChecking(false);
+        return;
+      }
       
-      // User is authenticated
+      // User is authenticated but not a super admin
       if (!schoolId) {
         // ... but has no school associated
         if (!isOnboardingPage) {
@@ -77,7 +83,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, schoolId, isLoading, pathname, router]);
   
   if (isLoading || isChecking) {
-    if (pathname === '/login' || pathname.startsWith('/public') || pathname === '/') {
+    if (pathname === '/login' || pathname.startsWith('/public') || pathname === '/' || pathname === '/contact') {
       return <>{children}</>;
     }
     return <AuthProtectionLoader />;
