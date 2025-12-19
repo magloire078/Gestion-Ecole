@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -19,7 +20,7 @@ const timeSlots = Array.from({ length: 11 }, (_, i) => `${String(i + 7).padStart
 export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageRooms;
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isFormOpen, setIsFormOpen] = useState(false);
