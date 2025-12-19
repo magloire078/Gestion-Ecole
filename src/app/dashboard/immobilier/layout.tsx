@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
 import { useUser } from '@/firebase';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ImmobilierLayout({
   children,
@@ -29,28 +30,21 @@ export default function ImmobilierLayout({
         <div>
             <h1 className="text-2xl font-bold">Gestion Immobilière</h1>
             <p className="text-muted-foreground">
-                Gérez l'inventaire, la maintenance et les réservations des locaux.
+                Gérez les biens, les locaux et la maintenance de votre établissement.
             </p>
         </div>
-        <nav className="flex space-x-2 border-b">
-            {immobilierNavLinks.map(link => {
-                const isActive = pathname.startsWith(link.href);
-                return (
-                    <Link 
-                        href={link.href} 
-                        key={link.href}
-                        className={cn(
-                            "inline-flex items-center shrink-0 justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-                            "border-b-2 border-transparent",
-                            isActive ? "border-primary text-primary" : "text-muted-foreground hover:text-foreground"
-                        )}
-                    >
-                        <link.icon className="mr-2 h-4 w-4" />
-                        {link.label}
+        <Tabs value={pathname} className="w-full">
+            <TabsList>
+                {immobilierNavLinks.map(link => (
+                    <Link href={link.href} key={link.href} passHref legacyBehavior>
+                        <TabsTrigger value={link.href}>
+                            <link.icon className="mr-2 h-4 w-4" />
+                            {link.label}
+                        </TabsTrigger>
                     </Link>
-                );
-            })}
-        </nav>
+                ))}
+            </TabsList>
+        </Tabs>
         <div className="mt-6">{children}</div>
     </div>
   );

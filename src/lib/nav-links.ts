@@ -34,7 +34,8 @@ import {
     CalendarCheck,
     DoorOpen,
     Users2,
-    BedDouble
+    BedDouble,
+    LayoutGrid
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -75,7 +76,7 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
         { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
-        { href: '/dashboard/immobilier/inventaire', label: 'Immobilier', icon: Building, permission: 'manageInventory', module: 'immobilier' },
+        { href: '/dashboard/immobilier/dashboard', label: 'Immobilier', icon: Building, permission: 'manageInventory', module: 'immobilier' },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
@@ -142,7 +143,9 @@ export const internatNavLinks = [
 ];
 
 export const immobilierNavLinks = [
+  { href: '/dashboard/immobilier/dashboard', label: 'Tableau de bord', icon: LayoutGrid },
   { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare },
+  { href: '/dashboard/immobilier/plan', label: 'Plan & Bâtiments', icon: Building2 },
   { href: '/dashboard/immobilier/salles', label: 'Salles', icon: DoorOpen },
   { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarCheck },
   { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench },
