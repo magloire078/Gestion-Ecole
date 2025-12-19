@@ -9,10 +9,9 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { createCheckoutLink } from '@/services/payment-service';
-import { Loader2, AlertCircle, CreditCard } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard, Smartphone } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
-import placeholderImages from '@/lib/placeholder-images.json';
 import { Separator } from '@/components/ui/separator';
 
 function PaymentPageContent() {
@@ -21,7 +20,7 @@ function PaymentPageContent() {
     const { user, loading: userLoading } = useUser();
     const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
 
-    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'cinetpay' | 'stripe'>(null);
+    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'orangemoney' | 'stripe'>(null);
     const [error, setError] = useState<string | null>(null);
 
     const plan = searchParams.get('plan');
@@ -39,7 +38,7 @@ function PaymentPageContent() {
         }
     }, [plan, price, description, userLoading, schoolLoading, searchParams]);
 
-    const handlePayment = async (provider: 'cinetpay' | 'stripe') => {
+    const handlePayment = async (provider: 'orangemoney' | 'stripe') => {
         setIsLoadingProvider(provider);
         setError(null);
 
@@ -113,13 +112,13 @@ function PaymentPageContent() {
                     <div className="space-y-4">
                         <Button 
                             className="w-full h-16 text-lg" 
-                            onClick={() => handlePayment('cinetpay')}
+                            onClick={() => handlePayment('orangemoney')}
                             disabled={!!isLoadingProvider}
                         >
-                            {isLoadingProvider === 'cinetpay' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                            {isLoadingProvider === 'orangemoney' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                                 <div className="flex items-center justify-center gap-4">
-                                     <Image src={placeholderImages.cinetpayLogo} alt="CinetPay" width={100} height={30} />
-                                     <span>(Mobile Money, Wave...)</span>
+                                     <Smartphone className="h-6 w-6" />
+                                     <span>Payer avec Orange Money</span>
                                 </div>
                             )}
                         </Button>
