@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -5,10 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 import type { admin_role as AdminRole } from '@/lib/data-types';
 import { RoleForm } from '@/components/admin/role-form';
 import { Badge } from '@/components/ui/badge';
@@ -18,15 +21,21 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreHorizontal } from 'lucide-react';
 
 export default function RolesPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
   const canManageSettings = !!user?.profile?.permissions?.manageSettings;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<(AdminRole & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [roleToDelete, setRoleToDelete] = useState<(AdminRole & { id: string }) | null>(null);
+
 
   const rolesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [firestore, schoolId]);
   const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
@@ -43,8 +52,26 @@ export default function RolesPage() {
     setIsFormOpen(false);
     setEditingRole(null);
   };
+
+  const handleOpenDeleteDialog = (role: AdminRole & { id: string }) => {
+    setRoleToDelete(role);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteRole = async () => {
+    if (!schoolId || !roleToDelete) return;
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/admin_roles/${roleToDelete.id}`));
+        toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
+    } catch(e) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le rôle.' });
+        console.error(e);
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setRoleToDelete(null);
+    }
+  }
   
-  // Convert camelCase to Title Case for display
   const formatPermissionName = (name: string) => {
     const result = name.replace(/([A-Z])/g, ' $1');
     return result.charAt(0).toUpperCase() + result.slice(1);
@@ -87,7 +114,22 @@ export default function RolesPage() {
                                         <span className="font-semibold text-lg">{role.name}</span>
                                         <span className="text-sm text-muted-foreground">{role.description}</span>
                                     </div>
-                                    {role.isSystem && <Badge variant="secondary" className="mr-4">Système</Badge>}
+                                    <div className="flex items-center gap-2">
+                                        {role.isSystem && <Badge variant="secondary">Système</Badge>}
+                                        {!role.isSystem && (
+                                            <DropdownMenu onOpenChange={(open) => open && (event?.stopPropagation())}>
+                                                <DropdownMenuTrigger asChild>
+                                                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                     </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => handleOpenForm(role)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(role)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        )}
+                                    </div>
                                 </div>
                             </AccordionTrigger>
                             <AccordionContent>
@@ -97,12 +139,6 @@ export default function RolesPage() {
                                         {Object.entries(role.permissions || {}).map(([key, value]) => value ? (
                                             <Badge key={key} variant="outline" className="font-normal">{formatPermissionName(key)}</Badge>
                                         ) : null)}
-                                    </div>
-                                    <div className="flex justify-end mt-4">
-                                        <Button variant="outline" size="sm" onClick={() => handleOpenForm(role)} disabled={role.isSystem}>
-                                            <Edit className="h-4 w-4 mr-2"/>
-                                            Modifier
-                                        </Button>
                                     </div>
                                 </div>
                             </AccordionContent>
@@ -129,6 +165,21 @@ export default function RolesPage() {
                 />
             </DialogContent>
         </Dialog>
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Cette action est irréversible. Le rôle <strong>"{roleToDelete?.name}"</strong> sera supprimé. Les utilisateurs ayant ce rôle perdront les permissions associées.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteRole} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </>
   );
 }
