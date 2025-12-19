@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -241,5 +242,3 @@ export default function DashboardLayout({
     </AuthGuard>
   );
 }
-
-    

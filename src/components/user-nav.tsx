@@ -79,6 +79,12 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
       <DropdownMenuSeparator />
       <DropdownMenuGroup>
         <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>Profil & Paramètres</DropdownMenuItem>
+         {isSuperAdmin && (
+            <DropdownMenuItem onClick={() => router.push('/admin/system/dashboard')}>
+                <ShieldCheck className="mr-2 h-4 w-4" />
+                <span>Admin Système</span>
+            </DropdownMenuItem>
+         )}
       </DropdownMenuGroup>
        <DropdownMenuSub>
           <DropdownMenuSubTrigger>

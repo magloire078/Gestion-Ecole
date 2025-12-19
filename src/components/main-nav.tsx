@@ -116,7 +116,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
 
           return (
             <AccordionItem value={group.group} key={group.group} className="border-b-0">
-                <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline [&[data-state=open]>div>svg.chevron]:rotate-180">
+                <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline [&[data-state=open]>div>svg]:rotate-180">
                     <div className="flex flex-1 items-center justify-between">
                          <div className="flex items-center gap-x-3">
                             <div className="flex h-6 w-6 items-center justify-center">
@@ -139,5 +139,3 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
     </Accordion>
   );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -38,7 +39,6 @@ import {
 import type { UserProfile } from '@/lib/data-types';
 
 type PermissionKey = keyof NonNullable<UserProfile['permissions']>;
-type Plan = 'Pro' | 'Premium';
 type Module = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
 
 interface NavLink {
@@ -114,6 +114,26 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings, permission: 'manageSettings' },
         { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield, permission: 'manageSettings' },
       ]
+    },
+    {
+        group: "Admin Système",
+        icon: Shield,
+        adminOnly: true,
+        links: [
+            { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
+            { href: '/admin/system/schools', label: 'Écoles', icon: Building },
+            { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
+        ]
+    },
+    {
+        group: "Internat",
+        icon: Bed,
+        links: [
+          { href: '/dashboard/internat/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+          { href: '/dashboard/internat/batiments', label: 'Bâtiments', icon: Building2 },
+          { href: '/dashboard/internat/chambres', label: 'Chambres', icon: BedDouble },
+          { href: '/dashboard/internat/occupants', label: 'Occupants', icon: Users2 },
+        ]
     },
   ];
 

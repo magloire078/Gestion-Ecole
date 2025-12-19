@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -10,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/firebase";
 import { usePathname } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { internatNavLinks } from '@/lib/nav-links';
+import { NAV_LINKS } from '@/lib/nav-links';
 
 export default function InternatLayout({
   children,
@@ -20,6 +21,8 @@ export default function InternatLayout({
     const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
+    
+    const internatNavLinks = NAV_LINKS.find(g => g.group === 'Internat')?.links || [];
 
     const isLoading = subscriptionLoading || userLoading;
 

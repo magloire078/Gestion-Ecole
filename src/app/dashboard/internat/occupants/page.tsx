@@ -13,7 +13,12 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { occupant, student as Student, room as Room } from '@/lib/data-types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { OccupantForm } from '@/components/internat/occupant-form';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -31,7 +36,7 @@ export default function OccupantsPage() {
     const firestore = useFirestore();
     const { user } = useUser();
     const { toast } = useToast();
-    const canManageContent = !!user?.profile?.permissions?.manageContent;
+    const canManageContent = !!user?.profile?.permissions?.manageInternat;
     
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingOccupant, setEditingOccupant] = useState<(occupant & { id: string }) | null>(null);
