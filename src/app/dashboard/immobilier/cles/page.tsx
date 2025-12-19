@@ -14,6 +14,22 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -62,6 +78,9 @@ export default function ClesPage() {
   const [selectedTrousseauForLog, setSelectedTrousseauForLog] = useState<string>('');
   const [selectedStaffForLog, setSelectedStaffForLog] = useState<string>('');
   const [isSavingLog, setIsSavingLog] = useState(false);
+  
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [trousseauToDelete, setTrousseauToDelete] = useState<(KeyTrousseau & { id: string }) | null>(null);
 
   const trousseauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_trousseaux`)) : null, [firestore, schoolId]);
   const { data: trousseauxData, loading: trousseauxLoading } = useCollection(trousseauxQuery);
@@ -155,6 +174,24 @@ export default function ClesPage() {
         setIsSavingLog(false);
     }
   };
+  
+  const handleOpenDeleteDialog = (trousseau: KeyTrousseau & { id: string }) => {
+    setTrousseauToDelete(trousseau);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteTrousseau = async () => {
+    if (!schoolId || !trousseauToDelete) return;
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/cles_trousseaux`, trousseauToDelete.id));
+        toast({ title: 'Trousseau supprimé', description: `Le trousseau "${trousseauToDelete.name}" a été supprimé.`});
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/cles_trousseaux/${trousseauToDelete.id}`, operation: 'delete'}));
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setTrousseauToDelete(null);
+    }
+  };
 
   const isLoading = schoolLoading || trousseauxLoading || logsLoading || staffLoading;
 
@@ -189,7 +226,17 @@ export default function ClesPage() {
                         <TableCell><Badge variant={t.status === 'disponible' ? 'secondary' : 'outline'}>{t.status}</Badge></TableCell>
                         <TableCell>{t.lastHolderId ? (staffMembers.find(s => s.id === t.lastHolderId)?.displayName || 'N/A') : 'N/A'}</TableCell>
                         <TableCell className="text-right">
-                          {canManageContent && <Button variant="ghost" size="icon" onClick={() => handleOpenForm(t)}><Edit className="h-4 w-4"/></Button>}
+                          {canManageContent && (
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenForm(t)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(t)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                         </TableCell>
                     </TableRow>
                 ))}
@@ -290,6 +337,24 @@ export default function ClesPage() {
             </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible. Le trousseau <strong>"{trousseauToDelete?.name}"</strong> sera définitivement supprimé.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteTrousseau} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
+
