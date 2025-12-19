@@ -13,6 +13,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -296,6 +306,8 @@ function CompetitionsPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<(Competition & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [competitionToDelete, setCompetitionToDelete] = useState<(Competition & { id: string }) | null>(null);
 
   const competitionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/competitions`)) : null, [firestore, schoolId]);
   const { data: competitionsData, loading: competitionsLoading } = useCollection(competitionsQuery);
@@ -323,15 +335,22 @@ function CompetitionsPage() {
     }
   };
   
-  const handleDeleteCompetition = async (id: string) => {
-    if (!schoolId) return;
+  const handleOpenDeleteDialog = (competition: Competition & { id: string }) => {
+    setCompetitionToDelete(competition);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteCompetition = async () => {
+    if (!schoolId || !competitionToDelete) return;
     try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/competitions`, id));
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/competitions`, competitionToDelete.id));
       toast({ title: 'Événement supprimé' });
     } catch (e) {
-       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/competitions/${id}`, operation: 'delete' }));
+       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/competitions/${competitionToDelete.id}`, operation: 'delete' }));
+    } finally {
+      setIsDeleteDialogOpen(false);
     }
-  }
+  };
 
   const isLoading = schoolLoading || competitionsLoading;
 
@@ -360,7 +379,7 @@ function CompetitionsPage() {
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild><Link href={`/dashboard/activites/competitions/${comp.id}`}><Users className="mr-2 h-4 w-4"/>Gérer participants</Link></DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleOpenForm(comp)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteCompetition(comp.id)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(comp)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -384,6 +403,23 @@ function CompetitionsPage() {
           <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="competition-form" disabled={form.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible. L'événement <strong>"{competitionToDelete?.name}"</strong> sera définitivement supprimé.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteCompetition} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
