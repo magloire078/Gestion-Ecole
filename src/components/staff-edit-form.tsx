@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -298,8 +297,3 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         </Form>
     );
 }
-
-    
-
-    
-    
