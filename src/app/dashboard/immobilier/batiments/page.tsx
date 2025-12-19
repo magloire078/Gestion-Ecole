@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, User, Building2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, User, Building2, BedDouble } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -22,7 +22,8 @@ import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { building as Building, staff as Staff } from '@/lib/data-types';
+import type { building as Building, staff as Staff, salle as Salle } from '@/lib/data-types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const buildingSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
@@ -39,7 +40,7 @@ export default function BatimentsPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageInternat;
+  const canManageContent = !!user?.profile?.permissions?.manageInventory;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<(Building & { id: string }) | null>(null);
@@ -51,8 +52,23 @@ export default function BatimentsPage() {
   const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   const staffMembers = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as Staff & {id: string})) || [], [staffData]);
-  const staffMap = useMemo(() => new Map(staffMembers.map(s => [s.id, `${s.firstName} ${s.lastName}`])), [staffMembers]);
-
+  
+  const sallesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
+  const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
+  const salles = useMemo(() => sallesData?.map(d => ({ id: d.id, ...d.data() } as Salle & {id: string})) || [], [sallesData]);
+  
+  const sallesByBuilding = useMemo(() => {
+    const grouped: Record<string, (Salle & {id: string})[]> = {};
+    for (const salle of salles) {
+      if (salle.buildingId) {
+        if (!grouped[salle.buildingId]) {
+            grouped[salle.buildingId] = [];
+        }
+        grouped[salle.buildingId].push(salle);
+      }
+    }
+    return grouped;
+  }, [salles]);
 
   const form = useForm<BuildingFormValues>({
     resolver: zodResolver(buildingSchema),
@@ -65,7 +81,6 @@ export default function BatimentsPage() {
 
   const handleFormSubmit = async (values: BuildingFormValues) => {
     if (!schoolId) return;
-
     const dataToSave = { ...values, schoolId };
 
     const promise = editingBuilding
@@ -82,23 +97,24 @@ export default function BatimentsPage() {
     }
   };
   
-  const isLoading = schoolLoading || buildingsLoading || staffLoading;
+  const isLoading = schoolLoading || buildingsLoading || staffLoading || sallesLoading;
 
-  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch (status) {
-      case 'active': return 'secondary';
-      case 'maintenance': return 'outline';
-      case 'full': return 'destructive';
-      default: return 'default';
-    }
-  };
+  if (isLoading) {
+    return (
+        <div className="space-y-4">
+            <Skeleton className="h-10 w-48 mb-4" />
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+        </div>
+    )
+  }
 
   return (
     <>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-xl font-semibold">Gestion des Bâtiments</h2>
-          <p className="text-muted-foreground">Gérez les bâtiments de votre établissement (dortoirs, blocs administratifs, etc.).</p>
+          <h2 className="text-xl font-semibold">Plan de l'Établissement</h2>
+          <p className="text-muted-foreground">Visualisez les bâtiments et les salles qui les composent.</p>
         </div>
         {canManageContent && (
           <Button onClick={() => { setEditingBuilding(null); setIsFormOpen(true); }}>
@@ -108,43 +124,40 @@ export default function BatimentsPage() {
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          [...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
-        ) : buildings.length > 0 ? (
-          buildings.map(building => (
-            <Card key={building.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                    <Building2 className="h-8 w-8 text-primary" />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setEditingBuilding(building); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                </div>
-                <CardTitle>{building.name}</CardTitle>
-                <CardDescription className="capitalize">{building.type}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 space-y-3">
-                <div className="text-sm flex items-center gap-2"><Users className="h-4 w-4" /> <span>Capacité: {building.capacity} personnes</span></div>
-                <div className="text-sm flex items-center gap-2"><User className="h-4 w-4" /> <span>Responsable: {staffMap.get(building.responsableId) || 'N/A'}</span></div>
-              </CardContent>
-              <CardFooter>
-                 <Badge variant={getStatusBadgeVariant(building.status)}>{building.status}</Badge>
-              </CardFooter>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full">
-            <Card className="flex items-center justify-center h-48">
-              <p className="text-muted-foreground">Aucun bâtiment créé.</p>
-            </Card>
-          </div>
-        )}
-      </div>
+      <Accordion type="multiple" defaultValue={buildings.map(b => b.id)} className="w-full space-y-4">
+        {buildings.map(building => (
+          <AccordionItem value={building.id} key={building.id} className="border rounded-lg overflow-hidden">
+             <Card className="border-0 shadow-none">
+                <AccordionTrigger className="p-4 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                   <div className="flex items-center gap-4 text-lg font-semibold">
+                       <Building2 className="h-6 w-6 text-primary" />
+                       {building.name}
+                       <Badge variant="outline" className="font-mono text-xs">{sallesByBuilding[building.id]?.length || 0} salle(s)</Badge>
+                   </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="px-4 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-2">
+                        {(sallesByBuilding[building.id] || []).map(salle => (
+                            <div key={salle.id} className="p-4 border rounded-lg space-y-2">
+                                <div className="font-bold flex items-center gap-2">
+                                  <BedDouble className="h-4 w-4" />
+                                  {salle.name}
+                                </div>
+                                <div className="text-sm text-muted-foreground">Type: {salle.type.replace(/_/g, ' ')}</div>
+                                <div className="text-sm text-muted-foreground">Capacité: {salle.capacity} personnes</div>
+                            </div>
+                        ))}
+                         {(!sallesByBuilding[building.id] || sallesByBuilding[building.id].length === 0) && (
+                            <p className="text-muted-foreground text-sm p-4 col-span-full text-center">Aucune salle dans ce bâtiment.</p>
+                        )}
+                    </div>
+                  </div>
+                </AccordionContent>
+             </Card>
+          </AccordionItem>
+        ))}
+      </Accordion>
       
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
