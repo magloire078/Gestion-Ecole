@@ -19,7 +19,7 @@ import { RoomForm } from './room-form';
 export function RoomManagement({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageInternat;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<(room & { id: string }) | null>(null);
