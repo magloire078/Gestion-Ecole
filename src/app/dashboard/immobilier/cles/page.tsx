@@ -61,6 +61,7 @@ export default function ClesPage() {
   const [logType, setLogType] = useState<'emprunt' | 'retour'>('emprunt');
   const [selectedTrousseauForLog, setSelectedTrousseauForLog] = useState<string>('');
   const [selectedStaffForLog, setSelectedStaffForLog] = useState<string>('');
+  const [isSavingLog, setIsSavingLog] = useState(false);
 
   const trousseauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_trousseaux`)) : null, [firestore, schoolId]);
   const { data: trousseauxData, loading: trousseauxLoading } = useCollection(trousseauxQuery);
@@ -130,6 +131,7 @@ export default function ClesPage() {
       toast({ variant: 'destructive', title: "Champs manquants"});
       return;
     }
+    setIsSavingLog(true);
     const logData: Omit<KeyLog, 'id'> = {
         trousseauId: selectedTrousseauForLog,
         staffId: selectedStaffForLog,
@@ -149,6 +151,8 @@ export default function ClesPage() {
         setIsLogFormOpen(false);
     } catch (e) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/cles_log`, operation: 'create', requestResourceData: logData }));
+    } finally {
+        setIsSavingLog(false);
     }
   };
 
