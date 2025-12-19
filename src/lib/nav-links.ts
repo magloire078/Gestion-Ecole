@@ -125,16 +125,6 @@ export const NAV_LINKS: NavGroup[] = [
             { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
         ]
     },
-    {
-        group: "Internat",
-        icon: Bed,
-        links: [
-          { href: '/dashboard/internat/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
-          { href: '/dashboard/internat/batiments', label: 'Bâtiments', icon: Building2 },
-          { href: '/dashboard/internat/chambres', label: 'Chambres', icon: BedDouble },
-          { href: '/dashboard/internat/occupants', label: 'Occupants', icon: Users2 },
-        ]
-    },
   ];
 
 export const transportNavLinks = [
