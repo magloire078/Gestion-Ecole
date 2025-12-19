@@ -1,3 +1,4 @@
+
 'use client';
 
 import {useState, useEffect} from 'react';
@@ -5,6 +6,7 @@ import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
 import type { staff as AppUser, admin_role as AdminRole, school as School, user_root } from '@/lib/data-types';
 import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 export interface UserProfile extends AppUser {
     permissions?: Partial<AdminRole['permissions']>;
@@ -69,7 +71,7 @@ export function useUser() {
                      isAdmin: true,
                  }
                  setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
-                 setSchoolId(null);
+                 setSchoolId(null); // Super admins aren't tied to one school
                  setIsDirector(false);
                  setLoading(false);
                  return;
@@ -106,17 +108,28 @@ export function useUser() {
                 setIsDirector(isDirectorFlag);
                 
                 let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
-
+                
+                // If user is director but has no profile, create one.
                 if (isDirectorFlag && !profileData) {
-                    const nameParts = authUser.displayName?.split(' ') || [];
+                    const nameParts = authUser.displayName?.split(' ') || ['Nouveau', 'Directeur'];
+                    const firstName = nameParts[0];
+                    const lastName = nameParts.slice(1).join(' ');
+                    const displayName = authUser.displayName || `${firstName} ${lastName}`;
+
                     profileData = {
-                        uid: authUser.uid, schoolId: effectiveSchoolId!, role: 'directeur',
-                        firstName: nameParts[0] || 'Directeur', lastName: nameParts.slice(1).join(' ') || 'Principal',
-                        displayName: authUser.displayName || `${nameParts[0]} ${nameParts.slice(1).join(' ')}`,
-                        email: authUser.email || '', hireDate: format(new Date(), 'yyyy-MM-dd'),
-                        baseSalary: 0, status: 'Actif', photoURL: authUser.photoURL || ''
+                        uid: authUser.uid,
+                        schoolId: effectiveSchoolId!,
+                        role: 'directeur',
+                        firstName,
+                        lastName,
+                        displayName,
+                        email: authUser.email || '',
+                        hireDate: format(new Date(), 'yyyy-MM-dd'),
+                        baseSalary: 0,
+                        status: 'Actif',
+                        photoURL: authUser.photoURL || '',
                     };
-                    await setDoc(profileRef, profileData);
+                    await setDoc(profileRef, profileData, { merge: true });
                 }
 
                 if (profileData) {
@@ -130,7 +143,7 @@ export function useUser() {
                         const roleRef = doc(firestore, `ecoles/${effectiveSchoolId!}/admin_roles`, profileData.adminRole);
                         const roleSnap = await getDoc(roleRef).catch(() => null);
                         if (roleSnap && roleSnap.exists()) {
-                            permissions = { ...roleSnap.data().permissions, ...permissions };
+                            permissions = { ...permissions, ...roleSnap.data().permissions };
                         }
                     }
                     setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });

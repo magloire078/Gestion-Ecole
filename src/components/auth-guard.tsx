@@ -60,16 +60,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   }, [user, schoolId, loading, pathname, router]);
   
-  // Affiche un loader uniquement pour les pages protégées pendant la vérification
-  if (loading && !['/login', '/', '/contact'].includes(pathname) && !pathname.startsWith('/public')) {
+  // Affiche un loader pour toutes les pages protégées pendant la vérification initiale
+  if (loading && !pathname.startsWith('/login') && !pathname.startsWith('/')) {
       return <AuthProtectionLoader />;
   }
 
-  // Si l'utilisateur est non-nul mais que schoolId est encore en cours de détermination,
-  // et qu'on est sur une page protégée, on peut vouloir attendre.
-  if (user && schoolId === undefined && !pathname.startsWith('/dashboard/onboarding')) {
-      // Potentiellement afficher un loader ici aussi si on voit des flashs de contenu non désiré
+  // Si l'utilisateur est connecté mais que schoolId n'est pas encore défini (cas de transition),
+  // et que la page n'est pas celle d'onboarding, on affiche un loader pour éviter les flashs.
+  if (user && schoolId === null && !pathname.startsWith('/dashboard/onboarding')) {
+      return <AuthProtectionLoader />;
   }
+
 
   return <>{children}</>;
 }
