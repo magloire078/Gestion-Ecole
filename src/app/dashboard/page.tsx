@@ -546,6 +546,7 @@ const OnboardingDashboard = () => {
             <QuickActionCard icon={<BookOpen />} title="Ajouter des livres" description="Gestion de la bibliothèque" color="orange" href="/dashboard/bibliotheque"/>
           </div>
         </Card>
+
       </div>
 
       <div className="mt-8 flex justify-end">
