@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -60,7 +61,7 @@ service cloud.firestore {
 
     // Règle générale pour toutes les sous-collections d'une école
     match /ecoles/{schoolId}/{document=**} {
-      // Un utilisateur authentifié peut créer son propre profil de personnel lors de l'inscription
+      // Un utilisateur authentifié peut créer des documents lors de l'inscription/création d'école.
       allow create: if isAuth();
       // Les membres de l'école ou un super admin ont un accès complet en lecture/écriture
       allow read, write: if isSchoolMember(schoolId) || isSuperAdmin();
