@@ -43,7 +43,7 @@ const paymentSchema = z.object({
   paymentDescription: z.string().min(1, "La description est requise."),
   paymentAmount: z.coerce.number().positive("Le montant doit être un nombre positif."),
   payerFirstName: z.string().min(1, "Le prénom du payeur est requis."),
-  payerLastName: z.string().min(1, "Le nom de famille du payeur est requis."),
+  payerLastName: z.string().min(1, "Le nom de la personne qui a effectué le paiement est requis."),
   payerContact: z.string().optional(),
   paymentMethod: z.string().min(1, "Le mode de paiement est requis."),
 });
@@ -265,10 +265,10 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
 
             {/* Right Column */}
             <div className="lg:col-span-3 flex flex-col gap-6">
-                <Tabs defaultValue="grades">
+                <Tabs defaultValue="payments">
                     <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="grades">Résultats</TabsTrigger>
                         <TabsTrigger value="payments">Paiements</TabsTrigger>
+                        <TabsTrigger value="grades">Résultats</TabsTrigger>
                         <TabsTrigger value="info">Informations</TabsTrigger>
                     </TabsList>
                     
@@ -456,7 +456,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
     </div>
     
     <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Modifier l'Élève</DialogTitle>
             <DialogDescription>

@@ -96,7 +96,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
     const newAmountDue = Math.max(0, newTuitionFee - currentDiscount);
     form.setValue('amountDue', newAmountDue, { shouldValidate: true });
 
-  }, [watchedClassId, watchedDiscountAmount, classes, fees, niveaux, form.setValue]);
+  }, [watchedClassId, watchedDiscountAmount, classes, fees, niveaux, form]);
 
 
   const handleEditStudent = async (values: StudentFormValues) => {
