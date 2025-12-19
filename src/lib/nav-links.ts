@@ -75,7 +75,7 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
         { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
-        { href: '/dashboard/immobilier', label: 'Immobilier', icon: Building, permission: 'manageInventory', module: 'immobilier' },
+        { href: '/dashboard/immobilier/inventaire', label: 'Immobilier', icon: Building, permission: 'manageInventory', module: 'immobilier' },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
