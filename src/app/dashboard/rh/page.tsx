@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2 } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -218,7 +218,7 @@ export default function HRPage() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>
-                            <span className="flex items-center gap-2">Supprimer</span>
+                            <span className="flex items-center gap-2"><Trash2 className="h-4 w-4" />Supprimer</span>
                           </DropdownMenuItem>
                         </>
                       )}
