@@ -207,7 +207,7 @@ export default function SallesPage() {
             </form>
           </Form>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+            <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
             <Button type="submit" form="salle-form" disabled={form.formState.isSubmitting}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
