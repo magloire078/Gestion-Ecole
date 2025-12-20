@@ -2,114 +2,25 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ========== UTILITY FUNCTIONS ==========
+    // RÈGLES ULTRA MINIMALES POUR TEST
     function isAuth() {
       return request.auth != null;
     }
-
-    function isSuperAdmin() {
-      return isAuth() && request.auth.token.superAdmin == true;
-    }
     
-    function isSchoolMember(schoolId) {
-        // Vérifier via claims OU via directeur dans BD
-        return isAuth() && (
-          request.auth.token.schoolId == schoolId ||
-          get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
-        );
-    }
-    
-    function isUser(userId) {
-        return isAuth() && request.auth.uid == userId;
-    }
-    
-    function isDirector(schoolId) {
-        // Vérifier via BD directement
-        let schoolData = get(/databases/$(database)/documents/ecoles/$(schoolId)).data;
-        return isAuth() && request.auth.uid == schoolData.directorId;
-    }
-    
-    // Fonction pour création d'école
-    function canCreateSchool() {
-        return isAuth() && request.resource.data.directorId == request.auth.uid;
-    }
-    
-    // Fonction pour mettre à jour schoolId pendant onboarding
-    function canUpdateUserSchoolId(userId) {
-        return isAuth() && (
-          // Cas 1: L'utilisateur met à jour son propre document
-          isUser(userId) ||
-          // Cas 2: Pendant la création d'école, on peut ajouter le schoolId
-          (request.resource.data.keys().hasOnly(['schoolId']) && 
-           request.resource.data.schoolId != null)
-        );
-    }
-
-    // ========== GLOBAL RULES ==========
-
-    // Les Super Admins ont un accès total.
-    match /{path=**} {
-      allow read, write: if isSuperAdmin();
-    }
-
-    // ========== SCHOOL-CREATION RULES ==========
-
-    // Règle cruciale : création d'école
     match /ecoles/{schoolId} {
-      // Création : vérifier que l'utilisateur se désigne comme directeur
-      allow create: if canCreateSchool();
-      
-      // Lecture : authentifié + (membre OU directeur selon BD)
-      allow read: if isAuth() && (
-        isSchoolMember(schoolId) ||
-        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
-      );
-      
-      // Mise à jour : seulement le directeur
-      allow update: if isDirector(schoolId);
-      
-      // Pas de suppression directe
-      allow delete: if false;
+      allow create, read, update, delete: if isAuth();
     }
-
-    // Règle pour la création du profil du directeur
+    
     match /ecoles/{schoolId}/personnel/{staffId} {
-        // SIMPLIFIÉ : permettre si l'utilisateur est le directeur qu'il crée
-        allow create: if isAuth() && 
-                      staffId == request.auth.uid && 
-                      request.resource.data.role == 'directeur';
-        
-        // Après création
-        allow get, list: if isSchoolMember(schoolId);
-        allow update: if isDirector(schoolId) || isUser(staffId);
-        allow delete: if isDirector(schoolId);
+      allow create, read, update, delete: if isAuth();
     }
     
-    // ========== USER-SPECIFIC RULES ==========
-    
-    // Document utilisateur - RÈGLE CORRIGÉE
     match /utilisateurs/{userId} {
-      allow read: if isUser(userId) || isSuperAdmin();
-      
-      // CRÉATION : n'importe quel utilisateur authentifié peut créer son document
-      allow create: if isAuth() && userId == request.auth.uid;
-      
-      // MISE À JOUR : permet d'ajouter schoolId pendant la création d'école
-      allow update: if canUpdateUserSchoolId(userId);
+      allow create, read, write: if isAuth();
     }
-    
-    // ========== SYSTEM LOGS ==========
     
     match /system_logs/{logId} {
-      allow create: if isAuth();
-      allow read: if isAuth() && (isSuperAdmin() || request.auth.token.isDirector == true);
-    }
-
-    // ========== GENERIC SCHOOL DATA RULES ==========
-    
-    match /ecoles/{schoolId}/{collection}/{document=**} {
-      allow read, write: if isSchoolMember(schoolId);
+      allow create, read: if isAuth();
     }
   }
 }
