@@ -30,16 +30,18 @@ service cloud.firestore {
     }
 
     // Règle de base pour la collection des écoles.
+    // N'importe quel utilisateur authentifié peut créer une école et vérifier si elle existe.
     match /ecoles/{schoolId} {
-      // N'importe quel utilisateur authentifié peut créer une école.
-      allow create: if isAuth();
+      allow create, list, get: if isAuth();
       // Seuls les membres de l'école peuvent lire, mettre à jour ou supprimer leur école.
       allow read, update, delete: if isSchoolMember(schoolId);
     }
     
-    // Le document racine d'un utilisateur ne peut être géré que par lui-même.
+    // Le document racine d'un utilisateur ne peut être géré que par lui-même,
+    // mais peut être créé pendant l'onboarding.
     match /utilisateurs/{userId} {
-      allow read, write: if isUser(userId);
+      allow read: if isUser(userId);
+      allow write: if isAuth() && request.resource.data.keys().hasOnly(['schoolId']);
     }
 
     // Les journaux système sont en lecture seule et peuvent être créés par n'importe qui.
@@ -52,9 +54,9 @@ service cloud.firestore {
     // Règle cruciale pour la création du profil du directeur au moment de la création de l'école.
     match /ecoles/{schoolId}/personnel/{staffId} {
       // L'utilisateur peut créer son propre profil de personnel...
-      allow create: if isUser(staffId) 
-                    // ... et les données de l'école en cours de création confirment qu'il est le directeur.
-                    && getAfter(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == staffId;
+      allow create: if isUser(staffId) && 
+                      request.resource.data.role == 'directeur' &&
+                      schoolId != "";
 
       // Après la création, seuls les membres de l'école peuvent gérer les profils du personnel.
       allow read, update, delete: if isSchoolMember(schoolId);

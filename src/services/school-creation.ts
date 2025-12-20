@@ -111,7 +111,7 @@ export class SchoolCreationService {
       displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
       photoURL: '',
       schoolId: schoolId,
-      role: 'directeur',
+      role: 'directeur', // This is crucial for the new security rule
       firstName: schoolData.directorFirstName,
       lastName: schoolData.directorLastName,
       hireDate: new Date().toISOString().split('T')[0],
