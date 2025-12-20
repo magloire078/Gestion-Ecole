@@ -19,7 +19,7 @@ import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
-import { SafeImage } from './ui/safe-image';
+import { SafeImage } from '@/components/ui/safe-image';
 
 export default function StaffProfilePage() {
     const params = useParams();

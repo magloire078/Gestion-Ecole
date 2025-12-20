@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -171,7 +172,7 @@ export function PayslipPreview({ details }: { details: PayslipDetails }) {
       const printWindow = window.open('', '', 'height=800,width=1000');
       if (printWindow) {
         printWindow.document.write('<html><head><title>Bulletin de Paie</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/_next/static/css/app/layout.css" type="text/css" media="all">');
+        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="all">');
         printWindow.document.write(`
             <style>
               body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
