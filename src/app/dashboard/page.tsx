@@ -576,6 +576,7 @@ export default function DashboardPage() {
     }
 
     const fetchOnboardingData = async () => {
+      setLoading(true);
       try {
         const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
           getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/classes`))),
@@ -601,9 +602,8 @@ export default function DashboardPage() {
     fetchOnboardingData();
   }, [schoolId, firestore, schoolData, schoolLoading, calculateOnboardingStatus]);
 
-  // Afficher un loader pendant le chargement
-  if (schoolLoading || loading || onboardingStatus === null) {
-    return (
+  if (loading) {
+     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -619,11 +619,24 @@ export default function DashboardPage() {
     );
   }
 
-  // Si l'école n'est pas configurée, afficher l'onboarding
-  if (!onboardingStatus.isSetupComplete) {
+  if (onboardingStatus && !onboardingStatus.isSetupComplete) {
     return <OnboardingDashboard onboardingStatus={onboardingStatus} />;
   }
 
-  // Sinon, afficher le dashboard régulier
-  return <RegularDashboard />;
+  // Affiche le dashboard normal uniquement si la configuration est complète
+  if (onboardingStatus && onboardingStatus.isSetupComplete) {
+      return <RegularDashboard />;
+  }
+  
+  // Par défaut (ou en cas d'erreur de chargement), on peut afficher un loader ou un message
+  return (
+      <div className="p-6 space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-32 w-full" />
+          ))}
+        </div>
+      </div>
+  );
 }
