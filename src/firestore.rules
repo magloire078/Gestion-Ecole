@@ -80,7 +80,8 @@ service cloud.firestore {
     }
     
     match /system_logs/{logId} {
-       allow create: if isSuperAdmin();
+       // Autoriser tout utilisateur authentifié à écrire un log (ex: création d'école)
+       allow create: if isAuth();
        allow read: if isAuth();
     }
     
