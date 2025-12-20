@@ -415,8 +415,8 @@ function CompetitionsPage() {
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild><Link href={`/dashboard/activites/competitions/${comp.id}`}><Users className="mr-2 h-4 w-4"/>Gérer participants</Link></DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenForm(comp)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(comp)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                            {canManageActivities && <DropdownMenuItem onClick={() => handleOpenForm(comp)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>}
+                            {canManageActivities && <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(comp)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>

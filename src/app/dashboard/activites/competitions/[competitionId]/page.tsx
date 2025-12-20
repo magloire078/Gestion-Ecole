@@ -132,20 +132,22 @@ export default function CompetitionParticipantsPage() {
               </div>
             )}
             <Table>
-              <TableHeader><TableRow><TableHead>Élève</TableHead><TableHead>Classement / Résultat</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+              <TableHeader><TableRow><TableHead>Élève</TableHead><TableHead>Classement / Résultat</TableHead>{canManageActivities && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
               <TableBody>
                 {participants.length > 0 ? (
                     participants.map(p => (
                         <TableRow key={p.id}>
                             <TableCell className="font-medium">{p.studentName}</TableCell>
                             <TableCell>{p.rank}</TableCell>
-                            <TableCell className="text-right">
-                                {canManageActivities && <Button variant="ghost" size="icon" onClick={() => handleDeleteParticipant(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>}
-                            </TableCell>
+                            {canManageActivities && (
+                              <TableCell className="text-right">
+                                <Button variant="ghost" size="icon" onClick={() => handleDeleteParticipant(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                              </TableCell>
+                            )}
                         </TableRow>
                     ))
                 ) : (
-                    <TableRow><TableCell colSpan={3} className="h-24 text-center">Aucun participant pour le moment.</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={canManageActivities ? 3 : 2} className="h-24 text-center">Aucun participant pour le moment.</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>

@@ -1,5 +1,4 @@
 
-
 import {
     LayoutDashboard,
     Users,
@@ -34,7 +33,6 @@ interface NavLink {
     label: string;
     icon: React.ElementType;
     permission?: PermissionKey;
-    plans?: readonly Plan[];
     module?: Module;
 }
 
@@ -114,4 +112,3 @@ export const NAV_LINKS: NavGroup[] = [
         ]
     },
   ];
-    

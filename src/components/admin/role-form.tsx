@@ -35,6 +35,7 @@ const allPermissionsList = [
     { id: 'manageActivities', label: 'Gérer Activités', desc: 'Gérer les activités parascolaires.' },
     { id: 'manageMedical', label: 'Gérer Dossiers Médicaux', desc: 'Accès et modification des dossiers de santé.' },
     { id: 'manageSettings', label: 'Gérer Paramètres École', desc: 'Modifier les paramètres de l\'établissement.' },
+    { id: 'manageSystem', label: 'Gérer le Système', desc: 'Accès aux paramètres globaux (super-admin).' },
 ] as const;
 
 type PermissionId = typeof allPermissionsList[number]['id'];
