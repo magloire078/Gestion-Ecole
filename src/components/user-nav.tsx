@@ -26,11 +26,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "./ui/skeleton";
 import { cn } from "@/lib/utils";
 import { SafeImage } from "./ui/safe-image";
+import { useSchoolData } from "@/hooks/use-school-data";
+import { Badge } from "@/components/ui/badge";
 
 export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
   const { user, loading: userLoading } = useUser();
+  const { subscription } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
 
@@ -64,12 +67,33 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   
   const userRole = isSuperAdmin ? 'Super Administrateur' : user?.profile?.role;
   const fallback = displayName ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'U';
+
+  const getPlanBadgeClasses = (plan?: 'Essentiel' | 'Pro' | 'Premium') => {
+    switch (plan) {
+      case 'Essentiel':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800';
+      case 'Pro':
+        return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
+      case 'Premium':
+        return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   
   const UserMenuContent = () => (
     <>
       <DropdownMenuLabel className="font-normal">
         <div className="flex flex-col space-y-1">
-          <p className="text-sm font-medium leading-none">{displayName}</p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium leading-none">{displayName}</p>
+             {subscription?.plan && !isSuperAdmin && (
+              <Badge className={cn("text-xs", getPlanBadgeClasses(subscription.plan))}>
+                {subscription.plan}
+              </Badge>
+            )}
+          </div>
           {userRole && <p className="text-xs leading-none text-muted-foreground capitalize pt-1">{userRole}</p>}
           <p className="text-xs leading-none text-muted-foreground pt-1">
             {user?.authUser?.email}
