@@ -24,11 +24,11 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
     }
     
-    // Check if the user is creating their own staff profile while also being the director of the new school
-    function isCreatingOwnProfileAsDirector(schoolId, staffId) {
-      let isDirectorOfNewSchool = request.resource.data.directorId == request.auth.uid;
-      let isOwnProfile = request.auth.uid == staffId;
-      return isDirectorOfNewSchool && isOwnProfile;
+    function isCreatingOwnProfileAsDirector(schoolId) {
+      // Allow if the incoming school document has a directorId matching the user,
+      // and the user is creating their own staff profile.
+      let schoolData = request.resource.data;
+      return schoolData.directorId == request.auth.uid;
     }
     
     match /utilisateurs/{userId} {
@@ -56,9 +56,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/personnel/{staffId} {
-       // Allow creating a profile if it's the director creating their own profile during school setup
-       allow create: if isCreatingOwnProfileAsDirector(schoolId, staffId) || isDirector(schoolId);
-       // Allow general read/write for school members or super admins for existing documents
+       allow create: if (isDirector(schoolId)) || (request.auth.uid == staffId && isCreatingOwnProfileAsDirector(schoolId));
        allow read, update, delete: if isSchoolMember(schoolId) || isSuperAdmin();
     }
 

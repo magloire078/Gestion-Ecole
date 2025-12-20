@@ -132,9 +132,11 @@ export class SchoolCreationService {
 
     try {
         await batch.commit();
+        // This is a client-side simulation of a server-side claim setting
         await setDirectorClaims(schoolData.directorId, schoolId);
         return { schoolId, schoolCode };
     } catch (e) {
+        console.error("Batch commit failed", e);
         const permissionError = new FirestorePermissionError({
             path: `[BATCH WRITE] /ecoles/${schoolId}`,
             operation: 'create',
