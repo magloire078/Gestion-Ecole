@@ -10,11 +10,12 @@ import {
   LayoutGrid,
   List,
   Plus,
-  Edit
+  Edit,
+  Trash2
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, addDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, query, addDoc, doc, setDoc, deleteDoc, getDocs, where, limit } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClassesGridView } from '@/components/classes/classes-grid-view';
@@ -22,12 +23,13 @@ import { ClassesListView } from '@/components/classes/classes-list-view';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import type { cycle as Cycle, niveau as Niveau } from '@/lib/data-types';
+import type { cycle as Cycle, niveau as Niveau, classe as Classe } from '@/lib/data-types';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -73,6 +75,9 @@ export default function StructurePage() {
   const [isNiveauFormOpen, setIsNiveauFormOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<Cycle & {id: string} | null>(null);
   const [editingNiveau, setEditingNiveau] = useState<Niveau & {id: string} | null>(null);
+  
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{type: 'cycle' | 'niveau', data: any} | null>(null);
 
   // --- Data Fetching ---
   const cyclesQuery = useMemoFirebase(() => 
@@ -85,8 +90,14 @@ export default function StructurePage() {
     [schoolId, firestore]
   );
   
+  const classesQuery = useMemoFirebase(() => 
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, 
+    [schoolId, firestore]
+  );
+
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+  const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
 
   // Transform data
   const cycles: (Cycle & {id: string})[] = useMemo(() => 
@@ -97,6 +108,11 @@ export default function StructurePage() {
   const niveaux: (Niveau & {id: string})[] = useMemo(() => 
     niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & {id: string})) || [], 
     [niveauxData]
+  );
+
+  const classes: (Classe & {id: string})[] = useMemo(() => 
+    classesData?.map(d => ({ id: d.id, ...d.data() } as Classe & {id: string})) || [], 
+    [classesData]
   );
 
   const niveauxByCycle = useMemo(() => {
@@ -153,7 +169,7 @@ export default function StructurePage() {
   }, [niveauForm.watch('name'), niveauxOptionsForSelectedCycle, niveauForm]);
 
 
-  const isLoading = schoolLoading || cyclesLoading || niveauxLoading || userLoading;
+  const isLoading = schoolLoading || cyclesLoading || niveauxLoading || classesLoading || userLoading;
   
   const handleAddCycleSubmit = (values: CycleFormValues) => {
     if (!schoolId) {
@@ -223,6 +239,33 @@ export default function StructurePage() {
       setIsNiveauFormOpen(true);
   }
 
+   const handleDelete = async () => {
+    if (!schoolId || !itemToDelete) return;
+
+    if (itemToDelete.type === 'cycle') {
+        const hasNiveaux = niveauxByCycle[itemToDelete.data.id]?.length > 0;
+        if (hasNiveaux) {
+            toast({ variant: 'destructive', title: 'Action impossible', description: 'Veuillez d\'abord supprimer tous les niveaux de ce cycle.' });
+            setIsDeleteDialogOpen(false);
+            return;
+        }
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/cycles`, itemToDelete.data.id));
+        toast({ title: 'Cycle supprimé' });
+    } else if (itemToDelete.type === 'niveau') {
+        const hasClasses = classes.some(c => c.niveauId === itemToDelete.data.id);
+        if (hasClasses) {
+            toast({ variant: 'destructive', title: 'Action impossible', description: 'Des classes sont encore rattachées à ce niveau. Veuillez les supprimer ou les déplacer d\'abord.' });
+            setIsDeleteDialogOpen(false);
+            return;
+        }
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/niveaux`, itemToDelete.data.id));
+        toast({ title: 'Niveau supprimé' });
+    }
+    
+    setIsDeleteDialogOpen(false);
+    setItemToDelete(null);
+  };
+
   return (
     <>
     <div className="space-y-6">
@@ -257,6 +300,7 @@ export default function StructurePage() {
                    {isDirectorOrAdmin && (
                     <div className="flex items-center gap-2 pl-4">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setItemToDelete({type: 'cycle', data: cycle }); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                     </div>
                    )}
                </div>
@@ -275,7 +319,8 @@ export default function StructurePage() {
                                     <TableCell className="text-right">
                                          {isDirectorOrAdmin && (
                                             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenNiveauForm(niveau)}><Edit className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setItemToDelete({type: 'niveau', data: niveau}); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                             </div>
                                         )}
                                     </TableCell>
@@ -393,6 +438,23 @@ export default function StructurePage() {
         <DialogFooter><Button variant="outline" onClick={() => setIsNiveauFormOpen(false)}>Annuler</Button><Button type="submit" form="niveau-form" disabled={niveauForm.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    L'élément <strong>"{itemToDelete?.data.name}"</strong> sera supprimé. Cette action est irréversible.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
