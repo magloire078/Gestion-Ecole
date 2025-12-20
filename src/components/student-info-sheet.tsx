@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Printer, User, Cake, MapPin, VenetianMask, School, GraduationCap, Users, Phone, Hash } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
+import { format, differenceInYears, addYears, differenceInMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { student as Student } from '@/lib/data-types';
@@ -32,6 +32,25 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
   const handlePrint = () => {
     window.print();
   };
+  
+  const getAge = (dateOfBirth: string | undefined) => {
+    if (!dateOfBirth) return 'N/A';
+    try {
+      const birthDate = new Date(dateOfBirth);
+      const today = new Date();
+      const years = differenceInYears(today, birthDate);
+      const monthDate = addYears(birthDate, years);
+      const months = differenceInMonths(today, monthDate);
+      
+      let ageString = `${years} an${years > 1 ? 's' : ''}`;
+      if (months > 0) {
+        ageString += ` et ${months} mois`;
+      }
+      return ageString;
+    } catch {
+      return 'N/A';
+    }
+  }
 
   const InfoRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value?: string | number | null }) => (
     <div className="flex items-start text-sm">
@@ -86,7 +105,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                         <div className="space-y-4">
                             <h4 className="font-bold text-lg border-b pb-1">Informations Personnelles</h4>
-                            <InfoRow icon={Cake} label="Date de naissance" value={student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'} />
+                            <InfoRow icon={Cake} label="Date de naissance" value={`${student.dateOfBirth ? format(new Date(student.dateOfBirth), 'd MMMM yyyy', { locale: fr }) : 'N/A'} (${getAge(student.dateOfBirth)})`} />
                             <InfoRow icon={MapPin} label="Lieu de naissance" value={student.placeOfBirth} />
                             <InfoRow icon={VenetianMask} label="Sexe" value={student.gender} />
                             <InfoRow icon={MapPin} label="Adresse" value={student.address} />
