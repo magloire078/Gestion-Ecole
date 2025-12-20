@@ -6,9 +6,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-// This function would be in a service file to check the status from your backend
-// For now, we'll just simulate it.
-// import { checkMtnMomoTransactionStatus } from '@/services/payment-service'; 
+import { getMtnMomoTransactionStatus } from '@/lib/mtn-momo'; 
 
 function PaymentStatusPageContent() {
     const searchParams = useSearchParams();
@@ -18,32 +16,36 @@ function PaymentStatusPageContent() {
     const transactionId = searchParams.get('tid');
 
     const [status, setStatus] = useState<'pending' | 'success' | 'failed'>('pending');
+    const [message, setMessage] = useState("Veuillez confirmer le paiement sur votre téléphone en composant le code USSD si nécessaire.");
 
     useEffect(() => {
         if (!provider || !transactionId) {
             setStatus('failed');
+            setMessage("Informations de transaction manquantes.");
             return;
         }
 
         const interval = setInterval(async () => {
             try {
-                // In a real app, you would call your backend here to check the status
-                // const result = await checkMtnMomoTransactionStatus(transactionId);
-                // For this example, we'll simulate a success after a few seconds.
-                console.log("Checking status for", transactionId);
-
-                // MOCK LOGIC
-                if (Math.random() > 0.3) { // Simulate success
-                    setStatus('success');
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        router.push('/dashboard/parametres/abonnement?payment_status=success');
-                    }, 3000);
+                if (provider === 'mtn') {
+                    const result = await getMtnMomoTransactionStatus(transactionId);
+                    if (result && result.status === 'SUCCESSFUL') {
+                         setStatus('success');
+                         setMessage("Votre abonnement a été activé avec succès.");
+                         clearInterval(interval);
+                         setTimeout(() => {
+                            router.push('/dashboard/parametres/abonnement?payment_status=success');
+                         }, 3000);
+                    } else if (result && (result.status === 'FAILED' || result.status === 'REJECTED')) {
+                        setStatus('failed');
+                        setMessage(`Le paiement a échoué. Statut : ${result.status}. Raison: ${result.reason}`);
+                        clearInterval(interval);
+                    }
                 }
-                
             } catch (error) {
                 console.error("Failed to check transaction status", error);
                 setStatus('failed');
+                setMessage("Une erreur est survenue lors de la vérification du paiement.");
                 clearInterval(interval);
             }
         }, 5000); // Check every 5 seconds
@@ -52,6 +54,7 @@ function PaymentStatusPageContent() {
             if (status === 'pending') {
                 clearInterval(interval);
                 setStatus('failed');
+                setMessage("Le paiement n'a pas été confirmé à temps. Veuillez réessayer.");
             }
         }, 60000 * 2); // Timeout after 2 minutes
 
@@ -71,9 +74,7 @@ function PaymentStatusPageContent() {
                         {status === 'failed' && "Paiement Échoué"}
                     </CardTitle>
                     <CardDescription>
-                        {status === 'pending' && "Veuillez confirmer le paiement sur votre téléphone."}
-                        {status === 'success' && "Votre abonnement a été activé avec succès."}
-                        {status === 'failed' && "Le paiement n'a pas pu être confirmé. Veuillez réessayer."}
+                       {message}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="py-10">

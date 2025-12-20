@@ -80,7 +80,8 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         const transactionId = `${schoolId}_${new Date().getTime()}`;
         const paymentData = {
             amount: price,
-            currency: 'XOF' as const,
+            // NOTE: Sandbox often uses EUR, production will use XOF. Adjust currency if needed.
+            currency: 'EUR' as const,
             externalId: transactionId,
             payer: {
                 partyIdType: 'MSISDN' as const,
@@ -90,11 +91,11 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             payeeNote: `Abonnement ${plan} pour ${schoolId}`,
         };
 
-        const { success, message } = await requestMtnMomoPayment(paymentData);
+        const { success, message, transactionId: mtnTransactionId } = await requestMtnMomoPayment(paymentData);
         if (success) {
             // MTN MoMo API v1 doesn't return a redirect URL.
             // The user confirms on their phone. We redirect to a pending page.
-            return { url: `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?provider=mtn&tid=${transactionId}`, error: null };
+            return { url: `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?provider=mtn&tid=${mtnTransactionId}`, error: null };
         }
         return { url: null, error: message };
     }
