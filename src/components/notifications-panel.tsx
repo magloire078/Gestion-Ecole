@@ -47,7 +47,7 @@ export function NotificationsPanel({
 
   const { data: notificationsData, loading } = useCollection(notificationsQuery);
   
-  const notifications = (notificationsData?.docs.map(d => ({ id: d.id, ...d.data() } as Notification)) || []);
+  const notifications = (notificationsData?.map(d => ({ id: d.id, ...d.data() } as Notification)) || []);
   const unreadCount = notifications.filter(n => !n.readBy?.includes(user?.uid || '')).length;
 
   const markAsRead = async (notificationId: string) => {
