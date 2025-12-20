@@ -1,71 +1,84 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-  
+
+    // ========== Fonctions Utilitaires ==========
     function isAuth() {
       return request.auth != null;
     }
 
-    // Fonction pour obtenir le schoolId de l'utilisateur, soit depuis les custom claims, soit depuis le document /utilisateurs
+    function isSuperAdmin() {
+      // Pour l'instant, vérifie un document. Plus tard, utilisera les custom claims.
+      return isAuth() && exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+    }
+    
     function getUserSchoolId() {
-      // Priorité aux custom claims pour l'efficacité
-      if (request.auth.token.schoolId != null) {
-        return request.auth.token.schoolId;
-      }
-      // Méthode de secours en lisant le document utilisateur
-      return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId;
+      // Tente de lire le schoolId depuis le token d'authentification.
+      return request.auth.token.schoolId;
     }
 
     function isSchoolMember(schoolId) {
+      // L'utilisateur est-il membre de l'école spécifiée ?
       return isAuth() && getUserSchoolId() == schoolId;
     }
-    
+
     function isDirector(schoolId) {
-        return isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+      // L'utilisateur est-il le directeur de l'école ?
+      return isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    }
+    
+    // Règle spécifique pour permettre au directeur de créer son propre profil PENDANT la création de l'école.
+    function isCreatingOwnProfileAsDirector(schoolId, staffId) {
+       return request.auth.uid == staffId && request.resource.data.directorId == request.auth.uid;
     }
 
-    function isSuperAdmin() {
-      // Dans le futur, ceci pourrait vérifier un custom claim `superAdmin: true`
-      return exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
-    }
-    
-    match /super_admins/{adminId} {
-      allow read, write: if isAuth() && request.auth.uid == adminId;
-    }
+    // ========== Règles Globales ==========
 
-    match /system_settings/{settingId} {
-       allow read, write: if isSuperAdmin();
-    }
-    
-    match /system_logs/{logId} {
-       allow create: if isSuperAdmin();
-       allow read: if isAuth(); // Permet à tous les utilisateurs authentifiés de lire (si nécessaire)
-    }
-    
-    match /utilisateurs/{userId} {
-        // Un utilisateur peut créer/lire/mettre à jour son propre document
-        allow read, write: if isAuth() && request.auth.uid == userId;
-        // Le super admin peut également y accéder
-        allow read, write: if isSuperAdmin();
-    }
-    
-    match /ecoles/{schoolId} {
-      // Tout utilisateur authentifié peut créer une école (pour l'onboarding)
-      allow create: if isAuth(); 
-      // Seuls les membres de l'école peuvent la lire
-      allow read: if isSchoolMember(schoolId);
-      // Seul le directeur ou un super admin peut la modifier/supprimer
-      allow update, delete: if isDirector(schoolId) || isSuperAdmin();
-    }
-
-    // Règle générale pour toutes les sous-collections d'une école
-    match /ecoles/{schoolId}/{document=**} {
-      // Les membres de l'école ont un accès complet
-      allow read, write: if isSchoolMember(schoolId);
-      // Les super admins ont aussi un accès complet
+    // Les Super Admins ont un accès total à toutes les données.
+    match /{document=**} {
       allow read, write: if isSuperAdmin();
+    }
+
+    // Chaque utilisateur peut gérer son propre document racine.
+    match /utilisateurs/{userId} {
+      allow read, write: if isAuth() && request.auth.uid == userId;
+    }
+
+    // Les journaux système peuvent être créés par n'importe quel utilisateur authentifié.
+    match /system_logs/{logId} {
+       allow create: if isAuth();
+       allow read: if isAuth(); // Ou plus restrictif si nécessaire
+    }
+    
+    // Les paramètres système sont lisibles par tous, mais modifiables uniquement par les Super Admins.
+    match /system_settings/{settingId} {
+       allow read: if isAuth();
+       allow write: if isSuperAdmin();
+    }
+
+    // ========== Règles pour les Écoles ==========
+
+    // N'importe quel utilisateur authentifié peut créer une école.
+    match /ecoles/{schoolId} {
+      allow create: if isAuth();
+      // Seuls les membres de l'école peuvent la lire.
+      allow read: if isSchoolMember(schoolId);
+      // Seul le directeur peut la mettre à jour ou la supprimer.
+      allow update, delete: if isDirector(schoolId);
+    }
+    
+    // Règles pour la création du profil du directeur en même temps que l'école
+    match /ecoles/{schoolId}/personnel/{staffId} {
+       allow create: if isCreatingOwnProfileAsDirector(schoolId, staffId);
+       // Pour les opérations futures, on applique les règles standard.
+       allow read, update, delete: if isSchoolMember(schoolId);
+    }
+
+    // Règle générale pour toutes les autres sous-collections d'une école.
+    // Un utilisateur doit être membre de l'école pour y accéder.
+    match /ecoles/{schoolId}/{collection}/{docId} {
+      allow read, write, delete: if isSchoolMember(schoolId);
     }
   }
 }
