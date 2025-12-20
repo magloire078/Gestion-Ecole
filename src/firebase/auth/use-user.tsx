@@ -99,16 +99,12 @@ export function useUser() {
 
             // User is associated with a school
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
-            const schoolRef = doc(firestore, 'ecoles', effectiveSchoolId!);
-
-            // Fetch school data once to determine director status
-            const schoolSnap = await getDoc(schoolRef).catch(() => null);
-            const schoolData = schoolSnap?.exists() ? schoolSnap.data() as School : null;
-            const isDirectorFlag = schoolData?.directorId === authUser.uid;
-            setIsDirector(isDirectorFlag);
             
             const unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
                 let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
+                const schoolSnap = await getDoc(doc(firestore, 'ecoles', effectiveSchoolId!)).catch(() => null);
+                const isDirectorFlag = schoolSnap?.data()?.directorId === authUser.uid;
+                setIsDirector(isDirectorFlag);
                 
                 // If user is director but has no profile, create one.
                 if (isDirectorFlag && !profileData) {
@@ -142,13 +138,18 @@ export function useUser() {
                     
                     if (profileData.adminRole) {
                         const roleRef = doc(firestore, `ecoles/${effectiveSchoolId!}/admin_roles`, profileData.adminRole);
-                        const roleSnap = await getDoc(roleRef).catch(() => null);
-                        if (roleSnap && roleSnap.exists()) {
-                            permissions = { ...permissions, ...roleSnap.data().permissions };
+                        try {
+                            const roleSnap = await getDoc(roleRef);
+                            if (roleSnap.exists()) {
+                                permissions = { ...permissions, ...roleSnap.data().permissions };
+                            }
+                        } catch (e) {
+                            console.error("Could not fetch admin role, might be due to permissions.", e);
                         }
                     }
                     setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
                 } else {
+                     // Still set user context even if profile is not found, AuthGuard will handle redirection.
                      setUser({ authUser, uid: authUser.uid, profile: undefined });
                 }
                  setLoading(false);

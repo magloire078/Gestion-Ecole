@@ -51,23 +51,27 @@ service cloud.firestore {
 
     // ========== SCHOOL-SPECIFIC RULES ==========
     
-    // Règle cruciale pour la création du profil du directeur au moment de la création de l'école.
     match /ecoles/{schoolId}/personnel/{staffId} {
-      // L'utilisateur peut créer son propre profil de personnel...
+      // L'utilisateur peut créer son propre profil de personnel (s'il est directeur lors de la création de l'école)
       allow create: if isUser(staffId) && 
                       request.resource.data.role == 'directeur' &&
                       schoolId != "";
 
-      // L'utilisateur peut lire son propre profil, même si le claim n'est pas encore là.
+      // L'utilisateur peut toujours lire son propre profil
       allow get: if isUser(staffId);
                       
-      // Après la création, seuls les membres de l'école peuvent gérer les profils du personnel.
+      // Les membres de l'école peuvent lister les autres membres
       allow list, update, delete: if isSchoolMember(schoolId);
+    }
+    
+    // Les membres de l'école peuvent lire les rôles
+    match /ecoles/{schoolId}/admin_roles/{roleId} {
+        allow get, list: if isSchoolMember(schoolId);
+        allow write: if isSchoolMember(schoolId); // Seuls les admins autorisés pourront via la logique applicative
     }
 
     // Règle générique pour toutes les autres sous-collections d'une école.
     // Elle permet aux membres de l'école de gérer les données de leur propre école.
-    // 'list' est ajouté pour permettre les requêtes d'agrégation comme getCountFromServer.
     match /ecoles/{schoolId}/{collection}/{docId=**} {
       allow get, list, write: if isSchoolMember(schoolId);
     }
