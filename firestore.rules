@@ -58,14 +58,18 @@ service cloud.firestore {
                       request.resource.data.role == 'directeur' &&
                       schoolId != "";
 
+      // L'utilisateur peut lire son propre profil, même si le claim n'est pas encore là.
+      allow get: if isUser(staffId);
+                      
       // Après la création, seuls les membres de l'école peuvent gérer les profils du personnel.
-      allow read, update, delete: if isSchoolMember(schoolId);
+      allow list, update, delete: if isSchoolMember(schoolId);
     }
 
     // Règle générique pour toutes les autres sous-collections d'une école.
     // Elle permet aux membres de l'école de gérer les données de leur propre école.
+    // 'list' est ajouté pour permettre les requêtes d'agrégation comme getCountFromServer.
     match /ecoles/{schoolId}/{collection}/{docId=**} {
-      allow read, write: if isSchoolMember(schoolId);
+      allow get, list, write: if isSchoolMember(schoolId);
     }
   }
 }

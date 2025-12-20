@@ -99,14 +99,15 @@ export function useUser() {
 
             // User is associated with a school
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
+            const schoolRef = doc(firestore, 'ecoles', effectiveSchoolId!);
+
+            // Fetch school data once to determine director status
+            const schoolSnap = await getDoc(schoolRef).catch(() => null);
+            const schoolData = schoolSnap?.exists() ? schoolSnap.data() as School : null;
+            const isDirectorFlag = schoolData?.directorId === authUser.uid;
+            setIsDirector(isDirectorFlag);
             
             const unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
-                const schoolRef = doc(firestore, 'ecoles', effectiveSchoolId!);
-                const schoolSnap = await getDoc(schoolRef);
-                const schoolData = schoolSnap.exists() ? schoolSnap.data() as School : null;
-                const isDirectorFlag = schoolData?.directorId === authUser.uid;
-                setIsDirector(isDirectorFlag);
-                
                 let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
                 
                 // If user is director but has no profile, create one.
