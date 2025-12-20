@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -9,12 +10,10 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      // Les super-admins ont un claim personnalisé.
       return isAuth() && request.auth.token.superAdmin == true;
     }
     
     function isSchoolMember(schoolId) {
-        // L'utilisateur appartient à l'école via un claim personnalisé.
         return isAuth() && request.auth.token.schoolId == schoolId;
     }
     
@@ -24,27 +23,20 @@ service cloud.firestore {
 
     // ========== GLOBAL RULES ==========
 
-    // Règle globale : les super-admins peuvent tout lire et écrire.
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
 
-    // Règle de base pour la collection des écoles.
-    // N'importe quel utilisateur authentifié peut créer une école et vérifier si elle existe.
     match /ecoles/{schoolId} {
       allow create, list, get: if isAuth();
-      // Seuls les membres de l'école peuvent lire, mettre à jour ou supprimer leur école.
       allow read, update, delete: if isSchoolMember(schoolId);
     }
     
-    // Le document racine d'un utilisateur ne peut être géré que par lui-même,
-    // mais peut être créé pendant l'onboarding.
     match /utilisateurs/{userId} {
       allow read: if isUser(userId);
       allow write: if isAuth() && request.resource.data.keys().hasOnly(['schoolId']);
     }
 
-    // Les journaux système sont en lecture seule et peuvent être créés par n'importe qui.
     match /system_logs/{logId} {
       allow create, read: if isAuth();
     }
@@ -52,26 +44,17 @@ service cloud.firestore {
     // ========== SCHOOL-SPECIFIC RULES ==========
     
     match /ecoles/{schoolId}/personnel/{staffId} {
-      // L'utilisateur peut créer son propre profil de personnel (s'il est directeur lors de la création de l'école)
       allow create: if isUser(staffId) && 
                       request.resource.data.role == 'directeur' &&
                       schoolId != "";
 
-      // L'utilisateur peut toujours lire son propre profil
       allow get: if isUser(staffId);
                       
-      // Les membres de l'école peuvent lister les autres membres
       allow list, update, delete: if isSchoolMember(schoolId);
     }
     
-    // Les membres de l'école peuvent lire les rôles
-    match /ecoles/{schoolId}/admin_roles/{roleId} {
-        allow get, list: if isSchoolMember(schoolId);
-        allow write: if isSchoolMember(schoolId); // Seuls les admins autorisés pourront via la logique applicative
-    }
-
-    // Règle générique pour toutes les autres sous-collections d'une école.
-    // Elle permet aux membres de l'école de gérer les données de leur propre école.
+    // Generic rule for all other subcollections within a school.
+    // Allows school members to manage their own school's data.
     match /ecoles/{schoolId}/{collection}/{docId=**} {
       allow get, list, write: if isSchoolMember(schoolId);
     }

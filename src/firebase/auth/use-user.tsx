@@ -78,7 +78,6 @@ export function useUser() {
              }
              
             if (!effectiveSchoolId) {
-                // Fallback for just-created schools where claim might not be set yet
                 const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
                 const userRootSnap = await getDoc(userRootRef).catch(() => null);
                 if (userRootSnap && userRootSnap.exists()) {
@@ -102,24 +101,21 @@ export function useUser() {
             
             const unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
                 let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
-                const schoolSnap = await getDoc(doc(firestore, 'ecoles', effectiveSchoolId!)).catch(() => null);
-                const isDirectorFlag = schoolSnap?.data()?.directorId === authUser.uid;
+
+                const schoolDoc = await getDoc(doc(firestore, 'ecoles', effectiveSchoolId!));
+                const isDirectorFlag = schoolDoc.exists() && schoolDoc.data().directorId === authUser.uid;
                 setIsDirector(isDirectorFlag);
                 
                 // If user is director but has no profile, create one.
                 if (isDirectorFlag && !profileData) {
                     const nameParts = authUser.displayName?.split(' ') || ['Nouveau', 'Directeur'];
-                    const firstName = nameParts[0];
-                    const lastName = nameParts.slice(1).join(' ');
-                    const displayName = authUser.displayName || `${firstName} ${lastName}`;
-
                     profileData = {
                         uid: authUser.uid,
                         schoolId: effectiveSchoolId!,
                         role: 'directeur',
-                        firstName,
-                        lastName,
-                        displayName,
+                        firstName: nameParts[0],
+                        lastName: nameParts.slice(1).join(' '),
+                        displayName: authUser.displayName || `${nameParts[0]} ${nameParts.slice(1).join(' ')}`,
                         email: authUser.email || '',
                         hireDate: format(new Date(), 'yyyy-MM-dd'),
                         baseSalary: 0,
@@ -149,7 +145,6 @@ export function useUser() {
                     }
                     setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
                 } else {
-                     // Still set user context even if profile is not found, AuthGuard will handle redirection.
                      setUser({ authUser, uid: authUser.uid, profile: undefined });
                 }
                  setLoading(false);
