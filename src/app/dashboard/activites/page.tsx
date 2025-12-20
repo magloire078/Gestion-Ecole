@@ -107,6 +107,8 @@ function ActivitesPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingActivite, setEditingActivite] = useState<(Activite & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [activiteToDelete, setActiviteToDelete] = useState<(Activite & { id: string }) | null>(null);
   
   const activitesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/activites`)) : null, [firestore, schoolId]);
   const { data: activitesData, loading: activitesLoading } = useCollection(activitesQuery);
@@ -134,6 +136,24 @@ function ActivitesPage() {
       setIsFormOpen(false);
     } catch (e) {
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/activites`, operation: 'write', requestResourceData: values }));
+    }
+  };
+  
+  const handleOpenDeleteDialog = (activite: Activite & { id: string }) => {
+    setActiviteToDelete(activite);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteActivite = async () => {
+    if (!schoolId || !activiteToDelete) return;
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/activites`, activiteToDelete.id));
+        toast({ title: 'Activité supprimée' });
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/activites/${activiteToDelete.id}`, operation: 'delete' }));
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setActiviteToDelete(null);
     }
   };
 
@@ -164,7 +184,7 @@ function ActivitesPage() {
                       <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => { setEditingActivite(activite); form.reset(activite); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(activite)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
@@ -197,6 +217,23 @@ function ActivitesPage() {
           <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="activite-form" disabled={form.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible. L'activité <strong>"{activiteToDelete?.name}"</strong> sera définitivement supprimée.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteActivite} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
@@ -423,3 +460,4 @@ function CompetitionsPage() {
     </>
   );
 }
+
