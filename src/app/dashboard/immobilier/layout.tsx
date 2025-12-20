@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -64,7 +63,7 @@ export default function ImmobilierLayout({
       );
   }
 
-  const hasAccess = subscription?.plan === 'Essentiel' || subscription?.activeModules?.includes('immobilier') || subscription?.plan === 'Premium';
+  const hasAccess = subscription?.activeModules?.includes('immobilier') || subscription?.plan === 'Premium';
 
   if (!hasAccess) {
       return (
