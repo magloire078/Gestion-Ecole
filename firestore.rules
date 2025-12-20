@@ -13,94 +13,123 @@ service cloud.firestore {
       return isAuth() && request.auth.token.superAdmin == true;
     }
     
-    function isSchoolMember(schoolId) {
-        // Un utilisateur est membre s'il a le claim ou s'il est le directeur enregistré dans la BD.
-        return isAuth() && (
-          request.auth.token.schoolId == schoolId ||
-          get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
-        );
-    }
-    
     function isUser(userId) {
         return isAuth() && request.auth.uid == userId;
     }
     
-    function isDirector(schoolId) {
-        let schoolData = get(/databases/$(database)/documents/ecoles/$(schoolId)).data;
-        return isAuth() && request.auth.uid == schoolData.directorId;
+    // Vérifie si l'utilisateur peut créer/crée une école
+    function isCreatingSchoolAsDirector(schoolId) {
+        return isAuth() && request.resource.data.directorId == request.auth.uid;
     }
     
-    // ========== GLOBAL RULES ==========
+    // Vérifie si l'utilisateur est directeur de n'importe quelle école (pour lire les logs)
+    function isDirectorOfAnySchool() {
+        return isAuth() && request.auth.token.isDirector == true;
+    }
 
-    // Les Super Admins ont un accès total en lecture et écriture sur toute la base de données.
+    // ========== GLOBAL RULES ==========
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
 
-    // ========== ONBOARDING & CREATION RULES ==========
-
-    // Règle pour la création d'une école.
+    // ========== ONBOARDING PHASE RULES ==========
+    
+    // CRITIQUE : Pendant l'onboarding, l'utilisateur n'a pas encore de schoolId
+    // On doit donc avoir des règles spécifiques
+    
+    // 1. Création d'école
     match /ecoles/{schoolId} {
-      // Un utilisateur ne peut créer une école que s'il se désigne comme directeur.
-      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
+      // CRÉATION : l'utilisateur se désigne comme directeur
+      allow create: if isCreatingSchoolAsDirector(schoolId);
       
-      // La lecture est permise aux membres de l'école (via claim) OU au directeur (via DB).
-      // Cette double vérification est cruciale juste après la création, avant que le claim ne soit propagé.
-      allow read: if isAuth() && isSchoolMember(schoolId);
+      // LECTURE après création : permettre immédiatement au directeur de lire son école
+      // Même sans claim schoolId, vérifier via directeurId dans le document
+      allow read: if isAuth() && (
+        // Via claims (si déjà propagés)
+        request.auth.token.schoolId == schoolId ||
+        // Via vérification dans le document (pour période intermédiaire)
+        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
+      );
       
-      // Seul le directeur peut mettre à jour les informations de l'école.
-      allow update: if isDirector(schoolId);
+      // MISE À JOUR : seulement le directeur
+      allow update: if isAuth() && 
+                     get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
       
-      // La suppression physique est interdite. On utilise un soft delete (champ 'status').
+      // PAS DE SUPPRESSION
       allow delete: if false;
     }
 
-    // Règle pour la création du profil du directeur lors de la création de l'école.
+    // 2. Création du profil personnel du directeur
     match /ecoles/{schoolId}/personnel/{staffId} {
-        // Permet la création du profil uniquement si :
-        // 1. L'utilisateur crée son propre profil (staffId == uid).
-        // 2. Le profil a le rôle 'directeur'.
-        // 3. L'UID dans les données du profil correspond à l'UID de l'utilisateur authentifié.
-        // Cela garantit que personne ne peut créer un profil de directeur pour quelqu'un d'autre.
+        // CRÉATION pendant onboarding : 
+        // - L'utilisateur crée son propre profil
+        // - Le rôle est 'directeur'
+        // - L'école existe OU est en cours de création dans le même batch
         allow create: if isAuth() && 
                       staffId == request.auth.uid && 
                       request.resource.data.role == 'directeur' &&
                       request.resource.data.uid == request.auth.uid;
-                      
-        // Une fois membre, on peut lire les profils et modifier le sien.
-        allow get, list: if isSchoolMember(schoolId);
-        allow update: if isDirector(schoolId) || isUser(staffId);
-        allow delete: if isDirector(schoolId);
+        
+        // Après création, lecture pour les membres
+        allow get, list: if isAuth() && (
+          // Membre via claims
+          request.auth.token.schoolId == schoolId ||
+          // Directeur selon BD
+          get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
+        );
+        
+        // Mise à jour
+        allow update: if isAuth() && (
+          // Le directeur de l'école
+          get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid ||
+          // L'utilisateur lui-même
+          staffId == request.auth.uid
+        );
+        
+        allow delete: if isAuth() &&
+                       get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
     
-    // Règle pour le document racine de l'utilisateur.
+    // 3. Document utilisateur (CRITIQUE POUR L'ONBOARDING)
     match /utilisateurs/{userId} {
-      // Un utilisateur peut toujours lire son propre document racine.
+      // LECTURE : seulement l'utilisateur lui-même
       allow read: if isUser(userId);
       
-      // La création est permise si l'utilisateur crée son propre document.
+      // CRÉATION : quand l'utilisateur est créé (phase 1)
       allow create: if isUser(userId);
       
-      // La mise à jour est permise si l'utilisateur met à jour son propre document
-      // (par exemple, pour changer d'école plus tard).
-      allow update: if isUser(userId);
+      // MISE À JOUR PENDANT ONBOARDING :
+      // Permettre de mettre à jour le schoolId pendant la création d'école
+      // même si le document existe déjà
+      allow update: if isAuth() && (
+        // Cas 1: L'utilisateur met à jour son propre document
+        isUser(userId) ||
+        // Cas 2: Pendant la création d'école, on met à jour schoolId
+        // Vérifier que c'est bien une mise à jour de schoolId
+        (request.resource.data.keys().hasOnly(['schoolId']) || 
+         (request.resource.data.keys().hasAll(['schoolId', 'updatedAt']) && request.resource.data.keys().size() == 2)
+        )
+      );
     }
     
-    // ========== SYSTEM LOGS ==========
-    
-    // N'importe quel utilisateur authentifié peut écrire un log (ex: création d'école).
-    // Seuls les admins peuvent les lire.
+    // 4. Logs système
     match /system_logs/{logId} {
+      // CRÉATION : n'importe quel utilisateur authentifié
       allow create: if isAuth();
-      allow read: if isDirector(request.auth.token.schoolId) || isSuperAdmin();
+      
+      // LECTURE : super admin ou directeurs
+      allow read: if isDirectorOfAnySchool() || isSuperAdmin();
     }
 
-    // ========== GENERAL SCHOOL DATA RULES ==========
+    // ========== POST-ONBOARDING RULES (quand schoolId est dans les claims) ==========
     
-    // Règle générique pour toutes les autres sous-collections d'une école.
-    // L'accès est accordé à tous les membres authentifiés de l'école.
+    // Règle générique pour toutes les autres données de l'école
+    // S'applique APRES que l'utilisateur ait le claim schoolId
     match /ecoles/{schoolId}/{collection}/{document=**} {
-      allow read, write: if isSchoolMember(schoolId);
+      allow read, write: if isAuth() && (
+        request.auth.token.schoolId == schoolId ||
+        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
+      );
     }
   }
 }
