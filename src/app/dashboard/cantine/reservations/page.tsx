@@ -45,10 +45,15 @@ export default function ReservationsPage() {
   const { data: reservationsData, loading: reservationsLoading } = useCollection(reservationsQuery);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
 
+  const students: (Student & { id: string })[] = useMemo(() => {
+    if (!studentsData) return [];
+    return studentsData.map(doc => ({ id: doc.id, ...doc.data() } as Student & { id: string }));
+  }, [studentsData]);
+
   const reservations: ReservationWithStudentName[] = useMemo(() => {
-    if (!reservationsData || !studentsData) return [];
+    if (!reservationsData || !students.length) return [];
     
-    const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
+    const studentsMap = new Map(students.map(s => [s.id, s]));
     
     return reservationsData.map(doc => {
       const res = { id: doc.id, ...doc.data() } as CanteenReservation & { id: string };
@@ -58,7 +63,7 @@ export default function ReservationsPage() {
         studentName: student ? `${student.firstName} ${student.lastName}` : 'Élève inconnu'
       };
     });
-  }, [reservationsData, studentsData]);
+  }, [reservationsData, students]);
   
   const filteredReservations = useMemo(() => {
     return reservations.filter(res => 
@@ -184,7 +189,7 @@ export default function ReservationsPage() {
             </DialogHeader>
              <ReservationForm 
                 schoolId={schoolId!}
-                students={studentsData?.docs.map(d => ({id: d.id, ...d.data()} as Student)) || []}
+                students={students}
                 reservation={editingReservation}
                 onSave={handleFormSave}
             />
