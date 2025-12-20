@@ -30,9 +30,20 @@ service cloud.firestore {
         return isAuth() && request.auth.uid == schoolData.directorId;
     }
     
-    // Fonction simplifiée pour création d'école
+    // Fonction pour création d'école
     function canCreateSchool() {
         return isAuth() && request.resource.data.directorId == request.auth.uid;
+    }
+    
+    // Fonction pour mettre à jour schoolId pendant onboarding
+    function canUpdateUserSchoolId(userId) {
+        return isAuth() && (
+          // Cas 1: L'utilisateur met à jour son propre document
+          isUser(userId) ||
+          // Cas 2: Pendant la création d'école, on peut ajouter le schoolId
+          (request.resource.data.keys().hasOnly(['schoolId']) && 
+           request.resource.data.schoolId != null)
+        );
     }
 
     // ========== GLOBAL RULES ==========
@@ -67,8 +78,7 @@ service cloud.firestore {
         // SIMPLIFIÉ : permettre si l'utilisateur est le directeur qu'il crée
         allow create: if isAuth() && 
                       staffId == request.auth.uid && 
-                      request.resource.data.role == 'directeur' &&
-                      request.resource.data.uid == request.auth.uid;
+                      request.resource.data.role == 'directeur';
         
         // Après création
         allow get, list: if isSchoolMember(schoolId);
@@ -78,16 +88,15 @@ service cloud.firestore {
     
     // ========== USER-SPECIFIC RULES ==========
     
-    // Document utilisateur
+    // Document utilisateur - RÈGLE CORRIGÉE
     match /utilisateurs/{userId} {
-      allow read: if isUser(userId);
-      // Permettre la création/mise à jour pendant l'onboarding
-      allow write: if isAuth() && (
-        isUser(userId) || // L'utilisateur lui-même
-        // Pendant la création d'école, on met juste à jour schoolId
-        (request.resource.data.keys().hasOnly(['schoolId']) && 
-         resource == null) // S'il n'existe pas encore
-      );
+      allow read: if isUser(userId) || isSuperAdmin();
+      
+      // CRÉATION : n'importe quel utilisateur authentifié peut créer son document
+      allow create: if isAuth() && userId == request.auth.uid;
+      
+      // MISE À JOUR : permet d'ajouter schoolId pendant la création d'école
+      allow update: if canUpdateUserSchoolId(userId);
     }
     
     // ========== SYSTEM LOGS ==========
