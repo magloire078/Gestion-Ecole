@@ -144,18 +144,16 @@ export default function StructurePage() {
     defaultValues: { name: '', code: '', order: 1, cycleId: '', capacity: 30 }
   });
 
-  const { setValue: cycleSetValue } = cycleForm;
   const watchedCycleName = useWatch({ control: cycleForm.control, name: 'name' });
-
+  
   useEffect(() => {
     const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
     if (selectedCycleTemplate) {
-        cycleSetValue('code', selectedCycleTemplate.code);
-        cycleSetValue('order', selectedCycleTemplate.order);
+        cycleForm.setValue('code', selectedCycleTemplate.code);
+        cycleForm.setValue('order', selectedCycleTemplate.order);
     }
-  }, [watchedCycleName, cycleSetValue]);
+  }, [watchedCycleName, cycleForm]);
   
-  const { setValue: niveauSetValue } = niveauForm;
   const watchedNiveauCycleId = useWatch({ control: niveauForm.control, name: 'cycleId' });
   const watchedNiveauName = useWatch({ control: niveauForm.control, name: 'name' });
 
@@ -164,16 +162,16 @@ export default function StructurePage() {
   
   useEffect(() => {
       if(watchedNiveauCycleId){
-        niveauSetValue('name', '');
+        niveauForm.setValue('name', '');
       }
-  }, [watchedNiveauCycleId, niveauSetValue]);
+  }, [watchedNiveauCycleId, niveauForm]);
 
   useEffect(() => {
     const selectedNiveauTemplate = niveauxOptionsForSelectedCycle.find(n => n === watchedNiveauName);
     if(selectedNiveauTemplate) {
-        niveauSetValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
+        niveauForm.setValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
     }
-  }, [watchedNiveauName, niveauxOptionsForSelectedCycle, niveauSetValue]);
+  }, [watchedNiveauName, niveauxOptionsForSelectedCycle, niveauForm]);
 
 
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading || classesLoading || userLoading;
