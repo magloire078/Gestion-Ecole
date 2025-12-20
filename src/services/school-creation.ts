@@ -116,7 +116,7 @@ export class SchoolCreationService {
       lastName: schoolData.directorLastName,
       hireDate: new Date().toISOString().split('T')[0],
       baseSalary: 0,
-      // directorId: schoolData.directorId, // IMPORTANT for security rule check
+      status: 'Actif',
     };
     batch.set(staffProfileRef, staffProfileData);
     
