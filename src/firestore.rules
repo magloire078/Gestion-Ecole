@@ -4,6 +4,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
   
+    // --- Helper Functions ---
     function isAuth() {
       return request.auth != null;
     }
@@ -13,33 +14,54 @@ service cloud.firestore {
     }
 
     function getUserSchoolId() {
+      // Priorité aux custom claims pour l'efficacité, sinon lecture du document.
+      if (request.auth.token.schoolId != null) {
+        return request.auth.token.schoolId;
+      }
       return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId;
     }
 
     function isSchoolMember(schoolId) {
       return isAuth() && getUserSchoolId() == schoolId;
     }
-
-    function isDirector(schoolId) {
-        return isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
-    }
     
-    // Super admins can read/write anywhere
+    // --- Global Access for Super Admins ---
     match /{document=**} {
         allow read, write: if isSuperAdmin();
     }
     
+    // --- User Root Document Rules ---
     match /utilisateurs/{userId} {
+        // Un utilisateur peut créer/lire/mettre à jour son propre document
         allow read, write: if isAuth() && request.auth.uid == userId;
     }
+
+    // --- System-level Collections Rules ---
+    match /system_logs/{logId} {
+       // Allow any authenticated user to create logs, necessary for onboarding.
+       allow create: if isAuth();
+       allow read: if isSchoolMember(getUserSchoolId()) || isSuperAdmin();
+    }
     
-    match /ecoles/{schoolId} {
-      allow create: if isAuth(); 
-      allow read: if isSchoolMember(schoolId);
-      allow update, delete: if isDirector(schoolId);
+    match /system_settings/{settingId} {
+       allow read: if isAuth(); // All authenticated users can read settings
+       allow write: if isSuperAdmin();
     }
 
-    match /ecoles/{schoolId}/{document=**} {
+    // --- School Collections Rules ---
+    match /ecoles/{schoolId} {
+      // Any authenticated user can create a school (for onboarding)
+      allow create: if isAuth(); 
+      
+      // Only members of the school can read its main document
+      allow read: if isSchoolMember(schoolId);
+      
+      // Only the director of the school can update or delete it
+      allow update, delete: if isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    }
+
+    // Generic rule for all subcollections within a school
+    match /ecoles/{schoolId}/{documents=**} {
       allow read, write: if isSchoolMember(schoolId);
     }
   }
