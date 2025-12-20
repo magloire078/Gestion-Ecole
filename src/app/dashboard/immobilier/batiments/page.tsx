@@ -210,7 +210,7 @@ export default function BatimentsPage() {
                             </div>
                         ))}
                         {(!sallesByBuilding[building.id] || sallesByBuilding[building.id].length === 0) && (
-                            <p className="text-muted-foreground text-sm p-4 col-span-full text-center">Aucune salle dans ce bâtiment. <Link href="/dashboard/immobilier/salles" className="text-primary underline">Ajoutez-en une</Link>.</p>
+                            <p className="text-muted-foreground text-sm p-4 col-span-full text-center">Aucune salle dans ce bâtiment. <Link href="/dashboard/immobilier/salles" className="text-primary underline">Ajoutez une salle</Link>.</p>
                         )}
                     </div>
                 </div>
@@ -262,3 +262,5 @@ export default function BatimentsPage() {
     </>
   );
 }
+
+    

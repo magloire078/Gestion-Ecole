@@ -94,3 +94,5 @@ export default function ImmobilierLayout({
 
   return layoutContent;
 }
+
+    
