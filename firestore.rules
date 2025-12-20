@@ -13,7 +13,6 @@ service cloud.firestore {
       return isAuth() && request.auth.token.superAdmin == true;
     }
     
-    // Un utilisateur est membre s'il a le schoolId dans son token OU si son profil existe dans la sous-collection personnel.
     function isSchoolMember(schoolId) {
         return isAuth() && 
                (request.auth.token.schoolId == schoolId || 
@@ -23,14 +22,6 @@ service cloud.firestore {
     function isUser(userId) {
         return isAuth() && request.auth.uid == userId;
     }
-    
-    function getDirectorId(schoolId) {
-        return get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
-    }
-    
-    function isDirector(schoolId) {
-      return isAuth() && request.auth.uid == getDirectorId(schoolId);
-    }
 
     // ========== GLOBAL RULES ==========
 
@@ -39,10 +30,14 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin();
     }
 
-    // N'importe quel utilisateur authentifié peut lister/créer une école
+    // Règle de création d'une école
     match /ecoles/{schoolId} {
-      allow create, list, get: if isAuth();
-      // Seuls les membres de l'école peuvent la lire/modifier
+      // N'importe quel utilisateur authentifié peut lire la liste des écoles ou en créer une nouvelle.
+      // La création autorise l'écriture groupée du profil directeur.
+      allow list, get: if isAuth();
+      allow create: if isAuth() && request.resource.data.directorId == request.auth.uid;
+      
+      // Seuls les membres de l'école peuvent la lire/modifier/supprimer
       allow read, update, delete: if isSchoolMember(schoolId);
     }
     
@@ -56,7 +51,7 @@ service cloud.firestore {
     // Règle spéciale pour la création du profil du directeur lors de l'onboarding
     match /ecoles/{schoolId}/personnel/{staffId} {
       // Autorise la création du profil si l'UID correspond à celui qui crée (le futur directeur)
-      allow create: if isUser(staffId) && request.resource.data.role == 'directeur';
+      allow create: if isUser(staffId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == staffId;
       
       // Les membres de l'école peuvent accéder aux profils
       allow get, list, update, delete: if isSchoolMember(schoolId);
