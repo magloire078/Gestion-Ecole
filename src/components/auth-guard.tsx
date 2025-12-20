@@ -45,7 +45,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
     
     // Si l'utilisateur est connecté mais n'a pas d'école
-    if (!schoolId) {
+    if (!schoolId && user.profile?.role !== 'super_admin') {
       if (!isOnboardingPage) {
         router.replace('/dashboard/onboarding');
       }
@@ -67,7 +67,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Si l'utilisateur est connecté mais que schoolId n'est pas encore défini (cas de transition),
   // et que la page n'est pas celle d'onboarding, on affiche un loader pour éviter les flashs.
-  if (user && schoolId === null && !pathname.startsWith('/dashboard/onboarding')) {
+  if (user && schoolId === null && !pathname.startsWith('/dashboard/onboarding') && user.profile?.role !== 'super_admin') {
       return <AuthProtectionLoader />;
   }
 
