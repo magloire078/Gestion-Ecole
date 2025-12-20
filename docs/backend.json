@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "user_root": {
@@ -38,7 +39,12 @@
                     "plan": { "type": "string", "enum": ["Essentiel", "Pro", "Premium"], "description": "Le nom du plan." },
                     "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"], "description": "Le statut de l'abonnement." },
                     "maxStudents": { "type": "number", "description": "Nombre maximum d'élèves autorisés." },
-                    "maxCycles": { "type": "number", "description": "Nombre maximum de cycles autorisés." }
+                    "maxCycles": { "type": "number", "description": "Nombre maximum de cycles autorisés." },
+                    "activeModules": {
+                        "type": "array",
+                        "description": "Liste des modules complémentaires activés.",
+                        "items": { "type": "string", "enum": ["sante", "cantine", "transport", "internat", "immobilier", "activites", "rh"] }
+                    }
                 }
             }
         },
