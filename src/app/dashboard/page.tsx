@@ -2,12 +2,12 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, AlertCircle, CheckCircle, Plus, CreditCard, Calendar, Check, TrendingUp, Wallet, Activity } from 'lucide-react';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, Check, Plus, CreditCard, Calendar, Activity, Wallet } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, query, orderBy, limit, getDocs, getCountFromServer, where, collectionGroup } from 'firebase/firestore';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook, classe as Classe, staff as Staff, fee as Fee } from '@/lib/data-types';
+import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
 
 // ====================================================================================
@@ -31,14 +31,25 @@ type ActivityItem = {
   date: Date;
 };
 
+type OnboardingStatus = {
+  baseInfoDone: boolean;
+  structureDone: boolean;
+  staffDone: boolean;
+  feesDone: boolean;
+  classesCount: number;
+  teachersCount: number;
+  feesCount: number;
+  completion: number;
+  isSetupComplete: boolean;
+};
+
 // ====================================================================================
 // Regular Dashboard Component
 // ====================================================================================
 const RegularDashboard = () => {
   const firestore = useFirestore();
-  const { schoolId, schoolData, subscription, loading: schoolLoading } = useSchoolData();
+  const { schoolId } = useSchoolData();
 
-  // --- State for Stats Cards ---
   const [stats, setStats] = useState({
     students: 0,
     teachers: 0,
@@ -49,60 +60,46 @@ const RegularDashboard = () => {
     tuitionDue: 0,
     totalTuition: 0,
   });
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  // --- Data for Recent Activity ---
   const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
-  const [activityLoading, setActivityLoading] = useState(true);
-
-  // --- Data for Performance Chart ---
   const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
-  const [gradesLoading, setGradesLoading] = useState(true);
-  
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (!schoolId || !firestore) {
-      if (!schoolLoading) {
-        setStatsLoading(false);
-        setActivityLoading(false);
-        setGradesLoading(false);
-      }
-      return;
-    }
+    if (!schoolId || !firestore) return;
 
     const fetchAllData = async () => {
-      setStatsLoading(true);
-      setActivityLoading(true);
-      setGradesLoading(true);
-
+      setLoading(true);
       try {
-        // --- Fetch Stats ---
-        const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
-        const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
-        const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
-        const booksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
-        const cyclesQuery = query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true));
-
-
-        const [studentsSnapshot, teachersSnapshot, classesSnapshot, booksSnapshot, cyclesSnapshot] = await Promise.all([
-            getCountFromServer(studentsQuery),
-            getCountFromServer(teachersQuery),
-            getDocs(classesQuery),
-            getDocs(booksQuery),
-            getCountFromServer(cyclesQuery)
+        // Fetch Stats
+        const [
+          studentsSnapshot,
+          teachersSnapshot,
+          classesSnapshot,
+          booksSnapshot,
+          cyclesSnapshot
+        ] = await Promise.all([
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/eleves`))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'))),
+          getDocs(query(collection(firestore, `ecoles/${schoolId}/classes`))),
+          getDocs(query(collection(firestore, `ecoles/${schoolId}/bibliotheque`))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true)))
         ]);
 
-        const totalBooks = booksSnapshot.docs.reduce((sum, doc) => sum + (doc.data() as LibraryBook).quantity, 0);
-        const studentsForTuitionSnapshot = await getDocs(studentsQuery);
-        
-        const { totalTuition, totalDue } = studentsForTuitionSnapshot.docs.reduce((acc, doc) => {
-            const student = doc.data() as Student;
-            const tuition = student.tuitionFee || 0;
-            const due = student.amountDue || 0;
-            acc.totalTuition += tuition;
-            acc.totalDue += due;
-            return acc;
+        // Calculate books total
+        const booksData = booksSnapshot.docs.map(doc => doc.data() as LibraryBook);
+        const totalBooks = booksData.reduce((sum, book) => sum + (book.quantity || 0), 0);
+
+        // Calculate tuition
+        const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
+        const studentsSnapshot2 = await getDocs(studentsQuery);
+        const { totalTuition, totalDue } = studentsSnapshot2.docs.reduce((acc, doc) => {
+          const student = doc.data() as Student;
+          return {
+            totalTuition: acc.totalTuition + (student.tuitionFee || 0),
+            totalDue: acc.totalDue + (student.amountDue || 0)
+          };
         }, { totalTuition: 0, totalDue: 0 });
-        
+
         setStats({
           students: studentsSnapshot.data().count,
           teachers: teachersSnapshot.data().count,
@@ -114,85 +111,88 @@ const RegularDashboard = () => {
           totalTuition: totalTuition,
         });
 
-        setStatsLoading(false);
-
-
-        // --- Fetch Recent Activity ---
-        const activities: ActivityItem[] = [];
-        
-        const recentStudentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(2));
-        const recentMessagesQuery = query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(2));
-        const recentBooksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(2));
-
+        // Fetch Recent Activity
         const [studentsActivitySnapshot, messagesActivitySnapshot, booksActivitySnapshot] = await Promise.all([
-          getDocs(recentStudentsQuery), getDocs(recentMessagesQuery), getDocs(recentBooksQuery)
+          getDocs(query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(2))),
+          getDocs(query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(2))),
+          getDocs(query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(2)))
         ]);
-        
+
+        const activities: ActivityItem[] = [];
+
         studentsActivitySnapshot.forEach(doc => {
-            const student = doc.data() as Student;
-            const createdAt = (student.createdAt && typeof student.createdAt === 'object' && 'seconds' in student.createdAt) 
-                ? new Date((student.createdAt as any).seconds * 1000) 
-                : new Date();
-            activities.push({
-              id: doc.id, type: 'student', icon: UserPlus, color: 'bg-blue-100 dark:bg-blue-900/50',
-              description: <>Nouvel élève, <strong>{student.firstName} {student.lastName}</strong>, ajouté.</>,
-              date: createdAt,
-            });
+          const student = doc.data() as Student;
+          const createdAt = (student.createdAt && typeof student.createdAt === 'object' && 'seconds' in student.createdAt) 
+            ? new Date((student.createdAt as any).seconds * 1000) 
+            : new Date();
+          activities.push({
+            id: doc.id,
+            type: 'student',
+            icon: UserPlus,
+            color: 'bg-blue-100 dark:bg-blue-900/50',
+            description: <>Nouvel élève, <strong>{student.firstName} {student.lastName}</strong>, ajouté.</>,
+            date: createdAt,
+          });
         });
+
         messagesActivitySnapshot.forEach(doc => {
-            const message = doc.data() as Message;
-             const createdAt = (message.createdAt && typeof message.createdAt === 'object' && 'seconds' in message.createdAt) 
-                ? new Date((message.createdAt as any).seconds * 1000) 
-                : new Date();
-            activities.push({
-                id: doc.id, type: 'message', icon: MessageSquare, color: 'bg-violet-100 dark:bg-violet-900/50',
-                description: <>Nouveau message: <strong>{message.title}</strong> par {message.senderName}.</>,
-                date: createdAt,
-            });
+          const message = doc.data() as Message;
+          const createdAt = (message.createdAt && typeof message.createdAt === 'object' && 'seconds' in message.createdAt) 
+            ? new Date((message.createdAt as any).seconds * 1000) 
+            : new Date();
+          activities.push({
+            id: doc.id,
+            type: 'message',
+            icon: MessageSquare,
+            color: 'bg-violet-100 dark:bg-violet-900/50',
+            description: <>Nouveau message: <strong>{message.title}</strong> par {message.senderName}.</>,
+            date: createdAt,
+          });
         });
+
         booksActivitySnapshot.forEach(doc => {
-            const book = doc.data() as LibraryBook;
-            const createdAt = (book.createdAt && typeof book.createdAt === 'object' && 'seconds' in book.createdAt) 
-                ? new Date((book.createdAt as any).seconds * 1000) 
-                : new Date();
-            activities.push({
-                id: doc.id, type: 'book', icon: BookOpen, color: 'bg-amber-100 dark:bg-amber-900/50',
-                description: <>Nouveau livre, <strong>{book.title}</strong>, ajouté à la bibliothèque.</>,
-                date: createdAt,
-            });
+          const book = doc.data() as LibraryBook;
+          const createdAt = (book.createdAt && typeof book.createdAt === 'object' && 'seconds' in book.createdAt) 
+            ? new Date((book.createdAt as any).seconds * 1000) 
+            : new Date();
+          activities.push({
+            id: doc.id,
+            type: 'book',
+            icon: BookOpen,
+            color: 'bg-amber-100 dark:bg-amber-900/50',
+            description: <>Nouveau livre, <strong>{book.title}</strong>, ajouté à la bibliothèque.</>,
+            date: createdAt,
+          });
         });
 
         const sortedActivities = activities.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
         setRecentActivity(sortedActivities);
-        setActivityLoading(false);
 
-        // --- Fetch Grades for Chart ---
+        // Fetch Grades for Chart
         const gradesCollectionGroup = collectionGroup(firestore, 'notes');
-        const gradesQuery = query(gradesCollectionGroup, where('__name__', '>=', `ecoles/${schoolId}/`), where('__name__', '<', `ecoles/${schoolId}0/`));
+        const gradesQuery = query(
+          gradesCollectionGroup,
+          where('__name__', '>=', `ecoles/${schoolId}/`),
+          where('__name__', '<', `ecoles/${schoolId}0/`)
+        );
         const gradesSnapshot = await getDocs(gradesQuery);
-        const fetchedGrades: GradeEntry[] = [];
-        gradesSnapshot.forEach(doc => {
-            fetchedGrades.push(doc.data() as GradeEntry);
-        });
+        const fetchedGrades: GradeEntry[] = gradesSnapshot.docs.map(doc => doc.data() as GradeEntry);
         setAllGrades(fetchedGrades);
-        setGradesLoading(false);
-
 
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        setStatsLoading(false);
-        setActivityLoading(false);
-        setGradesLoading(false);
+      } finally {
+        setLoading(false);
       }
     };
-    
+
     fetchAllData();
-  }, [schoolId, firestore, schoolLoading]);
+  }, [schoolId, firestore]);
 
   const formatCurrency = (value: number) => {
     return `${value.toLocaleString('fr-FR')} CFA`;
-  }
-  
+  };
+
   const paymentRate = stats.totalTuition > 0 ? (stats.tuitionPaid / stats.totalTuition) * 100 : 0;
 
   const statsCards = [
@@ -200,7 +200,6 @@ const RegularDashboard = () => {
       title: 'Élèves', 
       value: stats.students, 
       icon: Users, 
-      loading: statsLoading, 
       color: 'text-blue-600', 
       bgColor: 'bg-blue-100 dark:bg-blue-900/50', 
       href: '/dashboard/dossiers-eleves' 
@@ -209,7 +208,6 @@ const RegularDashboard = () => {
       title: 'Enseignants', 
       value: stats.teachers, 
       icon: BookUser, 
-      loading: statsLoading, 
       color: 'text-emerald-600', 
       bgColor: 'bg-emerald-100 dark:bg-emerald-900/50', 
       href: '/dashboard/rh' 
@@ -218,7 +216,6 @@ const RegularDashboard = () => {
       title: 'Classes', 
       value: stats.classes, 
       icon: School, 
-      loading: statsLoading, 
       color: 'text-amber-600', 
       bgColor: 'bg-amber-100 dark:bg-amber-900/50', 
       href: '/dashboard/pedagogie/structure'
@@ -227,12 +224,32 @@ const RegularDashboard = () => {
       title: 'Livres', 
       value: stats.books, 
       icon: BookOpen, 
-      loading: statsLoading, 
       color: 'text-violet-600', 
       bgColor: 'bg-violet-100 dark:bg-violet-900/50', 
       href: '/dashboard/bibliotheque' 
     }
   ];
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {[...Array(4)].map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-12 w-12 rounded-xl" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-1/2 mt-2" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -240,7 +257,7 @@ const RegularDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tableau de Bord</h1>
       </div>
       
-       {schoolId && <BillingAlerts schoolId={schoolId} studentCount={stats.students} cycleCount={stats.cycles} />}
+      {schoolId && <BillingAlerts schoolId={schoolId} studentCount={stats.students} cycleCount={stats.cycles} />}
     
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {statsCards.map((stat) => (
@@ -253,11 +270,7 @@ const RegularDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {stat.loading ? (
-                  <Skeleton className="h-8 w-1/2 mt-2" />
-                ) : (
-                  <div className="text-3xl font-bold mt-2">{stat.value}</div>
-                )}
+                <div className="text-3xl font-bold mt-2">{stat.value}</div>
               </CardContent>
             </Card>
           </Link>
@@ -266,7 +279,7 @@ const RegularDashboard = () => {
       
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <PerformanceChart grades={allGrades} loading={gradesLoading} />
+          <PerformanceChart grades={allGrades} loading={false} />
 
           <Card>
             <CardHeader>
@@ -275,17 +288,7 @@ const RegularDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {activityLoading ? (
-                  [...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4">
-                      <Skeleton className="h-10 w-10 rounded-full" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-64" />
-                        <Skeleton className="h-3 w-24" />
-                      </div>
-                    </div>
-                  ))
-                ) : recentActivity.length > 0 ? (
+                {recentActivity.length > 0 ? (
                   recentActivity.map((activity) => (
                     <div key={activity.id} className="flex items-center p-2 hover:bg-muted rounded-lg">
                       <div className={cn("p-2 rounded-full mr-4", activity.color)}>
@@ -316,18 +319,18 @@ const RegularDashboard = () => {
               <CardDescription>Vue d'ensemble des finances et plus.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-                <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Cycles Actifs:</span>
-                    <span className="font-semibold">{stats.cycles}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Dû (scolarité):</span>
-                    <span className="font-semibold text-destructive">{formatCurrency(stats.tuitionDue)}</span>
-                </div>
-                 <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Taux de Paiement:</span>
-                    <span className="font-semibold text-emerald-600">{paymentRate.toFixed(1)}%</span>
-                </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Cycles Actifs:</span>
+                <span className="font-semibold">{stats.cycles}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Total Dû (scolarité):</span>
+                <span className="font-semibold text-destructive">{formatCurrency(stats.tuitionDue)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-muted-foreground">Taux de Paiement:</span>
+                <span className="font-semibold text-emerald-600">{paymentRate.toFixed(1)}%</span>
+              </div>
             </CardContent>
           </Card>
           
@@ -366,111 +369,59 @@ const RegularDashboard = () => {
       </div>
     </div>
   );
-}
+};
 
 // ====================================================================================
 // Onboarding Dashboard Component
 // ====================================================================================
-const OnboardingDashboard = () => {
-  const { schoolData, schoolId, loading } = useSchoolData();
+const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: OnboardingStatus }) => {
   const router = useRouter();
-  const firestore = useFirestore();
+  const { schoolData } = useSchoolData();
 
-  const [onboardingData, setOnboardingData] = useState({
-    classesCount: 0,
-    teachersCount: 0,
-    feesCount: 0,
-  });
-  const [dataLoading, setDataLoading] = useState(true);
-
-  useEffect(() => {
-    if (!schoolId || !firestore) return;
-    
-    const fetchData = async () => {
-      setDataLoading(true);
-      const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
-      const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
-      const feesQuery = query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
-
-      const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
-        getCountFromServer(classesQuery),
-        getCountFromServer(teachersQuery),
-        getCountFromServer(feesQuery),
-      ]);
-      
-      setOnboardingData({
-        classesCount: classesSnap.data().count,
-        teachersCount: teachersSnap.data().count,
-        feesCount: feesSnap.data().count,
-      });
-      setDataLoading(false);
-    };
-
-    fetchData();
-  }, [schoolId, firestore]);
-
-  const { completion, isBaseInfoDone, isStructureDone, isStaffDone, isFeesDone } = useMemo(() => {
-    if (!schoolData) return { completion: 0, isBaseInfoDone: false, isStructureDone: false, isStaffDone: false, isFeesDone: false };
-
-    let completedSteps = 0;
-    const totalSteps = 4;
-
-    const baseInfoDone = !!(schoolData.name && schoolData.directorFirstName && schoolData.address);
-    const structureDone = onboardingData.classesCount > 0;
-    const staffDone = onboardingData.teachersCount > 0;
-    const feesDone = onboardingData.feesCount > 0;
-
-    if (baseInfoDone) completedSteps++;
-    if (structureDone) completedSteps++;
-    if (staffDone) completedSteps++;
-    if (feesDone) completedSteps++;
-
-    return {
-      completion: Math.round((completedSteps / totalSteps) * 100),
-      isBaseInfoDone: baseInfoDone,
-      isStructureDone: structureDone,
-      isStaffDone: staffDone,
-      isFeesDone: feesDone,
-    };
-  }, [schoolData, onboardingData]);
-
-
-  if (loading || dataLoading) {
-    return <Skeleton className="h-screen w-full" />
-  }
-
-  const QuickActionCard = ({ icon, title, description, color, href }: { icon: React.ReactNode, title: string, description: string, color: string, href: string }) => (
+  const QuickActionCard = ({ icon, title, description, color, href }: { 
+    icon: React.ReactNode; 
+    title: string; 
+    description: string; 
+    color: string; 
+    href: string;
+  }) => (
     <Link href={href} className="block">
-        <Card className="p-4 h-full hover:shadow-lg transition-shadow hover:-translate-y-1">
-          <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center mb-3", 
-            color === 'blue' && 'bg-blue-100 text-blue-600 dark:bg-blue-900/50',
-            color === 'green' && 'bg-green-100 text-green-600 dark:bg-green-900/50',
-            color === 'purple' && 'bg-purple-100 text-purple-600 dark:bg-purple-900/50',
-            color === 'orange' && 'bg-orange-100 text-orange-600 dark:bg-orange-900/50',
-            color === 'red' && 'bg-red-100 text-red-600 dark:bg-red-900/50'
-          )}>
-            {icon}
-          </div>
-          <h4 className="font-bold">{title}</h4>
-          <p className="text-xs text-muted-foreground">{description}</p>
-        </Card>
+      <Card className="p-4 h-full hover:shadow-lg transition-shadow hover:-translate-y-1">
+        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center mb-3", 
+          color === 'blue' && 'bg-blue-100 text-blue-600 dark:bg-blue-900/50',
+          color === 'green' && 'bg-green-100 text-green-600 dark:bg-green-900/50',
+          color === 'purple' && 'bg-purple-100 text-purple-600 dark:bg-purple-900/50',
+          color === 'orange' && 'bg-orange-100 text-orange-600 dark:bg-orange-900/50',
+          color === 'red' && 'bg-red-100 text-red-600 dark:bg-red-900/50'
+        )}>
+          {icon}
+        </div>
+        <h4 className="font-bold">{title}</h4>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </Card>
     </Link>
   );
   
-  const StepCard = ({ number, title, description, isDone, children }: { number: number, title: string, description: string, isDone: boolean, children: React.ReactNode }) => (
-     <Card className={cn("p-6 shadow-sm", isDone && "border-primary bg-primary/5")}>
-        <div className="flex items-start mb-4">
-          <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mr-4", isDone ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-muted')}>
-            <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", isDone ? 'bg-blue-500' : 'bg-gray-400')}>
-              {isDone ? <Check className="w-4 h-4 text-white" /> : <span className="text-white font-bold">{number}</span>}
-            </div>
-          </div>
-          <div>
-            <h3 className="text-lg font-bold">{title}</h3>
-            <p className="text-muted-foreground text-sm">{description}</p>
+  const StepCard = ({ number, title, description, isDone, children }: { 
+    number: number; 
+    title: string; 
+    description: string; 
+    isDone: boolean; 
+    children: React.ReactNode;
+  }) => (
+    <Card className={cn("p-6 shadow-sm", isDone && "border-primary bg-primary/5")}>
+      <div className="flex items-start mb-4">
+        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mr-4", isDone ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-muted')}>
+          <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", isDone ? 'bg-blue-500' : 'bg-gray-400')}>
+            {isDone ? <Check className="w-4 h-4 text-white" /> : <span className="text-white font-bold">{number}</span>}
           </div>
         </div>
-        {children}
+        <div>
+          <h3 className="text-lg font-bold">{title}</h3>
+          <p className="text-muted-foreground text-sm">{description}</p>
+        </div>
+      </div>
+      {children}
     </Card>
   );
 
@@ -489,27 +440,37 @@ const OnboardingDashboard = () => {
         <div className="mb-4">
           <div className="flex justify-between mb-2">
             <span className="font-medium">Configuration de l'école</span>
-            <span className="text-blue-600 dark:text-blue-400 font-bold">{completion}%</span>
+            <span className="text-blue-600 dark:text-blue-400 font-bold">{onboardingStatus.completion}%</span>
           </div>
           <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600" style={{ width: `${completion}%` }}></div>
+            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600" style={{ width: `${onboardingStatus.completion}%` }}></div>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StepCard number={1} title="Infos de l'École" description="Nom, logo, adresse..." isDone={isBaseInfoDone}>
+        <StepCard 
+          number={1} 
+          title="Infos de l'École" 
+          description="Nom, logo, adresse..." 
+          isDone={onboardingStatus.baseInfoDone}
+        >
           <p className="text-muted-foreground text-sm mb-4">
-             Fournissez les informations de base de votre établissement.
+            Fournissez les informations de base de votre établissement.
           </p>
           <Button className="mt-6 w-full" onClick={() => router.push('/dashboard/parametres')}>
-            {isBaseInfoDone ? 'Vérifier' : 'Compléter'} les infos
+            {onboardingStatus.baseInfoDone ? 'Vérifier' : 'Compléter'} les infos
           </Button>
         </StepCard>
 
-        <StepCard number={2} title="Structure Scolaire" description="Cycles, classes..." isDone={isStructureDone}>
+        <StepCard 
+          number={2} 
+          title="Structure Scolaire" 
+          description="Cycles, classes..." 
+          isDone={onboardingStatus.structureDone}
+        >
           <p className="text-muted-foreground text-sm mb-4">
-             Définissez l'organisation pédagogique. (Au moins 1 classe requise)
+            Définissez l'organisation pédagogique. (Au moins 1 classe requise)
           </p>
           <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/pedagogie/structure/new')}>
             <Plus className="w-5 h-5 inline mr-2" />
@@ -517,9 +478,14 @@ const OnboardingDashboard = () => {
           </Button>
         </StepCard>
 
-        <StepCard number={3} title="Équipe Pédagogique" description="Ajouter des enseignants" isDone={isStaffDone}>
+        <StepCard 
+          number={3} 
+          title="Équipe Pédagogique" 
+          description="Ajouter des enseignants" 
+          isDone={onboardingStatus.staffDone}
+        >
           <p className="text-muted-foreground text-sm mb-4">
-             Commencez à construire votre équipe. (Au moins 1 enseignant requis)
+            Commencez à construire votre équipe. (Au moins 1 enseignant requis)
           </p>
           <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/rh')}>
             <Plus className="w-5 h-5 inline mr-2" />
@@ -527,9 +493,14 @@ const OnboardingDashboard = () => {
           </Button>
         </StepCard>
 
-        <StepCard number={4} title="Grille Tarifaire" description="Frais de scolarité" isDone={isFeesDone}>
+        <StepCard 
+          number={4} 
+          title="Grille Tarifaire" 
+          description="Frais de scolarité" 
+          isDone={onboardingStatus.feesDone}
+        >
           <p className="text-muted-foreground text-sm mb-4">
-             Définissez les frais pour au moins un niveau scolaire.
+            Définissez les frais pour au moins un niveau scolaire.
           </p>
           <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/frais-scolarite')}>
             <Plus className="w-5 h-5 inline mr-2" />
@@ -549,8 +520,12 @@ const OnboardingDashboard = () => {
       </div>
 
       <div className="mt-8 flex justify-end">
-        <Button className="px-6 py-3" onClick={() => window.location.reload()} disabled={completion < 100}>
-          J'ai terminé la configuration
+        <Button 
+          className="px-6 py-3" 
+          onClick={() => window.location.reload()} 
+          disabled={!onboardingStatus.isSetupComplete}
+        >
+          {onboardingStatus.isSetupComplete ? 'J\'ai terminé la configuration' : 'Configuration incomplète'}
         </Button>
       </div>
     </div>
@@ -561,59 +536,73 @@ const OnboardingDashboard = () => {
 // Main Page Component
 // ====================================================================================
 export default function DashboardPage() {
-  const { schoolData, loading } = useSchoolData();
+  const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
-  const { schoolId } = useSchoolData();
+  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [onboardingData, setOnboardingData] = useState({
-    classesCount: 0,
-    teachersCount: 0,
-    feesCount: 0,
-  });
-  const [dataLoading, setDataLoading] = useState(true);
+  const calculateOnboardingStatus = useCallback((schoolData: any, classesCount: number, teachersCount: number, feesCount: number): OnboardingStatus => {
+    const baseInfoDone = !!(schoolData?.name && schoolData?.address);
+    const structureDone = classesCount > 0;
+    const staffDone = teachersCount > 0;
+    const feesDone = feesCount > 0;
+
+    let completedSteps = 0;
+    if (baseInfoDone) completedSteps++;
+    if (structureDone) completedSteps++;
+    if (staffDone) completedSteps++;
+    if (feesDone) completedSteps++;
+
+    const completion = Math.round((completedSteps / 4) * 100);
+    const isSetupComplete = baseInfoDone && structureDone && staffDone && feesDone;
+
+    return {
+      baseInfoDone,
+      structureDone,
+      staffDone,
+      feesDone,
+      classesCount,
+      teachersCount,
+      feesCount,
+      completion,
+      isSetupComplete
+    };
+  }, []);
 
   useEffect(() => {
-    if (!schoolId || !firestore) {
-        setDataLoading(false);
-        return;
+    if (schoolLoading || !schoolId || !firestore) {
+      if (!schoolLoading) setLoading(false);
+      return;
+    }
+
+    const fetchOnboardingData = async () => {
+      try {
+        const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/classes`))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`))),
+        ]);
+
+        const status = calculateOnboardingStatus(
+          schoolData,
+          classesSnap.data().count,
+          teachersSnap.data().count,
+          feesSnap.data().count
+        );
+
+        setOnboardingStatus(status);
+      } catch (error) {
+        console.error('Error fetching onboarding data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    const fetchData = async () => {
-      setDataLoading(true);
-      const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
-      const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
-      const feesQuery = query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`));
 
-      const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
-        getCountFromServer(classesQuery),
-        getCountFromServer(teachersQuery),
-        getCountFromServer(feesQuery),
-      ]);
-      
-      setOnboardingData({
-        classesCount: classesSnap.data().count,
-        teachersCount: teachersSnap.data().count,
-        feesCount: feesSnap.data().count,
-      });
-      setDataLoading(false);
-    };
+    fetchOnboardingData();
+  }, [schoolId, firestore, schoolData, schoolLoading, calculateOnboardingStatus]);
 
-    fetchData();
-  }, [schoolId, firestore]);
-
-  const isSetupComplete = useMemo(() => {
-    // Si les données de base de l'école ne sont pas chargées, on ne peut pas savoir.
-    if (!schoolData) return false;
-
-    const baseInfoDone = !!(schoolData.name && schoolData.address);
-    const structureDone = onboardingData.classesCount > 0;
-    const staffDone = onboardingData.teachersCount > 0;
-    const feesDone = onboardingData.feesCount > 0;
-
-    return baseInfoDone && structureDone && staffDone && feesDone;
-  }, [schoolData, onboardingData]);
-
-  if (loading || dataLoading) {
+  // Afficher un loader pendant le chargement
+  if (schoolLoading || loading || onboardingStatus === null) {
     return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -630,9 +619,11 @@ export default function DashboardPage() {
     );
   }
 
-  if (!isSetupComplete) {
-    return <OnboardingDashboard />;
+  // Si l'école n'est pas configurée, afficher l'onboarding
+  if (!onboardingStatus.isSetupComplete) {
+    return <OnboardingDashboard onboardingStatus={onboardingStatus} />;
   }
-  
+
+  // Sinon, afficher le dashboard régulier
   return <RegularDashboard />;
 }
