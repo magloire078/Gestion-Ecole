@@ -58,6 +58,20 @@ export class SchoolCreationService {
   }
 
   async createSchool(schoolData: SchoolCreationData) {
+    console.log("=== DÉBUT CRÉATION ÉCOLE ===");
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+    
+    if (!currentUser) {
+      throw new Error("Utilisateur non authentifié");
+    }
+    
+    console.log("User UID:", currentUser.uid);
+    console.log("Director ID from data:", schoolData.directorId);
+
+    if (currentUser.uid !== schoolData.directorId) {
+      throw new Error("Vous devez être le directeur de l'école que vous créez");
+    }
     
     // Check if a school with this directorId already exists
     const q = query(collection(this.db, "ecoles"), where("directorId", "==", schoolData.directorId), limit(1));

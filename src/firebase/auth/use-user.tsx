@@ -35,12 +35,14 @@ export function useUser() {
   const firestore = useFirestore();
   const [user, setUser] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
-  const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
   const [isDirector, setIsDirector] = useState(false);
 
   useEffect(() => {
     if (!auth || !firestore) {
         setUser(null);
+        setSchoolId(null);
+        setIsDirector(false);
         setLoading(false);
         return;
     }
@@ -55,9 +57,8 @@ export function useUser() {
             return;
         }
 
-        const tokenResult = await authUser.getIdTokenResult();
+        const tokenResult = await authUser.getIdTokenResult(true); // Force refresh
         const claims = tokenResult.claims;
-        const currentSchoolId = (claims.schoolId as string) || null;
         const isSuperAdmin = (claims.superAdmin as boolean) || false;
 
         // Super admin handling
@@ -75,17 +76,17 @@ export function useUser() {
             return;
         }
 
-        // For regular users, find their schoolId from the root document as the source of truth
-        const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
-        let effectiveSchoolId = null;
-        try {
-            const userRootSnap = await getDoc(userRootRef);
-            if (userRootSnap.exists()) {
-                effectiveSchoolId = (userRootSnap.data() as user_root).schoolId;
+        let effectiveSchoolId = (claims.schoolId as string) || null;
+        
+        if (!effectiveSchoolId) {
+            try {
+                const userRootSnap = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
+                if (userRootSnap.exists()) {
+                    effectiveSchoolId = (userRootSnap.data() as user_root).schoolId;
+                }
+            } catch (e) {
+                console.error("Could not read user root document, this may be normal during onboarding.", e);
             }
-        } catch (e) {
-            console.error("Could not read user root document", e);
-            // This might be a permission error during initial setup, so we proceed cautiously
         }
         
         setSchoolId(effectiveSchoolId);
@@ -119,7 +120,6 @@ export function useUser() {
                         email: authUser.email || '', hireDate: format(new Date(), 'yyyy-MM-dd'),
                         baseSalary: 0, status: 'Actif', photoURL: authUser.photoURL || '',
                     };
-                    // Don't await setDoc here in a snapshot listener to avoid potential loops
                     setDoc(profileRef, profileData, { merge: true });
                 }
 
@@ -137,8 +137,6 @@ export function useUser() {
                     }
                     setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
                 } else {
-                    // It might be a brief moment before the director profile is created.
-                    // Provide a minimal context.
                     setUser({ authUser, uid: authUser.uid, profile: undefined });
                 }
                 setLoading(false);
