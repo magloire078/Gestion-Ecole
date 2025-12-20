@@ -29,7 +29,7 @@ export type school = {
         status?: "active" | "trialing" | "past_due" | "canceled";
         maxStudents?: number;
         maxCycles?: number;
-        activeModules?: string[];
+        activeModules?: ('sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh')[];
     };
     id?: string;
 };

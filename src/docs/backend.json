@@ -43,7 +43,7 @@
                     "activeModules": {
                         "type": "array",
                         "description": "Liste des modules complémentaires activés.",
-                        "items": { "type": "string" }
+                        "items": { "type": "string", "enum": ["sante", "cantine", "transport", "internat", "immobilier", "activites", "rh"] }
                     }
                 }
             }

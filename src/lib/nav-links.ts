@@ -54,7 +54,7 @@ export const NAV_LINKS: NavGroup[] = [
       ]
     },
     {
-      group: "École",
+      group: "Vie Scolaire",
       icon: School,
       links: [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' },

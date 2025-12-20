@@ -231,6 +231,3 @@ export default function SallesPage() {
       </AlertDialog>
     </>
   );
-
-    
-
