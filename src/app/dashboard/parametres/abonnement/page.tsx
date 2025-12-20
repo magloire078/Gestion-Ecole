@@ -54,7 +54,6 @@ export default function SubscriptionPage() {
             plan: planName,
             price: price.toString(),
             description: `Abonnement ${planName} pour ${schoolName}`,
-            duration: '30', // Default to 30 days for monthly
         }).toString();
 
         router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);

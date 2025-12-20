@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function PaymentPageContent() {
     const searchParams = useSearchParams();
@@ -25,11 +27,19 @@ function PaymentPageContent() {
     const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'orangemoney' | 'stripe' | 'wave' | 'mtn'>(null);
     const [error, setError] = useState<string | null>(null);
     const [mtnPhoneNumber, setMtnPhoneNumber] = useState('');
+    const [selectedDuration, setSelectedDuration] = useState('1'); // 1 mois par défaut
+    const [totalPrice, setTotalPrice] = useState<number>(0);
 
 
     const plan = searchParams.get('plan');
     const price = searchParams.get('price');
     const description = searchParams.get('description');
+    
+    useEffect(() => {
+        const basePrice = parseInt(price || '0', 10);
+        const duration = parseInt(selectedDuration, 10);
+        setTotalPrice(basePrice * duration);
+    }, [price, selectedDuration]);
 
     useEffect(() => {
         if (!userLoading && !schoolLoading && (!plan || !price || !description)) {
@@ -45,7 +55,7 @@ function PaymentPageContent() {
         setIsLoadingProvider(provider);
         setError(null);
 
-        if (!plan || !price || !description || !user || !schoolId) {
+        if (!plan || !totalPrice || !description || !user || !schoolId) {
             setError("Impossible de lancer le paiement. Données manquantes.");
             setIsLoadingProvider(null);
             return;
@@ -53,11 +63,12 @@ function PaymentPageContent() {
 
         const { url, error: serviceError } = await createCheckoutLink(provider, {
             plan,
-            price,
-            description,
+            price: totalPrice.toString(),
+            description: `${description} (${selectedDuration} mois)`,
             user: user.authUser,
             schoolId,
             phoneNumber: provider === 'mtn' ? mtnPhoneNumber : undefined,
+            duration: (parseInt(selectedDuration) * 30).toString(), // Durée en jours
         });
 
         if (url) {
@@ -108,9 +119,24 @@ function PaymentPageContent() {
                     <CardDescription>Vous êtes sur le point de souscrire au <strong>Plan {plan}</strong>.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="p-4 border rounded-lg text-center">
-                        <p className="text-sm text-muted-foreground">Montant à Payer</p>
-                        <p className="text-3xl font-bold">{parseInt(price || '0').toLocaleString('fr-FR')} CFA</p>
+                    <div className="p-4 border rounded-lg text-center space-y-4">
+                        <div>
+                             <Label>Durée de l'abonnement</Label>
+                             <Select value={selectedDuration} onValueChange={setSelectedDuration}>
+                                <SelectTrigger className="w-[180px] mx-auto mt-2">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1 Mois</SelectItem>
+                                    <SelectItem value="3">3 Mois</SelectItem>
+                                    <SelectItem value="12">12 Mois</SelectItem>
+                                </SelectContent>
+                             </Select>
+                        </div>
+                         <div>
+                            <p className="text-sm text-muted-foreground">Montant Total à Payer</p>
+                            <p className="text-3xl font-bold">{totalPrice.toLocaleString('fr-FR')} CFA</p>
+                        </div>
                     </div>
 
                     <div className="space-y-4">
@@ -193,4 +219,3 @@ export default function PaymentPage() {
         </Suspense>
     )
 }
-

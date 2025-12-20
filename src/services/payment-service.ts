@@ -15,7 +15,7 @@ interface PaymentProviderData {
     user: User;
     schoolId: string;
     phoneNumber?: string; // For mobile money payments
-    duration?: string; // Duration in days
+    duration: string; // Duration in days
 }
 
 type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn';
@@ -25,7 +25,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
     const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
     
     // Using a generic pending page for mobile money, and specific success/cancel for all.
-    const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success`;
+    const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success&duration=${duration}`;
     const cancelUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`;
     const pendingUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente`;
 
