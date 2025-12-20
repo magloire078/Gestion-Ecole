@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/hooks/use-theme';
 import { useRouter, usePathname } from 'next/navigation';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -23,7 +23,6 @@ import { SearchModal } from '@/components/search-modal';
 import { NotificationsPanel } from '@/components/notifications-panel';
 import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
-import { collection, query, where } from 'firebase/firestore';
 
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -33,19 +32,8 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   
   const router = useRouter();
   const pathname = usePathname();
-  const firestore = useFirestore();
   const { user, loading: userLoading, isDirector } = useUser();
-  const { schoolId, subscription, loading: schoolLoading } = useSchoolData();
-
-  // Fetch notifications for the badge count
-  const notificationsQuery = useMemoFirebase(() => {
-    if (!schoolId || !user?.uid) return null;
-    // We only count unread messages.
-    return query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('readBy', 'not-in', [user.uid]));
-  }, [firestore, schoolId, user?.uid]);
-
-  const { data: notificationsData, loading: notificationsLoading } = useCollection(notificationsQuery);
-  const unreadNotifications = notificationsData?.length || 0;
+  const { subscription, loading: schoolLoading } = useSchoolData();
 
   // Raccourcis clavier
   useEffect(() => {
@@ -191,24 +179,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   <TooltipContent>Rechercher (⌘K)</TooltipContent>
                 </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
-                      <Bell className="h-5 w-5" />
-                      {unreadNotifications > 0 && (
-                        <Badge 
-                          variant="destructive" 
-                          className="absolute -top-1 -right-1 h-5 w-5 min-w-0 p-0 flex items-center justify-center text-xs"
-                        >
-                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                        </Badge>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Notifications</TooltipContent>
-                </Tooltip>
-
-                <UserNav />
+                <UserNav setIsNotificationsOpen={setIsNotificationsOpen} />
               </div>
             </header>
 

@@ -2,14 +2,14 @@
 'use client';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Bell, Check, Trash2 } from "lucide-react";
+import { Bell, Check, Trash2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, limit, doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, updateDoc, arrayUnion, getDoc, writeBatch } from "firebase/firestore";
 import { Skeleton } from "./ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,8 @@ export function NotificationsPanel({
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
+    // For now, we'll treat messages as notifications
+    // We can expand this later with a dedicated `notifications` collection
     return query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(20));
   }, [firestore, schoolId]);
 
@@ -49,17 +51,10 @@ export function NotificationsPanel({
   const unreadCount = notifications.filter(n => !n.readBy?.includes(user?.uid || '')).length;
 
   const markAsRead = async (notificationId: string) => {
-    if (!user || !schoolId) return;
+    if (!user || !schoolId || !user.uid) return;
 
     const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie`, notificationId);
     
-    // Optimistic update
-    const tempNotifs = notifications.map(n => 
-        n.id === notificationId 
-        ? { ...n, readBy: [...(n.readBy || []), user.uid] } 
-        : n
-    );
-
     try {
         const docSnap = await getDoc(notifRef);
         if (docSnap.exists()) {
@@ -72,7 +67,6 @@ export function NotificationsPanel({
         }
     } catch (e) {
       console.error("Failed to mark as read:", e);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de marquer la notification comme lue.' });
     }
   };
 
@@ -84,52 +78,63 @@ export function NotificationsPanel({
   };
   
   const markAllAsRead = async () => {
-    if (!user || !schoolId) return;
-    const unreadNotifications = notifications.filter(n => !n.readBy?.includes(user.uid));
+    if (!user || !schoolId || !user.uid) return;
+    const unreadNotifications = notifications.filter(n => !n.readBy?.includes(user?.uid || ''));
     
+    if(unreadNotifications.length === 0) return;
+
+    const batch = writeBatch(firestore);
+    unreadNotifications.forEach(notif => {
+        const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie`, notif.id);
+        batch.update(notifRef, { readBy: arrayUnion(user.uid) });
+    });
+
     try {
-        for (const notif of unreadNotifications) {
-            const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie`, notif.id);
-            await updateDoc(notifRef, {
-                readBy: arrayUnion(user.uid)
-            });
-        }
+        await batch.commit();
         toast({ title: "Notifications marquées comme lues" });
     } catch(e) {
         console.error("Failed to mark all as read:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de marquer les notifications comme lues.' });
     }
   };
 
+  const handleClose = () => {
+    setSelectedNotification(null);
+    onClose();
+  }
+
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
+    <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="p-6 border-b">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
               Notifications
-              {unreadCount > 0 && (
+              {unreadCount > 0 && !selectedNotification && (
                 <Badge variant="destructive" className="ml-2">
                   {unreadCount}
                 </Badge>
               )}
             </SheetTitle>
-            <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
-              Tout marquer comme lu
-            </Button>
+            {!selectedNotification && (
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={unreadCount === 0}>
+                Tout marquer comme lu
+                </Button>
+            )}
           </div>
         </SheetHeader>
 
         {selectedNotification ? (
             <div className="p-6 flex-1 overflow-y-auto">
-                 <Button variant="ghost" onClick={() => setSelectedNotification(null)} className="mb-4">
-                    &larr; Retour aux notifications
+                 <Button variant="ghost" onClick={() => setSelectedNotification(null)} className="mb-4 -ml-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux notifications
                 </Button>
                 <h3 className="font-bold text-lg">{selectedNotification.title}</h3>
                 <p className="text-xs text-muted-foreground mb-4">
                     Par {selectedNotification.senderName} • {formatDistanceToNow(new Date(selectedNotification.createdAt.seconds * 1000), { addSuffix: true, locale: fr })}
                 </p>
-                <div className="prose dark:prose-invert text-sm">
+                <div className="prose dark:prose-invert text-sm whitespace-pre-wrap">
                     {selectedNotification.content}
                 </div>
             </div>
@@ -160,7 +165,7 @@ export function NotificationsPanel({
                                     {!isRead && <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0"></div>}
                                     <div className={cn("flex-1", isRead && "pl-4")}>
                                     <div className="flex items-start justify-between mb-1">
-                                        <h4 className="font-medium text-sm">{notification.title}</h4>
+                                        <h4 className={cn("font-medium text-sm", !isRead && "font-bold")}>{notification.title}</h4>
                                         <span className="text-xs text-muted-foreground shrink-0 ml-2">
                                             {formatDistanceToNow(new Date(notification.createdAt.seconds * 1000), { addSuffix: true, locale: fr })}
                                         </span>
