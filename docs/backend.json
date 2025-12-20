@@ -38,6 +38,8 @@
                 "properties": {
                     "plan": { "type": "string", "enum": ["Essentiel", "Pro", "Premium"], "description": "Le nom du plan." },
                     "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"], "description": "Le statut de l'abonnement." },
+                    "startDate": { "type": "string", "format": "date-time", "description": "Date de début de l'abonnement." },
+                    "endDate": { "type": "string", "format": "date-time", "description": "Date de fin de l'abonnement." },
                     "maxStudents": { "type": "number", "description": "Nombre maximum d'élèves autorisés." },
                     "maxCycles": { "type": "number", "description": "Nombre maximum de cycles autorisés." },
                     "activeModules": {

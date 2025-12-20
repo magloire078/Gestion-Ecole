@@ -1,4 +1,5 @@
 
+
 'use client';
 import { 
   collection, 
@@ -92,6 +93,10 @@ export class SchoolCreationService {
     const batch = writeBatch(this.db);
     
     // 1. Create the main school document
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(startDate.getFullYear() + 1);
+
     const schoolDocData: Omit<school, 'id'> = {
       name: schoolData.name,
       address: schoolData.address,
@@ -106,6 +111,8 @@ export class SchoolCreationService {
       subscription: {
         plan: 'Essentiel',
         status: 'active',
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
         maxStudents: 50,
         maxCycles: 2,
         activeModules: [],

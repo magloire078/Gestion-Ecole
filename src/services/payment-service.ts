@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
@@ -14,12 +15,13 @@ interface PaymentProviderData {
     user: User;
     schoolId: string;
     phoneNumber?: string; // For mobile money payments
+    duration?: string; // Duration in days
 }
 
 type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn';
 
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
-    const { plan, price, description, user, schoolId, phoneNumber } = data;
+    const { plan, price, description, user, schoolId, phoneNumber, duration } = data;
     const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
     
     // Using a generic pending page for mobile money, and specific success/cancel for all.

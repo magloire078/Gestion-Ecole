@@ -1,9 +1,10 @@
 
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Zap, AlertCircle, Building, Users, Utensils, Bus, Bed, HeartPulse, Trophy, Briefcase, LandPlot, Loader2 } from "lucide-react";
+import { CheckCircle, Zap, AlertCircle, Building, Users, Utensils, Bus, Bed, HeartPulse, Trophy, Briefcase, LandPlot, Loader2, Calendar } from "lucide-react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSubscription } from "@/hooks/use-subscription";
@@ -16,6 +17,8 @@ import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { format, formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 type PlanName = 'Essentiel' | 'Pro' | 'Premium';
 type ModuleName = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
@@ -51,6 +54,7 @@ export default function SubscriptionPage() {
             plan: planName,
             price: price.toString(),
             description: `Abonnement ${planName} pour ${schoolName}`,
+            duration: '30', // Default to 30 days for monthly
         }).toString();
 
         router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
@@ -164,6 +168,22 @@ export default function SubscriptionPage() {
                 </p>
             </div>
             
+            {subscription?.endDate && (
+                <Card className="bg-primary/5">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                       <div>
+                         <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary"/> Statut de l'abonnement</CardTitle>
+                         <CardDescription>Votre plan actuel est <strong>{subscription.plan}</strong>.</CardDescription>
+                       </div>
+                        <Badge variant={subscription.status === 'active' ? 'secondary' : 'destructive'} className="capitalize">{subscription.status}</Badge>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm">Votre abonnement est valide jusqu'au <strong className="font-semibold">{format(new Date(subscription.endDate), 'd MMMM yyyy', {locale: fr})}</strong>.</p>
+                        <p className="text-xs text-muted-foreground">Il vous reste {formatDistanceToNow(new Date(subscription.endDate), {locale: fr})}.</p>
+                    </CardContent>
+                </Card>
+            )}
+
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {plans.map(plan => {
                     const current = isCurrentPlan(plan.name as PlanName);
