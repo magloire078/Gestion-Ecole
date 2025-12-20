@@ -14,11 +14,7 @@ service cloud.firestore {
     }
     
     function isSchoolMember(schoolId) {
-        // Un utilisateur est membre s'il est associé à l'école via son token/claim
-        // OU s'il a un profil de personnel dans cette école.
-        return isAuth() && 
-               (request.auth.token.schoolId == schoolId || 
-                exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)));
+        return isAuth() && request.auth.token.schoolId == schoolId;
     }
     
     function isUser(userId) {
@@ -29,7 +25,7 @@ service cloud.firestore {
         let schoolData = get(/databases/$(database)/documents/ecoles/$(schoolId)).data;
         return isAuth() && request.auth.uid == schoolData.directorId;
     }
-
+    
     // ========== GLOBAL RULES ==========
 
     // Les Super Admins ont un accès total.
@@ -54,11 +50,11 @@ service cloud.firestore {
     }
 
     // Règle pour la création du profil du directeur LORS de la création de l'école.
-    // L'utilisateur peut créer son propre profil de personnel (staffId == son uid)
-    // SI ET SEULEMENT SI, dans la même transaction, le document école en cours de création
-    // (`getAfter`) le désigne comme directeur.
+    // L'utilisateur (isUser(staffId)) peut créer son propre profil de personnel
+    // si l'école qui est sur le point d'être créée (`getAfter`) le désigne bien comme directeur.
     match /ecoles/{schoolId}/personnel/{staffId} {
-        allow create: if isUser(staffId) && getAfter(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == staffId;
+        allow create: if isUser(staffId) 
+                      && getAfter(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == staffId;
     }
     
     // ========== USER-SPECIFIC RULES ==========
@@ -85,7 +81,7 @@ service cloud.firestore {
     match /ecoles/{schoolId}/personnel/{staffId} {
         allow get, list: if isSchoolMember(schoolId);
         allow update: if isDirector(schoolId) || isUser(staffId);
-        allow delete: if isDirector(schoolId); // Seul le directeur peut supprimer un membre
+        allow delete: if isDirector(schoolId);
     }
     
     // Règle générique pour toutes les autres sous-collections.
