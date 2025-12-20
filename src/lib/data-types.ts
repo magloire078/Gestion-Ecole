@@ -27,6 +27,8 @@ export type school = {
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
         status?: "active" | "trialing" | "past_due" | "canceled";
+        startDate?: string;
+        endDate?: string;
         maxStudents?: number;
         maxCycles?: number;
         activeModules?: ('sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh')[];
@@ -613,3 +615,5 @@ export type participationCompetition = {
     rank?: string;
     notes?: string;
 };
+
+    

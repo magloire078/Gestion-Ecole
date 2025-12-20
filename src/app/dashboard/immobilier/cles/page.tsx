@@ -285,7 +285,7 @@ export default function ClesPage() {
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                   </div>
                 ))}
-                <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ value: `cle-${fields.length + 1}` })}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter une clé</Button>
+                <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ value: '' })}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter une clé</Button>
               </div>
             </form>
           </Form>
@@ -357,3 +357,5 @@ export default function ClesPage() {
     </>
   );
 }
+
+    
