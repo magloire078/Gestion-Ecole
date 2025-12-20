@@ -68,6 +68,12 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
       return true;
     }
 
+    // A user must have the base permission AND the module activated (if applicable)
+    const permissionGranted = permission ? !!userPermissions[permission] : true;
+    if (!permissionGranted) {
+        return false;
+    }
+
     if (module) {
         const isPremium = subscription?.plan === 'Premium';
         const isModuleActive = subscription?.activeModules?.includes(module);
@@ -76,7 +82,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
         }
     }
     
-    return permission ? !!userPermissions[permission] : true;
+    return true;
   };
   
   if (collapsed) {

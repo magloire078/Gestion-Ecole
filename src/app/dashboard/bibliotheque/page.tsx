@@ -74,7 +74,7 @@ export default function LibraryPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
   const { user } = useUser();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageLibrary = !!user?.profile?.permissions?.manageLibrary;
   
   const booksQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)) : null, [firestore, schoolId]);
   const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
@@ -91,7 +91,7 @@ export default function LibraryPage() {
     defaultValues: {
       title: "",
       author: "",
-      quantity: 0,
+      quantity: 1,
     },
   });
 
@@ -107,7 +107,7 @@ export default function LibraryPage() {
         form.reset({
           title: "",
           author: "",
-          quantity: 0,
+          quantity: 1,
         });
       }
     }
@@ -128,29 +128,22 @@ export default function LibraryPage() {
       createdAt: serverTimestamp(),
     };
 
-    if (editingBook) {
-        const bookDocRef = getBookDocRef(editingBook.id);
-        setDoc(bookDocRef, bookData, { merge: true })
-        .then(() => {
-          toast({ title: "Livre modifié", description: `Les informations pour "${values.title}" ont été mises à jour.` });
-          setIsFormOpen(false);
-        })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: bookDocRef.path, operation: 'update', requestResourceData: bookData });
-            errorEmitter.emit('permission-error', permissionError);
+    const promise = editingBook 
+        ? setDoc(getBookDocRef(editingBook.id), bookData, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/bibliotheque`), bookData);
+
+    promise.then(() => {
+        const action = editingBook ? "modifié" : "ajouté";
+        toast({ title: `Livre ${action}`, description: `"${values.title}" a été ${action} à la bibliothèque.` });
+        setIsFormOpen(false);
+    }).catch(error => {
+        const permissionError = new FirestorePermissionError({
+            path: `ecoles/${schoolId}/bibliotheque`,
+            operation: editingBook ? 'update' : 'create',
+            requestResourceData: bookData,
         });
-    } else {
-        const booksCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque`);
-        addDoc(booksCollectionRef, bookData)
-        .then(() => {
-            toast({ title: "Livre ajouté", description: `"${values.title}" a été ajouté à la bibliothèque.` });
-            setIsFormOpen(false);
-        })
-        .catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: booksCollectionRef.path, operation: 'create', requestResourceData: bookData });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    }
+        errorEmitter.emit('permission-error', permissionError);
+    });
   };
 
 
@@ -235,7 +228,7 @@ export default function LibraryPage() {
             <h1 className="text-lg font-semibold md:text-2xl">Bibliothèque</h1>
             <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
           </div>
-          {canManageContent && (
+          {canManageLibrary && (
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
               <DialogTrigger asChild>
                 <Button onClick={() => handleOpenFormDialog(null)}>
@@ -282,7 +275,7 @@ export default function LibraryPage() {
                  <div className="p-4">
                     <div className="flex items-start justify-between gap-2">
                          <CardTitle className="text-lg leading-tight font-bold">{book.title}</CardTitle>
-                         {canManageContent && (
+                         {canManageLibrary && (
                             <DropdownMenu>
                               <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0 h-8 w-8")}>
                                   <MoreHorizontal className="h-4 w-4" />

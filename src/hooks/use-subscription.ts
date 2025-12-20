@@ -9,8 +9,9 @@ export function useSubscription() {
     const { schoolData, loading, updateSchoolData } = useSchoolData();
 
     const updateSubscription = async (newSubscriptionData: Partial<Subscription>) => {
-        // Enveloppe les données de l'abonnement dans l'objet attendu par updateSchoolData
-        return updateSchoolData({ subscription: newSubscriptionData });
+        const currentSubscription = schoolData?.subscription || {};
+        const mergedSubscription = { ...currentSubscription, ...newSubscriptionData };
+        return updateSchoolData({ subscription: mergedSubscription });
     };
 
     return {
