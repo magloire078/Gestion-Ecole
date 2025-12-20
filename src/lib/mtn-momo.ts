@@ -78,6 +78,8 @@ export async function requestMtnMomoPayment(data: MtnMomoPaymentData): Promise<{
                 'X-Target-Environment': MTN_TARGET_ENVIRONMENT,
                 'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY,
                 'Content-Type': 'application/json',
+                // Important: Add the callback URL for the IPN
+                'X-Callback-Url': `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mtn`,
             },
             body: JSON.stringify(data),
         });

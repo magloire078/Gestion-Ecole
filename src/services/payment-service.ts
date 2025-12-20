@@ -21,8 +21,11 @@ type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn';
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
     const { plan, price, description, user, schoolId, phoneNumber } = data;
     const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
-    const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=success`;
+    
+    // Using a generic pending page for mobile money, and specific success/cancel for all.
+    const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success`;
     const cancelUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`;
+    const pendingUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente`;
 
     if (provider === 'orangemoney') {
         const transactionId = `${schoolId}_${new Date().getTime()}`;
@@ -93,9 +96,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
 
         const { success, message, transactionId: mtnTransactionId } = await requestMtnMomoPayment(paymentData);
         if (success) {
-            // MTN MoMo API v1 doesn't return a redirect URL.
-            // The user confirms on their phone. We redirect to a pending page.
-            return { url: `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?provider=mtn&tid=${mtnTransactionId}`, error: null };
+            return { url: pendingUrl, error: null };
         }
         return { url: null, error: message };
     }
