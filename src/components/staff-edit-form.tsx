@@ -14,7 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { allSubjects } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { useFirestore, useAuth } from '@/firebase';
+import { useFirestore, useAuth, useUser } from '@/firebase';
 import { doc, setDoc, getDoc, writeBatch, collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings } from '@/lib/data-types';
@@ -79,6 +79,7 @@ interface StaffEditFormProps {
 export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onFormSubmit }: StaffEditFormProps) {
     const firestore = useFirestore();
     const auth = useAuth();
+    const { user: currentUser } = useUser();
     const { toast } = useToast();
     const [todayDateString, setTodayDateString] = useState('');
     const [photoUrl, setPhotoUrl] = useState<string | null>(editingStaff?.photoURL || null);
@@ -137,8 +138,9 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
           return;
         }
         
-        const dataToSave = {
+        const dataToSave: Staff = {
             ...values,
+            uid: editingStaff?.uid || values.uid || '',
             schoolId,
             photoURL: photoUrl || '',
             matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -159,8 +161,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 errorEmitter.emit('permission-error', permissionError);
             }
         } else {
-            // Pour ajouter un nouveau membre, on suppose que le compte a déjà été créé
-            // L'UID doit être fourni.
+            // Pour ajouter un nouveau membre, on attend un UID valide d'un utilisateur déjà authentifié.
             if (!values.uid) {
                 form.setError("uid", { type: "manual", message: "L'ID de l'utilisateur (UID) est requis pour ajouter un nouveau membre." });
                 return;

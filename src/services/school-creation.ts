@@ -105,7 +105,7 @@ export class SchoolCreationService {
     batch.set(userRootRef, userRootData);
 
     // 3. Create director's staff profile
-    const staffProfileData: Omit<staff, 'id'> = {
+    const staffProfileData: Omit<staff, 'id'> & { directorId: string } = {
       uid: schoolData.directorId,
       email: schoolData.directorEmail,
       displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
@@ -116,6 +116,7 @@ export class SchoolCreationService {
       lastName: schoolData.directorLastName,
       hireDate: new Date().toISOString().split('T')[0],
       baseSalary: 0,
+      directorId: schoolData.directorId, // Add directorId for security rule check
     };
     batch.set(staffProfileRef, staffProfileData);
     
