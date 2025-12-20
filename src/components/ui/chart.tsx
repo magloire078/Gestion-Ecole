@@ -203,10 +203,7 @@ const ChartTooltipContent = React.forwardRef<
                   formatter(item.value, item.name, item, index, item.payload)
                 ) : (
                   <>
-                    {itemConfig?.icon ? (
-                      <itemConfig.icon />
-                    ) : (
-                      !hideIndicator && (
+                    {!hideIndicator && (
                         <div
                           className={cn(
                             "shrink-0 rounded-[2px] border-[--color-border] bg-[--color-bg]",
@@ -225,8 +222,7 @@ const ChartTooltipContent = React.forwardRef<
                             } as React.CSSProperties
                           }
                         />
-                      )
-                    )}
+                      )}
                     <div
                       className={cn(
                         "flex flex-1 justify-between leading-none",

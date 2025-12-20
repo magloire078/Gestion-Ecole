@@ -85,12 +85,12 @@ export default function AccountingPage() {
 
   const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), orderBy("date", "desc")) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
-  const transactions: AccountingTransaction[] = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction)) || [], [transactionsData]);
+  const transactions = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & {id: string})) || [], [transactionsData]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<AccountingTransaction | null>(null);
-  const [transactionToDelete, setTransactionToDelete] = useState<AccountingTransaction | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<(AccountingTransaction & {id: string}) | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<(AccountingTransaction & {id: string}) | null>(null);
 
   const [allCategories, setAllCategories] = useState({
     Revenu: ['Scolarité', 'Dons', 'Événements'],
@@ -184,12 +184,12 @@ export default function AccountingPage() {
     }
   };
 
-  const handleOpenFormDialog = (transaction: AccountingTransaction | null) => {
+  const handleOpenFormDialog = (transaction: (AccountingTransaction & {id: string}) | null) => {
     setEditingTransaction(transaction);
     setIsFormOpen(true);
   };
 
-  const handleOpenDeleteDialog = (transaction: AccountingTransaction) => {
+  const handleOpenDeleteDialog = (transaction: (AccountingTransaction & {id: string})) => {
     setTransactionToDelete(transaction);
     setIsDeleteDialogOpen(true);
   };

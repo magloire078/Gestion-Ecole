@@ -57,16 +57,16 @@ export function AccountingCharts({ transactions }: AccountingChartsProps) {
      const revenueByCategory = group(transactions.filter(t => t.type === 'Revenu'), d => d.category);
      const expenseByCategory = group(transactions.filter(t => t.type === 'Dépense'), d => d.category);
 
-     const revenue = Array.from(revenueByCategory, ([name, values]) => ({
+     const revenue = Array.from(revenueByCategory, ([name, values], index) => ({
         name,
         value: sum(values, d => d.amount),
-        fill: COLORS_REVENUE[Math.floor(Math.random() * COLORS_REVENUE.length)]
+        fill: COLORS_REVENUE[index % COLORS_REVENUE.length]
      })).sort((a,b) => b.value - a.value);
 
-     const expense = Array.from(expenseByCategory, ([name, values]) => ({
+     const expense = Array.from(expenseByCategory, ([name, values], index) => ({
         name,
         value: sum(values, d => d.amount),
-        fill: COLORS_EXPENSE[Math.floor(Math.random() * COLORS_EXPENSE.length)]
+        fill: COLORS_EXPENSE[index % COLORS_EXPENSE.length]
      })).sort((a,b) => b.value - a.value);
      
      const config: ChartConfig = {
