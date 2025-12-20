@@ -1,82 +1,161 @@
 
 'use client';
 
-import Link from "next/link";
-import { useSubscription } from '@/hooks/use-subscription';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Lock } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "@/firebase";
+import { useState, useMemo } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FileText, Banknote, Loader2 } from 'lucide-react';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where, getDoc, doc } from 'firebase/firestore';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import type { staff as Staff, school as OrganizationSettings } from '@/lib/data-types';
+import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
+import { PayslipPreview } from '@/components/payroll/payslip-template';
 
 export default function PaiePage() {
-    const { subscription, loading: subscriptionLoading } = useSubscription();
-    const { user, loading: userLoading } = useUser();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const firestore = useFirestore();
+  const { user, loading: userLoading } = useUser();
+  const canManageBilling = !!user?.profile?.permissions?.manageBilling;
 
-    const isLoading = subscriptionLoading || userLoading;
+  const [isPayslipOpen, setIsPayslipOpen] = useState(false);
+  const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-    if (user?.profile?.isAdmin) {
-        return <PaieContent />;
+  const staffQuery = useMemoFirebase(() => {
+    if (!schoolId) return null;
+    return query(collection(firestore, `ecoles/${schoolId}/personnel`), where('baseSalary', '>', 0));
+  }, [firestore, schoolId]);
+
+  const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
+
+  const staffWithSalary = useMemo(() => staffData?.map(doc => ({ id: doc.id, ...doc.data() } as Staff & { id: string })) || [], [staffData]);
+
+  const isLoading = schoolLoading || userLoading || staffLoading;
+  
+  const handleGeneratePayslip = async (staffMember: Staff) => {
+    if (!schoolData) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Données de l\'école non chargées.'});
+        return;
     }
     
-    if (isLoading) {
-        return (
-            <div className="space-y-6">
-                <Skeleton className="h-12 w-1/3" />
-                <Skeleton className="h-4 w-2/3" />
-                <Skeleton className="h-64 w-full" />
+    setIsGenerating(true);
+    setPayslipDetails(null);
+    setIsPayslipOpen(true);
+
+    try {
+        // We need to fetch the full document to get all payroll fields
+        const fullStaffDoc = await getDoc(doc(firestore, `ecoles/${schoolId}/personnel/${staffMember.id!}`));
+        if(!fullStaffDoc.exists()) throw new Error("Staff member not found");
+
+        const payslipDate = new Date().toISOString();
+        const details = await getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as OrganizationSettings);
+        setPayslipDetails(details);
+    } catch (e) {
+        console.error(e);
+        toast({
+            variant: "destructive",
+            title: "Erreur de génération",
+            description: "Impossible de calculer le bulletin de paie. Vérifiez que toutes les données de l'employé sont renseignées.",
+        });
+        setIsPayslipOpen(false);
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
+
+  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><Banknote />Gestion de la Paie</CardTitle>
+          <CardDescription>
+            Générez et consultez les bulletins de paie de votre personnel.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nom</TableHead>
+                <TableHead>Rôle</TableHead>
+                <TableHead>Salaire de Base</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                [...Array(3)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
+                  </TableRow>
+                ))
+              ) : staffWithSalary.length > 0 ? (
+                staffWithSalary.map(staff => (
+                  <TableRow key={staff.id}>
+                    <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
+                    <TableCell className="capitalize">{staff.role}</TableCell>
+                    <TableCell className="font-mono">{formatCurrency(staff.baseSalary)}</TableCell>
+                    <TableCell>
+                      <Badge variant={staff.status === 'Actif' ? 'secondary' : 'outline'}>{staff.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {canManageBilling && (
+                          <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(staff)}>
+                            <FileText className="mr-2 h-4 w-4" />
+                            Générer Bulletin
+                          </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24">Aucun membre du personnel avec un salaire défini.</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+      
+      <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
+        <DialogContent className="max-w-4xl p-0">
+             <DialogHeader className="p-6 pb-0">
+              <DialogTitle>Aperçu du Bulletin de paie</DialogTitle>
+              <DialogDescription>
+                Ceci est une prévisualisation basée sur les données enregistrées pour cet employé.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-6 pt-2">
+              {isGenerating ? (
+                  <div className="flex items-center justify-center h-96">
+                      <Loader2 className="mr-2 h-8 w-8 animate-spin"/>
+                      <p>Génération du bulletin de paie...</p>
+                  </div>
+              ) : payslipDetails ? (
+                  <PayslipPreview details={payslipDetails} />
+              ) : (
+                  <div className="flex items-center justify-center h-96">
+                      <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
+                  </div>
+              )}
             </div>
-        );
-    }
-    
-    const hasAccess = subscription?.plan === 'Pro' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('rh');
-
-    if (!hasAccess) {
-        return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
-                <Card className="max-w-lg">
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-center gap-2">
-                            <Lock className="h-6 w-6 text-primary" />
-                            Module Paie
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-muted-foreground">
-                            La gestion avancée de la paie est un module complémentaire ou inclus dans les plans Pro et Premium.
-                        </p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button asChild className="w-full">
-                            <Link href="/dashboard/parametres/abonnement">
-                                Gérer mon abonnement
-                            </Link>
-                        </Button>
-                    </CardFooter>
-                </Card>
-            </div>
-        );
-    }
-    
-    return <PaieContent />;
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
-
-
-function PaieContent() {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Gestion de la Paie</CardTitle>
-                <CardDescription>
-                    Générez et consultez les bulletins de paie de votre personnel.
-                </CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <p className="text-muted-foreground">
-                    La fonctionnalité complète de gestion de la paie est en cours de développement. Actuellement, vous pouvez générer un aperçu de bulletin de paie depuis le profil d'un membre du personnel.
-                </p>
-            </CardContent>
-        </Card>
-    );
-}
-
