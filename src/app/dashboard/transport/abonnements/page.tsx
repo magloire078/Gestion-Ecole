@@ -19,6 +19,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { SubscriptionForm } from '@/components/transport/subscription-form';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -38,6 +48,8 @@ export default function TransportSubscriptionsPage() {
     
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingSubscription, setEditingSubscription] = useState<(TransportSubscription & { id: string }) | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [subscriptionToDelete, setSubscriptionToDelete] = useState<(TransportSubscription & { id: string }) | null>(null);
 
     const subscriptionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_abonnements`)) : null, [firestore, schoolId]);
     const { data: subscriptionsData, loading: subscriptionsLoading } = useCollection(subscriptionsQuery);
@@ -81,17 +93,25 @@ export default function TransportSubscriptionsPage() {
         setEditingSubscription(null);
     };
     
-    const handleDeleteSubscription = async (subscriptionId: string) => {
-        if (!schoolId) return;
+    const handleOpenDeleteDialog = (subscription: (TransportSubscription & { id: string })) => {
+        setSubscriptionToDelete(subscription);
+        setIsDeleteDialogOpen(true);
+    };
+
+    const handleDeleteSubscription = async () => {
+        if (!schoolId || !subscriptionToDelete) return;
         try {
-            await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements`, subscriptionId));
+            await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements`, subscriptionToDelete.id));
             toast({ title: 'Abonnement supprimé', description: "L'abonnement a bien été supprimé." });
         } catch (e) {
              const permissionError = new FirestorePermissionError({
-                path: `ecoles/${schoolId}/transport_abonnements/${subscriptionId}`,
+                path: `ecoles/${schoolId}/transport_abonnements/${subscriptionToDelete.id}`,
                 operation: 'delete',
             });
             errorEmitter.emit('permission-error', permissionError);
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setSubscriptionToDelete(null);
         }
     }
 
@@ -150,7 +170,7 @@ export default function TransportSubscriptionsPage() {
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenForm(sub)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteSubscription(sub.id)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(sub)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -180,6 +200,23 @@ export default function TransportSubscriptionsPage() {
             />
         </DialogContent>
     </Dialog>
+    
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible. L'abonnement sera définitivement supprimé.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteSubscription} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
