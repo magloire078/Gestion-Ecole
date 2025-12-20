@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -144,8 +144,8 @@ export default function StructurePage() {
     defaultValues: { name: '', code: '', order: 1, cycleId: '', capacity: 30 }
   });
 
-  const { watch: cycleWatch, setValue: cycleSetValue } = cycleForm;
-  const watchedCycleName = cycleWatch('name');
+  const { setValue: cycleSetValue } = cycleForm;
+  const watchedCycleName = useWatch({ control: cycleForm.control, name: 'name' });
 
   useEffect(() => {
     const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
@@ -155,9 +155,9 @@ export default function StructurePage() {
     }
   }, [watchedCycleName, cycleSetValue]);
   
-  const { watch: niveauWatch, setValue: niveauSetValue } = niveauForm;
-  const watchedNiveauCycleId = niveauWatch('cycleId');
-  const watchedNiveauName = niveauWatch('name');
+  const { setValue: niveauSetValue } = niveauForm;
+  const watchedNiveauCycleId = useWatch({ control: niveauForm.control, name: 'cycleId' });
+  const watchedNiveauName = useWatch({ control: niveauForm.control, name: 'name' });
 
   const selectedCycleForNiveau = cycles.find(c => c.id === watchedNiveauCycleId);
   const niveauxOptionsForSelectedCycle = selectedCycleForNiveau ? ivorianNiveaux[selectedCycleForNiveau.name as keyof typeof ivorianNiveaux] || [] : [];
@@ -522,4 +522,3 @@ export default function StructurePage() {
     </>
   );
 }
-
