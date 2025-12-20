@@ -149,3 +149,4 @@ export const immobilierNavLinks = [
   { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench },
   { href: '/dashboard/immobilier/cles', label: 'Gestion des clés', icon: KeyRound },
 ];
+

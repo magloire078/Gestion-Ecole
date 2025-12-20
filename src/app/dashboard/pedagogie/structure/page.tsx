@@ -11,11 +11,12 @@ import {
   List,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 import Link from 'next/link';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, addDoc, doc, setDoc, deleteDoc, getDocs, where, limit } from 'firebase/firestore';
+import { collection, query, addDoc, doc, setDoc, deleteDoc, getDocs, where, limit, writeBatch } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ClassesGridView } from '@/components/classes/classes-grid-view';
@@ -78,6 +79,7 @@ export default function StructurePage() {
   
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{type: 'cycle' | 'niveau', data: any} | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   // --- Data Fetching ---
   const cyclesQuery = useMemoFirebase(() => 
@@ -265,6 +267,46 @@ export default function StructurePage() {
     setIsDeleteDialogOpen(false);
     setItemToDelete(null);
   };
+  
+  const handleImportTemplate = async () => {
+    if (!schoolId) return;
+    setIsImporting(true);
+
+    const batch = writeBatch(firestore);
+
+    for (const cycle of ivorianCycles) {
+        const cycleRef = doc(collection(firestore, `ecoles/${schoolId}/cycles`));
+        batch.set(cycleRef, { ...cycle, schoolId: schoolId, isActive: true, color: '#3b82f6' });
+
+        const niveauxPourCycle = ivorianNiveaux[cycle.name as keyof typeof ivorianNiveaux];
+        if (niveauxPourCycle) {
+            for (let i = 0; i < niveauxPourCycle.length; i++) {
+                const niveauName = niveauxPourCycle[i];
+                const niveauRef = doc(collection(firestore, `ecoles/${schoolId}/niveaux`));
+                batch.set(niveauRef, {
+                    name: niveauName,
+                    code: niveauName.replace(/\s+/g, '').toUpperCase(),
+                    order: i + 1,
+                    cycleId: cycleRef.id,
+                    schoolId: schoolId,
+                    capacity: 30, // Default capacity
+                    ageMin: 0,
+                    ageMax: 0,
+                });
+            }
+        }
+    }
+    
+    try {
+        await batch.commit();
+        toast({ title: 'Structure importée', description: 'La structure scolaire a été importée avec succès.'});
+    } catch(e) {
+        console.error(e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'L\'importation a échoué.'});
+    } finally {
+        setIsImporting(false);
+    }
+  }
 
   return (
     <>
@@ -283,6 +325,23 @@ export default function StructurePage() {
           </div>
         )}
       </div>
+
+       {cycles.length === 0 && !isLoading && isDirectorOrAdmin && (
+            <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                <CardHeader>
+                    <CardTitle>Démarrage Rapide</CardTitle>
+                    <CardDescription>
+                        Importez une structure standard du système éducatif ivoirien (maternelle, primaire, collège, lycée) pour commencer rapidement. Vous pourrez la modifier par la suite.
+                    </CardDescription>
+                </CardHeader>
+                <CardFooter>
+                    <Button onClick={handleImportTemplate} disabled={isImporting}>
+                        {isImporting ? <><Download className="mr-2 h-4 w-4 animate-spin"/> Importation en cours...</> : <><Download className="mr-2 h-4 w-4"/> Importer la structure</>}
+                    </Button>
+                </CardFooter>
+            </Card>
+       )}
+
 
       <Accordion type="multiple" defaultValue={cycles.map(c => c.id)} className="w-full space-y-4">
         {cycles.map(cycle => (
