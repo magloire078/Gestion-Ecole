@@ -1,20 +1,38 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Edit } from 'lucide-react';
+import { PlusCircle, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { canteenSubscription as CanteenSubscription, student as Student } from '@/lib/data-types';
 import { SubscriptionForm } from './subscription-form';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 interface SubscriptionWithStudentName extends CanteenSubscription {
     studentName?: string;
@@ -24,10 +42,14 @@ interface SubscriptionWithStudentName extends CanteenSubscription {
 export function SubscriptionList({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageCantine;
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<(CanteenSubscription & { id: string }) | null>(null);
+
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [subscriptionToDelete, setSubscriptionToDelete] = useState<(CanteenSubscription & { id: string }) | null>(null);
 
   const subscriptionsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`)), [firestore, schoolId]);
   const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
@@ -59,6 +81,28 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
       setIsFormOpen(false);
       setEditingSubscription(null);
   }
+
+  const handleOpenDeleteDialog = (subscription: SubscriptionWithStudentName) => {
+    setSubscriptionToDelete(subscription);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteSubscription = async () => {
+    if (!schoolId || !subscriptionToDelete) return;
+    try {
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/cantine_abonnements`, subscriptionToDelete.id));
+      toast({ title: "Abonnement supprimé", description: "L'abonnement a bien été supprimé." });
+    } catch (e) {
+      const permissionError = new FirestorePermissionError({
+        path: `ecoles/${schoolId}/cantine_abonnements/${subscriptionToDelete.id}`,
+        operation: 'delete'
+      });
+      errorEmitter.emit('permission-error', permissionError);
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setSubscriptionToDelete(null);
+    }
+  };
 
   const isLoading = subscriptionsLoading || studentsLoading;
   
@@ -126,9 +170,15 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
                     </TableCell>
                     <TableCell className="text-right">
                         {canManageContent && (
-                            <Button variant="ghost" size="icon" onClick={() => handleOpenForm(sub)}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => handleOpenForm(sub)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
+                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(sub)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         )}
                     </TableCell>
                   </TableRow>
@@ -161,6 +211,23 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
             />
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible. L'abonnement de <strong>{subscriptionToDelete?.studentName}</strong> sera définitivement supprimé.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteSubscription} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
