@@ -63,8 +63,13 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
   const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)), [firestore, schoolId]);
   
-  const todayStart = format(new Date(), 'yyyy-MM-dd') + 'T00:00:00';
-  const todayEnd = format(new Date(), 'yyyy-MM-dd') + 'T23:59:59';
+  const { todayStart, todayEnd } = useMemo(() => {
+    const now = new Date();
+    return {
+      todayStart: format(now, 'yyyy-MM-dd') + 'T00:00:00',
+      todayEnd: format(now, 'yyyy-MM-dd') + 'T23:59:59',
+    };
+  }, []);
 
   const todayLogsQuery = useMemoFirebase(() => {
     return query(
