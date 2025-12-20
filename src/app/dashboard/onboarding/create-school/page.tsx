@@ -99,8 +99,8 @@ export default function CreateSchoolPage() {
         duration: 5000,
       });
 
-      // Redirect to dashboard without any special params
-      router.push('/dashboard');
+      // Force a full page reload to ensure all states and guards are re-evaluated correctly.
+      window.location.href = '/dashboard';
 
     } catch (error: any) {
       console.error(error);
