@@ -46,7 +46,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageInternat;
   const [selectedBuilding, setSelectedBuilding] = useState<string | null>(null);
   
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -332,5 +332,3 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
     </>
   );
 }
-
-    
