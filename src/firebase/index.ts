@@ -17,28 +17,28 @@ let firestore: Firestore;
 let storage: FirebaseStorage;
 
 function initializeFirebase() {
-  if (typeof window !== 'undefined') {
-    if (!getApps().length) {
-      app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      firestore = initializeFirestore(app, {
-        localCache: persistentLocalCache(/* settings */),
-      });
-      storage = getStorage(app);
-    } else {
-      app = getApp();
-      auth = getAuth(app);
-      firestore = getFirestore(app);
-      storage = getStorage(app);
-    }
-    return {app, auth, firestore, storage};
+  if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    firestore = initializeFirestore(app, {
+      localCache: persistentLocalCache({}),
+    });
+    storage = getStorage(app);
+  } else {
+    app = getApp();
+    auth = getAuth(app);
+    firestore = getFirestore(app);
+    storage = getStorage(app);
   }
-  
-  return null;
+  return {app, auth, firestore, storage};
 }
 
+
 export function getFirebase() {
+  if (typeof window !== 'undefined') {
     return initializeFirebase();
+  }
+  return null;
 }
 
 export function useMemoFirebase<T>(
