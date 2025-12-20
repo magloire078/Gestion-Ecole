@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from "next/link";
@@ -34,7 +33,7 @@ export default function RHLayout({
         );
     }
     
-    const hasAccess = subscription?.activeModules?.includes('rh') || subscription?.plan === 'Premium';
+    const hasAccess = subscription?.plan === 'Pro' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('rh');
 
     if (!hasAccess) {
         return (
