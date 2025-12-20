@@ -90,7 +90,7 @@ export function SubscriptionForm({ schoolId, students, routes, subscription, onS
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
             <FormField control={form.control} name="studentId" render={({ field }) => (
-                <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!subscription}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id!}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+                <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!subscription}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id!}>{s.firstName} ${s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
             )}/>
             <FormField control={form.control} name="routeId" render={({ field }) => (
                 <FormItem><FormLabel>Ligne</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une ligne" /></SelectTrigger></FormControl><SelectContent>{routes.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>

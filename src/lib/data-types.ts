@@ -418,6 +418,7 @@ export type route = {
         lng?: number;
         timestamp?: string;
     };
+    id?: string;
 };
 
 export type routeSchedule = {
