@@ -281,6 +281,26 @@ export default function SettingsPage() {
             </Form>
         </div>
         
+        <div className="lg:col-span-3 space-y-6">
+            {schoolData?.schoolCode && (
+              <InvitationCode code={schoolData.schoolCode} onCopy={handleCopyCode} />
+            )}
+
+            <Card className="border-destructive">
+                <CardHeader>
+                    <CardTitle className="text-destructive">Zone de Danger</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Button variant="destructive" onClick={() => setIsResetDialogOpen(true)}>
+                        <LogOut className="mr-2 h-4 w-4"/>
+                        Réinitialiser mon compte / Quitter l'école
+                    </Button>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        Cette action vous dissociera de l'école actuelle. Utile si vous avez rejoint une école par erreur.
+                    </p>
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </div>
      <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
