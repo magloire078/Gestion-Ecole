@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/accordion"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function RolesPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -64,8 +66,11 @@ export default function RolesPage() {
         await deleteDoc(doc(firestore, `ecoles/${schoolId}/admin_roles/${roleToDelete.id}`));
         toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
     } catch(e) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le rôle.' });
-        console.error(e);
+        const permissionError = new FirestorePermissionError({
+            path: `ecoles/${schoolId}/admin_roles/${roleToDelete.id}`,
+            operation: 'delete'
+        });
+        errorEmitter.emit('permission-error', permissionError);
     } finally {
         setIsDeleteDialogOpen(false);
         setRoleToDelete(null);
@@ -116,7 +121,7 @@ export default function RolesPage() {
                                     </div>
                                     <div className="flex items-center gap-2">
                                         {role.isSystem && <Badge variant="secondary">Système</Badge>}
-                                        {!role.isSystem && (
+                                        {canManageSettings && !role.isSystem && (
                                             <DropdownMenu onOpenChange={(open) => open && (event?.stopPropagation())}>
                                                 <DropdownMenuTrigger asChild>
                                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
