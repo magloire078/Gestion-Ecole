@@ -31,6 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import * as React from 'react';
+import { useMemo } from 'react';
 
 interface UserNavProps {
   collapsed?: boolean;
