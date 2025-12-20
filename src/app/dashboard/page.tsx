@@ -1,8 +1,8 @@
 
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, Check, Plus, CreditCard, Calendar, Activity, Wallet } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Users, BookUser, School, BookOpen, UserPlus, FileText, CalendarClock, MessageSquare, Check, Plus, CreditCard, Calendar, Activity, Wallet, Milestone } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
+import { Progress } from '@/components/ui/progress';
 
 // ====================================================================================
 // TYPES
@@ -31,7 +32,7 @@ type ActivityItem = {
   date: Date;
 };
 
-type OnboardingStatus = {
+interface OnboardingStatus {
   baseInfoDone: boolean;
   structureDone: boolean;
   staffDone: boolean;
@@ -41,7 +42,7 @@ type OnboardingStatus = {
   feesCount: number;
   completion: number;
   isSetupComplete: boolean;
-};
+}
 
 // ====================================================================================
 // Regular Dashboard Component
@@ -375,7 +376,6 @@ const RegularDashboard = () => {
 // Onboarding Dashboard Component
 // ====================================================================================
 const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: OnboardingStatus }) => {
-  const router = useRouter();
   const { schoolData } = useSchoolData();
 
   const StepCard = ({ number, title, description, isDone, href, cta, count, required }: { 
@@ -434,9 +434,7 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
                 <span className="font-medium text-sm">Progression de la configuration</span>
                 <span className="text-primary font-bold">{onboardingStatus.completion}%</span>
             </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: `${onboardingStatus.completion}%`, transition: 'width 0.5s ease-in-out' }}></div>
-            </div>
+            <Progress value={onboardingStatus.completion} className="h-2"/>
         </CardContent>
       </Card>
       
@@ -454,7 +452,7 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
         <StepCard 
           number={2} 
           title="Structure Scolaire" 
-          description="Cycles & classes" 
+          description="Cycles & niveaux" 
           isDone={onboardingStatus.structureDone}
           href="/dashboard/pedagogie/structure"
           cta={onboardingStatus.structureDone ? "Gérer la structure" : "Définir la structure"}
@@ -489,7 +487,8 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
           onClick={() => window.location.reload()} 
           disabled={!onboardingStatus.isSetupComplete}
         >
-          {onboardingStatus.isSetupComplete ? 'Accéder au tableau de bord' : 'Configuration incomplète'}
+          <Milestone className="mr-2 h-5 w-5"/>
+          {onboardingStatus.isSetupComplete ? 'Terminer la configuration et accéder au Dashboard' : 'Configuration incomplète'}
         </Button>
       </div>
     </div>
@@ -501,13 +500,13 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
 // Main Page Component
 // ====================================================================================
 export default function DashboardPage() {
-  const { schoolData, schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolData, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
   const calculateOnboardingStatus = useCallback((schoolData: any, classesCount: number, teachersCount: number, feesCount: number): OnboardingStatus => {
-    const baseInfoDone = !!(schoolData?.name && schoolData?.address);
+    const baseInfoDone = !!(schoolData?.name && schoolData?.address && schoolData?.phone);
     const structureDone = classesCount > 0;
     const staffDone = teachersCount > 0;
     const feesDone = feesCount > 0;
@@ -535,7 +534,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (schoolLoading || !schoolId || !firestore) {
+    if (schoolLoading || !schoolData?.id || !firestore) {
       if (!schoolLoading) setLoading(false);
       return;
     }
@@ -544,9 +543,9 @@ export default function DashboardPage() {
       setLoading(true);
       try {
         const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
-          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/classes`))),
-          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'))),
-          getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/classes`))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/personnel`), where('role', '==', 'enseignant'))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/frais_scolarite`))),
         ]);
 
         const status = calculateOnboardingStatus(
@@ -555,7 +554,7 @@ export default function DashboardPage() {
           teachersSnap.data().count,
           feesSnap.data().count
         );
-
+        
         setOnboardingStatus(status);
       } catch (error) {
         console.error('Error fetching onboarding data:', error);
@@ -565,7 +564,7 @@ export default function DashboardPage() {
     };
 
     fetchOnboardingData();
-  }, [schoolId, firestore, schoolData, schoolLoading, calculateOnboardingStatus]);
+  }, [schoolData, firestore, schoolLoading, calculateOnboardingStatus]);
 
   if (loading) {
      return (

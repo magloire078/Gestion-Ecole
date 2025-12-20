@@ -24,6 +24,7 @@ interface SchoolData extends DocumentData {
     directorFirstName?: string;
     directorLastName?: string;
     directorPhone?: string;
+    directorEmail?: string;
     schoolCode?: string;
     matricule?: string;
     mainLogoUrl?: string;
@@ -106,5 +107,3 @@ export function useSchoolData() {
         updateSchoolData 
     };
 }
-
-    
