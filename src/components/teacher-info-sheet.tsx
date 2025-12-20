@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { staff as Teacher } from '@/lib/data-types';
+import { SafeImage } from './ui/safe-image';
 
 interface SchoolInfo {
   name: string;
@@ -33,7 +34,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
       const printWindow = window.open('', '', 'height=800,width=800');
       if (printWindow) {
         printWindow.document.write('<html><head><title>Fiche Enseignant</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="all">');
+        printWindow.document.write('<link rel="stylesheet" href="/_next/static/css/app/layout.css" type="text/css" media="print">');
         printWindow.document.write(`
             <style>
                 body { font-family: sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -96,7 +97,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                     <main className="space-y-8">
                         <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/50">
                             <Avatar className="h-24 w-24">
-                                <AvatarImage src={teacher.photoURL || `https://picsum.photos/seed/${teacher.id}/200`} alt={teacherFullName} data-ai-hint="person face" />
+                                <SafeImage src={teacher.photoURL} alt={teacherFullName} data-ai-hint="person face" />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                             <div className="space-y-1 text-center sm:text-left">

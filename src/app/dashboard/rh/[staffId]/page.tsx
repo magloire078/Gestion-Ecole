@@ -5,7 +5,7 @@
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield } from 'lucide-react';
+import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pencil } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -14,12 +14,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import type { staff as Staff, class_type as Class, school as OrganizationSettings, timetableEntry as TimetableEntry, admin_role as AdminRole } from '@/lib/data-types';
-import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
-import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
-import { SafeImage } from './safe-image';
+import { SafeImage } from '@/components/ui/safe-image';
+import { StaffEditForm } from '@/components/staff-edit-form';
 
 export default function StaffProfilePage() {
     const params = useParams();
@@ -49,12 +48,13 @@ interface StaffProfileContentProps {
 function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
   const router = useRouter();
   const firestore = useFirestore();
-  const { schoolData } = useSchoolData();
   const { user } = useUser();
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
   const { toast } = useToast();
   
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
   const staffRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`), [firestore, schoolId, staffId]);
   const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
 
@@ -66,12 +66,20 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
 
   const classRef = useMemoFirebase(() => staffMember?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
   const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
+  
+  const allSchoolClassesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
+  const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
+  const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);
+
+  const allAdminRolesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/admin_roles`), [firestore, schoolId]);
+  const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
+  const allAdminRoles: (AdminRole & {id: string})[] = useMemo(() => allAdminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [allAdminRolesData]);
 
   const timetableQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)), [firestore, schoolId, staffId]);
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as TimetableEntry) || [], [timetableData]);
   
-  const isLoading = staffLoading || classLoading || timetableLoading || adminRoleLoading;
+  const isLoading = staffLoading || classLoading || timetableLoading || adminRoleLoading || allClassesLoading || allAdminRolesLoading;
 
   if (isLoading) {
     return <StaffDetailSkeleton />;
@@ -104,6 +112,11 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
             <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
               <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
             </Button>
+            {canManageUsers && (
+              <Button onClick={() => setIsEditDialogOpen(true)}>
+                  <Pencil className="mr-2 h-4 w-4" /> Modifier
+              </Button>
+            )}
         </div>
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
 
@@ -186,6 +199,22 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
             </div>
         </div>
     </div>
+    
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Modifier un Membre du Personnel</DialogTitle>
+            <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>
+          </DialogHeader>
+          <StaffEditForm
+              schoolId={schoolId}
+              editingStaff={staffMember}
+              classes={allSchoolClasses}
+              adminRoles={allAdminRoles}
+              onFormSubmit={() => setIsEditDialogOpen(false)}
+           />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
