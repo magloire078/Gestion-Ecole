@@ -10,7 +10,8 @@ import {
   signInWithEmailAndPassword,
   updateProfile,
 } from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { doc, setDoc } from 'firebase/firestore';
+import { useAuth, useUser, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -66,6 +67,7 @@ export default function LoginPage() {
 
   const router = useRouter();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, loading } = useUser();
   const { toast } = useToast();
 
@@ -113,6 +115,11 @@ export default function LoginPage() {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
+
+        // Créer le document utilisateur dans Firestore
+        const userDocRef = doc(firestore, "utilisateurs", userCredential.user.uid);
+        await setDoc(userDocRef, { schoolId: null });
+
         toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.' });
         window.location.href = '/dashboard';
     } catch (error: any) {
