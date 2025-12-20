@@ -7,6 +7,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,6 +54,8 @@ export default function BatimentsPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<(Building & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [buildingToDelete, setBuildingToDelete] = useState<(Building & { id: string }) | null>(null);
 
   const buildingsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)) : null, [firestore, schoolId]);
   const { data: buildingsData, loading: buildingsLoading } = useCollection(buildingsQuery);
@@ -97,6 +109,36 @@ export default function BatimentsPage() {
     }
   };
   
+  const handleOpenDeleteDialog = (building: Building & { id: string }) => {
+    setBuildingToDelete(building);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteBuilding = async () => {
+    if (!schoolId || !buildingToDelete) return;
+    
+    if (sallesByBuilding[buildingToDelete.id] && sallesByBuilding[buildingToDelete.id].length > 0) {
+        toast({
+            variant: "destructive",
+            title: "Action impossible",
+            description: "Vous ne pouvez pas supprimer un bâtiment qui contient encore des salles."
+        });
+        setIsDeleteDialogOpen(false);
+        return;
+    }
+    
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_batiments`, buildingToDelete.id));
+        toast({ title: "Bâtiment supprimé" });
+    } catch (e) {
+        const path = `ecoles/${schoolId}/internat_batiments/${buildingToDelete.id}`;
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation: 'delete' }));
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setBuildingToDelete(null);
+    }
+  }
+  
   const isLoading = schoolLoading || buildingsLoading || staffLoading || sallesLoading;
 
   if (isLoading) {
@@ -129,12 +171,31 @@ export default function BatimentsPage() {
           <AccordionItem value={building.id} key={building.id} className="border rounded-lg overflow-hidden">
              <Card className="border-0 shadow-none">
                 <AccordionTrigger className="p-4 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                   <div className="flex items-center gap-4 text-lg font-semibold">
+                   <div className="flex items-center gap-4 text-lg font-semibold flex-1">
                        <Building2 className="h-6 w-6 text-primary" />
                        {building.name}
                        <Badge variant="outline" className="font-mono text-xs">{sallesByBuilding[building.id]?.length || 0} salle(s)</Badge>
                    </div>
                 </AccordionTrigger>
+                <div className="px-4 -mt-2 mb-2">
+                     {canManageContent && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => { setEditingBuilding(building); setIsFormOpen(true); }}>
+                                    <Edit className="mr-2 h-4 w-4" /> Modifier
+                                </DropdownMenuItem>
+                                 <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(building)}>
+                                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                     )}
+                </div>
                 <AccordionContent>
                   <div className="px-4 pb-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-2">
@@ -177,6 +238,23 @@ export default function BatimentsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                       Cette action est irréversible. Le bâtiment <strong>"{buildingToDelete?.name}"</strong> sera supprimé.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteBuilding} className="bg-destructive hover:bg-destructive/90">
+                        Supprimer
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     </>
   );
 }
