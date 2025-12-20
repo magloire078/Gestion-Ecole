@@ -132,7 +132,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     
     const watchedRole = form.watch('role');
 
-    const handleSubmit = (values: StaffFormValues) => {
+    const handleSubmit = async (values: StaffFormValues) => {
         if (!schoolId) {
           toast({ variant: 'destructive', title: 'Erreur', description: "ID de l'école non trouvé." });
           return;
@@ -149,48 +149,49 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
 
         if (editingStaff) {
             const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
-            setDoc(staffDocRef, dataToSave, { merge: true })
-                .then(() => {
-                    toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
-                    onFormSubmit();
-                })
-                .catch(serverError => {
-                    const permissionError = new FirestorePermissionError({
-                        path: staffDocRef.path,
-                        operation: 'update',
-                        requestResourceData: dataToSave,
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
+            try {
+                await setDoc(staffDocRef, dataToSave, { merge: true });
+                toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
+                onFormSubmit();
+            } catch (serverError) {
+                const permissionError = new FirestorePermissionError({
+                    path: staffDocRef.path, operation: 'update', requestResourceData: dataToSave,
                 });
+                errorEmitter.emit('permission-error', permissionError);
+            }
         } else {
             if (!password) {
                  form.setError("password", { type: "manual", message: "Le mot de passe est requis pour un nouvel utilisateur." });
                  return;
             }
-            // We can't create the user here due to auth limitations. 
-            // This part should be handled by a backend function or a different flow.
-            // For now, we will simulate the user creation part and just write to Firestore.
-            const newUid = `simulated_${Date.now()}`;
-            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}`);
-            const userRootRef = doc(firestore, `utilisateurs/${newUid}`);
+            try {
+                // Étape 1: Créer l'utilisateur dans Firebase Auth
+                // NOTE: Cette action est normalement effectuée côté serveur pour des raisons de sécurité.
+                // Ici, nous la faisons côté client car nous n'avons pas de backend.
+                // Dans un environnement de production, utilisez des fonctions Cloud.
+                const userCredential = await createUserWithEmailAndPassword(auth, values.email, password);
+                await updateProfile(userCredential.user, { displayName: `${values.firstName} ${values.lastName}` });
 
-            const batch = writeBatch(firestore);
-            batch.set(staffDocRef, { ...dataToSave, uid: newUid });
-            batch.set(userRootRef, { schoolId });
-            
-            batch.commit()
-                .then(() => {
-                    toast({ title: "Membre du personnel ajouté (Simulation)", description: `${values.firstName} ${values.lastName} a été ajouté(e).` });
-                    onFormSubmit();
-                })
-                .catch(serverError => {
-                    const permissionError = new FirestorePermissionError({
-                        path: `[BATCH] ecoles/${schoolId}/personnel/...`,
-                        operation: 'create',
-                        requestResourceData: dataToSave,
-                    });
-                    errorEmitter.emit('permission-error', permissionError);
-                });
+                // Étape 2: Créer les documents Firestore
+                const newUid = userCredential.user.uid;
+                const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}`);
+                const userRootRef = doc(firestore, `utilisateurs/${newUid}`);
+                
+                const batch = writeBatch(firestore);
+                batch.set(staffDocRef, { ...dataToSave, uid: newUid });
+                batch.set(userRootRef, { schoolId });
+                
+                await batch.commit();
+
+                toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) et un compte a été créé.` });
+                onFormSubmit();
+            } catch (authError: any) {
+                 if (authError.code === 'auth/email-already-in-use') {
+                    toast({ variant: 'destructive', title: 'Erreur', description: 'Cette adresse email est déjà utilisée par un autre compte.'});
+                } else {
+                    toast({ variant: 'destructive', title: 'Erreur de création', description: "Impossible de créer le compte d'authentification."});
+                }
+            }
         }
     };
     
