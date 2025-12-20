@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
-import { DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogFooter, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { allSubjects } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
@@ -17,14 +17,17 @@ import { useState, useEffect } from 'react';
 import { useFirestore, useAuth } from '@/firebase';
 import { doc, setDoc, getDoc, writeBatch, collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import type { staff as Staff, class_type as Class, admin_role as AdminRole } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { format, parseISO, isValid } from 'date-fns';
 import { ImageUploader } from './image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Upload, Loader2 } from 'lucide-react';
+import { Upload, Loader2, FileText } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { PayslipPreview } from '@/components/payroll/payslip-template';
 
 const staffSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -79,6 +82,11 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     const { toast } = useToast();
     const [todayDateString, setTodayDateString] = useState('');
     const [photoUrl, setPhotoUrl] = useState<string | null>(editingStaff?.photoURL || null);
+    
+    const [isPayslipOpen, setIsPayslipOpen] = useState(false);
+    const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
+    const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
+    const { schoolData } = useSchoolData();
 
     useEffect(() => {
         setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
@@ -186,7 +194,36 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         }
     };
     
+    const handlePreviewPayslip = async () => {
+        if (!schoolData) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Données de l\'école non chargées.'});
+            return;
+        }
+        
+        setIsGeneratingPayslip(true);
+        setPayslipDetails(null);
+        setIsPayslipOpen(true);
+
+        try {
+            const currentFormData = form.getValues();
+            const payslipDate = new Date().toISOString();
+            const details = await getPayslipDetails(currentFormData as Staff, payslipDate, schoolData as OrganizationSettings);
+            setPayslipDetails(details);
+        } catch (e) {
+            console.error(e);
+            toast({
+                variant: "destructive",
+                title: "Erreur de génération",
+                description: "Impossible de calculer le bulletin de paie. Vérifiez que toutes les données sont renseignées.",
+            });
+            setIsPayslipOpen(false);
+        } finally {
+            setIsGeneratingPayslip(false);
+        }
+    };
+    
     return (
+        <>
         <Form {...form}>
             <form id="staff-form" onSubmit={form.handleSubmit(handleSubmit)}>
                 <Tabs defaultValue="general" className="w-full">
@@ -260,6 +297,10 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                                 </AccordionContent>
                               </AccordionItem>
                             </Accordion>
+                             <Button type="button" variant="secondary" onClick={handlePreviewPayslip} className="w-full">
+                                <FileText className="mr-2 h-4 w-4" />
+                                Prévisualiser le Bulletin de Paie
+                            </Button>
                         </TabsContent>
                          <TabsContent value="personal" className="mt-0 space-y-4">
                              <div className="grid grid-cols-2 gap-4">
@@ -295,5 +336,29 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 </DialogFooter>
             </form>
         </Form>
+        <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
+            <DialogContent className="max-w-4xl p-0">
+                <DialogHeader className="p-6 pb-0">
+                  <DialogTitle>Aperçu du Bulletin de paie</DialogTitle>
+                  <DialogDescription>
+                    Ceci est une prévisualisation basée sur les données actuelles du formulaire.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="p-6 pt-2">
+                  {isGeneratingPayslip ? (
+                      <div className="flex items-center justify-center h-96">
+                          <p>Génération du bulletin de paie...</p>
+                      </div>
+                  ) : payslipDetails ? (
+                      <PayslipPreview details={payslipDetails} />
+                  ) : (
+                      <div className="flex items-center justify-center h-96">
+                          <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
+                      </div>
+                  )}
+                </div>
+            </DialogContent>
+          </Dialog>
+        </>
     );
 }

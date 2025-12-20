@@ -19,7 +19,7 @@ import { PayslipPreview } from '@/components/payroll/payslip-template';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
-import { SafeImage } from '@/components/ui/safe-image';
+import { SafeImage } from './ui/safe-image';
 
 export default function StaffProfilePage() {
     const params = useParams();
@@ -54,10 +54,6 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
   const { toast } = useToast();
-
-  const [isPayslipOpen, setIsPayslipOpen] = useState(false);
-  const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
-  const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
   
   const staffRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`), [firestore, schoolId, staffId]);
   const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
@@ -94,35 +90,6 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
     }
   };
 
-  const handleGeneratePayslip = async () => {
-    if (!schoolData || !staffMember) return;
-
-    setIsGeneratingPayslip(true);
-    setPayslipDetails(null);
-    setIsPayslipOpen(true);
-    
-    try {
-        const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
-        const staffDocSnap = await getDoc(staffDocRef);
-        const fullStaffData = staffDocSnap.exists() ? staffDocSnap.data() as Staff : staffMember;
-
-        const payslipDate = new Date().toISOString();
-        const details = await getPayslipDetails(fullStaffData, payslipDate, schoolData as OrganizationSettings);
-        setPayslipDetails(details);
-    } catch(e) {
-        console.error(e);
-        toast({
-            variant: "destructive",
-            title: "Erreur de génération",
-            description: "Impossible de calculer le bulletin de paie. Vérifiez que toutes les données de paie sont renseignées.",
-        });
-        setIsPayslipOpen(false);
-    } finally {
-        setIsGeneratingPayslip(false);
-    }
-  };
-
-
   const staffFullName = `${staffMember.firstName} ${staffMember.lastName}`;
   const fallback = staffFullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
 
@@ -134,11 +101,6 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
     <>
     <div className="space-y-6">
         <div className="flex flex-wrap justify-end items-center gap-2">
-            {canManageUsers && (
-                <Button variant="outline" onClick={handleGeneratePayslip}>
-                    <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Bulletin de Paie</span>
-                </Button>
-            )}
             <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
               <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
             </Button>
@@ -224,30 +186,6 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
             </div>
         </div>
     </div>
-    
-     <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
-        <DialogContent className="max-w-4xl p-0">
-            <DialogHeader className="p-6 pb-0">
-              <DialogTitle>Bulletin de paie</DialogTitle>
-              <DialogDescription>
-                Aperçu du bulletin de paie pour {payslipDetails?.employeeInfo.firstName} {payslipDetails?.employeeInfo.lastName || "..."}.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="p-6 pt-2">
-              {isGeneratingPayslip ? (
-                  <div className="flex items-center justify-center h-96">
-                      <p>Génération du bulletin de paie...</p>
-                  </div>
-              ) : payslipDetails ? (
-                  <PayslipPreview details={payslipDetails} />
-              ) : (
-                  <div className="flex items-center justify-center h-96">
-                      <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
-                  </div>
-              )}
-            </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
