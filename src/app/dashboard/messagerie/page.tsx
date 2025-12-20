@@ -76,7 +76,7 @@ export default function MessagingPage() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageCommunication = !!user?.profile?.permissions?.manageCommunication;
 
   const messagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy("createdAt", "desc")) : null, [firestore, schoolId]);
   const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
@@ -277,7 +277,7 @@ export default function MessagingPage() {
 
         <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold">Historique des envois</h2>
-            {canManageContent && (
+            {canManageCommunication && (
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogTrigger asChild>
                         <Button onClick={() => setIsFormOpen(true)}>
@@ -369,3 +369,5 @@ export default function MessagingPage() {
     </>
   );
 }
+
+    

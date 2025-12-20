@@ -283,7 +283,7 @@ export type message = {
     content: string;
     senderId: string;
     senderName: string;
-    createdAt: string;
+    createdAt: any;
     recipients: {
         all?: boolean;
         teachers?: boolean;
@@ -611,3 +611,5 @@ export type participationCompetition = {
     rank?: string;
     notes?: string;
 };
+
+    
