@@ -35,8 +35,8 @@ const staffSchema = z.object({
   photoURL: z.string().optional(),
   role: z.string().min(1, { message: "Le rôle est requis." }),
   email: z.string().email({ message: "L'adresse email est invalide." }),
+  uid: z.string().optional(),
   phone: z.string().optional(),
-  password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères.").optional().or(z.literal('')),
   baseSalary: z.coerce.number().min(0, { message: 'Le salaire doit être positif.' }),
   hireDate: z.string().min(1, { message: "La date d'embauche est requise." }),
   // --- Teacher-specific fields ---
@@ -95,7 +95,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(staffSchema),
         defaultValues: {
-          firstName: '', lastName: '', role: '', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: '', subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+          firstName: '', lastName: '', role: '', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: '', subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
         },
     });
 
@@ -114,7 +114,6 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 form.reset({
                     ...editingStaff,
                     ...fullData,
-                    password: '',
                     baseSalary: fullData.baseSalary || 0,
                     hireDate: formattedHireDate,
                     adminRole: fullData.adminRole || '',
@@ -122,7 +121,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 setPhotoUrl(editingStaff.photoURL || null);
             } else {
                 form.reset({
-                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', password: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
                 });
                 setPhotoUrl(null);
             }
@@ -138,7 +137,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
           return;
         }
         
-        const { password, ...dataToSave } = {
+        const dataToSave = {
             ...values,
             schoolId,
             photoURL: photoUrl || '',
@@ -160,37 +159,23 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 errorEmitter.emit('permission-error', permissionError);
             }
         } else {
-            if (!password) {
-                 form.setError("password", { type: "manual", message: "Le mot de passe est requis pour un nouvel utilisateur." });
-                 return;
+            // Pour ajouter un nouveau membre, on suppose que le compte a déjà été créé
+            // L'UID doit être fourni.
+            if (!values.uid) {
+                form.setError("uid", { type: "manual", message: "L'ID de l'utilisateur (UID) est requis pour ajouter un nouveau membre." });
+                return;
             }
+            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${values.uid}`);
+            
             try {
-                // Étape 1: Créer l'utilisateur dans Firebase Auth
-                // NOTE: Cette action est normalement effectuée côté serveur pour des raisons de sécurité.
-                // Ici, nous la faisons côté client car nous n'avons pas de backend.
-                // Dans un environnement de production, utilisez des fonctions Cloud.
-                const userCredential = await createUserWithEmailAndPassword(auth, values.email, password);
-                await updateProfile(userCredential.user, { displayName: `${values.firstName} ${values.lastName}` });
-
-                // Étape 2: Créer les documents Firestore
-                const newUid = userCredential.user.uid;
-                const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${newUid}`);
-                const userRootRef = doc(firestore, `utilisateurs/${newUid}`);
-                
-                const batch = writeBatch(firestore);
-                batch.set(staffDocRef, { ...dataToSave, uid: newUid });
-                batch.set(userRootRef, { schoolId });
-                
-                await batch.commit();
-
-                toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e) et un compte a été créé.` });
-                onFormSubmit();
-            } catch (authError: any) {
-                 if (authError.code === 'auth/email-already-in-use') {
-                    toast({ variant: 'destructive', title: 'Erreur', description: 'Cette adresse email est déjà utilisée par un autre compte.'});
-                } else {
-                    toast({ variant: 'destructive', title: 'Erreur de création', description: "Impossible de créer le compte d'authentification."});
-                }
+                 await setDoc(staffDocRef, dataToSave, { merge: true });
+                 toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e).` });
+                 onFormSubmit();
+            } catch (error) {
+                 const permissionError = new FirestorePermissionError({
+                    path: staffDocRef.path, operation: 'create', requestResourceData: dataToSave,
+                });
+                errorEmitter.emit('permission-error', permissionError);
             }
         }
     };
@@ -273,9 +258,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                             )}
                             <div className="grid grid-cols-2 gap-4">
                               <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemple.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                               {!editingStaff && (
-                                <FormField control={form.control} name="password" render={({ field }) => (<FormItem><FormLabel>Mot de Passe</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                               )}
+                               <FormField control={form.control} name="uid" render={({ field }) => (<FormItem><FormLabel>UID (si existant)</FormLabel><FormControl><Input placeholder="ID utilisateur de Firebase" {...field} disabled={!!editingStaff} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                              <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="hireDate" render={({ field }) => (<FormItem><FormLabel>Date d'embauche</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
