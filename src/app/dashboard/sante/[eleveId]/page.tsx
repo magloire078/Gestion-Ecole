@@ -153,7 +153,12 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
             <CardContent>
                 {vaccins.length > 0 ? (
                     <ul className="space-y-2">
-                        {vaccins.map(v => <li key={v.id} className="flex justify-between items-center p-2 rounded-md bg-muted/50"><span>{v.nom} (fait le {format(new Date(v.date), 'dd/MM/yyyy', { locale: fr })})</span>{v.rappel && <Badge>Rappel: {format(new Date(v.rappel), 'dd/MM/yyyy', { locale: fr })}</Badge>}</li>)}
+                        {vaccins.map(v => (
+                            <li key={v.id} className="flex justify-between items-center p-2 rounded-md bg-muted/50">
+                                <span>{v.nom} (fait le {format(new Date(v.date), 'dd/MM/yyyy', { locale: fr })})</span>
+                                {v.rappel && <Badge>Rappel: {format(new Date(v.rappel), 'dd/MM/yyyy', { locale: fr })}</Badge>}
+                            </li>
+                        ))}
                     </ul>
                 ) : <p className="text-muted-foreground text-center py-4">Aucun vaccin enregistré.</p>}
             </CardContent>
