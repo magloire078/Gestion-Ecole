@@ -33,7 +33,7 @@ type SubscriptionFormValues = z.infer<typeof subscriptionFormSchema>;
 
 interface SubscriptionFormProps {
   schoolId: string;
-  students: Student[];
+  students: (Student & { id: string })[];
   subscription: (CanteenSubscription & { id: string }) | null;
   onSave: () => void;
 }
@@ -78,7 +78,13 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
     setIsSubmitting(true);
     
     const dataToSave: Omit<CanteenSubscription, 'id'> = {
-        ...values,
+        studentId: values.studentId,
+        type: values.type,
+        startDate: values.startDate,
+        endDate: values.endDate,
+        price: values.price,
+        status: values.status,
+        autoRenew: values.autoRenew,
         mealType: 'dejeuner',
     };
 

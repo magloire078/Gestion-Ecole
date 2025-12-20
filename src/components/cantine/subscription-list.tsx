@@ -18,6 +18,7 @@ import { SubscriptionForm } from './subscription-form';
 
 interface SubscriptionWithStudentName extends CanteenSubscription {
     studentName?: string;
+    id: string;
 }
 
 export function SubscriptionList({ schoolId }: { schoolId: string }) {
@@ -154,7 +155,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
             </DialogHeader>
             <SubscriptionForm 
                 schoolId={schoolId}
-                students={studentsData?.docs.map(d => ({id: d.id, ...d.data()} as Student)) || []}
+                students={studentsData?.docs.map(d => ({id: d.id, ...d.data()} as Student & {id: string})) || []}
                 subscription={editingSubscription}
                 onSave={handleFormSave}
             />
