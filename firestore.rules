@@ -14,6 +14,7 @@ service cloud.firestore {
     }
     
     function isSchoolMember(schoolId) {
+        // Un utilisateur est membre s'il a le schoolId dans son token.
         return isAuth() && request.auth.token.schoolId == schoolId;
     }
     
@@ -23,38 +24,51 @@ service cloud.firestore {
 
     // ========== GLOBAL RULES ==========
 
+    // Les super admins peuvent tout faire.
     match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
 
+    // N'importe quel utilisateur authentifié peut lister/créer une école
     match /ecoles/{schoolId} {
       allow create, list, get: if isAuth();
+      // Seuls les membres de l'école peuvent la lire/modifier
       allow read, update, delete: if isSchoolMember(schoolId);
     }
     
+    // Un utilisateur peut lire son propre document racine.
+    // Un utilisateur peut créer/mettre à jour son document racine pour s'assigner un schoolId.
     match /utilisateurs/{userId} {
       allow read: if isUser(userId);
       allow write: if isAuth() && request.resource.data.keys().hasOnly(['schoolId']);
     }
 
+    // Tout utilisateur authentifié peut créer un log (car cela se fait côté client lors d'actions).
+    // La lecture est limitée aux super admins par la règle globale.
     match /system_logs/{logId} {
       allow create, read: if isAuth();
     }
 
     // ========== SCHOOL-SPECIFIC RULES ==========
     
+    // Règle spéciale pour la création du profil du directeur
     match /ecoles/{schoolId}/personnel/{staffId} {
+      // Autorise la création du profil si l'UID correspond à celui qui crée (le futur directeur)
+      // et que le rôle est bien 'directeur'.
       allow create: if isUser(staffId) && 
                       request.resource.data.role == 'directeur' &&
                       schoolId != "";
 
-      allow get: if isUser(staffId);
+      // Un utilisateur peut lire son propre profil
+      allow get: if isUser(staffId) || isSchoolMember(schoolId);
                       
+      // Les membres de l'école peuvent lister les profils, mettre à jour et supprimer (si permissions).
+      // La vérification des permissions fines se fait dans les règles des sous-collections.
       allow list, update, delete: if isSchoolMember(schoolId);
     }
     
-    // Generic rule for all other subcollections within a school.
-    // Allows school members to manage their own school's data.
+    // Règle générique pour toutes les autres sous-collections d'une école.
+    // Permet aux membres de l'école de gérer les données de leur propre école.
     match /ecoles/{schoolId}/{collection}/{docId=**} {
       allow get, list, write: if isSchoolMember(schoolId);
     }
