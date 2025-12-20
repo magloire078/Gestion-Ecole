@@ -44,7 +44,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    // Si l'utilisateur est connecté mais n'a pas d'école
+    // Si l'utilisateur est connecté mais n'a pas d'école (et n'est pas super admin)
     if (!schoolId && user.profile?.role !== 'super_admin') {
       if (!isOnboardingPage) {
         router.replace('/dashboard/onboarding');
@@ -60,17 +60,25 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   }, [user, schoolId, loading, pathname, router]);
   
-  // Affiche un loader pour toutes les pages protégées pendant la vérification initiale
-  if (loading && !pathname.startsWith('/login') && !pathname.startsWith('/')) {
+  const isAuthPage = pathname === '/login';
+  const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
+  const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+
+  // Afficher un loader pour toutes les pages protégées pendant la vérification initiale
+  if (loading && !isPublicPage) {
       return <AuthProtectionLoader />;
   }
 
-  // Si l'utilisateur est connecté mais que schoolId n'est pas encore défini (cas de transition),
-  // et que la page n'est pas celle d'onboarding, on affiche un loader pour éviter les flashs.
-  if (user && schoolId === null && !pathname.startsWith('/dashboard/onboarding') && user.profile?.role !== 'super_admin') {
+  // Si l'utilisateur est connecté mais que son statut d'école n'est pas encore clair,
+  // et qu'on n'est pas sur une page publique, on affiche le loader pour éviter les flashs.
+  if (user && schoolId === null && !isOnboardingPage && user.profile?.role !== 'super_admin' && !isPublicPage) {
       return <AuthProtectionLoader />;
   }
 
+  // Si l'utilisateur est non authentifié mais tente d'accéder à une page protégée, on affiche le loader le temps de la redirection.
+  if (!user && !isPublicPage) {
+    return <AuthProtectionLoader />;
+  }
 
   return <>{children}</>;
 }
