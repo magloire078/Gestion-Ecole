@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -205,7 +206,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
             </DialogHeader>
             <SubscriptionForm 
                 schoolId={schoolId}
-                students={studentsData?.docs.map(d => ({id: d.id, ...d.data()} as Student & {id: string})) || []}
+                students={(studentsData?.docs || []).map(d => ({id: d.id, ...d.data()} as Student & {id: string}))}
                 subscription={editingSubscription}
                 onSave={handleFormSave}
             />
