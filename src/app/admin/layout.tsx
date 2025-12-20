@@ -41,9 +41,8 @@ function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
             return;
         }
 
-        const credential = EmailAuthProvider.credential(user.authUser.email, password);
-
         try {
+            const credential = EmailAuthProvider.credential(user.authUser.email, password);
             await reauthenticateWithCredential(user.authUser, credential);
             toast({ title: 'Accès autorisé', description: "Identité vérifiée avec succès." });
             onVerified();
@@ -63,7 +62,7 @@ function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
     
     return (
         <Dialog open={true} >
-            <DialogContent hideCloseButton={true} className="sm:max-w-md">
+            <DialogContent className="sm:max-w-md" onInteractOutside={(e) => e.preventDefault()}>
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <ShieldAlert className="h-5 w-5 text-primary"/>
@@ -83,6 +82,7 @@ function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 required
+                                autoFocus
                             />
                             {error && <p className="text-sm text-destructive">{error}</p>}
                         </div>
@@ -144,11 +144,12 @@ function AdminLayoutContent({
     if (userLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-               <p>Vérification des permissions d'administrateur...</p>
+               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
         );
     }
     
+    // This part will eventually check for a super admin role in the user profile.
     if (!user?.profile?.isAdmin) {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-muted text-center p-8">

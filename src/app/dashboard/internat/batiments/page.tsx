@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -5,6 +6,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +31,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { building as Building, staff as Staff } from '@/lib/data-types';
+import type { building as Building, staff as Staff, room as Room } from '@/lib/data-types';
 import { Building2 } from 'lucide-react';
 
 const buildingSchema = z.object({
@@ -42,6 +53,8 @@ export default function BatimentsPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<(Building & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [buildingToDelete, setBuildingToDelete] = useState<(Building & { id: string }) | null>(null);
 
   const buildingsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)) : null, [firestore, schoolId]);
   const { data: buildingsData, loading: buildingsLoading } = useCollection(buildingsQuery);
@@ -51,6 +64,22 @@ export default function BatimentsPage() {
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   const staffMembers = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as Staff & {id: string})) || [], [staffData]);
   const staffMap = useMemo(() => new Map(staffMembers.map(s => [s.id, `${s.firstName} ${s.lastName}`])), [staffMembers]);
+  
+  const roomsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)) : null, [firestore, schoolId]);
+  const { data: roomsData, loading: roomsLoading } = useCollection(roomsQuery);
+  const rooms: (Room & { id: string })[] = useMemo(() => roomsData?.map(d => ({ id: d.id, ...d.data() } as Room & { id: string })) || [], [roomsData]);
+
+  const roomsByBuilding = useMemo(() => {
+    return rooms.reduce((acc, room) => {
+      if (room.buildingId) {
+        if (!acc[room.buildingId]) {
+          acc[room.buildingId] = [];
+        }
+        acc[room.buildingId].push(room);
+      }
+      return acc;
+    }, {} as Record<string, (Room & { id: string })[]>);
+  }, [rooms]);
 
 
   const form = useForm<BuildingFormValues>({
@@ -81,7 +110,37 @@ export default function BatimentsPage() {
     }
   };
   
-  const isLoading = schoolLoading || buildingsLoading || staffLoading;
+  const handleOpenDeleteDialog = (building: Building & { id: string }) => {
+    setBuildingToDelete(building);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteBuilding = async () => {
+    if (!schoolId || !buildingToDelete) return;
+
+    if (roomsByBuilding[buildingToDelete.id]?.length > 0) {
+      toast({
+        variant: "destructive",
+        title: "Action impossible",
+        description: "Vous ne pouvez pas supprimer un bâtiment qui contient encore des chambres."
+      });
+      setIsDeleteDialogOpen(false);
+      return;
+    }
+    
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_batiments`, buildingToDelete.id));
+        toast({ title: "Bâtiment supprimé" });
+    } catch (e) {
+        const path = `ecoles/${schoolId}/internat_batiments/${buildingToDelete.id}`;
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation: 'delete' }));
+    } finally {
+        setIsDeleteDialogOpen(false);
+        setBuildingToDelete(null);
+    }
+  }
+  
+  const isLoading = schoolLoading || buildingsLoading || staffLoading || roomsLoading;
 
   const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
     switch (status) {
@@ -91,6 +150,14 @@ export default function BatimentsPage() {
       default: return 'default';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -108,21 +175,21 @@ export default function BatimentsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          [...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
-        ) : buildings.length > 0 ? (
+        {buildings.length > 0 ? (
           buildings.map(building => (
             <Card key={building.id} className="flex flex-col">
               <CardHeader>
                 <div className="flex justify-between items-start">
                     <Building2 className="h-8 w-8 text-primary" />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setEditingBuilding(building); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {canManageContent && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setEditingBuilding(building); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(building)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                 </div>
                 <CardTitle>{building.name}</CardTitle>
                 <CardDescription className="capitalize">{building.type}</CardDescription>
@@ -159,10 +226,27 @@ export default function BatimentsPage() {
           </Form>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-            <Button type="submit" form="building-form">Enregistrer</Button>
+            <Button type="submit" form="building-form" disabled={form.formState.isSubmitting}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                   Cette action est irréversible. Le bâtiment <strong>"{buildingToDelete?.name}"</strong> sera supprimé.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteBuilding} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
