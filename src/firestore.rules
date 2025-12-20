@@ -8,74 +8,39 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Fonction pour obtenir le schoolId de l'utilisateur, soit depuis les custom claims, soit depuis le document /utilisateurs
+    function isSuperAdmin() {
+      return isAuth() && exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
+    }
+
     function getUserSchoolId() {
-      // Priorité aux custom claims pour l'efficacité
-      if request.auth.token.schoolId != null {
-        return request.auth.token.schoolId;
-      }
-      // Méthode de secours en lisant le document utilisateur
       return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId;
     }
 
     function isSchoolMember(schoolId) {
       return isAuth() && getUserSchoolId() == schoolId;
     }
-    
+
     function isDirector(schoolId) {
         return isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
-
-    function isSuperAdmin() {
-      // Dans le futur, ceci pourrait vérifier un custom claim `superAdmin: true`
-      return exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
-    }
     
-    match /super_admins/{adminId} {
-      allow read, write: if isAuth() && request.auth.uid == adminId;
-    }
-
-    match /system_settings/{settingId} {
-       allow read, write: if isSuperAdmin();
-    }
-    
-    match /system_logs/{logId} {
-       // On autorise la création pour tout utilisateur authentifié pour l'onboarding
-       allow create: if isAuth();
-       // La lecture reste restreinte aux super admins
-       allow read: if isSuperAdmin();
-    }
-    
-    match /utilisateurs/{userId} {
-        // Un utilisateur peut créer/lire/mettre à jour son propre document
-        allow read, write: if isAuth() && request.auth.uid == userId;
-        // Le super admin peut également y accéder
+    // Super admins can read/write anywhere
+    match /{document=**} {
         allow read, write: if isSuperAdmin();
     }
     
-    match /ecoles/{schoolId} {
-      // Tout utilisateur authentifié peut créer une école (pour l'onboarding)
-      allow create: if isAuth(); 
-      // Seuls les membres de l'école peuvent la lire
-      allow read: if isSchoolMember(schoolId);
-      // Seul le directeur ou un super admin peut la modifier/supprimer
-      allow update, delete: if isDirector(schoolId) || isSuperAdmin();
+    match /utilisateurs/{userId} {
+        allow read, write: if isAuth() && request.auth.uid == userId;
     }
     
-    // Règle spécifique pour la création du profil du directeur au moment de la création de l'école
-    match /ecoles/{schoolId}/personnel/{staffId} {
-      // Autoriser la création du profil si l'ID de l'utilisateur correspond au staffId ET au directorId dans les données de la nouvelle école
-      allow create: if request.auth.uid == staffId && request.resource.data.directorId == request.auth.uid;
-      // Pour les autres opérations, on applique les règles générales
-      allow read, update, delete: if isSchoolMember(schoolId);
+    match /ecoles/{schoolId} {
+      allow create: if isAuth(); 
+      allow read: if isSchoolMember(schoolId);
+      allow update, delete: if isDirector(schoolId);
     }
 
-    // Règle générale pour toutes les AUTRES sous-collections d'une école
-    match /ecoles/{schoolId}/{collection}/{docId} {
-      // Les membres de l'école ont un accès complet
+    match /ecoles/{schoolId}/{document=**} {
       allow read, write: if isSchoolMember(schoolId);
-      // Les super admins ont aussi un accès complet
-      allow read, write: if isSuperAdmin();
     }
   }
 }
