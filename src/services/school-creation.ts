@@ -100,9 +100,9 @@ export class SchoolCreationService {
     };
     batch.set(schoolRef, schoolDocData);
 
-     // 2. Create the user root document
+     // 2. Create or Update the user root document to link them to the school
     const userRootData: user_root = { schoolId };
-    batch.set(userRootRef, userRootData);
+    batch.set(userRootRef, userRootData, { merge: true });
 
     // 3. Create director's staff profile
     const staffProfileData: Omit<staff, 'id'> = {
@@ -116,6 +116,7 @@ export class SchoolCreationService {
       lastName: schoolData.directorLastName,
       hireDate: new Date().toISOString().split('T')[0],
       baseSalary: 0,
+      directorId: schoolData.directorId, // Add directorId for security rule check
     };
     batch.set(staffProfileRef, staffProfileData);
     

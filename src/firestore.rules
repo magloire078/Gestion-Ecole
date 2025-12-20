@@ -8,59 +8,68 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getUserSchoolId(userId) {
-      return get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId;
-    }
-
     function isSchoolMember(schoolId) {
-      return isAuth() && getUserSchoolId(request.auth.uid) == schoolId;
+      // Check for schoolId in custom claims first for efficiency
+      if (request.auth.token.schoolId != null) {
+        return request.auth.token.schoolId == schoolId;
+      }
+      // Fallback to reading the user document
+      return get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.schoolId == schoolId;
     }
     
     function isDirector(schoolId) {
+        // A director must be a member of the school and their UID must match the school's directorId
         return isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
     function isSuperAdmin() {
-      return exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
-    }
-    
-    function isCreatingOwnProfileAsDirector(schoolId) {
-      // Allow if the incoming school document has a directorId matching the user,
-      // and the user is creating their own staff profile.
-      let schoolData = request.resource.data;
-      return schoolData.directorId == request.auth.uid;
-    }
-    
-    match /utilisateurs/{userId} {
-        allow read, write: if isAuth() && request.auth.uid == userId;
-        allow read, write: if isSuperAdmin();
-    }
-    
-    match /ecoles/{schoolId} {
-      allow create: if isAuth(); 
-      allow read: if isSchoolMember(schoolId) || isSuperAdmin();
-      allow update, delete: if isDirector(schoolId) || isSuperAdmin();
-    }
-    
-    match /system_logs/{logId} {
-       allow create: if isAuth(); // Allow any authenticated user to create a log
-       allow read: if isAuth();
+      return request.auth.token.superAdmin == true;
     }
     
     match /super_admins/{adminId} {
+      // A user can read/write their own super_admin profile.
       allow read, write: if isAuth() && request.auth.uid == adminId;
     }
 
     match /system_settings/{settingId} {
+       // Only super admins can manage system-wide settings.
        allow read, write: if isSuperAdmin();
     }
     
+    match /system_logs/{logId} {
+       // Any authenticated user can create a log entry (e.g., for school creation).
+       // Reading is restricted to prevent information leakage.
+       allow create: if isAuth();
+       allow read: if isSuperAdmin(); 
+    }
+    
+    match /utilisateurs/{userId} {
+        // A user can create and manage their own root document.
+        allow read, write: if isAuth() && request.auth.uid == userId;
+        // A super admin can also manage user root documents.
+        allow read, write: if isSuperAdmin();
+    }
+    
+    match /ecoles/{schoolId} {
+      // Any authenticated user can create a new school.
+      allow create: if isAuth(); 
+      // Only members of the school or super admins can read its data.
+      allow read: if isSchoolMember(schoolId) || isSuperAdmin();
+      // Only the director of the school or a super admin can update or delete it.
+      allow update, delete: if isDirector(schoolId) || isSuperAdmin();
+    }
+    
     match /ecoles/{schoolId}/personnel/{staffId} {
-       allow create: if (isDirector(schoolId)) || (request.auth.uid == staffId && isCreatingOwnProfileAsDirector(schoolId));
-       allow read, update, delete: if isSchoolMember(schoolId) || isSuperAdmin();
+        // Allow creation if the user is the designated director of the school being created,
+        // and they are creating their own staff profile.
+        allow create: if request.auth.uid == staffId && request.resource.data.directorId == request.auth.uid;
+        // Allow subsequent creates/reads/updates/deletes by school members.
+        allow read, write: if isSchoolMember(schoolId) || isSuperAdmin();
     }
 
-    // Fallback rule for other subcollections
+    // General rule for all other sub-collections within a school.
+    // This simplifies management by granting full access to school members and super admins.
+    // Granular UI-based controls should be used to manage who can do what.
     match /ecoles/{schoolId}/{document=**} {
       allow read, write: if isSchoolMember(schoolId) || isSuperAdmin();
     }
