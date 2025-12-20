@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -505,10 +506,10 @@ export default function DashboardPage() {
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const calculateOnboardingStatus = useCallback((schoolData: any, classesCount: number, teachersCount: number, feesCount: number): OnboardingStatus => {
-    const baseInfoDone = !!(schoolData?.name && schoolData?.address && schoolData?.phone);
+  const calculateOnboardingStatus = useCallback((schoolData: any, classesCount: number, staffCount: number, feesCount: number): OnboardingStatus => {
+    const baseInfoDone = !!(schoolData?.name && schoolData?.address);
     const structureDone = classesCount > 0;
-    const staffDone = teachersCount > 0;
+    const staffDone = staffCount > 0; // Le directeur compte comme un membre du personnel
     const feesDone = feesCount > 0;
 
     let completedSteps = 0;
@@ -526,7 +527,7 @@ export default function DashboardPage() {
       staffDone,
       feesDone,
       classesCount,
-      teachersCount,
+      teachersCount: staffCount,
       feesCount,
       completion,
       isSetupComplete
@@ -542,16 +543,17 @@ export default function DashboardPage() {
     const fetchOnboardingData = async () => {
       setLoading(true);
       try {
-        const [classesSnap, teachersSnap, feesSnap] = await Promise.all([
+        const [classesSnap, staffSnap, feesSnap] = await Promise.all([
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/classes`))),
-          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/personnel`), where('role', '==', 'enseignant'))),
+          // On compte maintenant tous les membres du personnel, pas seulement les enseignants
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/personnel`))),
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/frais_scolarite`))),
         ]);
 
         const status = calculateOnboardingStatus(
           schoolData,
           classesSnap.data().count,
-          teachersSnap.data().count,
+          staffSnap.data().count,
           feesSnap.data().count
         );
         
