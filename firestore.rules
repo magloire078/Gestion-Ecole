@@ -13,8 +13,7 @@ service cloud.firestore {
     }
     
     function isSchoolMember(schoolId) {
-        // Vérifier si l'utilisateur a le schoolId dans ses claims
-        // OU s'il est le directeur de cette école (vérifié dans la BD)
+        // Vérifier via claims OU via directeur dans BD
         return isAuth() && (
           request.auth.token.schoolId == schoolId ||
           get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
@@ -26,12 +25,13 @@ service cloud.firestore {
     }
     
     function isDirector(schoolId) {
-        // Vérifier si l'utilisateur est le directeur selon la BD
-        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+        // Vérifier via BD directement
+        let schoolData = get(/databases/$(database)/documents/ecoles/$(schoolId)).data;
+        return isAuth() && request.auth.uid == schoolData.directorId;
     }
     
-    function isCreatingSchoolAsDirector() {
-        // Vérifier si l'utilisateur crée une école où il est le directeur
+    // Fonction simplifiée pour création d'école
+    function canCreateSchool() {
         return isAuth() && request.resource.data.directorId == request.auth.uid;
     }
 
@@ -42,41 +42,35 @@ service cloud.firestore {
       allow read, write: if isSuperAdmin();
     }
 
-    // ========== PUBLIC RULES (Authenticated users) ==========
-    
-    // N'importe qui d'authentifié peut lire la liste des écoles pour la recherche.
-    match /ecoles/{schoolId} {
-        allow list, get: if isAuth();
-    }
-
     // ========== SCHOOL-CREATION RULES ==========
 
-    // Création d'une école
+    // Règle cruciale : création d'école
     match /ecoles/{schoolId} {
-      allow create: if isCreatingSchoolAsDirector();
+      // Création : vérifier que l'utilisateur se désigne comme directeur
+      allow create: if canCreateSchool();
       
-      // Après création, le directeur peut immédiatement lire son école
-      // même sans avoir le claim schoolId dans son token
+      // Lecture : authentifié + (membre OU directeur selon BD)
       allow read: if isAuth() && (
-        isSchoolMember(schoolId) || // Membre de l'école
-        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid // Ou directeur selon BD
+        isSchoolMember(schoolId) ||
+        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
       );
       
+      // Mise à jour : seulement le directeur
       allow update: if isDirector(schoolId);
-      allow delete: if false; // Soft delete seulement
+      
+      // Pas de suppression directe
+      allow delete: if false;
     }
 
     // Règle pour la création du profil du directeur
     match /ecoles/{schoolId}/personnel/{staffId} {
-        // Permettre la création du profil directeur pendant la création de l'école
-        // OU si l'utilisateur est déjà membre de l'école
-        allow create: if isAuth() && (
-          (staffId == request.auth.uid && request.resource.data.role == 'directeur' && 
-           get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid) ||
-          isSchoolMember(schoolId)
-        );
+        // SIMPLIFIÉ : permettre si l'utilisateur est le directeur qu'il crée
+        allow create: if isAuth() && 
+                      staffId == request.auth.uid && 
+                      request.resource.data.role == 'directeur' &&
+                      request.resource.data.uid == request.auth.uid;
         
-        // Lecture et écriture
+        // Après création
         allow get, list: if isSchoolMember(schoolId);
         allow update: if isDirector(schoolId) || isUser(staffId);
         allow delete: if isDirector(schoolId);
@@ -84,14 +78,15 @@ service cloud.firestore {
     
     // ========== USER-SPECIFIC RULES ==========
     
-    // Un utilisateur peut lire/écrire son propre document racine
+    // Document utilisateur
     match /utilisateurs/{userId} {
       allow read: if isUser(userId);
-      // Permettre l'écriture pendant l'onboarding (sans claim schoolId)
+      // Permettre la création/mise à jour pendant l'onboarding
       allow write: if isAuth() && (
         isUser(userId) || // L'utilisateur lui-même
-        // Pendant la création d'école, le service peut mettre à jour le document
-        request.resource.data.keys().hasOnly(['schoolId']) // Seulement mettre à jour schoolId
+        // Pendant la création d'école, on met juste à jour schoolId
+        (request.resource.data.keys().hasOnly(['schoolId']) && 
+         resource == null) // S'il n'existe pas encore
       );
     }
     
@@ -102,10 +97,8 @@ service cloud.firestore {
       allow read: if isAuth() && (isSuperAdmin() || request.auth.token.isDirector == true);
     }
 
-    // ========== SCHOOL-MEMBER RULES ==========
+    // ========== GENERIC SCHOOL DATA RULES ==========
     
-    // Règle générique pour toutes les autres sous-collections
-    // S'assurer que cela n'écrase pas les règles spécifiques ci-dessus
     match /ecoles/{schoolId}/{collection}/{document=**} {
       allow read, write: if isSchoolMember(schoolId);
     }
