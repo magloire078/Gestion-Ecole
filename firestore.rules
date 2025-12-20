@@ -59,10 +59,12 @@ service cloud.firestore {
         // Permet la création du profil uniquement si :
         // 1. L'utilisateur crée son propre profil (staffId == uid).
         // 2. Le profil a le rôle 'directeur'.
-        // Cela se produit dans le même batch que la création de l'école.
+        // 3. L'UID dans les données du profil correspond à l'UID de l'utilisateur authentifié.
+        // Cela garantit que personne ne peut créer un profil de directeur pour quelqu'un d'autre.
         allow create: if isAuth() && 
                       staffId == request.auth.uid && 
-                      request.resource.data.role == 'directeur';
+                      request.resource.data.role == 'directeur' &&
+                      request.resource.data.uid == request.auth.uid;
                       
         // Une fois membre, on peut lire les profils et modifier le sien.
         allow get, list: if isSchoolMember(schoolId);
@@ -75,7 +77,7 @@ service cloud.firestore {
       // Un utilisateur peut toujours lire son propre document racine.
       allow read: if isUser(userId);
       
-      // La création est permise si elle n'existe pas.
+      // La création est permise si l'utilisateur crée son propre document.
       allow create: if isUser(userId);
       
       // La mise à jour est permise si l'utilisateur met à jour son propre document
