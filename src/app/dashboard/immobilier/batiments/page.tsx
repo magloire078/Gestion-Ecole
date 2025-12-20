@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -34,6 +33,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { building as Building, staff as Staff, salle as Salle } from '@/lib/data-types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import Link from 'next/link';
 
 const buildingSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
@@ -166,18 +166,18 @@ export default function BatimentsPage() {
         )}
       </div>
 
-      <Accordion type="multiple" defaultValue={buildings.map(b => b.id)} className="w-full space-y-4">
-        {buildings.map(building => (
-          <AccordionItem value={building.id} key={building.id} className="border rounded-lg overflow-hidden">
-             <Card className="border-0 shadow-none">
+       {buildings.length > 0 ? (
+        <Accordion type="multiple" defaultValue={buildings.map(b => b.id)} className="w-full space-y-4">
+            {buildings.map(building => (
+            <AccordionItem value={building.id} key={building.id} className="border rounded-lg overflow-hidden bg-card">
                 <AccordionTrigger className="p-4 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                   <div className="flex items-center gap-4 text-lg font-semibold flex-1">
-                       <Building2 className="h-6 w-6 text-primary" />
-                       {building.name}
-                       <Badge variant="outline" className="font-mono text-xs">{sallesByBuilding[building.id]?.length || 0} salle(s)</Badge>
-                   </div>
+                <div className="flex items-center gap-4 text-lg font-semibold flex-1">
+                    <Building2 className="h-6 w-6 text-primary" />
+                    {building.name}
+                    <Badge variant="outline" className="font-mono text-xs">{sallesByBuilding[building.id]?.length || 0} salle(s)</Badge>
+                </div>
                 </AccordionTrigger>
-                <div className="px-4 -mt-2 mb-2">
+                <div className="px-4 -mt-4 mb-2 flex justify-end">
                      {canManageContent && (
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -189,7 +189,7 @@ export default function BatimentsPage() {
                                 <DropdownMenuItem onClick={() => { setEditingBuilding(building); setIsFormOpen(true); }}>
                                     <Edit className="mr-2 h-4 w-4" /> Modifier
                                 </DropdownMenuItem>
-                                 <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(building)}>
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(building)}>
                                     <Trash2 className="mr-2 h-4 w-4" /> Supprimer
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -197,28 +197,32 @@ export default function BatimentsPage() {
                      )}
                 </div>
                 <AccordionContent>
-                  <div className="px-4 pb-4">
+                <div className="px-4 pb-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-2">
                         {(sallesByBuilding[building.id] || []).map(salle => (
-                            <div key={salle.id} className="p-4 border rounded-lg space-y-2">
+                            <div key={salle.id} className="p-4 border rounded-lg space-y-2 bg-background">
                                 <div className="font-bold flex items-center gap-2">
-                                  <BedDouble className="h-4 w-4" />
-                                  {salle.name}
+                                <BedDouble className="h-4 w-4" />
+                                {salle.name}
                                 </div>
-                                <div className="text-sm text-muted-foreground">Type: {salle.type.replace(/_/g, ' ')}</div>
+                                <div className="text-sm text-muted-foreground capitalize">Type: {salle.type.replace(/_/g, ' ')}</div>
                                 <div className="text-sm text-muted-foreground">Capacité: {salle.capacity} personnes</div>
                             </div>
                         ))}
-                         {(!sallesByBuilding[building.id] || sallesByBuilding[building.id].length === 0) && (
-                            <p className="text-muted-foreground text-sm p-4 col-span-full text-center">Aucune salle dans ce bâtiment.</p>
+                        {(!sallesByBuilding[building.id] || sallesByBuilding[building.id].length === 0) && (
+                            <p className="text-muted-foreground text-sm p-4 col-span-full text-center">Aucune salle dans ce bâtiment. <Link href="/dashboard/immobilier/salles" className="text-primary underline">Ajoutez-en une</Link>.</p>
                         )}
                     </div>
-                  </div>
+                </div>
                 </AccordionContent>
-             </Card>
-          </AccordionItem>
-        ))}
-      </Accordion>
+            </AccordionItem>
+            ))}
+        </Accordion>
+        ) : (
+            <Card className="flex items-center justify-center h-48">
+              <p className="text-muted-foreground">Aucun bâtiment créé. Cliquez sur "Ajouter un bâtiment" pour commencer.</p>
+            </Card>
+        )}
       
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>

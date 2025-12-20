@@ -44,6 +44,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { salle as Salle, building as Building } from '@/lib/data-types';
+import { Badge } from '@/components/ui/badge';
 
 const salleSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
@@ -164,15 +165,21 @@ export default function SallesPage() {
                     <TableCell className="capitalize">{item.type.replace(/_/g, ' ')}</TableCell>
                     <TableCell>{item.capacity}</TableCell>
                     <TableCell>{item.buildingId ? buildingMap.get(item.buildingId) || 'N/A' : 'N/A'}</TableCell>
-                    <TableCell className="text-xs">{(item.equipments || []).join(', ')}</TableCell>
+                    <TableCell className="text-xs max-w-xs truncate">
+                      <div className="flex flex-wrap gap-1">
+                        {(item.equipments || []).map(eq => <Badge key={eq} variant="outline">{eq}</Badge>)}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-right">
-                       <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {canManageContent && <DropdownMenuItem onClick={() => { setEditingSalle(item); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>}
-                            {canManageContent && <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(item)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                       {canManageContent && (
+                           <DropdownMenu>
+                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => { setEditingSalle(item); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(item)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -231,3 +238,4 @@ export default function SallesPage() {
       </AlertDialog>
     </>
   );
+}
