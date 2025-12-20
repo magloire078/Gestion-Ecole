@@ -378,75 +378,68 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
   const router = useRouter();
   const { schoolData } = useSchoolData();
 
-  const QuickActionCard = ({ icon, title, description, color, href }: { 
-    icon: React.ReactNode; 
-    title: string; 
-    description: string; 
-    color: string; 
-    href: string;
-  }) => (
-    <Link href={href} className="block">
-      <Card className="p-4 h-full hover:shadow-lg transition-shadow hover:-translate-y-1">
-        <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center mb-3", 
-          color === 'blue' && 'bg-blue-100 text-blue-600 dark:bg-blue-900/50',
-          color === 'green' && 'bg-green-100 text-green-600 dark:bg-green-900/50',
-          color === 'purple' && 'bg-purple-100 text-purple-600 dark:bg-purple-900/50',
-          color === 'orange' && 'bg-orange-100 text-orange-600 dark:bg-orange-900/50',
-          color === 'red' && 'bg-red-100 text-red-600 dark:bg-red-900/50'
-        )}>
-          {icon}
-        </div>
-        <h4 className="font-bold">{title}</h4>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </Card>
-    </Link>
-  );
-  
-  const StepCard = ({ number, title, description, isDone, children }: { 
+  const StepCard = ({ number, title, description, isDone, href, cta, count, required }: { 
     number: number; 
     title: string; 
     description: string; 
     isDone: boolean; 
-    children: React.ReactNode;
+    href: string;
+    cta: string;
+    count?: number;
+    required: number;
   }) => (
-    <Card className={cn("p-6 shadow-sm", isDone && "border-primary bg-primary/5")}>
-      <div className="flex items-start mb-4">
-        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center mr-4", isDone ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-muted')}>
-          <div className={cn("w-6 h-6 rounded-full flex items-center justify-center", isDone ? 'bg-blue-500' : 'bg-gray-400')}>
-            {isDone ? <Check className="w-4 h-4 text-white" /> : <span className="text-white font-bold">{number}</span>}
-          </div>
-        </div>
-        <div>
-          <h3 className="text-lg font-bold">{title}</h3>
-          <p className="text-muted-foreground text-sm">{description}</p>
-        </div>
-      </div>
-      {children}
+    <Card className={cn("flex flex-col", isDone && "bg-primary/5 border-primary/20")}>
+        <CardHeader>
+            <div className="flex items-start gap-4">
+                <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-full", isDone ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
+                    {isDone ? <Check className="h-6 w-6" /> : <span className="text-xl font-bold">{number}</span>}
+                </div>
+                <div>
+                    <CardTitle>{title}</CardTitle>
+                    <CardDescription>{description}</CardDescription>
+                </div>
+            </div>
+        </CardHeader>
+        <CardContent className="flex-1">
+             {typeof count !== 'undefined' && (
+                <div className="text-sm font-medium">
+                    {count} / {required} {count > 1 ? 'éléments créés' : 'élément créé'}
+                </div>
+             )}
+        </CardContent>
+        <CardFooter>
+             <Button className="w-full" variant={isDone ? 'secondary' : 'default'} asChild>
+                <Link href={href}>
+                   {cta}
+                </Link>
+            </Button>
+        </CardFooter>
     </Card>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 p-6 dark:from-gray-900 dark:to-gray-800">
-      <div className="mb-8">
+    <div className="space-y-6">
+      <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
           Bienvenue à {schoolData?.name || 'votre école'} 👋
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Complétez la configuration de votre école pour commencer.
+          Suivez ces étapes pour finaliser la configuration de votre espace de travail.
         </p>
       </div>
 
-      <div className="bg-card rounded-2xl p-6 shadow-sm mb-8">
-        <div className="mb-4">
-          <div className="flex justify-between mb-2">
-            <span className="font-medium">Configuration de l'école</span>
-            <span className="text-blue-600 dark:text-blue-400 font-bold">{onboardingStatus.completion}%</span>
-          </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600" style={{ width: `${onboardingStatus.completion}%` }}></div>
-          </div>
-        </div>
-      </div>
+      <Card>
+        <CardContent className="pt-6">
+            <div className="flex justify-between items-center mb-2">
+                <span className="font-medium text-sm">Progression de la configuration</span>
+                <span className="text-primary font-bold">{onboardingStatus.completion}%</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-full bg-primary" style={{ width: `${onboardingStatus.completion}%`, transition: 'width 0.5s ease-in-out' }}></div>
+            </div>
+        </CardContent>
+      </Card>
+      
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StepCard 
@@ -454,83 +447,55 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
           title="Infos de l'École" 
           description="Nom, logo, adresse..." 
           isDone={onboardingStatus.baseInfoDone}
-        >
-          <p className="text-muted-foreground text-sm mb-4">
-            Fournissez les informations de base de votre établissement.
-          </p>
-          <Button className="mt-6 w-full" onClick={() => router.push('/dashboard/parametres')}>
-            {onboardingStatus.baseInfoDone ? 'Vérifier' : 'Compléter'} les infos
-          </Button>
-        </StepCard>
-
+          href="/dashboard/parametres"
+          cta={onboardingStatus.baseInfoDone ? "Vérifier" : "Compléter"}
+          required={1}
+        />
         <StepCard 
           number={2} 
           title="Structure Scolaire" 
-          description="Cycles, classes..." 
+          description="Cycles & classes" 
           isDone={onboardingStatus.structureDone}
-        >
-          <p className="text-muted-foreground text-sm mb-4">
-            Définissez l'organisation pédagogique. (Au moins 1 classe requise)
-          </p>
-          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/pedagogie/structure/new')}>
-            <Plus className="w-5 h-5 inline mr-2" />
-            Créer une classe
-          </Button>
-        </StepCard>
-
+          href="/dashboard/pedagogie/structure"
+          cta={onboardingStatus.structureDone ? "Gérer la structure" : "Définir la structure"}
+          count={onboardingStatus.classesCount}
+          required={1}
+        />
         <StepCard 
           number={3} 
           title="Équipe Pédagogique" 
           description="Ajouter des enseignants" 
           isDone={onboardingStatus.staffDone}
-        >
-          <p className="text-muted-foreground text-sm mb-4">
-            Commencez à construire votre équipe. (Au moins 1 enseignant requis)
-          </p>
-          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/rh')}>
-            <Plus className="w-5 h-5 inline mr-2" />
-            Ajouter un enseignant
-          </Button>
-        </StepCard>
-
+          href="/dashboard/rh"
+          cta={onboardingStatus.staffDone ? "Gérer le personnel" : "Ajouter un enseignant"}
+          count={onboardingStatus.teachersCount}
+          required={1}
+        />
         <StepCard 
           number={4} 
           title="Grille Tarifaire" 
           description="Frais de scolarité" 
           isDone={onboardingStatus.feesDone}
-        >
-          <p className="text-muted-foreground text-sm mb-4">
-            Définissez les frais pour au moins un niveau scolaire.
-          </p>
-          <Button className="w-full" variant="outline" onClick={() => router.push('/dashboard/frais-scolarite')}>
-            <Plus className="w-5 h-5 inline mr-2" />
-            Définir les frais
-          </Button>
-        </StepCard>
-
-        <Card className="md:col-span-2 lg:col-span-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 p-6 border border-blue-100 dark:border-blue-900">
-          <h3 className="text-xl font-bold mb-4">Actions rapides</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <QuickActionCard icon={<UserPlus />} title="Inscrire un élève" description="Via le formulaire complet" color="blue" href="/dashboard/inscription"/>
-            <QuickActionCard icon={<Calendar />} title="Créer une classe" description="Définir niveaux et effectifs" color="green" href="/dashboard/pedagogie/structure/new"/>
-            <QuickActionCard icon={<CreditCard />} title="Grille Tarifaire" description="Définir les frais de scolarité" color="red" href="/dashboard/frais-scolarite"/>
-            <QuickActionCard icon={<BookOpen />} title="Ajouter des livres" description="Gestion de la bibliothèque" color="orange" href="/dashboard/bibliotheque"/>
-          </div>
-        </Card>
+          href="/dashboard/frais-scolarite"
+          cta={onboardingStatus.feesDone ? "Voir les tarifs" : "Définir les frais"}
+          count={onboardingStatus.feesCount}
+          required={1}
+        />
       </div>
 
-      <div className="mt-8 flex justify-end">
+      <div className="mt-8 flex justify-center">
         <Button 
-          className="px-6 py-3" 
+          size="lg"
           onClick={() => window.location.reload()} 
           disabled={!onboardingStatus.isSetupComplete}
         >
-          {onboardingStatus.isSetupComplete ? 'J\'ai terminé la configuration' : 'Configuration incomplète'}
+          {onboardingStatus.isSetupComplete ? 'Accéder au tableau de bord' : 'Configuration incomplète'}
         </Button>
       </div>
     </div>
   );
 };
+
 
 // ====================================================================================
 // Main Page Component
@@ -623,20 +588,6 @@ export default function DashboardPage() {
     return <OnboardingDashboard onboardingStatus={onboardingStatus} />;
   }
 
-  // Affiche le dashboard normal uniquement si la configuration est complète
-  if (onboardingStatus && onboardingStatus.isSetupComplete) {
-      return <RegularDashboard />;
-  }
-  
-  // Par défaut (ou en cas d'erreur de chargement), on peut afficher un loader ou un message
-  return (
-      <div className="p-6 space-y-6">
-        <Skeleton className="h-8 w-48" />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-32 w-full" />
-          ))}
-        </div>
-      </div>
-  );
+  // Affiche le dashboard normal si le statut n'a pas pu être déterminé ou si la config est complète
+  return <RegularDashboard />;
 }
