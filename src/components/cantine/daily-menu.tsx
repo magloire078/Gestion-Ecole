@@ -113,12 +113,20 @@ export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, d
                               <div>
                                   <div className="flex justify-between items-start">
                                       <h4 className="font-medium">{item.name}</h4>
-                                      {item.priceStudent != null && (
-                                        <div className="text-right shrink-0 ml-2">
-                                            <div className="font-bold">{item.priceStudent?.toLocaleString('fr-FR')} CFA</div>
-                                            <div className="text-xs text-muted-foreground">élève</div>
-                                        </div>
-                                      )}
+                                      <div className="text-right shrink-0 ml-2">
+                                          {item.priceStudent != null && (
+                                            <div>
+                                              <div className="font-bold">{item.priceStudent?.toLocaleString('fr-FR')} CFA</div>
+                                              <div className="text-xs text-muted-foreground">élève</div>
+                                            </div>
+                                          )}
+                                           {item.priceStaff != null && item.priceStaff > 0 && (
+                                            <div className="mt-1">
+                                              <div className="font-bold">{item.priceStaff?.toLocaleString('fr-FR')} CFA</div>
+                                              <div className="text-xs text-muted-foreground">personnel</div>
+                                            </div>
+                                          )}
+                                      </div>
                                   </div>
                                   <p className="text-sm text-muted-foreground mt-1">
                                     {item.description}

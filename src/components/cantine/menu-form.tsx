@@ -225,22 +225,33 @@ function InnerFormItems({ control, categoryIndex }: { control: any, categoryInde
                 />
                  <FormField
                     control={control}
-                    name={`categories.${categoryIndex}.items.${itemIndex}.allergens`}
+                    name={`categories.${categoryIndex}.items.${itemIndex}.priceStaff`}
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Allergènes</FormLabel>
-                            <FormControl><Input placeholder="lactose, gluten..." {...field} /></FormControl>
+                            <FormLabel>Prix Personnel (CFA)</FormLabel>
+                            <FormControl><Input type="number" {...field} /></FormControl>
+                            <FormMessage />
                         </FormItem>
                     )}
                 />
             </div>
+             <FormField
+                control={control}
+                name={`categories.${categoryIndex}.items.${itemIndex}.allergens`}
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Allergènes</FormLabel>
+                        <FormControl><Input placeholder="lactose, gluten..." {...field} /></FormControl>
+                    </FormItem>
+                )}
+            />
         </div>
       ))}
       <Button
         type="button"
         variant="secondary"
         size="sm"
-        onClick={() => append({ name: '', priceStudent: 0 })}
+        onClick={() => append({ name: '', priceStudent: 0, priceStaff: 0 })}
       >
         <PlusCircle className="mr-2 h-4 w-4" />
         Ajouter un plat
