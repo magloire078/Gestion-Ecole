@@ -18,8 +18,8 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Moon, Sun, ShieldCheck } from "lucide-react";
-import { useAuth, useUser } from "@/firebase";
+import { Moon, Sun, ShieldCheck, Bell } from "lucide-react";
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -28,14 +28,28 @@ import { cn } from "@/lib/utils";
 import { SafeImage } from "./ui/safe-image";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
+import { collection, query, where } from 'firebase/firestore';
 
 export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
+  const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const { subscription } = useSchoolData();
+  const { schoolId, subscription } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
+
+  // Fetch notifications
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!schoolId) return null;
+    // For now, we'll treat messages as notifications
+    // We can expand this later with a dedicated `notifications` collection
+    return query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('readBy', 'not-in', [user?.uid]));
+  }, [firestore, schoolId, user?.uid]);
+
+  const { data: notificationsData, loading: notificationsLoading } = useCollection(notificationsQuery);
+  const unreadNotifications = notificationsData?.length || 0;
+
 
   const handleLogout = async () => {
     try {
@@ -55,12 +69,12 @@ export function UserNav({ collapsed = false }: { collapsed?: boolean }) {
     }
   };
 
-  const isLoading = userLoading;
+  const isLoading = userLoading || notificationsLoading;
 
-  if (isLoading) {
-    return <Skeleton className="h-9 w-9 rounded-full" />;
+  if (isLoading && collapsed) {
+      return <Skeleton className="h-9 w-9 rounded-full" />;
   }
-  
+
   const isSuperAdmin = user?.profile?.isAdmin === true;
   
   const displayName = user?.authUser?.displayName || 'Utilisateur';

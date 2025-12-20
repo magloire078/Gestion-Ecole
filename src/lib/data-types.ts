@@ -290,6 +290,7 @@ export type message = {
         staff?: boolean;
         classes?: string[];
     };
+    readBy?: string[];
     id?: string;
 };
 
@@ -612,5 +613,3 @@ export type participationCompetition = {
     rank?: string;
     notes?: string;
 };
-
-    

@@ -32,10 +32,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, arrayUnion, query, orderBy, serverTimestamp, where, getDoc } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -46,6 +46,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from "@/components/ui/checkbox";
 import type { class_type as Class } from '@/lib/data-types';
+import { cn } from "@/lib/utils";
 
 const messageSchema = z.object({
     title: z.string().min(1, { message: "Le titre est requis." }),
@@ -69,6 +70,7 @@ interface Message {
     content: string;
     senderName: string;
     createdAt: { seconds: number, nanoseconds: number };
+    readBy?: string[];
     recipients: MessageFormValues['recipients'];
 }
 
@@ -121,6 +123,7 @@ export default function MessagingPage() {
         senderId: user.authUser.uid,
         senderName: user.authUser.displayName,
         createdAt: serverTimestamp(),
+        readBy: [], // Initialise as empty
     };
 
     const messagesCollectionRef = collection(firestore, `ecoles/${schoolId}/messagerie`);
@@ -134,9 +137,13 @@ export default function MessagingPage() {
     });
   };
 
-  const handleViewMessage = (message: Message) => {
+  const handleViewMessage = async (message: Message) => {
     setViewedMessage(message);
     setIsViewOpen(true);
+    if (!message.readBy?.includes(user?.uid || '')) {
+      const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie/${message.id}`);
+      await updateDoc(notifRef, { readBy: arrayUnion(user?.uid) });
+    }
   };
 
   const getRecipientSummary = (recipients: MessageFormValues['recipients']) => {
@@ -328,14 +335,17 @@ export default function MessagingPage() {
                         </TableRow>
                     ))
                 ) : messages.length > 0 ? (
-                    messages.map((message) => (
-                    <TableRow key={message.id} className="cursor-pointer" onClick={() => handleViewMessage(message)}>
-                        <TableCell>{message.createdAt ? format(new Date(message.createdAt.seconds * 1000), 'd MMM yyyy, HH:mm', { locale: fr }) : '...'}</TableCell>
-                        <TableCell className="font-medium">{message.title}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{getRecipientSummary(message.recipients)}</TableCell>
-                        <TableCell>{message.senderName}</TableCell>
-                    </TableRow>
-                    ))
+                    messages.map((message) => {
+                        const isRead = message.readBy?.includes(user?.uid || '');
+                        return (
+                             <TableRow key={message.id} className="cursor-pointer" onClick={() => handleViewMessage(message)}>
+                                <TableCell className={!isRead ? 'font-bold' : ''}>{message.createdAt ? formatDistanceToNow(new Date(message.createdAt.seconds * 1000), { addSuffix: true, locale: fr }) : '...'}</TableCell>
+                                <TableCell className={cn("font-medium", !isRead && 'font-bold')}>{message.title}</TableCell>
+                                <TableCell className="text-xs text-muted-foreground">{getRecipientSummary(message.recipients)}</TableCell>
+                                <TableCell>{message.senderName}</TableCell>
+                            </TableRow>
+                        )
+                    })
                 ) : (
                     <TableRow>
                         <TableCell colSpan={4} className="h-24 text-center">Aucun message envoyé pour le moment.</TableCell>
@@ -358,7 +368,7 @@ export default function MessagingPage() {
               À : {viewedMessage ? getRecipientSummary(viewedMessage.recipients) : ''}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 whitespace-pre-wrap text-sm">
+          <div className="py-4 whitespace-pre-wrap text-sm max-h-[60vh] overflow-y-auto">
             {viewedMessage?.content}
           </div>
           <DialogFooter>
@@ -369,5 +379,3 @@ export default function MessagingPage() {
     </>
   );
 }
-
-    

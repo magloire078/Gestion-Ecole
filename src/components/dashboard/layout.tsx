@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '@/hooks/use-theme';
 import { useRouter, usePathname } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
@@ -23,24 +23,29 @@ import { SearchModal } from '@/components/search-modal';
 import { NotificationsPanel } from '@/components/notifications-panel';
 import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { collection, query, where } from 'firebase/firestore';
 
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  
   const router = useRouter();
   const pathname = usePathname();
+  const firestore = useFirestore();
   const { user, loading: userLoading, isDirector } = useUser();
-  const { subscription, loading: schoolLoading } = useSchoolData();
+  const { schoolId, subscription, loading: schoolLoading } = useSchoolData();
 
-  // Mock notifications - à remplacer par votre logique
-  useEffect(() => {
-    // Simuler des notifications
-    const mockUnread = Math.floor(Math.random() * 10);
-    setUnreadNotifications(mockUnread);
-  }, []);
+  // Fetch notifications for the badge count
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!schoolId || !user?.uid) return null;
+    // We only count unread messages.
+    return query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('readBy', 'not-in', [user.uid]));
+  }, [firestore, schoolId, user?.uid]);
+
+  const { data: notificationsData, loading: notificationsLoading } = useCollection(notificationsQuery);
+  const unreadNotifications = notificationsData?.length || 0;
 
   // Raccourcis clavier
   useEffect(() => {
@@ -223,7 +228,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <NotificationsPanel
             isOpen={isNotificationsOpen}
             onClose={() => setIsNotificationsOpen(false)}
-            notifications={[]}
           />
         </div>
       </TooltipProvider>
