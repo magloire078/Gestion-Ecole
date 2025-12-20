@@ -95,13 +95,12 @@ export default function CreateSchoolPage() {
       
       toast({
         title: 'École créée avec succès !',
-        description: `Le code de votre établissement est : ${result.schoolCode}. Vous êtes maintenant Super Admin. Redirection...`,
+        description: `Le code de votre établissement est : ${result.schoolCode}. Redirection...`,
         duration: 5000,
       });
 
-      // Instead of direct redirection, we let the AuthGuard handle it after token refresh.
-      // A full page reload is often the most reliable way to ensure all states are new.
-      window.location.assign('/dashboard');
+      // Redirect with a parameter to handle race conditions in AuthGuard
+      router.push('/dashboard?fromOnboarding=true');
 
     } catch (error: any) {
       console.error(error);
