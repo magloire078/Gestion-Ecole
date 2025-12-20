@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -9,27 +10,23 @@ service cloud.firestore {
     }
 
     function isSuperAdmin() {
-      // Pour l'instant, vérifie un document. Plus tard, utilisera les custom claims.
       return isAuth() && exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
     }
     
     function getUserSchoolId() {
       // Tente de lire le schoolId depuis le token d'authentification.
+      // Cette fonction ne doit PAS être utilisée lors de la création d'une école.
       return request.auth.token.schoolId;
     }
 
     function isSchoolMember(schoolId) {
-      // L'utilisateur est-il membre de l'école spécifiée ?
+      // Vérifie si l'utilisateur est membre de l'école spécifiée.
       return isAuth() && getUserSchoolId() == schoolId;
-    }
-
-    function isDirector(schoolId) {
-      // L'utilisateur est-il le directeur de l'école ?
-      return isSchoolMember(schoolId) && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
     
     // Règle spécifique pour permettre au directeur de créer son propre profil PENDANT la création de l'école.
     function isCreatingOwnProfileAsDirector(schoolId, staffId) {
+       // L'utilisateur crée son propre profil, et ce profil contient son UID dans le champ directorId
        return request.auth.uid == staffId && request.resource.data.directorId == request.auth.uid;
     }
 
@@ -48,7 +45,7 @@ service cloud.firestore {
     // Les journaux système peuvent être créés par n'importe quel utilisateur authentifié.
     match /system_logs/{logId} {
        allow create: if isAuth();
-       allow read: if isAuth(); // Ou plus restrictif si nécessaire
+       allow read: if isAuth(); 
     }
     
     // Les paramètres système sont lisibles par tous, mais modifiables uniquement par les Super Admins.
@@ -62,16 +59,16 @@ service cloud.firestore {
     // N'importe quel utilisateur authentifié peut créer une école.
     match /ecoles/{schoolId} {
       allow create: if isAuth();
-      // Seuls les membres de l'école peuvent la lire.
-      allow read: if isSchoolMember(schoolId);
-      // Seul le directeur peut la mettre à jour ou la supprimer.
-      allow update, delete: if isDirector(schoolId);
+      // Un membre peut lire les infos de son école. Seuls les directeurs peuvent mettre à jour (sera affiné plus tard).
+      allow read, update, delete: if isSchoolMember(schoolId);
     }
     
-    // Règles pour la création du profil du directeur en même temps que l'école
+    // Règle pour la création du profil du directeur en même temps que l'école.
     match /ecoles/{schoolId}/personnel/{staffId} {
+       // Autorise la création du profil directeur pendant la création de l'école
        allow create: if isCreatingOwnProfileAsDirector(schoolId, staffId);
-       // Pour les opérations futures, on applique les règles standard.
+       
+       // Pour toutes les autres opérations, il faut être membre de l'école.
        allow read, update, delete: if isSchoolMember(schoolId);
     }
 

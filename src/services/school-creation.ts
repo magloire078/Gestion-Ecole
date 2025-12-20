@@ -105,7 +105,7 @@ export class SchoolCreationService {
     batch.set(userRootRef, userRootData, { merge: true });
 
     // 3. Create director's staff profile
-    const staffProfileData: Omit<staff, 'id'> = {
+    const staffProfileData: Partial<staff> = {
       uid: schoolData.directorId,
       email: schoolData.directorEmail,
       displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
@@ -116,7 +116,7 @@ export class SchoolCreationService {
       lastName: schoolData.directorLastName,
       hireDate: new Date().toISOString().split('T')[0],
       baseSalary: 0,
-      directorId: schoolData.directorId, // Add directorId for security rule check
+      directorId: schoolData.directorId, // IMPORTANT for security rule check
     };
     batch.set(staffProfileRef, staffProfileData);
     
