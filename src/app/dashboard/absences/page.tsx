@@ -31,11 +31,21 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, addDoc, serverTimestamp, orderBy, where } from 'firebase/firestore';
+import { collection, query, addDoc, serverTimestamp, orderBy, where, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -52,6 +62,7 @@ import type { class_type as Class, student as Student, absence as Absence } from
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Trash2 } from 'lucide-react';
 
 
 interface StudentWithAbsence extends Student {
@@ -73,12 +84,16 @@ export default function AbsencesPage() {
   const { user } = useUser();
   const { toast } = useToast();
 
-  const canManageGrades = !!user?.profile?.permissions?.manageGrades;
+  const canManageAbsences = !!user?.profile?.permissions?.manageAttendance;
 
   const [selectedClassId, setSelectedClassId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [todayDateString, setTodayDateString] = useState('');
+  
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [absenceToDelete, setAbsenceToDelete] = useState<(Absence & {id: string}) | null>(null);
+
 
   useEffect(() => {
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
@@ -148,7 +163,7 @@ export default function AbsencesPage() {
   }, [todayDateString, form]);
 
   const handleOpenForm = (student: Student) => {
-    if (!canManageGrades) return;
+    if (!canManageAbsences) return;
     setSelectedStudent(student);
     form.reset({
       studentId: student.id,
@@ -190,6 +205,25 @@ export default function AbsencesPage() {
     });
   };
 
+  const handleOpenDeleteDialog = (absence: Absence & { id: string }) => {
+    setAbsenceToDelete(absence);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteAbsence = async () => {
+    if (!schoolId || !absenceToDelete) return;
+    try {
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/absences`, absenceToDelete.id));
+      toast({ title: 'Absence supprimée', description: "L'enregistrement de l'absence a été supprimé." });
+    } catch (e) {
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/absences/${absenceToDelete.id}`, operation: 'delete' }));
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setAbsenceToDelete(null);
+    }
+  }
+
+
   const isLoading = schoolLoading || classesLoading;
   const isDataLoading = studentsLoading || allAbsencesLoading;
 
@@ -225,7 +259,7 @@ export default function AbsencesPage() {
                 <CardHeader>
                   <CardTitle>Liste des Élèves - {classes.find(c => c.id === selectedClassId)?.name}</CardTitle>
                   <CardDescription>
-                    {canManageGrades 
+                    {canManageAbsences 
                       ? `Cliquez sur un élève pour enregistrer une absence pour aujourd'hui (${format(new Date(), 'd MMMM', {locale: fr})}).`
                       : "Vue en lecture seule. Vous n'avez pas la permission d'enregistrer des absences."
                     }
@@ -253,7 +287,7 @@ export default function AbsencesPage() {
                             key={student.id} 
                             onClick={() => !student.isAbsentToday && handleOpenForm(student)}
                             className={cn(
-                                canManageGrades && !student.isAbsentToday && 'cursor-pointer hover:bg-muted/50',
+                                canManageAbsences && !student.isAbsentToday && 'cursor-pointer hover:bg-muted/50',
                                 student.isAbsentToday && 'bg-red-50/50 dark:bg-red-900/20 text-muted-foreground'
                             )}
                           >
@@ -298,6 +332,7 @@ export default function AbsencesPage() {
                         <TableHead>Type</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead>Motif</TableHead>
+                        {canManageAbsences && <TableHead className="text-right">Actions</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -309,6 +344,7 @@ export default function AbsencesPage() {
                             <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                             <TableCell><Skeleton className="h-6 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                            {canManageAbsences && <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>}
                           </TableRow>
                         ))
                       ) : historicAbsences.length > 0 ? (
@@ -323,11 +359,18 @@ export default function AbsencesPage() {
                                 </Badge>
                             </TableCell>
                             <TableCell>{absence.reason}</TableCell>
+                            {canManageAbsences && (
+                                <TableCell className="text-right">
+                                    <Button variant="ghost" size="icon" onClick={() => handleOpenDeleteDialog(absence)}>
+                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                    </Button>
+                                </TableCell>
+                            )}
                           </TableRow>
                         ))
                       ) : (
                         <TableRow>
-                           <TableCell colSpan={5} className="text-center h-24">Aucune absence enregistrée pour le moment.</TableCell>
+                           <TableCell colSpan={canManageAbsences ? 6 : 5} className="text-center h-24">Aucune absence enregistrée pour le moment.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
@@ -383,6 +426,23 @@ export default function AbsencesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible. L'absence de <strong>{absenceToDelete?.studentName}</strong> du <strong>{absenceToDelete && format(new Date(absenceToDelete.date), 'dd/MM/yyyy')}</strong> sera supprimée.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAbsence} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
