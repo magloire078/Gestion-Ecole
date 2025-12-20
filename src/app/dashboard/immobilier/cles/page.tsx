@@ -109,14 +109,14 @@ export default function ClesPage() {
 
   const form = useForm<KeyTrousseauFormValues>({
     resolver: zodResolver(keyTrousseauSchema),
-    defaultValues: { name: '', description: '', keys: [{ value: '' }] },
+    defaultValues: { name: '', description: '', keys: [{ value: 'cle-1' }] },
   });
   
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'keys' });
 
   const handleOpenForm = (trousseau: (KeyTrousseau & { id: string }) | null) => {
     setEditingTrousseau(trousseau);
-    form.reset(trousseau ? { ...trousseau, keys: trousseau.keys?.map(k => ({value: k})) } : { name: '', description: '', keys: [{ value: '' }] });
+    form.reset(trousseau ? { ...trousseau, keys: trousseau.keys?.map(k => ({value: k})) } : { name: '', description: '', keys: [{ value: 'cle-1' }] });
     setIsFormOpen(true);
   };
 
@@ -285,7 +285,7 @@ export default function ClesPage() {
                     <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                   </div>
                 ))}
-                <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ value: "" })}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter une clé</Button>
+                <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => append({ value: `cle-${fields.length + 1}` })}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter une clé</Button>
               </div>
             </form>
           </Form>
