@@ -22,7 +22,12 @@ service cloud.firestore {
 
     // Vérifie si l'utilisateur est un "super admin" de la plateforme.
     function isSuperAdmin() {
-      return get(/databases/$(database)/documents/super_admins/$(request.auth.uid)).data.isAdmin == true;
+      // Check for a custom claim first for efficiency
+      if (exists(request.auth.token) && request.auth.token.superAdmin == true) {
+        return true;
+      }
+      // Fallback to checking the super_admins collection
+      return exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
     }
 
     // Obtient le profil du personnel de l'utilisateur qui fait la requête.
@@ -82,7 +87,7 @@ service cloud.firestore {
     match /system_logs/{logId} {
        // Autoriser tout utilisateur authentifié à écrire un log (ex: création d'école)
        allow create: if isAuth();
-       allow read: if isAuth();
+       allow read: if isSuperAdmin();
     }
     
     // =================================
@@ -101,15 +106,25 @@ service cloud.firestore {
 
       // Règles pour le personnel (staff)
       match /personnel/{staffId} {
-        // Un utilisateur avec la permission 'manageUsers' peut créer un nouveau membre.
-        allow create: if hasPermission(schoolId, 'manageUsers');
+        // La création est autorisée si l'utilisateur a la permission 'manageUsers'
+        // OU s'il est en train de créer son propre profil de personnel (cas du directeur lors de la création de l'école).
+        allow create: if hasPermission(schoolId, 'manageUsers') || (isAuth() && request.auth.uid == staffId);
+        
         // Tout membre de l'école peut lire les profils du personnel.
         allow read: if isAuth() && getUserSchoolId() == schoolId;
+        
         // L'utilisateur peut modifier son propre profil.
         // Un utilisateur avec 'manageUsers' peut modifier n'importe quel profil.
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
-        // Seul un utilisateur avec 'manageUsers' peut supprimer un membre.
-        allow delete: if hasPermission(schoolId, 'manageUsers');
+        
+        // Seul un utilisateur avec 'manageUsers' ou un directeur peut supprimer un membre (autre que lui-même).
+        allow delete: if hasPermission(schoolId, 'manageUsers') && request.auth.uid != staffId;
+      }
+      
+      // Règles pour les élèves et leurs sous-données
+      match /eleves/{studentId}/{document=**} {
+        allow read: if hasPermission(schoolId, 'viewUsers');
+        allow write: if hasPermission(schoolId, 'manageUsers');
       }
 
       // Règle générale pour les autres sous-collections (plus spécifique)
