@@ -602,7 +602,7 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                                 <FormField control={paymentForm.control} name="paymentMethod" render={({ field }) => (<FormItem><FormLabel>Mode de paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Espèces">Espèces</SelectItem><SelectItem value="Chèque">Chèque</SelectItem><SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem><SelectItem value="Paiement Mobile">Paiement Mobile</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                                 <FormField control={paymentForm.control} name="payerFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                                 <FormField control={paymentForm.control} name="payerLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="payerContact" render={({ field }) => (<FormItem><FormLabel>Contact Payeur</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                                <FormField control={paymentForm.control} name="payerContact" render={({ field }) => (<FormItem><FormLabel>Contact Payeur</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
                             </form>
                         </Form>
                         <DialogFooter>
