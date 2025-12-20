@@ -4,6 +4,7 @@
 import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
 import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createWaveCheckoutSession } from '@/lib/wave';
+import { requestMtnMomoPayment } from '@/lib/mtn-momo';
 import type { User } from 'firebase/auth';
 
 interface PaymentProviderData {
@@ -12,12 +13,13 @@ interface PaymentProviderData {
     description: string;
     user: User;
     schoolId: string;
+    phoneNumber?: string; // For mobile money payments
 }
 
-type PaymentProvider = 'orangemoney' | 'stripe' | 'wave';
+type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn';
 
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
-    const { plan, price, description, user, schoolId } = data;
+    const { plan, price, description, user, schoolId, phoneNumber } = data;
     const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
     const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=success`;
     const cancelUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`;
@@ -69,6 +71,32 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         const { url, error } = await createStripeCheckoutSession(sessionData);
         if (url) return { url, error: null };
         return { url: null, error: error || "Impossible de générer le lien de paiement Stripe." };
+    }
+
+    if (provider === 'mtn') {
+        if (!phoneNumber) {
+            return { url: null, error: 'Le numéro de téléphone est requis pour le paiement MTN.' };
+        }
+        const transactionId = `${schoolId}_${new Date().getTime()}`;
+        const paymentData = {
+            amount: price,
+            currency: 'XOF' as const,
+            externalId: transactionId,
+            payer: {
+                partyIdType: 'MSISDN' as const,
+                partyId: phoneNumber,
+            },
+            payerMessage: `Paiement GèreEcole - ${plan}`,
+            payeeNote: `Abonnement ${plan} pour ${schoolId}`,
+        };
+
+        const { success, message } = await requestMtnMomoPayment(paymentData);
+        if (success) {
+            // MTN MoMo API v1 doesn't return a redirect URL.
+            // The user confirms on their phone. We redirect to a pending page.
+            return { url: `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?provider=mtn&tid=${transactionId}`, error: null };
+        }
+        return { url: null, error: message };
     }
     
     return { url: null, error: 'Fournisseur de paiement non supporté.' };
