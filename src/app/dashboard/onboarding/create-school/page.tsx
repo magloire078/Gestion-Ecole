@@ -99,8 +99,8 @@ export default function CreateSchoolPage() {
         duration: 5000,
       });
 
-      // Redirect with a parameter to handle race conditions in AuthGuard
-      router.push('/dashboard?fromOnboarding=true');
+      // Redirect to dashboard without any special params
+      router.push('/dashboard');
 
     } catch (error: any) {
       console.error(error);

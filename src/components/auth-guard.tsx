@@ -2,8 +2,8 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 function AuthProtectionLoader() {
   return (
@@ -20,77 +20,64 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, schoolId, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const [justCreatedSchool, setJustCreatedSchool] = useState(false);
 
   useEffect(() => {
-    // Ce hook ne s'exécute qu'une seule fois au montage pour vérifier le paramètre d'URL.
-    if (searchParams.get('fromOnboarding') === 'true') {
-      setJustCreatedSchool(true);
-      // Nettoyer l'URL pour que ce paramètre ne persiste pas
-      const newUrl = window.location.pathname;
-      window.history.replaceState(null, '', newUrl);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    // Si les données utilisateur sont encore en cours de chargement, on ne fait rien.
     if (loading) {
+      // Don't do anything while the user state is loading.
+      // The loader below will be displayed.
       return;
-    }
-    
-    // Si l'utilisateur vient de créer une école, mais que le schoolId n'est pas encore
-    // propagé dans le hook useUser, on attend et on affiche le loader.
-    if (justCreatedSchool && !schoolId) {
-        // On ne fait rien et on laisse le loader s'afficher (voir plus bas)
-        return;
-    } else if (justCreatedSchool && schoolId) {
-        // Le schoolId est enfin arrivé, on peut désactiver le mode spécial.
-        setJustCreatedSchool(false);
     }
 
     const isAuthPage = pathname === '/login';
     const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
     const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
 
-    // Cas 1 : Utilisateur non authentifié
+    // Case 1: No user is logged in.
     if (!user) {
       if (!isPublicPage) {
+        // If on a protected page, redirect to login.
         router.replace('/login');
       }
+      // Otherwise, allow access to public pages.
       return;
     }
 
-    // Cas 2 : Utilisateur authentifié
+    // Case 2: User is logged in.
     if (isAuthPage) {
+      // If on the login page, redirect to the dashboard.
       router.replace('/dashboard');
       return;
     }
     
-    // Cas 3 : Utilisateur connecté sans école (et non super-admin) -> Forcer l'onboarding
-    if (!schoolId && user.profile?.role !== 'super_admin') {
+    const isSuperAdmin = user.profile?.isAdmin === true;
+
+    // Case 3: User is logged in but has no schoolId (and is not a super admin).
+    if (!schoolId && !isSuperAdmin) {
       if (!isOnboardingPage) {
+        // Force onboarding if they are not already on an onboarding page.
         router.replace('/dashboard/onboarding');
       }
       return;
     }
 
-    // Cas 4 : Utilisateur connecté avec une école, mais sur une page d'onboarding -> Aller au dashboard
+    // Case 4: User has a schoolId but is on an onboarding page.
     if (schoolId && isOnboardingPage) {
+      // Redirect them to the main dashboard.
       router.replace('/dashboard');
       return;
     }
 
-  }, [user, schoolId, loading, pathname, router, justCreatedSchool]);
-  
-  // Logique d'affichage du Loader
-  // Si le statut de l'utilisateur est en cours de chargement, on affiche un loader pour toutes les pages protégées
-  if (loading && !pathname.startsWith('/login') && pathname !== '/') {
+  }, [user, schoolId, loading, pathname, router]);
+
+  // Render a loader while the auth state is being determined.
+  // This prevents the "flash" of content before redirection logic kicks in.
+  if (loading) {
     return <AuthProtectionLoader />;
   }
-
-  // Cas spécifique de l'après-création d'école
-  if (justCreatedSchool && !schoolId) {
+  
+  // If the user is logged in, but we're still waiting for the schoolId,
+  // show a loader to prevent flashing the onboarding page.
+  if (user && !schoolId && !pathname.startsWith('/dashboard/onboarding') && user.profile?.role !== 'super_admin') {
       return <AuthProtectionLoader />;
   }
 
