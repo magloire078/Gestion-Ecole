@@ -108,7 +108,7 @@ service cloud.firestore {
       match /personnel/{staffId} {
         // La création est autorisée si l'utilisateur a la permission 'manageUsers'
         // OU s'il est en train de créer son propre profil de personnel (cas du directeur lors de la création de l'école).
-        allow create: if hasPermission(schoolId, 'manageUsers') || (isAuth() && request.auth.uid == staffId);
+        allow create: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         
         // Tout membre de l'école peut lire les profils du personnel.
         allow read: if isAuth() && getUserSchoolId() == schoolId;
