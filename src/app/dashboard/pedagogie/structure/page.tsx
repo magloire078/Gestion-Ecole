@@ -1,7 +1,9 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -142,33 +144,36 @@ export default function StructurePage() {
     defaultValues: { name: '', code: '', order: 1, cycleId: '', capacity: 30 }
   });
 
-  const watchedCycleName = cycleForm.watch('name');
-  const watchedNiveauCycleId = niveauForm.watch('cycleId');
-  const selectedCycleForNiveau = cycles.find(c => c.id === watchedNiveauCycleId);
-  const niveauxOptionsForSelectedCycle = selectedCycleForNiveau ? ivorianNiveaux[selectedCycleForNiveau.name as keyof typeof ivorianNiveaux] || [] : [];
-
+  const { watch: cycleWatch, setValue: cycleSetValue } = cycleForm;
+  const watchedCycleName = cycleWatch('name');
 
   useEffect(() => {
-      const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
-      if (selectedCycleTemplate) {
-          cycleForm.setValue('code', selectedCycleTemplate.code);
-          cycleForm.setValue('order', selectedCycleTemplate.order);
-      }
-  }, [watchedCycleName, cycleForm]);
+    const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
+    if (selectedCycleTemplate) {
+        cycleSetValue('code', selectedCycleTemplate.code);
+        cycleSetValue('order', selectedCycleTemplate.order);
+    }
+  }, [watchedCycleName, cycleSetValue]);
+  
+  const { watch: niveauWatch, setValue: niveauSetValue } = niveauForm;
+  const watchedNiveauCycleId = niveauWatch('cycleId');
+  const watchedNiveauName = niveauWatch('name');
+
+  const selectedCycleForNiveau = cycles.find(c => c.id === watchedNiveauCycleId);
+  const niveauxOptionsForSelectedCycle = selectedCycleForNiveau ? ivorianNiveaux[selectedCycleForNiveau.name as keyof typeof ivorianNiveaux] || [] : [];
   
   useEffect(() => {
       if(watchedNiveauCycleId){
-        niveauForm.setValue('name', '');
+        niveauSetValue('name', '');
       }
-  }, [watchedNiveauCycleId, niveauForm]);
+  }, [watchedNiveauCycleId, niveauSetValue]);
 
   useEffect(() => {
-    const watchedNiveauName = niveauForm.watch('name');
     const selectedNiveauTemplate = niveauxOptionsForSelectedCycle.find(n => n === watchedNiveauName);
     if(selectedNiveauTemplate) {
-        niveauForm.setValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
+        niveauSetValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
     }
-  }, [niveauForm.watch('name'), niveauxOptionsForSelectedCycle, niveauForm]);
+  }, [watchedNiveauName, niveauxOptionsForSelectedCycle, niveauSetValue]);
 
 
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading || classesLoading || userLoading;
@@ -517,3 +522,4 @@ export default function StructurePage() {
     </>
   );
 }
+
