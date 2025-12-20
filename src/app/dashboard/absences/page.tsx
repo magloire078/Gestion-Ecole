@@ -253,7 +253,7 @@ export default function AbsencesPage() {
             <TabsTrigger value="history">Historique des absences</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="today">
+          <TabsContent value="today" className="mt-6">
              {selectedClassId ? (
               <Card>
                 <CardHeader>
@@ -317,7 +317,7 @@ export default function AbsencesPage() {
             )}
           </TabsContent>
           
-          <TabsContent value="history">
+          <TabsContent value="history" className="mt-6">
             <Card>
               <CardHeader>
                   <CardTitle>Historique des Absences</CardTitle>
@@ -446,3 +446,5 @@ export default function AbsencesPage() {
     </>
   );
 }
+
+    
