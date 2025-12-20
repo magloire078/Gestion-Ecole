@@ -22,15 +22,17 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    // Ne rien faire tant que les données ne sont pas chargées
     if (loading) {
-      return; // Attendre que l'état d'authentification soit résolu
+      return;
     }
 
     const isAuthPage = pathname === '/login';
     const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
     const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+    const isSuperAdmin = user?.profile?.isAdmin === true;
 
-    // Cas 1: Pas d'utilisateur connecté
+    // SCENARIO 1: L'utilisateur n'est pas connecté
     if (!user) {
       if (!isPublicPage) {
         router.replace('/login');
@@ -38,45 +40,60 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Cas 2: Utilisateur connecté
+    // SCENARIO 2: L'utilisateur est connecté
+    
+    // Si sur une page d'authentification, rediriger vers le tableau de bord
     if (isAuthPage) {
       router.replace('/dashboard');
       return;
     }
-    
-    const isSuperAdmin = user.profile?.isAdmin === true;
 
-    // Cas 3: Utilisateur connecté sans école (et non super admin)
-    if (!schoolId && !isSuperAdmin) {
+    // Si c'est un super admin, il a accès à tout (sauf l'onboarding)
+    if (isSuperAdmin) {
+       if (isOnboardingPage) {
+         router.replace('/admin/system/dashboard');
+       }
+       return;
+    }
+
+    // SCENARIO 3: L'utilisateur n'a pas d'école
+    if (!schoolId) {
       if (!isOnboardingPage) {
+        // Le rediriger vers l'onboarding s'il n'y est pas déjà
         router.replace('/dashboard/onboarding');
       }
       return;
     }
 
-    // Cas 4: Utilisateur avec une école, mais sur la page d'onboarding
+    // SCENARIO 4: L'utilisateur a une école mais est sur une page d'onboarding
     if (schoolId && isOnboardingPage) {
       router.replace('/dashboard');
       return;
     }
-    
+
   }, [user, schoolId, loading, pathname, router]);
 
-  // Si on charge encore les infos de l'utilisateur, on affiche un loader
-  if (loading) {
+  // --- LOGIQUE D'AFFICHAGE ---
+
+  const isPublicPage = pathname === '/' || pathname.startsWith('/public') || pathname === '/login' || pathname === '/contact';
+
+  // Si le chargement est en cours pour une page protégée, afficher le loader
+  if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Si l'utilisateur est connecté mais que son ID d'école n'est pas encore chargé (état de transition)
-  // on affiche un loader pour éviter le "flash" vers la page d'onboarding.
-  if (user && !schoolId && !pathname.startsWith('/dashboard/onboarding') && !user.profile?.isAdmin) {
-    return <AuthProtectionLoader />;
-  }
-
-  // L'utilisateur n'est pas connecté et essaie d'accéder à une page protégée
-  if (!user && pathname !== '/login' && pathname !== '/' && !pathname.startsWith('/public') && pathname !== '/contact') {
+  // Si l'utilisateur est connecté, mais que nous attendons toujours le schoolId (état de transition),
+  // et que ce n'est pas un super-admin, afficher le loader pour éviter le flash.
+  if (user && !schoolId && !user.profile?.isAdmin && !pathname.startsWith('/dashboard/onboarding')) {
       return <AuthProtectionLoader />;
   }
 
+  // Si l'utilisateur n'est pas connecté et essaie d'accéder à une page non publique,
+  // afficher le loader pendant que useEffect le redirige.
+  if (!user && !isPublicPage) {
+    return <AuthProtectionLoader />;
+  }
+
+  // Si tout est en ordre, afficher le contenu de la page
   return <>{children}</>;
 }
