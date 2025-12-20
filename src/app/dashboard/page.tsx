@@ -546,7 +546,6 @@ const OnboardingDashboard = () => {
             <QuickActionCard icon={<BookOpen />} title="Ajouter des livres" description="Gestion de la bibliothèque" color="orange" href="/dashboard/bibliotheque"/>
           </div>
         </Card>
-
       </div>
 
       <div className="mt-8 flex justify-end">
@@ -603,11 +602,14 @@ export default function DashboardPage() {
   }, [schoolId, firestore]);
 
   const isSetupComplete = useMemo(() => {
+    // Si les données de base de l'école ne sont pas chargées, on ne peut pas savoir.
     if (!schoolData) return false;
-    const baseInfoDone = !!(schoolData.name && schoolData.directorFirstName && schoolData.address);
+
+    const baseInfoDone = !!(schoolData.name && schoolData.address);
     const structureDone = onboardingData.classesCount > 0;
     const staffDone = onboardingData.teachersCount > 0;
     const feesDone = onboardingData.feesCount > 0;
+
     return baseInfoDone && structureDone && staffDone && feesDone;
   }, [schoolData, onboardingData]);
 
