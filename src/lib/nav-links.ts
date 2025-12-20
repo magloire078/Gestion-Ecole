@@ -21,7 +21,8 @@ import {
     Bed,
     Building,
     HeartPulse,
-    Trophy
+    Trophy,
+    Banknote
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -56,7 +57,7 @@ export const NAV_LINKS: NavGroup[] = [
       icon: School,
       links: [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' },
-        { href: '/dashboard/rh', label: 'Personnel', icon: Briefcase, permission: 'viewUsers', module: 'rh' },
+        { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Briefcase, permission: 'viewUsers' },
         { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageMedical', module: 'sante' },
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
@@ -91,6 +92,14 @@ export const NAV_LINKS: NavGroup[] = [
       icon: Send,
       links: [
         { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, permission: 'manageCommunication' },
+      ]
+    },
+     {
+      group: "RH & Paie",
+      icon: Briefcase,
+      links: [
+        { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers' },
+        { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
       ]
     },
      {

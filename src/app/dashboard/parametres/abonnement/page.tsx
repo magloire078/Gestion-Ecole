@@ -90,16 +90,16 @@ export default function SubscriptionPage() {
             name: "Essentiel",
             priceNumber: 0,
             price: "Gratuit",
-            priceDescription: "pour toujours",
-            description: "Idéal pour les petites écoles qui débutent.",
+            priceDescription: "pour découvrir",
+            description: "Idéal pour évaluer toutes les fonctionnalités avec des limites généreuses.",
             features: [
                 "Gestion de base (élèves, classes, notes)",
-                "Comptabilité simplifiée",
+                "Accès à tous les modules complémentaires",
                 "Support communautaire",
             ],
             limits: [
                 { icon: Users, text: "Jusqu'à 50 élèves" },
-                { icon: Building, text: "Jusqu'à 2 cycles" },
+                { icon: Building, text: "Jusqu'à 5 cycles" },
             ]
         },
         {
@@ -110,7 +110,7 @@ export default function SubscriptionPage() {
             description: "Pour les écoles en croissance avec des besoins avancés.",
             features: [
                 "Toutes les fonctionnalités Essentiel",
-                "Accès aux modules complémentaires",
+                "Accès aux modules complémentaires (payants)",
                 "Support prioritaire par email",
             ],
              limits: [
@@ -251,19 +251,20 @@ export default function SubscriptionPage() {
                 </Alert>
             )}
 
-            <Card>
+            {subscription?.plan === 'Pro' && (
+              <Card>
                 <CardHeader>
                     <CardTitle>Modules Complémentaires</CardTitle>
                     <CardDescription>
                         Activez des fonctionnalités additionnelles pour votre établissement. 
-                        {isPaidPlan ? " La facturation sera ajustée en conséquence." : " Requiert un plan Pro ou Premium."}
+                        La facturation sera ajustée en conséquence.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {MODULES_CONFIG.map(module => {
                         const Icon = module.icon;
-                        const isChecked = subscription?.activeModules?.includes(module.id) || subscription?.plan === 'Premium';
-                        const isDisabled = !isPaidPlan || isUpdating || subscription?.plan === 'Premium';
+                        const isChecked = subscription?.activeModules?.includes(module.id);
+                        const isDisabled = isUpdating;
 
                         return (
                              <div key={module.id} className={cn("flex items-center justify-between rounded-lg border p-4", isDisabled && "opacity-50")}>
@@ -293,7 +294,8 @@ export default function SubscriptionPage() {
                         </div>
                     </CardFooter>
                 )}
-            </Card>
+              </Card>
+            )}
         </div>
     )
 }

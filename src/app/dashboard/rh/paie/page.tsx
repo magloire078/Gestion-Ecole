@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from "next/link";
@@ -10,20 +9,16 @@ import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/firebase";
 
-export default function ActivitesLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function PaiePage() {
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
     const isLoading = subscriptionLoading || userLoading;
-    
-    if (user?.profile?.isAdmin) {
-        return <>{children}</>;
-    }
 
+    if (user?.profile?.isAdmin) {
+        return <PaieContent />;
+    }
+    
     if (isLoading) {
         return (
             <div className="space-y-6">
@@ -34,8 +29,8 @@ export default function ActivitesLayout({
         );
     }
     
-    const hasAccess = subscription?.plan === 'Essentiel' || subscription?.activeModules?.includes('activites') || subscription?.plan === 'Premium';
-    
+    const hasAccess = subscription?.plan === 'Pro' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('rh');
+
     if (!hasAccess) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
@@ -43,18 +38,18 @@ export default function ActivitesLayout({
                     <CardHeader>
                         <CardTitle className="flex items-center justify-center gap-2">
                             <Lock className="h-6 w-6 text-primary" />
-                            Module Activités
+                            Module Paie
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            La gestion des activités parascolaires est un module complémentaire. Pour y accéder, veuillez l'activer depuis la page d'abonnement.
+                            La gestion avancée de la paie est un module complémentaire ou inclus dans les plans Pro et Premium.
                         </p>
                     </CardContent>
                     <CardFooter>
                         <Button asChild className="w-full">
                             <Link href="/dashboard/parametres/abonnement">
-                                Activer le module
+                                Gérer mon abonnement
                             </Link>
                         </Button>
                     </CardFooter>
@@ -63,5 +58,25 @@ export default function ActivitesLayout({
         );
     }
     
-    return <>{children}</>;
+    return <PaieContent />;
 }
+
+
+function PaieContent() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Gestion de la Paie</CardTitle>
+                <CardDescription>
+                    Générez et consultez les bulletins de paie de votre personnel.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <p className="text-muted-foreground">
+                    La fonctionnalité complète de gestion de la paie est en cours de développement. Actuellement, vous pouvez générer un aperçu de bulletin de paie depuis le profil d'un membre du personnel.
+                </p>
+            </CardContent>
+        </Card>
+    );
+}
+

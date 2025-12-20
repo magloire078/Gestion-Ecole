@@ -1,4 +1,5 @@
 
+
 'use server';
 import { collection, getCountFromServer, query, where, type Firestore } from 'firebase/firestore';
 import type { school as School, student as Student, cycle as Cycle } from '@/lib/data-types';
@@ -17,7 +18,7 @@ interface PricingSupplements {
 }
 
 export const TARIFAIRE: Record<string, any> = {
-    Essentiel: { prixMensuel: 0, cyclesInclus: 2, elevesInclus: 50, stockageInclus: 1 },
+    Essentiel: { prixMensuel: 0, cyclesInclus: 5, elevesInclus: 50, stockageInclus: 1 },
     Pro: { prixMensuel: 49900, cyclesInclus: 5, elevesInclus: 250, stockageInclus: 10 },
     Premium: { prixMensuel: 99900, cyclesInclus: Infinity, elevesInclus: Infinity, stockageInclus: Infinity },
 };

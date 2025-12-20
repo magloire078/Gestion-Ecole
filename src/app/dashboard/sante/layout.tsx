@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -33,7 +34,7 @@ export default function SanteLayout({
         );
     }
     
-    const hasAccess = subscription?.activeModules?.includes('sante') || subscription?.plan === 'Premium';
+    const hasAccess = subscription?.plan === 'Essentiel' || subscription?.activeModules?.includes('sante') || subscription?.plan === 'Premium';
 
     if (!hasAccess) {
         return (
