@@ -6,13 +6,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { MoreHorizontal, PlusCircle, Edit, Trash2 } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, deleteDoc, doc } from 'firebase/firestore';
@@ -33,6 +43,8 @@ export default function RoutesManagementPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRoute, setEditingRoute] = useState<(Route & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState<(Route & { id: string }) | null>(null);
 
   const routesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_lignes`)) : null, [firestore, schoolId]);
   const { data: routesData, loading: routesLoading } = useCollection(routesQuery);
@@ -53,18 +65,25 @@ export default function RoutesManagementPage() {
     setIsFormOpen(false);
     setEditingRoute(null);
   };
+
+  const handleOpenDeleteDialog = (route: Route & { id: string }) => {
+    setRouteToDelete(route);
+    setIsDeleteDialogOpen(true);
+  };
   
-  const handleDeleteRoute = async (routeId: string) => {
-    if (!schoolId) return;
+  const handleDeleteRoute = async () => {
+    if (!schoolId || !routeToDelete) return;
     try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_lignes`, routeId));
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_lignes`, routeToDelete.id));
       toast({ title: 'Ligne supprimée', description: 'La ligne de transport a été supprimée.' });
     } catch(e) {
       const permissionError = new FirestorePermissionError({
-        path: `ecoles/${schoolId}/transport_lignes/${routeId}`,
+        path: `ecoles/${schoolId}/transport_lignes/${routeToDelete.id}`,
         operation: 'delete',
       });
       errorEmitter.emit('permission-error', permissionError);
+    } finally {
+        setIsDeleteDialogOpen(false);
     }
   }
 
@@ -113,7 +132,7 @@ export default function RoutesManagementPage() {
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenForm(route)}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteRoute(route.id)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(route)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                     </TableCell>
@@ -143,6 +162,23 @@ export default function RoutesManagementPage() {
           />
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible. La ligne <strong>"{routeToDelete?.name}"</strong> sera définitivement supprimée.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteRoute} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
