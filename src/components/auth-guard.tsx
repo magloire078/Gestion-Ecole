@@ -24,26 +24,36 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [justCreatedSchool, setJustCreatedSchool] = useState(false);
 
   useEffect(() => {
-    // Vérifier si on vient juste de créer une école
-    const fromOnboarding = searchParams.get('fromOnboarding');
-    if (fromOnboarding === 'true') {
+    // Ce hook ne s'exécute qu'une seule fois au montage pour vérifier le paramètre d'URL.
+    if (searchParams.get('fromOnboarding') === 'true') {
       setJustCreatedSchool(true);
-      // Nettoyer le paramètre d'URL
+      // Nettoyer l'URL pour que ce paramètre ne persiste pas
       const newUrl = window.location.pathname;
       window.history.replaceState(null, '', newUrl);
     }
   }, [searchParams]);
 
   useEffect(() => {
+    // Si les données utilisateur sont encore en cours de chargement, on ne fait rien.
     if (loading) {
       return;
+    }
+    
+    // Si l'utilisateur vient de créer une école, mais que le schoolId n'est pas encore
+    // propagé dans le hook useUser, on attend et on affiche le loader.
+    if (justCreatedSchool && !schoolId) {
+        // On ne fait rien et on laisse le loader s'afficher (voir plus bas)
+        return;
+    } else if (justCreatedSchool && schoolId) {
+        // Le schoolId est enfin arrivé, on peut désactiver le mode spécial.
+        setJustCreatedSchool(false);
     }
 
     const isAuthPage = pathname === '/login';
     const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
     const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
 
-    // Si l'utilisateur n'est pas connecté
+    // Cas 1 : Utilisateur non authentifié
     if (!user) {
       if (!isPublicPage) {
         router.replace('/login');
@@ -51,22 +61,13 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Si l'utilisateur est connecté
+    // Cas 2 : Utilisateur authentifié
     if (isAuthPage) {
       router.replace('/dashboard');
       return;
     }
     
-    // Cas spécial : on vient juste de créer une école
-    if (justCreatedSchool) {
-      if (pathname !== '/dashboard') { // Eviter une redirection en boucle si on y est déjà
-        router.replace('/dashboard');
-      }
-      setJustCreatedSchool(false); // Réinitialiser après la redirection
-      return;
-    }
-
-    // Si l'utilisateur est connecté mais n'a pas d'école (et n'est pas super admin)
+    // Cas 3 : Utilisateur connecté sans école (et non super-admin) -> Forcer l'onboarding
     if (!schoolId && user.profile?.role !== 'super_admin') {
       if (!isOnboardingPage) {
         router.replace('/dashboard/onboarding');
@@ -74,7 +75,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Si l'utilisateur est connecté, a une école, mais se trouve sur la page d'onboarding
+    // Cas 4 : Utilisateur connecté avec une école, mais sur une page d'onboarding -> Aller au dashboard
     if (schoolId && isOnboardingPage) {
       router.replace('/dashboard');
       return;
@@ -82,24 +83,15 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   }, [user, schoolId, loading, pathname, router, justCreatedSchool]);
   
-  const isAuthPage = pathname === '/login';
-  const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
-  const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
-
-  // Afficher un loader pour toutes les pages protégées pendant la vérification initiale
-  if (loading && !isPublicPage) {
-      return <AuthProtectionLoader />;
-  }
-
-  // Si l'utilisateur est connecté mais que son statut d'école n'est pas encore clair,
-  // et qu'on n'est pas sur une page publique, on affiche le loader pour éviter les flashs.
-  if (user && schoolId === null && !isOnboardingPage && user.profile?.role !== 'super_admin' && !isPublicPage && !justCreatedSchool) {
-      return <AuthProtectionLoader />;
-  }
-
-  // Si l'utilisateur est non authentifié mais tente d'accéder à une page protégée, on affiche le loader le temps de la redirection.
-  if (!user && !isPublicPage) {
+  // Logique d'affichage du Loader
+  // Si le statut de l'utilisateur est en cours de chargement, on affiche un loader pour toutes les pages protégées
+  if (loading && !pathname.startsWith('/login') && pathname !== '/') {
     return <AuthProtectionLoader />;
+  }
+
+  // Cas spécifique de l'après-création d'école
+  if (justCreatedSchool && !schoolId) {
+      return <AuthProtectionLoader />;
   }
 
   return <>{children}</>;
