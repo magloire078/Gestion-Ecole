@@ -104,18 +104,24 @@ export class SchoolCreationService {
       createdAt: serverTimestamp() as any,
       mainLogoUrl: schoolData.mainLogoUrl,
       subscription: {
-        plan: 'Pro',
-        status: 'trialing',
-        maxStudents: 250,
-        maxCycles: 5,
+        plan: 'Essentiel',
+        status: 'active',
+        maxStudents: 50,
+        maxCycles: 2,
         activeModules: [],
       },
       status: 'active',
     };
+    
+    console.log("Création école:", { path: schoolRef.path, data: schoolDocData });
     batch.set(schoolRef, schoolDocData);
 
-     // 2. Create or Update the user root document to link them to the school
-    const userRootData: user_root = { schoolId };
+    // 2. Create or Update the user root document to link them to the school
+    const userRootData: user_root = { 
+      schoolId: schoolId,
+    };
+    
+    console.log("Mise à jour utilisateur:", { path: userRootRef.path, data: userRootData });
     batch.set(userRootRef, userRootData, { merge: true });
 
     // 3. Create director's staff profile
@@ -132,33 +138,51 @@ export class SchoolCreationService {
       baseSalary: 0,
       status: 'Actif',
     };
+    
+    console.log("Création profil personnel:", { path: staffProfileRef.path, data: staffProfileData });
     batch.set(staffProfileRef, staffProfileData);
     
     // 4. Create system log
-    batch.set(logRef, {
+    const logData: Omit<system_log, 'id'> = {
         adminId: schoolData.directorId,
         action: 'school.created',
         target: schoolRef.path,
-        details: { schoolName: schoolData.name },
+        details: { 
+          schoolName: schoolData.name,
+          schoolId: schoolId,
+        },
         ipAddress: 'N/A (client-side)',
-        timestamp: serverTimestamp(),
-    });
-
+        userAgent: 'N/A (client-side)',
+        timestamp: serverTimestamp() as any,
+    };
+    
+    console.log("Création log:", { path: logRef.path, data: logData });
+    batch.set(logRef, logData);
 
     try {
+        console.log("Commit du batch...");
         await batch.commit();
+        console.log("✅ Batch commit réussi!");
+        
         // This is a client-side simulation of a server-side claim setting
         await setDirectorClaims(schoolData.directorId, schoolId);
-        return { schoolId, schoolCode };
-    } catch (e) {
-        console.error("Batch commit failed", e);
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}`,
-            operation: 'create',
-            requestResourceData: { schoolName: schoolData.name, director: schoolData.directorId },
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        throw e;
+        
+        // Wait a bit for propagation
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        return { 
+          schoolId, 
+          schoolCode
+        };
+        
+    } catch (error: any) {
+        console.error("❌ Erreur lors de la création:", error);
+        
+        if (error.code === 'permission-denied') {
+            console.error("DÉTAILS ERREUR PERMISSION:", error.message);
+        }
+        
+        throw new Error(`La création de l'école a échoué: ${error.message}`);
     }
   }
 }
