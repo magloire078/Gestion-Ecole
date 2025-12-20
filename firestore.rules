@@ -3,73 +3,66 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ========== Fonctions Utilitaires ==========
+    // ========== UTILITY FUNCTIONS ==========
     function isAuth() {
       return request.auth != null;
     }
 
     function isSuperAdmin() {
-      return isAuth() && exists(/databases/$(database)/documents/super_admins/$(request.auth.uid));
-    }
-    
-    function getUserSchoolId() {
-      return request.auth.token.schoolId;
+      // Check for a custom claim `superAdmin` set to true.
+      return isAuth() && request.auth.token.superAdmin == true;
     }
 
     function isSchoolMember(schoolId) {
-      return isAuth() && getUserSchoolId() == schoolId;
+      // Check for a custom claim `schoolId`.
+      return isAuth() && request.auth.token.schoolId == schoolId;
     }
     
-    // Règle pour la création du profil du directeur en même temps que l'école.
-    function isCreatingOwnProfileAsDirector() {
-       return request.auth.uid == request.resource.data.uid && request.resource.data.role == 'directeur';
+    function isUser(userId) {
+        return isAuth() && request.auth.uid == userId;
     }
 
-    // ========== Règles Globales ==========
-
-    // Les Super Admins ont un accès total à toutes les données.
-    match /{document=**} {
+    // ========== GLOBAL RULES ==========
+    
+    // Super Admins can do anything.
+    match /{path=**} {
       allow read, write: if isSuperAdmin();
     }
-
-    // Chaque utilisateur peut gérer son propre document racine.
-    match /utilisateurs/{userId} {
-      allow read, write: if isAuth() && request.auth.uid == userId;
-    }
-
-    // Les journaux système peuvent être créés par n'importe quel utilisateur authentifié.
-    match /system_logs/{logId} {
-       allow create: if isAuth();
-       allow read: if isAuth(); 
-    }
     
-    // Les paramètres système sont lisibles par tous.
-    match /system_settings/{settingId} {
-       allow read: if isAuth();
-       allow write: if isSuperAdmin();
-    }
-
-    // ========== Règles pour les Écoles ==========
-
-    // N'importe quel utilisateur authentifié peut créer une école.
+    // Any authenticated user can create a school.
     match /ecoles/{schoolId} {
       allow create: if isAuth();
-      // Un membre peut lire les infos de son école.
+      // Only school members can read/update their school.
       allow read, update, delete: if isSchoolMember(schoolId);
     }
     
-    match /ecoles/{schoolId}/personnel/{staffId} {
-       // Autorise la création du profil directeur PENDANT la création de l'école
-       // ou si un membre de l'école ajoute un nouveau membre.
-       allow create: if isCreatingOwnProfileAsDirector() || isSchoolMember(schoolId);
-       
-       // Pour toutes les autres opérations, il faut être membre de l'école.
-       allow read, update, delete: if isSchoolMember(schoolId);
+    // Any authenticated user can manage their own user_root document.
+    match /utilisateurs/{userId} {
+      allow read, write: if isUser(userId);
+    }
+    
+    // System logs are append-only for authenticated users.
+    match /system_logs/{logId} {
+      allow create, read: if isAuth();
     }
 
-    // Règle générale pour toutes les autres sous-collections d'une école.
+    // ========== SCHOOL-SPECIFIC RULES ==========
+
+    // Rule for creating the director's staff profile during school creation.
+    match /ecoles/{schoolId}/personnel/{staffId} {
+        // Allow creation if the user is creating their own profile AND
+        // the school being created designates them as the director.
+        allow create: if isUser(staffId) && request.resource.data.role == 'directeur' 
+                      && getAfter(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+        
+        // After creation, only school members can read/write personnel data.
+        allow read, update, delete: if isSchoolMember(schoolId);
+    }
+
+    // Generic rule for all other subcollections within a school.
+    // This allows school members to manage their own school's data.
     match /ecoles/{schoolId}/{collection}/{docId} {
-      allow read, write, delete: if isSchoolMember(schoolId);
+      allow read, write: if isSchoolMember(schoolId);
     }
   }
 }
