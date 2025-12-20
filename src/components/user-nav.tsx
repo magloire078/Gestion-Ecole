@@ -28,16 +28,15 @@ import { cn } from "@/lib/utils";
 import { SafeImage } from "./ui/safe-image";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import * as React from 'react';
 
 interface UserNavProps {
   collapsed?: boolean;
-  setIsNotificationsOpen: (isOpen: boolean) => void;
 }
 
-export function UserNav({ collapsed = false, setIsNotificationsOpen }: UserNavProps) {
+export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
   const firestore = useFirestore();
@@ -47,12 +46,17 @@ export function UserNav({ collapsed = false, setIsNotificationsOpen }: UserNavPr
   const { toast } = useToast();
 
   const notificationsQuery = useMemoFirebase(() => {
-    if (!schoolId || !user?.uid) return null;
-    return query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('readBy', 'not-in', [user.uid]));
-  }, [firestore, schoolId, user?.uid]);
+    if (!schoolId) return null;
+    // For now, we'll treat messages as notifications
+    // We can expand this later with a dedicated `notifications` collection
+    return query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(20));
+  }, [firestore, schoolId]);
 
   const { data: notificationsData, loading: notificationsLoading } = useCollection(notificationsQuery);
-  const unreadNotifications = notificationsData?.length || 0;
+  const unreadCount = useMemo(() => {
+      if (!notificationsData || !user?.uid) return 0;
+      return notificationsData.filter(n => !(n.data().readBy?.includes(user.uid))).length;
+  }, [notificationsData, user?.uid]);
 
 
   const handleLogout = async () => {
@@ -175,37 +179,18 @@ export function UserNav({ collapsed = false, setIsNotificationsOpen }: UserNavPr
   }
 
   return (
-    <div className="flex items-center gap-2">
-       <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
-            <Bell className="h-5 w-5" />
-            {unreadNotifications > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 min-w-0 p-0 flex items-center justify-center text-xs"
-              >
-                {unreadNotifications > 9 ? '9+' : unreadNotifications}
-              </Badge>
-            )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Notifications</TooltipContent>
-      </Tooltip>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-9 w-9">
-              <SafeImage src={user?.authUser?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
-              <AvatarFallback>{fallback}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <UserMenuContent />
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Avatar className="h-9 w-9">
+            <SafeImage src={user?.authUser?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
+            <AvatarFallback>{fallback}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end" forceMount>
+        <UserMenuContent />
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
