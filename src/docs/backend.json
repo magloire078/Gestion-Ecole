@@ -382,6 +382,7 @@
             "senderId": { "type": "string", "description": "L'UID de l'expéditeur." },
             "senderName": { "type": "string", "description": "Le nom de l'expéditeur." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'envoi du message." },
+            "readBy": { "type": "array", "items": { "type": "string" } },
             "recipients": {
                 "type": "object",
                 "description": "Définit les destinataires du message.",
