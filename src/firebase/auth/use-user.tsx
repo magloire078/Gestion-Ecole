@@ -6,7 +6,6 @@ import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
 import type { staff as AppUser, admin_role as AdminRole, school as School, user_root } from '@/lib/data-types';
 import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
-import { format } from 'date-fns';
 
 export interface UserProfile extends AppUser {
     permissions?: Partial<AdminRole['permissions']>;
@@ -62,13 +61,14 @@ export function useUser() {
             const claims = tokenResult.claims;
             let effectiveSchoolId = claims.schoolId as string | null;
             
+            // Fallback to Firestore if claim is not present
             if (!effectiveSchoolId) {
                  try {
                     const userDoc = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
                     if (userDoc.exists()) {
                         effectiveSchoolId = userDoc.data()?.schoolId || null;
                     }
-                 } catch (e) { console.error("Error fetching user document from Firestore:", e); }
+                 } catch (e) { console.error("Error fetching user root document:", e); }
             }
 
             setSchoolId(effectiveSchoolId || null);
@@ -94,42 +94,37 @@ export function useUser() {
                 return;
             }
 
+            // --- Start of refactored logic ---
             const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
+            
+            const [schoolSnap, profileSnap] = await Promise.all([
+                getDoc(schoolDocRef),
+                getDoc(profileRef)
+            ]);
 
-            let unsubscribeProfile: () => void = () => {};
+            const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
+            setIsDirector(isDirectorFlag);
 
-            try {
-                const schoolSnap = await getDoc(schoolDocRef);
-                const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
-                setIsDirector(isDirectorFlag);
+            const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
 
-                unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
-                    const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
+            if (profileData) {
+                let permissions: Partial<AdminRole['permissions']> = {};
 
-                    if (profileData) {
-                        let permissions: Partial<AdminRole['permissions']> = {};
-                        if (profileData.role === 'directeur' || isSuperAdmin) {
-                            permissions = { ...allPermissions };
-                        } else if (profileData.adminRole) {
-                            const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
-                            const roleSnap = await getDoc(roleRef);
-                            if (roleSnap.exists()) {
-                                permissions = { ...permissions, ...roleSnap.data().permissions };
-                            }
-                        }
-                        setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
-                    } else {
-                        setUser({ authUser, uid: authUser.uid, profile: undefined });
+                if (isDirectorFlag) {
+                    permissions = { ...allPermissions };
+                } else if (profileData.adminRole) {
+                    const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
+                    const roleSnap = await getDoc(roleRef);
+                    if (roleSnap.exists()) {
+                        permissions = { ...permissions, ...roleSnap.data().permissions };
                     }
-                }, (error) => {
-                    console.error("Error onSnapshot for user profile:", error);
-                    setUser({ authUser, uid: authUser.uid, profile: undefined });
-                });
-            } catch (e) {
-                 console.error("Error fetching initial school/profile data:", e);
+                }
+                setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
+            } else {
                  setUser({ authUser, uid: authUser.uid, profile: undefined });
             }
+            // --- End of refactored logic ---
 
         } catch (error) {
             console.error("Erreur dans useUser:", error);
