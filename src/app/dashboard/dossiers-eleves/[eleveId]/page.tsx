@@ -165,7 +165,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                     <CardContent className="space-y-3 text-sm">
                         <div className="flex items-center">
                             <BookUser className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Classe: <strong>{student.class}</strong></span>
+                            <span>Classe: <strong>{student.class}</strong> ({student.grade || 'N/A'})</span>
                         </div>
                         <div className="flex items-center">
                             <User className="mr-3 h-5 w-5 text-muted-foreground" />

@@ -32,6 +32,7 @@ const studentSchema = z.object({
   tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
   status: z.enum(['Actif', 'En attente', 'Radié']),
   feedback: z.string().optional(),
+  grade: z.string().optional(),
 });
 
 type StudentFormValues = z.infer<typeof studentSchema>;
@@ -65,6 +66,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       tuitionStatus: student.tuitionStatus || 'Partiel',
       status: student.status || 'Actif',
       feedback: student.feedback || '',
+      grade: student.grade || '',
     },
   });
   
@@ -73,24 +75,25 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
   // Effet pour recalculer les montants lorsque la classe ou la remise change
   useEffect(() => {
-    const getTuitionFeeForClass = (classId: string) => {
-      if (!classId || !classes.length || !niveaux.length || !fees.length) return 0;
+    const getTuitionInfoForClass = (classId: string) => {
+      if (!classId || !classes.length || !niveaux.length || !fees.length) return { fee: 0, gradeName: 'N/A' };
       
       const selectedClass = classes.find(c => c.id === classId);
-      if (!selectedClass) return 0;
+      if (!selectedClass) return { fee: 0, gradeName: 'N/A' };
       
       const gradeName = selectedClass.grade;
-      if(!gradeName) return 0;
+      if(!gradeName) return { fee: 0, gradeName: 'N/A' };
       
       const feeInfo = fees.find(f => f.grade === gradeName);
 
-      return feeInfo ? parseFloat(feeInfo.amount) : 0;
+      return { fee: feeInfo ? parseFloat(feeInfo.amount) : 0, gradeName: gradeName };
     }
 
-    const newTuitionFee = getTuitionFeeForClass(watchedClassId);
+    const { fee: newTuitionFee, gradeName } = getTuitionInfoForClass(watchedClassId);
     
     // Mettre à jour les frais de scolarité
     form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
+    form.setValue('grade', gradeName, { shouldValidate: true });
 
     const currentDiscount = watchedDiscountAmount || 0;
     const newAmountDue = Math.max(0, newTuitionFee - currentDiscount);
@@ -117,7 +120,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
         classId: newClassId,
         class: selectedClassInfo?.name || student.class,
         cycle: selectedClassInfo?.cycleId || student.cycle,
-        grade: selectedClassInfo?.grade || 'N/A',
+        grade: values.grade || 'N/A',
         dateOfBirth: values.dateOfBirth,
         tuitionFee: values.tuitionFee,
         discountAmount: values.discountAmount,

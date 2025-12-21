@@ -135,6 +135,7 @@ export type student = {
     classId?: string;
     class?: string;
     cycle?: string;
+    grade?: string;
     address?: string;
     parent2FirstName?: string;
     parent2LastName?: string;
