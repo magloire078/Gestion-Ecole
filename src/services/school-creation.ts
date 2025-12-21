@@ -103,13 +103,32 @@ export class SchoolCreationService {
       batch.set(userRef, userDoc);
       console.log("✅ Utilisateur pré-enregistré dans le batch");
       
-      // 3. Exécuter le batch
-      console.log("Étape 3: Commit du batch...");
+      // 3. Créer le profil PERSONNEL pour le directeur
+      console.log("Étape 3: Création du profil personnel du directeur...");
+      const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${user.uid}`);
+      const staffProfileData: Omit<staff, 'id'> = {
+          uid: user.uid,
+          email: user.email!,
+          displayName: user.displayName || `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
+          photoURL: user.photoURL || '',
+          schoolId: schoolId,
+          role: 'directeur',
+          firstName: schoolData.directorFirstName,
+          lastName: schoolData.directorLastName,
+          hireDate: new Date().toISOString().split('T')[0],
+          baseSalary: 0, // Le directeur peut définir son salaire plus tard
+          status: 'Actif',
+      };
+      batch.set(staffProfileRef, staffProfileData);
+      console.log("✅ Profil directeur pré-enregistré dans le batch.");
+
+      // 4. Exécuter le batch
+      console.log("Étape 4: Commit du batch...");
       await batch.commit();
       console.log("✅ Batch commit avec succès !");
 
-      // 4. Rafraîchir le token pour inclure le schoolId dans les claims (côté serveur)
-      console.log("Étape 4: Rafraîchissement du token...");
+      // 5. Rafraîchir le token pour inclure le schoolId dans les claims (côté serveur)
+      console.log("Étape 5: Rafraîchissement du token...");
       await user.getIdToken(true);
       
       console.log("🎉 CRÉATION RÉUSSIE !");
@@ -130,7 +149,7 @@ export class SchoolCreationService {
       });
       
       errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: '[BATCH] /ecoles & /utilisateurs',
+          path: '[BATCH] /ecoles & /utilisateurs & /personnel',
           operation: 'write'
       }));
       
