@@ -22,6 +22,7 @@ import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/da
 import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const registrationSchema = z.object({
   // Step 1
@@ -209,7 +210,12 @@ export default function RegistrationPage() {
   const isLoading = schoolDataLoading || feesLoading || classesLoading || niveauxLoading;
 
   if (isLoading) {
-    return <div>Chargement...</div>;
+    return (
+        <div className="max-w-3xl mx-auto space-y-6">
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-96 w-full" />
+        </div>
+    );
   }
   
   const { formState: { isSubmitting } } = form;
