@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useUser, useSchoolData } from '@/firebase';
+import { useUser } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
