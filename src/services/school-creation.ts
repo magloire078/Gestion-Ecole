@@ -58,16 +58,12 @@ export class SchoolCreationService {
   }
 
   async createSchool(schoolData: SchoolCreationData) {
-    console.log("=== DÉBUT CRÉATION ÉCOLE ===");
     const auth = getAuth();
     const currentUser = auth.currentUser;
     
     if (!currentUser) {
       throw new Error("Utilisateur non authentifié");
     }
-    
-    console.log("User UID:", currentUser.uid);
-    console.log("Director ID from data:", schoolData.directorId);
 
     if (currentUser.uid !== schoolData.directorId) {
       throw new Error("Vous devez être le directeur de l'école que vous créez");
@@ -152,46 +148,6 @@ export class SchoolCreationService {
     };
 
     try {
-      console.log("=== TEST SÉPARÉ DES OPÉRATIONS ===");
-      
-      // Test 1: Créer l'école seule
-      console.log("Test 1: Création école seule...");
-      try {
-        await setDoc(schoolRef, schoolDocData);
-        console.log("✅ École créée");
-      } catch (error) {
-        console.error("❌ Erreur création école:", error);
-      }
-      
-      // Test 2: Mettre à jour utilisateur
-      console.log("Test 2: Mise à jour utilisateur...");
-      try {
-        await setDoc(userRootRef, { schoolId: schoolId }, { merge: true });
-        console.log("✅ Utilisateur mis à jour");
-      } catch (error) {
-        console.error("❌ Erreur mise à jour utilisateur:", error);
-      }
-      
-      // Test 3: Créer profil personnel
-      console.log("Test 3: Création profil personnel...");
-      try {
-        await setDoc(staffProfileRef, staffProfileData);
-        console.log("✅ Profil personnel créé");
-      } catch (error) {
-        console.error("❌ Erreur création profil:", error);
-      }
-      
-      // Test 4: Créer log
-      console.log("Test 4: Création log...");
-      try {
-        await setDoc(logRef, logData);
-        console.log("✅ Log créé");
-      } catch (error) {
-        console.error("❌ Erreur création log:", error);
-      }
-      
-      // Si tout passe individuellement, essayer le batch
-      console.log("=== ESSAI BATCH COMPLET ===");
       const batch = writeBatch(this.db);
       batch.set(schoolRef, schoolDocData);
       batch.set(userRootRef, { schoolId: schoolId }, { merge: true });
@@ -199,7 +155,6 @@ export class SchoolCreationService {
       batch.set(logRef, logData);
       
       await batch.commit();
-      console.log("✅ Batch réussi!");
 
       // This is a client-side simulation of a server-side claim setting
       await setDirectorClaims(schoolData.directorId, schoolId);
@@ -213,8 +168,12 @@ export class SchoolCreationService {
       };
       
     } catch (error: any) {
-      console.error("❌ Erreur finale:", error);
-      throw error;
+        const permissionError = new FirestorePermissionError({
+            path: `[BATCH] ${schoolRef.path}, ${userRootRef.path}, ${staffProfileRef.path}`,
+            operation: 'write',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        throw error;
     }
   }
 }
