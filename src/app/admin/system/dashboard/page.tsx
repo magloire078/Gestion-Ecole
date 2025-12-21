@@ -1,72 +1,19 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  Building, 
   Users, 
   Server,
   Bell,
-  Cpu,
-  Globe,
-  CreditCard
 } from 'lucide-react';
 import { SystemMetrics } from '@/components/admin/system-metrics';
 import { AuditLog } from '@/components/admin/audit-log';
-import type { school as School } from '@/lib/data-types';
+import { DashboardStatCards } from '@/components/admin/dashboard-stat-cards';
 
 
 export default function SystemAdminDashboard() {
-  const firestore = useFirestore();
-  const [stats, setStats] = useState({
-    activeSchools: 0,
-    activeSubscriptions: 0
-  });
-  const [loading, setLoading] = useState(true);
-  
-  const [systemHealth, setSystemHealth] = useState({
-    status: 'healthy',
-    uptime: 99.9,
-  });
-  
-  useEffect(() => {
-    if (!firestore) return;
-
-    const fetchStats = async () => {
-        setLoading(true);
-        try {
-            const schoolsQuery = query(collection(firestore, 'ecoles'), where('status', '!=', 'deleted'));
-            const schoolsSnap = await getDocs(schoolsQuery);
-            
-            let activeSubscriptionCount = 0;
-
-            schoolsSnap.forEach(doc => {
-                const school = doc.data() as School;
-                if (school.subscription && school.subscription.status === 'active') {
-                    activeSubscriptionCount++;
-                }
-            });
-
-            setStats({
-                activeSchools: schoolsSnap.size,
-                activeSubscriptions: activeSubscriptionCount,
-            });
-
-        } catch (error) {
-            console.error("Failed to fetch system dashboard stats:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    fetchStats();
-}, [firestore]);
-
-
   return (
     <div className="space-y-6">
       
@@ -81,56 +28,7 @@ export default function SystemAdminDashboard() {
               </Badge>
         </div>
 
-        {/* Health Status */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className={systemHealth.status === 'healthy' ? 'border-green-200' : 'border-amber-200'}>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Statut système</p>
-                  <p className="text-2xl font-bold">{systemHealth.status === 'healthy' ? '✅ Opérationnel' : '⚠️ Dégradé'}</p>
-                </div>
-                <Cpu className={`h-8 w-8 ${systemHealth.status === 'healthy' ? 'text-green-500' : 'text-amber-500'}`} />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Uptime (30j)</p>
-                  <p className="text-2xl font-bold">{systemHealth.uptime}%</p>
-                </div>
-                <Globe className="h-8 w-8 text-blue-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Écoles actives</p>
-                  <p className="text-2xl font-bold">{stats.activeSchools}</p>
-                </div>
-                <Building className="h-8 w-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Abonnements Actifs</p>
-                  <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
-                </div>
-                <CreditCard className="h-8 w-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <DashboardStatCards />
         
         <SystemMetrics />
         
