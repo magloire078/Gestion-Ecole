@@ -23,7 +23,13 @@ import {
     HeartPulse,
     Trophy,
     Banknote,
-    LandPlot
+    LandPlot,
+    Map,
+    Ticket,
+    DoorOpen,
+    GanttChartSquare,
+    Wrench,
+    KeyRound
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 

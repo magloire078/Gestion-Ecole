@@ -1,9 +1,10 @@
+
 'use client';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { transportNavLinks } from './links';
+import { NAV_LINKS } from '@/lib/nav-links';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,10 @@ export default function TransportLayout({
   const pathname = usePathname();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const { user, loading: userLoading } = useUser();
+
+  const transportNavLinks = NAV_LINKS.find(g => g.group === 'Vie Scolaire')?.links.filter(
+      l => l.href.startsWith('/dashboard/transport')
+  ) || [];
 
   const isLoading = subscriptionLoading || userLoading;
 

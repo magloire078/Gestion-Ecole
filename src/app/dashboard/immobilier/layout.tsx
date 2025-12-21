@@ -3,14 +3,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { immobilierNavLinks } from './links';
+import { NAV_LINKS } from '@/lib/nav-links';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from '@/lib/utils';
-import { buttonVariants } from '@/components/ui/button';
 import { useUser } from '@/firebase';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -22,6 +20,11 @@ export default function ImmobilierLayout({
   const pathname = usePathname();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const { user, loading: userLoading } = useUser();
+
+  const immobilierNavLinks = NAV_LINKS.find(g => g.group === 'Vie Scolaire')?.links.filter(
+    l => l.href.startsWith('/dashboard/immobilier')
+  ) || [];
+
 
   const isLoading = subscriptionLoading || userLoading;
 
