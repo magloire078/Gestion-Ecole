@@ -16,14 +16,15 @@ service cloud.firestore {
         return isAuth() && request.auth.uid == userId;
     }
     
-    function isMemberOfSchool(schoolId) {
-      // Un utilisateur est membre si son token contient l'ID de l'école.
-      return isAuth() && request.auth.token.schoolId == schoolId;
-    }
-
     function isDirector(schoolId) {
         // Le directeur est identifié via le document de l'école.
         return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    }
+    
+    function isMemberOfSchool(schoolId) {
+      // Un utilisateur est membre s'il a le claim ou s'il est le directeur enregistré dans la BD de l'école.
+      // La vérification get() est cruciale pour l'onboarding où les claims ne sont pas encore présents.
+      return isAuth() && (request.auth.token.schoolId == schoolId || isDirector(schoolId));
     }
     
     function isCreatingSchoolAsDirector() {
@@ -31,7 +32,7 @@ service cloud.firestore {
         return isAuth() && request.resource.data.directorId == request.auth.uid;
     }
     
-    function isCreatingOwnStaffProfile(schoolId, staffId) {
+    function canCreateOwnProfile(schoolId, staffId) {
         // Règle cruciale pour l'onboarding : permet à un utilisateur de créer son propre profil (directeur ou autre).
         return isAuth() && 
                staffId == request.auth.uid && // L'utilisateur crée son propre document.
@@ -78,7 +79,7 @@ service cloud.firestore {
       
       // Règle spécifique pour la création du profil personnel (directeur ou autre)
       match /personnel/{staffId} {
-        allow create: if isCreatingOwnStaffProfile(schoolId, staffId); // Permet la création pendant l'onboarding
+        allow create: if canCreateOwnProfile(schoolId, staffId); // Permet la création pendant l'onboarding
         allow read: if isMemberOfSchool(schoolId);
         allow update: if isDirector(schoolId) || isUser(staffId); // Le directeur ou la personne elle-même.
         allow delete: if isDirector(schoolId);
