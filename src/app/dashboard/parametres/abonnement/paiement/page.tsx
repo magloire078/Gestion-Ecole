@@ -27,7 +27,7 @@ function PaymentPageContent() {
     const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'orangemoney' | 'stripe' | 'wave' | 'mtn'>(null);
     const [error, setError] = useState<string | null>(null);
     const [mtnPhoneNumber, setMtnPhoneNumber] = useState('');
-    const [selectedDuration, setSelectedDuration] = useState('1'); // 1 mois par défaut
+    const [selectedDuration, setSelectedDuration] = useState(1); // 1 mois par défaut
     const [totalPrice, setTotalPrice] = useState<number>(0);
 
 
@@ -37,8 +37,7 @@ function PaymentPageContent() {
     
     useEffect(() => {
         const basePrice = parseInt(price || '0', 10);
-        const duration = parseInt(selectedDuration, 10);
-        setTotalPrice(basePrice * duration);
+        setTotalPrice(basePrice * selectedDuration);
     }, [price, selectedDuration]);
 
     useEffect(() => {
@@ -68,7 +67,7 @@ function PaymentPageContent() {
             user: user.authUser,
             schoolId,
             phoneNumber: provider === 'mtn' ? mtnPhoneNumber : undefined,
-            duration: (parseInt(selectedDuration) * 30).toString(), // Durée en jours
+            duration: selectedDuration, // Durée en mois
         });
 
         if (url) {
@@ -122,7 +121,7 @@ function PaymentPageContent() {
                     <div className="p-4 border rounded-lg text-center space-y-4">
                         <div>
                              <Label>Durée de l'abonnement</Label>
-                             <Select value={selectedDuration} onValueChange={setSelectedDuration}>
+                             <Select value={String(selectedDuration)} onValueChange={(v) => setSelectedDuration(parseInt(v, 10))}>
                                 <SelectTrigger className="w-[180px] mx-auto mt-2">
                                     <SelectValue />
                                 </SelectTrigger>

@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase-admin/firestore';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
-import { addDays } from 'date-fns';
+import { addMonths } from 'date-fns';
 
 // Initialisez Firebase Admin SDK s'il n'est pas déjà initialisé
 const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON || '{}');
@@ -38,15 +38,12 @@ export async function POST(request: Request) {
     console.log(`Processing successful payment for schoolId: ${schoolId}`);
 
     // 3. Mettre à jour le document de l'école dans Firestore
+    // NOTE: C'est une solution de secours. La logique principale est maintenant sur la page de succès.
+    // Cette partie ne connaît pas la durée choisie par l'utilisateur, on applique une durée par défaut.
     const schoolRef = doc(db, 'ecoles', schoolId);
     
-    // Déterminer la durée de l'abonnement en fonction du montant payé
-    // C'est une simplification, une vraie application devrait retrouver le plan exact
-    let durationDays = 30; // 1 mois par défaut
-    if(amount > 90000) durationDays = 365; // ~1 an
-    else if (amount > 40000) durationDays = 30; // ~1 mois Pro
-    
-    const newEndDate = addDays(new Date(), durationDays);
+    // On assume 1 mois par défaut car on ne peut pas deviner la durée ici.
+    const newEndDate = addMonths(new Date(), 1);
 
     const subscriptionUpdate = {
         'subscription.status': 'active',
