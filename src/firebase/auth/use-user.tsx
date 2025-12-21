@@ -57,104 +57,115 @@ export function useUser() {
             return;
         }
 
-        // Ne pas forcer le refresh ici pour éviter l'épuisement du quota.
-        // Le refresh doit être fait par l'action qui change les claims.
-        const tokenResult = await authUser.getIdTokenResult();
-        const claims = tokenResult.claims;
-        const isSuperAdmin = (claims.superAdmin as boolean) || false;
-
-        // Super admin handling
-        if (isSuperAdmin) {
-            const superAdminProfile: UserProfile = {
-                uid: authUser.uid, email: authUser.email || '', schoolId: '',
-                role: 'super_admin', firstName: 'Super', lastName: 'Admin',
-                hireDate: '', baseSalary: 0, displayName: 'Super Admin',
-                permissions: { ...allPermissions }, isAdmin: true,
-            };
-            setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
-            setSchoolId(null);
-            setIsDirector(false);
-            setLoading(false);
-            return;
-        }
-
-        let effectiveSchoolId = (claims.schoolId as string) || null;
-        
-        if (!effectiveSchoolId) {
-            try {
-                const userRootSnap = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
-                if (userRootSnap.exists()) {
-                    effectiveSchoolId = (userRootSnap.data() as user_root).schoolId;
-                }
-            } catch (e) {
-                console.error("Could not read user root document, this may be normal during onboarding.", e);
-            }
-        }
-        
-        setSchoolId(effectiveSchoolId);
-
-        if (!effectiveSchoolId) {
-            setUser({ authUser, uid: authUser.uid, profile: undefined });
-            setLoading(false);
-            return;
-        }
-
-        // User is associated with a school, now fetch profile and roles
-        const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
-        const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
-
-        let unsubscribeProfile: () => void = () => {};
-
         try {
-            const schoolSnap = await getDoc(schoolDocRef);
-            const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
-            setIsDirector(isDirectorFlag);
-
-            unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
-                let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
-
-                if (isDirectorFlag && !profileData) {
-                    const nameParts = authUser.displayName?.split(' ') || ['Nouveau', 'Directeur'];
-                    profileData = {
-                        uid: authUser.uid, schoolId: effectiveSchoolId, role: 'directeur',
-                        firstName: nameParts[0], lastName: nameParts.slice(1).join(' '),
-                        displayName: authUser.displayName || `${nameParts[0]} ${nameParts.slice(1).join(' ')}`,
-                        email: authUser.email || '', hireDate: format(new Date(), 'yyyy-MM-dd'),
-                        baseSalary: 0, status: 'Actif', photoURL: authUser.photoURL || '',
-                    };
-                    setDoc(profileRef, profileData, { merge: true });
+            // FORCER le refresh du token après création d'école
+            const tokenResult = await authUser.getIdTokenResult(true);
+            const claims = tokenResult.claims;
+            
+            // Vérifier les claims d'abord
+            let schoolIdFromClaims = claims.schoolId as string;
+            
+            // Si pas de schoolId dans les claims, vérifier Firestore
+            if (!schoolIdFromClaims) {
+              console.log("⚠️ Pas de schoolId dans claims, vérification Firestore...");
+              try {
+                const userDoc = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
+                if (userDoc.exists()) {
+                  const userData = userDoc.data();
+                  schoolIdFromClaims = userData?.schoolId || null;
+                  
+                  // Si on trouve un schoolId dans Firestore mais pas dans claims
+                  // Forcer un nouveau refresh
+                  if (schoolIdFromClaims && !claims.schoolId) {
+                    console.log("🔄 SchoolId trouvé dans Firestore, refresh token...");
+                    await authUser.getIdToken(true);
+                  }
                 }
+              } catch (firestoreError) {
+                console.error("Erreur Firestore:", firestoreError);
+              }
+            }
+            
+            setSchoolId(schoolIdFromClaims);
+            
+            const effectiveSchoolId = schoolIdFromClaims;
+            const isSuperAdmin = (claims.superAdmin as boolean) || false;
 
-                if (profileData) {
-                    let permissions: Partial<AdminRole['permissions']> = {};
-                    // A director or super_admin gets all permissions
-                    if (profileData.role === 'directeur' || isSuperAdmin) {
-                        permissions = { ...allPermissions };
-                    } else if (profileData.adminRole) { // Otherwise, get from role document
-                        const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
-                        const roleSnap = await getDoc(roleRef);
-                        if (roleSnap.exists()) {
-                            permissions = { ...permissions, ...roleSnap.data().permissions };
-                        }
-                    }
-                    setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
-                } else {
-                    setUser({ authUser, uid: authUser.uid, profile: undefined });
-                }
+            if (isSuperAdmin) {
+                 const superAdminProfile: UserProfile = {
+                    uid: authUser.uid, email: authUser.email || '', schoolId: '',
+                    role: 'super_admin', firstName: 'Super', lastName: 'Admin',
+                    hireDate: '', baseSalary: 0, displayName: 'Super Admin',
+                    permissions: { ...allPermissions }, isAdmin: true,
+                };
+                setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
+                setSchoolId(null);
+                setIsDirector(false);
                 setLoading(false);
-            }, (error) => {
-                console.error("Error onSnapshot for user profile:", error);
+                return;
+            }
+
+            if (!effectiveSchoolId) {
                 setUser({ authUser, uid: authUser.uid, profile: undefined });
                 setLoading(false);
-            });
-        } catch (e) {
-             console.error("Error fetching initial school/profile data:", e);
-             setUser({ authUser, uid: authUser.uid, profile: undefined });
-             setLoading(false);
+                return;
+            }
+
+            // User is associated with a school, now fetch profile and roles
+            const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
+            const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
+
+            let unsubscribeProfile: () => void = () => {};
+
+            try {
+                const schoolSnap = await getDoc(schoolDocRef);
+                const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
+                setIsDirector(isDirectorFlag);
+
+                unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
+                    let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
+
+                    if (isDirectorFlag && !profileData) {
+                        const nameParts = authUser.displayName?.split(' ') || ['Nouveau', 'Directeur'];
+                        profileData = {
+                            uid: authUser.uid, schoolId: effectiveSchoolId, role: 'directeur',
+                            firstName: nameParts[0], lastName: nameParts.slice(1).join(' '),
+                            displayName: authUser.displayName || `${nameParts[0]} ${nameParts.slice(1).join(' ')}`,
+                            email: authUser.email || '', hireDate: format(new Date(), 'yyyy-MM-dd'),
+                            baseSalary: 0, status: 'Actif', photoURL: authUser.photoURL || '',
+                        };
+                        setDoc(profileRef, profileData, { merge: true });
+                    }
+
+                    if (profileData) {
+                        let permissions: Partial<AdminRole['permissions']> = {};
+                        if (profileData.role === 'directeur' || isSuperAdmin) {
+                            permissions = { ...allPermissions };
+                        } else if (profileData.adminRole) {
+                            const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
+                            const roleSnap = await getDoc(roleRef);
+                            if (roleSnap.exists()) {
+                                permissions = { ...permissions, ...roleSnap.data().permissions };
+                            }
+                        }
+                        setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
+                    } else {
+                        setUser({ authUser, uid: authUser.uid, profile: undefined });
+                    }
+                }, (error) => {
+                    console.error("Error onSnapshot for user profile:", error);
+                    setUser({ authUser, uid: authUser.uid, profile: undefined });
+                });
+            } catch (e) {
+                 console.error("Error fetching initial school/profile data:", e);
+                 setUser({ authUser, uid: authUser.uid, profile: undefined });
+            }
+
+        } catch (error) {
+            console.error("Erreur dans useUser:", error);
+        } finally {
+            setLoading(false);
         }
-
-        return () => unsubscribeProfile();
-
     });
 
     return () => unsubscribeFromAuth();
