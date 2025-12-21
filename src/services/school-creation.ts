@@ -17,21 +17,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { getAuth } from 'firebase/auth';
 
-// This would typically be a server-side function call.
-// In this environment, we'll simulate the call and its effect.
-// It's crucial for the useUser hook that this logic appears to run.
-async function setDirectorClaims(userId: string, schoolId: string) {
-    console.log(`[Simulating Claim] Setting isDirector=true and schoolId=${schoolId} for user ${userId}`);
-    const auth = getAuth();
-    if (auth.currentUser && auth.currentUser.uid === userId) {
-        // Force refresh of the token on the client side.
-        // This is the most critical part to break the onboarding loop.
-        await auth.currentUser.getIdToken(true);
-    }
-    return Promise.resolve();
-}
-
-
 interface SchoolCreationData {
     name: string;
     address: string;

@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -53,14 +54,14 @@ service cloud.firestore {
     
     // 2. CRÉATION ÉCOLE - Phase principale d'onboarding
     match /ecoles/{schoolId} {
-      // CRÉATION : n'importe quel utilisateur authentifié peut créer une école
+      // Pendant l'onboarding : n'importe quel utilisateur authentifié peut créer une école
       // (La vérification qu'il se désigne comme directeur se fait côté code)
       allow create: if isAuth();
       
-      // LECTURE après création : utilisateur authentifié + (est directeur OU a claim schoolId)
+      // Lecture après création : utilisateur authentifié + (est directeur OU a claim schoolId)
       allow read: if isAuth() && isSchoolMember(schoolId);
       
-      // MISE À JOUR : seulement le directeur
+      // Mise à jour : seulement le directeur
       allow update: if isDirectorOfSchool(schoolId);
       
       // Pas de suppression
@@ -69,7 +70,7 @@ service cloud.firestore {
     
     // 3. CRÉATION PROFIL PERSONNEL - Pendant l'onboarding
     match /ecoles/{schoolId}/personnel/{staffId} {
-      // CRÉATION PENDANT ONBOARDING : l'utilisateur peut créer son propre profil
+      // Pendant onboarding : l'utilisateur peut créer son propre profil
       allow create: if isAuth() && staffId == request.auth.uid;
       
       // Après création : règles normales

@@ -58,12 +58,13 @@ export function useUser() {
         }
 
         try {
-            // FORCER le refresh du token après création d'école
+            // FORCER le refresh du token pour avoir les claims à jour si nécessaire
             const tokenResult = await authUser.getIdTokenResult(true);
             const claims = tokenResult.claims;
             
             // Vérifier les claims d'abord
             let schoolIdFromClaims = claims.schoolId as string;
+            const isDirectorFromClaims = claims.isDirector === true;
             
             // Si pas de schoolId dans les claims, vérifier Firestore
             if (!schoolIdFromClaims) {
