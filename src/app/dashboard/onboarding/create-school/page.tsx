@@ -97,7 +97,8 @@ export default function CreateSchoolPage() {
         duration: 5000,
       });
   
-      router.push('/dashboard?created=true');
+      // Forcer une recharge complète de la page pour que le layout se mette à jour
+      window.location.assign('/dashboard?created=true');
   
     } catch (error: any) {
       console.error("❌ ERREUR FINALE:", error);
