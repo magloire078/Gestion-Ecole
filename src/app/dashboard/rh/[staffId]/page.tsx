@@ -21,6 +21,7 @@ import { StaffEditForm } from '@/components/staff-edit-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { group } from 'd3-array';
+import { StaffInfoTab } from '@/components/rh/staff-info-tab';
 
 
 // ====================================================================================
@@ -249,10 +250,7 @@ export default function StaffProfilePage() {
                              <TimetableTab schoolId={schoolId!} staffId={staffId} />
                         </TabsContent>
                         <TabsContent value="info" className="mt-4">
-                            <Card>
-                                <CardHeader><CardTitle>Informations Détaillées</CardTitle></CardHeader>
-                                <CardContent><p className="text-muted-foreground">D'autres informations sur le membre du personnel seront affichées ici.</p></CardContent>
-                            </Card>
+                            <StaffInfoTab staff={staffMember} />
                         </TabsContent>
                     </Tabs>
                 </div>
