@@ -97,8 +97,8 @@ export default function CreateSchoolPage() {
         duration: 5000,
       });
   
-      // Redirect directly to the dashboard
-      router.push('/dashboard');
+      // Force a full page reload to ensure auth state is fully updated everywhere
+      window.location.href = '/dashboard';
   
     } catch (error: any) {
       console.error("❌ ERREUR FINALE:", error);
