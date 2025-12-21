@@ -201,7 +201,7 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
     </div>
     
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>Modifier un Membre du Personnel</DialogTitle>
             <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>

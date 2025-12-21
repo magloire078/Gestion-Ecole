@@ -1,4 +1,5 @@
 
+
 'use client';
 import { 
   collection, 
@@ -60,8 +61,10 @@ export class SchoolCreationService {
       throw new Error("❌ L'utilisateur ne correspond pas au directeur");
     }
     
+    const batch = writeBatch(this.db);
+    
     try {
-      // 1. Créer l'ÉCOLE d'abord (document principal)
+      // 1. CRÉER L'ÉCOLE
       console.log("Étape 1: Création école...");
       const schoolRef = doc(collection(this.db, 'ecoles'));
       const schoolId = schoolRef.id;
@@ -80,12 +83,24 @@ export class SchoolCreationService {
         mainLogoUrl: schoolData.mainLogoUrl || '',
         status: 'active',
       };
+      batch.set(schoolRef, schoolDoc);
+      console.log("✅ École planifiée:", schoolId);
+
+      // 2. CRÉER LE RÔLE "SUPER ADMIN" PAR DÉFAUT
+      console.log("Étape 2: Création rôle Super Admin...");
+      const adminRoleRef = doc(collection(this.db, `ecoles/${schoolId}/admin_roles`));
+      const adminRoleId = adminRoleRef.id;
+      batch.set(adminRoleRef, {
+          name: 'Super Admin',
+          description: 'Accès complet à toutes les fonctionnalités de l\'école.',
+          isSystem: true,
+          schoolId: schoolId,
+          permissions: { manageUsers: true, viewUsers: true, manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true, manageSettings: true, manageBilling: true, manageCommunication: true, manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true, manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true }
+      });
+      console.log("✅ Rôle Super Admin planifié:", adminRoleId);
       
-      await setDoc(schoolRef, schoolDoc);
-      console.log("✅ École créée:", schoolId);
-      
-      // 2. Créer le PROFIL PERSONNEL
-      console.log("Étape 2: Création profil personnel...");
+      // 3. CRÉER LE PROFIL PERSONNEL DU DIRECTEUR
+      console.log("Étape 3: Création profil personnel...");
       const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
       
       const staffProfile = {
@@ -94,7 +109,8 @@ export class SchoolCreationService {
         displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
         photoURL: '',
         schoolId: schoolId,
-        role: 'directeur', // ⚠️ Doit être exactement 'directeur'
+        role: 'directeur',
+        adminRole: adminRoleId, // Assigner le rôle Super Admin au directeur
         firstName: schoolData.directorFirstName,
         lastName: schoolData.directorLastName,
         hireDate: new Date().toISOString().split('T')[0],
@@ -102,51 +118,42 @@ export class SchoolCreationService {
         status: 'Actif',
         createdAt: serverTimestamp(),
       };
+      batch.set(staffProfileRef, staffProfile);
+      console.log("✅ Profil créé et rôle assigné");
       
-      await setDoc(staffProfileRef, staffProfile);
-      console.log("✅ Profil créé");
-      
-      // 3. Mettre à jour l'UTILISATEUR
-      console.log("Étape 3: Mise à jour utilisateur...");
+      // 4. Mettre à jour L'UTILISATEUR
+      console.log("Étape 4: Mise à jour utilisateur...");
       const userRef = doc(this.db, `utilisateurs/${schoolData.directorId}`);
-      
-      const userDoc = {
-        schoolId: schoolId,
-        updatedAt: serverTimestamp(),
-      };
-      
-      await setDoc(userRef, userDoc, { merge: true });
+      const userDoc = { schoolId: schoolId, updatedAt: serverTimestamp() };
+      batch.set(userRef, userDoc, { merge: true });
       console.log("✅ Utilisateur mis à jour");
       
-      // 4. Créer le LOG
-      console.log("Étape 4: Création log...");
+      // 5. Créer le LOG
+      console.log("Étape 5: Création log...");
       const logRef = doc(collection(this.db, 'system_logs'));
-      
       const logDoc = {
         adminId: schoolData.directorId,
         action: 'school.created',
         target: schoolRef.path,
-        details: {
-          schoolName: schoolData.name,
-          schoolId: schoolId,
-          schoolCode: schoolCode,
-        },
+        details: { schoolName: schoolData.name, schoolId: schoolId, schoolCode: schoolCode },
         timestamp: serverTimestamp(),
       };
-      
-      await setDoc(logRef, logDoc);
+      batch.set(logRef, logDoc);
       console.log("✅ Log créé");
       
-      // 5. Rafraîchir le token
-      console.log("Étape 5: Rafraîchissement token...");
+      // COMMITTER LE BATCH
+      console.log("🚀 Commit du batch...");
+      await batch.commit();
+      console.log("✅ Batch réussi !");
+      
+      // 6. Rafraîchir le token
+      console.log("Étape 6: Rafraîchissement token...");
       await user.getIdToken(true);
       
       // Attendre un peu
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       console.log("🎉 CRÉATION RÉUSSIE !");
-      console.log("School ID:", schoolId);
-      console.log("School Code:", schoolCode);
       
       return {
         schoolId,
@@ -156,22 +163,8 @@ export class SchoolCreationService {
       };
       
     } catch (error: any) {
-      console.error("❌ ERREUR DÉTAILLÉE:", {
-        name: error.name,
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
-      
-      // Afficher plus d'infos selon le type d'erreur
-      if (error.code === 'permission-denied') {
-        console.error("🔴 ERREUR PERMISSION - Vérifiez:");
-        console.error("1. Règles Firestore déployées?");
-        console.error("2. Utilisateur authentifié? UID:", user?.uid);
-        console.error("3. Document path qui échoue?");
-      }
-      
-      throw new Error(`Échec création: ${error.message}`);
+        console.error("❌ ERREUR DÉTAILLÉE:", { name: error.name, code: error.code, message: error.message });
+        throw new Error(`Échec création: ${error.message}`);
     }
   }
   
