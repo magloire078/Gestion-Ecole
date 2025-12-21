@@ -866,10 +866,6 @@
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
-    "/super_admins/{adminId}": {
-        "schema": { "$ref": "#/entities/staff" },
-        "description": "Stocke les profils des super administrateurs de la plateforme."
-    },
     "/system_logs/{logId}": {
         "schema": { "$ref": "#/entities/system_log" },
         "description": "Journalise toutes les actions critiques effectuées sur la plateforme."
