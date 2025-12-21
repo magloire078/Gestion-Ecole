@@ -15,7 +15,7 @@ import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { student as Student, message as Message, gradeEntry as GradeEntry, libraryBook as LibraryBook } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { Progress } from '@/components/ui/progress';
@@ -501,16 +501,26 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
 // Main Page Component
 // ====================================================================================
 export default function DashboardPage() {
-  const router = useRouter();
   const { schoolData, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
+  const searchParams = useSearchParams();
+
+  // State to block rendering during critical transitions
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Check if we just created a school
+  useEffect(() => {
+      if (searchParams.get('created')) {
+          setIsTransitioning(true);
+      }
+  }, [searchParams]);
 
   const calculateOnboardingStatus = useCallback((schoolData: any, classesCount: number, staffCount: number, feesCount: number): OnboardingStatus => {
     const baseInfoDone = !!(schoolData?.name && schoolData?.address);
     const structureDone = classesCount > 0;
-    const staffDone = staffCount > 0; // Le directeur compte comme un membre du personnel
+    const staffDone = staffCount > 0;
     const feesDone = feesCount > 0;
 
     let completedSteps = 0;
@@ -523,30 +533,27 @@ export default function DashboardPage() {
     const isSetupComplete = baseInfoDone && structureDone && staffDone && feesDone;
 
     return {
-      baseInfoDone,
-      structureDone,
-      staffDone,
-      feesDone,
-      classesCount,
-      teachersCount: staffCount,
-      feesCount,
-      completion,
-      isSetupComplete
+      baseInfoDone, structureDone, staffDone, feesDone,
+      classesCount, teachersCount: staffCount, feesCount,
+      completion, isSetupComplete
     };
   }, []);
 
   useEffect(() => {
     if (schoolLoading || !schoolData?.id || !firestore) {
-      if (!schoolLoading) setLoading(false);
+      if (!schoolLoading) {
+          setLoading(false);
+          // If we're not transitioning but also have no school data, something is wrong, stop loader.
+          if (!isTransitioning) setLoading(false);
+      }
       return;
     }
 
     const fetchOnboardingData = async () => {
-      setLoading(true);
+      // Don't set main loading to true if we're just fetching onboarding status
       try {
         const [classesSnap, staffSnap, feesSnap] = await Promise.all([
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/classes`))),
-          // On compte maintenant tous les membres du personnel, pas seulement les enseignants
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/personnel`))),
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/frais_scolarite`))),
         ]);
@@ -560,10 +567,9 @@ export default function DashboardPage() {
         
         setOnboardingStatus(status);
         
-        // Si la configuration est terminée, mais que nous sommes toujours sur l'URL d'onboarding,
-        // cela signifie que nous venons de la terminer. Forcer une redirection.
-        if (status.isSetupComplete && window.location.pathname.includes('/onboarding')) {
-          router.replace('/dashboard');
+        // Once status is calculated, we can end the transition period
+        if(isTransitioning) {
+            setIsTransitioning(false);
         }
 
       } catch (error) {
@@ -574,9 +580,9 @@ export default function DashboardPage() {
     };
 
     fetchOnboardingData();
-  }, [schoolData, firestore, schoolLoading, calculateOnboardingStatus, router]);
+  }, [schoolData, firestore, schoolLoading, calculateOnboardingStatus, isTransitioning]);
 
-  if (loading) {
+  if (loading || isTransitioning) {
      return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -597,6 +603,5 @@ export default function DashboardPage() {
     return <OnboardingDashboard onboardingStatus={onboardingStatus} />;
   }
 
-  // Affiche le dashboard normal si le statut n'a pas pu être déterminé ou si la config est complète
   return <RegularDashboard />;
 }

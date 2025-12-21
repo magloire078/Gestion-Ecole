@@ -55,15 +55,12 @@ export default function CreateSchoolPage() {
     }
   });
   
-  // Sync user name to form once loaded
   useEffect(() => {
-    // Correction : s'assurer que userLoading est bien false avant de lire les données
-    if (user && user.authUser && !userLoading && user.authUser.displayName) {
-      const nameParts = user.authUser.displayName.split(' ');
+    if (user && user.authUser && !userLoading) {
+      const nameParts = user.authUser.displayName?.split(' ') || [];
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
-      // Utiliser setValue pour ne pas écraser les autres champs si l'utilisateur a déjà commencé à taper
       form.setValue('directorFirstName', firstName);
       form.setValue('directorLastName', lastName);
     }
@@ -72,7 +69,7 @@ export default function CreateSchoolPage() {
 
   const handleSubmit = async (values: CreateSchoolFormValues) => {
     if (!user || !user.authUser || !user.authUser.uid || !user.authUser.email) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide.' });
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide. Veuillez vous reconnecter.' });
       return;
     }
     
@@ -82,9 +79,6 @@ export default function CreateSchoolPage() {
     
     try {
       console.log("=== DÉBUT CRÉATION ===");
-      console.log("User UID:", user.authUser.uid);
-      console.log("User email:", user.authUser.email);
-      
       const result = await schoolCreationService.createSchoolSimple({
         name: values.name,
         address: values.address || '',
@@ -97,34 +91,20 @@ export default function CreateSchoolPage() {
         email: user.authUser.email || '',
       });
       
-      console.log("=== CRÉATION RÉUSSIE ===");
-      console.log("Result:", result);
+      console.log("=== CRÉATION RÉUSSIE ===", result);
       
       toast({
         title: 'École créée avec succès !',
-        description: `Le code de votre établissement est : ${result.schoolCode}. Redirection...`,
+        description: `Code: ${result.schoolCode}. Redirection...`,
         duration: 5000,
       });
   
-      // Attendre un peu puis rediriger
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 2000);
+      // Redirige avec un paramètre pour signaler la transition
+      router.push('/dashboard?created=true');
   
     } catch (error: any) {
       console.error("❌ ERREUR FINALE:", error);
-      
-      // Message d'erreur détaillé
-      let errorMessage = "La création de l'école a échoué.";
-      
-      if (error.message.includes('permission-denied')) {
-        errorMessage = "Erreur de permission. Vérifiez que vous êtes bien connecté et que les règles Firestore sont déployées.";
-      } else if (error.message.includes('already exists')) {
-        errorMessage = "Vous avez déjà une école.";
-      } else {
-        errorMessage = error.message || errorMessage;
-      }
-      
+      let errorMessage = "La création de l'école a échoué. " + error.message;
       toast({ 
         variant: 'destructive', 
         title: 'Erreur', 

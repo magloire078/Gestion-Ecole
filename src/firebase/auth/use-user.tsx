@@ -1,3 +1,4 @@
+
 'use client';
 
 import {useState, useEffect} from 'react';
@@ -34,7 +35,7 @@ export function useUser() {
   const firestore = useFirestore();
   const [user, setUser] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
-  const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
+  const [schoolId, setSchoolId] = useState<string | null>(null);
   const [isDirector, setIsDirector] = useState(false);
 
   useEffect(() => {
