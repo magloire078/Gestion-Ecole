@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -62,7 +61,7 @@ export default function TransportLayout({
       );
   }
   
-  const hasAccess = subscription?.plan === 'Essentiel' || subscription?.activeModules?.includes('transport') || subscription?.plan === 'Premium';
+  const hasAccess = subscription?.activeModules?.includes('transport') || subscription?.plan === 'Premium';
 
   if (!hasAccess) {
       return (
