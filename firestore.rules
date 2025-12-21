@@ -27,11 +27,9 @@ service cloud.firestore {
         return isAuth() && request.auth.token.isDirector == true;
     }
 
+    // Simplifié : Vérifie si l'utilisateur authentifié appartient à l'école via son token.
     function isMemberOfSchool(schoolId) {
-      return isAuth() && (
-        request.auth.token.schoolId == schoolId ||
-        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
-      );
+      return isAuth() && request.auth.token.schoolId == schoolId;
     }
 
     // ========== GLOBAL RULES ==========
