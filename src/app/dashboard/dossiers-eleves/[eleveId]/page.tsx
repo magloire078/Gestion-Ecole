@@ -24,6 +24,7 @@ import { StudentEditForm } from '@/components/student-edit-form';
 import { PaymentsTab } from '@/components/students/payments-tab';
 import { GradesTab } from '@/components/students/grades-tab';
 import { InfoTab } from '@/components/students/info-tab';
+import { Separator } from '@/components/ui/separator';
 
 function StudentProfilePageSkeleton() {
     return (
@@ -196,7 +197,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
 
             {/* Right Column */}
             <div className="lg:col-span-3 flex flex-col gap-6">
-                <Tabs defaultValue={initialTab}>
+                <Tabs defaultValue={initialTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="payments">Paiements</TabsTrigger>
                         <TabsTrigger value="grades">Résultats</TabsTrigger>
@@ -270,4 +271,3 @@ export default function StudentProfilePage() {
     </Suspense>
   );
 }
-
