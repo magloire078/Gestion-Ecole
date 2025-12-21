@@ -3,7 +3,7 @@
 
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import type { building, room } from '@/lib/data-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -14,15 +14,21 @@ import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { RoomForm } from './room-form';
-
+import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 export function RoomManagement({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
+  const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageInternat;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<(room & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [roomToDelete, setRoomToDelete] = useState<(room & { id: string }) | null>(null);
 
   const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
   const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)), [firestore, schoolId]);
@@ -55,6 +61,23 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
       setIsFormOpen(false);
       setEditingRoom(null);
   }
+
+  const handleOpenDeleteDialog = (room: room & { id: string }) => {
+    setRoomToDelete(room);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteRoom = async () => {
+    if (!schoolId || !roomToDelete) return;
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_chambres`, roomToDelete.id));
+        toast({ title: 'Chambre supprimée' });
+    } catch(e) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/internat_chambres/${roomToDelete.id}`, operation: 'delete'}));
+    } finally {
+        setIsDeleteDialogOpen(false);
+    }
+  }
   
   if(isLoading) {
       return (
@@ -75,7 +98,8 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
     }
   }
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value?: number) => {
+    if (typeof value !== 'number') return 'N/A';
     return `${value.toLocaleString('fr-FR')} CFA`;
   }
 
@@ -116,7 +140,7 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
                                                     <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4"/></Button></DropdownMenuTrigger>
                                                     <DropdownMenuContent>
                                                         <DropdownMenuItem onClick={() => handleOpenForm(room)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
-                                                        <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(room)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
                                                     </DropdownMenuContent>
                                                 </DropdownMenu>
                                             </div>
@@ -153,6 +177,22 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
             />
         </DialogContent>
     </Dialog>
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    La chambre <strong>{roomToDelete?.number}</strong> sera définitivement supprimée.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteRoom} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

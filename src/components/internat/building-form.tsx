@@ -17,6 +17,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
+import { query } from 'firebase/firestore';
 
 const buildingSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
@@ -31,9 +32,10 @@ type BuildingFormValues = z.infer<typeof buildingSchema>;
 interface BuildingFormProps {
   building: (Building & { id: string }) | null;
   onSave: () => void;
+  collectionName: string;
 }
 
-export function BuildingForm({ building, onSave }: BuildingFormProps) {
+export function BuildingForm({ building, onSave, collectionName }: BuildingFormProps) {
   const { schoolId } = useSchoolData();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -57,15 +59,15 @@ export function BuildingForm({ building, onSave }: BuildingFormProps) {
     const dataToSave = { ...values, schoolId };
 
     const promise = building
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_batiments`, building.id), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/internat_batiments`), dataToSave);
+      ? setDoc(doc(firestore, `ecoles/${schoolId}/${collectionName}`, building.id), dataToSave, { merge: true })
+      : addDoc(collection(firestore, `ecoles/${schoolId}/${collectionName}`), dataToSave);
       
     try {
       await promise;
       toast({ title: `Bâtiment ${building ? 'modifié' : 'ajouté'}`, description: `Le bâtiment ${values.name} a été enregistré.` });
       onSave();
     } catch (e) {
-      const path = `ecoles/${schoolId}/internat_batiments/${building?.id || '(new)'}`;
+      const path = `ecoles/${schoolId}/${collectionName}/${building?.id || '(new)'}`;
       const operation = building ? 'update' : 'create';
       errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData: dataToSave }));
     } finally {

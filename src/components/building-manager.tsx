@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -12,6 +12,22 @@ import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
 import Link from 'next/link';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface Building {
   id: string;
@@ -38,6 +54,7 @@ interface BuildingManagerProps {
   addBuildingButtonText: string;
   addRoomLink: string;
   BuildingFormComponent: React.FC<any>;
+  onDelete: (buildingId: string, buildingName: string, roomCount: number) => Promise<void>;
 }
 
 export function BuildingManager({
@@ -51,11 +68,13 @@ export function BuildingManager({
   addBuildingButtonText,
   addRoomLink,
   BuildingFormComponent,
+  onDelete
 }: BuildingManagerProps) {
   const firestore = useFirestore();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
+  const [buildingToDelete, setBuildingToDelete] = useState<Building | null>(null);
 
   const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/${buildingCollectionName}`)), [firestore, schoolId, buildingCollectionName]);
   const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/${roomCollectionName}`)), [firestore, schoolId, roomCollectionName]);
@@ -89,6 +108,13 @@ export function BuildingManager({
   const handleFormSave = () => {
     setIsFormOpen(false);
     setEditingBuilding(null);
+  };
+  
+  const handleDeleteConfirm = () => {
+    if (buildingToDelete) {
+      onDelete(buildingToDelete.id, buildingToDelete.name, roomsByBuilding[buildingToDelete.id]?.length || 0);
+      setBuildingToDelete(null);
+    }
   };
 
   if (isLoading) {
@@ -132,7 +158,7 @@ export function BuildingManager({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
                     <DropdownMenuItem onClick={() => handleOpenForm(building)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => setBuildingToDelete(building)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
@@ -167,9 +193,26 @@ export function BuildingManager({
           <DialogHeader>
             <DialogTitle>{editingBuilding ? 'Modifier le' : 'Nouveau'} Bâtiment</DialogTitle>
           </DialogHeader>
-          <BuildingFormComponent building={editingBuilding} onSave={handleFormSave} />
+          <BuildingFormComponent building={editingBuilding} onSave={handleFormSave} collectionName={buildingCollectionName} />
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={!!buildingToDelete} onOpenChange={(open) => !open && setBuildingToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                   Cette action est irréversible. Le bâtiment <strong>"{buildingToDelete?.name}"</strong> sera supprimé.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

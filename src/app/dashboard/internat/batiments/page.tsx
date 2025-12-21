@@ -5,9 +5,36 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BuildingManager } from '@/components/building-manager';
 import { BuildingForm } from '@/components/internat/building-form';
+import { useFirestore } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { doc, deleteDoc } from 'firebase/firestore';
 
 export default function BatimentsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  const handleDeleteBuilding = async (buildingId: string, buildingName: string, roomCount: number) => {
+    if (!schoolId) return;
+
+    if (roomCount > 0) {
+      toast({
+        variant: "destructive",
+        title: "Action impossible",
+        description: "Vous ne pouvez pas supprimer un bâtiment qui contient encore des chambres."
+      });
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_batiments`, buildingId));
+      toast({ title: "Bâtiment supprimé", description: `Le bâtiment "${buildingName}" a été supprimé.` });
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le bâtiment.' });
+    }
+  };
+
 
   if (schoolLoading || !schoolId) {
     return (
@@ -31,6 +58,7 @@ export default function BatimentsPage() {
       addBuildingButtonText="Ajouter un bâtiment"
       addRoomLink="/dashboard/internat/chambres"
       BuildingFormComponent={BuildingForm}
+      onDelete={handleDeleteBuilding}
     />
   );
 }

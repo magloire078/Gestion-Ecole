@@ -1,9 +1,9 @@
 
 'use client';
 
-import { SalleManagement } from '@/components/immobilier/salle-management';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SalleManagement } from '@/components/immobilier/salle-management';
 
 export default function SallesPage() {
   const { schoolId, loading } = useSchoolData();

@@ -7,7 +7,6 @@ import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import type { building, salle as Salle } from '@/lib/data-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Badge } from '@/components/ui/badge';
 import { DoorOpen, PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
@@ -141,7 +140,7 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
                 ))}
             </Accordion>
         ): (
-            <p className="text-muted-foreground text-center py-8">Aucun bâtiment n'a été créé. Commencez par en ajouter un dans l'onglet "Bâtiments".</p>
+            <p className="text-muted-foreground text-center py-8">Aucun bâtiment n'a été créé. Commencez par en ajouter un.</p>
         )}
       </CardContent>
     </Card>
