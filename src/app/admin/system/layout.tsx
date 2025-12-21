@@ -13,7 +13,7 @@ const adminNavLinks = [
     { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
     // { href: '/admin/system/billing', label: 'Facturation', icon: Wallet },
     // { href: '/admin/system/logs', label: 'Logs', icon: Shield },
-    // { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
+    { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
 ];
 
 
