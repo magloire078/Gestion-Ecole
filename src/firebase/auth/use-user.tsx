@@ -105,19 +105,7 @@ export function useUser() {
                 setIsDirector(isDirectorFlag);
 
                 unsubscribeProfile = onSnapshot(profileRef, async (profileSnap) => {
-                    let profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
-
-                    if (isDirectorFlag && !profileData) {
-                        const nameParts = authUser.displayName?.split(' ') || ['Nouveau', 'Directeur'];
-                        profileData = {
-                            uid: authUser.uid, schoolId: effectiveSchoolId, role: 'directeur',
-                            firstName: nameParts[0], lastName: nameParts.slice(1).join(' '),
-                            displayName: authUser.displayName || `${nameParts[0]} ${nameParts.slice(1).join(' ')}`,
-                            email: authUser.email || '', hireDate: format(new Date(), 'yyyy-MM-dd'),
-                            baseSalary: 0, status: 'Actif', photoURL: authUser.photoURL || '',
-                        };
-                        setDoc(profileRef, profileData, { merge: true });
-                    }
+                    const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
 
                     if (profileData) {
                         let permissions: Partial<AdminRole['permissions']> = {};
