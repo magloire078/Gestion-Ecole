@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -505,10 +504,10 @@ export default function DashboardPage() {
   const firestore = useFirestore();
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const searchParams = useSearchParams();
-
+  
   // State to block rendering during critical transitions
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const searchParams = useSearchParams();
 
   // Check if we just created a school
   useEffect(() => {
@@ -541,16 +540,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (schoolLoading || !schoolData?.id || !firestore) {
-      if (!schoolLoading) {
+      if (!schoolLoading && !isTransitioning) {
           setLoading(false);
-          // If we're not transitioning but also have no school data, something is wrong, stop loader.
-          if (!isTransitioning) setLoading(false);
       }
       return;
     }
 
     const fetchOnboardingData = async () => {
-      // Don't set main loading to true if we're just fetching onboarding status
       try {
         const [classesSnap, staffSnap, feesSnap] = await Promise.all([
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/classes`))),
@@ -567,7 +563,6 @@ export default function DashboardPage() {
         
         setOnboardingStatus(status);
         
-        // Once status is calculated, we can end the transition period
         if(isTransitioning) {
             setIsTransitioning(false);
         }

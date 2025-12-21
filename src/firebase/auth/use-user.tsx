@@ -35,7 +35,7 @@ export function useUser() {
   const firestore = useFirestore();
   const [user, setUser] = useState<UserContext | null>(null);
   const [loading, setLoading] = useState(true);
-  const [schoolId, setSchoolId] = useState<string | null>(null);
+  const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
   const [isDirector, setIsDirector] = useState(false);
 
   useEffect(() => {
@@ -58,20 +58,20 @@ export function useUser() {
         }
 
         try {
-            const tokenResult = await authUser.getIdTokenResult(); // No force refresh
+            const tokenResult = await authUser.getIdTokenResult(true); 
             const claims = tokenResult.claims;
             let effectiveSchoolId = claims.schoolId as string | null;
             
             if (!effectiveSchoolId) {
-                try {
+                 try {
                     const userDoc = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
                     if (userDoc.exists()) {
                         effectiveSchoolId = userDoc.data()?.schoolId || null;
                     }
-                } catch (e) { console.error("Error fetching user document from Firestore:", e); }
+                 } catch (e) { console.error("Error fetching user document from Firestore:", e); }
             }
 
-            setSchoolId(effectiveSchoolId);
+            setSchoolId(effectiveSchoolId || null);
             
             const isSuperAdmin = (claims.superAdmin as boolean) || false;
 
@@ -83,7 +83,6 @@ export function useUser() {
                     permissions: { ...allPermissions }, isAdmin: true,
                 };
                 setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
-                setSchoolId(null);
                 setIsDirector(false);
                 setLoading(false);
                 return;
@@ -146,6 +145,8 @@ export function useUser() {
 
         } catch (error) {
             console.error("Erreur dans useUser:", error);
+             setUser({ authUser, uid: authUser.uid, profile: undefined });
+             setSchoolId(null);
         } finally {
             setLoading(false);
         }

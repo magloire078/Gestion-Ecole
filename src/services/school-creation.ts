@@ -1,5 +1,4 @@
 
-
 'use client';
 import { 
   collection, 
@@ -52,9 +51,6 @@ export class SchoolCreationService {
     if (!user) {
       throw new Error("❌ Utilisateur non connecté");
     }
-    
-    console.log("User:", user.uid);
-    console.log("Director:", schoolData.directorId);
     
     // Vérification UID
     if (user.uid !== schoolData.directorId) {

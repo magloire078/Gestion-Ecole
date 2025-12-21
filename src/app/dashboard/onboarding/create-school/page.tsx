@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -78,8 +79,7 @@ export default function CreateSchoolPage() {
     const schoolCreationService = new SchoolCreationService(firestore);
     
     try {
-      console.log("=== DÉBUT CRÉATION ===");
-      const result = await schoolCreationService.createSchoolSimple({
+      const result = await schoolCreationService.createSchool({
         name: values.name,
         address: values.address || '',
         mainLogoUrl: logoUrl || '',
@@ -91,15 +91,12 @@ export default function CreateSchoolPage() {
         email: user.authUser.email || '',
       });
       
-      console.log("=== CRÉATION RÉUSSIE ===", result);
-      
       toast({
         title: 'École créée avec succès !',
         description: `Code: ${result.schoolCode}. Redirection...`,
         duration: 5000,
       });
   
-      // Redirige avec un paramètre pour signaler la transition
       router.push('/dashboard?created=true');
   
     } catch (error: any) {
