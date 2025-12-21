@@ -30,7 +30,8 @@ interface OnboardingStatus {
   structureDone: boolean;
   staffDone: boolean;
   feesDone: boolean;
-  classesCount: number;
+  cyclesCount: number;
+  niveauxCount: number;
   teachersCount: number;
   feesCount: number;
   completion: number;
@@ -124,8 +125,8 @@ const OnboardingDashboard = ({ onboardingStatus, onCompleteSetup }: { onboarding
           isDone={onboardingStatus.structureDone}
           href="/dashboard/pedagogie/structure"
           cta={onboardingStatus.structureDone ? "Gérer la structure" : "Définir la structure"}
-          count={onboardingStatus.classesCount}
-          required={1}
+          count={onboardingStatus.cyclesCount + onboardingStatus.niveauxCount}
+          required={2}
         />
         <StepCard 
           number={3} 
@@ -236,9 +237,9 @@ function DashboardPageContent() {
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const calculateOnboardingStatus = useCallback((schoolData: any, classesCount: number, staffCount: number, feesCount: number): OnboardingStatus => {
-    const baseInfoDone = !!(schoolData?.name && schoolData?.address);
-    const structureDone = classesCount > 0;
+  const calculateOnboardingStatus = useCallback((schoolData: any, cyclesCount: number, niveauxCount: number, staffCount: number, feesCount: number): OnboardingStatus => {
+    const baseInfoDone = !!(schoolData?.name && schoolData?.address && schoolData?.phone);
+    const structureDone = cyclesCount > 0 && niveauxCount > 0;
     const staffDone = staffCount > 0;
     const feesDone = feesCount > 0;
 
@@ -253,7 +254,7 @@ function DashboardPageContent() {
 
     return {
       baseInfoDone, structureDone, staffDone, feesDone,
-      classesCount, teachersCount: staffCount, feesCount,
+      cyclesCount, niveauxCount, teachersCount: staffCount, feesCount,
       completion, isSetupComplete
     };
   }, []);
@@ -290,15 +291,17 @@ function DashboardPageContent() {
     const fetchOnboardingData = async () => {
       setLoading(true);
       try {
-        const [classesSnap, staffSnap, feesSnap] = await Promise.all([
-          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/classes`))),
+        const [cyclesSnap, niveauxSnap, staffSnap, feesSnap] = await Promise.all([
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/cycles`))),
+          getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/niveaux`))),
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/personnel`))),
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/frais_scolarite`))),
         ]);
 
         const status = calculateOnboardingStatus(
           schoolData,
-          classesSnap.data().count,
+          cyclesSnap.data().count,
+          niveauxSnap.data().count,
           staffSnap.data().count,
           feesSnap.data().count
         );
