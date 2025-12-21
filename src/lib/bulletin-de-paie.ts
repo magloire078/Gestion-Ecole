@@ -162,7 +162,7 @@ export async function getPayslipDetails(
         indemniteTransportImposable: { label: 'INDEMNITE DE TRANSPORT IMPOSABLE', amount: indemniteTransportImposable },
         indemniteSujetion: { label: 'INDEMNITE DE SUJETION', amount: indemniteSujetion },
         indemniteCommunication: { label: 'INDEMNITE DE COMMUNICATION', amount: indemniteCommunication },
-        indemniteRepresentation: { label: 'INDEMNITE DE REPRESENTATION', amount: indemniteRepresentation },
+        indemniteRepresentation: { label: 'INDEMNITE DE REPRESENTATION', amount: indemniteResponsabilite },
         indemniteResponsabilite: { label: 'INDEMNITE DE RESPONSABILITE', amount: indemniteResponsabilite },
         indemniteLogement: { label: 'INDEMNITE DE LOGEMENT', amount: indemniteLogement },
     };
