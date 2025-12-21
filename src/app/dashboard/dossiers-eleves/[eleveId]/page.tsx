@@ -251,6 +251,18 @@ export default function StudentProfilePage() {
   const eleveId = params.eleveId as string;
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
+  // We wrap the content in a Suspense boundary to handle the initial tab state from searchParams
+  return (
+    <Suspense fallback={<StudentProfilePageSkeleton />}>
+        <PageContent eleveId={eleveId} schoolId={schoolId} schoolLoading={schoolLoading} />
+    </Suspense>
+  )
+}
+
+function PageContent({ eleveId, schoolId, schoolLoading }: { eleveId: string, schoolId: string | null | undefined, schoolLoading: boolean }) {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'payments';
+
   if (schoolLoading) {
     return <StudentProfilePageSkeleton />;
   }
@@ -263,11 +275,7 @@ export default function StudentProfilePage() {
     return <p>Erreur: ID de l'élève manquant.</p>;
   }
   
-  const initialTab = searchParams.get('tab') || 'payments';
-
   return (
-    <Suspense fallback={<StudentProfilePageSkeleton />}>
-        <StudentProfileContent eleveId={eleveId} schoolId={schoolId} initialTab={initialTab} />
-    </Suspense>
+    <StudentProfileContent eleveId={eleveId} schoolId={schoolId} initialTab={initialTab} />
   );
 }
