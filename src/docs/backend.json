@@ -254,7 +254,6 @@
         "cycleId": { "type": "string" },
         "niveauId": { "type": "string" },
         "name": { "type": "string", "description": "Nom complet (ex: CE1-A)." },
-        "grade": { "type": "string", "description": "Nom du niveau, ex: 'CE1'." },
         "code": { "type": "string", "description": "Code unique (ex: CE1A)." },
         "section": { "type": "string", "description": "Section (A, B, C...)." },
         "academicYear": { "type": "string", "description": "Année académique (ex: 2024-2025)." },
@@ -1083,3 +1082,5 @@
     }
   }
 }
+
+    

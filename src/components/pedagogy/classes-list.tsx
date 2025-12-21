@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, LayoutGrid, List, Plus } from 'lucide-react';
+import { Search, LayoutGrid, List, PlusCircle } from 'lucide-react';
 import { ClassesGridView } from '@/components/classes/classes-grid-view';
 import { ClassesListView } from '@/components/classes/classes-list-view';
 import { useUser } from '@/firebase';
@@ -32,7 +33,7 @@ export function ClassesList() {
             {isDirectorOrAdmin && (
               <Button asChild>
                 <Link href="/dashboard/pedagogie/structure/new">
-                  <Plus className="mr-2 h-4 w-4" />Nouvelle Classe
+                  <PlusCircle className="mr-2 h-4 w-4" />Nouvelle Classe
                 </Link>
               </Button>
             )}
@@ -53,3 +54,5 @@ export function ClassesList() {
     </Card>
   );
 }
+
+    
