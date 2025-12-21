@@ -26,7 +26,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 // ====================================================================================
 
 function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: string }) {
-    const classRef = useMemoFirebase(() => classId ? doc(collection(useFirestore(), `ecoles/${schoolId}/classes`), classId) : null, [schoolId, classId]);
+    const firestore = useFirestore();
+    const classRef = useMemoFirebase(() => classId ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) : null, [schoolId, classId, firestore]);
     const { data: mainClass, loading } = useDoc<Class>(classRef);
 
     if (loading) return <Skeleton className="h-5 w-24" />;
@@ -41,7 +42,8 @@ function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: stri
 }
 
 function AdminRoleInfo({ schoolId, adminRoleId }: { schoolId: string, adminRoleId?: string }) {
-    const adminRoleRef = useMemoFirebase(() => adminRoleId ? doc(collection(useFirestore(), `ecoles/${schoolId}/admin_roles`), adminRoleId) : null, [schoolId, adminRoleId]);
+    const firestore = useFirestore();
+    const adminRoleRef = useMemoFirebase(() => adminRoleId ? doc(firestore, `ecoles/${schoolId}/admin_roles/${adminRoleId}`) : null, [schoolId, adminRoleId, firestore]);
     const { data: adminRole, loading } = useDoc<AdminRole>(adminRoleRef);
 
     if (loading) return <Skeleton className="h-5 w-32" />;
@@ -122,20 +124,16 @@ export default function StaffProfilePage() {
     
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
-    // --- Requêtes Principales ---
     const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId]);
     const { data: staffMember, loading: staffLoading, error } = useDoc<Staff>(staffRef);
 
-    // --- Requêtes Secondaires (pour le formulaire d'édition) ---
+    // Queries for the edit form, can load in background
     const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
     const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
 
     const allAdminRolesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/admin_roles`) : null, [firestore, schoolId]);
     const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
 
-    const allSchoolClasses: (Class & {id: string})[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);
-    const allAdminRoles: (AdminRole & {id: string})[] = useMemo(() => allAdminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [allAdminRolesData]);
-  
     const isLoading = staffLoading || schoolLoading;
 
     if (isLoading) {
@@ -205,14 +203,14 @@ export default function StaffProfilePage() {
                                 <Briefcase className="mr-3 h-4 w-4 text-muted-foreground" />
                                 <span className="capitalize">{staffMember.role}</span>
                             </div>
-                            {staffMember.adminRole && <AdminRoleInfo schoolId={schoolId!} adminRoleId={staffMember.adminRole} />}
-                             {staffMember.role === 'enseignant' && (
+                            <AdminRoleInfo schoolId={schoolId!} adminRoleId={staffMember.adminRole} />
+                            {staffMember.role === 'enseignant' && (
                                 <div className="flex items-center">
                                     <Building className="mr-3 h-4 w-4 text-muted-foreground" />
                                     <span>Matière: <strong>{staffMember.subject || 'N/A'}</strong></span>
                                 </div>
                              )}
-                            {staffMember.classId && <MainClassInfo schoolId={schoolId!} classId={staffMember.classId} />}
+                            <MainClassInfo schoolId={schoolId!} classId={staffMember.classId} />
                         </CardContent>
                     </Card>
                 </div>
@@ -235,8 +233,8 @@ export default function StaffProfilePage() {
               <StaffEditForm
                   schoolId={schoolId!}
                   editingStaff={staffMember}
-                  classes={allSchoolClasses}
-                  adminRoles={allAdminRoles}
+                  classes={(allSchoolClassesData?.docs.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [])}
+                  adminRoles={(allAdminRolesData?.docs.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [])}
                   onFormSubmit={() => setIsEditDialogOpen(false)}
                />
             </DialogContent>
