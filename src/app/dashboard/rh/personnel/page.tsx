@@ -74,8 +74,8 @@ export default function PersonnelPage() {
   const { teachers, otherStaff } = useMemo(() => {
     const allStaff: StaffMember[] = staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [];
     return {
-        teachers: allStaff.filter(s => s.role === 'enseignant'),
-        otherStaff: allStaff.filter(s => s.role !== 'enseignant'),
+        teachers: allStaff.filter(s => s.role === 'enseignant' || s.role === 'enseignant_principal'),
+        otherStaff: allStaff.filter(s => s.role !== 'enseignant' && s.role !== 'enseignant_principal'),
     }
   }, [staffData]);
 
@@ -129,7 +129,7 @@ export default function PersonnelPage() {
 
     return (
         <Card key={member.id} className="flex flex-col">
-          <Link href={`/dashboard/rh/${member.id}`} className="flex-1 flex flex-col">
+          <Link href={`/dashboard/rh/${member.id}`} className="flex-1 flex flex-col hover:bg-accent/50 rounded-t-xl transition-colors">
             <CardHeader>
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
@@ -139,7 +139,7 @@ export default function PersonnelPage() {
                         </Avatar>
                         <div>
                             <CardTitle>{fullName}</CardTitle>
-                            <CardDescription className="capitalize">{member.role === 'enseignant' ? member.subject : member.role}</CardDescription>
+                            <CardDescription className="capitalize">{member.role === 'enseignant' ? member.subject : member.role?.replace(/_/g, ' ')}</CardDescription>
                         </div>
                     </div>
                 </div>
@@ -297,5 +297,3 @@ export default function PersonnelPage() {
     </>
   );
 }
-
-    
