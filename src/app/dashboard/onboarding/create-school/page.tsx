@@ -58,16 +58,15 @@ export default function CreateSchoolPage() {
   
   // Sync user name to form once loaded
   useEffect(() => {
+    // Correction : s'assurer que userLoading est bien false avant de lire les données
     if (user && user.authUser && !userLoading && user.authUser.displayName) {
       const nameParts = user.authUser.displayName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
       
-      form.reset({
-        ...form.getValues(),
-        directorFirstName: firstName,
-        directorLastName: lastName,
-      });
+      // Utiliser setValue pour ne pas écraser les autres champs si l'utilisateur a déjà commencé à taper
+      form.setValue('directorFirstName', firstName);
+      form.setValue('directorLastName', lastName);
     }
   }, [user, userLoading, form]);
 
