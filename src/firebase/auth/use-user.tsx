@@ -125,10 +125,10 @@ export function useUser() {
 
                 if (profileData) {
                     let permissions: Partial<AdminRole['permissions']> = {};
-                    if (isDirectorFlag) {
+                    // A director or super_admin gets all permissions
+                    if (profileData.role === 'directeur' || isSuperAdmin) {
                         permissions = { ...allPermissions };
-                    }
-                    if (profileData.adminRole) {
+                    } else if (profileData.adminRole) { // Otherwise, get from role document
                         const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
                         const roleSnap = await getDoc(roleRef);
                         if (roleSnap.exists()) {
