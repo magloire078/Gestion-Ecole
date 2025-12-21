@@ -3,12 +3,13 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from '@/components/ui/table';
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit as firestoreLimit } from 'firebase/firestore';
+import { collection, query, orderBy, limit as firestoreLimit, getDocs, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Badge } from '../ui/badge';
+import type { UserProfile } from '@/lib/data-types';
 
 type SystemLog = {
     id: string;
@@ -20,35 +21,44 @@ type SystemLog = {
     timestamp: string;
 }
 
-type SuperAdmin = {
-    id: string;
-    displayName: string;
-}
 
 export const AuditLog = ({ limit }: { limit: number }) => {
   const firestore = useFirestore();
   
+  const [adminMap, setAdminMap] = useState<Map<string, string>>(new Map());
+  const [adminsLoading, setAdminsLoading] = useState(true);
+
   const logsQuery = useMemoFirebase(() => 
     query(collection(firestore, 'system_logs'), orderBy('timestamp', 'desc'), firestoreLimit(limit)),
     [firestore, limit]
   );
   
-  const adminsQuery = useMemoFirebase(() => 
-    query(collection(firestore, 'super_admins')),
-    [firestore]
-  );
-  
   const { data: logsData, loading: logsLoading } = useCollection(logsQuery);
-  const { data: adminsData, loading: adminsLoading } = useCollection(adminsQuery);
-  
-  const adminMap = useMemo(() => {
-    const map = new Map<string, string>();
-    adminsData?.forEach(doc => {
-        const admin = doc.data() as SuperAdmin;
-        map.set(doc.id, admin.displayName || doc.id);
-    });
-    return map;
-  }, [adminsData]);
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      if (!firestore) return;
+      setAdminsLoading(true);
+      const newAdminMap = new Map<string, string>();
+      try {
+        const personnelQuery = query(collectionGroup(firestore, 'personnel'));
+        const querySnapshot = await getDocs(personnelQuery);
+        querySnapshot.forEach(doc => {
+          const user = doc.data() as UserProfile;
+          if (user.isAdmin) {
+            newAdminMap.set(user.uid, user.displayName || user.email);
+          }
+        });
+        setAdminMap(newAdminMap);
+      } catch (error) {
+        console.error("Error fetching admins for audit log:", error);
+      } finally {
+        setAdminsLoading(false);
+      }
+    };
+    fetchAdmins();
+  }, [firestore]);
+
 
   const logs = useMemo(() => 
     logsData?.map(doc => ({ id: doc.id, ...doc.data() } as SystemLog)) || [],
