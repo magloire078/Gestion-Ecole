@@ -1,5 +1,4 @@
 
-
 'use server';
 
 import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
@@ -40,7 +39,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             cancel_url: cancelUrl,
             notif_url: `${BASE_APP_URL}/api/webhooks/orangemoney`,
             lang: 'fr' as const,
-            reference: description,
+            reference: schoolId, // Utiliser l'ID de l'école comme référence
         };
 
         const paymentLink = await getOrangeMoneyPaymentLink(paymentData);
