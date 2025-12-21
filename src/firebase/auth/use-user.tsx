@@ -47,7 +47,6 @@ export function useUser() {
     }
     
     const unsubscribeFromAuth = onIdTokenChanged(auth, async (authUser) => {
-        setLoading(true);
         if (!authUser) {
             setUser(null);
             setSchoolId(null);
@@ -56,27 +55,24 @@ export function useUser() {
             return;
         }
 
+        // Garder le loading à true jusqu'à ce que tout soit chargé
+        setLoading(true);
+
         try {
             const tokenResult = await authUser.getIdTokenResult(true); 
             const claims = tokenResult.claims;
             let effectiveSchoolId = claims.schoolId as string | null;
-            
-            // Fallback to Firestore if claim is not present
-            if (!effectiveSchoolId) {
-                 try {
-                    const userDoc = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
-                    if (userDoc.exists()) {
-                        effectiveSchoolId = userDoc.data()?.schoolId || null;
-                    }
-                 } catch (e) { console.error("Error fetching user root document:", e); }
+            const isSuperAdmin = (claims.superAdmin as boolean) || false;
+
+            if (!effectiveSchoolId && !isSuperAdmin) {
+                 const userDoc = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
+                 effectiveSchoolId = userDoc.exists() ? userDoc.data()?.schoolId || null : null;
             }
 
             setSchoolId(effectiveSchoolId || null);
             
-            const isSuperAdmin = (claims.superAdmin as boolean) || false;
-
             if (isSuperAdmin) {
-                 const superAdminProfile: UserProfile = {
+                const superAdminProfile: UserProfile = {
                     uid: authUser.uid, email: authUser.email || '', schoolId: '',
                     role: 'super_admin', firstName: 'Super', lastName: 'Admin',
                     hireDate: '', baseSalary: 0, displayName: 'Super Admin',
@@ -84,52 +80,45 @@ export function useUser() {
                 };
                 setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
                 setIsDirector(false);
-                setLoading(false);
-                return;
-            }
+            } else if (effectiveSchoolId) {
+                const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
+                const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
+                
+                const [schoolSnap, profileSnap] = await Promise.all([
+                    getDoc(schoolDocRef),
+                    getDoc(profileRef)
+                ]);
 
-            if (!effectiveSchoolId) {
-                setUser({ authUser, uid: authUser.uid, profile: undefined });
-                setLoading(false);
-                return;
-            }
+                const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
+                setIsDirector(isDirectorFlag);
 
-            // --- Start of refactored logic ---
-            const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
-            const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
-            
-            const [schoolSnap, profileSnap] = await Promise.all([
-                getDoc(schoolDocRef),
-                getDoc(profileRef)
-            ]);
+                const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
 
-            const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
-            setIsDirector(isDirectorFlag);
-
-            const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
-
-            if (profileData) {
-                let permissions: Partial<AdminRole['permissions']> = {};
-
-                if (isDirectorFlag) {
-                    permissions = { ...allPermissions };
-                } else if (profileData.adminRole) {
-                    const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
-                    const roleSnap = await getDoc(roleRef);
-                    if (roleSnap.exists()) {
-                        permissions = { ...permissions, ...roleSnap.data().permissions };
+                if (profileData) {
+                    let permissions: Partial<AdminRole['permissions']> = {};
+                    if (isDirectorFlag) {
+                        permissions = { ...allPermissions };
+                    } else if (profileData.adminRole) {
+                        const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
+                        const roleSnap = await getDoc(roleRef);
+                        if (roleSnap.exists()) {
+                            permissions = { ...permissions, ...roleSnap.data().permissions };
+                        }
                     }
+                    setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: false } });
+                } else {
+                     setUser({ authUser, uid: authUser.uid, profile: undefined });
                 }
-                setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: isSuperAdmin } });
             } else {
-                 setUser({ authUser, uid: authUser.uid, profile: undefined });
+                // Utilisateur authentifié mais sans école (en attente d'onboarding)
+                setUser({ authUser, uid: authUser.uid, profile: undefined });
+                setIsDirector(false);
             }
-            // --- End of refactored logic ---
-
         } catch (error) {
             console.error("Erreur dans useUser:", error);
-             setUser({ authUser, uid: authUser.uid, profile: undefined });
-             setSchoolId(null);
+            setUser({ authUser, uid: authUser.uid, profile: undefined });
+            setSchoolId(null);
+            setIsDirector(false);
         } finally {
             setLoading(false);
         }

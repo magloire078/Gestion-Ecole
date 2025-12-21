@@ -2,7 +2,6 @@
 'use client';
 
 import { useUser } from '@/firebase';
-import { useSchoolData } from '@/hooks/use-school-data';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -18,21 +17,19 @@ function AuthProtectionLoader() {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading: userLoading, schoolId } = useUser();
-  const { loading: schoolLoading } = useSchoolData();
+  const { user, loading, schoolId } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const loading = userLoading || schoolLoading;
   
   const isPublicPage = ['/', '/login', '/contact'].includes(pathname) || pathname.startsWith('/public');
   const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
 
   useEffect(() => {
     if (loading) {
-      return; // Ne rien faire pendant que les données chargent
+      return; // Attendre que le chargement soit terminé
     }
     
-    // 1. Utilisateur non connecté
+    // 1. Si l'utilisateur n'est pas connecté
     if (!user) {
       if (!isPublicPage) {
         router.replace('/login');
@@ -40,24 +37,23 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    // 2. Utilisateur connecté
+    // 2. Si l'utilisateur est connecté et sur une page publique
     if (isPublicPage) {
         router.replace('/dashboard');
         return;
     }
     
-    // Logique pour l'onboarding
+    // 3. Logique d'onboarding
     const isAssociatedWithSchool = !!schoolId;
     const isSuperAdmin = user.profile?.isAdmin === true;
 
     if (!isAssociatedWithSchool && !isSuperAdmin) {
-      // Si pas d'école et pas admin, doit aller sur l'onboarding
+      // Non associé et pas admin -> doit aller sur l'onboarding
       if (!isOnboardingPage) {
         router.replace('/dashboard/onboarding');
       }
-    } else if (isAssociatedWithSchool || isSuperAdmin) {
-      // Si une école est associée (ou si c'est un super admin),
-      // il ne doit PAS être sur les pages d'onboarding.
+    } else {
+      // Associé à une école (ou super admin) -> ne doit PAS être sur l'onboarding
       if (isOnboardingPage) {
         router.replace('/dashboard');
       }
@@ -66,9 +62,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, schoolId, loading, pathname, isPublicPage, isOnboardingPage, router]);
 
 
-  // Affiche un loader si on est sur une page privée et que les infos chargent
+  // Afficher un loader si on est sur une page privée et que les infos chargent
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
+  }
+
+  // Si l'utilisateur est connecté mais que les redirections ne sont pas encore terminées
+  if (user && (isOnboardingPage && (!!schoolId || user.profile?.isAdmin)) || (!isOnboardingPage && !schoolId && !user.profile?.isAdmin)) {
+      return <AuthProtectionLoader />;
   }
 
   // Si pas d'utilisateur et page privée, le loader reste affiché pendant la redirection
