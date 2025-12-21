@@ -61,9 +61,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       router.replace('/dashboard/onboarding');
       return;
     }
-
-    // NOTE: Le scénario 4 (utilisateur avec école sur une page d'onboarding) est maintenant géré par la page /dashboard
-    // Cela empêche la boucle de redirection.
+    
+    // Scénario 4 (implicite) : Si l'utilisateur a un schoolId, il peut accéder aux pages du dashboard.
+    // La logique pour afficher l'onboarding ou le dashboard principal est maintenant gérée DANS la page /dashboard elle-même.
 
   }, [user, schoolId, loading, pathname, router]);
 
