@@ -22,7 +22,8 @@ import {
     Building,
     HeartPulse,
     Trophy,
-    Banknote
+    Banknote,
+    LandPlot
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -61,7 +62,7 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
         { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
-        { href: '/dashboard/immobilier', label: 'Immobilier', icon: Building, permission: 'manageInventory', module: 'immobilier' },
+        { href: '/dashboard/immobilier', label: 'Immobilier', icon: LandPlot, permission: 'manageInventory', module: 'immobilier' },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
@@ -87,18 +88,18 @@ export const NAV_LINKS: NavGroup[] = [
       ]
     },
     {
+      group: "RH & Paie",
+      icon: Briefcase,
+      links: [
+        { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
+        { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
+      ]
+    },
+    {
       group: "Communication",
       icon: Send,
       links: [
         { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, permission: 'manageCommunication' },
-      ]
-    },
-     {
-      group: "RH & Paie",
-      icon: Briefcase,
-      links: [
-        { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers' },
-        { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
       ]
     },
      {
