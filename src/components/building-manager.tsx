@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -183,9 +182,12 @@ export function BuildingManager({
           ))}
         </Accordion>
       ) : (
-        <Card className="flex items-center justify-center h-48">
-          <p className="text-muted-foreground">Aucun bâtiment créé. Cliquez sur "{addBuildingButtonText}" pour commencer.</p>
-        </Card>
+         <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+            <p>Aucun bâtiment créé.</p>
+            <Button variant="link" onClick={() => handleOpenForm(null)}>
+              Cliquez ici pour en ajouter un.
+            </Button>
+        </div>
       )}
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>

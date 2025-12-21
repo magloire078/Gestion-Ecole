@@ -8,6 +8,8 @@ import { BuildingForm } from '@/components/internat/building-form';
 import { useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { doc, deleteDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function BatimentsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -30,8 +32,11 @@ export default function BatimentsPage() {
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_batiments`, buildingId));
       toast({ title: "Bâtiment supprimé", description: `Le bâtiment "${buildingName}" a été supprimé.` });
     } catch (e) {
-      console.error(e);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le bâtiment.' });
+      const permissionError = new FirestorePermissionError({
+        path: `ecoles/${schoolId}/internat_batiments/${buildingId}`,
+        operation: 'delete',
+      });
+      errorEmitter.emit('permission-error', permissionError);
     }
   };
 
@@ -49,11 +54,11 @@ export default function BatimentsPage() {
     <BuildingManager
       schoolId={schoolId}
       buildingCollectionName="internat_batiments"
-      roomCollectionName="internat_chambres"
+      roomCollectionName="salles"
       pageTitle="Plan de l'Établissement"
       pageDescription="Visualisez les bâtiments et les salles qui les composent."
       buildingNameField="name"
-      roomNameField="number"
+      roomNameField="name"
       addBuildingButtonText="Ajouter un bâtiment"
       addRoomLink="/dashboard/immobilier/salles"
       BuildingFormComponent={BuildingForm}
