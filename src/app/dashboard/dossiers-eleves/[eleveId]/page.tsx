@@ -132,7 +132,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
               <CalendarDays className="mr-2 h-4 w-4" />Emploi du Temps
             </Button>
             <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)}>
-              <FileSignature className="mr-2 h-4 w-4" />Fiche
+              <FileSignature className="mr-2 h-4 w-4" />Fiche de Renseignements
             </Button>
             {canManageUsers && (
                 <Button onClick={() => setIsEditDialogOpen(true)}>
