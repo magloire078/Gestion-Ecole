@@ -50,7 +50,6 @@ service cloud.firestore {
     }
     
     // ========== SCHOOL & SUBCOLLECTIONS RULES ==========
-
     match /ecoles/{schoolId} {
       allow create: if isCreatingSchoolAsDirector(schoolId);
       allow read: if isMemberOfSchool(schoolId) || isSuperAdmin();
