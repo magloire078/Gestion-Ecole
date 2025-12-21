@@ -27,10 +27,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     const isPublicPage = ['/', '/login', '/contact'].includes(pathname) || pathname.startsWith('/public');
-    const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
-    const isSuperAdmin = user?.profile?.isAdmin === true;
 
-    // Si l'utilisateur n'est pas connecté et n'est pas sur une page publique, rediriger vers login
+    // Si l'utilisateur n'est pas connecté et essaie d'accéder à une page protégée
     if (!user && !isPublicPage) {
       router.replace('/login');
       return;
@@ -43,39 +41,24 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         router.replace('/dashboard');
         return;
       }
-
-      // Si c'est un super admin, il a accès à tout (sauf l'onboarding)
-      if (isSuperAdmin) {
-        if (isOnboardingPage) {
-          router.replace('/admin/system/dashboard');
-        }
-        return; // Le super admin peut continuer
-      }
       
-      // Si l'utilisateur standard n'a pas d'ID d'école et n'est pas déjà sur la page d'onboarding,
-      // on le redirige vers l'onboarding. C'est la seule redirection liée à l'onboarding.
-      if (!schoolId && !isOnboardingPage) {
-        router.replace('/dashboard/onboarding');
-        return;
+      // La seule redirection liée à l'onboarding que ce garde doit faire :
+      // si l'utilisateur est connecté mais n'a PAS de schoolId, le forcer vers la page d'onboarding.
+      if (!schoolId && !pathname.startsWith('/dashboard/onboarding') && user?.profile?.isAdmin !== true) {
+         router.replace('/dashboard/onboarding');
+         return;
       }
     }
   }, [user, schoolId, loading, pathname, router]);
 
-  // --- Logique d'affichage pendant le chargement ---
-
-  const isPublicPage = ['/', '/login', '/contact'].includes(pathname) || pathname.startsWith('/public');
-
-  // Afficher le loader sur les pages protégées pendant que l'on vérifie l'authentification
+  const isPublicPage = ['/', '/login', '/contact'].includes(pathname);
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Si l'utilisateur n'est pas authentifié et essaie d'accéder à une page protégée,
-  // afficher le loader pendant que useEffect fait son travail de redirection.
   if (!user && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Si tout est en ordre, afficher le contenu de la page.
   return <>{children}</>;
 }
