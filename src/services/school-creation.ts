@@ -52,13 +52,11 @@ export class SchoolCreationService {
       throw new Error("Vous devez être connecté pour créer une école");
     }
     
-    // Vérification critique
     if (user.uid !== schoolData.directorId) {
       console.error("UID mismatch:", { user: user.uid, director: schoolData.directorId });
       throw new Error("Vous devez être le directeur de l'école que vous créez");
     }
     
-    // Vérifier si l'utilisateur a déjà une école
     console.log("📋 Vérification école existante...");
     const q = query(
       collection(this.db, "ecoles"), 
@@ -83,7 +81,6 @@ export class SchoolCreationService {
     const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
     const logRef = doc(collection(this.db, 'system_logs'));
 
-    // Données de l'école
     const schoolDocData = {
       name: schoolData.name,
       address: schoolData.address,
@@ -107,20 +104,18 @@ export class SchoolCreationService {
       status: 'active',
     };
 
-    // Données utilisateur (très simple)
     const userRootData = { 
       schoolId: schoolId,
       updatedAt: serverTimestamp()
     };
 
-    // Profil personnel (CRITIQUE: bien formater les données)
     const staffProfileData = {
-      uid: schoolData.directorId, // champ 'uid' en minuscule
+      uid: schoolData.directorId,
       email: schoolData.directorEmail,
       displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
       photoURL: '',
       schoolId: schoolId,
-      role: 'directeur', // doit être exactement 'directeur'
+      role: 'directeur',
       firstName: schoolData.directorFirstName,
       lastName: schoolData.directorLastName,
       hireDate: new Date().toISOString().split('T')[0],
@@ -129,7 +124,6 @@ export class SchoolCreationService {
       createdAt: serverTimestamp(),
     };
 
-    // Log système
     const logData = {
       adminId: schoolData.directorId,
       action: 'school.created',
@@ -144,31 +138,21 @@ export class SchoolCreationService {
     };
 
     try {
-      console.log("🔄 Création batch...");
-      const batch = writeBatch(this.db);
+      console.log("🔄 Étape 1: Création du document école...");
+      await setDoc(schoolRef, schoolDocData as any);
+      console.log("✅ Document école créé.");
+
+      console.log("🔄 Étape 2: Création des documents liés (personnel, utilisateur, log)...");
+      const subsequentBatch = writeBatch(this.db);
+      subsequentBatch.set(staffProfileRef, staffProfileData as any);
+      subsequentBatch.set(userRootRef, userRootData as any, { merge: true });
+      subsequentBatch.set(logRef, logData as any);
+      await subsequentBatch.commit();
+      console.log("✅ Documents liés créés.");
       
-      // ORDRE CRITIQUE:
-      // 1. D'abord l'école (création du document principal)
-      batch.set(schoolRef, schoolDocData as any);
-      
-      // 2. Ensuite le profil personnel (l'utilisateur devient membre)
-      batch.set(staffProfileRef, staffProfileData as any);
-      
-      // 3. Puis l'utilisateur (mise à jour du schoolId)
-      batch.set(userRootRef, userRootData as any, { merge: true });
-      
-      // 4. Enfin le log (enregistrement de l'action)
-      batch.set(logRef, logData as any);
-      
-      console.log("✅ Batch prêt, commit...");
-      await batch.commit();
-      console.log("✅ Batch réussi!");
-      
-      // Forcer le rafraîchissement du token pour obtenir les nouveaux claims
       console.log("🔄 Rafraîchissement token...");
       await user.getIdToken(true);
       
-      // Petit délai pour la propagation
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       console.log("🎉 Création terminée avec succès!");
@@ -182,21 +166,10 @@ export class SchoolCreationService {
       
     } catch (error: any) {
       console.error("❌ Erreur lors de la création:", error);
+      console.error("Détails erreur:", { code: error.code, message: error.message, name: error.name });
       
-      // Log détaillé pour debugging
-      console.error("Détails erreur:", {
-        code: error.code,
-        message: error.message,
-        name: error.name
-      });
-      
-      // Suggestions d'erreurs courantes
       if (error.code === 'permission-denied') {
-        console.error("🔒 Erreur de permission - Vérifiez:");
-        console.error("1. Les règles Firestore sont-elles déployées?");
-        console.error("2. L'utilisateur est-il authentifié?");
-        console.error("3. Le champ 'role' est-il 'directeur'?");
-        console.error("4. Le champ 'uid' correspond-il à l'utilisateur?");
+        console.error("🔒 Erreur de permission - Vérifiez les règles Firestore.");
       }
       
       throw new Error(`Échec de la création: ${error.message}`);
