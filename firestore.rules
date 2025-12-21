@@ -56,13 +56,104 @@ service cloud.firestore {
       allow create: if isCreatingSchoolAsDirector(schoolId);
       allow read: if isMemberOfSchool(schoolId) || isSuperAdmin();
       allow update: if isDirector(schoolId) || isSuperAdmin();
-      allow delete: if false;
+      allow delete: if false; // Soft delete only
 
-      // --- SUBCOLLECTIONS ---
-      // This rule grants read/write access to all members of the school for all subcollections.
-      match /{allPaths=**} {
-        allow read, write: if isMemberOfSchool(schoolId) || isSuperAdmin();
+      // --- Staff & Roles ---
+      match /personnel/{staffId} {
+        allow read, write: if isMemberOfSchool(schoolId);
       }
+      match /admin_roles/{roleId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+
+      // --- Students & Subcollections ---
+      match /eleves/{studentId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+        match /notes/{gradeId} {
+          allow read, write: if isMemberOfSchool(schoolId);
+        }
+        match /paiements/{paymentId} {
+          allow read, write: if isMemberOfSchool(schoolId);
+        }
+        match /affectations/{assignmentId} {
+          allow read, write: if isMemberOfSchool(schoolId);
+        }
+        match /dossier_medical/{dossierId} {
+          allow read, write: if isMemberOfSchool(schoolId);
+          match /vaccins/{vaccinId} {
+            allow read, write: if isMemberOfSchool(schoolId);
+          }
+          match /consultations/{consultationId} {
+            allow read, write: if isMemberOfSchool(schoolId);
+          }
+        }
+      }
+
+      // --- School Structure ---
+      match /cycles/{cycleId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /niveaux/{niveauId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /classes/{classeId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /matieres/{subjectId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /emploi_du_temps/{entryId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+
+      // --- Finance & Billing ---
+      match /frais_scolarite/{feeId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /comptabilite/{transactionId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+
+      // --- School Life ---
+      match /absences/{absenceId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /bibliotheque/{bookId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /messagerie/{messageId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+
+      // --- Canteen Module ---
+      match /cantine_menus/{menuId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cantine_reservations/{reservationId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cantine_abonnements/{subscriptionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      
+      // --- Transport Module ---
+      match /transport_bus/{busId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /transport_lignes/{routeId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /transport_abonnements/{subscriptionId} { allow read, write: if isMemberOfSchool(schoolId); }
+
+      // --- Boarding Module ---
+      match /internat_batiments/{buildingId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /internat_chambres/{roomId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /internat_occupants/{occupationId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /internat_entrees_sorties/{logId} { allow read, write: if isMemberOfSchool(schoolId); }
+
+      // --- Real Estate / Inventory Module ---
+      match /inventaire/{materielId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /salles/{salleId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /reservations_salles/{reservationId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /maintenance/{tacheId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cles_trousseaux/{trousseauId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cles_log/{logId} { allow read, write: if isMemberOfSchool(schoolId); }
+
+      // --- Activities Module ---
+      match /activites/{activiteId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /inscriptions_activites/{inscriptionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /competitions/{competitionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /participations_competitions/{participationId} { allow read, write: if isMemberOfSchool(schoolId); }
     }
   }
 }
