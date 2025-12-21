@@ -18,8 +18,8 @@ function AuthProtectionLoader() {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading: userLoading } = useUser();
-  const { schoolData, loading: schoolLoading } = useSchoolData();
+  const { user, loading: userLoading, schoolId } = useUser();
+  const { loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const pathname = usePathname();
   const loading = userLoading || schoolLoading;
@@ -34,7 +34,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     
     // 1. Utilisateur non connecté
     if (!user) {
-      // S'il est sur une page privée, rediriger vers login
       if (!isPublicPage) {
         router.replace('/login');
       }
@@ -42,26 +41,29 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
     
     // 2. Utilisateur connecté
-    // Si connecté, rediriger depuis les pages publiques vers le dashboard
     if (isPublicPage) {
         router.replace('/dashboard');
         return;
     }
     
-    // Si connecté mais sans école (et pas admin), rediriger vers l'onboarding
-    const schoolId = user.profile?.schoolId;
-    if (!schoolId && !user.profile?.isAdmin) {
-        if (!isOnboardingPage) {
-            router.replace('/dashboard/onboarding');
-        }
-        return;
+    // Logique pour l'onboarding
+    const isAssociatedWithSchool = !!schoolId;
+    const isSuperAdmin = user.profile?.isAdmin === true;
+
+    if (!isAssociatedWithSchool && !isSuperAdmin) {
+      // Si pas d'école et pas admin, doit aller sur l'onboarding
+      if (!isOnboardingPage) {
+        router.replace('/dashboard/onboarding');
+      }
+    } else if (isAssociatedWithSchool || isSuperAdmin) {
+      // Si une école est associée (ou si c'est un super admin),
+      // il ne doit PAS être sur les pages d'onboarding.
+      if (isOnboardingPage) {
+        router.replace('/dashboard');
+      }
     }
     
-    // Si l'école est créée mais pas configurée, il reste sur le dashboard qui affichera le OnboardingDashboard
-    // La redirection depuis /dashboard/onboarding vers /dashboard si la config est complète est gérée dans la page d'onboarding elle-même ou sur la page dashboard
-    // si l'utilisateur y atterrit.
-    
-  }, [user, schoolData, loading, pathname, isPublicPage, isOnboardingPage, router]);
+  }, [user, schoolId, loading, pathname, isPublicPage, isOnboardingPage, router]);
 
 
   // Affiche un loader si on est sur une page privée et que les infos chargent
