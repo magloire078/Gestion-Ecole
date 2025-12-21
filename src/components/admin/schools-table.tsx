@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { deleteSchool, restoreSchool } from '@/services/school-services';
+import { cn } from '@/lib/utils';
 
 interface School {
     id: string;
@@ -144,7 +145,7 @@ export function SchoolsTable() {
                 </TableRow>
               ))
             ) : schools.length > 0 ? schools.map(school => (
-              <TableRow key={school.id} className={school.status === 'deleted' ? 'bg-muted/50 text-muted-foreground' : ''}>
+              <TableRow key={school.id} className={cn(school.status === 'deleted' && 'bg-muted/50 text-muted-foreground')}>
                 <TableCell>
                   <div className="font-medium">{school.name}</div>
                 </TableCell>
@@ -213,5 +214,3 @@ export function SchoolsTable() {
     </>
   );
 }
-
-    

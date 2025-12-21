@@ -1,7 +1,7 @@
 
 'use client';
 
-import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField } from "firebase/firestore";
+import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField, collection } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
@@ -25,7 +25,7 @@ export const deleteSchool = async (
     }
     
     const schoolRef = doc(firestore, `ecoles/${schoolId}`);
-    const logRef = doc(firestore.collection('system_logs'));
+    const logRef = doc(collection(firestore, 'system_logs'));
 
     const batch = writeBatch(firestore);
 
@@ -76,7 +76,7 @@ export const restoreSchool = async (
     }
 
     const schoolRef = doc(firestore, `ecoles/${schoolId}`);
-    const logRef = doc(firestore.collection('system_logs'));
+    const logRef = doc(collection(firestore, 'system_logs'));
     
     const batch = writeBatch(firestore);
 
