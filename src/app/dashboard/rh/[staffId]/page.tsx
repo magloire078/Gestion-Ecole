@@ -20,6 +20,8 @@ import { SafeImage } from '@/components/ui/safe-image';
 import { StaffEditForm } from '@/components/staff-edit-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { group } from 'd3-array';
+
 
 // ====================================================================================
 // NOUVEAUX SOUS-COMPOSANTS POUR LE RENDU PROGRESSIF
@@ -66,8 +68,20 @@ function TimetableTab({ schoolId, staffId }: { schoolId: string, staffId: string
     const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
     
-    const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as timetableEntry) || [], [timetableData]);
     const classMap = useMemo(() => new Map(classesData?.map(d => [d.id, d.data().name])), [classesData]);
+
+    const groupedTimetable = useMemo(() => {
+        const entries = timetableData?.map(d => d.data() as timetableEntry) || [];
+        // Group by day, then sort by start time
+        const grouped = group(entries, d => d.day);
+        grouped.forEach((dayEntries, day) => {
+            dayEntries.sort((a, b) => a.startTime.localeCompare(b.startTime));
+        });
+        return Array.from(grouped.entries()).sort(([dayA], [dayB]) => {
+            const order = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            return order.indexOf(dayA) - order.indexOf(dayB);
+        });
+    }, [timetableData]);
 
     if (timetableLoading || classesLoading) {
         return <Skeleton className="h-48 w-full" />;
@@ -76,32 +90,41 @@ function TimetableTab({ schoolId, staffId }: { schoolId: string, staffId: string
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" />Emploi du Temps</CardTitle>
-                <CardDescription>Aperçu de l'emploi du temps de cet enseignant.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" />Emploi du Temps Hebdomadaire</CardTitle>
+                <CardDescription>Aperçu des cours assignés à cet enseignant.</CardDescription>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Jour</TableHead>
-                            <TableHead>Heure</TableHead>
-                            <TableHead>Classe</TableHead>
-                            <TableHead>Matière</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {timetableEntries.length > 0 ? timetableEntries.map((entry, index) => (
-                            <TableRow key={index}>
-                                <TableCell>{entry.day}</TableCell>
-                                <TableCell>{entry.startTime} - {entry.endTime}</TableCell>
-                                <TableCell>{classMap.get(entry.classId) || 'N/A'}</TableCell>
-                                <TableCell>{entry.subject}</TableCell>
-                            </TableRow>
-                        )) : (
-                            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Aucun cours assigné.</TableCell></TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                {groupedTimetable.length > 0 ? (
+                     <div className="space-y-4">
+                        {groupedTimetable.map(([day, entries]) => (
+                            <div key={day}>
+                                <h3 className="font-semibold text-md mb-2">{day}</h3>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-24">Heure</TableHead>
+                                            <TableHead>Classe</TableHead>
+                                            <TableHead>Matière</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {entries.map((entry, index) => (
+                                            <TableRow key={index}>
+                                                <TableCell>{entry.startTime} - {entry.endTime}</TableCell>
+                                                <TableCell>{classMap.get(entry.classId) || 'N/A'}</TableCell>
+                                                <TableCell>{entry.subject}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                           </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                        Aucun cours assigné dans l'emploi du temps pour cet enseignant.
+                    </div>
+                )}
             </CardContent>
         </Card>
     );
@@ -217,9 +240,21 @@ export default function StaffProfilePage() {
     
                 {/* Colonne de droite */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
-                     {staffMember.role === 'enseignant' && (
-                        <TimetableTab schoolId={schoolId!} staffId={staffId} />
-                     )}
+                     <Tabs defaultValue="timetable">
+                        <TabsList>
+                            <TabsTrigger value="timetable">Emploi du Temps</TabsTrigger>
+                            <TabsTrigger value="info">Informations</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="timetable" className="mt-4">
+                             <TimetableTab schoolId={schoolId!} staffId={staffId} />
+                        </TabsContent>
+                        <TabsContent value="info" className="mt-4">
+                            <Card>
+                                <CardHeader><CardTitle>Informations Détaillées</CardTitle></CardHeader>
+                                <CardContent><p className="text-muted-foreground">D'autres informations sur le membre du personnel seront affichées ici.</p></CardContent>
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
                 </div>
             </div>
         </div>
