@@ -295,7 +295,7 @@ function InscriptionsPage() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Élève</TableHead><TableHead>Activité</TableHead><TableHead>Année</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Élève</TableHead><TableHead>Activité</TableHead><TableHead>Année</TableHead>{canManageActivities && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
             <TableBody>
               {isLoading ? ([...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>))
               : inscriptions.length > 0 ? (inscriptions.map(inscription => (
