@@ -2,33 +2,85 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    // ========== UTILITY FUNCTIONS ==========
     function isAuth() {
       return request.auth != null;
     }
-    
-    // RÈGLES ULTRA SIMPLES POUR TEST
-    match /ecoles/{schoolId} {
-      allow create: if isAuth();
-      allow read, update: if isAuth();
+
+    function isSuperAdmin() {
+      return isAuth() && request.auth.token.superAdmin == true;
     }
     
-    match /ecoles/{schoolId}/personnel/{staffId} {
-      allow create: if isAuth();
-      allow read, update: if isAuth();
+    function isUser(userId) {
+        return isAuth() && request.auth.uid == userId;
     }
     
-    match /utilisateurs/{userId} {
-      allow create, read, write: if isAuth();
+    function isDirector(schoolId) {
+        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+    }
+    
+    function isMemberOfSchool(schoolId) {
+      return isAuth() && (
+        request.auth.token.schoolId == schoolId || 
+        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
+      );
+    }
+    
+    function isCreatingSchoolAsDirector() {
+        return isAuth() && request.resource.data.directorId == request.auth.uid;
+    }
+    
+    // Allows a user to create their own staff profile IF they are the director being created
+    function canCreateDirectorProfile(schoolId) {
+        let isCreatingOwnProfile = request.auth.uid == request.resource.data.uid;
+        let isBecomingDirector = request.resource.data.role == 'directeur';
+        let isCorrectSchool = request.resource.data.schoolId == schoolId;
+        
+        // Ensure the school document is being created in the same transaction
+        let isSchoolBeingCreated = getAfter(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+
+        return isCreatingOwnProfile && isBecomingDirector && isCorrectSchool && isSchoolBeingCreated;
+    }
+
+    // ========== GLOBAL RULES ==========
+    match /system_settings/{settingId} {
+        allow read: if isAuth();
+        allow write: if isSuperAdmin();
+    }
+    
+    match /super_admins/{adminId} {
+        allow read, write: if isSuperAdmin();
     }
     
     match /system_logs/{logId} {
-      allow create, read: if isAuth();
+      allow create: if isAuth();
+      allow read: if isSuperAdmin();
+    }
+
+    // ========== ONBOARDING & USER ROOT ==========
+    match /utilisateurs/{userId} {
+      allow read, write: if isUser(userId);
     }
     
-    // Règle générique pour tout le reste
-    match /{document=**} {
-      allow read, write: if isAuth();
+    // ========== SCHOOL & SUBCOLLECTIONS RULES ==========
+    match /ecoles/{schoolId} {
+      allow create: if isCreatingSchoolAsDirector();
+      allow read: if isSuperAdmin() || isMemberOfSchool(schoolId);
+      allow update: if isSuperAdmin() || isDirector(schoolId);
+      allow delete: if false; // Soft delete via service
+      
+      match /personnel/{staffId} {
+        allow create: if canCreateDirectorProfile(schoolId);
+        allow read: if isMemberOfSchool(schoolId);
+        allow update: if isDirector(schoolId) || isUser(staffId);
+        allow delete: if isDirector(schoolId);
+      }
+      
+      // Generic rules for other subcollections
+      match /{subcollection}/{docId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
     }
   }
 }
