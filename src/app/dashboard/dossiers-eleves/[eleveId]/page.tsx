@@ -469,7 +469,10 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                 fees={allSchoolFees}
                 niveaux={allNiveaux}
                 schoolId={schoolId} 
-                onFormSubmit={() => setIsEditDialogOpen(false)} 
+                onFormSubmit={() => {
+                  setIsEditDialogOpen(false);
+                  setRefreshTrigger(prev => prev + 1); // Déclenche le re-rendu
+                }} 
               />
             )}
         </DialogContent>
