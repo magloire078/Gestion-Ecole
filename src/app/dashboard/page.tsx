@@ -501,6 +501,7 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
 // Main Page Component
 // ====================================================================================
 export default function DashboardPage() {
+  const router = useRouter();
   const { schoolData, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
@@ -558,6 +559,13 @@ export default function DashboardPage() {
         );
         
         setOnboardingStatus(status);
+        
+        // Si la configuration est terminée, mais que nous sommes toujours sur l'URL d'onboarding,
+        // cela signifie que nous venons de la terminer. Forcer une redirection.
+        if (status.isSetupComplete && window.location.pathname.includes('/onboarding')) {
+          router.replace('/dashboard');
+        }
+
       } catch (error) {
         console.error('Error fetching onboarding data:', error);
       } finally {
@@ -566,7 +574,7 @@ export default function DashboardPage() {
     };
 
     fetchOnboardingData();
-  }, [schoolData, firestore, schoolLoading, calculateOnboardingStatus]);
+  }, [schoolData, firestore, schoolLoading, calculateOnboardingStatus, router]);
 
   if (loading) {
      return (

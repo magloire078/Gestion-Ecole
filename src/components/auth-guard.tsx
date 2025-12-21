@@ -48,7 +48,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Si c'est un super admin, il a accès à tout (sauf l'onboarding)
+    // Si c'est un super admin, il a accès à tout (sauf l'onboarding qu'il ne devrait jamais voir)
     if (isSuperAdmin) {
        if (isOnboardingPage) {
          router.replace('/admin/system/dashboard');
@@ -56,20 +56,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
        return;
     }
 
-    // SCENARIO 3: L'utilisateur n'a pas d'école
-    if (!schoolId) {
-      if (!isOnboardingPage) {
-        // Le rediriger vers l'onboarding s'il n'y est pas déjà
-        router.replace('/dashboard/onboarding');
-      }
+    // SCENARIO 3: L'utilisateur n'a pas d'école et n'est pas sur une page d'onboarding
+    if (!schoolId && !isOnboardingPage) {
+      router.replace('/dashboard/onboarding');
       return;
     }
 
-    // SCENARIO 4: L'utilisateur a une école mais est sur une page d'onboarding
-    if (schoolId && isOnboardingPage) {
-      router.replace('/dashboard');
-      return;
-    }
+    // NOTE: Le scénario 4 (utilisateur avec école sur une page d'onboarding) est maintenant géré par la page /dashboard
+    // Cela empêche la boucle de redirection.
 
   }, [user, schoolId, loading, pathname, router]);
 
