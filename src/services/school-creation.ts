@@ -1,5 +1,4 @@
 
-
 'use client';
 import { 
   collection, 
@@ -90,9 +89,7 @@ export class SchoolCreationService {
     const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
     const logRef = doc(collection(this.db, 'system_logs'));
 
-    const batch = writeBatch(this.db);
-    
-    // 1. Create the main school document
+    // 1. Create the main school document data
     const startDate = new Date();
     const endDate = new Date();
     endDate.setFullYear(startDate.getFullYear() + 1);
@@ -120,18 +117,12 @@ export class SchoolCreationService {
       status: 'active',
     };
     
-    console.log("Création école:", { path: schoolRef.path, data: schoolDocData });
-    batch.set(schoolRef, schoolDocData);
-
-    // 2. Create or Update the user root document to link them to the school
+    // 2. Create or Update the user root document data
     const userRootData: user_root = { 
       schoolId: schoolId,
     };
     
-    console.log("Mise à jour utilisateur:", { path: userRootRef.path, data: userRootData });
-    batch.set(userRootRef, userRootData, { merge: true });
-
-    // 3. Create director's staff profile
+    // 3. Create director's staff profile data
     const staffProfileData: Partial<staff> = {
       uid: schoolData.directorId,
       email: schoolData.directorEmail,
@@ -146,10 +137,7 @@ export class SchoolCreationService {
       status: 'Actif',
     };
     
-    console.log("Création profil personnel:", { path: staffProfileRef.path, data: staffProfileData });
-    batch.set(staffProfileRef, staffProfileData);
-    
-    // 4. Create system log
+    // 4. Create system log data
     const logData: Omit<system_log, 'id'> = {
         adminId: schoolData.directorId,
         action: 'school.created',
@@ -162,34 +150,71 @@ export class SchoolCreationService {
         userAgent: 'N/A (client-side)',
         timestamp: serverTimestamp() as any,
     };
-    
-    console.log("Création log:", { path: logRef.path, data: logData });
-    batch.set(logRef, logData);
 
     try {
-        console.log("Commit du batch...");
-        await batch.commit();
-        console.log("✅ Batch commit réussi!");
-        
-        // This is a client-side simulation of a server-side claim setting
-        await setDirectorClaims(schoolData.directorId, schoolId);
-        
-        // Wait a bit for propagation
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        return { 
-          schoolId, 
-          schoolCode
-        };
-        
+      console.log("=== TEST SÉPARÉ DES OPÉRATIONS ===");
+      
+      // Test 1: Créer l'école seule
+      console.log("Test 1: Création école seule...");
+      try {
+        await setDoc(schoolRef, schoolDocData);
+        console.log("✅ École créée");
+      } catch (error) {
+        console.error("❌ Erreur création école:", error);
+      }
+      
+      // Test 2: Mettre à jour utilisateur
+      console.log("Test 2: Mise à jour utilisateur...");
+      try {
+        await setDoc(userRootRef, { schoolId: schoolId }, { merge: true });
+        console.log("✅ Utilisateur mis à jour");
+      } catch (error) {
+        console.error("❌ Erreur mise à jour utilisateur:", error);
+      }
+      
+      // Test 3: Créer profil personnel
+      console.log("Test 3: Création profil personnel...");
+      try {
+        await setDoc(staffProfileRef, staffProfileData);
+        console.log("✅ Profil personnel créé");
+      } catch (error) {
+        console.error("❌ Erreur création profil:", error);
+      }
+      
+      // Test 4: Créer log
+      console.log("Test 4: Création log...");
+      try {
+        await setDoc(logRef, logData);
+        console.log("✅ Log créé");
+      } catch (error) {
+        console.error("❌ Erreur création log:", error);
+      }
+      
+      // Si tout passe individuellement, essayer le batch
+      console.log("=== ESSAI BATCH COMPLET ===");
+      const batch = writeBatch(this.db);
+      batch.set(schoolRef, schoolDocData);
+      batch.set(userRootRef, { schoolId: schoolId }, { merge: true });
+      batch.set(staffProfileRef, staffProfileData);
+      batch.set(logRef, logData);
+      
+      await batch.commit();
+      console.log("✅ Batch réussi!");
+
+      // This is a client-side simulation of a server-side claim setting
+      await setDirectorClaims(schoolData.directorId, schoolId);
+      
+      // Wait a bit for propagation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      return { 
+        schoolId, 
+        schoolCode
+      };
+      
     } catch (error: any) {
-        console.error("❌ Erreur lors de la création:", error);
-        
-        if (error.code === 'permission-denied') {
-            console.error("DÉTAILS ERREUR PERMISSION:", error.message);
-        }
-        
-        throw new Error(`La création de l'école a échoué: ${error.message}`);
+      console.error("❌ Erreur finale:", error);
+      throw error;
     }
   }
 }
