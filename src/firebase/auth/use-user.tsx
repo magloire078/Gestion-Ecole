@@ -57,8 +57,9 @@ export function useUser() {
             return;
         }
 
-        // FORCER le refresh du token pour avoir les claims à jour
-        const tokenResult = await authUser.getIdTokenResult(true);
+        // Ne pas forcer le refresh ici pour éviter l'épuisement du quota.
+        // Le refresh doit être fait par l'action qui change les claims.
+        const tokenResult = await authUser.getIdTokenResult();
         const claims = tokenResult.claims;
         const isSuperAdmin = (claims.superAdmin as boolean) || false;
 
