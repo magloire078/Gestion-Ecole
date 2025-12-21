@@ -179,12 +179,15 @@ export default function PersonnelPage() {
                       <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/fiche`)}>
                         <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Imprimer Fiche</span>
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/payslip`)}>
+                        <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Bulletin de Paie</span>
+                      </DropdownMenuItem>
                       {canManageUsers && (
                         <>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>
                             <span className="flex items-center gap-2">Modifier</span>
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>
                             <span className="flex items-center gap-2"><Trash2 className="h-4 w-4" />Supprimer</span>
                           </DropdownMenuItem>

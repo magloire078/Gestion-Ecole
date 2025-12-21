@@ -37,14 +37,18 @@ export default function RHLayout({
         </div>
         <Tabs value={pathname} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                {rhNavLinks.map(link => (
+                {rhNavLinks.map(link => {
+                  const isActive = pathname.startsWith(link.href);
+                  return (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
-                        <TabsTrigger value={link.href}>
-                            <link.icon className="mr-2 h-4 w-4" />
-                            {link.label}
+                        <TabsTrigger value={link.href} asChild>
+                           <div>
+                                <link.icon className="mr-2 h-4 w-4" />
+                                {link.label}
+                           </div>
                         </TabsTrigger>
                     </Link>
-                ))}
+                )})}
             </TabsList>
         </Tabs>
         <div className="mt-6">{children}</div>

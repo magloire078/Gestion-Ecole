@@ -24,6 +24,7 @@ export type school = {
     website?: string;
     mainLogoUrl?: string;
     email?: string;
+    isSetupComplete?: boolean;
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
         status?: "active" | "trialing" | "past_due" | "canceled";
@@ -34,6 +35,7 @@ export type school = {
         activeModules?: ('sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh')[];
     };
     id?: string;
+    secondaryLogoUrl?: string;
 };
 
 export type admin_role = {
@@ -275,7 +277,7 @@ export type libraryBook = {
     title: string;
     author: string;
     quantity: number;
-    createdAt?: string;
+    createdAt?: any;
     id?: string;
 };
 
@@ -615,5 +617,3 @@ export type participationCompetition = {
     rank?: string;
     notes?: string;
 };
-
-    
