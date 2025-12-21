@@ -121,7 +121,7 @@ export default function ImmobilierDashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-3">
-                        {tachesData && tachesData.docs.length > 0 ? (tachesData.docs.map(doc => {
+                        {tachesData && tachesData.length > 0 ? (tachesData.map(doc => {
                            const tache = doc.data() as Tache;
                            return (
                              <div key={doc.id} className="flex items-center gap-4 p-2 rounded-lg bg-muted/50">
@@ -149,7 +149,7 @@ export default function ImmobilierDashboardPage() {
                 </CardHeader>
                 <CardContent>
                      <div className="space-y-3">
-                        {reservationsData && reservationsData.docs.length > 0 ? (reservationsData.docs.map(doc => {
+                        {reservationsData && reservationsData.length > 0 ? (reservationsData.map(doc => {
                            const reservation = doc.data() as Reservation;
                            return (
                              <div key={doc.id} className="flex items-center gap-4 p-2 rounded-lg bg-muted/50">
