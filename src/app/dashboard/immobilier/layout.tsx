@@ -21,9 +21,7 @@ export default function ImmobilierLayout({
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const { user, loading: userLoading } = useUser();
 
-  const immobilierNavLinks = NAV_LINKS.find(g => g.group === 'Vie Scolaire')?.links.filter(
-    l => l.href.startsWith('/dashboard/immobilier')
-  ) || [];
+  const immobilierNavLinks = NAV_LINKS.find(g => g.group === 'Immobilier')?.links || [];
 
 
   const isLoading = subscriptionLoading || userLoading;

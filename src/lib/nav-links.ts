@@ -68,7 +68,6 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
         { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
-        { href: '/dashboard/immobilier', label: 'Immobilier', icon: LandPlot, permission: 'manageInventory', module: 'immobilier' },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
@@ -97,8 +96,19 @@ export const NAV_LINKS: NavGroup[] = [
       group: "RH & Paie",
       icon: Briefcase,
       links: [
-        { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
-        { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
+        { href: '/dashboard/rh', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
+      ]
+    },
+    {
+      group: "Immobilier",
+      icon: LandPlot,
+      links: [
+        { href: '/dashboard/immobilier/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInventory', module: 'immobilier' },
+        { href: '/dashboard/immobilier/batiments', label: 'Bâtiments & Salles', icon: Building, permission: 'manageRooms', module: 'immobilier' },
+        { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare, permission: 'manageInventory', module: 'immobilier' },
+        { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench, permission: 'manageInventory', module: 'immobilier' },
+        { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarClock, permission: 'manageRooms', module: 'immobilier' },
+        { href: '/dashboard/immobilier/cles', label: 'Clés', icon: KeyRound, permission: 'manageInventory', module: 'immobilier' },
       ]
     },
     {
