@@ -14,6 +14,7 @@ import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { staff } from '@/lib/data-types';
 
 type OnboardingMode = "create" | "join";
@@ -27,6 +28,7 @@ export default function OnboardingPage() {
   
   const [mode, setMode] = useState<OnboardingMode>("create");
   const [schoolCode, setSchoolCode] = useState('');
+  const [role, setRole] = useState('enseignant');
   const [isProcessing, setIsProcessing] = useState(false);
   
   const handleJoinSchool = async () => {
@@ -38,6 +40,11 @@ export default function OnboardingPage() {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Le code de l\'établissement est requis.' });
         return;
     }
+     if (!role) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner votre rôle dans l\'établissement.' });
+        return;
+    }
+
 
     setIsProcessing(true);
 
@@ -68,7 +75,7 @@ export default function OnboardingPage() {
             displayName: user.displayName,
             photoURL: user.photoURL || '',
             schoolId: schoolId,
-            role: 'enseignant', // Default role for joining users
+            role: role, 
             firstName: firstName,
             lastName: lastName,
             hireDate: new Date().toISOString().split('T')[0],
@@ -160,6 +167,24 @@ export default function OnboardingPage() {
                         onChange={(e) => setSchoolCode(e.target.value)}
                         disabled={isProcessing}
                         />
+                    </div>
+                     <div className="grid gap-2">
+                        <Label htmlFor="role">Votre Rôle</Label>
+                         <Select onValueChange={setRole} defaultValue={role} disabled={isProcessing}>
+                            <SelectTrigger id="role">
+                                <SelectValue placeholder="Sélectionnez votre rôle..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="enseignant">Enseignant(e)</SelectItem>
+                                <SelectItem value="secretaire">Secrétaire</SelectItem>
+                                <SelectItem value="comptable">Comptable</SelectItem>
+                                <SelectItem value="surveillant">Surveillant(e)</SelectItem>
+                                <SelectItem value="bibliothecaire">Bibliothécaire</SelectItem>
+                                <SelectItem value="infirmier">Infirmier(e)</SelectItem>
+                                <SelectItem value="chauffeur">Chauffeur</SelectItem>
+                                <SelectItem value="personnel">Autre Personnel</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                 </div>
             )}
