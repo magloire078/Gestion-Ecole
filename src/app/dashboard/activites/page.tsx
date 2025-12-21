@@ -78,12 +78,6 @@ type CompetitionFormValues = z.infer<typeof competitionSchema>;
 
 export default function ActivitesModulePage() {
   return (
-    <div className="space-y-6">
-        <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
-            <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
-        </div>
-        
         <Tabs defaultValue="activites" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="activites"><Trophy className="mr-2 h-4 w-4" />Activités</TabsTrigger>
@@ -94,7 +88,6 @@ export default function ActivitesModulePage() {
             <TabsContent value="inscriptions" className="mt-6"><InscriptionsPage /></TabsContent>
             <TabsContent value="competitions" className="mt-6"><CompetitionsPage /></TabsContent>
         </Tabs>
-      </div>
   )
 }
 

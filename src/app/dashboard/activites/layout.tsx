@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import Link from "next/link";
@@ -20,8 +18,17 @@ export default function ActivitesLayout({
 
     const isLoading = subscriptionLoading || userLoading;
     
+    // Admins always have access
     if (user?.profile?.isAdmin) {
-        return <>{children}</>;
+        return (
+             <div className="space-y-6">
+                <div>
+                    <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
+                    <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
+                </div>
+                {children}
+            </div>
+        );
     }
 
     if (isLoading) {
@@ -34,7 +41,7 @@ export default function ActivitesLayout({
         );
     }
     
-    const hasAccess = subscription?.plan === 'Essentiel' || subscription?.activeModules?.includes('activites') || subscription?.plan === 'Premium';
+    const hasAccess = subscription?.activeModules?.includes('activites') || subscription?.plan === 'Premium';
     
     if (!hasAccess) {
         return (
@@ -63,5 +70,13 @@ export default function ActivitesLayout({
         );
     }
     
-    return <>{children}</>;
+    return (
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
+                <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
+            </div>
+            {children}
+        </div>
+    );
 }
