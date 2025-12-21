@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -32,7 +33,7 @@ service cloud.firestore {
         return isAuth() && request.resource.data.directorId == request.auth.uid;
     }
     
-    function canCreateOwnProfile(schoolId, staffId) {
+    function canCreateOwnStaffProfile(schoolId, staffId) {
         // Règle cruciale pour l'onboarding : permet à un utilisateur de créer son propre profil (directeur ou autre).
         return isAuth() && 
                staffId == request.auth.uid && // L'utilisateur crée son propre document.
@@ -79,7 +80,7 @@ service cloud.firestore {
       
       // Règle spécifique pour la création du profil personnel (directeur ou autre)
       match /personnel/{staffId} {
-        allow create: if canCreateOwnProfile(schoolId, staffId); // Permet la création pendant l'onboarding
+        allow create: if canCreateOwnStaffProfile(schoolId, staffId); // Permet la création pendant l'onboarding
         allow read: if isMemberOfSchool(schoolId);
         allow update: if isDirector(schoolId) || isUser(staffId); // Le directeur ou la personne elle-même.
         allow delete: if isDirector(schoolId);
