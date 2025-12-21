@@ -58,20 +58,21 @@ export class SchoolCreationService {
   }
 
   async createSchool(schoolData: SchoolCreationData) {
-    console.log("=== DÉBUT CRÉATION ÉCOLE ===");
-    
     const auth = getAuth();
     const currentUser = auth.currentUser;
     
+    console.log("=== VÉRIFICATION PRÉ-CRÉATION ===");
+    console.log("1. Utilisateur authentifié:", !!auth.currentUser);
+    console.log("2. UID utilisateur:", auth.currentUser?.uid);
+    console.log("3. UID directeur:", schoolData.directorId);
+    console.log("4. Correspondance:", auth.currentUser?.uid === schoolData.directorId);
+
     if (!currentUser) {
-      throw new Error("Utilisateur non authentifié");
+      throw new Error("❌ Vous devez être connecté pour créer une école");
     }
 
-    console.log("Current User UID:", currentUser.uid);
-    console.log("Director ID from data:", schoolData.directorId);
-    
     if (currentUser.uid !== schoolData.directorId) {
-      throw new Error("Vous devez être le directeur de l'école que vous créez");
+      throw new Error("❌ Vous devez être le directeur de l'école que vous créez");
     }
     
     // Vérifier l'existence d'une école
@@ -85,9 +86,6 @@ export class SchoolCreationService {
     const schoolRef = doc(collection(this.db, 'ecoles'));
     const schoolId = schoolRef.id;
     const schoolCode = generateSchoolCode(schoolData.name);
-    
-    console.log("School ID généré:", schoolId);
-    console.log("School Code:", schoolCode);
     
     const userRootRef = doc(this.db, `utilisateurs/${schoolData.directorId}`);
     const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
@@ -116,20 +114,16 @@ export class SchoolCreationService {
       },
       status: 'active',
     };
-    
-    console.log("Données école:", schoolDocData);
 
     // 2. Document utilisateur
     const userRootData = { 
       schoolId: schoolId,
       updatedAt: serverTimestamp()
     };
-    
-    console.log("Données utilisateur:", userRootData);
 
-    // 3. Profil personnel - CRITIQUE: utiliser 'uid' (minuscule)
+    // 3. Profil personnel
     const staffProfileData = {
-      uid: schoolData.directorId, // 'uid' en minuscule pour correspondre aux règles
+      uid: schoolData.directorId,
       email: schoolData.directorEmail,
       displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
       photoURL: '',
@@ -142,8 +136,6 @@ export class SchoolCreationService {
       status: 'Actif',
       createdAt: serverTimestamp(),
     };
-    
-    console.log("Données personnel:", staffProfileData);
 
     // 4. Log système
     const logData = {
@@ -160,36 +152,24 @@ export class SchoolCreationService {
         timestamp: serverTimestamp(),
     };
     
-    console.log("Données log:", logData);
-
     try {
-        console.log("Tentative de création séparée...");
+        console.log("Tentative de création avec writeBatch...");
+        const batch = writeBatch(this.db);
+
+        batch.set(schoolRef, schoolDocData as any);
+        batch.set(userRootRef, userRootData as any, { merge: true });
+        batch.set(staffProfileRef, staffProfileData as any);
+        batch.set(logRef, logData as any);
+
+        await batch.commit();
         
-        // TEST: Créer chaque document séparément pour identifier l'erreur
-        console.log("1. Création école...");
-        await setDoc(schoolRef, schoolDocData as any);
-        console.log("✅ École créée");
+        console.log("✅ Batch commit réussi!");
         
-        console.log("2. Mise à jour utilisateur...");
-        await setDoc(userRootRef, userRootData as any, { merge: true });
-        console.log("✅ Utilisateur mis à jour");
-        
-        console.log("3. Création profil personnel...");
-        await setDoc(staffProfileRef, staffProfileData as any);
-        console.log("✅ Profil personnel créé");
-        
-        console.log("4. Création log...");
-        await setDoc(logRef, logData as any);
-        console.log("✅ Log créé");
-        
-        // Rafraîchir le token
         console.log("Rafraîchissement du token...");
         await currentUser.getIdToken(true);
-        
-        // Attendre la propagation
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        console.log("✅ École créée avec succès!");
+        console.log("✅ Token rafraîchi");
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         return { 
           schoolId, 
@@ -197,20 +177,14 @@ export class SchoolCreationService {
         };
         
     } catch (error: any) {
-        console.error("❌ Erreur détaillée:", {
-            code: error.code,
-            message: error.message,
-            name: error.name,
-            stack: error.stack
-        });
+        console.error("❌ Erreur détaillée du batch:", error);
         
-        // Vérifier le token actuel
         if (currentUser) {
             try {
                 const token = await currentUser.getIdTokenResult();
-                console.log("Claims actuels:", token.claims);
+                console.log("Claims au moment de l'erreur:", token.claims);
             } catch (tokenError) {
-                console.error("Erreur token:", tokenError);
+                console.error("Erreur de token:", tokenError);
             }
         }
         
