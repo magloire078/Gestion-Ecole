@@ -27,7 +27,7 @@ export default function RHLayout({
             <TabsList>
                 {rhNavLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
-                        <TabsTrigger value={link.href}>
+                        <TabsTrigger value={link.href} disabled={link.href.includes('bulletin')}>
                             <link.icon className="mr-2 h-4 w-4" />
                             {link.label}
                         </TabsTrigger>

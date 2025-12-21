@@ -5,7 +5,7 @@
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pencil } from 'lucide-react';
+import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pencil, CalendarDays } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -19,6 +19,9 @@ import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
 import { SafeImage } from '@/components/ui/safe-image';
 import { StaffEditForm } from '@/components/staff-edit-form';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
 
 export default function StaffProfilePage() {
     const params = useParams();
@@ -69,7 +72,7 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
   
   const allSchoolClassesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
   const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
-  const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);
+  const allSchoolClasses: (Class & {id: string})[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);
 
   const allAdminRolesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/admin_roles`), [firestore, schoolId]);
   const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
@@ -176,26 +179,66 @@ function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
 
             {/* Right Column */}
             <div className="lg:col-span-2 flex flex-col gap-6">
-                 <Card>
-                    <CardHeader>
-                        <CardTitle>Statistiques</CardTitle>
-                         <CardDescription>Aperçu de l'activité de l'enseignant.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
-                                <Book className="h-8 w-8 text-primary mb-2"/>
-                                <p className="text-2xl font-bold">{uniqueSubjects.length}</p>
-                                <p className="text-sm text-muted-foreground">Matière(s) enseignée(s)</p>
-                            </div>
-                            <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
-                                <School className="h-8 w-8 text-primary mb-2"/>
-                                <p className="text-2xl font-bold">{uniqueClasses.length}</p>
-                                <p className="text-sm text-muted-foreground">Classe(s) assignée(s)</p>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <Tabs defaultValue="timetable">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="timetable">Emploi du Temps</TabsTrigger>
+                        <TabsTrigger value="stats">Statistiques</TabsTrigger>
+                    </TabsList>
+                     <TabsContent value="timetable" className="mt-6">
+                        <Card>
+                             <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" />Emploi du Temps</CardTitle>
+                                <CardDescription>Aperçu de l'emploi du temps de cet enseignant.</CardDescription>
+                            </CardHeader>
+                             <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Jour</TableHead>
+                                            <TableHead>Heure</TableHead>
+                                            <TableHead>Classe</TableHead>
+                                            <TableHead>Matière</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {timetableEntries.length > 0 ? timetableEntries.map(entry => (
+                                            <TableRow key={entry.id}>
+                                                <TableCell>{entry.day}</TableCell>
+                                                <TableCell>{entry.startTime} - {entry.endTime}</TableCell>
+                                                <TableCell>{allSchoolClasses.find(c => c.id === entry.classId)?.name || 'N/A'}</TableCell>
+                                                <TableCell>{entry.subject}</TableCell>
+                                            </TableRow>
+                                        )) : (
+                                            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Aucun cours assigné.</TableCell></TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                             </CardContent>
+                        </Card>
+                    </TabsContent>
+                    <TabsContent value="stats" className="mt-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Statistiques</CardTitle>
+                                <CardDescription>Aperçu de l'activité de l'enseignant.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                                        <Book className="h-8 w-8 text-primary mb-2"/>
+                                        <p className="text-2xl font-bold">{uniqueSubjects.length}</p>
+                                        <p className="text-sm text-muted-foreground">Matière(s) enseignée(s)</p>
+                                    </div>
+                                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                                        <School className="h-8 w-8 text-primary mb-2"/>
+                                        <p className="text-2xl font-bold">{uniqueClasses.length}</p>
+                                        <p className="text-sm text-muted-foreground">Classe(s) assignée(s)</p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+                </Tabs>
             </div>
         </div>
     </div>

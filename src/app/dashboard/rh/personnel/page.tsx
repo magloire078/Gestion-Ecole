@@ -177,6 +177,9 @@ export default function PersonnelPage() {
                       <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>
                         <span className="flex items-center gap-2"><BookUser className="h-4 w-4" />Voir le Profil</span>
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/fiche`)}>
+                        <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Imprimer Fiche</span>
+                      </DropdownMenuItem>
                       {canManageUsers && (
                         <>
                           <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>
