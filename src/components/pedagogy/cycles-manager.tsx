@@ -21,7 +21,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import { SCHOOL_TEMPLATES } from '@/lib/data-types';
+import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { cycle as Cycle, niveau as Niveau } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -60,7 +60,9 @@ export function CyclesManager() {
   
   const niveauxCountByCycle = useMemo(() => {
     return niveaux.reduce((acc, niveau) => {
-        acc[niveau.cycleId] = (acc[niveau.cycleId] || 0) + 1;
+        if (niveau.cycleId) {
+            acc[niveau.cycleId] = (acc[niveau.cycleId] || 0) + 1;
+        }
         return acc;
     }, {} as Record<string, number>);
   }, [niveaux]);

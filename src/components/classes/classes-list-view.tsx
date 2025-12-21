@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, ArrowRight } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import type { classe as Classe } from '@/lib/data-types';
@@ -46,7 +46,7 @@ export function ClassesListView({ cycleId, searchQuery }: ClassesListViewProps) 
 
     return (
         <Card>
-            <CardContent>
+            <CardContent className="p-0">
                 <Table>
                     <TableHeader>
                         <TableRow>
