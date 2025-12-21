@@ -1,7 +1,10 @@
 
 'use client';
 
-import { useState, FormEvent, Suspense, useReducer } from 'react';
+import { useState, Suspense } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,10 +18,28 @@ import { CalendarIcon, CheckCircle, Users, Clock, Video, Loader2 } from 'lucide-
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 
 const TIME_SLOTS = [
   '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'
 ];
+
+const contactSchema = z.object({
+  firstName: z.string().min(1, 'Le prénom est requis.'),
+  lastName: z.string().min(1, 'Le nom est requis.'),
+  email: z.string().email("L'email est invalide."),
+  phone: z.string().optional(),
+  schoolName: z.string().min(1, "Le nom de l'établissement est requis."),
+  schoolType: z.string().optional(),
+  studentCount: z.string().optional(),
+  needs: z.array(z.string()).optional(),
+  message: z.string().optional(),
+  meetingDate: z.date().optional(),
+  meetingTime: z.string().optional(),
+  newsletter: z.boolean().default(false),
+});
+
+type ContactFormValues = z.infer<typeof contactSchema>;
 
 async function sendContactRequest(data: any) {
     console.log("Sending contact request:", data);
@@ -26,79 +47,33 @@ async function sendContactRequest(data: any) {
     return { success: true };
 }
 
-const initialState = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    schoolName: '',
-    schoolType: '',
-    studentCount: '',
-    needs: [] as string[],
-    message: '',
-    meetingDate: new Date(),
-    meetingTime: '10:00',
-    newsletter: true
-};
-
-type FormState = typeof initialState;
-type FormAction = { type: 'SET_FIELD'; field: keyof FormState; value: any } | { type: 'TOGGLE_NEED'; need: string };
-
-function formReducer(state: FormState, action: FormAction): FormState {
-    switch (action.type) {
-        case 'SET_FIELD':
-            return { ...state, [action.field]: action.value };
-        case 'TOGGLE_NEED':
-            const needs = state.needs.includes(action.need)
-                ? state.needs.filter(n => n !== action.need)
-                : [...state.needs, action.need];
-            return { ...state, needs };
-        default:
-            return state;
-    }
-}
-
 
 function ContactPageContent() {
   const router = useRouter();
-  const [state, dispatch] = useReducer(formReducer, initialState);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleFieldChange = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      dispatch({ type: 'SET_FIELD', field, value: e.target.value });
-  };
-  
-  const handleSelectChange = (field: keyof FormState) => (value: string) => {
-      dispatch({ type: 'SET_FIELD', field, value });
-  };
-
-  const handleDateChange = (date: Date | undefined) => {
-      if (date) {
-        dispatch({ type: 'SET_FIELD', field: 'meetingDate', value: date });
+  const form = useForm<ContactFormValues>({
+      resolver: zodResolver(contactSchema),
+      defaultValues: {
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          schoolName: '',
+          needs: [],
+          meetingDate: new Date(),
+          meetingTime: '10:00',
+          newsletter: true,
       }
-  }
+  });
 
-  const handleNeedsChange = (need: string) => (checked: boolean | 'indeterminate') => {
-      dispatch({ type: 'TOGGLE_NEED', need });
-  }
-
-  const handleNewsletterChange = (checked: boolean | 'indeterminate') => {
-      dispatch({ type: 'SET_FIELD', field: 'newsletter', value: checked === true });
-  }
-
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const handleSubmit = async (values: ContactFormValues) => {
     try {
-      await sendContactRequest(state);
+      await sendContactRequest(values);
       setIsSubmitted(true);
       setTimeout(() => router.push('/'), 2000);
     } catch (error) {
       console.error('Error submitting form:', error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -143,36 +118,82 @@ function ContactPageContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label htmlFor="firstName">Prénom *</Label><Input id="firstName" value={state.firstName} onChange={handleFieldChange('firstName')} required/></div>
-                    <div className="space-y-2"><Label htmlFor="lastName">Nom *</Label><Input id="lastName" value={state.lastName} onChange={handleFieldChange('lastName')} required/></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label htmlFor="email">Email professionnel *</Label><Input id="email" type="email" value={state.email} onChange={handleFieldChange('email')} required/></div>
-                    <div className="space-y-2"><Label htmlFor="phone">Téléphone</Label><Input id="phone" type="tel" value={state.phone} onChange={handleFieldChange('phone')}/></div>
-                  </div>
-                  <div className="space-y-2"><Label htmlFor="schoolName">Nom de votre établissement *</Label><Input id="schoolName" value={state.schoolName} onChange={handleFieldChange('schoolName')} required/></div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Type d'établissement</Label><Select value={state.schoolType} onValueChange={handleSelectChange('schoolType')}><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger><SelectContent><SelectItem value="primary">École primaire</SelectItem><SelectItem value="middle">Collège</SelectItem><SelectItem value="high">Lycée</SelectItem><SelectItem value="international">École internationale</SelectItem><SelectItem value="group">Groupe scolaire</SelectItem></SelectContent></Select></div>
-                    <div className="space-y-2"><Label>Nombre d'élèves</Label><Select value={state.studentCount} onValueChange={handleSelectChange('studentCount')}><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger><SelectContent><SelectItem value="0-100">0-100 élèves</SelectItem><SelectItem value="100-500">100-500 élèves</SelectItem><SelectItem value="500-1000">500-1000 élèves</SelectItem><SelectItem value="1000+">Plus de 1000 élèves</SelectItem></SelectContent></Select></div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Vos besoins principaux</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {['Gestion administrative','Pédagogie et notes','Communication parents','Finances et paiements','Transport scolaire','Cantine/internat'].map((need) => (
-                        <div key={need} className="flex items-center space-x-2"><Checkbox id={need} checked={state.needs.includes(need)} onCheckedChange={handleNeedsChange(need)}/><label htmlFor={need} className="text-sm font-normal">{need}</label></div>
-                      ))}
-                    </div>
+                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2"><Label>Date de rendez-vous souhaitée</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{state.meetingDate ? format(state.meetingDate, 'PPP', { locale: fr }) : <span>Choisir une date</span>}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={state.meetingDate} onSelect={handleDateChange} initialFocus/></PopoverContent></Popover></div>
-                    <div className="space-y-2"><Label>Créneau horaire</Label><Select value={state.meetingTime} onValueChange={handleSelectChange('meetingTime')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{TIME_SLOTS.map((time) => (<SelectItem key={time} value={time}>{time}</SelectItem>))}</SelectContent></Select></div>
+                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email professionnel *</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" {...field} /></FormControl></FormItem>)} />
                   </div>
-                  <div className="space-y-2"><Label htmlFor="message">Message additionnel</Label><Textarea id="message" placeholder="Questions spécifiques, besoins particuliers..." value={state.message} onChange={handleFieldChange('message')} rows={4}/></div>
-                  <div className="flex items-center space-x-2"><Checkbox id="newsletter" checked={state.newsletter} onCheckedChange={handleNewsletterChange}/><label htmlFor="newsletter" className="text-sm font-normal">Je souhaite recevoir les actualités et conseils</label></div>
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : null}{isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}</Button>
+                  <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de votre établissement *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <FormField control={form.control} name="schoolType" render={({ field }) => (<FormItem><FormLabel>Type d'établissement</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger></FormControl><SelectContent><SelectItem value="primary">École primaire</SelectItem><SelectItem value="middle">Collège</SelectItem><SelectItem value="high">Lycée</SelectItem><SelectItem value="international">École internationale</SelectItem><SelectItem value="group">Groupe scolaire</SelectItem></SelectContent></Select></FormItem>)} />
+                     <FormField control={form.control} name="studentCount" render={({ field }) => (<FormItem><FormLabel>Nombre d'élèves</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0-100">0-100 élèves</SelectItem><SelectItem value="100-500">100-500 élèves</SelectItem><SelectItem value="500-1000">500-1000 élèves</SelectItem><SelectItem value="1000+">Plus de 1000 élèves</SelectItem></SelectContent></Select></FormItem>)} />
+                  </div>
+                  <FormField
+                      control={form.control}
+                      name="needs"
+                      render={() => (
+                        <FormItem>
+                          <div className="mb-4">
+                            <FormLabel className="text-base">Vos besoins principaux</FormLabel>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          {['Gestion administrative','Pédagogie et notes','Communication parents','Finances et paiements','Transport scolaire','Cantine/internat'].map((item) => (
+                            <FormField
+                              key={item}
+                              control={form.control}
+                              name="needs"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(item)}
+                                        onCheckedChange={(checked) => {
+                                          return checked
+                                            ? field.onChange([...(field.value || []), item])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                  (value) => value !== item
+                                                )
+                                              )
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">{item}</FormLabel>
+                                  </FormItem>
+                                )
+                              }}
+                            />
+                          ))}
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="meetingDate" render={({ field }) => (
+                        <FormItem className="flex flex-col"><FormLabel>Date de rendez-vous souhaitée</FormLabel>
+                            <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP', { locale: fr }) : <span>Choisir une date</span>}</Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent></Popover>
+                        </FormItem>
+                    )} />
+                    <FormField control={form.control} name="meetingTime" render={({ field }) => (
+                        <FormItem><FormLabel>Créneau horaire</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                            <SelectContent>{TIME_SLOTS.map((time) => (<SelectItem key={time} value={time}>{time}</SelectItem>))}</SelectContent>
+                        </Select>
+                        </FormItem>
+                    )} />
+                  </div>
+                  <FormField control={form.control} name="message" render={({ field }) => (<FormItem><FormLabel>Message additionnel</FormLabel><FormControl><Textarea placeholder="Questions spécifiques, besoins particuliers..." {...field} rows={4}/></FormControl></FormItem>)} />
+                  <FormField control={form.control} name="newsletter" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange}/></FormControl><Label htmlFor="newsletter" className="text-sm font-normal">Je souhaite recevoir les actualités et conseils</Label></FormItem>)} />
+                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : null}{form.formState.isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}</Button>
                 </form>
+                </Form>
               </CardContent>
             </Card>
             <div className="space-y-6">
