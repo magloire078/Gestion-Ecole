@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
@@ -9,6 +8,16 @@ import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import type { staff as Staff, school as School } from '@/lib/data-types';
+
+function TeacherSheetPageSkeleton() {
+    return (
+        <div className="space-y-4 p-4">
+            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
+        </div>
+    );
+}
 
 export default function TeacherSheetPage() {
   const params = useParams();
@@ -64,15 +73,4 @@ function TeacherSheetContent({ staffId, schoolId, schoolData }: TeacherSheetCont
       />
     </div>
   );
-}
-
-
-function TeacherSheetPageSkeleton() {
-    return (
-        <div className="space-y-4 p-4">
-            <Skeleton className="h-8 w-1/2" />
-            <Skeleton className="h-4 w-1/3" />
-            <Skeleton className="h-[70vh] w-full max-w-4xl mx-auto" />
-        </div>
-    );
 }

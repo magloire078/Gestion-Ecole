@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -131,7 +130,13 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         loadPrivateData();
     }, [editingStaff, schoolId, firestore, form, todayDateString]);
     
-    const watchedRole = form.watch('role');
+    const watchedRole = useWatch({ control: form.control, name: 'role' });
+
+    useEffect(() => {
+        if (watchedRole !== 'enseignant') {
+            form.setValue('subject', undefined);
+        }
+    }, [watchedRole, form]);
 
     const handleSubmit = async (values: StaffFormValues) => {
         if (!schoolId) {
@@ -311,7 +316,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 </Tabs>
                 <DialogFooter className="pt-4 border-t">
                     <Button type="button" variant="outline" onClick={onFormSubmit}>Annuler</Button>
-                    <Button type="submit" form="staff-form" disabled={form.formState.isSubmitting}>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

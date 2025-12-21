@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Printer, User, Cake, MapPin, Phone, Mail, Book, BookUser, Hash } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { staff as Teacher } from '@/lib/data-types';
 import { SafeImage } from './ui/safe-image';
@@ -74,6 +74,9 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
   const fallback = teacherFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const currentYear = new Date().getFullYear();
   const directorFullName = `${school.directorFirstName || ''} ${school.directorLastName || ''}`.trim();
+  const hireDate = teacher.hireDate && isValid(parseISO(teacher.hireDate)) 
+    ? format(parseISO(teacher.hireDate), 'dd MMMM yyyy', { locale: fr })
+    : 'N/A';
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -89,7 +92,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                             </div>
                         </div>
                         <div className="text-right">
-                             <h2 className="text-2xl font-bold tracking-tight">FICHE ENSEIGNANT</h2>
+                             <h2 className="text-2xl font-bold tracking-tight">FICHE PERSONNEL</h2>
                              <p className="text-muted-foreground">Année scolaire: {`${currentYear - 1}-${currentYear}`}</p>
                         </div>
                     </header>
@@ -102,15 +105,17 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                             </Avatar>
                             <div className="space-y-1 text-center sm:text-left">
                                 <h3 className="text-2xl font-bold text-primary">{teacherFullName}</h3>
-                                <InfoRow icon={Hash} label="ID Enseignant" value={teacher.id} />
+                                <InfoRow icon={Hash} label="Matricule" value={teacher.matricule} />
                             </div>
                         </div>
 
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                             <div className="space-y-4">
                                 <h4 className="font-bold text-lg border-b pb-1">Informations Professionnelles</h4>
-                                <InfoRow icon={Book} label="Matière principale" value={teacher.subject} />
-                                <InfoRow icon={BookUser} label="Classe principale" value={teacher.classId || 'Non assignée'} />
+                                <InfoRow icon={Book} label="Rôle" value={teacher.role} />
+                                {teacher.subject && <InfoRow icon={BookUser} label="Matière principale" value={teacher.subject} />}
+                                {teacher.classId && <InfoRow icon={BookUser} label="Classe principale" value={teacher.classId} />}
+                                <InfoRow icon={Cake} label="Date d'embauche" value={hireDate} />
                             </div>
                              <div className="space-y-4">
                                 <h4 className="font-bold text-lg border-b pb-1">Coordonnées</h4>
@@ -122,7 +127,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
 
                      <footer className="mt-16 grid grid-cols-2 gap-4 text-center text-sm">
                         <div>
-                             <div className="font-bold">Signature de l'enseignant(e)</div>
+                             <div className="font-bold">Signature de l'employé(e)</div>
                              <div className="mt-16 border-t border-dashed w-48 mx-auto"></div>
                         </div>
                          <div>

@@ -1,19 +1,18 @@
 
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pencil, CalendarDays } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import type { staff as Staff, class_type as Class, school as OrganizationSettings, timetableEntry as TimetableEntry, admin_role as AdminRole } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, admin_role as AdminRole, timetableEntry } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
@@ -22,249 +21,234 @@ import { StaffEditForm } from '@/components/staff-edit-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
+// ====================================================================================
+// NOUVEAUX SOUS-COMPOSANTS POUR LE RENDU PROGRESSIF
+// ====================================================================================
+
+function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: string }) {
+    const classRef = useMemoFirebase(() => classId ? doc(collection(useFirestore(), `ecoles/${schoolId}/classes`), classId) : null, [schoolId, classId]);
+    const { data: mainClass, loading } = useDoc<Class>(classRef);
+
+    if (loading) return <Skeleton className="h-5 w-24" />;
+    if (!mainClass) return null;
+
+    return (
+        <div className="flex items-center">
+            <BookUser className="mr-3 h-4 w-4 text-muted-foreground" />
+            <span>Prof. principal de: <strong>{mainClass.name}</strong></span>
+        </div>
+    );
+}
+
+function AdminRoleInfo({ schoolId, adminRoleId }: { schoolId: string, adminRoleId?: string }) {
+    const adminRoleRef = useMemoFirebase(() => adminRoleId ? doc(collection(useFirestore(), `ecoles/${schoolId}/admin_roles`), adminRoleId) : null, [schoolId, adminRoleId]);
+    const { data: adminRole, loading } = useDoc<AdminRole>(adminRoleRef);
+
+    if (loading) return <Skeleton className="h-5 w-32" />;
+    if (!adminRole) return null;
+
+    return (
+        <div className="flex items-center">
+            <Shield className="mr-3 h-4 w-4 text-muted-foreground" />
+            <span>Rôle Admin: <strong>{adminRole.name}</strong></span>
+        </div>
+    );
+}
+
+
+function TimetableTab({ schoolId, staffId }: { schoolId: string, staffId: string }) {
+    const firestore = useFirestore();
+    const timetableQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)), [firestore, schoolId, staffId]);
+    const classesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
+
+    const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
+    const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+    
+    const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as timetableEntry) || [], [timetableData]);
+    const classMap = useMemo(() => new Map(classesData?.map(d => [d.id, d.data().name])), [classesData]);
+
+    if (timetableLoading || classesLoading) {
+        return <Skeleton className="h-48 w-full" />;
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" />Emploi du Temps</CardTitle>
+                <CardDescription>Aperçu de l'emploi du temps de cet enseignant.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Jour</TableHead>
+                            <TableHead>Heure</TableHead>
+                            <TableHead>Classe</TableHead>
+                            <TableHead>Matière</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {timetableEntries.length > 0 ? timetableEntries.map((entry, index) => (
+                            <TableRow key={index}>
+                                <TableCell>{entry.day}</TableCell>
+                                <TableCell>{entry.startTime} - {entry.endTime}</TableCell>
+                                <TableCell>{classMap.get(entry.classId) || 'N/A'}</TableCell>
+                                <TableCell>{entry.subject}</TableCell>
+                            </TableRow>
+                        )) : (
+                            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Aucun cours assigné.</TableCell></TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
+// ====================================================================================
+// COMPOSANT PRINCIPAL
+// ====================================================================================
 
 export default function StaffProfilePage() {
     const params = useParams();
     const staffId = params.staffId as string;
     const { schoolId, loading: schoolLoading } = useSchoolData();
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
-    if (schoolLoading) {
+    const { toast } = useToast();
+    const router = useRouter();
+    
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+    // --- Requêtes Principales ---
+    const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId]);
+    const { data: staffMember, loading: staffLoading, error } = useDoc<Staff>(staffRef);
+
+    // --- Requêtes Secondaires (pour le formulaire d'édition) ---
+    const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+    const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
+
+    const allAdminRolesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/admin_roles`) : null, [firestore, schoolId]);
+    const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
+
+    const allSchoolClasses: (Class & {id: string})[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);
+    const allAdminRoles: (AdminRole & {id: string})[] = useMemo(() => allAdminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [allAdminRolesData]);
+  
+    const isLoading = staffLoading || schoolLoading;
+
+    if (isLoading) {
         return <StaffDetailSkeleton />;
     }
-    
-    if (!schoolId) {
-        return <p>Erreur: Aucune école n'est associée à votre compte.</p>;
-    }
-    
-    if (!staffId) {
-        return <p>Erreur: ID du membre du personnel manquant.</p>;
+
+    if (!staffMember) {
+        notFound();
     }
 
-    return <StaffProfileContent staffId={staffId} schoolId={schoolId} />;
-}
+    const handlePhotoUploadComplete = async (url: string) => {
+        try {
+            await updateStaffPhoto(firestore, schoolId!, staffId, url);
+            toast({ title: 'Photo de profil mise à jour !' });
+        } catch (error) {
+            // L'erreur est gérée dans le service via l'emitter
+        }
+    };
 
-interface StaffProfileContentProps {
-    staffId: string;
-    schoolId: string;
-}
-
-function StaffProfileContent({ staffId, schoolId }: StaffProfileContentProps) {
-  const router = useRouter();
-  const firestore = useFirestore();
-  const { user } = useUser();
-  const canManageUsers = !!user?.profile?.permissions?.manageUsers;
-
-  const { toast } = useToast();
+    const staffFullName = `${staffMember.firstName} ${staffMember.lastName}`;
+    const fallback = staffFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-  const staffRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`), [firestore, schoolId, staffId]);
-  const { data: staffMemberData, loading: staffLoading } = useDoc<Staff>(staffRef);
-
-  const staffMember = staffMemberData as Staff | null;
-  
-  const adminRoleRef = useMemoFirebase(() => staffMember?.adminRole ? doc(firestore, `ecoles/${schoolId}/admin_roles/${staffMember.adminRole}`) : null, [staffMember, schoolId, firestore]);
-  const { data: adminRoleData, loading: adminRoleLoading } = useDoc<AdminRole>(adminRoleRef);
-  const adminRole = adminRoleData as AdminRole | null;
-
-  const classRef = useMemoFirebase(() => staffMember?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${staffMember.classId}`) : null, [staffMember, schoolId, firestore]);
-  const { data: mainClass, loading: classLoading } = useDoc<Class>(classRef);
-  
-  const allSchoolClassesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
-  const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
-  const allSchoolClasses: (Class & {id: string})[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);
-
-  const allAdminRolesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/admin_roles`), [firestore, schoolId]);
-  const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
-  const allAdminRoles: (AdminRole & {id: string})[] = useMemo(() => allAdminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [allAdminRolesData]);
-
-  const timetableQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)), [firestore, schoolId, staffId]);
-  const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
-  const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as TimetableEntry) || [], [timetableData]);
-  
-  const isLoading = staffLoading || classLoading || timetableLoading || adminRoleLoading || allClassesLoading || allAdminRolesLoading;
-
-  if (isLoading) {
-    return <StaffDetailSkeleton />;
-  }
-
-  if (!staffMember) {
-    notFound();
-  }
-
-  const handlePhotoUploadComplete = async (url: string) => {
-    try {
-        await updateStaffPhoto(firestore, schoolId, staffId, url);
-        toast({ title: 'Photo de profil mise à jour !' });
-    } catch (error) {
-        // Error is handled by the service
-    }
-  };
-
-  const staffFullName = `${staffMember.firstName} ${staffMember.lastName}`;
-  const fallback = staffFullName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
-
-  const uniqueSubjects = [...new Set(timetableEntries.map(e => e.subject))];
-  const uniqueClasses = [...new Set(timetableEntries.map(e => e.classId))];
-
-
-  return (
-    <>
-    <div className="space-y-6">
-        <div className="flex flex-wrap justify-end items-center gap-2">
-            <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
-              <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
-            </Button>
-            {canManageUsers && (
-              <Button onClick={() => setIsEditDialogOpen(true)}>
-                  <Pencil className="mr-2 h-4 w-4" /> Modifier
-              </Button>
-            )}
-        </div>
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-
-            {/* Left Column */}
-            <div className="lg:col-span-1 flex flex-col gap-6">
-                 <Card>
-                    <CardHeader className="items-center text-center">
-                        <ImageUploader 
-                            onUploadComplete={handlePhotoUploadComplete}
-                            storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
-                            currentImageUrl={staffMember.photoURL}
-                        >
-                            <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
-                                <SafeImage src={staffMember.photoURL} alt={staffFullName} width={96} height={96} className="rounded-full" />
-                                <AvatarFallback>{fallback}</AvatarFallback>
-                            </Avatar>
-                        </ImageUploader>
-                        <CardTitle className="text-2xl">{staffFullName}</CardTitle>
-                        <CardDescription className='capitalize'>{staffMember.role}</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3 text-sm">
-                        <div className="flex items-center">
-                            <Mail className="mr-3 h-4 w-4 text-muted-foreground" />
-                            <span>{staffMember.email}</span>
-                        </div>
-                        {staffMember.phone && (
-                            <div className="flex items-center">
-                                <Phone className="mr-3 h-4 w-4 text-muted-foreground" />
-                                <span>{staffMember.phone}</span>
-                            </div>
-                        )}
-                         <div className="flex items-center">
-                            <Briefcase className="mr-3 h-4 w-4 text-muted-foreground" />
-                            <span className="capitalize">{staffMember.role}</span>
-                        </div>
-                         {adminRole && (
-                            <div className="flex items-center">
-                                <Shield className="mr-3 h-4 w-4 text-muted-foreground" />
-                                <span>Rôle Admin: <strong>{adminRole.name}</strong></span>
-                            </div>
-                         )}
-                         {staffMember.role === 'enseignant' && (
-                            <div className="flex items-center">
-                                <Building className="mr-3 h-4 w-4 text-muted-foreground" />
-                                <span>Matière: <strong>{staffMember.subject}</strong></span>
-                            </div>
-                         )}
-                         {mainClass && (
-                            <div className="flex items-center">
-                                <BookUser className="mr-3 h-4 w-4 text-muted-foreground" />
-                                <span>Prof. principal de: <strong>{mainClass.name}</strong></span>
-                            </div>
-                         )}
-                    </CardContent>
-                </Card>
+    return (
+        <>
+        <div className="space-y-6">
+            <div className="flex flex-wrap justify-end items-center gap-2">
+                <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
+                  <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
+                </Button>
+                {canManageUsers && (
+                  <Button onClick={() => setIsEditDialogOpen(true)}>
+                      <Pencil className="mr-2 h-4 w-4" /> Modifier
+                  </Button>
+                )}
             </div>
-
-            {/* Right Column */}
-            <div className="lg:col-span-2 flex flex-col gap-6">
-                <Tabs defaultValue="timetable">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="timetable">Emploi du Temps</TabsTrigger>
-                        <TabsTrigger value="stats">Statistiques</TabsTrigger>
-                    </TabsList>
-                     <TabsContent value="timetable" className="mt-6">
-                        <Card>
-                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><CalendarDays className="h-5 w-5" />Emploi du Temps</CardTitle>
-                                <CardDescription>Aperçu de l'emploi du temps de cet enseignant.</CardDescription>
-                            </CardHeader>
-                             <CardContent>
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead>Jour</TableHead>
-                                            <TableHead>Heure</TableHead>
-                                            <TableHead>Classe</TableHead>
-                                            <TableHead>Matière</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {timetableEntries.length > 0 ? timetableEntries.map(entry => (
-                                            <TableRow key={entry.id}>
-                                                <TableCell>{entry.day}</TableCell>
-                                                <TableCell>{entry.startTime} - {entry.endTime}</TableCell>
-                                                <TableCell>{allSchoolClasses.find(c => c.id === entry.classId)?.name || 'N/A'}</TableCell>
-                                                <TableCell>{entry.subject}</TableCell>
-                                            </TableRow>
-                                        )) : (
-                                            <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Aucun cours assigné.</TableCell></TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                             </CardContent>
-                        </Card>
-                    </TabsContent>
-                    <TabsContent value="stats" className="mt-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Statistiques</CardTitle>
-                                <CardDescription>Aperçu de l'activité de l'enseignant.</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
-                                        <Book className="h-8 w-8 text-primary mb-2"/>
-                                        <p className="text-2xl font-bold">{uniqueSubjects.length}</p>
-                                        <p className="text-sm text-muted-foreground">Matière(s) enseignée(s)</p>
-                                    </div>
-                                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
-                                        <School className="h-8 w-8 text-primary mb-2"/>
-                                        <p className="text-2xl font-bold">{uniqueClasses.length}</p>
-                                        <p className="text-sm text-muted-foreground">Classe(s) assignée(s)</p>
-                                    </div>
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+    
+                {/* Colonne de gauche */}
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                     <Card>
+                        <CardHeader className="items-center text-center">
+                            <ImageUploader 
+                                onUploadComplete={handlePhotoUploadComplete}
+                                storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
+                                currentImageUrl={staffMember.photoURL}
+                            >
+                                <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
+                                    <SafeImage src={staffMember.photoURL} alt={staffFullName} width={96} height={96} className="rounded-full" />
+                                    <AvatarFallback>{fallback}</AvatarFallback>
+                                </Avatar>
+                            </ImageUploader>
+                            <CardTitle className="text-2xl">{staffFullName}</CardTitle>
+                            <CardDescription className='capitalize'>{staffMember.role}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3 text-sm">
+                            <div className="flex items-center">
+                                <Mail className="mr-3 h-4 w-4 text-muted-foreground" />
+                                <span>{staffMember.email}</span>
+                            </div>
+                            {staffMember.phone && (
+                                <div className="flex items-center">
+                                    <Phone className="mr-3 h-4 w-4 text-muted-foreground" />
+                                    <span>{staffMember.phone}</span>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
+                            )}
+                             <div className="flex items-center">
+                                <Briefcase className="mr-3 h-4 w-4 text-muted-foreground" />
+                                <span className="capitalize">{staffMember.role}</span>
+                            </div>
+                            {staffMember.adminRole && <AdminRoleInfo schoolId={schoolId!} adminRoleId={staffMember.adminRole} />}
+                             {staffMember.role === 'enseignant' && (
+                                <div className="flex items-center">
+                                    <Building className="mr-3 h-4 w-4 text-muted-foreground" />
+                                    <span>Matière: <strong>{staffMember.subject || 'N/A'}</strong></span>
+                                </div>
+                             )}
+                            {staffMember.classId && <MainClassInfo schoolId={schoolId!} classId={staffMember.classId} />}
+                        </CardContent>
+                    </Card>
+                </div>
+    
+                {/* Colonne de droite */}
+                <div className="lg:col-span-2 flex flex-col gap-6">
+                     {staffMember.role === 'enseignant' && (
+                        <TimetableTab schoolId={schoolId!} staffId={staffId} />
+                     )}
+                </div>
             </div>
         </div>
-    </div>
-    
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Modifier un Membre du Personnel</DialogTitle>
-            <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>
-          </DialogHeader>
-          <StaffEditForm
-              schoolId={schoolId}
-              editingStaff={staffMember}
-              classes={allSchoolClasses}
-              adminRoles={allAdminRoles}
-              onFormSubmit={() => setIsEditDialogOpen(false)}
-           />
-        </DialogContent>
-      </Dialog>
-    </>
-  );
+        
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Modifier un Membre du Personnel</DialogTitle>
+                <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>
+              </DialogHeader>
+              <StaffEditForm
+                  schoolId={schoolId!}
+                  editingStaff={staffMember}
+                  classes={allSchoolClasses}
+                  adminRoles={allAdminRoles}
+                  onFormSubmit={() => setIsEditDialogOpen(false)}
+               />
+            </DialogContent>
+          </Dialog>
+        </>
+      );
 }
 
 function StaffDetailSkeleton() {
     return (
          <div className="space-y-6">
+            <div className="flex justify-end"><Skeleton className="h-10 w-48" /></div>
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-1 flex flex-col gap-6">
                     <Skeleton className="h-64 w-full" />

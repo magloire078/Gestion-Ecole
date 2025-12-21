@@ -18,8 +18,8 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Moon, Sun, ShieldCheck, Bell } from "lucide-react";
-import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { Moon, Sun, ShieldCheck } from "lucide-react";
+import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -28,10 +28,6 @@ import { cn } from "@/lib/utils";
 import { SafeImage } from "./ui/safe-image";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
-import { collection, query, orderBy, limit } from 'firebase/firestore';
-import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import * as React from 'react';
-import { useMemo } from 'react';
 
 interface UserNavProps {
   collapsed?: boolean;
@@ -40,25 +36,10 @@ interface UserNavProps {
 export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
-  const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const { schoolId, subscription } = useSchoolData();
+  const { subscription } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
-
-  const notificationsQuery = useMemoFirebase(() => {
-    if (!schoolId) return null;
-    // For now, we'll treat messages as notifications
-    // We can expand this later with a dedicated `notifications` collection
-    return query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(20));
-  }, [firestore, schoolId]);
-
-  const { data: notificationsData, loading: notificationsLoading } = useCollection(notificationsQuery);
-  const unreadCount = useMemo(() => {
-      if (!notificationsData || !user?.uid) return 0;
-      return notificationsData.filter(n => !(n.data().readBy?.includes(user.uid))).length;
-  }, [notificationsData, user?.uid]);
-
 
   const handleLogout = async () => {
     try {
@@ -78,9 +59,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
 
-  const isLoading = userLoading || notificationsLoading;
-
-  if (isLoading && collapsed) {
+  if (userLoading) {
       return <Skeleton className="h-9 w-9 rounded-full" />;
   }
 

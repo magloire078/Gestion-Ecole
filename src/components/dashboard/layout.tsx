@@ -1,5 +1,4 @@
 
-
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -178,8 +177,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </TooltipTrigger>
                   <TooltipContent>Rechercher (⌘K)</TooltipContent>
                 </Tooltip>
-
-                <UserNav setIsNotificationsOpen={setIsNotificationsOpen} />
+                 <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
+                       <Bell className="h-5 w-5" />
+                     </Button>
+                   </TooltipTrigger>
+                  <TooltipContent>Notifications</TooltipContent>
+                </Tooltip>
+                <UserNav />
               </div>
             </header>
 

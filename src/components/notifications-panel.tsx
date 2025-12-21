@@ -13,7 +13,7 @@ import { collection, query, orderBy, limit, doc, updateDoc, arrayUnion, getDoc, 
 import { Skeleton } from "./ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface Notification {
   id: string;
@@ -47,8 +47,8 @@ export function NotificationsPanel({
 
   const { data: notificationsData, loading } = useCollection(notificationsQuery);
   
-  const notifications = (notificationsData?.map(d => ({ id: d.id, ...d.data() } as Notification)) || []);
-  const unreadCount = notifications.filter(n => !n.readBy?.includes(user?.uid || '')).length;
+  const notifications = useMemo(() => (notificationsData?.map(d => ({ id: d.id, ...d.data() } as Notification)) || []), [notificationsData]);
+  const unreadCount = useMemo(() => notifications.filter(n => !n.readBy?.includes(user?.uid || '')).length, [notifications, user?.uid]);
 
   const markAsRead = async (notificationId: string) => {
     if (!user || !schoolId || !user.uid) return;
