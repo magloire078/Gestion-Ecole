@@ -179,7 +179,6 @@
             "classId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe actuelle de l'élève." },
             "cycle": { "type": "string", "description": "Le nom du cycle actuel de l'élève." },
-            "grade": { "type": "string", "description": "Le nom du niveau de l'élève (ex: CE1)." },
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
             "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
