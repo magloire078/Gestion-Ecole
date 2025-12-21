@@ -73,14 +73,20 @@ export default function CreateSchoolPage() {
 
   const handleSubmit = async (values: CreateSchoolFormValues) => {
     if (!user || !user.authUser || !user.authUser.uid || !user.authUser.email) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide.' });
-        return;
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide.' });
+      return;
     }
+    
     setIsSubmitting(true);
-
+  
     const schoolCreationService = new SchoolCreationService(firestore);
+    
     try {
-      const result = await schoolCreationService.createSchool({
+      console.log("=== DÉBUT CRÉATION ===");
+      console.log("User UID:", user.authUser.uid);
+      console.log("User email:", user.authUser.email);
+      
+      const result = await schoolCreationService.createSchoolSimple({
         name: values.name,
         address: values.address || '',
         mainLogoUrl: logoUrl || '',
@@ -92,18 +98,39 @@ export default function CreateSchoolPage() {
         email: user.authUser.email || '',
       });
       
+      console.log("=== CRÉATION RÉUSSIE ===");
+      console.log("Result:", result);
+      
       toast({
         title: 'École créée avec succès !',
         description: `Le code de votre établissement est : ${result.schoolCode}. Redirection...`,
         duration: 5000,
       });
-
-      // Force a full page reload to ensure all states and guards are re-evaluated correctly.
-      window.location.href = '/dashboard';
-
+  
+      // Attendre un peu puis rediriger
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+  
     } catch (error: any) {
-      console.error(error);
-      toast({ variant: 'destructive', title: 'Erreur', description: `La création de l'école a échoué. ${error.message}` });
+      console.error("❌ ERREUR FINALE:", error);
+      
+      // Message d'erreur détaillé
+      let errorMessage = "La création de l'école a échoué.";
+      
+      if (error.message.includes('permission-denied')) {
+        errorMessage = "Erreur de permission. Vérifiez que vous êtes bien connecté et que les règles Firestore sont déployées.";
+      } else if (error.message.includes('already exists')) {
+        errorMessage = "Vous avez déjà une école.";
+      } else {
+        errorMessage = error.message || errorMessage;
+      }
+      
+      toast({ 
+        variant: 'destructive', 
+        title: 'Erreur', 
+        description: errorMessage 
+      });
     } finally {
       setIsSubmitting(false);
     }

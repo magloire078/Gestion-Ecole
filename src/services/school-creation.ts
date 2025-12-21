@@ -12,7 +12,7 @@ import {
   limit
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { school, user_root, staff, admin_role, system_log } from '@/lib/data-types';
+import type { school, user_root, staff, system_log } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { getAuth } from 'firebase/auth';
@@ -42,137 +42,141 @@ export class SchoolCreationService {
     this.db = firestore;
   }
 
-  async createSchool(schoolData: SchoolCreationData) {
-    console.log("🚀 Début création école");
+  async createSchoolSimple(schoolData: SchoolCreationData) {
+    console.log("=== CRÉATION SIMPLIFIÉE ===");
     
     const auth = getAuth();
     const user = auth.currentUser;
     
     if (!user) {
-      throw new Error("Vous devez être connecté pour créer une école");
+      throw new Error("❌ Utilisateur non connecté");
     }
     
+    console.log("User:", user.uid);
+    console.log("Director:", schoolData.directorId);
+    
+    // Vérification UID
     if (user.uid !== schoolData.directorId) {
-      console.error("UID mismatch:", { user: user.uid, director: schoolData.directorId });
-      throw new Error("Vous devez être le directeur de l'école que vous créez");
+      throw new Error("❌ L'utilisateur ne correspond pas au directeur");
     }
     
-    console.log("📋 Vérification école existante...");
-    const q = query(
-      collection(this.db, "ecoles"), 
-      where("directorId", "==", schoolData.directorId), 
-      limit(1)
-    );
-    
-    const existingSchoolSnap = await getDocs(q);
-    if (!existingSchoolSnap.empty) {
-      const existingSchool = existingSchoolSnap.docs[0].data();
-      throw new Error(`Vous êtes déjà directeur/rice de l'école "${existingSchool.name}".`);
-    }
-
-    const schoolRef = doc(collection(this.db, 'ecoles'));
-    const schoolId = schoolRef.id;
-    const schoolCode = generateSchoolCode(schoolData.name);
-    
-    console.log("✅ ID école généré:", schoolId);
-    console.log("✅ Code école:", schoolCode);
-    
-    const userRootRef = doc(this.db, `utilisateurs/${schoolData.directorId}`);
-    const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
-    const logRef = doc(collection(this.db, 'system_logs'));
-
-    const schoolDocData = {
-      name: schoolData.name,
-      address: schoolData.address,
-      phone: schoolData.phone || '',
-      email: schoolData.email || '',
-      schoolCode: schoolCode,
-      directorId: schoolData.directorId,
-      directorFirstName: schoolData.directorFirstName,
-      directorLastName: schoolData.directorLastName,
-      createdAt: serverTimestamp(),
-      mainLogoUrl: schoolData.mainLogoUrl || '',
-      subscription: {
-        plan: 'Essentiel',
-        status: 'active',
-        startDate: new Date().toISOString(),
-        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString(),
-        maxStudents: 50,
-        maxCycles: 2,
-        activeModules: [],
-      },
-      status: 'active',
-    };
-
-    const userRootData = { 
-      schoolId: schoolId,
-      updatedAt: serverTimestamp()
-    };
-
-    const staffProfileData = {
-      uid: schoolData.directorId,
-      email: schoolData.directorEmail,
-      displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
-      photoURL: '',
-      schoolId: schoolId,
-      role: 'directeur',
-      firstName: schoolData.directorFirstName,
-      lastName: schoolData.directorLastName,
-      hireDate: new Date().toISOString().split('T')[0],
-      baseSalary: 0,
-      status: 'Actif',
-      createdAt: serverTimestamp(),
-    };
-
-    const logData = {
-      adminId: schoolData.directorId,
-      action: 'school.created',
-      target: schoolRef.path,
-      details: { 
-        schoolName: schoolData.name,
-        schoolId: schoolId,
-      },
-      ipAddress: 'N/A (client-side)',
-      userAgent: 'N/A (client-side)',
-      timestamp: serverTimestamp(),
-    };
-
     try {
-      console.log("🔄 Étape 1: Création du document école...");
-      await setDoc(schoolRef, schoolDocData as any);
-      console.log("✅ Document école créé.");
-
-      console.log("🔄 Étape 2: Création des documents liés (personnel, utilisateur, log)...");
-      const subsequentBatch = writeBatch(this.db);
-      subsequentBatch.set(staffProfileRef, staffProfileData as any);
-      subsequentBatch.set(userRootRef, userRootData as any, { merge: true });
-      subsequentBatch.set(logRef, logData as any);
-      await subsequentBatch.commit();
-      console.log("✅ Documents liés créés.");
+      // 1. Créer l'ÉCOLE d'abord (document principal)
+      console.log("Étape 1: Création école...");
+      const schoolRef = doc(collection(this.db, 'ecoles'));
+      const schoolId = schoolRef.id;
+      const schoolCode = generateSchoolCode(schoolData.name);
       
-      console.log("🔄 Rafraîchissement token...");
+      const schoolDoc = {
+        name: schoolData.name,
+        address: schoolData.address || '',
+        phone: schoolData.phone || '',
+        email: schoolData.email || '',
+        schoolCode: schoolCode,
+        directorId: schoolData.directorId,
+        directorFirstName: schoolData.directorFirstName,
+        directorLastName: schoolData.directorLastName,
+        createdAt: serverTimestamp(),
+        mainLogoUrl: schoolData.mainLogoUrl || '',
+        status: 'active',
+      };
+      
+      await setDoc(schoolRef, schoolDoc);
+      console.log("✅ École créée:", schoolId);
+      
+      // 2. Créer le PROFIL PERSONNEL
+      console.log("Étape 2: Création profil personnel...");
+      const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
+      
+      const staffProfile = {
+        uid: schoolData.directorId,
+        email: schoolData.directorEmail,
+        displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
+        photoURL: '',
+        schoolId: schoolId,
+        role: 'directeur', // ⚠️ Doit être exactement 'directeur'
+        firstName: schoolData.directorFirstName,
+        lastName: schoolData.directorLastName,
+        hireDate: new Date().toISOString().split('T')[0],
+        baseSalary: 0,
+        status: 'Actif',
+        createdAt: serverTimestamp(),
+      };
+      
+      await setDoc(staffProfileRef, staffProfile);
+      console.log("✅ Profil créé");
+      
+      // 3. Mettre à jour l'UTILISATEUR
+      console.log("Étape 3: Mise à jour utilisateur...");
+      const userRef = doc(this.db, `utilisateurs/${schoolData.directorId}`);
+      
+      const userDoc = {
+        schoolId: schoolId,
+        updatedAt: serverTimestamp(),
+      };
+      
+      await setDoc(userRef, userDoc, { merge: true });
+      console.log("✅ Utilisateur mis à jour");
+      
+      // 4. Créer le LOG
+      console.log("Étape 4: Création log...");
+      const logRef = doc(collection(this.db, 'system_logs'));
+      
+      const logDoc = {
+        adminId: schoolData.directorId,
+        action: 'school.created',
+        target: schoolRef.path,
+        details: {
+          schoolName: schoolData.name,
+          schoolId: schoolId,
+          schoolCode: schoolCode,
+        },
+        timestamp: serverTimestamp(),
+      };
+      
+      await setDoc(logRef, logDoc);
+      console.log("✅ Log créé");
+      
+      // 5. Rafraîchir le token
+      console.log("Étape 5: Rafraîchissement token...");
       await user.getIdToken(true);
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Attendre un peu
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      console.log("🎉 Création terminée avec succès!");
+      console.log("🎉 CRÉATION RÉUSSIE !");
+      console.log("School ID:", schoolId);
+      console.log("School Code:", schoolCode);
       
-      return { 
-        schoolId, 
+      return {
+        schoolId,
         schoolCode,
         success: true,
         message: "École créée avec succès!"
       };
       
     } catch (error: any) {
-      console.error("❌ Erreur lors de la création:", error);
-      console.error("Détails erreur:", { code: error.code, message: error.message, name: error.name });
+      console.error("❌ ERREUR DÉTAILLÉE:", {
+        name: error.name,
+        code: error.code,
+        message: error.message,
+        stack: error.stack
+      });
       
+      // Afficher plus d'infos selon le type d'erreur
       if (error.code === 'permission-denied') {
-        console.error("🔒 Erreur de permission - Vérifiez les règles Firestore.");
+        console.error("🔴 ERREUR PERMISSION - Vérifiez:");
+        console.error("1. Règles Firestore déployées?");
+        console.error("2. Utilisateur authentifié? UID:", user?.uid);
+        console.error("3. Document path qui échoue?");
       }
       
-      throw new Error(`Échec de la création: ${error.message}`);
+      throw new Error(`Échec création: ${error.message}`);
     }
+  }
+  
+  async createSchool(schoolData: SchoolCreationData) {
+    // Utiliser la version simplifiée
+    return this.createSchoolSimple(schoolData);
   }
 }
