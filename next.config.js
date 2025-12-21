@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    deploymentId: 'v' + Date.now(),
+  },
   images: {
     remotePatterns: [
       {
