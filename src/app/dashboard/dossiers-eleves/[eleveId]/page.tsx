@@ -1,57 +1,45 @@
 
 'use client';
 
-import { notFound, useParams, useRouter } from 'next/navigation';
+import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, BookUser, Building, Wallet, Cake, School, Users, Hash, Receipt, VenetianMask, MapPin, FileText, CalendarDays, FileSignature, Pencil, Sparkles, Tag, CalendarCheck, Loader2, CreditCard } from 'lucide-react';
-import React, { useMemo, useState, useEffect } from 'react';
-import { TuitionStatusBadge } from '@/components/tuition-status-badge';
-import { Separator } from '@/components/ui/separator';
+import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature } from 'lucide-react';
+import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy, writeBatch, increment } from 'firebase/firestore';
+import { doc, collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { cn } from "@/lib/utils";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { staff as Staff, class_type as Class, student as Student, gradeEntry as GradeEntry, payment as Payment, fee as Fee, niveau as Niveau } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, student as Student, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
-import { StudentEditForm } from '@/components/student-edit-form';
 import { updateStudentPhoto } from '@/services/student-services';
 import { SafeImage } from '@/components/ui/safe-image';
+import { StudentEditForm } from '@/components/student-edit-form';
 import { PaymentsTab } from '@/components/students/payments-tab';
 import { GradesTab } from '@/components/students/grades-tab';
 import { InfoTab } from '@/components/students/info-tab';
 
-// ====================================================================================
-// Main Page Component
-// ====================================================================================
-export default function StudentProfilePage() {
-  const params = useParams();
-  const eleveId = params.eleveId as string;
-  const { schoolId, loading: schoolLoading } = useSchoolData();
-
-  if (schoolLoading) {
-    return <EmployeeDetailSkeleton />;
-  }
-
-  if (!schoolId) {
-    // This can happen if the user has no school associated.
-    // An AuthGuard should ideally handle this, but as a fallback:
-    return <p>Erreur: Aucune école n'est associée à votre compte.</p>;
-  }
-  
-  if (!eleveId) {
-    return <p>Erreur: ID de l'élève manquant.</p>;
-  }
-
-  return <StudentProfileContent eleveId={eleveId} schoolId={schoolId} />;
+function StudentProfilePageSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-end"><Skeleton className="h-10 w-32" /></div>
+            <div className="grid gap-6 lg:grid-cols-4">
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                    <Skeleton className="h-56 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                </div>
+                <div className="lg:col-span-3 flex flex-col gap-6">
+                     <Skeleton className="h-96 w-full" />
+                </div>
+            </div>
+        </div>
+    );
 }
 
 
@@ -61,9 +49,10 @@ export default function StudentProfilePage() {
 interface StudentProfileContentProps {
   eleveId: string;
   schoolId: string;
+  initialTab: string;
 }
 
-function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps) {
+function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfileContentProps) {
   const router = useRouter();
   const [refreshTrigger, setRefreshTrigger] = useState(0); // State to force re-render
   
@@ -102,7 +91,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
   const isLoading = studentLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
 
   if (isLoading) {
-    return <EmployeeDetailSkeleton />;
+    return <StudentProfilePageSkeleton />;
   }
 
   if (!student) {
@@ -126,7 +115,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
         case 'En attente': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
         default: return 'bg-secondary text-secondary-foreground';
     }
-};
+  };
 
   return (
     <>
@@ -189,7 +178,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
                 </Card>
                  <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /><span>Contacts des Parents</span></CardTitle>
+                        <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /><span>Contacts des Parents</span></CardTitle>
                     </CardHeader>
                      <CardContent className="space-y-3 text-sm">
                         <div className="font-medium">{student.parent1FirstName} {student.parent1LastName}</div>
@@ -207,7 +196,7 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
 
             {/* Right Column */}
             <div className="lg:col-span-3 flex flex-col gap-6">
-                <Tabs defaultValue="payments">
+                <Tabs defaultValue={initialTab}>
                     <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="payments">Paiements</TabsTrigger>
                         <TabsTrigger value="grades">Résultats</TabsTrigger>
@@ -255,20 +244,30 @@ function StudentProfileContent({ eleveId, schoolId }: StudentProfileContentProps
 }
 
 
-function EmployeeDetailSkeleton() {
-    return (
-        <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                    <Skeleton className="h-56 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                </div>
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                    <Skeleton className="h-64 w-full" />
-                    <Skeleton className="h-40 w-full" />
-                </div>
-            </div>
-        </div>
-    );
+export default function StudentProfilePage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
+  const eleveId = params.eleveId as string;
+  const { schoolId, loading: schoolLoading } = useSchoolData();
+
+  if (schoolLoading) {
+    return <StudentProfilePageSkeleton />;
+  }
+
+  if (!schoolId) {
+    return <p>Erreur: Aucune école n'est associée à votre compte.</p>;
+  }
+  
+  if (!eleveId) {
+    return <p>Erreur: ID de l'élève manquant.</p>;
+  }
+  
+  const initialTab = searchParams.get('tab') || 'payments';
+
+  return (
+    <Suspense fallback={<StudentProfilePageSkeleton />}>
+        <StudentProfileContent eleveId={eleveId} schoolId={schoolId} initialTab={initialTab} />
+    </Suspense>
+  );
 }
 
