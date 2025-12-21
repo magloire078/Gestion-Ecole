@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
+import { useUser, useSchoolData } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
@@ -17,58 +17,61 @@ function AuthProtectionLoader() {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, schoolId, loading } = useUser();
+  const { user, loading: userLoading } = useUser();
+  const { schoolData, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const pathname = usePathname();
-
+  const loading = userLoading || schoolLoading;
+  
   const isPublicPage = ['/', '/login', '/contact'].includes(pathname) || pathname.startsWith('/public');
   const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
 
-  // Si on est encore en train de charger les infos de l'utilisateur,
-  // et qu'on n'est pas sur une page publique, on affiche un loader.
-  // Cela empêche toute redirection prématurée.
+  useEffect(() => {
+    if (loading) {
+      return; // Ne rien faire pendant que les données chargent
+    }
+    
+    // 1. Utilisateur non connecté
+    if (!user) {
+      // S'il est sur une page privée, rediriger vers login
+      if (!isPublicPage) {
+        router.replace('/login');
+      }
+      return;
+    }
+    
+    // 2. Utilisateur connecté
+    // Si connecté, rediriger depuis les pages publiques vers le dashboard
+    if (isPublicPage) {
+        router.replace('/dashboard');
+        return;
+    }
+    
+    // Si connecté mais sans école (et pas admin), rediriger vers l'onboarding
+    const schoolId = user.profile?.schoolId;
+    if (!schoolId && !user.profile?.isAdmin) {
+        if (!isOnboardingPage) {
+            router.replace('/dashboard/onboarding');
+        }
+        return;
+    }
+    
+    // Si l'école est créée mais pas configurée, il reste sur le dashboard qui affichera le OnboardingDashboard
+    // La redirection depuis /dashboard/onboarding vers /dashboard si la config est complète est gérée dans la page d'onboarding elle-même ou sur la page dashboard
+    // si l'utilisateur y atterrit.
+    
+  }, [user, schoolData, loading, pathname, isPublicPage, isOnboardingPage, router]);
+
+
+  // Affiche un loader si on est sur une page privée et que les infos chargent
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Une fois le chargement terminé, on peut prendre des décisions.
-  if (!loading) {
-    // 1. L'utilisateur N'EST PAS connecté.
-    if (!user) {
-      // S'il essaie d'accéder à une page privée, on le redirige vers le login.
-      if (!isPublicPage) {
-        router.replace('/login');
-        return <AuthProtectionLoader />; // Afficher le loader pendant la redirection.
-      }
-      // S'il est sur une page publique, on ne fait rien, il a le droit d'y être.
-    }
-    
-    // 2. L'utilisateur EST connecté.
-    else {
-      // S'il est connecté et essaie d'aller sur une page publique (comme la landing page ou le login), on le redirige vers son tableau de bord.
-      if (isPublicPage) {
-        router.replace('/dashboard');
-        return <AuthProtectionLoader />;
-      }
-
-      // S'il est connecté mais n'a pas encore d'école (et n'est pas super admin)...
-      if (schoolId === null && !user.profile?.isAdmin) {
-        // ...et qu'il n'est PAS sur la page d'onboarding, on l'y redirige.
-        if (!isOnboardingPage) {
-          router.replace('/dashboard/onboarding');
-          return <AuthProtectionLoader />;
-        }
-        // S'il est déjà sur la page d'onboarding, on le laisse faire.
-      }
-
-      // S'il est connecté ET a une école, mais qu'il se retrouve sur la page d'onboarding, on le redirige vers le tableau de bord.
-      if (schoolId && isOnboardingPage) {
-        router.replace('/dashboard');
-        return <AuthProtectionLoader />;
-      }
-    }
+  // Si pas d'utilisateur et page privée, le loader reste affiché pendant la redirection
+  if (!user && !isPublicPage) {
+    return <AuthProtectionLoader />;
   }
 
-  // Si aucune des conditions de redirection n'a été remplie, on affiche la page demandée.
   return <>{children}</>;
 }

@@ -93,12 +93,12 @@ export default function CreateSchoolPage() {
       
       toast({
         title: 'École créée avec succès !',
-        description: `Code: ${result.schoolCode}. Redirection vers la configuration...`,
+        description: `Code: ${result.schoolCode}. Redirection vers le tableau de bord...`,
         duration: 5000,
       });
   
-      // Redirect directly to the onboarding/setup page
-      router.push('/dashboard/onboarding');
+      // Redirect directly to the dashboard
+      router.push('/dashboard');
   
     } catch (error: any) {
       console.error("❌ ERREUR FINALE:", error);
