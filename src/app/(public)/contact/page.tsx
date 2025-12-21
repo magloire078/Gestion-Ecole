@@ -1,8 +1,6 @@
-
-
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,8 +46,7 @@ async function sendContactRequest(data: any) {
     return { success: true };
 }
 
-
-function ContactPageContent() {
+export default function ContactPage() {
   const router = useRouter();
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -206,12 +203,4 @@ function ContactPageContent() {
       </div>
     </div>
   );
-}
-
-export default function ContactPage() {
-    return (
-        <Suspense fallback={<div>Chargement du formulaire...</div>}>
-            <ContactPageContent />
-        </Suspense>
-    );
 }
