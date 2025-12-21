@@ -129,7 +129,17 @@ export async function getPayslipDetails(
     organizationSettings: OrganizationSettings
 ): Promise<PayslipDetails> {
     
-    const { baseSalary = 0, ...otherFields } = employee;
+    const { 
+        baseSalary = 0,
+        indemniteTransportImposable = 0,
+        indemniteSujetion = 0,
+        indemniteCommunication = 0,
+        indemniteRepresentation = 0,
+        indemniteResponsabilite = 0,
+        indemniteLogement = 0,
+        transportNonImposable = 0,
+        ...otherFields 
+    } = employee;
     
     const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);
     
@@ -149,12 +159,12 @@ export async function getPayslipDetails(
     const earningsMap: { [key: string]: { label: string; amount: number } } = {
         baseSalary: { label: 'SALAIRE DE BASE', amount: baseSalary },
         primeAnciennete: { label: 'PRIME D\'ANCIENNETE', amount: primeAnciennete },
-        indemniteTransportImposable: { label: 'INDEMNITE DE TRANSPORT IMPOSABLE', amount: otherFields.indemniteTransportImposable || 0 },
-        indemniteSujetion: { label: 'INDEMNITE DE SUJETION', amount: otherFields.indemniteSujetion || 0 },
-        indemniteCommunication: { label: 'INDEMNITE DE COMMUNICATION', amount: otherFields.indemniteCommunication || 0 },
-        indemniteRepresentation: { label: 'INDEMNITE DE REPRESENTATION', amount: otherFields.indemniteRepresentation || 0 },
-        indemniteResponsabilite: { label: 'INDEMNITE DE RESPONSABILITE', amount: otherFields.indemniteResponsabilite || 0 },
-        indemniteLogement: { label: 'INDEMNITE DE LOGEMENT', amount: otherFields.indemniteLogement || 0 },
+        indemniteTransportImposable: { label: 'INDEMNITE DE TRANSPORT IMPOSABLE', amount: indemniteTransportImposable },
+        indemniteSujetion: { label: 'INDEMNITE DE SUJETION', amount: indemniteSujetion },
+        indemniteCommunication: { label: 'INDEMNITE DE COMMUNICATION', amount: indemniteCommunication },
+        indemniteRepresentation: { label: 'INDEMNITE DE REPRESENTATION', amount: indemniteRepresentation },
+        indemniteResponsabilite: { label: 'INDEMNITE DE RESPONSABILITE', amount: indemniteResponsabilite },
+        indemniteLogement: { label: 'INDEMNITE DE LOGEMENT', amount: indemniteLogement },
     };
 
     const earnings: PayslipEarning[] = Object.values(earningsMap)
@@ -198,7 +208,6 @@ export async function getPayslipDetails(
     
     const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
 
-    const transportNonImposable = otherFields.transportNonImposable || 0;
     const netAPayer = brutImposable + transportNonImposable - totalDeductions;
     const netAPayerInWords = toWords(Math.floor(netAPayer)) + " FRANCS CFA";
 
