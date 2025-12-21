@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore } from '@/firebase';
-import { collection, getCountFromServer, query, where, collectionGroup, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -19,82 +19,51 @@ import { SystemMetrics } from '@/components/admin/system-metrics';
 import { AuditLog } from '@/components/admin/audit-log';
 import type { school as School } from '@/lib/data-types';
 
-const TARIFAIRE = {
-    Essentiel: 0,
-    Pro: 49900,
-    Premium: 99900,
-};
 
 export default function SystemAdminDashboard() {
   const firestore = useFirestore();
-  const [metrics, setMetrics] = useState({
-    totalSchools: 0,
+  const [stats, setStats] = useState({
     activeSchools: 0,
-    totalUsers: 0,
-    storageUsed: 2.5, // Mock value
-    revenue: 0,
     activeSubscriptions: 0
   });
-  const [loadingMetrics, setLoadingMetrics] = useState(true);
+  const [loading, setLoading] = useState(true);
   
   const [systemHealth, setSystemHealth] = useState({
     status: 'healthy',
     uptime: 99.9,
-    responseTime: 120,
-    database: 'connected',
-    storage: 'normal'
   });
   
   useEffect(() => {
     if (!firestore) return;
 
-    const fetchMetrics = async () => {
-        setLoadingMetrics(true);
+    const fetchStats = async () => {
+        setLoading(true);
         try {
-            const schoolsQuery = collection(firestore, 'ecoles');
-            const usersQuery = collectionGroup(firestore, 'personnel');
-
-            const [schoolsSnap, usersSnap] = await Promise.all([
-                getDocs(schoolsQuery),
-                getCountFromServer(usersQuery),
-            ]);
+            const schoolsQuery = query(collection(firestore, 'ecoles'), where('status', '!=', 'deleted'));
+            const schoolsSnap = await getDocs(schoolsQuery);
             
-            let totalRevenue = 0;
-            let activeSchoolCount = 0;
             let activeSubscriptionCount = 0;
 
             schoolsSnap.forEach(doc => {
                 const school = doc.data() as School;
-                if (school.status !== 'deleted') {
-                    activeSchoolCount++;
-                    if (school.subscription && school.subscription.status === 'active') {
-                        activeSubscriptionCount++;
-                        const plan = school.subscription.plan as keyof typeof TARIFAIRE;
-                        if (plan && TARIFAIRE[plan]) {
-                            totalRevenue += TARIFAIRE[plan];
-                        }
-                    }
+                if (school.subscription && school.subscription.status === 'active') {
+                    activeSubscriptionCount++;
                 }
             });
 
-
-            setMetrics(prev => ({
-                ...prev,
-                totalSchools: schoolsSnap.size,
-                activeSchools: activeSchoolCount,
+            setStats({
+                activeSchools: schoolsSnap.size,
                 activeSubscriptions: activeSubscriptionCount,
-                revenue: totalRevenue,
-                totalUsers: usersSnap.data().count,
-            }));
+            });
 
         } catch (error) {
-            console.error("Failed to fetch system metrics:", error);
+            console.error("Failed to fetch system dashboard stats:", error);
         } finally {
-            setLoadingMetrics(false);
+            setLoading(false);
         }
     };
 
-    fetchMetrics();
+    fetchStats();
 }, [firestore]);
 
 
@@ -130,7 +99,7 @@ export default function SystemAdminDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Uptime</p>
+                  <p className="text-sm text-muted-foreground">Uptime (30j)</p>
                   <p className="text-2xl font-bold">{systemHealth.uptime}%</p>
                 </div>
                 <Globe className="h-8 w-8 text-blue-500" />
@@ -143,7 +112,7 @@ export default function SystemAdminDashboard() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Écoles actives</p>
-                  <p className="text-2xl font-bold">{metrics.activeSchools}</p>
+                  <p className="text-2xl font-bold">{stats.activeSchools}</p>
                 </div>
                 <Building className="h-8 w-8 text-purple-500" />
               </div>
@@ -154,8 +123,8 @@ export default function SystemAdminDashboard() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Abonnements</p>
-                  <p className="text-2xl font-bold">{metrics.activeSubscriptions}</p>
+                  <p className="text-sm text-muted-foreground">Abonnements Actifs</p>
+                  <p className="text-2xl font-bold">{stats.activeSubscriptions}</p>
                 </div>
                 <CreditCard className="h-8 w-8 text-green-500" />
               </div>
@@ -163,7 +132,7 @@ export default function SystemAdminDashboard() {
           </Card>
         </div>
         
-        <SystemMetrics metrics={metrics} loading={loadingMetrics}/>
+        <SystemMetrics />
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
