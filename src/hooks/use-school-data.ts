@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -13,6 +14,7 @@ const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
 export interface Subscription {
     plan: 'Essentiel' | 'Pro' | 'Premium';
     status: 'active' | 'trialing' | 'past_due' | 'canceled';
+    endDate?: string;
     maxStudents?: number;
     maxCycles?: number;
     activeModules?: ('sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh')[];
@@ -41,10 +43,18 @@ export function useSchoolData() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!authSchoolId || !firestore) {
-             if(!userLoading) setLoading(false);
-             document.title = DEFAULT_TITLE;
+        // Ne rien faire si schoolId n'est pas encore défini (undefined)
+        if (typeof authSchoolId === 'undefined' || !firestore) {
+             setLoading(userLoading);
              return;
+        }
+
+        // Si schoolId est null, il n'y a pas d'école, on arrête de charger
+        if (authSchoolId === null) {
+            setSchoolData(null);
+            setLoading(false);
+            document.title = DEFAULT_TITLE;
+            return;
         }
 
         setLoading(true);

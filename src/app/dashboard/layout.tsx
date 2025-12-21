@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -11,11 +12,9 @@ import { MobileNav } from '@/components/mobile-nav';
 import { AuthGuard } from '@/components/auth-guard';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
-import { useTheme } from '@/hooks/use-theme';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { SearchModal } from '@/components/search-modal';
@@ -25,21 +24,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: userLoading, isDirector } = useUser();
   const { subscription, loading: schoolLoading } = useSchoolData();
-
-  // Mock notifications - à remplacer par votre logique
-  useEffect(() => {
-    // Simuler des notifications
-    const mockUnread = Math.floor(Math.random() * 10);
-    setUnreadNotifications(mockUnread);
-  }, []);
 
   // Raccourcis clavier
   useEffect(() => {
@@ -184,24 +175,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   </TooltipTrigger>
                   <TooltipContent>Rechercher (⌘K)</TooltipContent>
                 </Tooltip>
-
-                <Tooltip>
+                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
-                      <Bell className="h-5 w-5" />
-                      {unreadNotifications > 0 && (
-                        <Badge 
-                          variant="destructive" 
-                          className="absolute -top-1 -right-1 h-5 w-5 min-w-0 p-0 flex items-center justify-center text-xs"
-                        >
-                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                        </Badge>
-                      )}
-                    </Button>
-                  </TooltipTrigger>
+                     <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
+                       <Bell className="h-5 w-5" />
+                     </Button>
+                   </TooltipTrigger>
                   <TooltipContent>Notifications</TooltipContent>
                 </Tooltip>
-
                 <UserNav />
               </div>
             </header>
@@ -222,7 +203,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           <NotificationsPanel
             isOpen={isNotificationsOpen}
             onClose={() => setIsNotificationsOpen(false)}
-            notifications={[]}
           />
         </div>
       </TooltipProvider>
@@ -241,5 +221,3 @@ export default function DashboardLayout({
     </AuthGuard>
   );
 }
-
-    

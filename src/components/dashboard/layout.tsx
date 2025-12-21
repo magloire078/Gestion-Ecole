@@ -1,4 +1,5 @@
 
+
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -11,11 +12,9 @@ import { MobileNav } from '@/components/mobile-nav';
 import { AuthGuard } from '@/components/auth-guard';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
-import { useTheme } from '@/hooks/use-theme';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { SearchModal } from '@/components/search-modal';
@@ -25,7 +24,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   
