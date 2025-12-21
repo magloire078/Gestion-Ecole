@@ -21,8 +21,8 @@ service cloud.firestore {
         return isAuth() && request.resource.data.directorId == request.auth.uid;
     }
     
-    function isDirectorOfAnySchool() {
-        return isAuth() && request.auth.token.isDirector == true;
+    function isDirector(schoolId) {
+        return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
     function isMemberOfSchool(schoolId) {
@@ -39,7 +39,7 @@ service cloud.firestore {
     }
     match /system_logs/{logId} {
       allow create: if isAuth();
-      allow read: if isDirectorOfAnySchool() || isSuperAdmin();
+      allow read: if isDirector(request.auth.token.schoolId) || isSuperAdmin();
     }
 
     // ========== ONBOARDING & USER ROOT ==========
@@ -52,21 +52,13 @@ service cloud.firestore {
     // ========== SCHOOL & SUBCOLLECTIONS RULES ==========
 
     match /ecoles/{schoolId} {
-      // Creation: only a new director can create their school.
       allow create: if isCreatingSchoolAsDirector(schoolId);
-      
-      // Reading: any authenticated member of the school can read the school doc.
       allow read: if isMemberOfSchool(schoolId) || isSuperAdmin();
-      
-      // Update: only the director or a super admin can update.
       allow update: if isDirector(schoolId) || isSuperAdmin();
-      
-      // Deletion: Not allowed directly. Status should be changed.
       allow delete: if false;
 
       // --- SUBCOLLECTIONS ---
       // This rule grants read/write access to all members of the school for all subcollections.
-      // This is a broad rule, but secure as long as `isMemberOfSchool` is correct.
       match /{allPaths=**} {
         allow read, write: if isMemberOfSchool(schoolId) || isSuperAdmin();
       }
