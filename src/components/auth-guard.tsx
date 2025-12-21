@@ -22,72 +22,60 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Ne rien faire tant que les données ne sont pas chargées
     if (loading) {
-      return;
+      return; // Ne rien faire tant que les données ne sont pas chargées
     }
 
-    const isAuthPage = pathname === '/login';
-    const isPublicPage = isAuthPage || pathname === '/' || pathname.startsWith('/public') || pathname === '/contact';
+    const isPublicPage = ['/', '/login', '/contact'].includes(pathname) || pathname.startsWith('/public');
     const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
     const isSuperAdmin = user?.profile?.isAdmin === true;
 
-    // SCENARIO 1: L'utilisateur n'est pas connecté
-    if (!user) {
-      if (!isPublicPage) {
-        router.replace('/login');
+    // Si l'utilisateur n'est pas connecté et n'est pas sur une page publique, rediriger vers login
+    if (!user && !isPublicPage) {
+      router.replace('/login');
+      return;
+    }
+
+    // Si l'utilisateur est connecté
+    if (user) {
+      // S'il est sur la page de login, le rediriger vers le dashboard
+      if (pathname === '/login') {
+        router.replace('/dashboard');
+        return;
       }
-      return;
-    }
 
-    // SCENARIO 2: L'utilisateur est connecté
-    
-    // Si sur une page d'authentification, rediriger vers le tableau de bord
-    if (isAuthPage) {
-      router.replace('/dashboard');
-      return;
+      // Si c'est un super admin, il a accès à tout (sauf l'onboarding)
+      if (isSuperAdmin) {
+        if (isOnboardingPage) {
+          router.replace('/admin/system/dashboard');
+        }
+        return; // Le super admin peut continuer
+      }
+      
+      // Si l'utilisateur standard n'a pas d'ID d'école et n'est pas déjà sur la page d'onboarding,
+      // on le redirige vers l'onboarding. C'est la seule redirection liée à l'onboarding.
+      if (!schoolId && !isOnboardingPage) {
+        router.replace('/dashboard/onboarding');
+        return;
+      }
     }
-
-    // Si c'est un super admin, il a accès à tout (sauf l'onboarding qu'il ne devrait jamais voir)
-    if (isSuperAdmin) {
-       if (isOnboardingPage) {
-         router.replace('/admin/system/dashboard');
-       }
-       return;
-    }
-
-    // SCENARIO 3: L'utilisateur n'a pas d'école et n'est pas sur une page d'onboarding
-    if (!schoolId && !isOnboardingPage) {
-      router.replace('/dashboard/onboarding');
-      return;
-    }
-    
-    // Scénario 4 (implicite) : Si l'utilisateur a un schoolId, il peut accéder aux pages du dashboard.
-    // La logique pour afficher l'onboarding ou le dashboard principal est maintenant gérée DANS la page /dashboard elle-même.
-
   }, [user, schoolId, loading, pathname, router]);
 
-  // --- LOGIQUE D'AFFICHAGE ---
+  // --- Logique d'affichage pendant le chargement ---
 
-  const isPublicPage = pathname === '/' || pathname.startsWith('/public') || pathname === '/login' || pathname === '/contact';
+  const isPublicPage = ['/', '/login', '/contact'].includes(pathname) || pathname.startsWith('/public');
 
-  // Si le chargement est en cours pour une page protégée, afficher le loader
+  // Afficher le loader sur les pages protégées pendant que l'on vérifie l'authentification
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Si l'utilisateur est connecté, mais que nous attendons toujours le schoolId (état de transition),
-  // et que ce n'est pas un super-admin, afficher le loader pour éviter le flash.
-  if (user && !schoolId && !user.profile?.isAdmin && !pathname.startsWith('/dashboard/onboarding')) {
-      return <AuthProtectionLoader />;
-  }
-
-  // Si l'utilisateur n'est pas connecté et essaie d'accéder à une page non publique,
-  // afficher le loader pendant que useEffect le redirige.
+  // Si l'utilisateur n'est pas authentifié et essaie d'accéder à une page protégée,
+  // afficher le loader pendant que useEffect fait son travail de redirection.
   if (!user && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Si tout est en ordre, afficher le contenu de la page
+  // Si tout est en ordre, afficher le contenu de la page.
   return <>{children}</>;
 }
