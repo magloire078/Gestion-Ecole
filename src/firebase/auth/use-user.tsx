@@ -1,4 +1,3 @@
-
 'use client';
 
 import {useState, useEffect} from 'react';
@@ -58,38 +57,21 @@ export function useUser() {
         }
 
         try {
-            // FORCER le refresh du token pour avoir les claims à jour si nécessaire
-            const tokenResult = await authUser.getIdTokenResult(true);
+            const tokenResult = await authUser.getIdTokenResult(); // No force refresh
             const claims = tokenResult.claims;
+            let effectiveSchoolId = claims.schoolId as string | null;
             
-            // Vérifier les claims d'abord
-            let schoolIdFromClaims = claims.schoolId as string;
-            const isDirectorFromClaims = claims.isDirector === true;
-            
-            // Si pas de schoolId dans les claims, vérifier Firestore
-            if (!schoolIdFromClaims) {
-              console.log("⚠️ Pas de schoolId dans claims, vérification Firestore...");
-              try {
-                const userDoc = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
-                if (userDoc.exists()) {
-                  const userData = userDoc.data();
-                  schoolIdFromClaims = userData?.schoolId || null;
-                  
-                  // Si on trouve un schoolId dans Firestore mais pas dans claims
-                  // Forcer un nouveau refresh
-                  if (schoolIdFromClaims && !claims.schoolId) {
-                    console.log("🔄 SchoolId trouvé dans Firestore, refresh token...");
-                    await authUser.getIdToken(true);
-                  }
-                }
-              } catch (firestoreError) {
-                console.error("Erreur Firestore:", firestoreError);
-              }
+            if (!effectiveSchoolId) {
+                try {
+                    const userDoc = await getDoc(doc(firestore, 'utilisateurs', authUser.uid));
+                    if (userDoc.exists()) {
+                        effectiveSchoolId = userDoc.data()?.schoolId || null;
+                    }
+                } catch (e) { console.error("Error fetching user document from Firestore:", e); }
             }
+
+            setSchoolId(effectiveSchoolId);
             
-            setSchoolId(schoolIdFromClaims);
-            
-            const effectiveSchoolId = schoolIdFromClaims;
             const isSuperAdmin = (claims.superAdmin as boolean) || false;
 
             if (isSuperAdmin) {
@@ -112,7 +94,6 @@ export function useUser() {
                 return;
             }
 
-            // User is associated with a school, now fetch profile and roles
             const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
 
