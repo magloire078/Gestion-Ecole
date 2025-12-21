@@ -123,13 +123,22 @@ service cloud.firestore {
 
     // ========== POST-ONBOARDING RULES (quand schoolId est dans les claims) ==========
     
-    // Règle générique pour toutes les autres données de l'école
-    // S'applique APRES que l'utilisateur ait le claim schoolId
-    match /ecoles/{schoolId}/{collection}/{document=**} {
-      allow read, write: if isAuth() && (
+    function isMemberOfSchool(schoolId) {
+      return isAuth() && (
         request.auth.token.schoolId == schoolId ||
         get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid
       );
+    }
+    
+    // Règle spécifique pour les listages de collections
+    match /ecoles/{schoolId}/{collectionId} {
+        allow list, get: if isMemberOfSchool(schoolId);
+    }
+
+    // Règle générique pour toutes les autres données de l'école
+    // S'applique APRES que l'utilisateur ait le claim schoolId
+    match /ecoles/{schoolId}/{collection}/{document=**} {
+      allow read, write: if isMemberOfSchool(schoolId);
     }
   }
 }
