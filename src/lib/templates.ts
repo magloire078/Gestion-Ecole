@@ -1,5 +1,4 @@
 
-
 export const SCHOOL_TEMPLATES = {
   IVORIAN_SYSTEM: {
     cycles: [
