@@ -17,16 +17,18 @@ service cloud.firestore {
         return isAuth() && request.auth.uid == userId;
     }
     
-    function isCreatingSchoolAsDirector(schoolId) {
-        return isAuth() && request.resource.data.directorId == request.auth.uid;
-    }
-    
     function isDirector(schoolId) {
         return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
     function isMemberOfSchool(schoolId) {
       return isAuth() && request.auth.token.schoolId == schoolId;
+    }
+    
+    function isCreatingSchoolAsDirector(schoolId) {
+        let isDirector = request.resource.data.directorId == request.auth.uid;
+        let directorProfileExists = !exists(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
+        return isAuth() && isDirector && directorProfileExists;
     }
 
     // ========== GLOBAL RULES ==========
