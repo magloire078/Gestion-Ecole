@@ -18,20 +18,18 @@ service cloud.firestore {
     }
     
     function isDirector(schoolId) {
-        // Important: Ne pas utiliser `get()` dans les règles de liste de collection.
-        // Cette fonction est sûre pour les opérations sur un seul document (get, create, update, delete).
+        // Important: Do not use `get()` in collection list rules.
+        // This is safe for single-document operations (get, create, update, delete).
         return isAuth() && get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
     function isMemberOfSchool(schoolId) {
-      // La source de vérité pour l'appartenance à l'école est le token d'authentification.
       return isAuth() && request.auth.token.schoolId == schoolId;
     }
     
-    // Règle pour permettre à un utilisateur de créer sa toute première école.
     function isCreatingSchoolAsDirector(schoolId) {
         let isDirectorFieldCorrect = request.resource.data.directorId == request.auth.uid;
-        // Vérifie qu'il n'a pas déjà un `schoolId` dans son profil racine.
+        // Check that they do not already have a `schoolId` in their root profile.
         let isFirstSchool = !exists(/databases/$(database)/documents/utilisateurs/$(request.auth.uid));
         return isAuth() && isDirectorFieldCorrect && isFirstSchool;
     }
@@ -50,36 +48,77 @@ service cloud.firestore {
     }
 
     // ========== ONBOARDING & USER ROOT ==========
-    // Un utilisateur peut créer son propre profil racine une seule fois.
+    // A user can create their own root profile once.
     match /utilisateurs/{userId} {
       allow read: if isUser(userId);
       allow create: if isUser(userId) && !exists(/databases/$(database)/documents/utilisateurs/$(userId));
-      allow update: if false; // Ne devrait pas être mis à jour après la création.
+      allow update: if false; // Should not be updated after creation.
     }
     
     // ========== SCHOOL & SUBCOLLECTIONS RULES ==========
     match /ecoles/{schoolId} {
-      // Qui peut créer une école ?
+      // Who can create a school?
       allow create: if isCreatingSchoolAsDirector(schoolId);
       
-      // Qui peut lire le document principal de l'école ?
-      // Un super admin OU un membre de l'école.
+      // Who can read the main school document?
+      // A super admin OR a member of the school.
       allow read: if isSuperAdmin() || isMemberOfSchool(schoolId);
       
-      // Qui peut mettre à jour l'école ?
-      // Un super admin OU le directeur de l'école.
+      // Who can update the school?
+      // A super admin OR the director of the school.
       allow update: if isSuperAdmin() || isDirector(schoolId);
       
-      // La suppression physique est désactivée (soft delete via le statut).
+      // Physical deletion is disabled (soft delete via status).
       allow delete: if false;
 
-      // --- RÈGLE GÉNÉRIQUE POUR TOUTES LES SOUS-COLLECTIONS ---
-      // Cette règle s'applique à /ecoles/{schoolId}/[n'importe quelle sous-collection]/{docId}
-      match /{allPaths=**} {
-        // Les membres de l'école peuvent lire et écrire dans toutes les sous-collections.
-        // Cela simplifie la gestion des permissions pour les données internes de l'école.
+      // --- EXPLICIT SUBCOLLECTION RULES ---
+      match /personnel/{staffId} {
         allow read, write: if isMemberOfSchool(schoolId);
       }
+      match /admin_roles/{roleId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+      }
+      match /eleves/{studentId} {
+        allow read, write: if isMemberOfSchool(schoolId);
+        match /notes/{gradeId} { allow read, write: if isMemberOfSchool(schoolId); }
+        match /paiements/{paymentId} { allow read, write: if isMemberOfSchool(schoolId); }
+        match /affectations/{assignmentId} { allow read, write: if isMemberOfSchool(schoolId); }
+        match /dossier_medical/{dossierId} { 
+            allow read, write: if isMemberOfSchool(schoolId); 
+            match /vaccins/{vaccinId} { allow read, write: if isMemberOfSchool(schoolId); }
+            match /consultations/{consultationId} { allow read, write: if isMemberOfSchool(schoolId); }
+        }
+      }
+      match /cycles/{cycleId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /niveaux/{niveauId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /classes/{classeId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /emploi_du_temps/{entryId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /frais_scolarite/{feeId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /absences/{absenceId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /comptabilite/{transactionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /bibliotheque/{bookId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /messagerie/{messageId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /matieres/{subjectId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cantine_menus/{menuId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cantine_reservations/{reservationId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cantine_abonnements/{subscriptionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /transport_bus/{busId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /transport_lignes/{routeId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /transport_abonnements/{subscriptionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /internat_batiments/{buildingId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /internat_chambres/{roomId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /internat_occupants/{occupationId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /internat_entrees_sorties/{logId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /inventaire/{materielId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cles_trousseaux/{trousseauId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /cles_log/{logId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /salles/{salleId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /reservations_salles/{reservationId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /maintenance/{tacheId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /activites/{activiteId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /inscriptions_activites/{inscriptionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /competitions/{competitionId} { allow read, write: if isMemberOfSchool(schoolId); }
+      match /participations_competitions/{participationId} { allow read, write: if isMemberOfSchool(schoolId); }
     }
   }
 }
