@@ -57,7 +57,8 @@ export function useUser() {
             return;
         }
 
-        const tokenResult = await authUser.getIdTokenResult(); // <-- CORRIGÉ ICI
+        // FORCER le refresh du token pour avoir les claims à jour
+        const tokenResult = await authUser.getIdTokenResult(true);
         const claims = tokenResult.claims;
         const isSuperAdmin = (claims.superAdmin as boolean) || false;
 

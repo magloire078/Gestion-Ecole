@@ -2,92 +2,14 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ========== UTILITY FUNCTIONS ==========
+    
     function isAuth() {
       return request.auth != null;
     }
-
-    function isSuperAdmin() {
-      return isAuth() && request.auth.token.superAdmin == true;
-    }
     
-    function isUser(userId) {
-        return isAuth() && request.auth.uid == userId;
-    }
-    
-    // Fonction pour vérifier si l'utilisateur est directeur (selon BD)
-    function isDirectorOfSchool(schoolId) {
-        return isAuth() && 
-               get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
-    }
-    
-    // Fonction pour vérifier si l'utilisateur est membre (via claims OU via directeur BD)
-    function isSchoolMember(schoolId) {
-      return isAuth() && (
-        request.auth.token.schoolId == schoolId || // Via claims
-        get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid // Via BD
-      );
-    }
-    
-    // ========== GLOBAL RULES ==========
-    match /system_settings/{settingId} {
-        allow read: if isAuth();
-        allow write: if isSuperAdmin();
-    }
-    
-    match /super_admins/{adminId} {
-        allow read, write: if isSuperAdmin();
-    }
-
-    // ========== ONBOARDING PHASE - RÈGLES SPÉCIALES ==========
-    
-    // 1. UTILISATEURS - pendant onboarding
-    match /utilisateurs/{userId} {
-      // Pendant l'onboarding, l'utilisateur peut créer/mettre à jour son document
-      allow create, update: if isUser(userId);
-      allow read: if isUser(userId) || isSuperAdmin();
-    }
-    
-    // 2. ÉCOLES - création
-    match /ecoles/{schoolId} {
-      // CRÉATION : n'importe quel utilisateur authentifié peut créer une école
-      // (on vérifiera côté code qu'il se désigne comme directeur)
-      allow create: if isAuth();
-      
-      // LECTURE après création : utilisateur authentifié + (est directeur OU a le claim)
-      allow read: if isSchoolMember(schoolId) || isSuperAdmin();
-      
-      // MISE À JOUR : seulement le directeur ou super admin
-      allow update: if isDirectorOfSchool(schoolId) || isSuperAdmin();
-      
-      // PAS DE SUPPRESSION
-      allow delete: if false;
-    }
-    
-    // 3. PERSONNEL - création pendant onboarding
-    match /ecoles/{schoolId}/personnel/{staffId} {
-      // CRÉATION PENDANT ONBOARDING : l'utilisateur peut créer son propre profil
-      allow create: if isAuth() && staffId == request.auth.uid;
-      
-      // Après création : règles normales
-      allow read: if isSchoolMember(schoolId) || isSuperAdmin();
-      allow update: if isDirectorOfSchool(schoolId) || isUser(staffId) || isSuperAdmin();
-      allow delete: if isDirectorOfSchool(schoolId) || isSuperAdmin();
-    }
-    
-    // 4. LOGS SYSTÈME
-    match /system_logs/{logId} {
-      allow create: if isAuth();
-      allow read: if isSuperAdmin() || (isAuth() && request.auth.token.isDirector == true);
-    }
-
-    // ========== POST-ONBOARDING RULES ==========
-    // Ces règles s'appliquent quand l'utilisateur a déjà schoolId dans ses claims
-    
-    // Règle générique pour TOUTES les autres sous-collections
-    match /ecoles/{schoolId}/{collection}/{document} {
-      allow read, write: if isSchoolMember(schoolId) || isSuperAdmin();
+    // RÈGLES ULTRA SIMPLES POUR TEST
+    match /{document=**} {
+      allow read, write: if isAuth();
     }
   }
 }
