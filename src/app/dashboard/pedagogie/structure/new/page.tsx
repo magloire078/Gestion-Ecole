@@ -181,7 +181,28 @@ export default function NewClassPage() {
                             )}
                         />
                          <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="section" render={({ field }) => (<FormItem><FormLabel>Section *</FormLabel><FormControl><Input placeholder="Ex: A" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField 
+                                control={form.control} 
+                                name="section" 
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Section *</FormLabel>
+                                        <Select onValueChange={field.onChange} value={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Ex: A" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {['A', 'B', 'C', 'D', 'E', 'F'].map(s => (
+                                                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} 
+                            />
                              <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année Scolaire *</FormLabel><FormControl><Input {...field} readOnly className="bg-muted"/></FormControl><FormMessage /></FormItem>)} />
                          </div>
                         <FormField
