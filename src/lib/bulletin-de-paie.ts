@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from "date-fns";
@@ -6,6 +7,7 @@ import { fr } from "date-fns/locale";
 import { numberToWords } from "french-numbers-to-words";
 import placeholderImages from '@/lib/placeholder-images.json';
 import type { staff as Employe, school as OrganizationSettings } from '@/lib/data-types';
+import { TRANCHES_IGR } from './payroll-config';
 
 // ====================================================================================
 // 1. DATA TYPES 
@@ -99,6 +101,23 @@ function calculateParts(situation: Employe['situationMatrimoniale'], enfants: nu
     }
 }
 
+function getIGRFromTranche(revenu: number): number {
+    let impot = 0;
+    let revenuRestant = revenu;
+    let limitePrecedente = 0;
+
+    for (const tranche of TRANCHES_IGR) {
+        if (revenuRestant <= 0) break;
+
+        const montantDansTranche = Math.min(tranche.limite - limitePrecedente, revenuRestant);
+        impot += montantDansTranche * tranche.taux;
+        revenuRestant -= montantDansTranche;
+        limitePrecedente = tranche.limite;
+    }
+
+    return impot;
+}
+
 
 // ====================================================================================
 // 3. PAYSLIP CALCULATION LOGIC
@@ -166,34 +185,6 @@ export async function getPayslipDetails(
     const N = baseCalculITS - (its + cn);
     const parts = calculateParts(employee.situationMatrimoniale, employee.enfants);
     const Q = Math.floor(N / parts);
-    
-    const getIGRFromTranche = (revenu: number) => {
-        const tranches = [
-            {limite: 25000, taux: 0},
-            {limite: 46250, taux: 0.10},
-            {limite: 73750, taux: 0.15},
-            {limite: 121250, taux: 0.20},
-            {limite: 203750, taux: 0.25},
-            {limite: 346250, taux: 0.35},
-            {limite: 843750, taux: 0.45},
-            {limite: Infinity, taux: 0.60}
-        ];
-        
-        let impot = 0;
-        let revenuRestant = revenu;
-        let limitePrecedente = 0;
-
-        for (const tranche of tranches) {
-            if (revenuRestant <= 0) break;
-
-            const montantDansTranche = Math.min(tranche.limite - limitePrecedente, revenuRestant);
-            impot += montantDansTranche * tranche.taux;
-            revenuRestant -= montantDansTranche;
-            limitePrecedente = tranche.limite;
-        }
-
-        return impot;
-    };
     
     const igr = Math.max(0, Math.round(getIGRFromTranche(Q) * parts));
 

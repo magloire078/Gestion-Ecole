@@ -3,6 +3,8 @@
 'use server';
 import { collection, getCountFromServer, query, where, type Firestore } from 'firebase/firestore';
 import type { school as School, student as Student, cycle as Cycle } from '@/lib/data-types';
+import { TARIFAIRE, SUPPLEMENTS, MODULE_PRICES } from './payroll-config';
+
 
 interface UsageData {
   cyclesCount: number;
@@ -10,34 +12,6 @@ interface UsageData {
   storageUsed: number; // en Go, pour l'instant une valeur fictive
   month: string;
 }
-
-interface PricingSupplements {
-    parCycle: number;
-    parEleve: number;
-    parGoStockage: number;
-}
-
-export const TARIFAIRE: Record<string, any> = {
-    Essentiel: { prixMensuel: 0, cyclesInclus: 5, elevesInclus: 50, stockageInclus: 1 },
-    Pro: { prixMensuel: 49900, cyclesInclus: 5, elevesInclus: 250, stockageInclus: 10 },
-    Premium: { prixMensuel: 99900, cyclesInclus: Infinity, elevesInclus: Infinity, stockageInclus: Infinity },
-};
-
-const SUPPLEMENTS: PricingSupplements = {
-    parCycle: 5000,
-    parEleve: 250,
-    parGoStockage: 1000,
-}
-
-export const MODULE_PRICES = {
-    sante: 5000,
-    cantine: 10000,
-    transport: 10000,
-    internat: 15000,
-    rh: 15000,
-    immobilier: 10000,
-    activites: 5000,
-} as const;
 
 
 export async function calculateMonthlyUsage(firestore: Firestore, schoolId: string): Promise<UsageData> {
