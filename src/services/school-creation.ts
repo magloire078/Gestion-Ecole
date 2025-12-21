@@ -79,6 +79,7 @@ export class SchoolCreationService {
         createdAt: new Date().toISOString(),
         mainLogoUrl: schoolData.mainLogoUrl || '',
         status: 'active',
+        isSetupComplete: false, // Initialisé à false
         subscription: {
           plan: 'Essentiel',
           status: 'trialing',

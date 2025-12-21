@@ -2,15 +2,13 @@
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Users, BookOpen, UserPlus, MessageSquare, Check, Milestone } from 'lucide-react';
+import { Check, Milestone, Loader2 } from 'lucide-react';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, query, orderBy, limit, getDocs, getCountFromServer, where, collectionGroup } from 'firebase/firestore';
+import { collection, query, getDocs, getCountFromServer, where, collectionGroup } from 'firebase/firestore';
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -22,6 +20,7 @@ import { StatCards } from '@/components/dashboard/stat-cards';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { FinanceOverview } from '@/components/dashboard/finance-overview';
+import { useToast } from '@/hooks/use-toast';
 
 // ====================================================================================
 // Onboarding Dashboard Component
@@ -38,8 +37,14 @@ interface OnboardingStatus {
   isSetupComplete: boolean;
 }
 
-const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: OnboardingStatus }) => {
+const OnboardingDashboard = ({ onboardingStatus, onCompleteSetup }: { onboardingStatus: OnboardingStatus, onCompleteSetup: () => void }) => {
   const { schoolData } = useSchoolData();
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  const handleComplete = () => {
+      setIsCompleting(true);
+      onCompleteSetup();
+  }
 
   const StepCard = ({ number, title, description, isDone, href, cta, count, required }: { 
     number: number; 
@@ -147,11 +152,11 @@ const OnboardingDashboard = ({ onboardingStatus }: { onboardingStatus: Onboardin
       <div className="mt-8 flex justify-center">
         <Button 
           size="lg"
-          onClick={() => window.location.reload()} 
-          disabled={!onboardingStatus.isSetupComplete}
+          onClick={handleComplete} 
+          disabled={!onboardingStatus.isSetupComplete || isCompleting}
         >
-          <Milestone className="mr-2 h-5 w-5"/>
-          {onboardingStatus.isSetupComplete ? 'Terminer la configuration et accéder au Dashboard' : 'Configuration incomplète'}
+          {isCompleting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Milestone className="mr-2 h-5 w-5"/>}
+          {isCompleting ? 'Finalisation...' : (onboardingStatus.isSetupComplete ? 'Terminer la configuration et accéder au Dashboard' : 'Configuration incomplète')}
         </Button>
       </div>
     </div>
@@ -224,20 +229,13 @@ const RegularDashboard = () => {
 // Main Page Component
 // ====================================================================================
 function DashboardPageContent() {
-  const { schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolData, loading: schoolLoading, updateSchoolData } = useSchoolData();
   const firestore = useFirestore();
+  const { toast } = useToast();
+  
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
   const [loading, setLoading] = useState(true);
   
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-      if (searchParams.get('created')) {
-          setIsTransitioning(true);
-      }
-  }, [searchParams]);
-
   const calculateOnboardingStatus = useCallback((schoolData: any, classesCount: number, staffCount: number, feesCount: number): OnboardingStatus => {
     const baseInfoDone = !!(schoolData?.name && schoolData?.address);
     const structureDone = classesCount > 0;
@@ -259,16 +257,38 @@ function DashboardPageContent() {
       completion, isSetupComplete
     };
   }, []);
+  
+  const handleCompleteSetup = async () => {
+    try {
+        await updateSchoolData({ isSetupComplete: true });
+        toast({
+            title: "Configuration terminée !",
+            description: "Votre tableau de bord est maintenant actif.",
+        });
+        // La mise à jour via onSnapshot dans useSchoolData déclenchera le re-rendu
+    } catch(e) {
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de finaliser la configuration."
+        });
+    }
+  };
 
   useEffect(() => {
     if (schoolLoading || !schoolData?.id || !firestore) {
-      if (!schoolLoading && !isTransitioning) {
-          setLoading(false);
-      }
+      if (!schoolLoading) setLoading(false);
+      return;
+    }
+    
+    // Si la configuration est déjà marquée comme complète, pas besoin de vérifier à nouveau.
+    if (schoolData.isSetupComplete) {
+      setLoading(false);
       return;
     }
 
     const fetchOnboardingData = async () => {
+      setLoading(true);
       try {
         const [classesSnap, staffSnap, feesSnap] = await Promise.all([
           getCountFromServer(query(collection(firestore, `ecoles/${schoolData.id}/classes`))),
@@ -285,10 +305,6 @@ function DashboardPageContent() {
         
         setOnboardingStatus(status);
         
-        if(isTransitioning) {
-            setIsTransitioning(false);
-        }
-
       } catch (error) {
         console.error('Error fetching onboarding data:', error);
       } finally {
@@ -297,9 +313,9 @@ function DashboardPageContent() {
     };
 
     fetchOnboardingData();
-  }, [schoolData, firestore, schoolLoading, calculateOnboardingStatus, isTransitioning]);
+  }, [schoolData, firestore, schoolLoading, calculateOnboardingStatus]);
 
-  if (loading || isTransitioning) {
+  if (loading) {
      return (
       <div className="p-6 space-y-6">
         <Skeleton className="h-8 w-48" />
@@ -316,8 +332,8 @@ function DashboardPageContent() {
     );
   }
 
-  if (onboardingStatus && !onboardingStatus.isSetupComplete) {
-    return <OnboardingDashboard onboardingStatus={onboardingStatus} />;
+  if (schoolData && !schoolData.isSetupComplete && onboardingStatus) {
+    return <OnboardingDashboard onboardingStatus={onboardingStatus} onCompleteSetup={handleCompleteSetup} />;
   }
 
   return <RegularDashboard />;
