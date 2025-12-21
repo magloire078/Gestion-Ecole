@@ -39,22 +39,22 @@ service cloud.firestore {
     match /super_admins/{adminId} {
         allow read, write: if isSuperAdmin();
     }
+    // Any authenticated user can create a log, but only super admins or directors can read them all
     match /system_logs/{logId} {
       allow create: if isAuth();
-      allow read: if isSuperAdmin();
+      allow read: if isSuperAdmin() || isDirector(request.auth.token.schoolId);
     }
 
     // ========== ONBOARDING & USER ROOT ==========
-    // A user can create their own root profile once.
+    // A user can create/update their own root profile.
+    // This is necessary for the school creation process to link the schoolId.
     match /utilisateurs/{userId} {
-      allow read: if isUser(userId);
-      allow create: if isUser(userId);
-      allow update: if false; // Should not be updated after creation.
+      allow read, write: if isUser(userId);
     }
     
     // ========== SCHOOL & SUBCOLLECTIONS RULES ==========
     match /ecoles/{schoolId} {
-      // Who can create a school?
+      // Who can create a school? An authenticated user creating it for themselves.
       allow create: if isCreatingSchoolAsDirector();
       
       // Who can read the main school document?
@@ -68,10 +68,18 @@ service cloud.firestore {
       // Physical deletion is disabled (soft delete via status).
       allow delete: if false;
 
+      // --- Staff Creation Rule ---
+      // This rule is crucial for onboarding. A user can create their OWN staff profile
+      // before their schoolId claim is set.
+      match /personnel/{staffId} {
+        allow create: if isUser(staffId);
+        allow read, update, delete: if isMemberOfSchool(schoolId);
+      }
+
       // --- GENERIC SUBCOLLECTION RULE ---
-      // This rule applies to ALL subcollections of a school.
+      // This rule applies to ALL other subcollections of a school.
       // A user can read/write data within their own school.
-      match /{allPaths=**} {
+      match /{path=**}/documents/{docId} {
         allow read, write: if isMemberOfSchool(schoolId);
       }
     }
