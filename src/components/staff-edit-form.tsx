@@ -146,7 +146,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         
         const dataToSave: Staff = {
             ...values,
-            uid: editingStaff?.uid || values.uid || '',
+            uid: editingStaff?.uid || '', // UID is set by the user upon joining, not here.
             schoolId,
             photoURL: photoUrl || '',
             matricule: editingStaff?.matricule || `STAFF-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -155,35 +155,32 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         };
 
         if (editingStaff) {
+            // Mise à jour d'un membre existant
             const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
-            try {
-                await setDoc(staffDocRef, dataToSave, { merge: true });
+            setDoc(staffDocRef, dataToSave, { merge: true })
+            .then(() => {
                 toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
                 onFormSubmit();
-            } catch (serverError) {
-                const permissionError = new FirestorePermissionError({
+            }).catch((serverError) => {
+                 const permissionError = new FirestorePermissionError({
                     path: staffDocRef.path, operation: 'update', requestResourceData: dataToSave,
                 });
                 errorEmitter.emit('permission-error', permissionError);
-            }
+            })
         } else {
-            // Pour ajouter un nouveau membre, on attend un UID valide d'un utilisateur déjà authentifié.
-            if (!values.uid) {
-                form.setError("uid", { type: "manual", message: "L'ID de l'utilisateur (UID) est requis pour ajouter un nouveau membre." });
-                return;
-            }
-            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${values.uid}`);
-            
-            try {
-                 await setDoc(staffDocRef, dataToSave, { merge: true });
-                 toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e).` });
+            // Ajout d'un nouveau membre (profil seulement, sans compte auth)
+            const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
+            addDoc(staffCollectionRef, dataToSave)
+            .then(() => {
+                 toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e). L'utilisateur pourra rejoindre l'école en utilisant cette adresse email.` });
                  onFormSubmit();
-            } catch (error) {
+            })
+            .catch((error) => {
                  const permissionError = new FirestorePermissionError({
-                    path: staffDocRef.path, operation: 'create', requestResourceData: dataToSave,
+                    path: staffCollectionRef.path, operation: 'create', requestResourceData: dataToSave,
                 });
                 errorEmitter.emit('permission-error', permissionError);
-            }
+            })
         }
     };
     
@@ -265,7 +262,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                             )}
                             <div className="grid grid-cols-2 gap-4">
                               <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email</FormLabel><FormControl><Input type="email" placeholder="email@exemple.com" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                               <FormField control={form.control} name="uid" render={({ field }) => (<FormItem><FormLabel>UID (si existant)</FormLabel><FormControl><Input placeholder="ID utilisateur de Firebase" {...field} disabled={!!editingStaff} /></FormControl><FormMessage /></FormItem>)} />
+                              <FormField control={form.control} name="uid" render={({ field }) => (<FormItem><FormLabel>UID</FormLabel><FormControl><Input placeholder="Généré automatiquement" {...field} disabled={true} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                              <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" placeholder="(Optionnel)" {...field} /></FormControl></FormItem>)} />
                             <FormField control={form.control} name="hireDate" render={({ field }) => (<FormItem><FormLabel>Date d'embauche</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
