@@ -39,7 +39,9 @@ export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAle
     }
   }, [subscriptionLoading, studentsLoading, dueStudentsData]);
 
-  const planDetails = subscription ? TARIFAIRE[subscription.plan] : null;
+  const planDetails = (subscription && subscription.plan && TARIFAIRE[subscription.plan]) 
+    ? TARIFAIRE[subscription.plan] 
+    : null;
 
   const alerts: {type: 'warning' | 'error' | 'info', message: string, href?: string}[] = [];
 
