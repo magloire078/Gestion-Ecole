@@ -61,20 +61,35 @@ export function useUser() {
         const effectiveSchoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
         setSchoolId(effectiveSchoolId);
         
+        let profileData: AppUser | null = null;
         if (effectiveSchoolId) {
-            const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
+            const profileSnap = await getDoc(profileRef);
+            if (profileSnap.exists()) {
+                profileData = profileSnap.data() as AppUser;
+            }
+        }
 
-            const [schoolSnap, profileSnap] = await Promise.all([
-                getDoc(schoolDocRef),
-                getDoc(profileRef)
-            ]);
+        const tokenResult = await authUser.getIdTokenResult(true);
+        const hasSuperAdminClaim = (tokenResult.claims.superAdmin as boolean) || false;
+        const hasSuperAdminRoleInProfile = profileData?.isAdmin === true;
+
+        if(hasSuperAdminClaim || hasSuperAdminRoleInProfile) {
+            const superAdminProfile: UserProfile = {
+                uid: authUser.uid, email: authUser.email || '', schoolId: effectiveSchoolId || '',
+                role: 'super_admin', firstName: 'Super', lastName: 'Admin',
+                hireDate: '', baseSalary: 0, displayName: 'Super Admin',
+                permissions: { ...allPermissions }, isAdmin: true,
+            };
+             setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
+             setIsDirector(false); // Super admin is not a director of a specific school context
+        } else if (effectiveSchoolId) {
+            const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
+            const schoolSnap = await getDoc(schoolDocRef);
 
             const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
             setIsDirector(isDirectorFlag);
             
-            const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
-
             if (profileData) {
                 let permissions: Partial<AdminRole['permissions']> = {};
                 if (isDirectorFlag) {
@@ -92,21 +107,8 @@ export function useUser() {
             }
 
         } else {
-            const tokenResult = await authUser.getIdTokenResult(true);
-            const isSuperAdmin = (tokenResult.claims.superAdmin as boolean) || false;
-            
-            if (isSuperAdmin) {
-                const superAdminProfile: UserProfile = {
-                    uid: authUser.uid, email: authUser.email || '', schoolId: '',
-                    role: 'super_admin', firstName: 'Super', lastName: 'Admin',
-                    hireDate: '', baseSalary: 0, displayName: 'Super Admin',
-                    permissions: { ...allPermissions }, isAdmin: true,
-                };
-                 setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
-            } else {
-                setUser({ authUser, uid: authUser.uid, profile: undefined });
-                setIsDirector(false);
-            }
+            setUser({ authUser, uid: authUser.uid, profile: undefined });
+            setIsDirector(false);
         }
       } catch (error) {
         console.error("Erreur dans useUser:", error);
