@@ -61,20 +61,10 @@ export function useUser() {
         const effectiveSchoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
         setSchoolId(effectiveSchoolId);
         
-        let profileData: AppUser | null = null;
-        if (effectiveSchoolId) {
-            const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
-            const profileSnap = await getDoc(profileRef);
-            if (profileSnap.exists()) {
-                profileData = profileSnap.data() as AppUser;
-            }
-        }
-
         const tokenResult = await authUser.getIdTokenResult(true);
-        const hasSuperAdminClaim = (tokenResult.claims.superAdmin as boolean) || false;
-        const hasSuperAdminRoleInProfile = profileData?.isAdmin === true;
+        const isSuperAdmin = (tokenResult.claims.superAdmin as boolean) === true;
 
-        if(hasSuperAdminClaim || hasSuperAdminRoleInProfile) {
+        if (isSuperAdmin) {
             const superAdminProfile: UserProfile = {
                 uid: authUser.uid, email: authUser.email || '', schoolId: effectiveSchoolId || '',
                 role: 'super_admin', firstName: 'Super', lastName: 'Admin',
@@ -82,11 +72,17 @@ export function useUser() {
                 permissions: { ...allPermissions }, isAdmin: true,
             };
              setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
-             setIsDirector(false); // Super admin is not a director of a specific school context
+             setIsDirector(false);
         } else if (effectiveSchoolId) {
+            const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
             const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
-            const schoolSnap = await getDoc(schoolDocRef);
+            
+            const [profileSnap, schoolSnap] = await Promise.all([
+                getDoc(profileRef),
+                getDoc(schoolDocRef)
+            ]);
 
+            const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
             const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
             setIsDirector(isDirectorFlag);
             
