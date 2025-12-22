@@ -21,12 +21,13 @@ import type { student as Student, class_type as Class } from "@/lib/data-types";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Search } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
+import { Input } from "@/components/ui/input";
 
 export default function PaymentsPage() {
   const firestore = useFirestore();
@@ -43,14 +44,18 @@ export default function PaymentsPage() {
 
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
       const classMatch = selectedClass === 'all' || student.classId === selectedClass;
       const statusMatch = selectedStatus === 'all' || student.tuitionStatus === selectedStatus;
-      return classMatch && statusMatch;
+      const searchMatch = searchTerm === '' || 
+        `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        student.matricule?.toLowerCase().includes(searchTerm.toLowerCase());
+      return classMatch && statusMatch && searchMatch;
     });
-  }, [students, selectedClass, selectedStatus]);
+  }, [students, selectedClass, selectedStatus, searchTerm]);
 
   const totalDue = useMemo(() => {
     return filteredStudents.reduce((acc, student) => acc + (student.amountDue || 0), 0);
@@ -84,11 +89,15 @@ export default function PaymentsPage() {
             </CardContent>
         </Card>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-                <h2 className="text-xl font-semibold">Liste des Élèves</h2>
-                <p className="text-muted-foreground">
-                    Filtrez par classe ou par statut pour affiner les résultats.
-                </p>
+            <div className="relative w-full sm:max-w-xs">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                    type="search"
+                    placeholder="Chercher par nom ou matricule..."
+                    className="pl-8 w-full"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
                 <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isLoading}>
