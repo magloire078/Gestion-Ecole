@@ -39,7 +39,7 @@ export default function RHLayout({
             <TabsList className="grid w-full grid-cols-2">
                 {rhNavLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
-                        <TabsTrigger value={link.href} asChild>
+                        <TabsTrigger value={link.href}>
                            <div className="flex items-center justify-center">
                                 <link.icon className="mr-2 h-4 w-4" />
                                 {link.label}
