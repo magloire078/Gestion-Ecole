@@ -38,11 +38,14 @@ export function NotificationsPanel({
   
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
+  // Correction: La requête est maintenant plus spécifique pour contourner les problèmes de permissions 'list'
   const notificationsQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
-    // For now, we'll treat messages as notifications
-    // We can expand this later with a dedicated `notifications` collection
-    return query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(20));
+    return query(
+        collection(firestore, `ecoles/${schoolId}/messagerie`),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+    );
   }, [firestore, schoolId]);
 
   const { data: notificationsData, loading } = useCollection(notificationsQuery);
