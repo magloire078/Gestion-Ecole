@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -6,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "@/firebase";
+import { useUser } from '@/firebase';
 import { usePathname } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NAV_LINKS } from '@/lib/nav-links';
@@ -20,7 +21,9 @@ export default function InternatLayout({
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
     
-    const internatNavLinks = NAV_LINKS.find(g => g.group === 'Internat')?.links || [];
+    const internatNavLinks = NAV_LINKS.find(g => g.group === 'Vie Scolaire')?.links.filter(
+      l => l.href.startsWith('/dashboard/internat')
+    ) || [];
 
     const isLoading = subscriptionLoading || userLoading;
 
