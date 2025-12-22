@@ -214,6 +214,7 @@ export default function LandingPageV2() {
           </div>
           <nav className="flex gap-4">
             <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary">Contact</Link>
+            <Link href="/survey" className="text-sm text-muted-foreground hover:text-primary">Enquête</Link>
              <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">Connexion</Link>
           </nav>
         </div>
