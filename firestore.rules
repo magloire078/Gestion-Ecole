@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -147,7 +148,7 @@ service cloud.firestore {
 
       // Communication
       match /messagerie/{messageId} {
-        allow read: if isSchoolMember(schoolId);
+        allow read, list: if isSchoolMember(schoolId); // FIX: allow list
         allow create: if hasPermission(schoolId, 'manageCommunication');
         // Seul le créateur peut (théoriquement) modifier pour marquer comme lu
         allow update: if isSchoolMember(schoolId); 
