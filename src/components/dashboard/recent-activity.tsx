@@ -30,27 +30,11 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     
     const loading = studentsLoading || messagesLoading || booksLoading;
 
-    if (loading) {
-        return (
-            <Card>
-                <CardHeader>
-                    <Skeleton className="h-6 w-1/2" />
-                    <Skeleton className="h-4 w-3/4" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                </CardContent>
-            </Card>
-        )
-    }
-
     const recentItems = [
         ...(studentsData?.map(doc => ({ type: 'student', ...doc.data() } as student & { type: 'student' })) || []),
         ...(messagesData?.map(doc => ({ type: 'message', ...doc.data() } as message & { type: 'message' })) || []),
         ...(booksData?.map(doc => ({ type: 'book', ...doc.data() } as libraryBook & { type: 'book' })) || []),
-    ].sort((a, b) => b.createdAt?.seconds - a.createdAt?.seconds);
+    ].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
     return (
         <Card>
@@ -60,7 +44,17 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
-                    {recentItems.length > 0 ? recentItems.slice(0, 5).map((item: any, index) => (
+                    {loading ? (
+                         [...Array(3)].map((_, i) => (
+                             <div key={i} className="flex items-center gap-4">
+                                <Skeleton className="h-10 w-10 rounded-full" />
+                                <div className="flex-1 space-y-1">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-3 w-1/4" />
+                                </div>
+                            </div>
+                         ))
+                    ) : recentItems.length > 0 ? recentItems.slice(0, 5).map((item: any, index) => (
                         <div key={index} className="flex items-center gap-4">
                             <div className="p-2 bg-muted rounded-full">
                                 {item.type === 'student' && <User className="h-5 w-5 text-muted-foreground" />}
@@ -74,7 +68,7 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                                     {item.type === 'book' && `Nouveau livre : ${item.title}`}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {formatDistanceToNow(new Date(item.createdAt?.seconds * 1000), { addSuffix: true, locale: fr })}
+                                    {item.createdAt?.seconds ? formatDistanceToNow(new Date(item.createdAt.seconds * 1000), { addSuffix: true, locale: fr }) : 'il y a quelques instants'}
                                 </p>
                             </div>
                         </div>
