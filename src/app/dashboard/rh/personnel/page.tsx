@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2, Search } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -54,6 +54,7 @@ import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { StaffEditForm } from "@/components/staff-edit-form";
+import { Input } from "@/components/ui/input";
 
 
 type StaffMember = Staff & { id: string };
@@ -71,13 +72,21 @@ export default function PersonnelPage() {
   const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   
+  const [searchTerm, setSearchTerm] = useState('');
+  
   const { teachers, otherStaff } = useMemo(() => {
     const allStaff: StaffMember[] = staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [];
+    
+    const filteredStaff = allStaff.filter(s => 
+        s.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return {
-        teachers: allStaff.filter(s => s.role === 'enseignant' || s.role === 'enseignant_principal'),
-        otherStaff: allStaff.filter(s => s.role !== 'enseignant' && s.role !== 'enseignant_principal'),
+        teachers: filteredStaff.filter(s => s.role === 'enseignant' || s.role === 'enseignant_principal'),
+        otherStaff: filteredStaff.filter(s => s.role !== 'enseignant' && s.role !== 'enseignant_principal'),
     }
-  }, [staffData]);
+  }, [staffData, searchTerm]);
 
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -216,6 +225,15 @@ export default function PersonnelPage() {
             </Button>
           )}
         </div>
+        <div className="relative w-full max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input 
+                placeholder="Rechercher par nom ou email..." 
+                className="pl-10"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+            />
+        </div>
         
         <Tabs defaultValue="teachers">
             <TabsList className="grid w-full grid-cols-2">
@@ -233,7 +251,7 @@ export default function PersonnelPage() {
                     </div>
                 ) : (
                     <Card className="flex items-center justify-center h-48">
-                        <p className="text-muted-foreground">Aucun enseignant n'a été ajouté pour le moment.</p>
+                        <p className="text-muted-foreground">Aucun enseignant trouvé.</p>
                     </Card>
                 )}
             </TabsContent>
@@ -248,7 +266,7 @@ export default function PersonnelPage() {
                     </div>
                 ) : (
                     <Card className="flex items-center justify-center h-48">
-                        <p className="text-muted-foreground">Aucun autre membre du personnel n'a été ajouté.</p>
+                        <p className="text-muted-foreground">Aucun autre membre du personnel trouvé.</p>
                     </Card>
                 )}
             </TabsContent>

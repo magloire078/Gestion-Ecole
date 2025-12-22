@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,7 +36,7 @@ export function FinanceOverview({ schoolId }: FinanceOverviewProps) {
                 totalFees += student.tuitionFee || 0;
                 totalDue += student.amountDue || 0;
             });
-            const paidPercentage = totalFees > 0 ? ((totalFees - totalDue) / totalFees) * 100 : 0;
+            const paidPercentage = totalFees > 0 ? ((totalFees - totalDue) / totalFees) * 100 : 100;
 
             setFinanceStats({ totalFees, totalDue, paidPercentage });
         }
