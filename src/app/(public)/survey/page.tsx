@@ -16,6 +16,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { CheckCircle, Loader2, School } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Slider } from '@/components/ui/slider';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const surveySchema = z.object({
   schoolName: z.string().min(1, "Le nom de l'établissement est requis."),
@@ -51,6 +54,8 @@ const featureConfig = [
 export default function SurveyPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const firestore = useFirestore();
+  const { toast } = useToast();
 
   const form = useForm<SurveyFormValues>({
       resolver: zodResolver(surveySchema),
@@ -64,11 +69,24 @@ export default function SurveyPage() {
 
   const handleSubmit = async (values: SurveyFormValues) => {
     setIsSubmitting(true);
-    console.log("Résultats de l'enquête:", values);
-    // Simuler une soumission au serveur
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    setIsSubmitted(true);
+    
+    try {
+        const surveyCollectionRef = collection(firestore, 'survey_responses');
+        await addDoc(surveyCollectionRef, {
+            ...values,
+            submittedAt: serverTimestamp(),
+        });
+        setIsSubmitted(true);
+    } catch(error) {
+        console.error("Erreur lors de la soumission de l'enquête:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Erreur',
+            description: 'Impossible d\'enregistrer votre réponse. Veuillez réessayer.'
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
   const painPointOptions = [
@@ -208,3 +226,5 @@ export default function SurveyPage() {
     </div>
   );
 }
+
+    
