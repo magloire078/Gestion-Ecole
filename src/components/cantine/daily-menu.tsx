@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, date?: Date }) {
   const firestore = useFirestore();
   const { user } = useUser();
-  const canManageContent = !!user?.profile?.permissions?.manageContent;
+  const canManageContent = !!user?.profile?.permissions?.manageCantine;
 
   const [selectedDate, setSelectedDate] = useState(initialDate || new Date());
   const [menu, setMenu] = useState<CanteenMenu | null>(null);
