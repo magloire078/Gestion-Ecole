@@ -627,19 +627,18 @@
         "required": ["studentId", "routeId", "stopId", "type", "period", "price", "status"]
     },
     "building": {
-        "title": "Bâtiment d'Internat",
-        "description": "Un bâtiment utilisé pour l'hébergement des internes.",
+        "title": "Bâtiment",
+        "description": "Un bâtiment (administratif, pédagogique, sportif...).",
         "type": "object",
         "properties": {
             "name": { "type": "string" },
-            "type": { "type": "string", "enum": ["garcons", "filles", "mixte"] },
+            "type": { "type": "string", "enum": ["administratif", "pedagogique", "sportif", "autre"] },
             "capacity": { "type": "number" },
             "responsableId": { "type": "string" },
             "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
-            "curfew": { "type": "object", "properties": { "weekdays": {"type": "string"}, "weekends": {"type": "string"} } },
             "features": { "type": "array", "items": { "type": "string" } }
         },
-        "required": ["name", "type", "capacity", "responsableId", "status"]
+        "required": ["name", "type", "capacity"]
     },
     "room": {
         "title": "Chambre d'Internat",
@@ -1083,5 +1082,3 @@
     }
   }
 }
-
-    

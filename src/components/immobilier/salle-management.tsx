@@ -29,7 +29,7 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [salleToDelete, setSalleToDelete] = useState<(Salle & { id: string }) | null>(null);
 
-  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
+  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
   const sallesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
 
   const { data: buildingsData, loading: buildingsLoading } = useCollection(buildingsQuery);
@@ -41,10 +41,11 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
   const sallesByBuilding = useMemo(() => {
     const grouped: Record<string, (Salle & {id: string})[]> = {};
     for (const salle of salles) {
-        if (!grouped[salle.buildingId!]) {
-            grouped[salle.buildingId!] = [];
+        if (!salle.buildingId) continue;
+        if (!grouped[salle.buildingId]) {
+            grouped[salle.buildingId] = [];
         }
-        grouped[salle.buildingId!].push(salle);
+        grouped[salle.buildingId].push(salle);
     }
     return grouped;
   }, [salles]);

@@ -456,9 +456,9 @@ export type transportSubscription = {
 
 export type building = {
     name: string;
-    type: "garcons" | "filles" | "mixte";
+    type: "garcons" | "filles" | "mixte" | "administratif" | "pedagogique" | "sportif";
     capacity: number;
-    responsableId: string;
+    responsableId?: string;
     status: "active" | "maintenance" | "full";
     id?: string;
     curfew?: {

@@ -21,9 +21,9 @@ import { query } from 'firebase/firestore';
 
 const buildingSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
-  type: z.enum(['garcons', 'filles', 'mixte']),
+  type: z.enum(['garcons', 'filles', 'mixte', 'administratif', 'pedagogique', 'sportif']),
   capacity: z.coerce.number().min(1, "La capacité est requise."),
-  responsableId: z.string().min(1, "Le responsable est requis."),
+  responsableId: z.string().optional(),
   status: z.enum(['active', 'maintenance', 'full']),
 });
 
@@ -75,11 +75,15 @@ export function BuildingForm({ building, onSave, collectionName }: BuildingFormP
     }
   };
 
+  const buildingTypes = collectionName === 'internat_batiments' 
+    ? [{value: 'garcons', label: 'Garçons'}, {value: 'filles', label: 'Filles'}, {value: 'mixte', label: 'Mixte'}]
+    : [{value: 'administratif', label: 'Administratif'}, {value: 'pedagogique', label: 'Pédagogique'}, {value: 'sportif', label: 'Sportif'}];
+
   return (
     <Form {...form}>
       <form id="building-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Nom du Bâtiment</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-        <FormField control={form.control} name="type" render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="garcons">Garçons</SelectItem><SelectItem value="filles">Filles</SelectItem><SelectItem value="mixte">Mixte</SelectItem></SelectContent></Select></FormItem>} />
+        <FormField control={form.control} name="type" render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{buildingTypes.map(type => <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>)}</SelectContent></Select></FormItem>} />
         <FormField control={form.control} name="capacity" render={({ field }) => <FormItem><FormLabel>Capacité</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>} />
         <FormField control={form.control} name="responsableId" render={({ field }) => <FormItem><FormLabel>Responsable</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir..."/></SelectTrigger></FormControl><SelectContent>{staffMembers.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage/></FormItem>} />
         <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="maintenance">En maintenance</SelectItem><SelectItem value="full">Plein</SelectItem></SelectContent></Select></FormItem>} />
