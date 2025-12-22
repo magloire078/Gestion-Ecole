@@ -119,12 +119,6 @@ export default function BillingDashboard() {
 
   return (
     <div className="space-y-6">
-       <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Facturation</h1>
-            <p className="text-muted-foreground">
-                Consultez votre utilisation actuelle et la prévision de votre prochaine facture.
-            </p>
-        </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>

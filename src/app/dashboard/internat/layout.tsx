@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -36,7 +37,7 @@ export default function InternatLayout({
             </p>
         </div>
         <Tabs value={pathname} className="w-full">
-            <TabsList>
+            <TabsList className="grid w-full grid-cols-4">
                 {internatNavLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>

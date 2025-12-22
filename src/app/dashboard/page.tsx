@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Suspense } from 'react';
@@ -13,6 +14,7 @@ import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import type { gradeEntry as GradeEntry } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
+import { AnnouncementBanner } from '@/components/announcement-banner';
 
 
 // ====================================================================================
@@ -56,6 +58,8 @@ const RegularDashboard = () => {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tableau de Bord</h1>
       </div>
       
+      <AnnouncementBanner />
+
       {schoolId && <BillingAlerts schoolId={schoolId} studentCount={schoolData?.studentsCount || 0} cycleCount={schoolData?.cyclesCount || 0} />}
     
       <StatCards schoolId={schoolId!} />

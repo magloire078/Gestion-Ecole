@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -36,7 +37,7 @@ export default function TransportLayout({
           </p>
       </div>
       <Tabs value={pathname} className="w-full">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-4">
               {transportNavLinks.map(link => (
                   <Link href={link.href} key={link.href} passHref legacyBehavior>
                       <TabsTrigger value={link.href}>
