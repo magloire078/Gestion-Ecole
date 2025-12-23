@@ -193,6 +193,24 @@
       },
       "required": ["uid", "email", "schoolId", "role", "firstName", "lastName", "hireDate", "baseSalary"]
     },
+    "parent": {
+      "title": "Parent/Tuteur",
+      "description": "Représente un compte parent/tuteur avec des accès limités aux informations de ses enfants.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "L'UID Firebase Auth du parent." },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "schoolId": { "type": "string" },
+        "studentIds": {
+          "type": "array",
+          "description": "Liste des IDs des élèves associés à ce parent.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["uid", "email", "schoolId", "studentIds"]
+    },
     "student": {
         "title": "Élève",
         "description": "Un élève inscrit à l'école.",
@@ -217,6 +235,11 @@
             "parent2FirstName": { "type": "string", "description": "Le prénom du deuxième parent/tuteur (optionnel)." },
             "parent2LastName": { "type": "string", "description": "Le nom de famille du deuxième parent/tuteur (optionnel)." },
             "parent2Contact": { "type": "string", "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)." },
+            "parentIds": {
+                "type": "array",
+                "description": "Liste des UID des parents/tuteurs associés à cet élève.",
+                "items": { "type": "string" }
+            },
             "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
             "tuitionFee": { "type": "number", "description": "Le montant total de la scolarité pour la classe de l'élève." },
             "discountAmount": { "type": "number", "description": "Le montant de la remise ou de la bourse accordée." },
@@ -915,6 +938,11 @@
           "path": "personnel/{staffId}",
           "schema": { "$ref": "#/entities/staff" },
           "description": "Stocke les profils du personnel pour cette école."
+        },
+        "parents": {
+          "path": "parents/{parentId}",
+          "schema": { "$ref": "#/entities/parent" },
+          "description": "Stocke les profils des parents/tuteurs pour cette école."
         },
         "admin_roles": {
           "path": "admin_roles/{roleId}",
