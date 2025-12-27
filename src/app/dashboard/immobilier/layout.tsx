@@ -35,7 +35,7 @@ export default function ImmobilierLayout({
             </p>
         </div>
         <Tabs value={pathname} className="w-full">
-            <TabsList>
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7">
                 {immobilierNavLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>
