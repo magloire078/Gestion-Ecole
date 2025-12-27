@@ -10,27 +10,28 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Edit } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import type { classe as Classe } from '@/lib/data-types';
 
-
 interface ClassesListViewProps {
     cycleId: string;
     searchQuery: string;
+    onEdit: (classe: Classe & { id: string }) => void;
 }
 
-export function ClassesListView({ cycleId, searchQuery }: ClassesListViewProps) {
+export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListViewProps) {
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
 
     const classesQuery = useMemoFirebase(() => {
         if (!schoolId) return null;
+        const baseQuery = collection(firestore, `ecoles/${schoolId}/classes`);
         if (cycleId === 'all') {
-            return query(collection(firestore, `ecoles/${schoolId}/classes`));
+            return query(baseQuery);
         }
-        return query(collection(firestore, `ecoles/${schoolId}/classes`), where('cycleId', '==', cycleId));
+        return query(baseQuery, where('cycleId', '==', cycleId));
     }, [schoolId, cycleId, firestore]);
 
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -88,7 +89,9 @@ export function ClassesListView({ cycleId, searchQuery }: ClassesListViewProps) 
                                                         Voir les détails
                                                     </Link>
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem>Modifier</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => onEdit(classe)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Modifier
+                                                </DropdownMenuItem>
                                                 <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { Users, User, MapPin, BookOpen, MoreVertical } from 'lucide-react';
+import { Users, User, MapPin, BookOpen, MoreVertical, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,9 +19,10 @@ import type { classe as Classe, staff as Staff } from '@/lib/data-types';
 interface ClassCardProps {
   classe: Classe & { id: string };
   teacherName?: string;
+  onEdit: (classe: Classe & { id: string }) => void;
 }
 
-export function ClassCard({ classe, teacherName }: ClassCardProps) {
+export function ClassCard({ classe, teacherName, onEdit }: ClassCardProps) {
   const fillPercentage = classe.maxStudents > 0 ? Math.round((classe.studentCount / classe.maxStudents) * 100) : 0;
   
   return (
@@ -30,7 +31,7 @@ export function ClassCard({ classe, teacherName }: ClassCardProps) {
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="flex items-center gap-2">
-              {classe.name}
+              <Link href={`/dashboard/classes/${classe.id}`} className="hover:underline">{classe.name}</Link>
               <Badge variant="outline" className="ml-2">
                 {classe.code}
               </Badge>
@@ -46,10 +47,10 @@ export function ClassCard({ classe, teacherName }: ClassCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <Link href={`/dashboard/classes/${classe.id}`}>Voir détails</Link>
+              <DropdownMenuItem onClick={() => onEdit(classe)}>
+                <Edit className="mr-2 h-4 w-4" /> Modifier
               </DropdownMenuItem>
-              <DropdownMenuItem>Modifier</DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -99,9 +100,10 @@ export function ClassCard({ classe, teacherName }: ClassCardProps) {
 interface ClassesGridViewProps {
   cycleId: string;
   searchQuery: string;
+  onEdit: (classe: Classe & { id: string }) => void;
 }
 
-export function ClassesGridView({ cycleId, searchQuery }: ClassesGridViewProps) {
+export function ClassesGridView({ cycleId, searchQuery, onEdit }: ClassesGridViewProps) {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
 
@@ -163,6 +165,7 @@ export function ClassesGridView({ cycleId, searchQuery }: ClassesGridViewProps) 
             key={classe.id} 
             classe={classe} 
             teacherName={classe.mainTeacherId ? teacherMap.get(classe.mainTeacherId) : undefined}
+            onEdit={onEdit}
         />
       ))}
     </div>
