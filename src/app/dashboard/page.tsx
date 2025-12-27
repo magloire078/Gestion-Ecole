@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Suspense } from 'react';
@@ -51,6 +50,11 @@ const RegularDashboard = () => {
 
     fetchGrades();
   }, [schoolId, firestore]);
+  
+  const studentCount = useMemo(() => {
+    // This is a placeholder, a real implementation might get this from schoolData or a separate query
+    return schoolData?.studentCount || 0;
+  }, [schoolData]);
 
   return (
     <div className="space-y-6">
@@ -60,7 +64,7 @@ const RegularDashboard = () => {
       
       <AnnouncementBanner />
 
-      {schoolId && <BillingAlerts schoolId={schoolId} studentCount={schoolData?.studentsCount || 0} cycleCount={schoolData?.cyclesCount || 0} />}
+      {schoolId && <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={schoolData?.cycles?.length || 0} />}
     
       <StatCards schoolId={schoolId!} />
       
