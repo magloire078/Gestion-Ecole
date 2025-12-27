@@ -82,6 +82,12 @@ service cloud.firestore {
       allow delete: if false; // Ne jamais supprimer ce lien
     }
     
+    // Collection pour les demandes de contact
+    match /contact_requests/{requestId} {
+      allow create: if true;
+      allow read, list, delete: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
     // Collection des réponses à l'enquête
     match /survey_responses/{responseId} {
       allow create: if true; // Tout le monde peut soumettre l'enquête
@@ -180,7 +186,7 @@ service cloud.firestore {
       // Communication
       match /messagerie/{messageId} {
         allow get: if isSchoolMember(schoolId); // Un membre peut lire un message spécifique.
-        allow list: if isAuth() && isSchoolStaff(schoolId); // Seul le personnel peut lister les messages
+        allow list: if isSchoolMember(schoolId); // Tous les membres de l'école peuvent lister les messages.
         allow create: if hasPermission(schoolId, 'manageCommunication');
         allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
       }
