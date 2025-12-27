@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Check, School, Sparkles, Zap, PlayCircle, Users, BookOpen, Utensils, Building as BuildingIcon, Wallet, Briefcase, Bus, Bed, HeartPulse, Trophy, LandPlot, ArrowRight } from 'lucide-react';
+import { Check, School, Sparkles, Zap, PlayCircle, Users, BookOpen, Utensils, Building as BuildingIcon, Wallet, Briefcase, Bus, Bed, HeartPulse, Trophy, LandPlot, ArrowRight, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -201,6 +202,27 @@ export default function LandingPageV2() {
                     ))}
                 </div>
             </div>
+        </section>
+
+        {/* Survey CTA Section */}
+        <section id="survey-cta" className="py-20 bg-muted/40">
+          <div className="container text-center">
+            <FileText className="mx-auto h-12 w-12 text-primary" />
+            <h2 className="mt-4 text-3xl font-bold">
+              Votre avis est précieux
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-muted-foreground">
+              Aidez-nous à construire la meilleure solution pour votre établissement en répondant à notre courte enquête. Cela ne vous prendra que quelques minutes.
+            </p>
+            <div className="mt-6">
+              <Button asChild size="lg">
+                <Link href="/survey">
+                  Participer à l'enquête
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
         </section>
 
       </main>
