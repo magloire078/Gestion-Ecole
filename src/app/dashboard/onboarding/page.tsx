@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -80,6 +81,7 @@ export default function OnboardingPage() {
             lastName: lastName,
             hireDate: new Date().toISOString().split('T')[0],
             baseSalary: 0,
+            status: 'Actif', // Définir un statut par défaut
         };
 
         const batch = writeBatch(firestore);
