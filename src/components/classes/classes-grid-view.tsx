@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { classe as Classe, staff as Staff } from '@/lib/data-types';
+import { useUser } from '@/firebase';
 
 interface ClassCardProps {
   classe: Classe & { id: string };
@@ -24,6 +25,8 @@ interface ClassCardProps {
 
 export function ClassCard({ classe, teacherName, onEdit }: ClassCardProps) {
   const fillPercentage = classe.maxStudents > 0 ? Math.round((classe.studentCount / classe.maxStudents) * 100) : 0;
+  const { user } = useUser();
+  const canManageClasses = user?.profile?.permissions?.manageClasses;
   
   return (
     <Card className="hover:shadow-lg transition-shadow flex flex-col">
@@ -40,19 +43,21 @@ export function ClassCard({ classe, teacherName, onEdit }: ClassCardProps) {
               Année: {classe.academicYear}
             </CardDescription>
           </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(classe)}>
-                <Edit className="mr-2 h-4 w-4" /> Modifier
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {canManageClasses && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onEdit(classe)}>
+                  <Edit className="mr-2 h-4 w-4" /> Modifier
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </CardHeader>
       

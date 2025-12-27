@@ -14,6 +14,7 @@ import { MoreHorizontal, Edit } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
 import type { classe as Classe } from '@/lib/data-types';
+import { useUser } from '@/firebase';
 
 interface ClassesListViewProps {
     cycleId: string;
@@ -24,6 +25,8 @@ interface ClassesListViewProps {
 export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListViewProps) {
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
+    const { user } = useUser();
+    const canManageClasses = user?.profile?.permissions?.manageClasses;
 
     const classesQuery = useMemoFirebase(() => {
         if (!schoolId) return null;
@@ -89,10 +92,14 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
                                                         Voir les détails
                                                     </Link>
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => onEdit(classe)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Modifier
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
+                                                {canManageClasses && (
+                                                    <>
+                                                        <DropdownMenuItem onClick={() => onEdit(classe)}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Modifier
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-destructive">Archiver</DropdownMenuItem>
+                                                    </>
+                                                )}
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>

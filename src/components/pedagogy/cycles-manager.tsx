@@ -42,7 +42,7 @@ export function CyclesManager() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const isDirectorOrAdmin = user?.profile?.role === 'directeur' || user?.profile?.isAdmin === true;
+  const isDirectorOrAdmin = user?.profile?.permissions?.manageClasses;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<(Cycle & { id: string }) | null>(null);

@@ -16,6 +16,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
 import { ClassForm } from './class-form';
 import type { staff as Staff, niveau as Niveau, class_type as ClassType } from '@/lib/data-types';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 export function ClassesList() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -24,10 +25,10 @@ export function ClassesList() {
   const [editingClass, setEditingClass] = useState<(ClassType & { id: string }) | null>(null);
 
   const { user } = useUser();
-  const { schoolId, loading: schoolLoading } = useCollection.useSchoolData(); // Corrected hook
+  const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
 
-  const isDirectorOrAdmin = user?.profile?.role === 'directeur' || user?.profile?.isAdmin === true;
+  const isDirectorOrAdmin = user?.profile?.permissions?.manageClasses;
 
   const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
@@ -37,7 +38,7 @@ export function ClassesList() {
   const allTeachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
   const allNiveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
   const { data: teachersData, loading: teachersLoading } = useCollection(allTeachersQuery);
-  const { data: niveauxData, loading: niveauxLoading } = useCollection(allNiveauxQuery);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
   
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
   const niveaux = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
