@@ -1,5 +1,4 @@
 
-
 'use server';
 
 // This file is now dedicated to payroll-specific configurations.
