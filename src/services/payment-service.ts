@@ -24,22 +24,24 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
     const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
     
     // Using a generic pending page for mobile money, and specific success/cancel for all.
-    const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success&duration_months=${duration}`;
+    const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success`;
     const cancelUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`;
     const pendingUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente`;
 
     if (provider === 'orangemoney') {
-        const transactionId = `${schoolId}_${new Date().getTime()}`;
+        // Unique ID for this transaction, including duration
+        const orderId = `${schoolId}_${duration}m_${new Date().getTime()}`;
+        
         const paymentData = {
             merchant_key: process.env.ORANGE_MONEY_CLIENT_ID || '',
             currency: 'XOF' as const,
-            order_id: transactionId,
+            order_id: orderId, // Pass the unique ID
             amount: parseInt(price, 10),
             return_url: successUrl,
             cancel_url: cancelUrl,
             notif_url: `${BASE_APP_URL}/api/webhooks/orangemoney`,
             lang: 'fr' as const,
-            reference: schoolId, // Utiliser l'ID de l'école comme référence
+            reference: schoolId, 
         };
 
         const paymentLink = await getOrangeMoneyPaymentLink(paymentData);
@@ -53,6 +55,8 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             currency: 'XOF' as const,
             success_url: successUrl,
             error_url: cancelUrl,
+            // Wave's `client_reference` can be used to pass our internal transaction ID
+            client_reference: `${schoolId}_${duration}m_${new Date().getTime()}`
         };
         const paymentLink = await createWaveCheckoutSession(paymentData);
         if (paymentLink) return { url: paymentLink, error: null };
@@ -68,7 +72,8 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             priceInCents,
             planName: plan,
             description: description,
-            clientReferenceId: schoolId,
+            // Pass schoolId and duration in client_reference_id
+            clientReferenceId: `${schoolId}__${duration}`,
             customerEmail: user.email,
         };
 
@@ -81,12 +86,13 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         if (!phoneNumber) {
             return { url: null, error: 'Le numéro de téléphone est requis pour le paiement MTN.' };
         }
-        const transactionId = `${schoolId}_${new Date().getTime()}`;
+        // Unique ID for this transaction, including duration
+        const transactionId = `${schoolId}_${duration}m_${new Date().getTime()}`;
+        
         const paymentData = {
             amount: price,
-            // NOTE: Sandbox often uses EUR, production will use XOF. Adjust currency if needed.
             currency: 'EUR' as const,
-            externalId: transactionId,
+            externalId: transactionId, // Use the unique ID here
             payer: {
                 partyIdType: 'MSISDN' as const,
                 partyId: phoneNumber,
@@ -95,7 +101,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             payeeNote: `Abonnement ${plan} pour ${schoolId}`,
         };
 
-        const { success, message, transactionId: mtnTransactionId } = await requestMtnMomoPayment(paymentData);
+        const { success, message } = await requestMtnMomoPayment(paymentData);
         if (success) {
             return { url: pendingUrl, error: null };
         }

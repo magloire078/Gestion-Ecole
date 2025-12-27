@@ -1,8 +1,9 @@
 
 import { NextResponse } from 'next/server';
-import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase-admin/firestore';
+import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
+import type { school } from '@/lib/data-types';
 
 // Initialisez Firebase Admin SDK s'il n'est pas déjà initialisé
 const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON || '{}');
@@ -20,30 +21,46 @@ export async function POST(request: Request) {
     const body = await request.json();
     console.log("Received Orange Money IPN:", JSON.stringify(body, null, 2));
 
-    const { status, reference, amount } = body;
+    // Sécurité basique : Vérifier que le corps contient les champs attendus
+    const { status, order_id, reference } = body;
+    if (!status || !order_id || !reference) {
+      console.error("Orange Money IPN: Missing required fields.");
+      return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    }
 
     // 1. Vérifier le statut du paiement
     if (status !== 'SUCCESS') {
         console.log(`Payment status is ${status}. Ignoring.`);
-        return NextResponse.json({ message: "Notification received, status not SUCCESS" }, { status: 200 });
+        return NextResponse.json({}, { status: 200 }); // OK pour Orange Money
     }
 
-    // 2. Extraire la référence (qui doit être le schoolId)
-    const schoolId = reference;
-    if (!schoolId) {
-        console.error("Error: 'reference' (schoolId) is missing in the Orange Money IPN body.");
-        return NextResponse.json({ error: "Reference (schoolId) missing" }, { status: 400 });
+    // 2. Extraire les informations de l'order_id
+    // Format attendu : "schoolId_durationM_timestamp"
+    const schoolId = reference; // La référence principale est l'ID de l'école
+    const parts = order_id.split('_');
+    
+    let durationMonths = 1; // Durée par défaut si non trouvée
+    if (parts.length >= 2 && parts[1].endsWith('m')) {
+        const durationStr = parts[1].replace('m', '');
+        const parsedDuration = parseInt(durationStr, 10);
+        if (!isNaN(parsedDuration) && parsedDuration > 0) {
+            durationMonths = parsedDuration;
+        }
     }
-
-    console.log(`Processing successful payment for schoolId: ${schoolId}`);
+    console.log(`Processing successful payment for schoolId: ${schoolId} with duration: ${durationMonths} months.`);
 
     // 3. Mettre à jour le document de l'école dans Firestore
-    // NOTE: C'est une solution de secours. La logique principale est maintenant sur la page de succès.
-    // Cette partie ne connaît pas la durée choisie par l'utilisateur, on applique une durée par défaut.
     const schoolRef = doc(db, 'ecoles', schoolId);
-    
-    // On assume 1 mois par défaut car on ne peut pas deviner la durée ici.
-    const newEndDate = addMonths(new Date(), 1);
+    const schoolSnap = await getDoc(schoolRef);
+
+    if (!schoolSnap.exists()) {
+        console.error(`School with ID ${schoolId} not found.`);
+        return NextResponse.json({ error: "School not found" }, { status: 404 });
+    }
+
+    const schoolData = schoolSnap.data() as school;
+    const currentEndDate = new Date(schoolData.subscription?.endDate || Date.now());
+    const newEndDate = addMonths(currentEndDate, durationMonths);
 
     const subscriptionUpdate = {
         'subscription.status': 'active',

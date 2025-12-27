@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Suspense, useEffect } from 'react';
@@ -8,49 +7,26 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle, Mail } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { addMonths } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 function PaymentStatusPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const status = searchParams.get('payment_status');
-    const durationMonthsParam = searchParams.get('duration_months');
-    const { subscription, updateSubscription, loading } = useSchoolData();
-    const { toast } = useToast();
 
+    // Cette page n'est plus responsable de la mise à jour de l'abonnement.
+    // Elle se contente d'afficher un statut à l'utilisateur.
+    // Le webhook s'occupe de la logique métier critique.
+    
     useEffect(() => {
-        const handleSubscriptionUpdate = async () => {
-            if (status === 'success' && durationMonthsParam && subscription) {
-                const duration = parseInt(durationMonthsParam, 10);
-                if (!isNaN(duration) && duration > 0) {
-                    const currentEndDate = new Date(subscription.endDate || Date.now());
-                    const newEndDate = addMonths(currentEndDate, duration);
-
-                    try {
-                        await updateSubscription({
-                            endDate: newEndDate.toISOString(),
-                            status: 'active',
-                        });
-                        toast({
-                            title: 'Abonnement mis à jour !',
-                            description: `Votre abonnement est maintenant valide jusqu'au ${newEndDate.toLocaleDateString('fr-FR')}.`,
-                        });
-                    } catch (error) {
-                         toast({
-                            variant: 'destructive',
-                            title: 'Erreur',
-                            description: "Impossible de mettre à jour l'abonnement.",
-                        });
-                    }
-                }
-            }
-        };
-
-        if (!loading) {
-            handleSubscriptionUpdate();
+        // Rediriger vers le tableau de bord après quelques secondes si le paiement a réussi.
+        if (status === 'success') {
+            const timer = setTimeout(() => {
+                router.push('/dashboard/parametres/abonnement');
+            }, 4000);
+            return () => clearTimeout(timer);
         }
-    }, [status, durationMonthsParam, subscription, updateSubscription, loading, toast]);
+    }, [status, router]);
     
 
     if (status === 'success') {
@@ -62,15 +38,15 @@ function PaymentStatusPageContent() {
                            <CheckCircle className="h-8 w-8 text-green-500" /> Paiement Réussi !
                         </CardTitle>
                         <CardDescription>
-                           Votre paiement a été traité avec succès. Votre abonnement est mis à jour.
+                           Votre paiement a été traité avec succès. Votre abonnement sera mis à jour dans quelques instants.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="py-10">
-                        <p className="text-muted-foreground">Vous allez être redirigé vers votre tableau de bord.</p>
+                        <p className="text-muted-foreground">Vous allez être redirigé vers la page d'abonnement.</p>
                     </CardContent>
                     <CardFooter>
-                        <Button className="w-full" onClick={() => router.push('/dashboard')}>
-                            Retourner au Tableau de Bord
+                        <Button className="w-full" onClick={() => router.push('/dashboard/parametres/abonnement')}>
+                            Retourner à la page d'abonnement
                         </Button>
                     </CardFooter>
                 </Card>
