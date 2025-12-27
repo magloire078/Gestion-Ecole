@@ -157,6 +157,10 @@ export default function StaffProfilePage() {
 
     const allAdminRolesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/admin_roles`) : null, [firestore, schoolId]);
     const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
+    
+    const allSchoolClasses = useMemo(() => allSchoolClassesData?.docs.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);
+    const allAdminRoles = useMemo(() => allAdminRolesData?.docs.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [allAdminRolesData]);
+
 
     const isLoading = staffLoading || schoolLoading;
 
@@ -266,8 +270,8 @@ export default function StaffProfilePage() {
               <StaffEditForm
                   schoolId={schoolId!}
                   editingStaff={staffMember}
-                  classes={(allSchoolClassesData?.docs.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [])}
-                  adminRoles={(allAdminRolesData?.docs.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [])}
+                  classes={allSchoolClasses}
+                  adminRoles={allAdminRoles}
                   onFormSubmit={() => setIsEditDialogOpen(false)}
                />
             </DialogContent>

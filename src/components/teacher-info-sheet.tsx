@@ -4,7 +4,7 @@
 import React, { useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Printer, User, Cake, MapPin, Phone, Mail, Book, BookUser, Hash } from 'lucide-react';
+import { Printer, User, Cake, MapPin, Phone, Mail, Book, BookUser, Hash, Building, Bank, Users, Hand } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -108,10 +108,10 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                             </div>
                         </div>
 
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                             <div className="space-y-4">
                                 <h4 className="font-bold text-lg border-b pb-1">Informations Professionnelles</h4>
-                                <InfoRow icon={Book} label="Rôle" value={teacher.role} />
+                                <InfoRow icon={Book} label="Rôle" value={teacher.role?.replace(/_/g, ' ')} />
                                 {teacher.subject && <InfoRow icon={BookUser} label="Matière principale" value={teacher.subject} />}
                                 {teacher.classId && <InfoRow icon={BookUser} label="Classe principale" value={teacher.classId} />}
                                 <InfoRow icon={Cake} label="Date d'embauche" value={hireDate} />
@@ -120,6 +120,25 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                                 <h4 className="font-bold text-lg border-b pb-1">Coordonnées</h4>
                                 <InfoRow icon={Mail} label="Email" value={teacher.email} isLink href={`mailto:${teacher.email}`} />
                                 <InfoRow icon={Phone} label="Téléphone" value={teacher.phone} isLink href={`tel:${teacher.phone}`} />
+                            </div>
+                             <div className="space-y-4">
+                                <h4 className="font-bold text-lg border-b pb-1">Informations Personnelles</h4>
+                                <InfoRow icon={Users} label="Situation matrimoniale" value={teacher.situationMatrimoniale} />
+                                <InfoRow icon={Users} label="Enfants à charge" value={teacher.enfants} />
+                            </div>
+                            <div className="space-y-4">
+                                <h4 className="font-bold text-lg border-b pb-1">Informations Administratives</h4>
+                                <InfoRow icon={Hand} label="Catégorie" value={teacher.categorie} />
+                                <InfoRow icon={Hash} label="N° CNPS" value={teacher.cnpsEmploye} />
+                                <InfoRow icon={Hash} label="Soumis CNPS" value={teacher.CNPS ? 'Oui' : 'Non'} />
+                            </div>
+                             <div className="space-y-4 md:col-span-2">
+                                <h4 className="font-bold text-lg border-b pb-1">Coordonnées Bancaires</h4>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+                                    <InfoRow icon={Bank} label="Banque" value={teacher.banque} />
+                                    <InfoRow icon={Bank} label="N° Compte" value={teacher.numeroCompte} />
+                                    <InfoRow icon={Bank} label="RIB" value={`${teacher.CB || ''} ${teacher.CG || ''} ${teacher.Cle_RIB || ''}`.trim()} />
+                                </div>
                             </div>
                         </div>
                     </main>
