@@ -25,10 +25,21 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface OccupantWithDetails extends occupant {
     studentName?: string;
     roomNumber?: string;
+    id: string;
 }
 
 export default function OccupantsPage() {
@@ -40,6 +51,8 @@ export default function OccupantsPage() {
     
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingOccupant, setEditingOccupant] = useState<(occupant & { id: string }) | null>(null);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [occupantToDelete, setOccupantToDelete] = useState<(OccupantWithDetails & { id: string }) | null>(null);
 
     const occupantsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/internat_occupants`)) : null, [firestore, schoolId]);
     const { data: occupantsData, loading: occupantsLoading } = useCollection(occupantsQuery);
@@ -54,7 +67,7 @@ export default function OccupantsPage() {
     
     const rooms = useMemo(() => roomsData?.map(doc => ({ id: doc.id, ...doc.data() } as Room & { id: string })) || [], [roomsData]);
 
-    const occupants: (OccupantWithDetails & {id: string})[] = useMemo(() => {
+    const occupants: OccupantWithDetails[] = useMemo(() => {
         if (!occupantsData || !studentsData || !roomsData) return [];
         const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
         const roomsMap = new Map(roomsData.map(doc => [doc.id, doc.data() as Room]));
@@ -83,17 +96,25 @@ export default function OccupantsPage() {
         setEditingOccupant(null);
     };
     
-    const handleDeleteOccupant = async (occupantId: string) => {
-        if (!schoolId) return;
+    const handleOpenDeleteDialog = (occupant: OccupantWithDetails) => {
+        setOccupantToDelete(occupant);
+        setIsDeleteDialogOpen(true);
+    }
+    
+    const handleDeleteOccupant = async () => {
+        if (!schoolId || !occupantToDelete) return;
         try {
-            await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants`, occupantId));
+            await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants`, occupantToDelete.id));
             toast({ title: 'Occupation supprimée', description: "L'occupation a bien été supprimée." });
         } catch (e) {
              const permissionError = new FirestorePermissionError({
-                path: `ecoles/${schoolId}/internat_occupants/${occupantId}`,
+                path: `ecoles/${schoolId}/internat_occupants/${occupantToDelete.id}`,
                 operation: 'delete',
             });
             errorEmitter.emit('permission-error', permissionError);
+        } finally {
+            setIsDeleteDialogOpen(false);
+            setOccupantToDelete(null);
         }
     }
 
@@ -144,13 +165,15 @@ export default function OccupantsPage() {
                     </TableCell>
                     <TableCell><Badge variant={getStatusBadgeVariant(occ.status)}>{occ.status}</Badge></TableCell>
                     <TableCell className="text-right">
-                       <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleOpenForm(occ)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteOccupant(occ.id)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
-                          </DropdownMenuContent>
+                       {canManageContent && (
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenForm(occ)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(occ)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                            </DropdownMenuContent>
                         </DropdownMenu>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -178,6 +201,23 @@ export default function OccupantsPage() {
             />
         </DialogContent>
     </Dialog>
+
+    <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Cette action est irréversible et supprimera l'occupation de <strong>{occupantToDelete?.studentName}</strong>.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteOccupant} className="bg-destructive hover:bg-destructive/90">
+                    Supprimer
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
