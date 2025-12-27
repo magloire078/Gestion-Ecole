@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
+import { FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -44,6 +44,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { fee as Fee } from "@/lib/data-types";
 import { useMemo, useState, useEffect } from "react";
+import { SafeImage } from "@/components/ui/safe-image";
 
 
 const feeSchema = z.object({
@@ -236,10 +237,17 @@ export default function FeesPage() {
                   [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
               ) : (
                   fees.map((fee: Fee) => (
-                      <Card key={fee.id} className="flex flex-col">
-                          <CardHeader className="p-0 relative bg-muted/50 rounded-t-xl h-24 flex items-center justify-center">
-                              <GraduationCap className="h-12 w-12 text-muted-foreground/50" />
-                              {canManageBilling && (
+                      <Card key={fee.id} className="flex flex-col overflow-hidden">
+                          <CardHeader className="p-0 relative">
+                              <SafeImage
+                                  src={`https://picsum.photos/seed/${fee.id}/400/200`}
+                                  alt={`Image pour ${fee.grade}`}
+                                  width={400}
+                                  height={200}
+                                  className="h-28 w-full object-cover"
+                                  data-ai-hint={getImageHintForGrade(fee.grade)}
+                              />
+                               {canManageBilling && (
                                 <div className="absolute top-2 right-2">
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -255,22 +263,24 @@ export default function FeesPage() {
                           </CardHeader>
                           <CardContent className="p-4 flex-1 flex flex-col justify-between">
                               <div>
-                                  <CardTitle className="flex items-center gap-2 text-xl">
-                                      {fee.grade}
-                                  </CardTitle>
+                                  <CardTitle className="text-xl">{fee.grade}</CardTitle>
                                   <div className="flex items-baseline gap-2 mt-2">
                                       <p className="text-3xl font-bold text-primary">{formatCurrency(fee.amount)}</p>
                                       <p className="text-sm text-muted-foreground">/ an</p>
                                   </div>
-                                  <CardDescription className="flex items-center gap-2 mt-2 text-sm font-medium text-primary">
-                                      <CalendarDays className="h-4 w-4" />
+                              </div>
+                               <div className="space-y-2 mt-4">
+                                  <CardDescription className="flex items-center gap-2 text-sm">
+                                      <CalendarDays className="h-4 w-4 shrink-0" />
                                       <span>{fee.installments}</span>
                                   </CardDescription>
-                                  <CardDescription className="flex items-start gap-2 mt-3 text-xs">
-                                      <FileText className="h-4 w-4 mt-0.5 shrink-0" />
-                                      <span>{fee.details}</span>
-                                  </CardDescription>
-                              </div>
+                                  {fee.details && (
+                                    <CardDescription className="flex items-start gap-2 text-xs pt-1">
+                                        <FileText className="h-4 w-4 mt-0.5 shrink-0" />
+                                        <span className="italic">{fee.details}</span>
+                                    </CardDescription>
+                                  )}
+                               </div>
                           </CardContent>
                       </Card>
                   ))
