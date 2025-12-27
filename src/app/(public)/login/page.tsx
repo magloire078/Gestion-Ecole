@@ -115,10 +115,10 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
 
-        const userDocRef = doc(firestore, "utilisateurs", userCredential.user.uid);
-        await setDoc(userDocRef, { schoolId: null });
-
-        toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès. Vous pouvez maintenant vous connecter.' });
+        // Un nouvel utilisateur n'a pas de document /utilisateurs/{userId}
+        // Il sera créé lors de l'onboarding (création ou jonction d'école)
+        
+        toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès. Vous allez être redirigé.' });
         window.location.href = '/dashboard';
     } catch (error: any) {
         if (error.code === 'auth/email-already-in-use') {
