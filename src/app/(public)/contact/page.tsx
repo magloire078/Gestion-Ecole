@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -18,6 +19,9 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useFirestore } from '@/firebase';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 const TIME_SLOTS = [
   '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'
@@ -40,15 +44,12 @@ const contactSchema = z.object({
 
 type ContactFormValues = z.infer<typeof contactSchema>;
 
-async function sendContactRequest(data: any) {
-    console.log("Sending contact request:", data);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    return { success: true };
-}
-
 export default function ContactPage() {
   const router = useRouter();
+  const firestore = useFirestore();
+  const { toast } = useToast();
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ContactFormValues>({
       resolver: zodResolver(contactSchema),
@@ -66,12 +67,26 @@ export default function ContactPage() {
   });
 
   const handleSubmit = async (values: ContactFormValues) => {
+    setIsSubmitting(true);
     try {
-      await sendContactRequest(values);
+      const collectionRef = collection(firestore, 'contact_requests');
+      await addDoc(collectionRef, {
+        ...values,
+        meetingDate: values.meetingDate ? format(values.meetingDate, 'yyyy-MM-dd') : null,
+        submittedAt: serverTimestamp(),
+      });
+
       setIsSubmitted(true);
-      setTimeout(() => router.push('/'), 2000);
+      // Pas de redirection automatique, pour laisser le temps de lire le message
     } catch (error) {
       console.error('Error submitting form:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: "Une erreur est survenue lors de l'envoi de votre demande. Veuillez réessayer."
+      })
+    } finally {
+        setIsSubmitting(false);
     }
   };
 
@@ -83,7 +98,7 @@ export default function ContactPage() {
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold mb-2">Demande envoyée !</h2>
             <p className="text-muted-foreground mb-6">
-              Notre équipe commerciale vous contactera dans les 24h.
+              Merci pour votre intérêt. Notre équipe commerciale vous contactera dans les 24h pour confirmer votre démonstration.
             </p>
             <Button onClick={() => router.push('/')}>
               Retour à l'accueil
@@ -189,7 +204,7 @@ export default function ContactPage() {
                   </div>
                   <FormField control={form.control} name="message" render={({ field }) => (<FormItem><FormLabel>Message additionnel</FormLabel><FormControl><Textarea placeholder="Questions spécifiques, besoins particuliers..." {...field} rows={4}/></FormControl></FormItem>)} />
                   <FormField control={form.control} name="newsletter" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange}/></FormControl><Label htmlFor="newsletter" className="text-sm font-normal">Je souhaite recevoir les actualités et conseils</Label></FormItem>)} />
-                  <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : null}{form.formState.isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}</Button>
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : null}{isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}</Button>
                 </form>
                 </Form>
               </CardContent>

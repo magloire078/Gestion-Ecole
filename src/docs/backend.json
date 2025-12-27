@@ -53,6 +53,55 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
     },
+    "contact_request": {
+      "title": "Demande de Contact",
+      "description": "Stocke une soumission du formulaire de demande de démo.",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "schoolType": { "type": "string" },
+        "studentCount": { "type": "string" },
+        "needs": { "type": "array", "items": { "type": "string" } },
+        "message": { "type": "string" },
+        "meetingDate": { "type": "string", "format": "date" },
+        "meetingTime": { "type": "string" },
+        "newsletter": { "type": "boolean" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["firstName", "lastName", "email", "schoolName"]
+    },
+    "survey_response": {
+        "title": "Réponse à l'Enquête",
+        "description": "Stocke une soumission du formulaire d'enquête.",
+        "type": "object",
+        "properties": {
+            "schoolName": { "type": "string" },
+            "schoolType": { "type": "string" },
+            "studentCount": { "type": "string" },
+            "currentManagement": { "type": "string" },
+            "painPoints": { "type": "array", "items": { "type": "string" } },
+            "featureInterest": {
+                "type": "object",
+                "properties": {
+                    "pedagogy": { "type": "number" },
+                    "finance": { "type": "number" },
+                    "communication": { "type": "number" },
+                    "schoolLife": { "type": "number" },
+                    "rh": { "type": "number" },
+                    "infra": { "type": "number" }
+                }
+            },
+            "budget": { "type": "string" },
+            "comments": { "type": "string" },
+            "contactEmail": { "type": "string" },
+            "submittedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["schoolName", "schoolType", "studentCount", "currentManagement", "painPoints", "featureInterest", "submittedAt"]
+    },
     "system_log": {
       "title": "Journal Système",
       "description": "Trace toutes les actions critiques effectuées par les super admins.",
@@ -165,6 +214,24 @@
       },
       "required": ["uid", "email", "schoolId", "role", "firstName", "lastName", "hireDate", "baseSalary"]
     },
+    "parent": {
+      "title": "Parent/Tuteur",
+      "description": "Représente un compte parent/tuteur avec des accès limités aux informations de ses enfants.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "L'UID Firebase Auth du parent." },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "schoolId": { "type": "string" },
+        "studentIds": {
+          "type": "array",
+          "description": "Liste des IDs des élèves associés à ce parent.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["uid", "email", "schoolId", "studentIds"]
+    },
     "student": {
         "title": "Élève",
         "description": "Un élève inscrit à l'école.",
@@ -189,6 +256,11 @@
             "parent2FirstName": { "type": "string", "description": "Le prénom du deuxième parent/tuteur (optionnel)." },
             "parent2LastName": { "type": "string", "description": "Le nom de famille du deuxième parent/tuteur (optionnel)." },
             "parent2Contact": { "type": "string", "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)." },
+            "parentIds": {
+                "type": "array",
+                "description": "Liste des UID des parents/tuteurs associés à cet élève.",
+                "items": { "type": "string" }
+            },
             "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
             "tuitionFee": { "type": "number", "description": "Le montant total de la scolarité pour la classe de l'élève." },
             "discountAmount": { "type": "number", "description": "Le montant de la remise ou de la bourse accordée." },
@@ -867,6 +939,14 @@
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
+    "/contact_requests/{requestId}": {
+        "schema": { "$ref": "#/entities/contact_request" },
+        "description": "Stocke les soumissions du formulaire de contact/démo."
+    },
+    "/survey_responses/{responseId}": {
+        "schema": { "$ref": "#/entities/survey_response" },
+        "description": "Stocke les soumissions du formulaire d'enquête publique."
+    },
     "/system_logs/{logId}": {
         "schema": { "$ref": "#/entities/system_log" },
         "description": "Journalise toutes les actions critiques effectuées sur la plateforme."
@@ -883,6 +963,11 @@
           "path": "personnel/{staffId}",
           "schema": { "$ref": "#/entities/staff" },
           "description": "Stocke les profils du personnel pour cette école."
+        },
+        "parents": {
+          "path": "parents/{parentId}",
+          "schema": { "$ref": "#/entities/parent" },
+          "description": "Stocke les profils des parents/tuteurs pour cette école."
         },
         "admin_roles": {
           "path": "admin_roles/{roleId}",
