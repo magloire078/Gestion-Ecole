@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {useState, useEffect} from 'react';
@@ -74,6 +75,8 @@ export function useUser() {
              setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
              setIsDirector(false);
         } else if (effectiveSchoolId) {
+            // Un utilisateur pourrait être un membre du personnel OU un parent.
+            // On vérifie d'abord s'il est un membre du personnel.
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
             const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
             
@@ -99,6 +102,7 @@ export function useUser() {
                 }
                 setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: false } });
             } else {
+                 // Si pas de profil staff, on pourrait chercher un profil parent ici à l'avenir
                  setUser({ authUser, uid: authUser.uid, profile: undefined });
             }
 

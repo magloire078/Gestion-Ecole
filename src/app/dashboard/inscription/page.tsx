@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -170,6 +171,7 @@ export default function RegistrationPage() {
       parent2LastName: values.parent2LastName,
       parent2FirstName: values.parent2FirstName,
       parent2Contact: values.parent2Contact,
+      parentIds: [], // Initialise le champ parentIds
       tuitionFee: tuitionFee,
       discountAmount: 0,
       discountReason: '',

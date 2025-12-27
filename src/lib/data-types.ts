@@ -114,6 +114,15 @@ export interface UserProfile extends staff {
     isAdmin?: boolean;
 }
 
+export type parent = {
+    uid: string;
+    email: string;
+    schoolId: string;
+    studentIds: string[];
+    displayName?: string;
+    photoURL?: string;
+};
+
 
 export type student = {
     schoolId: string;
@@ -140,6 +149,7 @@ export type student = {
     parent2FirstName?: string;
     parent2LastName?: string;
     parent2Contact?: string;
+    parentIds?: string[];
     previousSchool?: string;
     discountAmount?: number;
     discountReason?: string;
