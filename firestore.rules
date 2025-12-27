@@ -127,7 +127,7 @@ service cloud.firestore {
       // Personnel de l'école
       match /personnel/{staffId} {
         allow read: if isSchoolStaff(schoolId);
-        allow create: if hasPermission(schoolId, 'manageUsers');
+        allow create: if isAuth() && request.auth.uid == staffId;
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
