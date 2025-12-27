@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature, CreditCard } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature, CreditCard, Edit, Trash2 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -38,7 +38,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
@@ -269,48 +273,45 @@ export default function StudentsPage() {
                               <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
                           </TableCell>
                           <TableCell className="text-right print:hidden">
-                            <div className="flex justify-end gap-2">
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-9 w-9">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                   <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}`)}>
-                                        <Eye className="mr-2 h-4 w-4" />
-                                        Voir le Profil
-                                    </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/carte`)}>
-                                        <CreditCard className="mr-2 h-4 w-4" />
-                                        Carte Étudiant
-                                    </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/bulletin`)}>
-                                        <FileText className="mr-2 h-4 w-4" />
-                                        Bulletin
-                                    </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/emploi-du-temps`)}>
-                                        <CalendarDays className="mr-2 h-4 w-4" />
-                                        Emploi du temps
-                                    </DropdownMenuItem>
-                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/fiche`)}>
-                                        <FileSignature className="mr-2 h-4 w-4" />
-                                        Fiche
-                                    </DropdownMenuItem>
-                                  {canManageUsers && (
-                                    <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem onClick={() => handleOpenEditDialog(student)}>Modifier</DropdownMenuItem>
-                                      <DropdownMenuItem 
-                                        className="text-destructive"
-                                        onClick={() => handleOpenDeleteDialog(student)}
-                                      >
-                                        Supprimer
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                            <div className="flex justify-end gap-1">
+                                {canManageUsers && (
+                                    <Button variant="outline" size="sm" onClick={() => handleOpenEditDialog(student)}>
+                                        <Edit className="h-3.5 w-3.5 mr-1"/> Modifier
+                                    </Button>
+                                )}
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-9 w-9">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}`)}>
+                                            <Eye className="mr-2 h-4 w-4" /> Voir le Profil
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>
+                                                <Printer className="mr-2 h-4 w-4" /> Imprimer
+                                            </DropdownMenuSubTrigger>
+                                            <DropdownMenuPortal>
+                                                <DropdownMenuSubContent>
+                                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/carte`)}><CreditCard className="mr-2 h-4 w-4" />Carte Étudiant</DropdownMenuItem>
+                                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/bulletin`)}><FileText className="mr-2 h-4 w-4" />Bulletin</DropdownMenuItem>
+                                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/emploi-du-temps`)}><CalendarDays className="mr-2 h-4 w-4" />Emploi du temps</DropdownMenuItem>
+                                                     <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/fiche`)}><FileSignature className="mr-2 h-4 w-4" />Fiche</DropdownMenuItem>
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuPortal>
+                                        </DropdownMenuSub>
+                                        {canManageUsers && (
+                                            <>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(student)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                                </DropdownMenuItem>
+                                            </>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                           </TableCell>
                         </TableRow>
