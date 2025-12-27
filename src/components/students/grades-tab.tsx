@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import React from 'react';
 import type { gradeEntry as GradeEntry } from '@/lib/data-types';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 interface GradesTabProps {
     schoolId: string;
@@ -53,6 +54,7 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
     const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
     
     const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
+    const sortedSubjects = useMemo(() => Object.keys(subjectAverages).sort((a,b) => subjectAverages[b].average - subjectAverages[a].average), [subjectAverages]);
 
     return (
         <Card>
@@ -69,40 +71,57 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
                 </div>
             </CardHeader>
             <CardContent>
-                <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Matière</TableHead>
-                        <TableHead className="text-right">Coeff.</TableHead>
-                        <TableHead className="text-right">Moyenne</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {gradesLoading ? (
-                             <TableRow><TableCell colSpan={3}><Skeleton className="h-8 w-full" /></TableCell></TableRow>
-                        ) : Object.keys(subjectAverages).length > 0 ? Object.entries(subjectAverages).map(([subject, subjectData]) => {
+                {gradesLoading ? (
+                    <div className="space-y-4">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                    </div>
+                ) : sortedSubjects.length > 0 ? (
+                    <Accordion type="multiple" className="w-full">
+                        {sortedSubjects.map(subject => {
+                            const subjectData = subjectAverages[subject];
                             const subjectGrades = grades.filter(g => g.subject === subject);
                             return (
-                                <React.Fragment key={subject}>
-                                    <TableRow>
-                                        <TableCell className="font-medium">{subject}</TableCell>
-                                        <TableCell className="text-right font-mono">{subjectData.totalCoeffs}</TableCell>
-                                        <TableCell className="text-right font-mono text-lg">{subjectData.average.toFixed(2)}</TableCell>
-                                    </TableRow>
-                                    {subjectGrades.map(grade => (
-                                        <TableRow key={grade.id} className="bg-muted/50">
-                                            <TableCell className="py-1 text-xs pl-8 text-muted-foreground">{format(new Date(grade.date), 'd MMM', { locale: fr }) }</TableCell>
-                                            <TableCell className="py-1 text-xs text-right text-muted-foreground">x{grade.coefficient}</TableCell>
-                                            <TableCell className="py-1 text-xs text-right text-muted-foreground">{grade.grade}/20</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </React.Fragment>
+                                <AccordionItem value={subject} key={subject}>
+                                    <AccordionTrigger>
+                                        <div className="flex justify-between w-full items-center pr-4">
+                                            <span className="font-semibold">{subject}</span>
+                                            <div className="text-right">
+                                                <div className="font-bold text-lg">{subjectData.average.toFixed(2)}</div>
+                                                <div className="text-xs text-muted-foreground">Coeff. {subjectData.totalCoeffs}</div>
+                                            </div>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Date</TableHead>
+                                                    <TableHead>Type</TableHead>
+                                                    <TableHead className="text-right">Note</TableHead>
+                                                    <TableHead className="text-right">Coeff.</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {subjectGrades.map(grade => (
+                                                    <TableRow key={grade.id}>
+                                                        <TableCell>{format(new Date(grade.date), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                                                        <TableCell>{grade.type}</TableCell>
+                                                        <TableCell className="text-right font-mono">{grade.grade}/20</TableCell>
+                                                        <TableCell className="text-right font-mono">{grade.coefficient}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </AccordionContent>
+                                </AccordionItem>
                             );
-                        }) : (
-                            <TableRow><TableCell colSpan={3} className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</TableCell></TableRow>
-                        )}
-                    </TableBody>
-                </Table>
+                        })}
+                    </Accordion>
+                ) : (
+                    <div className="text-center text-muted-foreground py-8">Aucune note enregistrée pour cet élève.</div>
+                )}
             </CardContent>
         </Card>
     );
