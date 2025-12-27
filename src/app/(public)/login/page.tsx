@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -27,7 +26,6 @@ import { Label } from '@/components/ui/label';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from 'next/link';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -64,7 +62,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState("login");
+  const [isSignUp, setIsSignUp] = useState(false); // New state to toggle between modes
 
   const router = useRouter();
   const auth = useAuth();
@@ -117,7 +115,6 @@ export default function LoginPage() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName });
 
-        // Créer le document utilisateur dans Firestore
         const userDocRef = doc(firestore, "utilisateurs", userCredential.user.uid);
         await setDoc(userDocRef, { schoolId: null });
 
@@ -155,6 +152,14 @@ export default function LoginPage() {
         setIsProcessing(false);
     }
   };
+  
+  const handleSubmit = () => {
+    if (isSignUp) {
+      handleEmailPasswordSignUp();
+    } else {
+      handleEmailPasswordSignIn();
+    }
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -163,61 +168,44 @@ export default function LoginPage() {
             <div className="mb-4 flex justify-center">
                  <Logo />
             </div>
-          <CardTitle className="text-2xl">Accès à votre espace</CardTitle>
+          <CardTitle className="text-2xl">{isSignUp ? 'Créer un compte' : 'Accès à votre espace'}</CardTitle>
           <CardDescription>
-            Utilisez votre e-mail et mot de passe ou un compte social.
+            {isSignUp ? 'Créez votre compte pour commencer.' : 'Utilisez votre e-mail et mot de passe.'}
           </CardDescription>
         </CardHeader>
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="px-6">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="login">Se connecter</TabsTrigger>
-                    <TabsTrigger value="signup">Créer un compte</TabsTrigger>
-                </TabsList>
+        <CardContent className="grid gap-4">
+          {isSignUp && (
+            <div className="grid gap-2">
+                <Label htmlFor="signup-name">Nom complet</Label>
+                <Input id="signup-name" placeholder="Ex: Jean Dupont" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required disabled={isProcessing} />
             </div>
-            <TabsContent value="login">
-                <CardContent className="grid gap-4 pt-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="login-email">Email</Label>
-                        <Input id="login-email" type="email" placeholder="directeur@ecole.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isProcessing} />
-                    </div>
-                     <div className="grid gap-2">
-                        <Label htmlFor="login-password">Mot de passe</Label>
-                        <Input id="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isProcessing} />
-                    </div>
-                </CardContent>
-                <CardFooter className="flex flex-col gap-4">
-                    <Button className="w-full" onClick={handleEmailPasswordSignIn} disabled={isProcessing}>
-                        {isProcessing ? 'Connexion...' : 'Se connecter'}
-                    </Button>
-                </CardFooter>
-            </TabsContent>
-            <TabsContent value="signup">
-                 <CardContent className="grid gap-4 pt-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="signup-name">Nom complet</Label>
-                        <Input id="signup-name" placeholder="Ex: Jean Dupont" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required disabled={isProcessing} />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="signup-email">Email</Label>
-                        <Input id="signup-email" type="email" placeholder="directeur@ecole.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isProcessing} />
-                    </div>
-                     <div className="grid gap-2">
-                        <Label htmlFor="signup-password">Mot de passe</Label>
-                        <Input id="signup-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isProcessing} />
-                    </div>
-                </CardContent>
-                <CardFooter>
-                    <Button className="w-full" onClick={handleEmailPasswordSignUp} disabled={isProcessing}>
-                         {isProcessing ? 'Création en cours...' : 'Créer mon compte'}
-                    </Button>
-                </CardFooter>
-            </TabsContent>
-        </Tabs>
+          )}
+          <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" placeholder="directeur@ecole.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isProcessing} />
+          </div>
+          <div className="grid gap-2">
+              <Label htmlFor="password">Mot de passe</Label>
+              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isProcessing} />
+          </div>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+            <Button className="w-full" onClick={handleSubmit} disabled={isProcessing}>
+                {isProcessing ? 'Traitement...' : (isSignUp ? 'Créer mon compte' : 'Se connecter')}
+            </Button>
+             <p className="text-center text-sm text-muted-foreground">
+                {isSignUp ? 'Vous avez déjà un compte ?' : "Vous n'avez pas de compte ?"}
+                <Button variant="link" className="p-1" onClick={() => setIsSignUp(!isSignUp)}>
+                    {isSignUp ? 'Se connecter' : 'Créez-en un'}
+                </Button>
+            </p>
+        </CardFooter>
+        
         <div className="relative p-6 pt-0">
             <Separator />
             <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
         </div>
+        
         <div className="px-6 pb-6 flex flex-col gap-4">
             <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
                 <GoogleIcon className="mr-2 h-4 w-4" />

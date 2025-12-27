@@ -16,7 +16,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { staff } from '@/lib/data-types';
+import type { staff, user_root } from '@/lib/data-types';
 
 type OnboardingMode = "create" | "join";
 
@@ -69,7 +69,7 @@ export default function OnboardingPage() {
         const rootUserRef = doc(firestore, `utilisateurs/${user.uid}`);
         const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
         
-        const rootUserData = { schoolId: schoolId };
+        const rootUserData: user_root = { schoolId: schoolId };
         const staffProfileData: Omit<staff, 'id'> = {
             uid: user.uid,
             email: user.email,
@@ -101,7 +101,7 @@ export default function OnboardingPage() {
 
     } catch(error: any) {
          const permissionError = new FirestorePermissionError({
-            path: `/utilisateurs/${user.uid} and /personnel/${user.uid}`,
+            path: `[BATCH] /utilisateurs/${user.uid} & /ecoles/${schoolCode}/personnel/${user.uid}`,
             operation: 'write',
             requestResourceData: { schoolCode },
         });
