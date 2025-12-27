@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
