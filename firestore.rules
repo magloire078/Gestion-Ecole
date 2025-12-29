@@ -195,7 +195,7 @@ service cloud.firestore {
       // Communication
       match /messagerie/{messageId} {
         allow get, update: if isSchoolMember(schoolId);
-        allow list: if request.query.limit <= 20; // Limite la taille des requêtes de liste
+        allow list: if isSchoolMember(schoolId) && (request.query.limit <= 20 || (request.query.where[0][0] == 'recipients.all' && request.query.where[0][2] == true));
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
