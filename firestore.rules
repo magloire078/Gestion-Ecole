@@ -32,9 +32,14 @@ service cloud.firestore {
 
     // Vérifie si un token de session parent est valide
     function isParent(schoolId, studentId) {
-      let token = request.auth.token;
-      return token.schoolId == schoolId && studentId in token.studentIds;
+        let token = request.auth.token;
+        // The studentId check might be null if we are just checking general access
+        if (studentId == null) {
+            return token.schoolId == schoolId;
+        }
+        return token.schoolId == schoolId && studentId in token.studentIds;
     }
+    
 
     // Vérifie si l'utilisateur est un membre de l'école (personnel ou parent authentifié)
     function isSchoolMember(schoolId) {
@@ -195,6 +200,7 @@ service cloud.firestore {
       // Communication
       match /messagerie/{messageId} {
         allow get, update: if isSchoolMember(schoolId);
+        // Permet de lister les messages destinés à tous.
         allow list: if isSchoolMember(schoolId) && (request.query.limit <= 20 || (request.query.where[0][0] == 'recipients.all' && request.query.where[0][2] == true));
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
