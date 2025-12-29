@@ -185,10 +185,9 @@ service cloud.firestore {
 
       // Communication
       match /messagerie/{messageId} {
-        allow get: if isSchoolMember(schoolId); // Un membre peut lire un message spécifique.
-        allow list: if isSchoolMember(schoolId); // Tous les membres de l'école peuvent lister les messages.
+        allow read: if isSchoolMember(schoolId); // allow get/list queries based on specific fields (e.g. recipients)
         allow create: if hasPermission(schoolId, 'manageCommunication');
-        allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
+        allow update: if isSchoolMember(schoolId); // To mark as read
       }
       
       // Finances (frais, comptabilité)
