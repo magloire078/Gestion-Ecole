@@ -122,6 +122,15 @@ function getIGRFromTranche(revenu: number): number {
 // 3. PAYSLIP CALCULATION LOGIC
 // ====================================================================================
 
+const SENIORITY_BONUS_TIERS = [
+    { years: 25, rate: 25 },
+    { years: 20, rate: 20 },
+    { years: 15, rate: 15 },
+    { years: 10, rate: 10 },
+    { years: 5, rate: 5 },
+    { years: 2, rate: 2 },
+];
+
 export async function getPayslipDetails(
     employee: Employe,
     payslipDate: string, 
@@ -143,16 +152,9 @@ export async function getPayslipDetails(
     const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);
     
     let primeAnciennete = 0;
-    if (seniorityInfo.years >= 2) {
-        let bonusRate = 0;
-        if (seniorityInfo.years >= 25) bonusRate = 25;
-        else if (seniorityInfo.years >= 20) bonusRate = 20;
-        else if (seniorityInfo.years >= 15) bonusRate = 15;
-        else if (seniorityInfo.years >= 10) bonusRate = 10;
-        else if (seniorityInfo.years >= 5) bonusRate = 5;
-        else if (seniorityInfo.years >= 2) bonusRate = 2;
-        
-        primeAnciennete = baseSalary * (bonusRate / 100);
+    const applicableTier = SENIORITY_BONUS_TIERS.find(tier => seniorityInfo.years >= tier.years);
+    if (applicableTier) {
+        primeAnciennete = baseSalary * (applicableTier.rate / 100);
     }
 
     const earningsMap: { [key: string]: { label: string; amount: number } } = {
