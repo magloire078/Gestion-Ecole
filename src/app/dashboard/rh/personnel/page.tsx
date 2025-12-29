@@ -173,37 +173,38 @@ export default function PersonnelPage() {
             </CardContent>
           </Link>
            <CardFooter className="pt-4 border-t">
-              <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="w-full justify-start">
-                      <span className="flex items-center gap-2">
-                        <MoreHorizontal className="h-4 w-4" /> Actions
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>
-                        <span className="flex items-center gap-2"><BookUser className="h-4 w-4" />Voir le Profil</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/fiche`)}>
-                        <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Imprimer Fiche</span>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/payslip`)}>
-                        <span className="flex items-center gap-2"><FileText className="h-4 w-4" />Bulletin de Paie</span>
-                      </DropdownMenuItem>
-                      {canManageUsers && (
-                        <>
+              <div className="flex w-full items-center justify-between">
+                  <Button asChild size="sm">
+                      <Link href={`/dashboard/rh/${member.id}`}>
+                        <BookUser className="mr-2 h-4 w-4" />
+                        Voir Profil
+                      </Link>
+                  </Button>
+                  {canManageUsers && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/fiche`)}>
+                            <FileText className="mr-2 h-4 w-4" />Imprimer Fiche
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/payslip`)}>
+                            <FileText className="mr-2 h-4 w-4" />Bulletin de Paie
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>
-                            <span className="flex items-center gap-2">Modifier</span>
+                            Modifier
                           </DropdownMenuItem>
                           <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>
-                            <span className="flex items-center gap-2"><Trash2 className="h-4 w-4" />Supprimer</span>
+                            Supprimer
                           </DropdownMenuItem>
-                        </>
-                      )}
-                  </DropdownMenuContent>
-              </DropdownMenu>
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+                  )}
+              </div>
             </CardFooter>
         </Card>
     );
