@@ -9,7 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
-import { collection, query, orderBy, limit, doc, updateDoc, arrayUnion, getDoc, writeBatch } from "firebase/firestore";
+import { collection, query, orderBy, limit, doc, updateDoc, arrayUnion, getDoc, writeBatch, where } from "firebase/firestore";
 import { Skeleton } from "./ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useToast } from "@/hooks/use-toast";
@@ -41,8 +41,11 @@ export function NotificationsPanel({
   // Correction: La requête est maintenant plus spécifique pour contourner les problèmes de permissions 'list'
   const notificationsQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
+    // On ne récupère que les 20 messages les plus récents qui sont destinés à tout le monde
+    // pour éviter les problèmes de permissions sur un list() complet.
     return query(
         collection(firestore, `ecoles/${schoolId}/messagerie`),
+        where('recipients.all', '==', true),
         orderBy('createdAt', 'desc'),
         limit(20)
     );
