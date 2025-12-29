@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -20,9 +21,9 @@ interface RecentActivityProps {
 export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
-    const recentStudentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)), [firestore, schoolId]);
-    const recentMessagesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(3)), [firestore, schoolId]);
-    const recentBooksQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(3)), [firestore, schoolId]);
+    const recentStudentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
+    const recentMessagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
+    const recentBooksQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
 
     const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
     const { data: messagesData, loading: messagesLoading } = useCollection(recentMessagesQuery);
@@ -35,6 +36,30 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         ...(messagesData?.map(doc => ({ type: 'message', ...doc.data() } as message & { type: 'message' })) || []),
         ...(booksData?.map(doc => ({ type: 'book', ...doc.data() } as libraryBook & { type: 'book' })) || []),
     ].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+    if (!schoolId) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle>Activité Récente</CardTitle>
+                    <CardDescription>Derniers ajouts dans votre établissement.</CardDescription>
+                </CardHeader>
+                 <CardContent>
+                    <div className="space-y-4">
+                        {[...Array(3)].map((_, i) => (
+                             <div key={i} className="flex items-center gap-4">
+                                <Skeleton className="h-10 w-10 rounded-full" />
+                                <div className="flex-1 space-y-1">
+                                    <Skeleton className="h-4 w-3/4" />
+                                    <Skeleton className="h-3 w-1/4" />
+                                </div>
+                            </div>
+                         ))}
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
 
     return (
         <Card>

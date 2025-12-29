@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -107,6 +108,10 @@ export function NotificationsPanel({
   const handleClose = () => {
     setSelectedNotification(null);
     onClose();
+  }
+  
+  if (!schoolId) {
+      return null;
   }
 
   return (
