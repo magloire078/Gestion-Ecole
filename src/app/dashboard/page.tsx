@@ -17,6 +17,7 @@ import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users } from 'lucide-react';
 import Link from 'next/link';
+import { ParentStudentCard } from '@/components/parent/student-card';
 
 
 // ====================================================================================
@@ -24,6 +25,10 @@ import Link from 'next/link';
 // ====================================================================================
 const ParentDashboard = () => {
     const { user } = useUser();
+
+    if (!user || !user.isParent || !user.schoolId) {
+        return null;
+    }
 
     return (
         <div className="space-y-6">
@@ -36,12 +41,10 @@ const ParentDashboard = () => {
                     <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Mes Enfants</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground mb-4">Cliquez sur le nom d'un enfant pour voir ses informations détaillées.</p>
-                    <div className="space-y-2">
-                        {user?.parentStudentIds?.map(studentId => (
-                            <Link key={studentId} href={`/dashboard/dossiers-eleves/${studentId}`} className="block p-3 rounded-md hover:bg-muted">
-                                Élève ID: {studentId}
-                            </Link>
+                    <p className="text-muted-foreground mb-4">Cliquez sur un enfant pour voir ses informations détaillées (notes, paiements, absences, etc.).</p>
+                    <div className="space-y-3">
+                        {user.parentStudentIds?.map(studentId => (
+                           <ParentStudentCard key={studentId} schoolId={user.schoolId!} studentId={studentId} />
                         ))}
                     </div>
                 </CardContent>
