@@ -72,5 +72,5 @@ export function useCollection<T>(query: Query<T> | null) {
   }
 
 
-  return {data, loading, add };
+  return {data: data || [], loading, add };
 }
