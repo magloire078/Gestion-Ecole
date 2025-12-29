@@ -13,11 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import {
   PlusCircle,
-  MoreHorizontal,
   Send,
-  Users,
-  BookUser,
-  ClipboardUser,
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -34,7 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, addDoc, doc, updateDoc, arrayUnion, query, orderBy, serverTimestamp, where, getDoc, limit } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, arrayUnion, query, orderBy, serverTimestamp, where, getDocs, limit, Query, DocumentData } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -75,24 +71,13 @@ interface Message {
 
 export default function MessagingPage() {
   const firestore = useFirestore();
-  const { user } = useUser();
+  const { user, loading: userLoading } = useUser();
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const canManageCommunication = !!user?.profile?.permissions?.manageCommunication;
 
-  // Requête ciblée pour ne récupérer que les 20 derniers messages envoyés à tout le monde
-  const messagesQuery = useMemoFirebase(() => {
-    if (!schoolId) return null;
-    return query(
-        collection(firestore, `ecoles/${schoolId}/messagerie`),
-        where('recipients.all', '==', true),
-        orderBy('createdAt', 'desc'),
-        limit(20)
-    );
-  }, [firestore, schoolId]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(true);
 
-  const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
-  const messages: Message[] = useMemo(() => messagesData?.map(d => ({ id: d.id, ...d.data() } as Message)) || [], [messagesData]);
-  
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
@@ -117,12 +102,58 @@ export default function MessagingPage() {
   });
 
   useEffect(() => {
+    if (!firestore || !schoolId || !user) return;
+
+    const fetchMessages = async () => {
+        setMessagesLoading(true);
+        const messageCollection = collection(firestore, `ecoles/${schoolId}/messagerie`);
+        const queries: Query<DocumentData>[] = [];
+        
+        // 1. Messages for everyone
+        queries.push(query(messageCollection, where('recipients.all', '==', true), orderBy('createdAt', 'desc'), limit(50)));
+
+        // 2. Messages for staff/teachers if user is one
+        if (user.profile) {
+            queries.push(query(messageCollection, where('recipients.teachers', '==', true), orderBy('createdAt', 'desc'), limit(50)));
+            queries.push(query(messageCollection, where('recipients.staff', '==', true), orderBy('createdAt', 'desc'), limit(50)));
+        }
+
+        // 3. Messages for the user's class
+        if (user.profile?.classId) {
+            queries.push(query(messageCollection, where('recipients.classes', 'array-contains', user.profile.classId), orderBy('createdAt', 'desc'), limit(50)));
+        }
+        
+        try {
+            const querySnapshots = await Promise.all(queries.map(q => getDocs(q)));
+            const allMessages = new Map<string, Message>();
+            
+            querySnapshots.forEach(snapshot => {
+                snapshot.forEach(doc => {
+                    if (!allMessages.has(doc.id)) {
+                        allMessages.set(doc.id, { id: doc.id, ...doc.data() } as Message);
+                    }
+                });
+            });
+
+            const sortedMessages = Array.from(allMessages.values()).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
+            setMessages(sortedMessages);
+        } catch (error) {
+            console.error("Error fetching messages:", error);
+            toast({ variant: 'destructive', title: "Erreur de chargement", description: "Impossible de récupérer les messages." });
+        } finally {
+            setMessagesLoading(false);
+        }
+    };
+
+    fetchMessages();
+  }, [firestore, schoolId, user, toast]);
+
+  useEffect(() => {
     if (isFormOpen) {
         form.reset();
     }
   }, [isFormOpen, form]);
   
-
   const handleMessageSubmit = (values: MessageFormValues) => {
     if (!schoolId || !user?.authUser || !user.authUser.displayName) return;
 
@@ -167,7 +198,7 @@ export default function MessagingPage() {
     return parts.join(', ');
   }
 
-  const isLoading = schoolLoading || messagesLoading || classesLoading;
+  const isLoading = schoolLoading || messagesLoading || classesLoading || userLoading;
   
   const renderFormContent = () => (
     <Form {...form}>
