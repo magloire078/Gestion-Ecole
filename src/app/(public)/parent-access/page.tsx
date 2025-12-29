@@ -11,7 +11,7 @@ import { Loader2, KeyRound } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
 import { getAuth, signInWithCustomToken } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
 export default function ParentAccessPage() {
@@ -30,48 +30,49 @@ export default function ParentAccessPage() {
         setIsLoading(true);
 
         try {
-            // In a real app, you would call a serverless function here
-            // to exchange the access code for a custom Firebase auth token.
-            // For this prototype, we'll simulate this flow.
-            
-            // 1. Find the session document using the access code (This is insecure client-side)
-            // This logic should be on a serverless function.
-            // const sessionQuery = query(collection(firestore, 'sessions_parents'), where('accessCode', '==', accessCode));
-            // const sessionSnap = await getDocs(sessionQuery);
+            // Dans une application de production, vous appelleriez une fonction Cloud
+            // qui valide le code et génère un token personnalisé.
+            // Ex: const response = await fetch('/api/parent-login', { body: { accessCode } });
+            // const { customToken } = await response.json();
+            // await signInWithCustomToken(auth, customToken);
 
-            // SIMULATION: We'll assume the access code is the session ID for now.
-            const sessionId = accessCode.trim();
-            const sessionRef = doc(firestore, 'sessions_parents', sessionId);
-            const sessionSnap = await getDoc(sessionRef);
+            // --- Simulation pour le prototypage ---
+            const sessionsRef = collection(firestore, 'sessions_parents');
+            const q = query(sessionsRef, where('accessCode', '==', accessCode.trim()), where('isActive', '==', true));
+            const sessionSnap = await getDocs(q);
 
-            if (!sessionSnap.exists() || new Date(sessionSnap.data().expiresAt.toDate()) < new Date()) {
+            if (sessionSnap.empty) {
                 toast({ variant: 'destructive', title: 'Code invalide ou expiré', description: 'Veuillez vérifier votre code et réessayer.' });
                 setIsLoading(false);
                 return;
             }
+
+            const sessionDoc = sessionSnap.docs[0];
+            const sessionData = sessionDoc.data();
             
-            // 2. Simulate getting a custom token from a backend
-            // In a real app: const response = await fetch('/api/create-parent-token', { body: {sessionId} })
-            // For now, we will just redirect, as we don't have a secure backend to generate tokens.
-            // The firestore rules will handle authorization based on this simulated session.
+            if (new Date(sessionData.expiresAt.toDate()) < new Date()) {
+                toast({ variant: 'destructive', title: 'Code expiré', description: 'Ce code d\'accès a expiré.' });
+                setIsLoading(false);
+                return;
+            }
+
+            // Invalider le code d'accès après usage
+            await updateDoc(doc(firestore, 'sessions_parents', sessionDoc.id), { isActive: false });
+
+            // Pour simuler la connexion et la persistance, nous utilisons localStorage.
+            // La sécurité réelle est gérée par les règles Firestore qui liraient le custom token.
+            localStorage.setItem('parent_session_id', sessionDoc.id);
+            localStorage.setItem('parent_school_id', sessionData.schoolId);
+            localStorage.setItem('parent_student_ids', JSON.stringify(sessionData.studentIds));
             
             toast({ title: 'Accès autorisé', description: 'Redirection vers votre portail...' });
             
-            // We would use signInWithCustomToken(auth, customToken) here.
-            // For now, we'll just navigate. The rules assume a token is present.
-            // This will require પોલીસrules changes to work without real auth.
-            
-            // Let's store session info in localStorage for the prototype to work
-            localStorage.setItem('parent_session_id', sessionId);
-            localStorage.setItem('parent_school_id', sessionSnap.data().schoolId);
-            localStorage.setItem('parent_student_ids', JSON.stringify(sessionSnap.data().studentIds));
-            
-            router.push('/dashboard');
+            // Recharger la page pour que useUser détecte la session parent
+            window.location.href = '/dashboard';
 
         } catch (error) {
-            console.error("Parent login error:", error);
+            console.error("Erreur de connexion parent:", error);
             toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue lors de la connexion.' });
-        } finally {
             setIsLoading(false);
         }
     };
@@ -97,6 +98,7 @@ export default function ParentAccessPage() {
                             value={accessCode}
                             onChange={(e) => setAccessCode(e.target.value)}
                             disabled={isLoading}
+                            onKeyUp={(e) => e.key === 'Enter' && handleLogin()}
                         />
                     </div>
                 </CardContent>

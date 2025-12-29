@@ -16,7 +16,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { staff, user_root } from '@/lib/data-types';
+import type { staff as Staff, user_root } from '@/lib/data-types';
 
 type OnboardingMode = "create" | "join";
 
@@ -70,13 +70,13 @@ export default function OnboardingPage() {
         const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
         
         const rootUserData: user_root = { schoolId: schoolId };
-        const staffProfileData: Omit<staff, 'id'> = {
+        const staffProfileData: Omit<Staff, 'id'> = {
             uid: user.uid,
             email: user.email,
             displayName: user.displayName,
             photoURL: user.photoURL || '',
             schoolId: schoolId,
-            role: role, 
+            role: role as any, 
             firstName: firstName,
             lastName: lastName,
             hireDate: new Date().toISOString().split('T')[0],

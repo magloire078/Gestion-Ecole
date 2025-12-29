@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {useState, useEffect, useCallback} from 'react';
@@ -10,18 +11,6 @@ import { doc, getDoc, onSnapshot, setDoc, serverTimestamp } from 'firebase/fires
 export interface UserProfile extends AppUser {
     permissions?: Partial<AdminRole['permissions']>;
     isAdmin?: boolean;
-}
-
-export interface ParentSession {
-    isParent: true;
-    schoolId: string;
-    studentIds: string[];
-}
-
-export interface UserContext {
-  uid: string;
-  authUser: FirebaseUser;
-  profile?: UserProfile;
 }
 
 export interface CombinedUser {
@@ -117,7 +106,7 @@ export function useUser() {
         if (isSuperAdmin) {
             const superAdminProfile: UserProfile = {
                 uid: authUser.uid, email: authUser.email || '', schoolId: effectiveSchoolId || '',
-                role: 'super_admin', firstName: 'Super', lastName: 'Admin',
+                role: 'super_admin' as any, firstName: 'Super', lastName: 'Admin',
                 hireDate: '', baseSalary: 0, displayName: 'Super Admin',
                 permissions: { ...allPermissions }, isAdmin: true,
             };
