@@ -53,6 +53,29 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
     },
+    "parent_profile": {
+      "title": "Profil Parent",
+      "description": "Informations sur un parent ou tuteur, stockées dans une sous-collection de l'élève.",
+      "type": "object",
+      "properties": {
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phone": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "isPrimary": { "type": "boolean", "description": "Indique si c'est le contact principal."}
+      }
+    },
+    "parent_session": {
+      "title": "Session Parent",
+      "description": "Un document de session temporaire pour l'accès des parents.",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "studentIds": { "type": "array", "items": { "type": "string"} },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
     "contact_request": {
       "title": "Demande de Contact",
       "description": "Stocke une soumission du formulaire de demande de démo.",
@@ -935,6 +958,10 @@
     "providers": ["Google", "Email"]
   },
   "firestore": {
+    "/sessions_parents/{sessionId}": {
+        "schema": { "$ref": "#/entities/parent_session" },
+        "description": "Stocke les sessions temporaires pour l'accès parent."
+    },
     "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
@@ -979,6 +1006,11 @@
             "schema": { "$ref": "#/entities/student" },
             "description": "Stocke les profils des élèves pour cette école.",
             "subcollections": {
+                "parents_tuteurs": {
+                    "path": "parents_tuteurs/{parentId}",
+                    "schema": { "$ref": "#/entities/parent_profile" },
+                    "description": "Stocke les profils des parents pour cet élève."
+                },
                 "notes": {
                     "path": "notes/{gradeId}",
                     "schema": { "$ref": "#/entities/gradeEntry" },
