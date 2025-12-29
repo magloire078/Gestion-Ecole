@@ -79,13 +79,14 @@ export default function MessagingPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const canManageCommunication = !!user?.profile?.permissions?.manageCommunication;
 
+  // Requête ciblée pour ne récupérer que les 20 derniers messages envoyés à tout le monde
   const messagesQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
     return query(
         collection(firestore, `ecoles/${schoolId}/messagerie`),
-        where('recipients.all', '==', true), // Requête sécurisée
+        where('recipients.all', '==', true),
         orderBy('createdAt', 'desc'),
-        limit(50)
+        limit(20)
     );
   }, [firestore, schoolId]);
 

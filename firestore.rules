@@ -151,8 +151,7 @@ service cloud.firestore {
         
         // Sous-collections de l'élève (notes, paiements, etc.)
         match /{subcollection}/{docId} {
-             allow read: if isSchoolStaff(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-             allow write: if hasPermission(schoolId, 'manageUsers') || hasPermission(schoolId, 'manageGrades') || hasPermission(schoolId, 'manageBilling') || hasPermission(schoolId, 'manageMedical');
+             allow read, write: if isSchoolStaff(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
         }
       }
       
@@ -185,9 +184,8 @@ service cloud.firestore {
 
       // Communication
       match /messagerie/{messageId} {
-        allow get, update: if isSchoolMember(schoolId); // Autorise la lecture/mise à jour d'un document
+        allow get, update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
-        // `list` est intentionnellement omis pour forcer les requêtes ciblées
       }
       
       // Finances (frais, comptabilité)
