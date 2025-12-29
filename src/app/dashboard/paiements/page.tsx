@@ -28,10 +28,12 @@ import { collection, query } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 export default function PaymentsPage() {
   const firestore = useFirestore();
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
+  const { toast } = useToast();
   
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
   const classesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
@@ -68,6 +70,13 @@ export default function PaymentsPage() {
     if (isNaN(num)) return value.toString();
     return `${num.toLocaleString('fr-FR')} CFA`;
   };
+  
+  const handleRemind = (student: Student) => {
+      toast({
+          title: "Fonctionnalité en développement",
+          description: `La relance automatique pour ${student.firstName} ${student.lastName} sera bientôt disponible.`,
+      });
+  }
 
   return (
     <>
@@ -172,6 +181,11 @@ export default function PaymentsPage() {
                             </TableCell>
                             <TableCell className="text-right">
                                <div className="flex justify-end gap-2">
+                                {(student.amountDue ?? 0) > 0 && (
+                                    <Button variant="outline" size="sm" onClick={() => handleRemind(student)}>
+                                        <MessageSquare className="mr-1 h-3.5 w-3.5" /> Relancer
+                                    </Button>
+                                )}
                                 <Button variant="outline" size="sm" asChild>
                                   <Link href={`/dashboard/dossiers-eleves/${student.id}?tab=payments`}>
                                      Gérer
