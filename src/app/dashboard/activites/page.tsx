@@ -120,9 +120,10 @@ function ActivitesPage() {
 
   const handleFormSubmit = async (values: ActiviteFormValues) => {
     if (!schoolId) return;
+    const collectionRef = collection(firestore, `ecoles/${schoolId}/activites`);
     const promise = editingActivite
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/activites/${editingActivite.id}`), values, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/activites`), values);
+      ? setDoc(doc(collectionRef, editingActivite.id), values, { merge: true })
+      : addDoc(collectionRef, values);
     try {
       await promise;
       toast({ title: `Activité ${editingActivite ? 'modifiée' : 'ajoutée'}`});
@@ -139,11 +140,12 @@ function ActivitesPage() {
   
   const handleDeleteActivite = async () => {
     if (!schoolId || !activiteToDelete) return;
+    const docRef = doc(firestore, `ecoles/${schoolId}/activites`, activiteToDelete.id);
     try {
-        await deleteDoc(doc(firestore, `ecoles/${schoolId}/activites`, activiteToDelete.id));
+        await deleteDoc(docRef);
         toast({ title: 'Activité supprimée' });
     } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/activites/${activiteToDelete.id}`, operation: 'delete' }));
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
     } finally {
         setIsDeleteDialogOpen(false);
         setActiviteToDelete(null);
@@ -263,22 +265,24 @@ function InscriptionsPage() {
 
   const handleFormSubmit = async (values: InscriptionFormValues) => {
     if (!schoolId) return;
+    const collectionRef = collection(firestore, `ecoles/${schoolId}/inscriptions_activites`);
     try {
-      await addDoc(collection(firestore, `ecoles/${schoolId}/inscriptions_activites`), values);
+      await addDoc(collectionRef, values);
       toast({ title: 'Inscription réussie' });
       setIsFormOpen(false);
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/inscriptions_activites`, operation: 'create', requestResourceData: values }));
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: values }));
     }
   };
 
   const handleDelete = async (inscriptionId: string) => {
     if (!schoolId) return;
+    const docRef = doc(firestore, `ecoles/${schoolId}/inscriptions_activites`, inscriptionId);
     try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/inscriptions_activites`, inscriptionId));
+      await deleteDoc(docRef);
       toast({ title: "Inscription annulée" });
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/inscriptions_activites/${inscriptionId}`, operation: 'delete' }));
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
     }
   }
 
@@ -353,15 +357,16 @@ function CompetitionsPage() {
 
   const handleFormSubmit = async (values: CompetitionFormValues) => {
     if (!schoolId) return;
+    const collectionRef = collection(firestore, `ecoles/${schoolId}/competitions`);
     const promise = editingCompetition
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/competitions/${editingCompetition.id}`), values, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/competitions`), values);
+      ? setDoc(doc(collectionRef, editingCompetition.id), values, { merge: true })
+      : addDoc(collectionRef, values);
     try {
       await promise;
       toast({ title: `Compétition ${editingCompetition ? 'modifiée' : 'ajoutée'}` });
       setIsFormOpen(false);
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/competitions`, operation: 'write', requestResourceData: values }));
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'write', requestResourceData: values }));
     }
   };
   
@@ -372,11 +377,12 @@ function CompetitionsPage() {
 
   const handleDeleteCompetition = async () => {
     if (!schoolId || !competitionToDelete) return;
+    const docRef = doc(firestore, `ecoles/${schoolId}/competitions`, competitionToDelete.id);
     try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/competitions`, competitionToDelete.id));
+      await deleteDoc(docRef);
       toast({ title: 'Événement supprimé' });
     } catch (e) {
-       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/competitions/${competitionToDelete.id}`, operation: 'delete' }));
+       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
     } finally {
       setIsDeleteDialogOpen(false);
     }

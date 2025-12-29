@@ -62,19 +62,20 @@ export default function RolesPage() {
 
   const handleDeleteRole = async () => {
     if (!schoolId || !roleToDelete) return;
-    try {
-        await deleteDoc(doc(firestore, `ecoles/${schoolId}/admin_roles/${roleToDelete.id}`));
+    const docRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, roleToDelete.id);
+    deleteDoc(docRef)
+    .then(() => {
         toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
-    } catch(e) {
+    }).catch(e => {
         const permissionError = new FirestorePermissionError({
-            path: `ecoles/${schoolId}/admin_roles/${roleToDelete.id}`,
+            path: docRef.path,
             operation: 'delete'
         });
         errorEmitter.emit('permission-error', permissionError);
-    } finally {
+    }).finally(() => {
         setIsDeleteDialogOpen(false);
         setRoleToDelete(null);
-    }
+    })
   }
   
   const formatPermissionName = (name: string) => {

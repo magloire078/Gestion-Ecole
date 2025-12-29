@@ -55,10 +55,11 @@ export function SalleForm({ schoolId, buildings, salle, onSave }: SalleFormProps
     setIsSubmitting(true);
     
     const dataToSave = { ...values };
-
+    
+    const collectionRef = collection(firestore, `ecoles/${schoolId}/salles`);
     const promise = salle && salle.id
-        ? setDoc(doc(firestore, `ecoles/${schoolId}/salles/${salle.id}`), dataToSave, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/salles`), dataToSave);
+        ? setDoc(doc(collectionRef, salle.id), dataToSave, { merge: true })
+        : addDoc(collectionRef, dataToSave);
     
     promise.then(() => {
         toast({ title: 'Salle enregistrée', description: `La salle ${values.name} a été enregistrée.` });

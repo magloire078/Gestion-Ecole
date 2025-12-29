@@ -31,19 +31,21 @@ export const SystemSettings = () => {
 
     const handleSave = async () => {
         setIsSaving(true);
-        try {
-            await setDoc(settingsRef, { maintenanceMode }, { merge: true });
+        const dataToSave = { maintenanceMode };
+        setDoc(settingsRef, dataToSave, { merge: true })
+        .then(() => {
             toast({ title: "Paramètres sauvegardés", description: "Le mode maintenance a été mis à jour."});
-        } catch (e) {
+        })
+        .catch(e => {
              const permissionError = new FirestorePermissionError({
                 path: settingsRef.path,
                 operation: 'write',
-                requestResourceData: { maintenanceMode },
+                requestResourceData: dataToSave,
             });
             errorEmitter.emit('permission-error', permissionError);
-        } finally {
+        }).finally(() => {
             setIsSaving(false);
-        }
+        });
     };
     
     if (settingsLoading) {

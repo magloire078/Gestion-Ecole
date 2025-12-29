@@ -28,22 +28,22 @@ export const deleteSchool = async (
     const logRef = doc(collection(firestore, 'system_logs'));
 
     const batch = writeBatch(firestore);
-
-    // Étape 1: Créer le log d'audit
-    batch.set(logRef, {
+    
+    const logData = {
         adminId: adminId,
         action: 'school.soft-deleted',
         target: schoolRef.path,
         details: { schoolId: schoolId, status: 'deleted' },
         ipAddress: 'N/A (client-side)',
         timestamp: serverTimestamp(),
-    });
+    };
+    batch.set(logRef, logData);
     
-    // Étape 2: Mettre à jour l'école pour la marquer comme supprimée
-    batch.update(schoolRef, {
+    const schoolUpdate = {
       status: 'deleted',
       deletedAt: serverTimestamp()
-    });
+    };
+    batch.update(schoolRef, schoolUpdate);
 
     return batch.commit().catch((serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -80,7 +80,6 @@ export const restoreSchool = async (
     
     const batch = writeBatch(firestore);
 
-    // Étape 1: Créer le log d'audit pour la restauration
     batch.set(logRef, {
         adminId: adminId,
         action: 'school.restored',
@@ -90,7 +89,6 @@ export const restoreSchool = async (
         timestamp: serverTimestamp(),
     });
 
-    // Étape 2: Restaurer l'école en changeant son statut et en supprimant la date de suppression
     batch.update(schoolRef, {
       status: 'active',
       deletedAt: deleteField() 

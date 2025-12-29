@@ -26,7 +26,8 @@ export const updateStaffPhoto = async (
     const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
     const dataToUpdate = { photoURL };
 
-    return updateDoc(staffRef, dataToUpdate).catch(error => {
+    return updateDoc(staffRef, dataToUpdate)
+    .catch(error => {
         const permissionError = new FirestorePermissionError({
             path: staffRef.path,
             operation: 'update',

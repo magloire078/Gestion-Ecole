@@ -69,14 +69,15 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
   
   const handleDeleteSalle = async () => {
     if (!schoolId || !salleToDelete) return;
-    try {
-        await deleteDoc(doc(firestore, `ecoles/${schoolId}/salles`, salleToDelete.id));
+    const docRef = doc(firestore, `ecoles/${schoolId}/salles`, salleToDelete.id);
+    deleteDoc(docRef)
+    .then(() => {
         toast({ title: 'Salle supprimée' });
-    } catch(e) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/salles/${salleToDelete.id}`, operation: 'delete'}));
-    } finally {
+    }).catch(e => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete'}));
+    }).finally(() => {
         setIsDeleteDialogOpen(false);
-    }
+    })
   }
   
   if(isLoading) {

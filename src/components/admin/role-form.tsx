@@ -16,6 +16,8 @@ import { useState, useEffect } from 'react';
 import { DialogFooter } from '../ui/dialog';
 import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 const allPermissionsList = [
     { id: 'manageUsers', label: 'Gérer Utilisateurs', desc: 'Créer, modifier, supprimer élèves et personnel.' },
@@ -87,20 +89,26 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
         isSystem: false,
     };
     
+    const collectionRef = collection(firestore, `ecoles/${schoolId}/admin_roles`);
     const promise = role 
-        ? setDoc(doc(firestore, `ecoles/${schoolId}/admin_roles/${role.id}`), dataToSave, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/admin_roles`), dataToSave);
+        ? setDoc(doc(collectionRef, role.id), dataToSave, { merge: true })
+        : addDoc(collectionRef, dataToSave);
         
-    try {
-        await promise;
-        toast({ title: `Rôle ${role ? 'modifié' : 'créé'}`, description: `Le rôle "${values.name}" a été enregistré.` });
-        onSave();
-    } catch(e) {
-        console.error(e);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le rôle.' });
-    } finally {
-        setIsSubmitting(false);
-    }
+    promise
+        .then(() => {
+            toast({ title: `Rôle ${role ? 'modifié' : 'créé'}`, description: `Le rôle "${values.name}" a été enregistré.` });
+            onSave();
+        })
+        .catch(e => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: `ecoles/${schoolId}/admin_roles/${role?.id || ''}`,
+                operation: 'write',
+                requestResourceData: dataToSave
+            }));
+        })
+        .finally(() => {
+            setIsSubmitting(false);
+        });
   };
 
   return (

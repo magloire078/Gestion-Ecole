@@ -80,7 +80,7 @@ export default function CompetitionParticipantsPage() {
         setSelectedStudent('');
         setRank('');
     }).catch(error => {
-        const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/participations_competitions`, operation: 'create', requestResourceData: dataToSave });
+        const permissionError = new FirestorePermissionError({ path: participantsCollectionRef.path, operation: 'create', requestResourceData: dataToSave });
         errorEmitter.emit('permission-error', permissionError);
     });
   };
@@ -91,7 +91,7 @@ export default function CompetitionParticipantsPage() {
     deleteDoc(participantDocRef).then(() => {
       toast({ title: 'Participant retiré', description: "L'élève a été retiré de la compétition." });
     }).catch(error => {
-        const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/participations_competitions/${participantId}`, operation: 'delete' });
+        const permissionError = new FirestorePermissionError({ path: participantDocRef.path, operation: 'delete' });
         errorEmitter.emit('permission-error', permissionError);
     });
   }

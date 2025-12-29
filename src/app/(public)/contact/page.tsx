@@ -22,6 +22,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { FirestorePermissionError } from '@/firebase/errors';
+import { errorEmitter } from '@/firebase/error-emitter';
 
 const TIME_SLOTS = [
   '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'
@@ -68,26 +70,28 @@ export default function ContactPage() {
 
   const handleSubmit = async (values: ContactFormValues) => {
     setIsSubmitting(true);
-    try {
-      const collectionRef = collection(firestore, 'contact_requests');
-      await addDoc(collectionRef, {
-        ...values,
-        meetingDate: values.meetingDate ? format(values.meetingDate, 'yyyy-MM-dd') : null,
-        submittedAt: serverTimestamp(),
-      });
+    const collectionRef = collection(firestore, 'contact_requests');
+    const dataToSave = {
+      ...values,
+      meetingDate: values.meetingDate ? format(values.meetingDate, 'yyyy-MM-dd') : null,
+      submittedAt: serverTimestamp(),
+    };
 
-      setIsSubmitted(true);
-      // Pas de redirection automatique, pour laisser le temps de lire le message
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: "Une erreur est survenue lors de l'envoi de votre demande. Veuillez réessayer."
+    addDoc(collectionRef, dataToSave)
+      .then(() => {
+        setIsSubmitted(true);
       })
-    } finally {
+      .catch((error) => {
+        const permissionError = new FirestorePermissionError({
+          path: collectionRef.path,
+          operation: 'create',
+          requestResourceData: dataToSave,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+      })
+      .finally(() => {
         setIsSubmitting(false);
-    }
+      });
   };
 
   if (isSubmitted) {

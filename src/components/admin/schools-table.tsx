@@ -68,11 +68,7 @@ export function SchoolsTable() {
             description: `L'école "${schoolToDelete.name}" a été marquée comme supprimée.`,
         });
     } catch (error) {
-        toast({
-            variant: "destructive",
-            title: "Erreur de suppression",
-            description: "Une erreur est survenue lors de la mise à la corbeille.",
-        });
+        // L'erreur est déjà gérée et notifiée par l'error emitter dans le service
     } finally {
         setIsDeleting(false);
         setSchoolToDelete(null);
@@ -90,11 +86,7 @@ export function SchoolsTable() {
             description: `L'école "${school.name}" est à nouveau active.`,
         });
     } catch (error) {
-         toast({
-            variant: "destructive",
-            title: "Erreur de restauration",
-            description: "Une erreur est survenue lors de la restauration.",
-        });
+         // L'erreur est déjà gérée et notifiée par l'error emitter dans le service
     } finally {
         setIsRestoring(false);
         setSchoolToRestore(null);

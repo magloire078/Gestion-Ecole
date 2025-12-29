@@ -28,12 +28,13 @@ export default function BatimentsPage() {
       return;
     }
 
+    const docRef = doc(firestore, `ecoles/${schoolId}/salles/${buildingId}`);
     try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/salles/${buildingId}`));
+      await deleteDoc(docRef);
       toast({ title: "Bâtiment supprimé", description: `Le bâtiment "${buildingName}" a été supprimé.` });
     } catch (e) {
       const permissionError = new FirestorePermissionError({
-        path: `ecoles/${schoolId}/salles/${buildingId}`,
+        path: docRef.path,
         operation: 'delete',
       });
       errorEmitter.emit('permission-error', permissionError);
