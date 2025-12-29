@@ -125,3 +125,4 @@ export function useUser() {
 
   return {user, loading, schoolId, isDirector};
 }
+
