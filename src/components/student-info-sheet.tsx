@@ -72,16 +72,16 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
             <CardContent className="p-4 sm:p-6">
                 <div ref={printRef}>
                     {/* Header */}
-                    <div className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
+                    <header className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
                         <div className="flex items-center gap-4">
                             {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={80} height={80} className="object-contain" />}
                             <div>
-                                <h2 className="text-2xl font-bold">{school.name}</h2>
+                                <h1 className="text-2xl font-bold">{school.name}</h1>
                                 <p className="text-xs text-muted-foreground">{school.address}</p>
                                 <p className="text-xs text-muted-foreground">Tél: {school.phone} - Site: {school.website}</p>
                             </div>
                         </div>
-                    </div>
+                    </header>
 
                     <div className="text-center mb-6">
                         <h1 className="text-2xl font-bold tracking-tight">FICHE DE RENSEIGNEMENTS</h1>
