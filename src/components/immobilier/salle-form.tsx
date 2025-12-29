@@ -97,3 +97,5 @@ export function SalleForm({ schoolId, buildings, salle, onSave }: SalleFormProps
     </Form>
   );
 }
+
+    

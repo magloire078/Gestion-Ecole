@@ -17,6 +17,7 @@ import { SalleForm } from './salle-form';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import Link from 'next/link';
 
 export function SalleManagement({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
@@ -29,7 +30,7 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [salleToDelete, setSalleToDelete] = useState<(Salle & { id: string }) | null>(null);
 
-  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
+  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
   const sallesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
 
   const { data: buildingsData, loading: buildingsLoading } = useCollection(buildingsQuery);
@@ -142,7 +143,12 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
                 ))}
             </Accordion>
         ): (
-            <p className="text-muted-foreground text-center py-8">Aucun bâtiment n'a été créé. Commencez par en ajouter un.</p>
+             <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
+                <p>Aucun bâtiment créé.</p>
+                <Button variant="link" asChild>
+                  <Link href="/dashboard/immobilier/batiments">Cliquez ici pour en ajouter un.</Link>
+                </Button>
+            </div>
         )}
       </CardContent>
     </Card>
@@ -182,3 +188,5 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
     </>
   );
 }
+
+    

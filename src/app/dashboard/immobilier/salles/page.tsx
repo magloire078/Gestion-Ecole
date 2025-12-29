@@ -23,3 +23,5 @@ export default function SallesPage() {
 
   return <SalleManagement schoolId={schoolId} />;
 }
+
+    

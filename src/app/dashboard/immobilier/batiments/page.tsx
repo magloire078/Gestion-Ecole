@@ -28,7 +28,7 @@ export default function BatimentsPage() {
       return;
     }
 
-    const docRef = doc(firestore, `ecoles/${schoolId}/salles/${buildingId}`);
+    const docRef = doc(firestore, `ecoles/${schoolId}/internat_batiments/${buildingId}`);
     try {
       await deleteDoc(docRef);
       toast({ title: "Bâtiment supprimé", description: `Le bâtiment "${buildingName}" a été supprimé.` });
@@ -40,6 +40,7 @@ export default function BatimentsPage() {
       errorEmitter.emit('permission-error', permissionError);
     }
   };
+
 
   if (schoolLoading || !schoolId) {
     return (
@@ -54,7 +55,7 @@ export default function BatimentsPage() {
   return (
     <BuildingManager
       schoolId={schoolId}
-      buildingCollectionName="salles"
+      buildingCollectionName="internat_batiments"
       roomCollectionName="salles"
       pageTitle="Plan de l'Établissement"
       pageDescription="Visualisez les bâtiments et les salles qui les composent."
@@ -67,3 +68,5 @@ export default function BatimentsPage() {
     />
   );
 }
+
+    
