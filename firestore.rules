@@ -186,6 +186,8 @@ service cloud.firestore {
       match /messagerie/{messageId} {
         allow get, update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
+        // Allow list only for public messages
+        allow list: if isSchoolMember(schoolId) && resource.data.recipients.all == true;
       }
       
       // Finances (frais, comptabilité)
