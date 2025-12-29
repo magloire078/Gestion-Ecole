@@ -16,7 +16,7 @@ import { useState, useEffect } from 'react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
-import { PlusCircle, Trash2, Clock } from 'lucide-react';
+import { PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
 
 const stopSchema = z.object({
