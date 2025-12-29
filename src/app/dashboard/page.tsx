@@ -8,12 +8,47 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { FinanceOverview } from '@/components/dashboard/finance-overview';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
 import type { gradeEntry as GradeEntry } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Users } from 'lucide-react';
+import Link from 'next/link';
+
+
+// ====================================================================================
+// Parent Dashboard Component
+// ====================================================================================
+const ParentDashboard = () => {
+    const { user } = useUser();
+
+    return (
+        <div className="space-y-6">
+             <div className="flex items-center">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Portail Parent</h1>
+            </div>
+            <AnnouncementBanner />
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Mes Enfants</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground mb-4">Cliquez sur le nom d'un enfant pour voir ses informations détaillées.</p>
+                    <div className="space-y-2">
+                        {user?.parentStudentIds?.map(studentId => (
+                            <Link key={studentId} href={`/dashboard/dossiers-eleves/${studentId}`} className="block p-3 rounded-md hover:bg-muted">
+                                Élève ID: {studentId}
+                            </Link>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
 
 
 // ====================================================================================
@@ -88,8 +123,12 @@ const RegularDashboard = () => {
 // Main Page Component
 // ====================================================================================
 function DashboardPageContent() {
-    // La logique de redirection vers l'onboarding est maintenant gérée par AuthGuard.
-    // Cette page n'affiche donc que le tableau de bord normal.
+    const { user } = useUser();
+    
+    if (user?.isParent) {
+        return <ParentDashboard />;
+    }
+
     return <RegularDashboard />;
 }
 

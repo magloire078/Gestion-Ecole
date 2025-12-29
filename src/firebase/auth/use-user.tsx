@@ -1,8 +1,7 @@
 
-
 'use client';
 
-import {useState, useEffect} from 'react';
+import {useState, useEffect, useCallback} from 'react';
 import {onIdTokenChanged, type User as FirebaseUser} from 'firebase/auth';
 import {useAuth, useFirestore} from '../provider';
 import type { staff as AppUser, admin_role as AdminRole, school as School, user_root } from '@/lib/data-types';
@@ -13,11 +12,26 @@ export interface UserProfile extends AppUser {
     isAdmin?: boolean;
 }
 
+export interface ParentSession {
+    isParent: true;
+    schoolId: string;
+    studentIds: string[];
+}
+
 export interface UserContext {
   uid: string;
   authUser: FirebaseUser;
   profile?: UserProfile;
 }
+
+export interface CombinedUser {
+    uid: string;
+    authUser?: FirebaseUser;
+    profile?: UserProfile;
+    isParent?: boolean;
+    parentStudentIds?: string[];
+}
+
 
 const allPermissions = {
     manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
@@ -33,12 +47,44 @@ const allPermissions = {
 export function useUser() {
   const auth = useAuth();
   const firestore = useFirestore();
-  const [user, setUser] = useState<UserContext | null>(null);
+  const [user, setUser] = useState<CombinedUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
   const [isDirector, setIsDirector] = useState(false);
 
+  const checkParentSession = useCallback(() => {
+    try {
+        const sessionId = localStorage.getItem('parent_session_id');
+        const sessionSchoolId = localStorage.getItem('parent_school_id');
+        const studentIdsStr = localStorage.getItem('parent_student_ids');
+
+        if (sessionId && sessionSchoolId && studentIdsStr) {
+            setSchoolId(sessionSchoolId);
+            setUser({
+                uid: sessionId,
+                isParent: true,
+                parentStudentIds: JSON.parse(studentIdsStr),
+            });
+            setLoading(false);
+            return true;
+        }
+    } catch (e) {
+        // Can happen in SSR or if localStorage is disabled
+    }
+    return false;
+  }, []);
+
   useEffect(() => {
+    if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+    }
+    
+    // Si une session parent est trouvée, on ne cherche pas d'utilisateur Firebase.
+    if (checkParentSession()) {
+        return;
+    }
+    
     if (!auth || !firestore) {
       setLoading(false);
       return;
@@ -46,10 +92,13 @@ export function useUser() {
 
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (!authUser) {
-        setUser(null);
-        setSchoolId(null);
-        setIsDirector(false);
-        setLoading(false);
+        // Avant de conclure qu'il n'y a pas d'utilisateur, revérifier la session parent.
+        if (!checkParentSession()) {
+          setUser(null);
+          setSchoolId(null);
+          setIsDirector(false);
+          setLoading(false);
+        }
         return;
       }
       
@@ -75,8 +124,6 @@ export function useUser() {
              setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
              setIsDirector(false);
         } else if (effectiveSchoolId) {
-            // Un utilisateur pourrait être un membre du personnel OU un parent.
-            // On vérifie d'abord s'il est un membre du personnel.
             const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
             const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
             
@@ -102,7 +149,6 @@ export function useUser() {
                 }
                 setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: false } });
             } else {
-                 // Si pas de profil staff, on pourrait chercher un profil parent ici à l'avenir
                  setUser({ authUser, uid: authUser.uid, profile: undefined });
             }
 
@@ -121,8 +167,7 @@ export function useUser() {
     });
 
     return () => unsubscribe();
-  }, [auth, firestore]);
+  }, [auth, firestore, checkParentSession]);
 
   return {user, loading, schoolId, isDirector};
 }
-
