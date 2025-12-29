@@ -34,7 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, addDoc, doc, updateDoc, arrayUnion, query, orderBy, serverTimestamp, where, getDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, arrayUnion, query, orderBy, serverTimestamp, where, getDoc, limit } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -81,21 +81,15 @@ export default function MessagingPage() {
 
   const messagesQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
-    // We can't query the whole collection. 
-    // The query must be constrained to what the user is allowed to see.
-    // For now, let's fetch messages sent by the current user.
-    // A more complex system would check roles and recipient lists, which is complex for client-side queries.
-    if (!user?.uid) return null;
-    
+    // Correction : On ne récupère que les 20 messages les plus récents qui sont destinés à tout le monde
+    // pour éviter les problèmes de permissions sur un list() complet.
     return query(
-      collection(firestore, `ecoles/${schoolId}/messagerie`),
-      orderBy("createdAt", "desc")
-      // This is a placeholder. A real-world app would need a more complex query strategy,
-      // potentially involving a separate "inbox" for each user.
-      // For now, we'll rely on the fact that only senders (admins) can view this page.
-      // where('senderId', '==', user.uid)
+        collection(firestore, `ecoles/${schoolId}/messagerie`),
+        where('recipients.all', '==', true),
+        orderBy('createdAt', 'desc'),
+        limit(20)
     );
-  }, [firestore, schoolId, user?.uid]);
+  }, [firestore, schoolId]);
 
 
   const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
@@ -396,5 +390,3 @@ export default function MessagingPage() {
     </>
   );
 }
-
-    
