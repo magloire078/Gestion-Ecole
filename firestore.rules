@@ -183,7 +183,8 @@ service cloud.firestore {
 
       // Communication
       match /messagerie/{messageId} {
-        allow read, update: if isSchoolMember(schoolId);
+        allow read: if isSchoolMember(schoolId) && (resource.data.recipients.all == true || (resource.data.recipients.teachers == true && getMyStaffProfile(schoolId).role == 'enseignant') || (resource.data.recipients.staff == true && getMyStaffProfile(schoolId).role != 'enseignant') || getMyStaffProfile(schoolId).classId in resource.data.recipients.classes);
+        allow update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
@@ -294,3 +295,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
