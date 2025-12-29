@@ -143,23 +143,28 @@ export function BuildingManager({
         <Accordion type="multiple" defaultValue={buildings.map(b => b.id)} className="w-full space-y-4">
           {buildings.map(building => (
             <AccordionItem value={building.id} key={building.id} className="border rounded-lg overflow-hidden bg-card">
-              <AccordionTrigger className="p-4 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                <div className="flex items-center gap-4 text-lg font-semibold flex-1">
-                  <Building2 className="h-6 w-6 text-primary" />
-                  {building[buildingNameField]}
-                  <Badge variant="outline" className="font-mono text-xs">{roomsByBuilding[building.id]?.length || 0} salle(s)/chambre(s)</Badge>
-                </div>
-              </AccordionTrigger>
-              <div className="px-4 -mt-4 mb-2 flex justify-end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleOpenForm(building)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive" onClick={() => setBuildingToDelete(building)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div className="flex justify-between items-center p-4 hover:bg-accent/50 transition-colors">
+                  <AccordionTrigger className="p-0 hover:no-underline flex-1">
+                    <div className="flex items-center gap-4 text-lg font-semibold">
+                      <Building2 className="h-6 w-6 text-primary" />
+                      {building[buildingNameField]}
+                      <Badge variant="outline" className="font-mono text-xs">{roomsByBuilding[building.id]?.length || 0} salle(s)/chambre(s)</Badge>
+                    </div>
+                  </AccordionTrigger>
+                   <div className="flex items-center gap-2 pl-4">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link href={addRoomLink}>Gérer les salles</Link>
+                        </Button>
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                            <DropdownMenuItem onClick={() => handleOpenForm(building)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => setBuildingToDelete(building)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
               </div>
               <AccordionContent>
                 <div className="px-4 pb-4">
@@ -214,7 +219,6 @@ export function BuildingManager({
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
-    </AlertDialog>
     </>
   );
 }
