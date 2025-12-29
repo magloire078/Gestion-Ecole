@@ -185,9 +185,9 @@ service cloud.firestore {
 
       // Communication
       match /messagerie/{messageId} {
-        allow read: if isSchoolMember(schoolId); // allow get/list queries based on specific fields (e.g. recipients)
+        allow get, update: if isSchoolMember(schoolId); // Autorise la lecture/mise à jour d'un document
         allow create: if hasPermission(schoolId, 'manageCommunication');
-        allow update: if isSchoolMember(schoolId); // To mark as read
+        // `list` est intentionnellement omis pour forcer les requêtes ciblées
       }
       
       // Finances (frais, comptabilité)

@@ -81,16 +81,13 @@ export default function MessagingPage() {
 
   const messagesQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
-    // Correction : On ne récupère que les 20 messages les plus récents qui sont destinés à tout le monde
-    // pour éviter les problèmes de permissions sur un list() complet.
     return query(
         collection(firestore, `ecoles/${schoolId}/messagerie`),
-        where('recipients.all', '==', true),
+        where('recipients.all', '==', true), // Requête sécurisée
         orderBy('createdAt', 'desc'),
-        limit(20)
+        limit(50)
     );
   }, [firestore, schoolId]);
-
 
   const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
   const messages: Message[] = useMemo(() => messagesData?.map(d => ({ id: d.id, ...d.data() } as Message)) || [], [messagesData]);
