@@ -53,6 +53,27 @@
         },
         "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
     },
+    "contact_request": {
+      "title": "Demande de Contact",
+      "description": "Stocke une soumission du formulaire de demande de démo.",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "schoolType": { "type": "string" },
+        "studentCount": { "type": "string" },
+        "needs": { "type": "array", "items": { "type": "string" } },
+        "message": { "type": "string" },
+        "meetingDate": { "type": "string", "format": "date" },
+        "meetingTime": { "type": "string" },
+        "newsletter": { "type": "boolean" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["firstName", "lastName", "email", "schoolName"]
+    },
     "survey_response": {
         "title": "Réponse à l'Enquête",
         "description": "Stocke une soumission du formulaire d'enquête.",
@@ -917,6 +938,10 @@
     "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+    },
+    "/contact_requests/{requestId}": {
+        "schema": { "$ref": "#/entities/contact_request" },
+        "description": "Stocke les soumissions du formulaire de contact/démo."
     },
     "/survey_responses/{responseId}": {
         "schema": { "$ref": "#/entities/survey_response" },
