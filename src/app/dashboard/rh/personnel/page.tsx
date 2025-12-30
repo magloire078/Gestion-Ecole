@@ -53,7 +53,7 @@ import { PayslipPreview } from '@/components/payroll/payslip-template';
 import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
-import { StaffEditForm } from "@/components/staff-edit-form";
+import { StaffEditForm } from "@/components/rh/staff-edit-form";
 import { Input } from "@/components/ui/input";
 
 
@@ -88,11 +88,11 @@ export default function PersonnelPage() {
     }
   }, [staffData, searchTerm]);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
+  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [schoolId, firestore]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const adminRolesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [firestore, schoolId]);
+  const adminRolesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [schoolId, firestore]);
   const { data: adminRolesData, loading: adminRolesLoading } = useCollection(adminRolesQuery);
   const adminRoles: (AdminRole & {id: string})[] = useMemo(() => adminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [adminRolesData]);
 
