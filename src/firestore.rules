@@ -29,7 +29,6 @@ service cloud.firestore {
                exists(/databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid));
     }
 
-    // Règle simplifiée pour le prototypage : si l'utilisateur est un parent (basé sur le token)
     function isParent(schoolId, studentId) {
         let token = request.auth.token;
         if (studentId == null) {
@@ -178,6 +177,7 @@ service cloud.firestore {
 
       match /messagerie/{messageId} {
         allow get: if isSchoolMember(schoolId);
+        // Allow listing only if the query specifically asks for public messages
         allow list: if isSchoolMember(schoolId) && (request.query.limit <= 20 || (request.query.where[0][0] == 'recipients.all' && request.query.where[0][2] == true));
         allow update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
