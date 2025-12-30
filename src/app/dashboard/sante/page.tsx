@@ -12,15 +12,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, HeartPulse, ShieldAlert, Syringe } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { Search, HeartPulse, ShieldAlert, Syringe, Users } from "lucide-react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, limit, orderBy } from "firebase/firestore";
+import { collection, query, limit, orderBy, getDocs, collectionGroup } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { student as Student, dossierMedical as DossierMedical } from "@/lib/data-types";
+import type { student as Student, dossierMedical as DossierMedical, consultation as Consultation } from "@/lib/data-types";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -30,24 +30,15 @@ export default function HealthPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [stats, setStats] = useState({ withAllergies: 0 });
+  const [recentConsultations, setRecentConsultations] = useState<(Consultation & {studentName: string})[]>([]);
 
   const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
-  const dossiersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]); // This is simplified. A real app might use a collectionGroup.
   
-  const recentConsultationsQuery = useMemoFirebase(() => schoolId ? query(
-      collection(firestore, `ecoles/${schoolId}/eleves`), 
-      // This is a placeholder as we can't query subcollections easily without collectionGroup
-      // A real implementation would use a separate 'consultations' root collection or a backend function.
-      orderBy('createdAt', 'desc'), 
-      limit(5)
-  ) : null, [firestore, schoolId]);
-
-
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-  const { data: dossiersData, loading: dossiersLoading } = useCollection(dossiersQuery);
-  const { data: recentConsultationsData, loading: consultationsLoading } = useCollection(recentConsultationsQuery);
 
   const allStudents: (Student & {id: string})[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student & {id: string})) || [], [studentsData]);
+  const studentsMap = useMemo(() => new Map(allStudents.map(s => [s.id, `${s.firstName} ${s.lastName}`])), [allStudents]);
 
   const students = useMemo(() => {
     return allStudents.filter(student =>
@@ -56,13 +47,49 @@ export default function HealthPage() {
     );
   }, [allStudents, searchTerm]);
   
-  const stats = useMemo(() => {
-      const allDossiers = dossiersData?.map(d => d.data() as DossierMedical) || [];
-      const withAllergies = allDossiers.filter(d => d.allergies && d.allergies.length > 0).length;
-      return { withAllergies };
-  }, [dossiersData]);
+  useEffect(() => {
+    if (!schoolId) return;
+    
+    // Fetch stats
+    const fetchStats = async () => {
+        const dossiersWithAllergiesQuery = query(collectionGroup(firestore, 'dossier_medical'), where('allergies', '!=', []));
+        const snapshot = await getDocs(dossiersWithAllergiesQuery);
+        let count = 0;
+        snapshot.forEach(doc => {
+            if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
+                count++;
+            }
+        });
+        setStats({ withAllergies: count });
+    };
 
-  const isLoading = schoolLoading || studentsLoading || userLoading || dossiersLoading || consultationsLoading;
+    // Fetch recent consultations
+    const fetchRecentConsultations = async () => {
+        const consultationsQuery = query(collectionGroup(firestore, 'consultations'), orderBy('date', 'desc'), limit(5));
+        const snapshot = await getDocs(consultationsQuery);
+        const consultations: (Consultation & {studentName: string})[] = [];
+        snapshot.forEach(doc => {
+             if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
+                const data = doc.data() as Consultation;
+                const studentId = doc.ref.parent.parent?.parent?.id; // ecoles/{schoolId}/eleves/{studentId}/...
+                if (studentId) {
+                     consultations.push({
+                        ...data,
+                        studentName: studentsMap.get(studentId) || 'Élève inconnu',
+                     });
+                }
+             }
+        });
+        setRecentConsultations(consultations);
+    };
+
+    fetchStats();
+    if (studentsMap.size > 0) {
+      fetchRecentConsultations();
+    }
+  }, [schoolId, firestore, studentsMap]);
+
+  const isLoading = schoolLoading || studentsLoading || userLoading;
 
   return (
     <div className="space-y-6">
@@ -94,12 +121,12 @@ export default function HealthPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Prochain Rappel</CardTitle>
+            <CardTitle className="text-sm font-medium">Prochain Rappel Vaccin</CardTitle>
              <Syringe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
              {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">N/A</div>}
-            <p className="text-xs text-muted-foreground">Prochain rappel de vaccin</p>
+            <p className="text-xs text-muted-foreground">Fonctionnalité à venir</p>
           </CardContent>
         </Card>
       </div>
@@ -170,10 +197,25 @@ export default function HealthPage() {
                     <CardDescription>Dernières visites à l'infirmerie.</CardDescription>
                 </CardHeader>
                  <CardContent className="space-y-3">
-                    {consultationsLoading ? (
+                    {isLoading ? (
                         [...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                    ) : recentConsultations.length > 0 ? (
+                      recentConsultations.map(c => (
+                        <div key={c.id} className="flex items-center gap-3">
+                          <div className="p-2 bg-muted rounded-full">
+                            <HeartPulse className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="font-medium text-sm">{c.studentName}</div>
+                            <div className="text-xs text-muted-foreground">{c.motif}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(c.date), 'dd/MM', { locale: fr })}
+                          </div>
+                        </div>
+                      ))
                     ) : (
-                        <p className="text-center text-sm text-muted-foreground py-8">Fonctionnalité à venir.</p>
+                        <p className="text-center text-sm text-muted-foreground py-8">Aucune consultation récente.</p>
                     )}
                  </CardContent>
             </Card>
