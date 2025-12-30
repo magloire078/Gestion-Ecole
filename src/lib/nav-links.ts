@@ -142,10 +142,17 @@ export const NAV_LINKS: NavGroup[] = [
     },
   ];
 
-// Ajout conceptuel des sous-liens de transport. La logique de rendu est dans le layout.
+// Ajout conceptuel des sous-liens. La logique de rendu est dans le layout respectif.
 const transportSubLinks = [
     { href: '/dashboard/transport/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
     { href: '/dashboard/transport/bus', label: 'Bus', icon: Bus, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
     { href: '/dashboard/transport/lignes', label: 'Lignes', icon: Map, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
     { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
+];
+
+const internatSubLinks = [
+    { href: '/dashboard/internat/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
+    { href: '/dashboard/internat/batiments', label: 'Bâtiments', icon: Building, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
+    { href: '/dashboard/internat/chambres', label: 'Chambres', icon: Bed, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
+    { href: '/dashboard/internat/occupants', label: 'Occupants', icon: Users, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
 ];
