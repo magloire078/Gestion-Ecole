@@ -297,3 +297,5 @@ function PageContent({ eleveId, schoolId, schoolLoading }: { eleveId: string, sc
     <StudentProfileContent eleveId={eleveId} schoolId={schoolId} initialTab={initialTab} />
   );
 }
+
+    

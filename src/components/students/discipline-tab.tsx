@@ -193,3 +193,5 @@ export function DisciplineTab({ schoolId, studentId }: DisciplineTabProps) {
         </>
     );
 }
+
+    
