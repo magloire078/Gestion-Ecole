@@ -1,5 +1,4 @@
 
-
 {
   "entities": {
     "user_root": {
@@ -273,6 +272,7 @@
             "classId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe actuelle de l'élève." },
             "cycle": { "type": "string", "description": "Le nom du cycle actuel de l'élève." },
+            "grade": { "type": "string", "description": "Le nom du niveau de l'élève."},
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
             "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
@@ -748,11 +748,10 @@
         "type": "object",
         "properties": {
             "name": { "type": "string" },
-            "type": { "type": "string", "enum": ["administratif", "pedagogique", "sportif", "autre"] },
+            "type": { "type": "string", "enum": ["garcons", "filles", "mixte", "administratif", "pedagogique", "sportif", "autre"] },
             "capacity": { "type": "number" },
             "responsableId": { "type": "string" },
-            "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
-            "features": { "type": "array", "items": { "type": "string" } }
+            "status": { "type": "string", "enum": ["active", "maintenance", "full"] }
         },
         "required": ["name", "type", "capacity"]
     },
@@ -1225,7 +1224,3 @@
     }
   }
 }
-
-
-
-    

@@ -23,7 +23,7 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const canManageContent = !!user?.profile?.permissions?.manageInventory;
+  const canManageContent = !!user?.profile?.permissions?.manageRooms;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSalle, setEditingSalle] = useState<(Salle & { id: string }) | null>(null);
@@ -188,5 +188,3 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
     </>
   );
 }
-
-    

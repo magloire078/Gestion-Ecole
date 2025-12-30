@@ -24,6 +24,7 @@ const allPermissionsList = [
     { id: 'viewUsers', label: 'Voir Utilisateurs', desc: 'Consulter les listes et profils.' },
     { id: 'manageClasses', label: 'Gérer Classes', desc: 'Créer, modifier la structure scolaire.' },
     { id: 'manageGrades', label: 'Gérer Notes', desc: 'Saisir et modifier les notes des élèves.' },
+    { id: 'manageDiscipline', label: 'Gérer Discipline', desc: "Suivre et gérer les incidents disciplinaires."},
     { id: 'manageBilling', label: 'Gérer Facturation', desc: 'Gérer les paiements, frais et comptabilité.' },
     { id: 'manageCommunication', label: 'Gérer Communication', desc: 'Envoyer des messages à la communauté.' },
     { id: 'manageSchedule', label: 'Gérer Emploi du temps', desc: 'Modifier les emplois du temps.' },
