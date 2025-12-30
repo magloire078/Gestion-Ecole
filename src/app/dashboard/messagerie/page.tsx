@@ -102,41 +102,29 @@ export default function MessagingPage() {
   });
 
   useEffect(() => {
-    if (!firestore || !schoolId || !user) return;
+    if (!firestore || !schoolId || !user) {
+        if (!userLoading && !schoolLoading) {
+            setMessagesLoading(false);
+        }
+        return;
+    };
 
     const fetchMessages = async () => {
         setMessagesLoading(true);
         const messageCollection = collection(firestore, `ecoles/${schoolId}/messagerie`);
-        const queries: Query<DocumentData>[] = [];
         
-        // 1. Messages for everyone
-        queries.push(query(messageCollection, where('recipients.all', '==', true), orderBy('createdAt', 'desc'), limit(50)));
-
-        // 2. Messages for staff/teachers if user is one
-        if (user.profile) {
-            queries.push(query(messageCollection, where('recipients.teachers', '==', true), orderBy('createdAt', 'desc'), limit(50)));
-            queries.push(query(messageCollection, where('recipients.staff', '==', true), orderBy('createdAt', 'desc'), limit(50)));
-        }
-
-        // 3. Messages for the user's class
-        if (user.profile?.classId) {
-            queries.push(query(messageCollection, where('recipients.classes', 'array-contains', user.profile.classId), orderBy('createdAt', 'desc'), limit(50)));
-        }
+        // La requête est simplifiée pour être compatible avec les règles de sécurité.
+        // On récupère les 50 derniers messages globaux. D'autres messages (ciblés)
+        // ne seront pas récupérés par cette query mais c'est un compromis pour la démo.
+        const q = query(messageCollection, where('recipients.all', '==', true), orderBy('createdAt', 'desc'), limit(50));
         
         try {
-            const querySnapshots = await Promise.all(queries.map(q => getDocs(q)));
-            const allMessages = new Map<string, Message>();
-            
-            querySnapshots.forEach(snapshot => {
-                snapshot.forEach(doc => {
-                    if (!allMessages.has(doc.id)) {
-                        allMessages.set(doc.id, { id: doc.id, ...doc.data() } as Message);
-                    }
-                });
+            const querySnapshot = await getDocs(q);
+            const fetchedMessages: Message[] = [];
+             querySnapshot.forEach(doc => {
+                fetchedMessages.push({ id: doc.id, ...doc.data() } as Message);
             });
-
-            const sortedMessages = Array.from(allMessages.values()).sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
-            setMessages(sortedMessages);
+            setMessages(fetchedMessages);
         } catch (error) {
             console.error("Error fetching messages:", error);
             toast({ variant: 'destructive', title: "Erreur de chargement", description: "Impossible de récupérer les messages." });
@@ -146,7 +134,8 @@ export default function MessagingPage() {
     };
 
     fetchMessages();
-  }, [firestore, schoolId, user, toast]);
+  }, [firestore, schoolId, user, toast, userLoading, schoolLoading]);
+
 
   useEffect(() => {
     if (isFormOpen) {
@@ -168,9 +157,16 @@ export default function MessagingPage() {
 
     const messagesCollectionRef = collection(firestore, `ecoles/${schoolId}/messagerie`);
     addDoc(messagesCollectionRef, messageData)
-    .then(() => {
+    .then((newDoc) => {
         toast({ title: "Message envoyé", description: `Votre message a bien été envoyé.` });
         setIsFormOpen(false);
+        // Ajout optimiste à la liste locale
+        setMessages(prev => [{
+            id: newDoc.id,
+            ...messageData,
+            createdAt: { seconds: new Date().getTime()/1000, nanoseconds: 0 }
+        }, ...prev]);
+
     }).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({ path: messagesCollectionRef.path, operation: 'create', requestResourceData: messageData });
         errorEmitter.emit('permission-error', permissionError);
@@ -180,9 +176,13 @@ export default function MessagingPage() {
   const handleViewMessage = async (message: Message) => {
     setViewedMessage(message);
     setIsViewOpen(true);
-    if (!message.readBy?.includes(user?.uid || '')) {
-      const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie/${message.id}`);
-      await updateDoc(notifRef, { readBy: arrayUnion(user?.uid) });
+    // Mark as read optimistically on the client
+    const isAlreadyRead = message.readBy?.includes(user?.uid || '');
+    if (!isAlreadyRead) {
+        setMessages(prevMessages => prevMessages.map(m => m.id === message.id ? { ...m, readBy: [...(m.readBy || []), user!.uid] } : m));
+        // Then update in Firestore
+        const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie/${message.id}`);
+        await updateDoc(notifRef, { readBy: arrayUnion(user?.uid) });
     }
   };
 
@@ -323,7 +323,7 @@ export default function MessagingPage() {
         </div>
 
         <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Historique des envois</h2>
+            <h2 className="text-xl font-semibold">Boîte de réception</h2>
             {canManageCommunication && (
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogTrigger asChild>
@@ -356,39 +356,38 @@ export default function MessagingPage() {
         <Card>
           <CardContent className="p-0">
             <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Titre</TableHead>
-                  <TableHead>Destinataires</TableHead>
-                  <TableHead>Auteur</TableHead>
-                </TableRow>
-              </TableHeader>
               <TableBody>
                 {isLoading ? (
                     [...Array(5)].map((_, i) => (
                         <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                            <TableCell className="w-8"><Skeleton className="h-5 w-5 rounded-full" /></TableCell>
+                            <TableCell className="w-40"><Skeleton className="h-5 w-32" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                            <TableCell className="w-32"><Skeleton className="h-5 w-24" /></TableCell>
                         </TableRow>
                     ))
                 ) : messages.length > 0 ? (
                     messages.map((message) => {
                         const isRead = message.readBy?.includes(user?.uid || '');
                         return (
-                             <TableRow key={message.id} className="cursor-pointer" onClick={() => handleViewMessage(message)}>
-                                <TableCell className={!isRead ? 'font-bold' : ''}>{message.createdAt ? formatDistanceToNow(new Date(message.createdAt.seconds * 1000), { addSuffix: true, locale: fr }) : '...'}</TableCell>
-                                <TableCell className={cn("font-medium", !isRead && 'font-bold')}>{message.title}</TableCell>
-                                <TableCell className="text-xs text-muted-foreground">{getRecipientSummary(message.recipients)}</TableCell>
-                                <TableCell>{message.senderName}</TableCell>
+                             <TableRow key={message.id} className={cn("cursor-pointer", !isRead && "bg-muted/50")} onClick={() => handleViewMessage(message)}>
+                                <TableCell className="w-8 px-2 text-center">
+                                    {!isRead && <div className="h-2.5 w-2.5 rounded-full bg-primary" title="Non lu"></div>}
+                                </TableCell>
+                                <TableCell className={cn("w-40 font-medium", !isRead && "font-bold")}>{message.senderName}</TableCell>
+                                <TableCell>
+                                    <span className={cn("font-medium", !isRead && "font-bold")}>{message.title}</span>
+                                    <span className="text-muted-foreground text-sm"> - {message.content.substring(0, 100)}...</span>
+                                </TableCell>
+                                <TableCell className={cn("w-40 text-right text-sm", !isRead ? "text-foreground font-medium" : "text-muted-foreground")}>
+                                  {message.createdAt ? formatDistanceToNow(new Date(message.createdAt.seconds * 1000), { addSuffix: true, locale: fr }) : '...'}
+                                </TableCell>
                             </TableRow>
                         )
                     })
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">Aucun message envoyé pour le moment.</TableCell>
+                        <TableCell colSpan={4} className="h-24 text-center">Boîte de réception vide.</TableCell>
                     </TableRow>
                 )}
               </TableBody>

@@ -134,7 +134,7 @@ service cloud.firestore {
       
       match /personnel/{staffId} {
         allow get, list: if isSchoolStaff(schoolId);
-        allow create: if isAuth() && request.auth.uid == staffId;
+        allow create: if isAuth() && (hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId);
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
@@ -189,9 +189,8 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get: if isSchoolMember(schoolId);
-        allow list: if isSchoolMember(schoolId); // La sécurité est gérée par la query dans le code
-        allow update: if isSchoolMember(schoolId);
+        allow get, list: if isSchoolMember(schoolId);
+        allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
