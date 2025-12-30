@@ -7,7 +7,8 @@
       "description": "Un document racine qui associe l'UID d'un utilisateur à l'identifiant de son école.",
       "type": "object",
       "properties": {
-        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." }
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
+        "isAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme."}
       },
       "required": ["schoolId"]
     },
