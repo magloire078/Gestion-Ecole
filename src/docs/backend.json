@@ -748,10 +748,11 @@
         "type": "object",
         "properties": {
             "name": { "type": "string" },
-            "type": { "type": "string", "enum": ["garcons", "filles", "mixte", "administratif", "pedagogique", "sportif", "autre"] },
+            "type": { "type": "string", "enum": ["garcons", "filles", "mixte"] },
             "capacity": { "type": "number" },
             "responsableId": { "type": "string" },
-            "status": { "type": "string", "enum": ["active", "maintenance", "full"] }
+            "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
+            "features": { "type": "array", "items": { "type": "string" } }
         },
         "required": ["name", "type", "capacity"]
     },

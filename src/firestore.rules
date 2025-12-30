@@ -148,6 +148,11 @@ service cloud.firestore {
         allow get, list: if isSchoolStaff(schoolId) || isParentOfStudent(resource) || isParentSession(schoolId) && isParentOfStudentViaSession(studentId);
         allow write: if hasPermission(schoolId, 'manageUsers');
         
+        match /incidents_disciplinaires/{incidentId} {
+          allow get, list: if isSchoolStaff(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId))) || isParentSession(schoolId) && isParentOfStudentViaSession(studentId);
+          allow write: if hasPermission(schoolId, 'manageDiscipline');
+        }
+
         match /{subcollection}/{docId} {
              allow get, list: if isSchoolStaff(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId))) || isParentSession(schoolId) && isParentOfStudentViaSession(studentId);
              allow write: if isSchoolStaff(schoolId);
