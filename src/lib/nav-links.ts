@@ -139,6 +139,7 @@ export const NAV_LINKS: NavGroup[] = [
             { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
             { href: '/admin/system/schools', label: 'Écoles', icon: Building },
             { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
+             { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
         ]
     },
   ];
