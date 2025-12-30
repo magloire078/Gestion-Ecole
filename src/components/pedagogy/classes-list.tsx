@@ -38,7 +38,7 @@ export function ClassesList() {
   const allTeachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
   const allNiveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
   const { data: teachersData, loading: teachersLoading } = useCollection(allTeachersQuery);
-  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(allNiveauxQuery);
   
   const teachers = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
   const niveaux = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
