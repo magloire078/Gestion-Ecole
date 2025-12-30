@@ -21,7 +21,7 @@ import type { student as Student, class_type as Class } from "@/lib/data-types";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Search } from "lucide-react";
+import { MessageSquare, Search, Loader2 } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import { useCollection, useFirestore, useMemoFirebase } from "@/firebase";
 import { collection, query } from "firebase/firestore";
@@ -29,10 +29,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { generatePaymentReminder } from "@/ai/flows/generate-payment-reminder";
 
 export default function PaymentsPage() {
   const firestore = useFirestore();
-  const { schoolId, loading: schoolDataLoading } = useSchoolData();
+  const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
   const { toast } = useToast();
   
   const studentsQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
@@ -47,6 +49,11 @@ export default function PaymentsPage() {
   const [selectedClass, setSelectedClass] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const [isReminderDialogOpen, setIsReminderDialogOpen] = useState(false);
+  const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
+  const [reminderContent, setReminderContent] = useState('');
+  const [studentForReminder, setStudentForReminder] = useState<Student | null>(null);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -71,11 +78,27 @@ export default function PaymentsPage() {
     return `${num.toLocaleString('fr-FR')} CFA`;
   };
   
-  const handleRemind = (student: Student) => {
-      toast({
-          title: "Fonctionnalité en développement",
-          description: `La relance automatique pour ${student.firstName} ${student.lastName} sera bientôt disponible.`,
-      });
+  const handleRemind = async (student: Student) => {
+    if (!student.amountDue || student.amountDue <= 0 || !schoolName) return;
+
+    setStudentForReminder(student);
+    setIsReminderDialogOpen(true);
+    setIsGeneratingReminder(true);
+    setReminderContent('');
+
+    try {
+        const result = await generatePaymentReminder({
+            studentName: `${student.firstName} ${student.lastName}`,
+            parentName: `${student.parent1FirstName} ${student.parent1LastName}`,
+            amountDue: student.amountDue,
+            schoolName: schoolName,
+        });
+        setReminderContent(result.reminder);
+    } catch (e) {
+        setReminderContent("Erreur lors de la génération du message. Veuillez réessayer.");
+    } finally {
+        setIsGeneratingReminder(false);
+    }
   }
 
   return (
@@ -181,7 +204,7 @@ export default function PaymentsPage() {
                             </TableCell>
                             <TableCell className="text-right">
                                <div className="flex justify-end gap-2">
-                                {(student.amountDue ?? 0) > 0 && (
+                                {student.amountDue && student.amountDue > 0 && (
                                     <Button variant="outline" size="sm" onClick={() => handleRemind(student)}>
                                         <MessageSquare className="mr-1 h-3.5 w-3.5" /> Relancer
                                     </Button>
@@ -208,6 +231,36 @@ export default function PaymentsPage() {
         </Card>
       </div>
     </div>
+
+    <AlertDialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Message de Relance pour {studentForReminder?.parent1FirstName} {studentForReminder?.parent1LastName}</AlertDialogTitle>
+                <AlertDialogDescription>
+                    Voici une suggestion de message générée par l'IA. Vous pouvez la copier pour l'envoyer.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="p-4 bg-muted rounded-md text-sm my-4">
+                {isGeneratingReminder ? (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Génération du message...
+                    </div>
+                ) : (
+                    <p>{reminderContent}</p>
+                )}
+            </div>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Fermer</AlertDialogCancel>
+                <AlertDialogAction onClick={() => {
+                    navigator.clipboard.writeText(reminderContent);
+                    toast({ title: "Message copié !" });
+                }} disabled={isGeneratingReminder || !reminderContent}>
+                    Copier le message
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
