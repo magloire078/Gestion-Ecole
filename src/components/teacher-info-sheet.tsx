@@ -119,7 +119,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                         </div>
                     </main>
 
-                     <footer className="mt-16 grid grid-cols-2 gap-4 text-center text-sm">
+                     <footer className="mt-16 grid grid-cols-2 gap-4 text-center text-sm print-break-inside-avoid">
                         <div>
                              <div className="font-bold">Signature de l'employé(e)</div>
                              <div className="mt-16 border-t border-dashed w-48 mx-auto"></div>
