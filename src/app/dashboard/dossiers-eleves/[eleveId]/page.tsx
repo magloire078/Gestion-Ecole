@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -59,7 +60,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
   
   const firestore = useFirestore();
   const { user } = useUser();
-  const canManageUsers = !!user?.profile?.permissions?.manageUsers;
+  const canManageUsers = user?.isParent ? false : (user?.profile?.permissions?.manageUsers ?? false);
 
   const { toast } = useToast();
 
@@ -76,11 +77,11 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
   const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
-  const allSchoolClassesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
+  const allSchoolClassesQuery = useMemoFirebase(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId, canManageUsers]);
   const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
-  const feesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/frais_scolarite`), [firestore, schoolId]);
+  const feesQuery = useMemoFirebase(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId, canManageUsers]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
-  const niveauxQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/niveaux`)), [firestore, schoolId]);
+  const niveauxQuery = useMemoFirebase(() => canManageUsers ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId, canManageUsers]);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
 
   const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);
@@ -89,7 +90,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
 
   const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
   
-  const isLoading = studentLoading || classLoading || teacherLoading || allClassesLoading || feesLoading || niveauxLoading;
+  const isLoading = studentLoading || classLoading || teacherLoading || (canManageUsers && (allClassesLoading || feesLoading || niveauxLoading));
 
   if (isLoading) {
     return <StudentProfilePageSkeleton />;
@@ -131,13 +132,15 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
             <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/emploi-du-temps`)}>
               <CalendarDays className="mr-2 h-4 w-4" />Emploi du Temps
             </Button>
-            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)}>
-              <FileSignature className="mr-2 h-4 w-4" />Fiche de Renseignements
-            </Button>
-            {canManageUsers && (
-                <Button onClick={() => setIsEditDialogOpen(true)}>
-                    <Pencil className="mr-2 h-4 w-4" /> Modifier
-                </Button>
+             {canManageUsers && (
+                <>
+                    <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/${eleveId}/fiche`)}>
+                        <FileSignature className="mr-2 h-4 w-4" />Fiche de Renseignements
+                    </Button>
+                    <Button onClick={() => setIsEditDialogOpen(true)}>
+                        <Pencil className="mr-2 h-4 w-4" /> Modifier
+                    </Button>
+                </>
             )}
         </div>
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
@@ -225,7 +228,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                 Mettez à jour les informations de <strong>{student?.firstName} {student?.lastName}</strong>.
             </DialogDescription>
           </DialogHeader>
-            {student && (
+            {student && canManageUsers && (
               <StudentEditForm 
                 student={student} 
                 classes={allSchoolClasses} 
@@ -247,7 +250,6 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
 
 export default function StudentProfilePage() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const eleveId = params.eleveId as string;
   const { schoolId, loading: schoolLoading } = useSchoolData();
 
