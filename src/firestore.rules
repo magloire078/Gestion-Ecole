@@ -90,7 +90,7 @@ service cloud.firestore {
 
     match /utilisateurs/{userId} {
       allow get, update, create: if isAuth() && request.auth.uid == userId;
-      allow list, delete: if false;
+      allow list, delete: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true || request.auth.uid == userId;
     }
     
     match /contact_requests/{requestId} {
@@ -123,7 +123,7 @@ service cloud.firestore {
       allow get: if isSchoolMember(schoolId);
       allow list: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
       allow update: if isDirector(schoolId) || hasPermission(schoolId, 'manageSettings');
-      allow delete: if false;
+      allow delete: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
 
       // --- SOUS-COLLECTIONS ---
       
@@ -185,7 +185,7 @@ service cloud.firestore {
 
       match /messagerie/{messageId} {
         allow get: if isSchoolMember(schoolId);
-        allow list: if isSchoolMember(schoolId) && (request.query.limit <= 20 || (request.query.where[0][0] == 'recipients.all' && request.query.where[0][2] == true));
+        allow list: if isSchoolMember(schoolId); // La sécurité est gérée par la query dans le code
         allow update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
