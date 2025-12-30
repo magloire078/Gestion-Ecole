@@ -59,6 +59,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from "@/lib/data-types";
 import { StudentEditForm } from "@/components/student-edit-form";
+import { SafeImage } from "@/components/ui/safe-image";
 
 const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
@@ -252,7 +253,7 @@ export default function StudentsPage() {
                           <TableCell>
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10 print:hidden">
-                                    <AvatarImage src={student.photoUrl || `https://picsum.photos/seed/${student.id}/100`} alt={`${student.firstName} ${student.lastName}`} data-ai-hint="person face" />
+                                    <SafeImage src={student.photoUrl} alt={`${student.firstName} ${student.lastName}`} data-ai-hint="person face" />
                                     <AvatarFallback>{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <div>

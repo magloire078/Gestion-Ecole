@@ -5,7 +5,7 @@
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature, KeyRound, UserX, Megaphone } from 'lucide-react';
+import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature, KeyRound, UserX, Megaphone, Shield } from 'lucide-react';
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
