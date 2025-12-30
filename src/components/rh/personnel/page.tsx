@@ -78,7 +78,7 @@ export function PersonnelList() {
     const allStaff: StaffMember[] = staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [];
     
     const filteredStaff = allStaff.filter(s => 
-        s.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
