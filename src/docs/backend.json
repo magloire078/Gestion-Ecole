@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "user_root": {
@@ -748,7 +749,7 @@
         "type": "object",
         "properties": {
             "name": { "type": "string" },
-            "type": { "type": "string", "enum": ["garcons", "filles", "mixte"] },
+            "type": { "type": "string", "enum": ["garcons", "filles", "mixte", "administratif", "pedagogique", "sportif", "autre"] },
             "capacity": { "type": "number" },
             "responsableId": { "type": "string" },
             "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
@@ -1226,4 +1227,5 @@
   }
 }
 
+    
     
