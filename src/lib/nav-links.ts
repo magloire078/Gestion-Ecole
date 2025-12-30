@@ -30,7 +30,8 @@ import {
     DoorOpen,
     GanttChartSquare,
     Wrench,
-    KeyRound
+    KeyRound,
+    Handshake,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -140,3 +141,4 @@ export const NAV_LINKS: NavGroup[] = [
         ]
     },
   ];
+

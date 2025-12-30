@@ -1,0 +1,253 @@
+
+'use client';
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { PlusCircle, MoreHorizontal, User, Hash, Handshake, Trash2, Edit } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { cn } from "@/lib/utils";
+import { SafeImage } from "@/components/ui/safe-image";
+import type { libraryBook as LibraryBook, student as Student } from "@/lib/data-types";
+import { LoanDialog } from "./loan-dialog";
+
+const bookSchema = z.object({
+  title: z.string().min(1, { message: "Le titre est requis." }),
+  author: z.string().min(1, { message: "L'auteur est requis." }),
+  quantity: z.coerce.number().int().min(0, { message: "La quantité doit être un nombre positif." }),
+});
+
+type BookFormValues = z.infer<typeof bookSchema>;
+
+interface BookListProps {
+  schoolId: string;
+}
+
+export function BookList({ schoolId }: BookListProps) {
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const { user } = useUser();
+  const canManageLibrary = !!user?.profile?.permissions?.manageLibrary;
+  
+  const booksQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)), [firestore, schoolId]);
+  const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
+  const books: (LibraryBook & { id: string })[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook & { id: string })) || [], [booksData]);
+  
+  const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const students: (Student & {id:string})[] = useMemo(() => studentsData?.map(d => ({id: d.id, ...d.data()} as Student & {id: string})) || [], [studentsData]);
+
+
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isLoanDialogOpen, setIsLoanDialogOpen] = useState(false);
+  
+  const [selectedBookForLoan, setSelectedBookForLoan] = useState<(LibraryBook & { id: string }) | null>(null);
+  const [editingBook, setEditingBook] = useState<(LibraryBook & { id: string }) | null>(null);
+  const [bookToDelete, setBookToDelete] = useState<(LibraryBook & { id: string }) | null>(null);
+
+  const form = useForm<BookFormValues>({
+    resolver: zodResolver(bookSchema),
+    defaultValues: { title: "", author: "", quantity: 1 },
+  });
+
+  useEffect(() => {
+    form.reset(editingBook || { title: "", author: "", quantity: 1 });
+  }, [isFormOpen, editingBook, form]);
+
+  const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
+
+  const handleBookSubmit = (values: BookFormValues) => {
+    if (!schoolId) return;
+    
+    const bookData = { ...values, schoolId, createdAt: serverTimestamp() };
+
+    const promise = editingBook 
+        ? setDoc(getBookDocRef(editingBook.id), bookData, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/bibliotheque`), bookData);
+
+    promise.then(() => {
+        toast({ title: `Livre ${editingBook ? "modifié" : "ajouté"}`, description: `"${values.title}" a été ${editingBook ? "modifié" : "ajouté"} à la bibliothèque.` });
+        setIsFormOpen(false);
+    }).catch(error => {
+        const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/bibliotheque`, operation: editingBook ? 'update' : 'create', requestResourceData: bookData });
+        errorEmitter.emit('permission-error', permissionError);
+    });
+  };
+
+  const handleOpenFormDialog = (book: (LibraryBook & { id: string }) | null) => {
+    setEditingBook(book);
+    setIsFormOpen(true);
+  };
+  
+  const handleOpenLoanDialog = (book: LibraryBook & { id: string }) => {
+    setSelectedBookForLoan(book);
+    setIsLoanDialogOpen(true);
+  };
+
+  const handleOpenDeleteDialog = (book: LibraryBook & { id: string }) => {
+    setBookToDelete(book);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteBook = () => {
+    if (!schoolId || !bookToDelete) return;
+    deleteDoc(getBookDocRef(bookToDelete.id)).then(() => {
+        toast({ title: "Livre supprimé" });
+        setIsDeleteDialogOpen(false);
+    }).catch((error) => {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: getBookDocRef(bookToDelete.id).path, operation: 'delete' }));
+    });
+  };
+  
+  const isLoading = booksLoading || studentsLoading;
+
+  return (
+    <>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Catalogue ({books.length} titres)</h2>
+        {canManageLibrary && (
+          <Button onClick={() => handleOpenFormDialog(null)}>
+            <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
+          </Button>
+        )}
+      </div>
+      
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {isLoading ? (
+            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
+        ) : books.map((book) => (
+          <Card key={book.id} className="flex flex-col">
+            <CardHeader className="p-0">
+              <div className="relative h-40 w-full">
+                <SafeImage 
+                  src={`https://picsum.photos/seed/${book.id}/400/200`} 
+                  alt={`Couverture du livre ${book.title}`} 
+                  fill
+                  style={{objectFit: 'cover'}}
+                  className="rounded-t-lg"
+                  data-ai-hint="book cover"
+                />
+              </div>
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-lg leading-tight font-bold">{book.title}</CardTitle>
+                  {canManageLibrary && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0 h-8 w-8")}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleOpenLoanDialog(book)}><Handshake className="mr-2 h-4 w-4" />Enregistrer un prêt</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenFormDialog(book)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(book)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+                <CardDescription className="flex items-center gap-2 text-sm mt-1">
+                  <User className="h-4 w-4" />
+                  {book.author}
+                </CardDescription>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 pb-4 px-4 pt-0">
+              <div className="flex items-center text-sm text-muted-foreground">
+                <Hash className="mr-2 h-4 w-4 flex-shrink-0" />
+                <span>Quantité disponible: <strong>{book.quantity}</strong></span>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      {!isLoading && books.length === 0 && (
+        <Card className="flex items-center justify-center h-48">
+          <p className="text-muted-foreground">Aucun livre dans la bibliothèque pour le moment.</p>
+        </Card>
+      )}
+
+      {/* --- Dialogs --- */}
+      {canManageLibrary && (
+        <>
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>{editingBook ? "Modifier le" : "Ajouter un Nouveau"} Livre</DialogTitle>
+                <DialogDescription>{editingBook ? `Mettez à jour les informations du livre "${editingBook.title}".` : "Renseignez les informations du nouveau livre."}</DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form id="book-form" onSubmit={form.handleSubmit(handleBookSubmit)} className="grid gap-4 py-4">
+                  <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Titre</FormLabel><FormControl><Input placeholder="Ex: Les Misérables" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="author" render={({ field }) => (<FormItem><FormLabel>Auteur</FormLabel><FormControl><Input placeholder="Ex: Victor Hugo" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>Quantité</FormLabel><FormControl><Input type="number" placeholder="Ex: 5" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                </form>
+              </Form>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+                <Button type="submit" form="book-form" disabled={form.formState.isSubmitting}>{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader><AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle><AlertDialogDescription>Cette action est irréversible. Le livre <strong>"{bookToDelete?.title}"</strong> sera définitivement supprimé.</AlertDialogDescription></AlertDialogHeader>
+              <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDeleteBook} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction></AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          <LoanDialog
+            isOpen={isLoanDialogOpen}
+            onClose={() => setIsLoanDialogOpen(false)}
+            book={selectedBookForLoan}
+            students={students}
+            schoolId={schoolId}
+          />
+        </>
+      )}
+    </>
+  );
+}

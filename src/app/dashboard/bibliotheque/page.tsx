@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { PlusCircle, MoreHorizontal, User, Hash } from "lucide-react";
+import { PlusCircle, MoreHorizontal, User, Hash, ArrowRight } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
   Dialog,
@@ -52,276 +52,51 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { cn } from "@/lib/utils";
 import { SafeImage } from "@/components/ui/safe-image";
-
-const bookSchema = z.object({
-  title: z.string().min(1, { message: "Le titre est requis." }),
-  author: z.string().min(1, { message: "L'auteur est requis." }),
-  quantity: z.coerce.number().int().min(0, { message: "La quantité doit être un nombre positif." }),
-});
-
-type BookFormValues = z.infer<typeof bookSchema>;
-
-
-interface LibraryBook {
-    id: string;
-    title: string;
-    author: string;
-    quantity: number;
-}
+import Link from "next/link";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BookList } from '@/components/bibliotheque/book-list';
+import { LoanList } from '@/components/bibliotheque/loan-list';
+import { BookOpen, Handshake } from 'lucide-react';
 
 export default function LibraryPage() {
-  const firestore = useFirestore();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
-  const { toast } = useToast();
-  const { user } = useUser();
-  const canManageLibrary = !!user?.profile?.permissions?.manageLibrary;
-  
-  const booksQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)) : null, [firestore, schoolId]);
-  const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
-  const books: LibraryBook[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook)) || [], [booksData]);
+  const { schoolId, loading } = useSchoolData();
 
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
-  const [editingBook, setEditingBook] = useState<LibraryBook | null>(null);
-  const [bookToDelete, setBookToDelete] = useState<LibraryBook | null>(null);
-
-  const form = useForm<BookFormValues>({
-    resolver: zodResolver(bookSchema),
-    defaultValues: {
-      title: "",
-      author: "",
-      quantity: 1,
-    },
-  });
-
-  useEffect(() => {
-    if (isFormOpen) {
-      if (editingBook) {
-        form.reset({
-          title: editingBook.title,
-          author: editingBook.author,
-          quantity: editingBook.quantity,
-        });
-      } else {
-        form.reset({
-          title: "",
-          author: "",
-          quantity: 1,
-        });
-      }
-    }
-  }, [isFormOpen, editingBook, form]);
-
-
-  const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
-
-  const handleBookSubmit = (values: BookFormValues) => {
-    if (!schoolId) {
-      toast({ variant: "destructive", title: "Erreur", description: "ID de l'école non trouvé." });
-      return;
-    }
-    
-    const bookData = {
-      ...values,
-      schoolId,
-      createdAt: serverTimestamp(),
-    };
-
-    const promise = editingBook 
-        ? setDoc(getBookDocRef(editingBook.id), bookData, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/bibliotheque`), bookData);
-
-    promise.then(() => {
-        const action = editingBook ? "modifié" : "ajouté";
-        toast({ title: `Livre ${action}`, description: `"${values.title}" a été ${action} à la bibliothèque.` });
-        setIsFormOpen(false);
-    }).catch(error => {
-        const permissionError = new FirestorePermissionError({
-            path: `ecoles/${schoolId}/bibliotheque`,
-            operation: editingBook ? 'update' : 'create',
-            requestResourceData: bookData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  };
-
-
-  const handleOpenFormDialog = (book: LibraryBook | null) => {
-    setEditingBook(book);
-    setIsFormOpen(true);
-  };
-
-  const handleOpenDeleteDialog = (book: LibraryBook) => {
-    setBookToDelete(book);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleDeleteBook = () => {
-    if (!schoolId || !bookToDelete) return;
-    const bookDocRef = getBookDocRef(bookToDelete.id);
-    deleteDoc(bookDocRef)
-    .then(() => {
-        toast({ title: "Livre supprimé", description: `"${bookToDelete.title}" a été retiré de la bibliothèque.` });
-        setIsDeleteDialogOpen(false);
-        setBookToDelete(null);
-    })
-    .catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: bookDocRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  };
-  
-  const isLoading = schoolLoading || booksLoading;
-
-  const renderForm = () => (
-    <Form {...form}>
-      <form id="book-form" onSubmit={form.handleSubmit(handleBookSubmit)} className="grid gap-4 py-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">Titre</FormLabel>
-              <FormControl className="col-span-3">
-                <Input placeholder="Ex: Les Misérables" {...field} />
-              </FormControl>
-              <FormMessage className="col-start-2 col-span-3" />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="author"
-          render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">Auteur</FormLabel>
-              <FormControl className="col-span-3">
-                <Input placeholder="Ex: Victor Hugo" {...field} />
-              </FormControl>
-              <FormMessage className="col-start-2 col-span-3" />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="quantity"
-          render={({ field }) => (
-            <FormItem className="grid grid-cols-4 items-center gap-4">
-              <FormLabel className="text-right">Quantité</FormLabel>
-              <FormControl className="col-span-3">
-                <Input type="number" placeholder="Ex: 5" {...field} />
-              </FormControl>
-              <FormMessage className="col-start-2 col-span-3" />
-            </FormItem>
-          )}
-        />
-      </form>
-    </Form>
-  );
-
-  return (
-    <>
+  if (loading || !schoolId) {
+    return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-lg font-semibold md:text-2xl">Bibliothèque</h1>
-            <p className="text-muted-foreground">Consultez et gérez les livres disponibles dans la bibliothèque de l'école.</p>
-          </div>
-          {canManageLibrary && (
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => handleOpenFormDialog(null)}>
-                  <span className="flex items-center gap-2">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Ajouter un Livre
-                  </span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>{editingBook ? "Modifier le" : "Ajouter un Nouveau"} Livre</DialogTitle>
-                  <DialogDescription>
-                    {editingBook ? `Mettez à jour les informations du livre "${editingBook.title}".` : "Renseignez les informations du nouveau livre."}
-                  </DialogDescription>
-                </DialogHeader>
-                {renderForm()}
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                  <Button type="submit" form="book-form" disabled={form.formState.isSubmitting}>
-                      {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          )}
-        </div>
-        
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {isLoading ? (
-                [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
-            ) : books.map((book) => (
-             <Card key={book.id} className="flex flex-col">
-              <CardHeader className="p-0">
-                  <div className="relative h-40 w-full">
-                     <SafeImage 
-                        src={`https://picsum.photos/seed/${book.id}/400/200`} 
-                        alt={`Couverture du livre ${book.title}`} 
-                        fill
-                        style={{objectFit: 'cover'}}
-                        className="rounded-t-lg"
-                        data-ai-hint="book cover"
-                     />
-                  </div>
-                 <div className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                         <CardTitle className="text-lg leading-tight font-bold">{book.title}</CardTitle>
-                         {canManageLibrary && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "shrink-0 h-8 w-8")}>
-                                  <MoreHorizontal className="h-4 w-4" />
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleOpenFormDialog(book)}>Modifier</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(book)}>Supprimer</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                         )}
-                    </div>
-                     <CardDescription className="flex items-center gap-2 text-sm mt-1">
-                        <User className="h-4 w-4" />
-                        {book.author}
-                    </CardDescription>
-                 </div>
-              </CardHeader>
-              <CardContent className="flex-1 pb-4 px-4 pt-0">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                      <Hash className="mr-2 h-4 w-4 flex-shrink-0" />
-                      <span>Quantité disponible: <strong>{book.quantity}</strong></span>
-                  </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        { !isLoading && books.length === 0 && (
-             <Card className="flex items-center justify-center h-48">
-                <p className="text-muted-foreground">Aucun livre dans la bibliothèque pour le moment.</p>
-            </Card>
-        )}
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-4 w-64" />
+        <Skeleton className="h-10 w-full max-w-sm" />
+        <Skeleton className="h-96 w-full" />
       </div>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-            <AlertDialogDescription>Cette action est irréversible. Le livre <strong>"{bookToDelete?.title}"</strong> sera définitivement supprimé.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteBook} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+    );
+  }
+  
+  return (
+    <div className="space-y-6">
+       <div>
+            <h1 className="text-lg font-semibold md:text-2xl">Bibliothèque</h1>
+            <p className="text-muted-foreground">Consultez et gérez les livres et les prêts de votre établissement.</p>
+        </div>
+      <Tabs defaultValue="livres" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="livres">
+                <BookOpen className="mr-2 h-4 w-4" />
+                Liste des Livres
+            </TabsTrigger>
+            <TabsTrigger value="prets">
+                <Handshake className="mr-2 h-4 w-4" />
+                Suivi des Prêts
+            </TabsTrigger>
+        </TabsList>
+        <TabsContent value="livres" className="mt-6">
+            <BookList schoolId={schoolId} />
+        </TabsContent>
+        <TabsContent value="prets" className="mt-6">
+            <LoanList schoolId={schoolId} />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
+
