@@ -67,8 +67,8 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' },
         { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageMedical', module: 'sante' },
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
-        { href: '/dashboard/transport/dashboard', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
-        { href: '/dashboard/internat/dashboard', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
+        { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
+        { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
@@ -140,4 +140,3 @@ export const NAV_LINKS: NavGroup[] = [
         ]
     },
   ];
-
