@@ -86,6 +86,12 @@ service cloud.firestore {
       allow read, write: if isAuth(); // Seuls les utilisateurs authentifiés (le personnel) peuvent créer/invalider des sessions.
       // La lecture n'est pas nécessaire côté client une fois la session créée.
     }
+    
+    match /support_tickets/{ticketId} {
+      allow create: if isAuth();
+      allow list, get: if isAuth() && hasPermission(request.resource.data.schoolId, 'viewSupportTickets');
+      allow update: if isAuth() && hasPermission(request.resource.data.schoolId, 'manageSupportTickets');
+    }
 
     match /utilisateurs/{userId} {
       allow get, update, create: if isAuth() && request.auth.uid == userId;
@@ -297,5 +303,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

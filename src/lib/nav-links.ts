@@ -31,6 +31,7 @@ import {
     Wrench,
     KeyRound,
     Handshake,
+    LifeBuoy,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -119,6 +120,7 @@ export const NAV_LINKS: NavGroup[] = [
       icon: Send,
       links: [
         { href: '/dashboard/messagerie', label: 'Messagerie', icon: Send, permission: 'manageCommunication' },
+        { href: '/dashboard/support', label: 'Support', icon: LifeBuoy },
       ]
     },
      {

@@ -127,6 +127,24 @@
         },
         "required": ["schoolName", "schoolType", "studentCount", "currentManagement", "painPoints", "featureInterest", "submittedAt"]
     },
+    "support_ticket": {
+        "title": "Ticket de Support",
+        "description": "Une demande de support soumise par un utilisateur.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "schoolId": { "type": "string" },
+            "subject": { "type": "string" },
+            "category": { "type": "string" },
+            "description": { "type": "string" },
+            "status": { "type": "string", "enum": ["open", "in_progress", "closed"] },
+            "submittedAt": { "type": "string", "format": "date-time" },
+            "closedAt": { "type": "string", "format": "date-time" },
+            "userDisplayName": { "type": "string" },
+            "userEmail": { "type": "string" }
+        },
+        "required": ["userId", "schoolId", "subject", "category", "description", "status"]
+    },
     "system_log": {
       "title": "Journal Système",
       "description": "Trace toutes les actions critiques effectuées par les super admins.",
@@ -1000,6 +1018,10 @@
     "/utilisateurs/{userId}": {
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+    },
+     "/support_tickets/{ticketId}": {
+        "schema": { "$ref": "#/entities/support_ticket" },
+        "description": "Stocke les demandes de support soumises par les utilisateurs."
     },
     "/contact_requests/{requestId}": {
         "schema": { "$ref": "#/entities/contact_request" },
