@@ -133,7 +133,7 @@ export function useUser() {
                     const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
                     const roleSnap = await getDoc(roleRef);
                     if (roleSnap.exists()) {
-                        permissions = { ...permissions, ...roleSnap.data().permissions };
+                        permissions = { ...roleSnap.data().permissions };
                     }
                 }
                 setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: false } });
