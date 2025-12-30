@@ -135,7 +135,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
           </div>
           
           <div className="flex items-center gap-1">
-            <p className="text-xs leading-none text-muted-foreground capitalize">{userRole}</p>
+            <p className="text-xs leading-none text-muted-foreground capitalize">{userRole.replace(/_/g, ' ')}</p>
             {schoolData?.name && !isSuperAdmin && (
               <><span className="text-xs text-muted-foreground">•</span><p className="text-xs leading-none text-muted-foreground truncate max-w-[120px]">{schoolData.name}</p></>
             )}
