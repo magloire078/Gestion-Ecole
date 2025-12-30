@@ -1,19 +1,57 @@
 
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { FinanceOverview } from '@/components/dashboard/finance-overview';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useFirestore } from '@/firebase';
-import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collectionGroup, query, where, getDocs, collection } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
-import type { gradeEntry as GradeEntry } from '@/lib/data-types';
+import type { gradeEntry as GradeEntry, cycle as Cycle, student as Student } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Users } from 'lucide-react';
+import Link from 'next/link';
+import { ParentStudentCard } from '@/components/parent/student-card';
+
+
+// ====================================================================================
+// Parent Dashboard Component
+// ====================================================================================
+const ParentDashboard = () => {
+    const { user } = useUser();
+
+    if (!user || !user.isParent || !user.schoolId) {
+        return null;
+    }
+
+    return (
+        <div className="space-y-6">
+             <div className="flex items-center">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Portail Parent</h1>
+            </div>
+            <AnnouncementBanner />
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Mes Enfants</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground mb-4">Cliquez sur un enfant pour voir ses informations détaillées (notes, paiements, absences, etc.).</p>
+                    <div className="space-y-3">
+                        {user.parentStudentIds?.map(studentId => (
+                           <ParentStudentCard key={studentId} schoolId={user.schoolId!} studentId={studentId} />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
 
 
 // ====================================================================================
@@ -24,6 +62,15 @@ const RegularDashboard = () => {
   const { schoolId, schoolData } = useSchoolData();
   const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
   const [gradesLoading, setGradesLoading] = useState(true);
+  
+  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true)) : null, [firestore, schoolId]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
+  
+  const studentCount = useMemo(() => studentsData?.length || 0, [studentsData]);
+  const cycleCount = useMemo(() => cyclesData?.length || 0, [cyclesData]);
+
 
   // Isolate grade fetching
   useEffect(() => {
@@ -59,7 +106,7 @@ const RegularDashboard = () => {
       
       <AnnouncementBanner />
 
-      {schoolId && <BillingAlerts schoolId={schoolId} studentCount={schoolData?.studentsCount || 0} cycleCount={schoolData?.cyclesCount || 0} />}
+      {schoolId && <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />}
     
       <StatCards schoolId={schoolId!} />
       
@@ -83,8 +130,12 @@ const RegularDashboard = () => {
 // Main Page Component
 // ====================================================================================
 function DashboardPageContent() {
-    // La logique de redirection vers l'onboarding est maintenant gérée par AuthGuard.
-    // Cette page n'affiche donc que le tableau de bord normal.
+    const { user } = useUser();
+    
+    if (user?.isParent) {
+        return <ParentDashboard />;
+    }
+
     return <RegularDashboard />;
 }
 
