@@ -29,16 +29,12 @@ service cloud.firestore {
                exists(/databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid));
     }
 
-    // NOUVELLE FONCTION: Vérifie si une session parent est valide (token personnalisé)
-    // Cette fonction sera plus utile lorsque nous aurons un backend pour générer des tokens.
-    // Pour l'instant, on se base sur une règle plus simple.
+    // Règle simplifiée pour le prototypage : si l'utilisateur est un parent (basé sur le token)
     function isParent(schoolId, studentId) {
         let token = request.auth.token;
-        // Si aucun studentId n'est fourni, on vérifie juste si l'utilisateur est un parent de l'école
         if (studentId == null) {
             return token.schoolId == schoolId;
         }
-        // Sinon, on vérifie qu'il a accès à cet élève spécifique
         return token.schoolId == schoolId && studentId in token.studentIds;
     }
     
@@ -86,7 +82,7 @@ service cloud.firestore {
     // =================================================================
 
     match /sessions_parents/{sessionId} {
-      allow read, create: if true; // Pour le prototypage, à sécuriser avec une fonction Cloud plus tard
+      allow read, create: if true; 
       allow update, delete: if false;
     }
 
@@ -181,7 +177,9 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow read, update: if isSchoolMember(schoolId);
+        allow get: if isSchoolMember(schoolId);
+        allow list: if isSchoolMember(schoolId) && (request.query.limit <= 20 || (request.query.where[0][0] == 'recipients.all' && request.query.where[0][2] == true));
+        allow update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       

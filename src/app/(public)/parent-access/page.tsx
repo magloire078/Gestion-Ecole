@@ -30,15 +30,12 @@ export default function ParentAccessPage() {
         setIsLoading(true);
 
         try {
-            // Dans une application de production, vous appelleriez une fonction Cloud
-            // qui valide le code et génère un token personnalisé.
-            // Ex: const response = await fetch('/api/parent-login', { body: { accessCode } });
-            // const { customToken } = await response.json();
-            // await signInWithCustomToken(auth, customToken);
+            // Dans une application réelle, on appellerait une fonction Cloud pour valider le code
+            // et générer un token personnalisé pour signInWithCustomToken.
+            // Pour le prototypage, nous simulons ce processus et utilisons localStorage.
 
-            // --- Simulation pour le prototypage ---
             const sessionsRef = collection(firestore, 'sessions_parents');
-            const q = query(sessionsRef, where('accessCode', '==', accessCode.trim()), where('isActive', '==', true));
+            const q = query(sessionsRef, where("accessCode", "==", accessCode.trim()), where('isActive', '==', true));
             const sessionSnap = await getDocs(q);
 
             if (sessionSnap.empty) {
@@ -56,18 +53,17 @@ export default function ParentAccessPage() {
                 return;
             }
 
-            // Invalider le code d'accès après usage
+            // Invalider le code après utilisation
             await updateDoc(doc(firestore, 'sessions_parents', sessionDoc.id), { isActive: false });
-
-            // Pour simuler la connexion et la persistance, nous utilisons localStorage.
-            // La sécurité réelle est gérée par les règles Firestore qui liraient le custom token.
+            
+            // Stocker les informations de session dans localStorage pour que useUser puisse les lire
             localStorage.setItem('parent_session_id', sessionDoc.id);
             localStorage.setItem('parent_school_id', sessionData.schoolId);
             localStorage.setItem('parent_student_ids', JSON.stringify(sessionData.studentIds));
-            
+
             toast({ title: 'Accès autorisé', description: 'Redirection vers votre portail...' });
             
-            // Recharger la page pour que useUser détecte la session parent
+            // Recharger la page vers le tableau de bord pour que le hook useUser détecte la nouvelle session
             window.location.href = '/dashboard';
 
         } catch (error) {

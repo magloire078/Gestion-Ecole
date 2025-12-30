@@ -58,7 +58,7 @@ export function useUser() {
             return true;
         }
     } catch (e) {
-        // Can happen in SSR or if localStorage is disabled
+        console.error("Error accessing parent session from localStorage:", e);
     }
     return false;
   }, []);

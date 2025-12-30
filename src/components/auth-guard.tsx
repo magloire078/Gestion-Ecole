@@ -22,7 +22,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  const isPublicPage = ['/', '/login', '/contact', '/survey'].includes(pathname) || pathname.startsWith('/public');
+  const isPublicPage = ['/', '/login', '/contact', '/survey', '/parent-access'].includes(pathname) || pathname.startsWith('/public');
   const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
 
   useEffect(() => {
@@ -49,7 +49,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     
     // Scénario 3: Gestion de l'onboarding pour un utilisateur connecté
     // L'ID de l'école est 'undefined' pendant que useUser le charge. 'null' signifie "chargé et pas d'école".
-    const isAssociatedWithSchool = schoolId !== null && schoolId !== undefined;
+    const isAssociatedWithSchool = user.isParent || (schoolId !== null && schoolId !== undefined);
     const isSuperAdmin = user.profile?.isAdmin === true;
 
     if (!isAssociatedWithSchool && !isSuperAdmin) {
@@ -74,7 +74,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   // Si on est connecté, mais que la redirection n'a pas encore eu lieu, on affiche le loader
   if (user && !isPublicPage) {
-      const isAssociatedWithSchool = schoolId !== null && schoolId !== undefined;
+      const isAssociatedWithSchool = user.isParent || (schoolId !== null && schoolId !== undefined);
       const isSuperAdmin = user.profile?.isAdmin === true;
 
       // On affiche le loader si on est sur l'onboarding mais qu'on devrait être ailleurs
