@@ -120,9 +120,11 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
                                         </div>
                                     ))}
                                 </div>
-                                <Button variant="ghost" size="icon" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100" onClick={() => handleOpenForm(null, { date, time: '08:00', salleId: salle.id })}>
-                                    <PlusCircle className="h-5 w-5 text-muted-foreground" />
-                                </Button>
+                                {canManageContent && (
+                                    <Button variant="ghost" size="icon" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100" onClick={() => handleOpenForm(null, { date, time: '08:00', salleId: salle.id })}>
+                                        <PlusCircle className="h-5 w-5 text-muted-foreground" />
+                                    </Button>
+                                )}
                              </td>
                         )
                     })}
@@ -153,7 +155,7 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
             <ReservationForm
                 schoolId={schoolId}
                 salles={salles}
-                staff={staffData?.docs.map(doc => ({id: doc.id, ...doc.data()} as Staff)) || []}
+                staff={staffData?.docs.map(doc => ({id: doc.id, ...doc.data()} as Staff & {id: string})) || []}
                 reservation={editingReservation}
                 preselectedSlot={preselectedSlot}
                 onSave={() => { setIsFormOpen(false); setEditingReservation(null); setPreselectedSlot(null); }}

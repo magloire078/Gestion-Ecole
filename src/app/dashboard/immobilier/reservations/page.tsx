@@ -9,7 +9,7 @@ export default function ReservationsPage() {
   const { schoolId, loading } = useSchoolData();
 
   if (loading) {
-    return <Skeleton className="h-96 w-full" />;
+    return <Skeleton className="h-[60vh] w-full" />;
   }
 
   if (!schoolId) {
