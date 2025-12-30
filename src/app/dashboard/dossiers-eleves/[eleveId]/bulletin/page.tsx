@@ -2,7 +2,7 @@
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where } from 'firebase/firestore';
@@ -49,7 +49,7 @@ function StudentReportContent({ eleveId, schoolId, schoolData }: StudentReportCo
     query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`))
   , [firestore, schoolId, eleveId]);
   
-  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')), [firestore, schoolId]);
+  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
 
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);

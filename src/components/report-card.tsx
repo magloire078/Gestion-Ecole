@@ -6,12 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Bot, Printer } from 'lucide-react';
+import { Bot, Printer, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { SafeImage } from './ui/safe-image';
+import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 
 
 // --- Interfaces ---
@@ -68,6 +69,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     const { toast } = useToast();
     const printRef = useRef<HTMLDivElement>(null);
     const firestore = useFirestore();
+    const { user } = useUser();
+    const canManageGrades = !!user?.profile?.permissions?.manageGrades;
 
     const [councilComment, setCouncilComment] = useState("Excellent trimestre. Élève sérieux et motivé qui a fourni un travail de qualité. Les résultats sont très satisfaisants. Félicitations du conseil de classe.");
     const [isGeneratingCouncilComment, setIsGeneratingCouncilComment] = useState(false);
@@ -125,7 +128,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
                 classMax: studentAverage < 19 ? studentAverage + 1.2 : 20,
                 classAverage: studentAverage < 19.5 ? studentAverage + 0.5 : 20,
-                appreciation: subjectAppreciations[subject]?.text || `Trimestre solide en ${subject}.`
+                appreciation: subjectAppreciations[subject]?.text || ''
             });
 
             totalPoints += studentAverage * studentTotalCoeffs;
@@ -144,16 +147,36 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
         if (isCouncilComment) {
             setIsGeneratingCouncilComment(true);
+        } else if (subject && teacherName && average !== undefined) {
+             setSubjectAppreciations(prev => ({...prev, [subject]: { text: '', isGenerating: true }}));
         } else {
-             setSubjectAppreciations(prev => ({...prev, [subject!]: { text: '', isGenerating: true }}));
+            return;
         }
         
-        toast({ title: "Fonctionnalité indisponible", description: "La génération de commentaires par IA a été temporairement désactivée." });
-
-        if (isCouncilComment) {
-            setIsGeneratingCouncilComment(false);
-        } else {
-            setSubjectAppreciations(prev => ({...prev, [subject!]: { ...prev[subject!], isGenerating: false }}));
+        try {
+            const input = {
+                studentName: student.firstName || 'L\'élève',
+                teacherName: teacherName || mainTeacher?.firstName || 'Le professeur',
+                subject: subject || 'toutes les matières',
+                average: average || generalAverage,
+            };
+            const response = await generateReportCardComment(input);
+            if (response.comment) {
+                 if (isCouncilComment) {
+                    setCouncilComment(response.comment);
+                } else {
+                    setSubjectAppreciations(prev => ({...prev, [subject!]: { text: response.comment, isGenerating: false }}));
+                }
+                toast({ title: "Commentaire généré !" });
+            }
+        } catch (error) {
+             toast({ variant: 'destructive', title: "Erreur de l'IA", description: "Impossible de générer le commentaire." });
+        } finally {
+             if (isCouncilComment) {
+                setIsGeneratingCouncilComment(false);
+            } else {
+                setSubjectAppreciations(prev => ({...prev, [subject!]: { ...prev[subject!], isGenerating: false }}));
+            }
         }
     };
     
@@ -243,15 +266,17 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                                     <td className="p-2 text-xs italic">
                                         <div className="flex items-start gap-1">
                                             <span className="flex-1">{report.appreciation}</span>
-                                            <Button 
-                                                variant="ghost" 
-                                                size="icon" 
-                                                className="h-5 w-5 no-print"
-                                                onClick={() => handleGenerateComment(report.subject, report.teacherName, report.average)}
-                                                disabled={isGenerating}
-                                            >
-                                                <Bot className="h-3 w-3" />
-                                            </Button>
+                                            {canManageGrades && (
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="icon" 
+                                                    className="h-5 w-5 no-print"
+                                                    onClick={() => handleGenerateComment(report.subject, report.teacherName, report.average)}
+                                                    disabled={isGenerating}
+                                                >
+                                                    {isGenerating ? <Loader2 className="h-3 w-3 animate-spin"/> : <Bot className="h-3 w-3" />}
+                                                </Button>
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
@@ -279,10 +304,12 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                  <div className="p-3 bg-muted/50 rounded-md">
                      <div className="flex justify-between items-start">
                         <p className="font-bold mb-1">APPRÉCIATION DU CONSEIL DE CLASSE</p>
-                        <Button variant="ghost" size="sm" onClick={() => handleGenerateComment()} disabled={isGeneratingCouncilComment} className="no-print">
-                             <Bot className="mr-2 h-4 w-4" />
-                            {isGeneratingCouncilComment ? "Génération..." : "Générer"}
-                        </Button>
+                        {canManageGrades && (
+                            <Button variant="ghost" size="sm" onClick={() => handleGenerateComment()} disabled={isGeneratingCouncilComment} className="no-print">
+                                {isGeneratingCouncilComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Bot className="mr-2 h-4 w-4" />}
+                                {isGeneratingCouncilComment ? "Génération..." : "Générer"}
+                            </Button>
+                        )}
                     </div>
                     <p className="italic text-sm">{councilComment}</p>
                  </div>
