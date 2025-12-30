@@ -174,6 +174,7 @@
             "viewSchools": { "type": "boolean" },
             "manageClasses": { "type": "boolean" },
             "manageGrades": { "type": "boolean" },
+            "manageDiscipline": { "type": "boolean" },
             "manageSystem": { "type": "boolean" },
             "viewAnalytics": { "type": "boolean" },
             "manageSettings": { "type": "boolean" },
@@ -298,6 +299,23 @@
             "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
         },
         "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
+    },
+     "discipline_incident": {
+      "title": "Incident Disciplinaire",
+      "description": "Un incident disciplinaire enregistré pour un élève.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "type": { "type": "string", "enum": ["Avertissement Oral", "Avertissement Écrit", "Retenue", "Mise à pied", "Exclusion temporaire", "Exclusion définitive"] },
+        "reason": { "type": "string", "description": "Raison ou description de l'incident." },
+        "reportedById": { "type": "string", "description": "ID du membre du personnel qui a signalé." },
+        "reportedByName": { "type": "string" },
+        "actionsTaken": { "type": "string", "description": "Actions immédiates ou sanctions appliquées." },
+        "parentNotified": { "type": "boolean", "default": false },
+        "followUpNotes": { "type": "string", "description": "Notes de suivi." }
+      },
+      "required": ["studentId", "date", "type", "reason", "reportedById"]
     },
     "cycle": {
         "title": "Cycle",
@@ -1028,6 +1046,11 @@
                     "path": "affectations/{assignmentId}",
                     "schema": { "$ref": "#/entities/studentClassAssignment" },
                     "description": "Stocke l'historique des affectations de classe pour un élève."
+                },
+                "incidents_disciplinaires": {
+                  "path": "incidents_disciplinaires/{incidentId}",
+                  "schema": { "$ref": "#/entities/discipline_incident" },
+                  "description": "Historique des incidents disciplinaires de l'élève."
                 },
                 "dossier_medical": {
                     "path": "dossier_medical/{dossierId}",

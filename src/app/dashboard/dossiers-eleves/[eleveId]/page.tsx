@@ -5,7 +5,7 @@
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature, KeyRound, UserX } from 'lucide-react';
+import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature, KeyRound, UserX, Megaphone } from 'lucide-react';
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -26,6 +26,7 @@ import { PaymentsTab } from '@/components/students/payments-tab';
 import { GradesTab } from '@/components/students/grades-tab';
 import { InfoTab } from '@/components/students/info-tab';
 import { AbsencesTab } from '@/components/students/absences-tab';
+import { DisciplineTab } from '@/components/students/discipline-tab';
 import { Separator } from '@/components/ui/separator';
 import { ParentAccessGenerator } from '@/components/parent-access-generator';
 
@@ -208,10 +209,11 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
             {/* Right Column */}
             <div className="lg:col-span-3 flex flex-col gap-6">
                 <Tabs defaultValue={initialTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="payments">Paiements</TabsTrigger>
                         <TabsTrigger value="grades">Résultats</TabsTrigger>
                         <TabsTrigger value="absences">Absences</TabsTrigger>
+                        <TabsTrigger value="discipline">Discipline</TabsTrigger>
                         <TabsTrigger value="info">Informations</TabsTrigger>
                     </TabsList>
                     <TabsContent value="payments" className="mt-6">
@@ -222,6 +224,9 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                     </TabsContent>
                      <TabsContent value="absences" className="mt-6">
                         <AbsencesTab schoolId={schoolId} studentId={eleveId} />
+                    </TabsContent>
+                    <TabsContent value="discipline" className="mt-6">
+                        <DisciplineTab schoolId={schoolId} studentId={eleveId} />
                     </TabsContent>
                     <TabsContent value="info" className="mt-6">
                         <InfoTab student={student}/>
