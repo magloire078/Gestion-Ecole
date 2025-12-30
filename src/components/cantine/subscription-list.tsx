@@ -50,7 +50,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
   const [editingSubscription, setEditingSubscription] = useState<(CanteenSubscription & { id: string }) | null>(null);
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [subscriptionToDelete, setSubscriptionToDelete] = useState<(CanteenSubscription & { id: string }) | null>(null);
+  const [subscriptionToDelete, setSubscriptionToDelete] = useState<(SubscriptionWithStudentName) | null>(null);
 
   const subscriptionsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`)), [firestore, schoolId]);
   const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);

@@ -33,7 +33,7 @@ export default function CantineLayout({
         );
     }
     
-    const hasAccess = subscription?.plan === 'Essentiel' || subscription?.activeModules?.includes('cantine') || subscription?.plan === 'Premium';
+    const hasAccess = subscription?.activeModules?.includes('cantine') || subscription?.plan === 'Premium';
 
     if (!hasAccess) {
         return (

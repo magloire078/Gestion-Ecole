@@ -76,7 +76,14 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
 
     if (module) {
         const isPremium = subscription?.plan === 'Premium';
+        const isFreeTier = subscription?.plan === 'Essentiel';
         const isModuleActive = subscription?.activeModules?.includes(module);
+        
+        // Free tier (Essentiel) has access to all modules
+        if (isFreeTier) {
+            return true;
+        }
+
         if (!isPremium && !isModuleActive) {
             return false;
         }
