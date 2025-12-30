@@ -492,6 +492,20 @@
         },
         "required": ["schoolId", "title", "author", "quantity"]
     },
+    "libraryLoan": {
+      "title": "Prêt de Livre",
+      "description": "Enregistre un prêt de livre à un élève.",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "borrowedDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "returnedDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["borrowed", "returned", "overdue"] }
+      },
+      "required": ["bookId", "studentId", "borrowedDate", "dueDate", "status"]
+    },
     "message": {
         "title": "Message",
         "description": "Un message ou une annonce envoyé(e) via la messagerie interne.",
@@ -1111,6 +1125,11 @@
             "path": "bibliotheque/{bookId}",
             "schema": { "$ref": "#/entities/libraryBook" },
             "description": "Stocke les livres de la bibliothèque pour cette école."
+        },
+        "bibliotheque_prets": {
+          "path": "bibliotheque_prets/{loanId}",
+          "schema": { "$ref": "#/entities/libraryLoan" },
+          "description": "Stocke les prêts de livres pour cette école."
         },
         "messagerie": {
             "path": "messagerie/{messageId}",
