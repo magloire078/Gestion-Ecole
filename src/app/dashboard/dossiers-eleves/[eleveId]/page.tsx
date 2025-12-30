@@ -5,7 +5,7 @@
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature } from 'lucide-react';
+import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature, KeyRound } from 'lucide-react';
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
 import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -26,6 +26,7 @@ import { PaymentsTab } from '@/components/students/payments-tab';
 import { GradesTab } from '@/components/students/grades-tab';
 import { InfoTab } from '@/components/students/info-tab';
 import { Separator } from '@/components/ui/separator';
+import { ParentAccessGenerator } from '@/components/parent-access-generator';
 
 function StudentProfilePageSkeleton() {
     return (
@@ -195,6 +196,11 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                             </>
                         )}
                     </CardContent>
+                    {canManageUsers && (
+                        <CardFooter>
+                            <ParentAccessGenerator schoolId={schoolId} studentId={eleveId} studentName={studentFullName} />
+                        </CardFooter>
+                    )}
                 </Card>
             </div>
 

@@ -72,6 +72,8 @@
       "properties": {
         "schoolId": { "type": "string" },
         "studentIds": { "type": "array", "items": { "type": "string"} },
+        "accessCode": { "type": "string" },
+        "isActive": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "expiresAt": { "type": "string", "format": "date-time" }
       }
@@ -1199,4 +1201,3 @@
     }
   }
 }
-
