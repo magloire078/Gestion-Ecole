@@ -142,18 +142,10 @@ export const NAV_LINKS: NavGroup[] = [
     },
   ];
 
-// Adding transport sub-nav links to the main structure
-const vieScolaireGroup = NAV_LINKS.find(g => g.group === 'Vie Scolaire');
-if (vieScolaireGroup) {
-    const transportLinkIndex = vieScolaireGroup.links.findIndex(l => l.href === '/dashboard/transport');
-    if (transportLinkIndex !== -1) {
-        // This is a conceptual addition; the real navigation logic is in the layout.
-        // We'll add the sublinks here for completeness of definition.
-        const transportSubLinks = [
-            { href: '/dashboard/transport/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'manageTransport', module: 'transport' },
-            { href: '/dashboard/transport/bus', label: 'Bus', icon: Bus, permission: 'manageTransport', module: 'transport' },
-            { href: '/dashboard/transport/lignes', label: 'Lignes', icon: Map, permission: 'manageTransport', module: 'transport' },
-            { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket, permission: 'manageTransport', module: 'transport' },
-        ];
-    }
-}
+// Ajout conceptuel des sous-liens de transport. La logique de rendu est dans le layout.
+const transportSubLinks = [
+    { href: '/dashboard/transport/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
+    { href: '/dashboard/transport/bus', label: 'Bus', icon: Bus, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
+    { href: '/dashboard/transport/lignes', label: 'Lignes', icon: Map, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
+    { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
+];
