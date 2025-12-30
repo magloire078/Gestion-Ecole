@@ -9,8 +9,6 @@ export function FirebaseErrorListener() {
   useEffect(() => {
     const handlePermissionError = (error: FirestorePermissionError) => {
       // In a real app, you might want to log this to a service like Sentry
-      // For this example, we'll throw it to make it visible in the Next.js overlay
-      console.error("Caught Firestore Permission Error:", error.message);
       toast({
           variant: "destructive",
           title: "Erreur de Permissions",
