@@ -177,7 +177,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                         </div>
                          <div className="flex items-center">
                             <Building className="mr-3 h-5 w-5 text-muted-foreground" />
-                            <span>Cycle: <strong>{studentClass?.cycleId || student.cycle || 'N/A'}</strong></span>
+                            <span>Cycle: {studentClass?.cycleId || student.cycle || 'N/A'}</span>
                         </div>
                     </CardContent>
                 </Card>
@@ -287,3 +287,5 @@ function PageContent({ eleveId, schoolId, schoolLoading }: { eleveId: string, sc
     <StudentProfileContent eleveId={eleveId} schoolId={schoolId} initialTab={initialTab} />
   );
 }
+
+    

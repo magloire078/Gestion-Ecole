@@ -10,8 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, KeyRound } from 'lucide-react';
 import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { getAuth, signInWithCustomToken } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, collection, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 
 export default function ParentAccessPage() {
@@ -19,7 +18,6 @@ export default function ParentAccessPage() {
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
-    const auth = getAuth();
     const firestore = useFirestore();
 
     const handleLogin = async () => {
@@ -30,12 +28,8 @@ export default function ParentAccessPage() {
         setIsLoading(true);
 
         try {
-            // Dans une application réelle, on appellerait une fonction Cloud pour valider le code
-            // et générer un token personnalisé pour signInWithCustomToken.
-            // Pour le prototypage, nous simulons ce processus et utilisons localStorage.
-
             const sessionsRef = collection(firestore, 'sessions_parents');
-            const q = query(sessionsRef, where("accessCode", "==", accessCode.trim()), where('isActive', '==', true));
+            const q = query(sessionsRef, where("accessCode", "==", accessCode.trim().toUpperCase()), where('isActive', '==', true));
             const sessionSnap = await getDocs(q);
 
             if (sessionSnap.empty) {
@@ -53,7 +47,7 @@ export default function ParentAccessPage() {
                 return;
             }
 
-            // Invalider le code après utilisation
+            // Invalider le code après utilisation pour empêcher la réutilisation
             await updateDoc(doc(firestore, 'sessions_parents', sessionDoc.id), { isActive: false });
             
             // Stocker les informations de session dans localStorage pour que useUser puisse les lire
@@ -95,6 +89,7 @@ export default function ParentAccessPage() {
                             onChange={(e) => setAccessCode(e.target.value)}
                             disabled={isLoading}
                             onKeyUp={(e) => e.key === 'Enter' && handleLogin()}
+                            className="uppercase tracking-widest text-center font-mono"
                         />
                     </div>
                 </CardContent>
@@ -108,3 +103,5 @@ export default function ParentAccessPage() {
         </div>
     );
 }
+
+    
