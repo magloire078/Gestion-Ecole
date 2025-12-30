@@ -43,6 +43,8 @@ export default function ParentAccessPage() {
             
             if (new Date(sessionData.expiresAt.toDate()) < new Date()) {
                 toast({ variant: 'destructive', title: 'Code expiré', description: 'Ce code d\'accès a expiré.' });
+                // Invalider le code expiré pour ne pas le réutiliser
+                await updateDoc(doc(firestore, 'sessions_parents', sessionDoc.id), { isActive: false });
                 setIsLoading(false);
                 return;
             }
