@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -16,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
 import { SafeImage } from '@/components/ui/safe-image';
-import { StaffEditForm } from '@/components/staff-edit-form';
+import { StaffEditForm } from '@/components/rh/staff-edit-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { group } from 'd3-array';
@@ -187,8 +188,8 @@ export default function StaffProfilePage() {
         <>
         <div className="space-y-6">
             <div className="flex flex-wrap justify-end items-center gap-2">
-                <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
-                  <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Imprimer la Fiche</span>
+                <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/bulletin`)}>
+                  <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Voir Bulletin de Paie</span>
                 </Button>
                 {canManageUsers && (
                   <Button onClick={() => setIsEditDialogOpen(true)}>
@@ -213,7 +214,7 @@ export default function StaffProfilePage() {
                                 </Avatar>
                             </ImageUploader>
                             <CardTitle className="text-2xl">{staffFullName}</CardTitle>
-                            <CardDescription className='capitalize'>{staffMember.role}</CardDescription>
+                            <CardDescription className='capitalize'>{staffMember.role?.replace(/_/g, ' ')}</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
                             <div className="flex items-center">
@@ -228,7 +229,7 @@ export default function StaffProfilePage() {
                             )}
                              <div className="flex items-center">
                                 <Briefcase className="mr-3 h-4 w-4 text-muted-foreground" />
-                                <span className="capitalize">{staffMember.role}</span>
+                                <span className="capitalize">{staffMember.role?.replace(/_/g, ' ')}</span>
                             </div>
                             <AdminRoleInfo schoolId={schoolId!} adminRoleId={staffMember.adminRole} />
                             {staffMember.role === 'enseignant' && (
