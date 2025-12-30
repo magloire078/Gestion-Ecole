@@ -188,6 +188,9 @@ export default function StaffProfilePage() {
         <>
         <div className="space-y-6">
             <div className="flex flex-wrap justify-end items-center gap-2">
+                <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
+                  <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Fiche de Renseignements</span>
+                </Button>
                 <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/bulletin`)}>
                   <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Voir Bulletin de Paie</span>
                 </Button>

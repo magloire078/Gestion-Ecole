@@ -8,6 +8,7 @@ import { Printer, User, Phone, Map, Globe, Building, Hash } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { school as School } from '@/lib/data-types';
+import { SafeImage } from './ui/safe-image';
 
 interface SchoolInfoSheetProps {
   school: School;
@@ -22,7 +23,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
       const printWindow = window.open('', '', 'height=800,width=800');
       if (printWindow) {
         printWindow.document.write('<html><head><title>Fiche Établissement</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/_next/static/css/app/layout.css" type="text/css" media="print">');
+        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="print">');
         printWindow.document.write(`
             <style>
                 body { font-family: sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -64,7 +65,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
                 <div ref={printRef}>
                     <header className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
                         <div className="flex items-center gap-4">
-                            {school.mainLogoUrl && <img src={school.mainLogoUrl} alt={school.name} className="h-20 w-20 object-contain" />}
+                            {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={80} height={80} className="object-contain" />}
                             <div>
                                 <h1 className="text-2xl font-bold">{school.name}</h1>
                                 <p className="text-xs text-muted-foreground">{school.address}</p>
