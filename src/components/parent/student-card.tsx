@@ -2,7 +2,7 @@
 'use client';
 
 import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
-import { doc, collection, query, orderBy, limit } from 'firebase/firestore';
+import { doc, collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,9 +20,6 @@ interface ParentStudentCardProps {
 const calculateGeneralAverage = (grades: GradeEntry[]) => {
     if (!grades || grades.length === 0) return 0;
     
-    let totalPoints = 0;
-    let totalCoeffs = 0;
-
     const subjectGrades: Record<string, { totalPoints: number, totalCoeffs: number}> = {};
 
     grades.forEach(grade => {
@@ -33,15 +30,19 @@ const calculateGeneralAverage = (grades: GradeEntry[]) => {
         subjectGrades[grade.subject].totalCoeffs += grade.coefficient;
     });
 
+    let totalWeightedAverage = 0;
+    let totalAllCoeffs = 0;
+
     Object.values(subjectGrades).forEach(subject => {
         if (subject.totalCoeffs > 0) {
             const subjectAverage = subject.totalPoints / subject.totalCoeffs;
-            totalPoints += subjectAverage * subject.totalCoeffs; // Use the average of the subject weighted by its total coefficient
-            totalCoeffs += subject.totalCoeffs;
+            // Pondérer la moyenne de la matière par la somme de ses coefficients
+            totalWeightedAverage += subjectAverage * subject.totalCoeffs;
+            totalAllCoeffs += subject.totalCoeffs;
         }
     });
 
-    return totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
+    return totalAllCoeffs > 0 ? totalWeightedAverage / totalAllCoeffs : 0;
 };
 
 
@@ -54,10 +55,10 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
     const gradesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`)), [firestore, schoolId, studentId]);
     const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
     
-    const absencesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc'), limit(30)), [firestore, schoolId]);
+    const absencesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/absences`), where('studentId', '==', studentId), orderBy('date', 'desc'), limit(30)), [firestore, schoolId, studentId]);
     const { data: absencesData, loading: absencesLoading } = useCollection(absencesQuery);
     
-    const studentAbsences = useMemo(() => absencesData?.filter(doc => doc.data().studentId === studentId).length || 0, [absencesData, studentId]);
+    const studentAbsences = useMemo(() => absencesData?.length || 0, [absencesData]);
 
     const grades = useMemo(() => gradesData?.map(d => d.data() as GradeEntry) || [], [gradesData]);
     const generalAverage = useMemo(() => calculateGeneralAverage(grades), [grades]);

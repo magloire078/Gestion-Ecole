@@ -92,8 +92,8 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
     const { subjectReports, generalAverage, totalCoefficients } = useMemo(() => {
         const reports: SubjectReport[] = [];
-        let totalPoints = 0;
-        let totalCoeffs = 0;
+        let totalWeightedAverage = 0;
+        let totalAllCoeffs = 0;
 
         const subjects = [...new Set(grades.map(g => g.subject))];
         const studentCycle = student.cycle;
@@ -130,16 +130,18 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 classAverage: studentAverage < 19.5 ? studentAverage + 0.5 : 20,
                 appreciation: subjectAppreciations[subject]?.text || ''
             });
-
-            totalPoints += studentAverage * studentTotalCoeffs;
-            totalCoeffs += studentTotalCoeffs;
+            
+            if (studentTotalCoeffs > 0) {
+                totalWeightedAverage += studentAverage * studentTotalCoeffs;
+                totalAllCoeffs += studentTotalCoeffs;
+            }
         });
 
         reports.sort((a,b) => b.average - a.average);
 
-        const finalAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
+        const finalAverage = totalAllCoeffs > 0 ? totalWeightedAverage / totalAllCoeffs : 0;
 
-        return { subjectReports: reports, generalAverage: finalAverage, totalCoefficients: totalCoeffs };
+        return { subjectReports: reports, generalAverage: finalAverage, totalCoefficients: totalAllCoeffs };
     }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);
 
     const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
