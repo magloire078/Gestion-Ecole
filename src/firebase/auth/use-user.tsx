@@ -19,6 +19,7 @@ export interface CombinedUser {
     profile?: UserProfile;
     isParent?: boolean;
     parentStudentIds?: string[];
+    schoolId?: string;
 }
 
 
@@ -51,6 +52,7 @@ export function useUser() {
             setSchoolId(sessionSchoolId);
             setUser({
                 uid: sessionId,
+                schoolId: sessionSchoolId,
                 isParent: true,
                 parentStudentIds: JSON.parse(studentIdsStr),
             });
@@ -136,9 +138,9 @@ export function useUser() {
                         permissions = { ...roleSnap.data().permissions };
                     }
                 }
-                setUser({ authUser, uid: authUser.uid, profile: { ...profileData, permissions, isAdmin: false } });
+                setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: { ...profileData, permissions, isAdmin: false } });
             } else {
-                 setUser({ authUser, uid: authUser.uid, profile: undefined });
+                 setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: undefined });
             }
 
         } else {

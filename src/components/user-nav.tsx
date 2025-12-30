@@ -60,7 +60,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
         localStorage.removeItem('parent_school_id');
         localStorage.removeItem('parent_student_ids');
         toast({ title: "Déconnexion réussie", description: "Vous avez quitté le portail parent." });
-        router.replace('/parent-access');
+        // Full page reload to ensure state is cleared
+        window.location.href = '/parent-access';
         return;
     }
     try {
