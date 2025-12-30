@@ -5,6 +5,7 @@
 
 export type user_root = {
     schoolId: string;
+    isAdmin?: boolean;
 };
 
 export type school = {
@@ -48,6 +49,7 @@ export type admin_role = {
         viewSchools?: boolean;
         manageClasses?: boolean;
         manageGrades?: boolean;
+        manageDiscipline?: boolean;
         manageSystem?: boolean;
         viewAnalytics?: boolean;
         manageSettings?: boolean;
@@ -157,6 +159,19 @@ export type student = {
     createdAt?: string;
     id?: string;
     name?: string;
+};
+
+export type discipline_incident = {
+    studentId: string;
+    date: string;
+    type: "Avertissement Oral" | "Avertissement Écrit" | "Retenue" | "Mise à pied" | "Exclusion temporaire" | "Exclusion définitive";
+    reason: string;
+    reportedById: string;
+    reportedByName?: string;
+    actionsTaken?: string;
+    parentNotified?: boolean;
+    followUpNotes?: string;
+    id?: string;
 };
 
 export type cycle = {
@@ -290,6 +305,16 @@ export type libraryBook = {
     quantity: number;
     createdAt?: any;
     id?: string;
+};
+
+export type libraryLoan = {
+  bookId: string;
+  studentId: string;
+  borrowedDate: string;
+  dueDate: string;
+  returnedDate?: string;
+  status: "borrowed" | "returned" | "overdue";
+  id?: string;
 };
 
 export type message = {
