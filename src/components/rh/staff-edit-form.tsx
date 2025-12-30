@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -25,7 +24,7 @@ import { format, parseISO, isValid } from 'date-fns';
 import { ImageUploader } from '../image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Upload, Loader2, FileText, Shield } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { PayslipPreview } from '@/components/payroll/payslip-template';
