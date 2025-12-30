@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useFirestore, useUser } from '@/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import type { canteenMenu as CanteenMenu } from '@/lib/data-types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Edit } from 'lucide-react';

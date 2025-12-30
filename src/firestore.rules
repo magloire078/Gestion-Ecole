@@ -203,6 +203,10 @@ service cloud.firestore {
         allow get, list: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageLibrary');
       }
+       match /bibliotheque_prets/{loanId} {
+         allow read: if isSchoolMember(schoolId);
+         allow write: if hasPermission(schoolId, 'manageLibrary');
+      }
 
        match /cantine_menus/{menuId} {
         allow get, list: if isSchoolMember(schoolId);
@@ -294,6 +298,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
-    
