@@ -1,4 +1,5 @@
 
+
 import {
     LayoutDashboard,
     Users,
@@ -66,8 +67,8 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' },
         { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageMedical', module: 'sante' },
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
-        { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
-        { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
+        { href: '/dashboard/transport/dashboard', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
+        { href: '/dashboard/internat/dashboard', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
@@ -97,6 +98,7 @@ export const NAV_LINKS: NavGroup[] = [
       icon: Briefcase,
       links: [
         { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
+        { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
       ]
     },
     {
@@ -138,3 +140,4 @@ export const NAV_LINKS: NavGroup[] = [
         ]
     },
   ];
+

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { LiveTransportTracking } from '@/components/transport/live-tracking';
@@ -30,3 +31,4 @@ export default function TransportDashboardPage() {
 
   return <LiveTransportTracking schoolId={schoolId} />;
 }
+
