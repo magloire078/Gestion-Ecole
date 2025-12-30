@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2, Search } from "lucide-react";
 import { 
@@ -36,35 +36,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useAuth, useMemoFirebase, useUser } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch, query, where, getDoc } from "firebase/firestore";
+import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { collection, doc, deleteDoc, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { getPayslipDetails } from '@/lib/bulletin-de-paie';
-import type { PayslipDetails } from '@/lib/bulletin-de-paie';
-import type { staff as Staff, school as OrganizationSettings, admin_role as AdminRole } from '@/lib/data-types';
+import type { staff as Staff, admin_role as AdminRole } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { PayslipPreview } from '@/components/payroll/payslip-template';
 import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { StaffEditForm } from "@/components/rh/staff-edit-form";
 import { Input } from "@/components/ui/input";
 
-
 type StaffMember = Staff & { id: string };
 
 export function PersonnelList() {
   const firestore = useFirestore();
-  const auth = useAuth();
   const router = useRouter();
   const { user, loading: userLoading } = useUser();
-  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  const { schoolId, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
   
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
@@ -78,7 +73,7 @@ export function PersonnelList() {
     const allStaff: StaffMember[] = staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [];
     
     const filteredStaff = allStaff.filter(s => 
-        s.displayName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (s.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -96,10 +91,8 @@ export function PersonnelList() {
   const { data: adminRolesData, loading: adminRolesLoading } = useCollection(adminRolesQuery);
   const adminRoles: (AdminRole & {id: string})[] = useMemo(() => adminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [adminRolesData]);
 
-
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
   
