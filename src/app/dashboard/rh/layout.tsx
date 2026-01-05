@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -10,11 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/firebase";
 import { usePathname } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-const rhNavLinks = [
-    { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users },
-    { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote },
-];
+import { rhSubLinks } from "@/lib/nav-links";
 
 export default function RHLayout({
   children,
@@ -37,7 +34,7 @@ export default function RHLayout({
         </div>
         <Tabs value={pathname.startsWith('/dashboard/rh/paie') ? '/dashboard/rh/paie' : '/dashboard/rh/personnel'} className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                {rhNavLinks.map(link => (
+                {rhSubLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>
                            <div className="flex items-center justify-center">

@@ -69,8 +69,8 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' },
         { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageMedical', module: 'sante' },
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
-        { href: '/dashboard/transport/dashboard', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
-        { href: '/dashboard/internat/dashboard', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
+        { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
+        { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
         { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
@@ -99,8 +99,7 @@ export const NAV_LINKS: NavGroup[] = [
       group: "RH & Paie",
       icon: Briefcase,
       links: [
-        { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
-        { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
+        { href: '/dashboard/rh', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
       ]
     },
     {
@@ -168,4 +167,9 @@ export const immobilierSubLinks = [
     { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench, permission: 'manageInventory' as PermissionKey, module: 'immobilier' as Module },
     { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarClock, permission: 'manageRooms' as PermissionKey, module: 'immobilier' as Module },
     { href: '/dashboard/immobilier/cles', label: 'Clés', icon: KeyRound, permission: 'manageInventory' as PermissionKey, module: 'immobilier' as Module },
+];
+
+export const rhSubLinks = [
+    { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers' as PermissionKey, module: 'rh' as Module },
+    { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling' as PermissionKey, module: 'rh' as Module },
 ];
