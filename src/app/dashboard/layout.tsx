@@ -7,7 +7,7 @@ import { UserNav } from '@/components/user-nav';
 import { Logo } from '@/components/logo';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Bell, Menu, Search } from 'lucide-react';
+import { Bell, Menu, Search, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
 import { AuthGuard } from '@/components/auth-guard';
 import { cn } from '@/lib/utils';
@@ -26,21 +26,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: userLoading, isDirector } = useUser();
   const { subscription, loading: schoolLoading } = useSchoolData();
 
-  // Raccourcis clavier
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K pour la recherche
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setIsSearchOpen(true);
       }
-      // Échap pour fermer les modals
       if (e.key === 'Escape') {
         setIsSearchOpen(false);
         setIsNotificationsOpen(false);
@@ -51,7 +49,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Générer le breadcrumb dynamiquement
   const generateBreadcrumbs = () => {
     const paths = pathname.split('/').filter(path => path && path !== 'dashboard');
     const breadcrumbs = [];
@@ -79,8 +76,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   const handleSearch = useCallback((query: string) => {
     console.log('Recherche:', query);
-    // Implémentez votre logique de recherche ici
-    // router.push(`/dashboard/recherche?q=${encodeURIComponent(query)}`);
     setIsSearchOpen(false);
   }, [router]);
   
@@ -89,18 +84,18 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     isDirector: isDirector,
     userPermissions: user?.profile?.permissions || {},
     subscription: subscription,
-    collapsed: false,
+    collapsed: isNavCollapsed,
   };
 
 
   return (
       <TooltipProvider>
-        <div className={cn("min-h-screen w-full bg-muted/40 print:bg-white")}>
-          <aside className="fixed inset-y-0 left-0 z-10 hidden w-60 flex-col border-r bg-background sm:flex print:hidden">
-            <div className="flex h-16 shrink-0 items-center border-b px-6">
-              <Logo />
+        <div className={cn("min-h-screen w-full bg-background print:bg-white")}>
+          <aside className={cn("fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-card sm:flex print:hidden transition-all duration-300", isNavCollapsed ? "w-20" : "w-64")}>
+            <div className={cn("flex h-16 shrink-0 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
+              <Logo compact={isNavCollapsed} />
             </div>
-            <nav className="flex-1 overflow-y-auto p-4">
+            <nav className="flex-1 overflow-y-auto p-2">
               {userLoading || schoolLoading ? (
                   <div className="space-y-2 p-2">
                       <Skeleton className="h-8 w-full" />
@@ -111,14 +106,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                   <MainNav {...navProps} />
               )}
             </nav>
+             <div className="mt-auto flex flex-col p-4">
+                <Button variant="ghost" size="icon" className="self-end" onClick={() => setIsNavCollapsed(!isNavCollapsed)}>
+                    {isNavCollapsed ? <PanelRightClose className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                </Button>
+            </div>
           </aside>
 
-          {/* Main content */}
-          <div className="flex flex-col sm:pl-60">
+          <div className={cn("flex flex-col transition-all duration-300", isNavCollapsed ? "sm:pl-20" : "sm:pl-64")}>
             
-            {/* Header */}
             <header className={cn(
-              "sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 dark:bg-background/80 backdrop-blur-md px-4 sm:px-6 print:hidden"
+              "sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-card/80 dark:bg-card/80 backdrop-blur-md px-4 sm:px-6 print:hidden"
             )}>
               
               <div className="flex items-center gap-3">
@@ -128,7 +126,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                       <Menu className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-full max-w-xs p-0 bg-background text-foreground border-r-0">
+                  <SheetContent side="left" className="w-full max-w-xs p-0 bg-card text-card-foreground border-r-0">
                     <MobileNav />
                   </SheetContent>
                 </Sheet>
@@ -183,17 +181,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                    </TooltipTrigger>
                   <TooltipContent>Notifications</TooltipContent>
                 </Tooltip>
-                <UserNav />
+                <UserNav collapsed={false} />
               </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 print:p-0 overflow-auto">
+            <main className="flex-1 p-4 sm:p-6 print:p-0 overflow-auto bg-muted/40">
                 {children}
             </main>
 
           </div>
 
-          {/* Modals */}
           <SearchModal
             isOpen={isSearchOpen}
             onClose={() => setIsSearchOpen(false)}

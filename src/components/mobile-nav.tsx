@@ -19,7 +19,7 @@ export function MobileNav() {
   };
 
   return (
-    <div className='flex flex-col h-full'>
+    <div className='flex flex-col h-full bg-card'>
         <div className="flex h-16 shrink-0 items-center border-b px-6">
             <Logo />
         </div>

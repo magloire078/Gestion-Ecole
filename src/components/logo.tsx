@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -36,14 +37,14 @@ export function Logo({ compact = false }: { compact?: boolean }) {
         <SafeImage 
             src={schoolData?.mainLogoUrl} 
             alt={schoolData?.name || 'Logo École'} 
-            width={32} 
-            height={32} 
+            width={36} 
+            height={36} 
             className={cn("object-contain transition-all duration-300", compact ? "h-9 w-9" : "h-8 w-8")}
             fallback={<DefaultLogo compact={compact} />}
         />
         {!compact && (
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold font-headline leading-tight">{schoolData?.name || 'Mon École'}</h1>
+            <h1 className="text-lg font-bold font-headline leading-tight">{schoolData?.name || 'GèreEcole'}</h1>
           </div>
         )}
     </Link>

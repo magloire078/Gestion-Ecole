@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -55,12 +56,10 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   const handleLogout = async () => {
     if (user?.isParent) {
-        // Clear parent session and redirect
         localStorage.removeItem('parent_session_id');
         localStorage.removeItem('parent_school_id');
         localStorage.removeItem('parent_student_ids');
         toast({ title: "Déconnexion réussie", description: "Vous avez quitté le portail parent." });
-        // Full page reload to ensure state is cleared
         window.location.href = '/parent-access';
         return;
     }
@@ -70,7 +69,6 @@ export function UserNav({ collapsed = false }: UserNavProps) {
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté(e).",
       });
-      // Use window.location.href to force a full refresh, clearing all state
       window.location.href = '/login';
     } catch (error) {
       console.error("Erreur de déconnexion: ", error);
@@ -84,7 +82,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   if (userLoading || isTransitioning) {
     return (
-      <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "justify-start")}>
+      <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "")}>
         <Skeleton className="h-9 w-9 rounded-full" />
         {!collapsed && (<div className="flex flex-col space-y-1"><Skeleton className="h-3 w-20" /><Skeleton className="h-2 w-16" /></div>)}
       </div>
@@ -93,8 +91,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   if (!user) {
     return (
-      <Button variant="ghost" onClick={() => router.push('/login')} className={cn("h-8 rounded-full", collapsed && "justify-center p-2")}>
-        {!collapsed && "Se connecter"}
+      <Button variant="ghost" onClick={() => router.push('/login')}>
+        Se connecter
       </Button>
     );
   }
@@ -189,33 +187,22 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     </>
   );
 
-  if (collapsed) {
-    return (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button className="flex w-full items-center justify-center gap-2 rounded-full p-1 hover:bg-sidebar-accent">
-            <Avatar className="h-9 w-9">
-              <SafeImage src={user?.profile?.photoURL || user?.authUser?.photoURL} alt={displayName} width={36} height={36} className="rounded-full" />
-              <AvatarFallback>{schoolLoading || isTransitioning ? <Loader2 className="h-4 w-4 animate-spin" /> : fallback}</AvatarFallback>
-            </Avatar>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount><UserMenuContent /></DropdownMenuContent>
-      </DropdownMenu>
-    );
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-9 w-9 rounded-full justify-start gap-2">
-          <Avatar className="h-9 w-9">
+        <Button variant="ghost" className="relative h-9 rounded-full flex items-center justify-start gap-2 p-1">
+          <Avatar className="h-8 w-8">
             <SafeImage src={user?.profile?.photoURL || user?.authUser?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
             <AvatarFallback>{schoolLoading || isTransitioning ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
           </Avatar>
+           {!collapsed && (
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium leading-none">{displayName}</span>
+            </div>
+           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56" align="end" forceMount><UserMenuContent /></DropdownMenuContent>
+      <DropdownMenuContent className="w-64" align="end" forceMount><UserMenuContent /></DropdownMenuContent>
     </DropdownMenu>
   );
 }
