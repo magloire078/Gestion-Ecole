@@ -7,7 +7,8 @@
       "description": "Un document racine qui associe l'UID d'un utilisateur à l'identifiant de son école.",
       "type": "object",
       "properties": {
-        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." }
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
+        "isAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme."}
       },
       "required": ["schoolId"]
     },
@@ -72,6 +73,8 @@
       "properties": {
         "schoolId": { "type": "string" },
         "studentIds": { "type": "array", "items": { "type": "string"} },
+        "accessCode": { "type": "string" },
+        "isActive": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
         "expiresAt": { "type": "string", "format": "date-time" }
       }
@@ -125,6 +128,24 @@
         },
         "required": ["schoolName", "schoolType", "studentCount", "currentManagement", "painPoints", "featureInterest", "submittedAt"]
     },
+    "support_ticket": {
+        "title": "Ticket de Support",
+        "description": "Une demande de support soumise par un utilisateur.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "schoolId": { "type": "string" },
+            "subject": { "type": "string" },
+            "category": { "type": "string" },
+            "description": { "type": "string" },
+            "status": { "type": "string", "enum": ["open", "in_progress", "closed"] },
+            "submittedAt": { "type": "string", "format": "date-time" },
+            "closedAt": { "type": "string", "format": "date-time" },
+            "userDisplayName": { "type": "string" },
+            "userEmail": { "type": "string" }
+        },
+        "required": ["userId", "schoolId", "subject", "category", "description", "status"]
+    },
     "system_log": {
       "title": "Journal Système",
       "description": "Trace toutes les actions critiques effectuées par les super admins.",
@@ -171,6 +192,7 @@
             "viewSchools": { "type": "boolean" },
             "manageClasses": { "type": "boolean" },
             "manageGrades": { "type": "boolean" },
+            "manageDiscipline": { "type": "boolean" },
             "manageSystem": { "type": "boolean" },
             "viewAnalytics": { "type": "boolean" },
             "manageSettings": { "type": "boolean" },
@@ -269,6 +291,7 @@
             "classId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe actuelle de l'élève." },
             "cycle": { "type": "string", "description": "Le nom du cycle actuel de l'élève." },
+            "grade": { "type": "string", "description": "Le nom du niveau de l'élève."},
             "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
             "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
             "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
@@ -295,6 +318,23 @@
             "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
         },
         "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
+    },
+     "discipline_incident": {
+      "title": "Incident Disciplinaire",
+      "description": "Un incident disciplinaire enregistré pour un élève.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["Avertissement Oral", "Avertissement Écrit", "Retenue", "Mise à pied", "Exclusion temporaire", "Exclusion définitive"] },
+        "reason": { "type": "string", "description": "Raison ou description de l'incident." },
+        "reportedById": { "type": "string", "description": "ID du membre du personnel qui a signalé." },
+        "reportedByName": { "type": "string" },
+        "actionsTaken": { "type": "string", "description": "Actions immédiates ou sanctions appliquées." },
+        "parentNotified": { "type": "boolean", "default": false },
+        "followUpNotes": { "type": "string", "description": "Notes de suivi." }
+      },
+      "required": ["studentId", "date", "type", "reason", "reportedById"]
     },
     "cycle": {
         "title": "Cycle",
@@ -469,6 +509,20 @@
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'ajout du livre." }
         },
         "required": ["schoolId", "title", "author", "quantity"]
+    },
+    "libraryLoan": {
+      "title": "Prêt de Livre",
+      "description": "Enregistre un prêt de livre à un élève.",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "borrowedDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "returnedDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["borrowed", "returned", "overdue"] }
+      },
+      "required": ["bookId", "studentId", "borrowedDate", "dueDate", "status"]
     },
     "message": {
         "title": "Message",
@@ -727,7 +781,7 @@
         "type": "object",
         "properties": {
             "name": { "type": "string" },
-            "type": { "type": "string", "enum": ["administratif", "pedagogique", "sportif", "autre"] },
+            "type": { "type": "string", "enum": ["garcons", "filles", "mixte", "administratif", "pedagogique", "sportif", "autre"] },
             "capacity": { "type": "number" },
             "responsableId": { "type": "string" },
             "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
@@ -897,7 +951,7 @@
         "description": "Une consultation médicale enregistrée.",
         "type": "object",
         "properties": {
-            "date": { "type": "string", "format": "date" },
+            "date": { "type": "string", "format": "date-time" },
             "motif": { "type": "string" },
             "diagnostic": { "type": "string" },
             "traitement": { "type": "string" },
@@ -966,6 +1020,10 @@
         "schema": { "$ref": "#/entities/user_root" },
         "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
     },
+     "/support_tickets/{ticketId}": {
+        "schema": { "$ref": "#/entities/support_ticket" },
+        "description": "Stocke les demandes de support soumises par les utilisateurs."
+    },
     "/contact_requests/{requestId}": {
         "schema": { "$ref": "#/entities/contact_request" },
         "description": "Stocke les soumissions du formulaire de contact/démo."
@@ -1026,6 +1084,11 @@
                     "schema": { "$ref": "#/entities/studentClassAssignment" },
                     "description": "Stocke l'historique des affectations de classe pour un élève."
                 },
+                "incidents_disciplinaires": {
+                  "path": "incidents_disciplinaires/{incidentId}",
+                  "schema": { "$ref": "#/entities/discipline_incident" },
+                  "description": "Historique des incidents disciplinaires de l'élève."
+                },
                 "dossier_medical": {
                     "path": "dossier_medical/{dossierId}",
                     "schema": { "$ref": "#/entities/dossierMedical" },
@@ -1084,6 +1147,11 @@
             "path": "bibliotheque/{bookId}",
             "schema": { "$ref": "#/entities/libraryBook" },
             "description": "Stocke les livres de la bibliothèque pour cette école."
+        },
+        "bibliotheque_prets": {
+          "path": "bibliotheque_prets/{loanId}",
+          "schema": { "$ref": "#/entities/libraryLoan" },
+          "description": "Stocke les prêts de livres pour cette école."
         },
         "messagerie": {
             "path": "messagerie/{messageId}",
@@ -1199,4 +1267,3 @@
     }
   }
 }
-
