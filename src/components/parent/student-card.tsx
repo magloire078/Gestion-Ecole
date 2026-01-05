@@ -20,29 +20,10 @@ interface ParentStudentCardProps {
 const calculateGeneralAverage = (grades: GradeEntry[]) => {
     if (!grades || grades.length === 0) return 0;
     
-    const subjectGrades: Record<string, { totalPoints: number, totalCoeffs: number}> = {};
+    const totalPoints = grades.reduce((acc, grade) => acc + (grade.grade * grade.coefficient), 0);
+    const totalCoeffs = grades.reduce((acc, grade) => acc + grade.coefficient, 0);
 
-    grades.forEach(grade => {
-        if (!subjectGrades[grade.subject]) {
-            subjectGrades[grade.subject] = { totalPoints: 0, totalCoeffs: 0 };
-        }
-        subjectGrades[grade.subject].totalPoints += grade.grade * grade.coefficient;
-        subjectGrades[grade.subject].totalCoeffs += grade.coefficient;
-    });
-
-    let totalWeightedAverage = 0;
-    let totalAllCoeffs = 0;
-
-    Object.values(subjectGrades).forEach(subject => {
-        if (subject.totalCoeffs > 0) {
-            const subjectAverage = subject.totalPoints / subject.totalCoeffs;
-            // Pondérer la moyenne de la matière par la somme de ses coefficients
-            totalWeightedAverage += subjectAverage * subject.totalCoeffs;
-            totalAllCoeffs += subject.totalCoeffs;
-        }
-    });
-
-    return totalAllCoeffs > 0 ? totalWeightedAverage / totalAllCoeffs : 0;
+    return totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
 };
 
 

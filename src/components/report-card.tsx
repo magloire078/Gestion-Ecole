@@ -137,18 +137,18 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
         reports.sort((a,b) => b.average - a.average);
         
-        let totalWeightedAverage = 0;
+        let totalWeightedPoints = 0;
         let totalAllCoeffs = 0;
         
         Object.keys(gradesBySubject).forEach(subject => {
             const { totalPoints, totalCoeffs } = gradesBySubject[subject];
             if (totalCoeffs > 0) {
-                 totalWeightedAverage += totalPoints;
+                 totalWeightedPoints += totalPoints;
                  totalAllCoeffs += totalCoeffs;
             }
         });
 
-        const finalAverage = totalAllCoeffs > 0 ? totalWeightedAverage / totalAllCoeffs : 0;
+        const finalAverage = totalAllCoeffs > 0 ? totalWeightedPoints / totalAllCoeffs : 0;
 
         return { subjectReports: reports, generalAverage: finalAverage, totalCoefficients: totalAllCoeffs };
     }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);

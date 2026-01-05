@@ -8,10 +8,10 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { FinanceOverview } from '@/components/dashboard/finance-overview';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useFirestore, useUser } from '@/firebase';
-import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
+import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
+import { collectionGroup, query, where, getDocs, collection } from 'firebase/firestore';
 import { useState, useEffect } from 'react';
-import type { gradeEntry as GradeEntry } from '@/lib/data-types';
+import type { gradeEntry as GradeEntry, cycle as Cycle, student as Student } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -43,7 +43,7 @@ const ParentDashboard = () => {
                 <CardContent>
                     <p className="text-muted-foreground mb-4">Cliquez sur un enfant pour voir ses informations détaillées (notes, paiements, absences, etc.).</p>
                     <div className="space-y-3">
-                        {user.parentStudentIds?.map(studentId => (
+                        {(user.parentStudentIds || []).map(studentId => (
                            <ParentStudentCard key={studentId} schoolId={user.schoolId!} studentId={studentId} />
                         ))}
                     </div>
@@ -62,6 +62,15 @@ const RegularDashboard = () => {
   const { schoolId, schoolData } = useSchoolData();
   const [allGrades, setAllGrades] = useState<GradeEntry[]>([]);
   const [gradesLoading, setGradesLoading] = useState(true);
+  
+  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
+  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true)) : null, [firestore, schoolId]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
+  
+  const studentCount = useMemo(() => studentsData?.length || 0, [studentsData]);
+  const cycleCount = useMemo(() => cyclesData?.length || 0, [cyclesData]);
+
 
   // Isolate grade fetching
   useEffect(() => {
@@ -88,11 +97,6 @@ const RegularDashboard = () => {
 
     fetchGrades();
   }, [schoolId, firestore]);
-  
-  const studentCount = useMemo(() => {
-    // This is a placeholder, a real implementation might get this from schoolData or a separate query
-    return schoolData?.studentCount || 0;
-  }, [schoolData]);
 
   return (
     <div className="space-y-6">
@@ -102,7 +106,7 @@ const RegularDashboard = () => {
       
       <AnnouncementBanner />
 
-      {schoolId && <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={schoolData?.cycles?.length || 0} />}
+      {schoolId && <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />}
     
       <StatCards schoolId={schoolId!} />
       
