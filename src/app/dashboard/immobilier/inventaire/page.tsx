@@ -164,7 +164,7 @@ export default function InventairePage() {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Catégorie</TableHead><TableHead>Quantité</TableHead><TableHead>Emplacement</TableHead><TableHead>Statut</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Catégorie</TableHead><TableHead>Quantité</TableHead><TableHead>Emplacement</TableHead><TableHead>Statut</TableHead>{canManageContent && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
             <TableBody>
               {isLoading ? (
                 [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
@@ -175,9 +175,9 @@ export default function InventairePage() {
                     <TableCell>{item.category}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
                     <TableCell>{salleMap.get(item.locationId) || item.locationId}</TableCell>
-                    <TableCell><Badge variant={getStatusBadgeVariant(item.status)}>{item.status}</Badge></TableCell>
-                    <TableCell className="text-right">
-                       {canManageContent && (
+                    <TableCell><Badge variant={getStatusBadgeVariant(item.status)} className="capitalize">{item.status.replace(/_/g, ' ')}</Badge></TableCell>
+                    {canManageContent && (
+                        <TableCell className="text-right">
                            <DropdownMenu>
                               <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
@@ -185,8 +185,8 @@ export default function InventairePage() {
                                 <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(item)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                       )}
-                    </TableCell>
+                       </TableCell>
+                    )}
                   </TableRow>
                 ))
               ) : (
