@@ -70,7 +70,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté(e).",
       });
-      router.replace('/login');
+      // Use window.location.href to force a full refresh, clearing all state
+      window.location.href = '/login';
     } catch (error) {
       console.error("Erreur de déconnexion: ", error);
       toast({

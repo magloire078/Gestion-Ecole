@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Cake, VenetianMask, CalendarCheck, MapPin, School } from 'lucide-react';
+import { Cake, VenetianMask, CalendarCheck, MapPin, School, GraduationCap } from 'lucide-react';
 import type { student as Student } from '@/lib/data-types';
 
 interface InfoTabProps {
@@ -26,6 +26,10 @@ export function InfoTab({ student }: InfoTabProps) {
                 <div className="flex items-center">
                     <VenetianMask className="mr-3 h-5 w-5 text-muted-foreground" />
                     <span>Sexe: <strong>{student.gender || 'N/A'}</strong></span>
+                </div>
+                 <div className="flex items-center">
+                    <GraduationCap className="mr-3 h-5 w-5 text-muted-foreground" />
+                    <span>Cycle: <strong>{student.cycle || 'N/A'}</strong></span>
                 </div>
                 <div className="flex items-center">
                     <CalendarCheck className="mr-3 h-5 w-5 text-muted-foreground" />

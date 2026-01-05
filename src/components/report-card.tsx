@@ -92,20 +92,23 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
     const { subjectReports, generalAverage, totalCoefficients } = useMemo(() => {
         const reports: SubjectReport[] = [];
-        let totalWeightedAverage = 0;
-        let totalAllCoeffs = 0;
-
-        const subjects = [...new Set(grades.map(g => g.subject))];
+        
+        const gradesBySubject: Record<string, { totalPoints: number; totalCoeffs: number }> = {};
+        grades.forEach(g => {
+            if (!gradesBySubject[g.subject]) {
+                gradesBySubject[g.subject] = { totalPoints: 0, totalCoeffs: 0 };
+            }
+            gradesBySubject[g.subject].totalPoints += g.grade * g.coefficient;
+            gradesBySubject[g.subject].totalCoeffs += g.coefficient;
+        });
+        
+        const subjects = Object.keys(gradesBySubject);
         const studentCycle = student.cycle;
         const isPrimaryOrMaternelle = studentCycle === "Maternelle" || studentCycle === "Enseignement Primaire";
 
         subjects.forEach(subject => {
-            const subjectGrades = grades.filter(g => g.subject === subject);
-            if (subjectGrades.length === 0) return;
-
-            const studentTotalPoints = subjectGrades.reduce((acc, g) => acc + g.grade * g.coefficient, 0);
-            const studentTotalCoeffs = subjectGrades.reduce((acc, g) => acc + g.coefficient, 0);
-            const studentAverage = studentTotalCoeffs > 0 ? studentTotalPoints / studentTotalCoeffs : 0;
+            const { totalPoints, totalCoeffs } = gradesBySubject[subject];
+            const studentAverage = totalCoeffs > 0 ? totalPoints / totalCoeffs : 0;
             
             let teacherName = 'N/A';
             if (isPrimaryOrMaternelle && mainTeacher) {
@@ -130,14 +133,20 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 classAverage: studentAverage < 19.5 ? studentAverage + 0.5 : 20,
                 appreciation: subjectAppreciations[subject]?.text || ''
             });
-            
-            if (studentTotalCoeffs > 0) {
-                totalWeightedAverage += studentAverage * studentTotalCoeffs;
-                totalAllCoeffs += studentTotalCoeffs;
-            }
         });
 
         reports.sort((a,b) => b.average - a.average);
+        
+        let totalWeightedAverage = 0;
+        let totalAllCoeffs = 0;
+        
+        Object.keys(gradesBySubject).forEach(subject => {
+            const { totalPoints, totalCoeffs } = gradesBySubject[subject];
+            if (totalCoeffs > 0) {
+                 totalWeightedAverage += totalPoints;
+                 totalAllCoeffs += totalCoeffs;
+            }
+        });
 
         const finalAverage = totalAllCoeffs > 0 ? totalWeightedAverage / totalAllCoeffs : 0;
 
