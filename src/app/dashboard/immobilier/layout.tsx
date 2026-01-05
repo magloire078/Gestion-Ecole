@@ -3,7 +3,6 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { NAV_LINKS } from '@/lib/nav-links';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from '@/firebase';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { immobilierSubLinks } from '@/lib/nav-links';
 
 export default function ImmobilierLayout({
   children,
@@ -20,9 +20,6 @@ export default function ImmobilierLayout({
   const pathname = usePathname();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const { user, loading: userLoading } = useUser();
-
-  const immobilierNavLinks = NAV_LINKS.find(g => g.group === 'Immobilier')?.links || [];
-
 
   const isLoading = subscriptionLoading || userLoading;
 
@@ -36,7 +33,7 @@ export default function ImmobilierLayout({
         </div>
         <Tabs value={pathname} className="w-full">
             <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-7">
-                {immobilierNavLinks.map(link => (
+                {immobilierSubLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>
                             <link.icon className="mr-2 h-4 w-4" />

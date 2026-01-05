@@ -491,7 +491,7 @@ export type transportSubscription = {
 
 export type building = {
     name: string;
-    type: "garcons" | "filles" | "mixte" | "administratif" | "pedagogique" | "sportif";
+    type: "garcons" | "filles" | "mixte" | "administratif" | "pedagogique" | "sportif" | "autre";
     capacity: number;
     responsableId?: string;
     status: "active" | "maintenance" | "full";
