@@ -1,5 +1,4 @@
 
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -194,8 +193,7 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get: if isSchoolMember(schoolId);
-        allow list: if request.query.recipientSchoolId == schoolId;
+        allow read: if isSchoolMember(schoolId);
         allow update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
@@ -308,5 +306,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
