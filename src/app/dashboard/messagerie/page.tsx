@@ -82,7 +82,6 @@ export default function MessagingPage() {
   
   const messagesQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
-    // La requête est sécurisée par la règle Firestore qui vérifie la correspondance des schoolId
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
       where('recipientSchoolId', '==', schoolId),
@@ -392,3 +391,5 @@ export default function MessagingPage() {
     </>
   );
 }
+
+    
