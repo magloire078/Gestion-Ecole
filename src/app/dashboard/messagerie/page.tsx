@@ -85,8 +85,7 @@ export default function MessagingPage() {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('schoolId', '==', schoolId),
-      where('recipients.all', '==', true), 
+      where('isGeneral', '==', true), 
       orderBy('createdAt', 'desc'),
       limit(50)
     );
@@ -393,3 +392,5 @@ export default function MessagingPage() {
     </>
   );
 }
+
+    
