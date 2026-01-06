@@ -195,9 +195,8 @@ service cloud.firestore {
 
       match /messagerie/{messageId} {
         allow get: if isSchoolMember(schoolId);
-        // On ne peut requêter la liste des messages que si on filtre par notre propre école
-        allow list: if request.query.recipientSchoolId == schoolId && isSchoolMember(schoolId);
-        allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
+        allow list: if isAuth() && request.query.recipientSchoolId == schoolId;
+        allow update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
