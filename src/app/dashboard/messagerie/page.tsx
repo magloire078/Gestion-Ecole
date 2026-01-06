@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -83,7 +84,7 @@ export default function MessagingPage() {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('schoolId', '==', schoolId), 
+      where('recipientSchoolId', '==', schoolId), 
       orderBy('createdAt', 'desc'),
       limit(50)
     );
@@ -124,6 +125,7 @@ export default function MessagingPage() {
     const messageData = {
         ...values,
         schoolId,
+        recipientSchoolId: schoolId, // Important for security rules
         senderId: user.authUser.uid,
         senderName: user.authUser.displayName,
         createdAt: serverTimestamp(),
@@ -390,3 +392,5 @@ export default function MessagingPage() {
     </>
   );
 }
+
+    

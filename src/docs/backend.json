@@ -530,6 +530,7 @@
         "type": "object",
         "properties": {
             "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "recipientSchoolId": { "type": "string", "description": "ID de l'école destinataire (pour les règles de sécurité)." },
             "title": { "type": "string", "description": "Le titre ou l'objet du message." },
             "content": { "type": "string", "description": "Le corps du message." },
             "senderId": { "type": "string", "description": "L'UID de l'expéditeur." },
@@ -552,7 +553,7 @@
                 }
             }
         },
-        "required": ["schoolId", "title", "content", "senderId", "senderName", "createdAt", "recipients"]
+        "required": ["schoolId", "recipientSchoolId", "title", "content", "senderId", "senderName", "createdAt", "recipients"]
     },
     "absence": {
         "title": "Absence",
@@ -1268,5 +1269,7 @@
     }
   }
 }
+
+    
 
     
