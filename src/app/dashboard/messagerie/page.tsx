@@ -84,7 +84,7 @@ export default function MessagingPage() {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('recipientSchoolId', '==', schoolId), 
+      where('recipientSchoolId', '==', schoolId),
       orderBy('createdAt', 'desc'),
       limit(50)
     );
@@ -125,11 +125,11 @@ export default function MessagingPage() {
     const messageData = {
         ...values,
         schoolId,
-        recipientSchoolId: schoolId, // Important for security rules
+        recipientSchoolId: schoolId,
         senderId: user.authUser.uid,
         senderName: user.authUser.displayName,
         createdAt: serverTimestamp(),
-        readBy: [], // Initialise as empty
+        readBy: [], 
         isGeneral: values.recipients.all === true,
     };
 
@@ -147,7 +147,6 @@ export default function MessagingPage() {
   const handleViewMessage = async (message: Message) => {
     setViewedMessage(message);
     setIsViewOpen(true);
-    // Mark as read optimistically on the client
     if (!user?.uid) return;
     const isAlreadyRead = message.readBy?.includes(user.uid);
     if (!isAlreadyRead) {
@@ -392,5 +391,3 @@ export default function MessagingPage() {
     </>
   );
 }
-
-    

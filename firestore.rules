@@ -1,4 +1,5 @@
 
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -194,8 +195,9 @@ service cloud.firestore {
 
       match /messagerie/{messageId} {
         allow get: if isSchoolMember(schoolId);
+        // La requête doit filtrer par recipientSchoolId pour que cette règle fonctionne
         allow list: if isAuth() && request.query.recipientSchoolId == schoolId;
-        allow update: if isSchoolMember(schoolId);
+        allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
@@ -307,5 +309,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
