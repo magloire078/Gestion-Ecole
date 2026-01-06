@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -68,6 +67,7 @@ interface Message {
     createdAt: { seconds: number, nanoseconds: number };
     readBy?: string[];
     recipients: MessageFormValues['recipients'];
+    recipientSchoolId?: string; // Ajout du champ optionnel
 }
 
 export default function MessagingPage() {
@@ -84,7 +84,6 @@ export default function MessagingPage() {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('recipientSchoolId', '==', schoolId),
       orderBy('createdAt', 'desc'),
       limit(50)
     );
@@ -125,7 +124,7 @@ export default function MessagingPage() {
     const messageData = {
         ...values,
         schoolId,
-        recipientSchoolId: schoolId,
+        recipientSchoolId: schoolId, // Important pour les règles de sécurité
         senderId: user.authUser.uid,
         senderName: user.authUser.displayName,
         createdAt: serverTimestamp(),
@@ -391,6 +390,4 @@ export default function MessagingPage() {
     </>
   );
 }
-
-
-
+    
