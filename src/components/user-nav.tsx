@@ -196,8 +196,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
             <AvatarFallback>{schoolLoading || isTransitioning ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
           </Avatar>
            {!collapsed && (
-            <div className="flex-1 flex-col items-start hidden md:flex">
-              <span className="text-sm font-medium leading-none text-left">{displayName}</span>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-medium leading-none">{displayName}</span>
             </div>
            )}
         </Button>
