@@ -67,6 +67,7 @@ interface Message {
     createdAt: { seconds: number, nanoseconds: number };
     readBy?: string[];
     recipients: MessageFormValues['recipients'];
+    isGeneral?: boolean;
 }
 
 export default function MessagingPage() {
@@ -84,11 +85,12 @@ export default function MessagingPage() {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('recipients.all', '==', true),
+      where('isGeneral', '==', true),
       orderBy('createdAt', 'desc'),
       limit(50)
     );
   }, [firestore, schoolId]);
+
   const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
   const messages = useMemo(() => messagesData?.map(d => ({ id: d.id, ...d.data() } as Message)) || [], [messagesData]);
 
@@ -128,6 +130,7 @@ export default function MessagingPage() {
         senderName: user.authUser.displayName,
         createdAt: serverTimestamp(),
         readBy: [], // Initialise as empty
+        isGeneral: values.recipients.all === true, // Champ ajouté
     };
 
     const messagesCollectionRef = collection(firestore, `ecoles/${schoolId}/messagerie`);
@@ -145,10 +148,15 @@ export default function MessagingPage() {
     setViewedMessage(message);
     setIsViewOpen(true);
     // Mark as read optimistically on the client
-    const isAlreadyRead = message.readBy?.includes(user?.uid || '');
+    if (!user?.uid) return;
+    const isAlreadyRead = message.readBy?.includes(user.uid);
     if (!isAlreadyRead) {
         const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie/${message.id}`);
-        await updateDoc(notifRef, { readBy: arrayUnion(user?.uid) });
+        try {
+            await updateDoc(notifRef, { readBy: arrayUnion(user.uid) });
+        } catch(e) {
+            console.error("Failed to mark message as read", e);
+        }
     }
   };
 

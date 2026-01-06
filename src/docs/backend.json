@@ -325,7 +325,7 @@
       "type": "object",
       "properties": {
         "studentId": { "type": "string" },
-        "date": { "type": "string", "format": "date" },
+        "date": { "type": "string", "format": "date-time" },
         "type": { "type": "string", "enum": ["Avertissement Oral", "Avertissement Écrit", "Retenue", "Mise à pied", "Exclusion temporaire", "Exclusion définitive"] },
         "reason": { "type": "string", "description": "Raison ou description de l'incident." },
         "reportedById": { "type": "string", "description": "ID du membre du personnel qui a signalé." },
@@ -536,6 +536,7 @@
             "senderName": { "type": "string", "description": "Le nom de l'expéditeur." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'envoi du message." },
             "readBy": { "type": "array", "items": { "type": "string" } },
+            "isGeneral": { "type": "boolean", "description": "Indique si c'est un message pour toute l'école." },
             "recipients": {
                 "type": "object",
                 "description": "Définit les destinataires du message.",
@@ -951,7 +952,7 @@
         "description": "Une consultation médicale enregistrée.",
         "type": "object",
         "properties": {
-            "date": { "type": "string", "format": "date" },
+            "date": { "type": "string", "format": "date-time" },
             "motif": { "type": "string" },
             "diagnostic": { "type": "string" },
             "traitement": { "type": "string" },
@@ -1271,3 +1272,4 @@
     
 
     
+

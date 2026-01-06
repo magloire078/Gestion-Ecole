@@ -193,8 +193,7 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get: if isSchoolMember(schoolId); // N'importe qui peut lire un message s'il a l'ID
-        allow list: if false; // Personne ne peut lister toute la collection
+        allow get: if isSchoolMember(schoolId);
         allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
