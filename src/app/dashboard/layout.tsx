@@ -1,5 +1,4 @@
 
-
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -107,9 +106,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               )}
             </nav>
              <div className="mt-auto flex flex-col p-4">
-                <Button variant="ghost" size="icon" className="self-end" onClick={() => setIsNavCollapsed(!isNavCollapsed)}>
-                    {isNavCollapsed ? <PanelRightClose className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                     <Button variant="ghost" size="icon" className="self-center" onClick={() => setIsNavCollapsed(!isNavCollapsed)}>
+                        {isNavCollapsed ? <PanelRightClose className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    {isNavCollapsed ? "Étendre" : "Réduire"}
+                  </TooltipContent>
+                </Tooltip>
             </div>
           </aside>
 
@@ -181,7 +187,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                    </TooltipTrigger>
                   <TooltipContent>Notifications</TooltipContent>
                 </Tooltip>
-                <UserNav collapsed={false} />
+                <UserNav collapsed={isNavCollapsed} />
               </div>
             </header>
 

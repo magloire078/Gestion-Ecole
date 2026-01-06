@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -82,7 +81,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   if (userLoading || isTransitioning) {
     return (
-      <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "")}>
+      <div className={cn("flex items-center gap-2")}>
         <Skeleton className="h-9 w-9 rounded-full" />
         {!collapsed && (<div className="flex flex-col space-y-1"><Skeleton className="h-3 w-20" /><Skeleton className="h-2 w-16" /></div>)}
       </div>
@@ -190,16 +189,14 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className={cn("flex items-center gap-2 h-auto p-1 rounded-full", collapsed ? "w-auto" : "w-full justify-start")}>
+        <Button variant="ghost" className="h-auto p-1 pr-2 rounded-full flex items-center gap-2">
           <Avatar className="h-8 w-8">
             <SafeImage src={user?.profile?.photoURL || user?.authUser?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
             <AvatarFallback>{schoolLoading || isTransitioning ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
           </Avatar>
-           {!collapsed && (
-            <div className="flex flex-col items-start">
+           <div className={cn("flex flex-col items-start", collapsed && "hidden")}>
               <span className="text-sm font-medium leading-none">{displayName}</span>
             </div>
-           )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64" align="end" forceMount><UserMenuContent /></DropdownMenuContent>
