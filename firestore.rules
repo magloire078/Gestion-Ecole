@@ -193,8 +193,9 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get: if isSchoolMember(schoolId); // On autorise la lecture individuelle
-        allow list: if isAuth(); // Permet la liste, la sécurité est sur la requête
+        // Correct Rule: Allow listing for authenticated users. Security is enforced in the query.
+        allow list: if isAuth(); 
+        allow get: if isSchoolMember(schoolId);
         allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
