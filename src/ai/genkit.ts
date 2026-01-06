@@ -9,7 +9,7 @@
  * imported and used for all AI-related tasks, such as defining flows,
  * prompts, and generating content.
  */
-import {genkit} from 'genkit';
+import {genkit, configureGenkit} from 'genkit';
 import {googleAI} from '@genkit-ai/google-genai';
 import {firebase} from '@genkit-ai/firebase';
 import { googleCloud } from '@genkit-ai/google-cloud';
@@ -26,6 +26,6 @@ const genkitConfig = {
   enableTracingAndMetrics: true,
 };
 
-genkit(genkitConfig);
+configureGenkit(genkitConfig);
 
-export {genkit as ai} from 'genkit';
+export {genkit as ai};
