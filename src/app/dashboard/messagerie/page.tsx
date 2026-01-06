@@ -67,7 +67,6 @@ interface Message {
     createdAt: { seconds: number, nanoseconds: number };
     readBy?: string[];
     recipients: MessageFormValues['recipients'];
-    isGeneral?: boolean;
 }
 
 export default function MessagingPage() {
@@ -79,13 +78,12 @@ export default function MessagingPage() {
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
-
-  // Requête sécurisée pour les annonces générales
+  
   const messagesQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('isGeneral', '==', true), 
+      where('schoolId', '==', schoolId), 
       orderBy('createdAt', 'desc'),
       limit(50)
     );
@@ -392,5 +390,3 @@ export default function MessagingPage() {
     </>
   );
 }
-
-    
