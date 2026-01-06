@@ -80,7 +80,7 @@ export default function MessagingPage() {
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  // Requête corrigée pour ne récupérer que les messages généraux
+  // Correction : On ne récupère que les annonces générales, car lister toute la collection est interdit.
   const messagesQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
     return query(
@@ -297,7 +297,7 @@ export default function MessagingPage() {
         </div>
 
         <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Boîte de réception</h2>
+            <h2 className="text-xl font-semibold">Annonces Générales</h2>
             {canManageCommunication && (
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogTrigger asChild>
@@ -361,7 +361,7 @@ export default function MessagingPage() {
                     })
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">Boîte de réception vide.</TableCell>
+                        <TableCell colSpan={4} className="h-24 text-center">Aucune annonce générale pour le moment.</TableCell>
                     </TableRow>
                 )}
               </TableBody>

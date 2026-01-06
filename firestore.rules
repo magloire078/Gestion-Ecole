@@ -99,7 +99,7 @@ service cloud.firestore {
 
     match /utilisateurs/{userId} {
       allow get, update, create: if isAuth() && request.auth.uid == userId;
-      allow list, delete: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true || request.auth.uid == userId;
+      allow list, delete: if (get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true) || (isAuth() && request.auth.uid == userId);
     }
     
     match /contact_requests/{requestId} {
@@ -193,7 +193,8 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get, list: if isSchoolMember(schoolId);
+        allow get: if isSchoolMember(schoolId); // On autorise la lecture individuelle
+        allow list: if false; // INTERDICTION de lister la collection entière
         allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
