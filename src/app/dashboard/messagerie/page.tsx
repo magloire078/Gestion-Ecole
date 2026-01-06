@@ -75,12 +75,23 @@ export default function MessagingPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const canManageCommunication = !!user?.profile?.permissions?.manageCommunication;
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [messagesLoading, setMessagesLoading] = useState(true);
-
   const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+  // Requête corrigée pour ne récupérer que les messages généraux
+  const messagesQuery = useMemoFirebase(() => {
+    if (!schoolId) return null;
+    return query(
+      collection(firestore, `ecoles/${schoolId}/messagerie`),
+      where('recipients.all', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
+  }, [firestore, schoolId]);
+  const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
+  const messages = useMemo(() => messagesData?.map(d => ({ id: d.id, ...d.data() } as Message)) || [], [messagesData]);
+
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [viewedMessage, setViewedMessage] = useState<Message | null>(null);
@@ -100,42 +111,6 @@ export default function MessagingPage() {
         }
     },
   });
-
-  useEffect(() => {
-    if (!firestore || !schoolId || !user) {
-        if (!userLoading && !schoolLoading) {
-            setMessagesLoading(false);
-        }
-        return;
-    };
-
-    const fetchMessages = async () => {
-        setMessagesLoading(true);
-        const messageCollection = collection(firestore, `ecoles/${schoolId}/messagerie`);
-        
-        // La requête est simplifiée pour être compatible avec les règles de sécurité.
-        // On récupère les 50 derniers messages globaux. D'autres messages (ciblés)
-        // ne seront pas récupérés par cette query mais c'est un compromis pour la démo.
-        const q = query(messageCollection, where('recipients.all', '==', true), orderBy('createdAt', 'desc'), limit(50));
-        
-        try {
-            const querySnapshot = await getDocs(q);
-            const fetchedMessages: Message[] = [];
-             querySnapshot.forEach(doc => {
-                fetchedMessages.push({ id: doc.id, ...doc.data() } as Message);
-            });
-            setMessages(fetchedMessages);
-        } catch (error) {
-            console.error("Error fetching messages:", error);
-            toast({ variant: 'destructive', title: "Erreur de chargement", description: "Impossible de récupérer les messages." });
-        } finally {
-            setMessagesLoading(false);
-        }
-    };
-
-    fetchMessages();
-  }, [firestore, schoolId, user, toast, userLoading, schoolLoading]);
-
 
   useEffect(() => {
     if (isFormOpen) {
@@ -160,13 +135,6 @@ export default function MessagingPage() {
     .then((newDoc) => {
         toast({ title: "Message envoyé", description: `Votre message a bien été envoyé.` });
         setIsFormOpen(false);
-        // Ajout optimiste à la liste locale
-        setMessages(prev => [{
-            id: newDoc.id,
-            ...messageData,
-            createdAt: { seconds: new Date().getTime()/1000, nanoseconds: 0 }
-        }, ...prev]);
-
     }).catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({ path: messagesCollectionRef.path, operation: 'create', requestResourceData: messageData });
         errorEmitter.emit('permission-error', permissionError);
@@ -179,8 +147,6 @@ export default function MessagingPage() {
     // Mark as read optimistically on the client
     const isAlreadyRead = message.readBy?.includes(user?.uid || '');
     if (!isAlreadyRead) {
-        setMessages(prevMessages => prevMessages.map(m => m.id === message.id ? { ...m, readBy: [...(m.readBy || []), user!.uid] } : m));
-        // Then update in Firestore
         const notifRef = doc(firestore, `ecoles/${schoolId}/messagerie/${message.id}`);
         await updateDoc(notifRef, { readBy: arrayUnion(user?.uid) });
     }
@@ -380,7 +346,7 @@ export default function MessagingPage() {
                                     <span className="text-muted-foreground text-sm"> - {message.content.substring(0, 100)}...</span>
                                 </TableCell>
                                 <TableCell className={cn("w-40 text-right text-sm", !isRead ? "text-foreground font-medium" : "text-muted-foreground")}>
-                                  {message.createdAt ? formatDistanceToNow(new Date(message.createdAt.seconds * 1000), { addSuffix: true, locale: fr }) : '...'}
+                                  {message.createdAt?.seconds ? formatDistanceToNow(new Date(message.createdAt.seconds * 1000), { addSuffix: true, locale: fr }) : '...'}
                                 </TableCell>
                             </TableRow>
                         )
