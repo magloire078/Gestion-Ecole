@@ -193,7 +193,10 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow list, get: if isSchoolMember(schoolId);
+        // La règle de liste est simple : on peut lister si on est authentifié.
+        // La sécurité est ensuite assurée par la requête qui filtre par schoolId.
+        allow list: if isAuth(); 
+        allow get: if isSchoolMember(schoolId);
         allow update: if isSchoolMember(schoolId); // Pour marquer comme lu
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }

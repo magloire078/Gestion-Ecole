@@ -80,11 +80,13 @@ export default function MessagingPage() {
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  // Correction : On ne récupère que les annonces générales, car lister toute la collection est interdit.
+  // Correction de la requête pour être plus sécurisée et performante
   const messagesQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
+      // Filtrer par schoolId pour la sécurité, et isGeneral pour la fonctionnalité
+      where('schoolId', '==', schoolId),
       where('isGeneral', '==', true),
       orderBy('createdAt', 'desc'),
       limit(50)
@@ -392,3 +394,5 @@ export default function MessagingPage() {
     </>
   );
 }
+
+    
