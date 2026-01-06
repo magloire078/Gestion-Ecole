@@ -106,27 +106,25 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
   }
 
   const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasAccess(link.permission, link.module) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
+  const mainLinks = NAV_LINKS.find(g => g.group === "Principal")?.links.filter(link => hasAccess(link.permission, link.module)) || [];
+  const configLinks = NAV_LINKS.find(g => g.group === "Configuration")?.links.filter(link => hasAccess(link.permission, link.module)) || [];
+  const accordionGroups = NAV_LINKS.filter(g => g.group !== "Principal" && g.group !== "Configuration");
+
 
   return (
+    <>
+    <div className="space-y-1 py-1">
+        {mainLinks.map(link => (
+            <NavLink key={link.href} {...link} collapsed={false} pathname={pathname} />
+        ))}
+    </div>
     <Accordion type="multiple" defaultValue={defaultActiveGroup ? [defaultActiveGroup] : []} className="w-full">
-      {NAV_LINKS.map((group) => {
+      {accordionGroups.map((group) => {
           if (group.adminOnly && !isSuperAdmin) return null;
           
           const visibleLinks = group.links.filter(link => hasAccess(link.permission, link.module));
           if (visibleLinks.length === 0) return null;
           
-          const isAccordion = group.group !== "Principal" && group.group !== "Configuration";
-
-          if (!isAccordion) {
-              return (
-                  <div key={group.group} className="py-1">
-                      {visibleLinks.map(link => (
-                          <NavLink key={link.href} {...link} collapsed={false} pathname={pathname} />
-                      ))}
-                  </div>
-              )
-          }
-
           return (
             <AccordionItem value={group.group} key={group.group} className="border-b-0">
                 <AccordionTrigger className="py-2 px-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground rounded-lg hover:no-underline [&[data-state=open]>svg]:rotate-180">
@@ -150,5 +148,11 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
           );
       })}
     </Accordion>
+    <div className="space-y-1 pt-2 mt-2 border-t">
+        {configLinks.map(link => (
+            <NavLink key={link.href} {...link} collapsed={false} pathname={pathname} />
+        ))}
+    </div>
+    </>
   );
 }

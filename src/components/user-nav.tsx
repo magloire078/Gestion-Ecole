@@ -189,7 +189,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-auto p-1 pr-2 rounded-full flex items-center gap-2">
+        <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")}>
           <Avatar className="h-8 w-8">
             <SafeImage src={user?.profile?.photoURL || user?.authUser?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
             <AvatarFallback>{schoolLoading || isTransitioning ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
