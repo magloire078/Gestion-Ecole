@@ -61,7 +61,7 @@ export function useUser() {
       }
       
       setLoading(true);
-      const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
+      const userRootRef = doc(firestore, 'users', authUser.uid);
 
       const unsubUserDoc = onSnapshot(userRootRef, async (userRootSnap) => {
         try {

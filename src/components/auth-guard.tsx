@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser } from '@/firebase';
@@ -22,40 +21,28 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-  const [isParent, setIsParent] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-    if(localStorage.getItem('parent_session_id')) {
-        setIsParent(true);
-    }
-  }, []);
-
-  const effectiveUser = isParent ? { isParent: true, ...user } : user;
-
-  const publicPages = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'];
-  const isPublicPage = publicPages.some(p => pathname.startsWith(p)) || pathname === '/';
+  const isPublicPage = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'].some(p => pathname.startsWith(p)) || pathname === '/';
   const isOnboardingPage = pathname.startsWith('/onboarding');
   
   useEffect(() => {
-    if (loading || !isClient) {
-      return;
+    if (loading) {
+      return; // Ne rien faire tant que l'état de l'utilisateur n'est pas résolu
     }
 
-    if (!effectiveUser && !isPublicPage) {
+    if (!user && !isPublicPage) {
       router.replace('/auth/login');
       return;
     }
 
-    if (effectiveUser) {
-        if (isPublicPage && !pathname.startsWith('/parent-access')) {
+    if (user) {
+        if (isPublicPage && !user.isParent) {
             router.replace('/dashboard');
             return;
         }
 
-        if (!effectiveUser.isParent) {
-            const hasSchool = !!effectiveUser.schoolId;
+        if (!user.isParent) {
+            const hasSchool = !!user.schoolId;
             if (hasSchool && isOnboardingPage) {
                 router.replace('/dashboard');
             } else if (!hasSchool && !isOnboardingPage && pathname.startsWith('/dashboard')) {
@@ -63,14 +50,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             }
         }
     }
-  }, [effectiveUser, loading, pathname, isPublicPage, isOnboardingPage, router, isClient]);
+  }, [user, loading, pathname, isPublicPage, isOnboardingPage, router]);
 
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
   // Si on est sur une page protégée mais sans utilisateur, on affiche le loader pendant la redirection.
-  if (!effectiveUser && !isPublicPage) {
+  if (!user && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 

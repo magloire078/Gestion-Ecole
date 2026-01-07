@@ -60,8 +60,20 @@ export default function LoginPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
   const auth = useAuth();
-  const { loading: userLoading } = useUser();
   const { toast } = useToast();
+  const { user, loading: userLoading } = useUser();
+
+  if (userLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-muted/40">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-lg font-semibold">Vérification de votre session...</p>
+          <p className="text-sm text-muted-foreground">Veuillez patienter</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,18 +147,6 @@ export default function LoginPage() {
       setIsProcessing(false);
     }
   };
-
-  if (userLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/40">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-lg font-semibold">Vérification de votre session...</p>
-          <p className="text-sm text-muted-foreground">Veuillez patienter</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
