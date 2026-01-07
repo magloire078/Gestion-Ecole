@@ -98,7 +98,7 @@ export default function LandingPageV2() {
               <Button variant="ghost" asChild>
                 <Link href="/contact">Contact</Link>
               </Button>
-              <Button onClick={() => router.push('/login')}>Se connecter</Button>
+              <Button onClick={() => router.push('/auth/login')}>Se connecter</Button>
             </nav>
           </div>
         </div>
@@ -122,7 +122,7 @@ export default function LandingPageV2() {
                   <PlayCircle className="h-5 w-5" />Demander une Démo
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" onClick={() => router.push('/login')}>
+              <Button size="lg" variant="outline" onClick={() => router.push('/auth/login')}>
                 Commencer
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -196,7 +196,7 @@ export default function LandingPageV2() {
                                 </ul>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" variant={plan.variant as any} onClick={() => router.push('/login')}>{plan.cta}</Button>
+                                <Button className="w-full" variant={plan.variant as any} onClick={() => router.push('/auth/login')}>{plan.cta}</Button>
                             </CardFooter>
                         </Card>
                     ))}
@@ -237,7 +237,7 @@ export default function LandingPageV2() {
           <nav className="flex gap-4">
             <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary">Contact</Link>
             <Link href="/survey" className="text-sm text-muted-foreground hover:text-primary">Enquête</Link>
-             <Link href="/login" className="text-sm text-muted-foreground hover:text-primary">Connexion</Link>
+             <Link href="/auth/login" className="text-sm text-muted-foreground hover:text-primary">Connexion</Link>
           </nav>
         </div>
       </footer>

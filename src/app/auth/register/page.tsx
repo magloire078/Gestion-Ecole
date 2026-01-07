@@ -131,7 +131,7 @@ export default function RegisterPage() {
           <div className="mt-4 text-center text-sm">
             Déjà un compte ?{' '}
             <Button variant="link" className="p-0" asChild>
-                <Link href="/login">Se connecter</Link>
+                <Link href="/auth/login">Se connecter</Link>
             </Button>
           </div>
         </CardContent>
