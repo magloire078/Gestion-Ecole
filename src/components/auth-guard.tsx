@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -22,7 +23,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   
   const publicPages = ['/login', '/register', '/contact', '/survey', '/parent-access'];
   const isPublicPage = publicPages.some(p => pathname.startsWith(p)) || pathname === '/';
-  const isOnboardingPage = pathname.startsWith('/dashboard/onboarding');
+  const isOnboardingPage = pathname.startsWith('/onboarding');
 
   useEffect(() => {
     if (loading) {
@@ -46,8 +47,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         router.replace('/dashboard');
       }
       
-      if (!hasSchool && !isOnboardingPage) {
-        router.replace('/dashboard/onboarding');
+      if (!hasSchool && !isOnboardingPage && pathname.startsWith('/dashboard')) {
+        router.replace('/onboarding');
       }
     }
     
@@ -57,7 +58,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return <AuthProtectionLoader />;
   }
 
-  if (user && !user.schoolId && !isOnboardingPage && !isPublicPage) {
+  if (user && !user.schoolId && !isOnboardingPage && pathname.startsWith('/dashboard')) {
       return <AuthProtectionLoader />;
   }
   
