@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUser } from '@/firebase';
@@ -22,52 +21,38 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  const [isReadyToRender, setIsReadyToRender] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
-    if (loading) {
-      return; // Attendre que l'état d'authentification soit résolu
+    if (!isClient || loading) {
+      return; 
     }
 
     const isPublicPage = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'].some(p => pathname.startsWith(p)) || pathname === '/';
-    const isOnboardingPage = pathname.startsWith('/onboarding');
-    const isParentSession = !!localStorage.getItem('parent_session_id');
-
-    if (isPublicPage) {
-      if (user || isParentSession) {
-        // Utilisateur connecté ou en session parent sur une page publique -> rediriger vers le tableau de bord
-        router.replace('/dashboard');
-      } else {
-        // Utilisateur non connecté sur une page publique -> afficher la page
-        setIsReadyToRender(true);
-      }
-      return;
-    }
-
-    // --- À partir d'ici, nous sommes sur une page protégée ---
     
-    if (!user && !isParentSession) {
-      // Non connecté et pas de session parent -> rediriger vers la connexion
+    // Si nous sommes sur une page protégée et qu'il n'y a pas d'utilisateur authentifié
+    if (!isPublicPage && !user) {
       router.replace('/auth/login');
       return;
     }
-
-    if (user && !user.schoolId && !isOnboardingPage && !isParentSession) {
-      // Connecté mais sans école et pas sur l'onboarding -> rediriger vers l'onboarding
+    
+    // Si l'utilisateur est connecté mais n'a pas encore d'école et n'est pas sur la page d'onboarding
+    if (user && !user.schoolId && !pathname.startsWith('/onboarding')) {
       router.replace('/onboarding');
       return;
     }
 
-    // Si toutes les conditions sont remplies, on peut afficher le contenu
-    setIsReadyToRender(true);
+  }, [user, loading, pathname, router, isClient]);
 
-  }, [user, loading, pathname, router]);
-
-  // N'afficher le contenu que lorsque toutes les vérifications et redirections potentielles sont terminées.
-  // Pendant ce temps, `AuthProtectionLoader` est affiché pour éviter les erreurs d'hydratation.
-  if (!isReadyToRender) {
+  // Affiche un loader pendant que l'état d'authentification se résout côté client
+  if (loading || !isClient) {
     return <AuthProtectionLoader />;
   }
 
+  // Si toutes les conditions sont remplies, affiche le contenu de la page
   return <>{children}</>;
 }

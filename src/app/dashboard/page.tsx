@@ -65,7 +65,7 @@ const useGradesData = (schoolId?: string | null) => {
         const gradesQuery = query(
           gradesCollectionGroup,
           where('__name__', '>=', `ecoles/${schoolId}/`),
-          where('__name__', '<', `ecoles/${schoolId}\uf8ff`),
+          where('__name__', '<', `ecoles/${schoolId}￿`),
           limit(500)
         );
         
@@ -239,7 +239,7 @@ function DashboardPageContent() {
     }, []);
 
     useEffect(() => {
-        if (isClient) {
+        if (isClient && !user) { // Only check for parent session if not a regular user
             const sessionId = localStorage.getItem('parent_session_id');
             const schoolId = localStorage.getItem('parent_school_id');
             const studentIdsStr = localStorage.getItem('parent_student_ids');
@@ -252,7 +252,7 @@ function DashboardPageContent() {
                 }
             }
         }
-    }, [isClient]);
+    }, [isClient, user]);
 
     if (userLoading || !isClient) {
         return <DashboardSkeleton />;
@@ -266,6 +266,7 @@ function DashboardPageContent() {
         return <RegularDashboard />;
     }
 
+    // Default to skeleton if no session is found yet but client is ready
     return <DashboardSkeleton />;
 }
 
