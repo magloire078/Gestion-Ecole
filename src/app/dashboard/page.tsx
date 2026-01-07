@@ -101,13 +101,12 @@ const useGradesData = (schoolId?: string | null) => {
 // ====================================================================================
 // Parent Dashboard Component
 // ====================================================================================
-interface ParentDashboardState {
-    studentIds: string[];
-    schoolId: string;
+interface ParentDashboardProps {
+    user: NonNullable<ReturnType<typeof useUser>['user']>;
 }
 
-const ParentDashboard = ({ session }: { session: ParentDashboardState }) => {
-    if (!session.schoolId) {
+const ParentDashboard = ({ user }: ParentDashboardProps) => {
+    if (!user.schoolId || !user.parentStudentIds) {
       return (
         <Alert>
           <AlertDescription>
@@ -116,8 +115,8 @@ const ParentDashboard = ({ session }: { session: ParentDashboardState }) => {
         </Alert>
       );
     }
-
-    if (session.studentIds.length === 0) {
+    
+    if (user.parentStudentIds.length === 0) {
       return (
         <div className="space-y-6">
           <h1 className="text-2xl font-bold">Portail Parent</h1>
@@ -144,10 +143,10 @@ const ParentDashboard = ({ session }: { session: ParentDashboardState }) => {
                 <CardContent>
                     <p className="text-muted-foreground mb-4">Cliquez sur un enfant pour voir ses informations détaillées.</p>
                     <div className="space-y-4">
-                        {session.studentIds.map(studentId => (
+                        {user.parentStudentIds.map(studentId => (
                            <ParentStudentCard 
                              key={studentId} 
-                             schoolId={session.schoolId!} 
+                             schoolId={user.schoolId!} 
                              studentId={studentId}
                            />
                         ))}
@@ -231,43 +230,16 @@ const RegularDashboard = () => {
 // ====================================================================================
 function DashboardPageContent() {
     const { user, loading: userLoading } = useUser();
-    const [parentSession, setParentSession] = useState<ParentDashboardState | null>(null);
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
-
-    useEffect(() => {
-        if (isClient && !user) { // Only check for parent session if not a regular user
-            const sessionId = localStorage.getItem('parent_session_id');
-            const schoolId = localStorage.getItem('parent_school_id');
-            const studentIdsStr = localStorage.getItem('parent_student_ids');
-            if (sessionId && schoolId && studentIdsStr) {
-                try {
-                    const studentIds = JSON.parse(studentIdsStr);
-                    setParentSession({ studentIds, schoolId });
-                } catch (e) {
-                    console.error("Failed to parse parent session data from localStorage", e);
-                }
-            }
-        }
-    }, [isClient, user]);
-
-    if (userLoading || !isClient) {
+    
+    if (userLoading) {
         return <DashboardSkeleton />;
     }
 
-    if (parentSession) {
-        return <ParentDashboard session={parentSession} />;
+    if (user?.isParent) {
+        return <ParentDashboard user={user} />;
     }
-
-    if (user) {
-        return <RegularDashboard />;
-    }
-
-    // Default to skeleton if no session is found yet but client is ready
-    return <DashboardSkeleton />;
+    
+    return <RegularDashboard />;
 }
 
 export default function DashboardPage() {

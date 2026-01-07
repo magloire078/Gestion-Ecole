@@ -1,4 +1,3 @@
-
 'use client';
 
 import {useState, useEffect, useCallback} from 'react';
@@ -12,16 +11,21 @@ export interface UserProfile extends AppUser {
     isAdmin?: boolean;
 }
 
+// Unified user object for both regular users and parent sessions
 export interface CombinedUser {
     uid: string;
-    authUser: FirebaseUser;
+    isParent: boolean;
+    // For regular Firebase users
+    authUser?: FirebaseUser;
     profile?: UserProfile;
-    isParent?: false; 
+    // For parent sessions
+    parentStudentIds?: string[];
     schoolId?: string;
     displayName?: string;
     photoURL?: string;
     email?: string;
 }
+
 
 const allPermissions = {
     manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
@@ -48,11 +52,37 @@ export function useUser() {
   }, [auth]);
 
   useEffect(() => {
-    if (!auth || !firestore) {
+    if (typeof window === 'undefined' || !firestore) {
       setLoading(false);
       return;
     }
-
+    
+    // First, check for a parent session from localStorage
+    try {
+        const sessionId = localStorage.getItem('parent_session_id');
+        const sessionSchoolId = localStorage.getItem('parent_school_id');
+        const studentIdsStr = localStorage.getItem('parent_student_ids');
+        if (sessionId && sessionSchoolId && studentIdsStr) {
+             setUser({
+                uid: sessionId,
+                isParent: true,
+                schoolId: sessionSchoolId,
+                parentStudentIds: JSON.parse(studentIdsStr),
+                displayName: 'Parent / Tuteur',
+            });
+            setLoading(false);
+            return; // Exit early if it's a parent session
+        }
+    } catch(e) {
+        console.error("Error reading parent session", e);
+    }
+    
+    // If not a parent session, proceed with Firebase Auth
+    if (!auth) {
+        setLoading(false);
+        return;
+    }
+    
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (!authUser) {
         setUser(null);
@@ -62,9 +92,8 @@ export function useUser() {
       }
       
       setLoading(true);
-      const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
+      const userRootRef = doc(firestore, 'users', authUser.uid);
 
-      // Using onSnapshot to listen for real-time changes to the user's school association
       const unsubUserDoc = onSnapshot(userRootRef, async (userRootSnap) => {
         try {
             const tokenResult = await authUser.getIdTokenResult(true);
@@ -79,13 +108,12 @@ export function useUser() {
                     hireDate: '', baseSalary: 0, displayName: 'Super Admin',
                     permissions: { ...allPermissions }, isAdmin: true,
                 };
-                setUser({ authUser, uid: authUser.uid, profile: superAdminProfile, schoolId: schoolId, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email, isParent: false });
+                setUser({ authUser, uid: authUser.uid, profile: superAdminProfile, schoolId: schoolId, displayName: 'Super Admin', photoURL: authUser.photoURL, email: authUser.email, isParent: false });
                 setIsDirector(false);
             } else if (schoolId) {
                 const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
                 const schoolDocRef = doc(firestore, 'ecoles', schoolId);
                 
-                // Using getDoc for one-time fetch of related data within the snapshot listener
                 const [profileSnap, schoolSnap] = await Promise.all([getDoc(profileRef), getDoc(schoolDocRef)]);
                 
                 const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
@@ -101,10 +129,9 @@ export function useUser() {
                     permissions = roleSnap.exists() ? roleSnap.data().permissions || {} : {};
                 }
 
-                setUser({ authUser, uid: authUser.uid, schoolId: schoolId, profile: { ...profileData, permissions, isAdmin: false } as UserProfile, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email, isParent: false });
+                setUser({ authUser, uid: authUser.uid, schoolId: schoolId, profile: { ...profileData, permissions, isAdmin: false } as UserProfile, displayName: profileData?.displayName || authUser.displayName, photoURL: profileData?.photoURL || authUser.photoURL, email: authUser.email, isParent: false });
             } else {
-                // User is authenticated but has no school
-                setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: undefined, isParent: false, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
+                setUser({ authUser, uid: authUser.uid, schoolId: undefined, isParent: false, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
                 setIsDirector(false);
             }
         } catch (err) {
@@ -121,11 +148,9 @@ export function useUser() {
           setLoading(false);
       });
       
-      // Detach the user document listener when the auth state changes
       return () => unsubUserDoc();
     });
 
-    // Detach the auth state listener on component unmount
     return () => unsubscribe();
   }, [auth, firestore]);
 

@@ -41,20 +41,10 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const router = useRouter();
   const { toast } = useToast();
   
-  const [isClient, setIsClient] = useState(false);
-  const [isParentSession, setIsParentSession] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-    setIsParentSession(!!localStorage.getItem('parent_session_id'));
-  }, []);
-
-  const effectiveUser = isParentSession ? { isParent: true, displayName: 'Parent / Tuteur', profile: undefined, authUser: undefined } : user;
-  const loading = userLoading || (isClient && !isParentSession && schoolLoading) || !isClient;
-
+  const loading = userLoading || (user && !user.isParent && schoolLoading);
 
   const handleLogout = async () => {
-    if (isParentSession) {
+    if (user?.isParent) {
         localStorage.removeItem('parent_session_id');
         localStorage.removeItem('parent_school_id');
         localStorage.removeItem('parent_student_ids');
@@ -88,7 +78,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     );
   }
 
-  if (!effectiveUser) {
+  if (!user) {
     return (
       <Button variant="ghost" onClick={() => router.push('/auth/login')}>
         Se connecter
@@ -96,15 +86,15 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     );
   }
 
-  const isSuperAdmin = effectiveUser?.profile?.isAdmin === true;
+  const isSuperAdmin = user?.profile?.isAdmin === true;
   
-  const displayName = isParentSession ? 'Parent / Tuteur' : effectiveUser?.profile?.displayName || effectiveUser?.authUser?.displayName || 'Utilisateur';
+  const displayName = user.displayName || 'Utilisateur';
   
-  const userRole = isParentSession 
+  const userRole = user.isParent 
     ? 'Portail Parent' 
     : isSuperAdmin 
       ? 'Super Administrateur' 
-      : (effectiveUser?.profile?.role === 'directeur' ? 'Directeur' : effectiveUser?.profile?.role || 'Membre');
+      : (user?.profile?.role === 'directeur' ? 'Directeur' : user?.profile?.role || 'Membre');
   
   const fallback = displayName 
     ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() 
@@ -136,18 +126,18 @@ export function UserNav({ collapsed = false }: UserNavProps) {
           
           <div className="flex items-center gap-1">
             <p className="text-xs leading-none text-muted-foreground capitalize">{userRole.replace(/_/g, ' ')}</p>
-            {schoolData?.name && !isSuperAdmin && (
+            {schoolData?.name && !isSuperAdmin && !user.isParent && (
               <><span className="text-xs text-muted-foreground">•</span><p className="text-xs leading-none text-muted-foreground truncate max-w-[120px]">{schoolData.name}</p></>
             )}
           </div>
           
-          {!isParentSession && effectiveUser?.authUser?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{effectiveUser.authUser.email}</p>}
+          {!user.isParent && user?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{user.email}</p>}
         </div>
       </DropdownMenuLabel>
       
       <DropdownMenuSeparator />
       
-      {!isParentSession && (
+      {!user.isParent && (
         <>
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>
@@ -183,7 +173,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       
       <DropdownMenuItem onClick={handleLogout}>
         <LogOutIcon className="mr-2 h-4 w-4" />
-        {isParentSession ? "Quitter le portail" : "Se déconnecter"}
+        {user.isParent ? "Quitter le portail" : "Se déconnecter"}
       </DropdownMenuItem>
     </>
   );
@@ -193,7 +183,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")}>
           <Avatar className="h-8 w-8">
-            <SafeImage src={effectiveUser?.profile?.photoURL || effectiveUser?.authUser?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
+            <SafeImage src={user?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
             <AvatarFallback>{loading ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
           </Avatar>
            <div className={cn("flex flex-col items-start", collapsed && "hidden")}>
@@ -205,4 +195,3 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     </DropdownMenu>
   );
 }
-
