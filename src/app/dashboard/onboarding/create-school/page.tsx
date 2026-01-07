@@ -98,8 +98,9 @@ export default function CreateSchoolPage() {
         duration: 5000,
       });
   
-      // Force a full page reload to ensure auth state is fully updated everywhere
-      window.location.href = '/dashboard';
+      // Utiliser router.push pour une transition douce. 
+      // Le listener dans useUser se chargera de la mise à jour de l'état.
+      router.push('/dashboard');
   
     } catch (error: any) {
       console.error("❌ ERREUR FINALE:", error);

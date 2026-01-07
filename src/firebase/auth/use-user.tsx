@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {useState, useEffect, useCallback} from 'react';
@@ -41,14 +42,11 @@ export function useUser() {
   const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
   const [isDirector, setIsDirector] = useState(false);
 
-  const fetchUserData = useCallback(async (authUser: FirebaseUser) => {
+  const fetchFullUserProfile = useCallback(async (authUser: FirebaseUser, userRootData: user_root) => {
     try {
-      const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
-      const userRootSnap = await getDoc(userRootRef);
-
-      const effectiveSchoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
+      const effectiveSchoolId = userRootData.schoolId;
       setSchoolId(effectiveSchoolId);
-      
+
       const tokenResult = await authUser.getIdTokenResult(true);
       const isSuperAdmin = (tokenResult.claims.superAdmin as boolean) === true;
 
@@ -89,7 +87,6 @@ export function useUser() {
           } else {
                setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: undefined });
           }
-
       } else {
           setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: null });
           setIsDirector(false);
@@ -103,14 +100,6 @@ export function useUser() {
       setLoading(false);
     }
   }, [firestore]);
-  
-  const reloadUser = useCallback(async () => {
-    if (auth?.currentUser) {
-        setLoading(true);
-        await auth.currentUser.getIdToken(true); // Force token refresh
-        await fetchUserData(auth.currentUser);
-    }
-  }, [auth, fetchUserData]);
 
 
   useEffect(() => {
@@ -129,11 +118,50 @@ export function useUser() {
       }
       
       setLoading(true);
-      await fetchUserData(authUser);
+      // Écouter les changements en temps réel sur le document racine de l'utilisateur
+      const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
+      const unsubUserDoc = onSnapshot(userRootRef, (userRootSnap) => {
+          if (userRootSnap.exists()) {
+              const userRootData = userRootSnap.data() as user_root;
+              fetchFullUserProfile(authUser, userRootData);
+          } else {
+              // L'utilisateur est authentifié mais n'a pas encore de document racine (onboarding)
+              setSchoolId(null);
+              setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: null });
+              setIsDirector(false);
+              setLoading(false);
+          }
+      }, (error) => {
+          console.error("Erreur de snapshot sur le document utilisateur:", error);
+          setUser(null);
+          setSchoolId(null);
+          setIsDirector(false);
+          setLoading(false);
+      });
+      
+      return () => unsubUserDoc();
     });
 
     return () => unsubscribe();
-  }, [auth, firestore, fetchUserData]);
+  }, [auth, firestore, fetchFullUserProfile]);
+  
+  const reloadUser = useCallback(async () => {
+    const firebaseUser = auth?.currentUser;
+    if (firebaseUser) {
+        setLoading(true);
+        const userRootRef = doc(firestore, 'utilisateurs', firebaseUser.uid);
+        const userRootSnap = await getDoc(userRootRef);
+        if (userRootSnap.exists()) {
+            await fetchFullUserProfile(firebaseUser, userRootSnap.data() as user_root);
+        } else {
+             // L'utilisateur est authentifié mais n'a pas encore de document racine (onboarding)
+              setSchoolId(null);
+              setUser({ authUser: firebaseUser, uid: firebaseUser.uid, profile: undefined, schoolId: null });
+              setIsDirector(false);
+              setLoading(false);
+        }
+    }
+  }, [auth, firestore, fetchFullUserProfile]);
 
   return {user, loading, schoolId, isDirector, reloadUser};
 }
