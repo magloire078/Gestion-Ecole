@@ -135,12 +135,13 @@ export default function AbsencesPage() {
 
 
   const studentsWithAbsenceStatus = useMemo<StudentWithAbsence[]>(() => {
+      if (!todayDateString) return studentsInClass;
       const absentStudentIds = new Set(todayAbsences.map(absence => absence.studentId));
       return studentsInClass.map(student => ({
           ...student,
           isAbsentToday: absentStudentIds.has(student.id!)
       }));
-  }, [studentsInClass, todayAbsences]);
+  }, [studentsInClass, todayAbsences, todayDateString]);
 
 
   const form = useForm<AbsenceFormValues>({
