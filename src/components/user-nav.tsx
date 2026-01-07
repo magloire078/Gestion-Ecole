@@ -40,13 +40,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
   
-  const loading = userLoading || (user && !user.isParent && schoolLoading) || !isClient;
+  const loading = userLoading || (user && !user.isParent && schoolLoading);
 
   const handleLogout = async () => {
     if (user?.isParent) {
@@ -92,7 +87,6 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   }
 
   const isSuperAdmin = user?.profile?.isAdmin === true;
-  
   const displayName = user.displayName || 'Utilisateur';
   
   const userRole = user.isParent 
