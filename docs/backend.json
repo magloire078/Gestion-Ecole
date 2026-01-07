@@ -536,7 +536,6 @@
             "senderName": { "type": "string", "description": "Le nom de l'expéditeur." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'envoi du message." },
             "readBy": { "type": "array", "items": { "type": "string" } },
-            "isGeneral": { "type": "boolean", "description": "Indique si c'est un message pour toute l'école." },
             "recipients": {
                 "type": "object",
                 "description": "Définit les destinataires du message.",
@@ -1268,12 +1267,3 @@
     }
   }
 }
-
-    
-
-    
-
-
-    
-
-    
