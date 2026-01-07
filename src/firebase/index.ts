@@ -1,8 +1,9 @@
 
+
 import * as React from 'react';
 import {initializeApp, getApp, getApps, FirebaseApp} from 'firebase/app';
 import {getAuth, Auth} from 'firebase/auth';
-import {getFirestore, Firestore, initializeFirestore, persistentLocalCache, memoryLocalCache} from 'firebase/firestore';
+import {getFirestore, Firestore, initializeFirestore, memoryLocalCache} from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import {firebaseConfig} from './config';
 export * from './provider';
@@ -17,11 +18,17 @@ let firestore: Firestore;
 let storage: FirebaseStorage;
 
 function initializeFirebase() {
-  if (getApps().length === 0) {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  
+  if (!getApps().length) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
+    // Use memory cache which is simpler and less prone to corruption
+    // in dev environments with hot-reloading.
     firestore = initializeFirestore(app, {
-      localCache: persistentLocalCache({}),
+      localCache: memoryLocalCache(),
     });
     storage = getStorage(app);
   } else {
@@ -33,12 +40,11 @@ function initializeFirebase() {
   return {app, auth, firestore, storage};
 }
 
+// Memoize the firebase instance to prevent re-initialization on every render
+const firebaseInstance = initializeFirebase();
 
 export function getFirebase() {
-  if (typeof window !== 'undefined') {
-    return initializeFirebase();
-  }
-  return null;
+  return firebaseInstance;
 }
 
 export function useMemoFirebase<T>(
