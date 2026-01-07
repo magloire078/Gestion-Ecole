@@ -18,76 +18,44 @@ function AuthProtectionLoader() {
   );
 }
 
-// État pour la session parent, géré côté client uniquement
-interface ParentSession {
-    uid: string;
-    schoolId: string;
-    parentStudentIds: string[];
-    isParent: true;
-    displayName: string;
-}
-
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user: firebaseUser, loading: firebaseUserLoading } = useUser();
+  const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  
-  const [parentSession, setParentSession] = useState<ParentSession | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [isParent, setIsParent] = useState(false);
 
-  // Étape 1: Déterminer si nous sommes sur le client
   useEffect(() => {
     setIsClient(true);
+    if(localStorage.getItem('parent_session_id')) {
+        setIsParent(true);
+    }
   }, []);
 
-  // Étape 2: Vérifier la session parent UNIQUEMENT sur le client
-  useEffect(() => {
-    if (isClient) {
-        try {
-            const sessionId = localStorage.getItem('parent_session_id');
-            const sessionSchoolId = localStorage.getItem('parent_school_id');
-            const studentIdsStr = localStorage.getItem('parent_student_ids');
-
-            if (sessionId && sessionSchoolId && studentIdsStr) {
-                setParentSession({
-                    uid: sessionId,
-                    schoolId: sessionSchoolId,
-                    isParent: true,
-                    parentStudentIds: JSON.parse(studentIdsStr),
-                    displayName: 'Parent / Tuteur',
-                });
-            }
-        } catch (e) {
-          console.error("Failed to read parent session from local storage", e);
-        }
-    }
-  }, [isClient]);
-
-  const user = parentSession || firebaseUser;
-  const loading = firebaseUserLoading || !isClient;
+  const effectiveUser = isParent ? { isParent: true, ...user } : user;
 
   const publicPages = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'];
   const isPublicPage = publicPages.some(p => pathname.startsWith(p)) || pathname === '/';
   const isOnboardingPage = pathname.startsWith('/onboarding');
   
   useEffect(() => {
-    if (loading) {
+    if (loading || !isClient) {
       return;
     }
 
-    if (!user && !isPublicPage) {
+    if (!effectiveUser && !isPublicPage) {
       router.replace('/auth/login');
       return;
     }
 
-    if (user) {
+    if (effectiveUser) {
         if (isPublicPage && !pathname.startsWith('/parent-access')) {
             router.replace('/dashboard');
             return;
         }
 
-        if (!user.isParent) {
-            const hasSchool = !!user.schoolId;
+        if (!effectiveUser.isParent) {
+            const hasSchool = !!effectiveUser.schoolId;
             if (hasSchool && isOnboardingPage) {
                 router.replace('/dashboard');
             } else if (!hasSchool && !isOnboardingPage && pathname.startsWith('/dashboard')) {
@@ -95,14 +63,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
             }
         }
     }
-  }, [user, loading, pathname, isPublicPage, isOnboardingPage, router]);
+  }, [effectiveUser, loading, pathname, isPublicPage, isOnboardingPage, router, isClient]);
 
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
   // Si on est sur une page protégée mais sans utilisateur, on affiche le loader pendant la redirection.
-  if (!user && !isPublicPage) {
+  if (!effectiveUser && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 

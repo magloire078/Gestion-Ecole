@@ -1,16 +1,13 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
-  onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth, useUser } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -61,46 +58,10 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isCheckingUser, setIsCheckingUser] = useState(true);
   const router = useRouter();
   const auth = useAuth();
-  const firestore = useFirestore();
+  const { loading: userLoading } = useUser();
   const { toast } = useToast();
-
-  // Vérifier l'état d'authentification au chargement
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user && firestore) {
-        try {
-          // Vérifier si l'utilisateur a un document dans Firestore
-          const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            
-            // Rediriger selon que l'utilisateur a une école ou non
-            if (userData.schoolId) {
-              // L'utilisateur a une école, rediriger vers le dashboard
-              router.push('/dashboard');
-            } else {
-              // L'utilisateur n'a pas d'école, rediriger vers l'onboarding
-              router.push('/onboarding');
-            }
-          } else {
-            // L'utilisateur n'a pas de document, rediriger vers l'onboarding
-            router.push('/onboarding');
-          }
-        } catch (error) {
-          console.error('Erreur lors de la vérification:', error);
-           setIsCheckingUser(false);
-        }
-      } else {
-         setIsCheckingUser(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [auth, firestore, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,13 +74,12 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // La redirection est gérée par le AuthGuard
       toast({ 
         title: 'Connexion réussie', 
         description: 'Redirection en cours...' 
       });
-      
-      // La redirection sera gérée par le useEffect ci-dessus
-      
+      // Le AuthGuard s'occupera de la redirection
     } catch (error: any) {
       console.error('Erreur de connexion:', error);
       
@@ -155,9 +115,7 @@ export default function LoginPage() {
         title: 'Connexion réussie', 
         description: 'Redirection en cours...' 
       });
-      
-      // La redirection sera gérée par le useEffect ci-dessus
-      
+      // La redirection est gérée par le AuthGuard
     } catch (error: any) {
       console.error('Erreur Google:', error);
       
@@ -178,8 +136,7 @@ export default function LoginPage() {
     }
   };
 
-  // Afficher un loader pendant la vérification initiale
-  if (isCheckingUser) {
+  if (userLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/40">
         <div className="text-center space-y-4">
