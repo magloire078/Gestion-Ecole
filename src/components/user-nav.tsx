@@ -47,8 +47,6 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     setIsClient(true);
   }, []);
 
-  const loading = userLoading || (user && !user.isParent && schoolLoading);
-
   const handleLogout = async () => {
     if (user?.isParent) {
         localStorage.removeItem('parent_session_id');
@@ -74,10 +72,13 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       });
     }
   };
+  
+  // Consolidated loading state. Show loader until everything is resolved on the client.
+  const isLoading = !isClient || userLoading || (user && !user.isParent && schoolLoading);
 
-  if (loading || !isClient) {
+  if (isLoading) {
     return (
-      <div className={cn("flex items-center gap-2")}>
+      <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "justify-start")}>
         <Skeleton className="h-9 w-9 rounded-full" />
         {!collapsed && (<div className="flex flex-col space-y-1"><Skeleton className="h-3 w-20" /><Skeleton className="h-2 w-16" /></div>)}
       </div>
@@ -113,7 +114,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
+  
   const planName = isSuperAdmin ? null : (subscription?.plan || 'Gratuit');
   
   const UserMenuContent = () => (
@@ -189,7 +190,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
         <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")}>
           <Avatar className="h-8 w-8">
             <SafeImage src={user?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
-            <AvatarFallback>{loading ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
+            <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
            <div className={cn("flex flex-col items-start", collapsed && "hidden")}>
               <span className="text-sm font-medium leading-none">{displayName}</span>
