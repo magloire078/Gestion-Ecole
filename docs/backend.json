@@ -26,8 +26,10 @@
             "directorFirstName": { "type": "string", "description": "Le prénom du directeur de l'école." },
             "directorLastName": { "type": "string", "description": "Le nom de famille du directeur de l'école." },
             "directorPhone": { "type": "string", "description": "Le numéro de téléphone du directeur." },
+            "directorEmail": { "type": "string", "format": "email", "description": "L'email du directeur." },
             "schoolCode": { "type": "string", "description": "Un code lisible par l'homme pour rejoindre l'école." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date de création de l'école." },
+            "updatedAt": { "type": "string", "format": "date-time", "description": "La date de dernière modification de l'école." },
             "address": { "type": "string", "description": "Adresse de l'école." },
             "phone": { "type": "string", "description": "Numéro de téléphone de l'école." },
             "website": { "type": "string", "description": "Site web de l'école." },
@@ -881,8 +883,8 @@
             "title": { "type": "string" },
             "priority": { "type": "string", "enum": ["haute", "moyenne", "basse"] },
             "status": { "type": "string", "enum": ["à_faire", "en_cours", "terminée"] },
-            "createdAt": { "type": "string", "format": "date-time" },
             "assignedTo": { "type": "string", "description": "UID du membre du personnel assigné." },
+            "createdAt": { "type": "string", "format": "date-time" },
             "dueDate": { "type": "string", "format": "date" },
             "description": { "type": "string" },
             "location": { "type": "string", "description": "Où la maintenance doit avoir lieu (ex: Salle B102, Bus-01)." }
@@ -1193,6 +1195,11 @@
             "schema": { "$ref": "#/entities/transportSubscription" },
             "description": "Stocke les abonnements au transport des élèves."
         },
+        "batiments": {
+            "path": "batiments/{buildingId}",
+            "schema": { "$ref": "#/entities/building" },
+            "description": "Gère les bâtiments de l'établissement (pédagogique, admin, etc.)."
+        },
          "internat_batiments": {
             "path": "internat_batiments/{buildingId}",
             "schema": { "$ref": "#/entities/building" },
@@ -1267,3 +1274,4 @@
     }
   }
 }
+

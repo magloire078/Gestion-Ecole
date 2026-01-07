@@ -28,7 +28,7 @@ export default function BatimentsPage() {
       return;
     }
 
-    const docRef = doc(firestore, `ecoles/${schoolId}/internat_batiments/${buildingId}`);
+    const docRef = doc(firestore, `ecoles/${schoolId}/batiments/${buildingId}`);
     try {
       await deleteDoc(docRef);
       toast({ title: "Bâtiment supprimé", description: `Le bâtiment "${buildingName}" a été supprimé.` });
@@ -55,7 +55,7 @@ export default function BatimentsPage() {
   return (
     <BuildingManager
       schoolId={schoolId}
-      buildingCollectionName="internat_batiments"
+      buildingCollectionName="batiments"
       roomCollectionName="salles"
       pageTitle="Plan de l'Établissement"
       pageDescription="Visualisez les bâtiments et les salles qui les composent."
@@ -68,3 +68,4 @@ export default function BatimentsPage() {
     />
   );
 }
+
