@@ -1,3 +1,5 @@
+
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -84,7 +86,7 @@ export default function CreateSchoolPage() {
     }
   });
   
-  // Pré-remplir avec les infos de l'utilisateur
+  // Pré-remplir avec les infos de l'utilisateur seulement côté client
   useEffect(() => {
     if (user?.authUser && !userLoading) {
       const nameParts = user.authUser.displayName?.split(' ') || [];
@@ -200,7 +202,7 @@ export default function CreateSchoolPage() {
           <div className="mt-2">
             <p>Votre code d'école: <strong className="text-lg">{schoolCode}</strong></p>
             <p className="text-sm text-muted-foreground mt-1">
-              Partagez ce code avec vos collaborateurs pour qu'ils puissent rejoindre l'école.
+              Partagez ce code avec vos collaborateurs pour qu'ils puissent vous rejoindre.
             </p>
           </div>
         ),
@@ -244,7 +246,7 @@ export default function CreateSchoolPage() {
     ? `school-logos/${user.authUser.uid}/${Date.now()}` 
     : 'school-logos/temp';
 
-  // Afficher un loader pendant le chargement initial
+  // Afficher un loader pendant le chargement initial pour éviter l'hydratation
   if (userLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -256,7 +258,7 @@ export default function CreateSchoolPage() {
     );
   }
 
-  // Si pas d'utilisateur, rediriger
+  // Si pas d'utilisateur, rediriger (devrait être géré par AuthGuard mais sécurité supplémentaire)
   if (!user) {
     router.push('/auth/login');
     return null;
