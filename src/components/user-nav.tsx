@@ -73,7 +73,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
   
-  // Consolidated loading state. Show loader until everything is resolved on the client.
+  // Consolidated loading state.
   const isLoading = !isClient || userLoading || (user && !user.isParent && schoolLoading);
 
   if (isLoading) {

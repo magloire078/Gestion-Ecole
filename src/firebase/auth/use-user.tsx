@@ -56,6 +56,7 @@ export function useUser() {
 
   useEffect(() => {
     if (!isClient || !firestore) {
+      if(!isClient) setLoading(false);
       return;
     }
     
