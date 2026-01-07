@@ -1,3 +1,4 @@
+
 'use client';
 import { 
   collection, 
@@ -6,7 +7,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { school, user_root, staff } from '@/lib/data-types';
+import type { school, user_root, staff, admin_role } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
@@ -23,7 +24,7 @@ interface SchoolCreationData {
 }
 
 const generateSchoolCode = (name: string): string => {
-    const prefix = name.substring(0, 3).toUpperCase();
+    const prefix = name.substring(0, 3).toUpperCase().replace(/\s/g, '');
     const randomNumber = Math.floor(1000 + Math.random() * 9000);
     return `${prefix}-${randomNumber}`;
 };
@@ -44,7 +45,7 @@ export class SchoolCreationService {
       const schoolId = schoolRef.id;
       const schoolCode = generateSchoolCode(schoolData.name);
       
-      const schoolDoc: Omit<school, 'id'> = {
+      const schoolDoc: school = {
         name: schoolData.name,
         address: schoolData.address || '',
         phone: schoolData.phone || '',
@@ -53,6 +54,7 @@ export class SchoolCreationService {
         directorId: schoolData.directorId,
         directorFirstName: schoolData.directorFirstName,
         directorLastName: schoolData.directorLastName,
+        directorEmail: schoolData.directorEmail,
         directorPhone: schoolData.phone,
         createdAt: new Date().toISOString(),
         mainLogoUrl: schoolData.mainLogoUrl || '',
@@ -70,23 +72,34 @@ export class SchoolCreationService {
       
       batch.set(schoolRef, schoolDoc);
 
-      // 2. Mettre à jour le document racine de l'UTILISATEUR
-      const userRef = doc(this.db, `users/${schoolData.directorId}`);
-      
+      // 2. Créer le rôle système "Directeur"
+      const directorRoleRef = doc(collection(this.db, `ecoles/${schoolId}/admin_roles`));
+      const directorRoleData: Omit<admin_role, 'id'> = {
+          name: 'Directeur',
+          description: 'Accès complet à toutes les fonctionnalités de l\'école.',
+          schoolId: schoolId,
+          isSystem: true,
+          permissions: { manageUsers: true, viewUsers: true, manageClasses: true, manageGrades: true, manageDiscipline: true, manageSettings: true, manageBilling: true, manageCommunication: true, manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true, manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true, viewSupportTickets: true, manageSupportTickets: true }
+      };
+      batch.set(directorRoleRef, directorRoleData);
+
+      // 3. Mettre à jour le document racine de l'UTILISATEUR
+      const userRef = doc(this.db, 'users', schoolData.directorId);
       const userDoc: user_root = {
         schoolId: schoolId,
+        isAdmin: false, // Default to false
       };
-      
       batch.set(userRef, userDoc, { merge: true });
       
-      // 3. Créer le profil PERSONNEL pour le directeur
-      const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
+      // 4. Créer le profil PERSONNEL pour le directeur
+      const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
       const staffProfileData: Omit<staff, 'id' | 'uid'> = {
           email: schoolData.directorEmail,
           displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
           photoURL: '',
           schoolId: schoolId,
           role: 'directeur',
+          adminRole: directorRoleRef.id,
           firstName: schoolData.directorFirstName,
           lastName: schoolData.directorLastName,
           hireDate: new Date().toISOString().split('T')[0],

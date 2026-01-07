@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { Loader2 } from 'lucide-react';
@@ -8,44 +9,44 @@ import LandingPageV2 from '@/components/landing-page-v2';
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, loading, schoolId } = useUser();
+  const { user, loading } = useUser();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Ne pas rediriger tant que le statut d'authentification n'est pas certain
-    if (loading) return;
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Ne rien faire si nous ne sommes pas côté client ou si l'état de l'utilisateur n'est pas encore résolu.
+    if (!isClient || loading) {
+      return;
+    }
 
     if (user) {
-      if (schoolId) {
-        // L'utilisateur est connecté et associé à une école -> Tableau de bord
+      if (user.schoolId) {
+        // Utilisateur connecté avec une école -> Tableau de bord
         router.replace('/dashboard');
       } else {
-        // L'utilisateur est connecté mais sans école -> Onboarding
+        // Utilisateur connecté sans école -> Onboarding
         router.replace('/onboarding');
       }
     }
-    // Si l'utilisateur n'est pas connecté, on ne fait rien, la landing page s'affiche.
-    
-  }, [user, loading, schoolId, router]);
+    // Si 'user' est null, on reste sur la page d'accueil (LandingPageV2).
+  }, [user, loading, isClient, router]);
   
-  // Afficher un loader tant que l'état d'authentification n'est pas résolu
-  if (loading) {
+  // Affiche un loader plein écran tant que l'état d'authentification est incertain ou
+  // si une redirection est en cours. Cela empêche tout flash de la page d'accueil.
+  if (!isClient || loading || user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+         <div className="text-center space-y-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+            <p className="text-lg font-semibold">Chargement...</p>
+         </div>
       </div>
     );
   }
 
-  // Si l'utilisateur est connecté, on affiche un loader pendant la redirection pour éviter un flash de la landing page
-  if (user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Redirection en cours...</span>
-      </div>
-    );
-  }
-
-  // Si l'utilisateur n'est pas connecté, afficher la landing page
+  // Si l'état de chargement est terminé et qu'il n'y a pas d'utilisateur, afficher la landing page.
   return <LandingPageV2 />;
 }

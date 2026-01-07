@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -13,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { SchoolCreationService } from '@/services/school-creation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
@@ -20,7 +22,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { doc, setDoc, addDoc, collection, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ImageUploader } from '@/components/image-uploader';
 
@@ -51,186 +52,80 @@ const createSchoolSchema = z.object({
 
 type CreateSchoolFormValues = z.infer<typeof createSchoolSchema>;
 
-// Service simplifié intégré dans le composant
-const generateSchoolCode = () => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-};
-
 export default function CreateSchoolPage() {
   const router = useRouter();
   const firestore = useFirestore();
   const auth = useAuth();
-  const { user, loading: userLoading, reloadUser } = useUser();
+  const { user, loading, reloadUser } = useUser();
   const { toast } = useToast();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
+  
   const form = useForm<CreateSchoolFormValues>({
     resolver: zodResolver(createSchoolSchema),
-    defaultValues: {
-      name: '',
-      address: '',
-      directorFirstName: '',
-      directorLastName: '',
-      phone: '',
-      email: '',
-    }
+    defaultValues: { name: '', address: '', directorFirstName: '', directorLastName: '', phone: '', email: '' }
   });
   
-  // Pré-remplir avec les infos de l'utilisateur seulement côté client
   useEffect(() => {
-    if (user?.authUser && !userLoading) {
+    if (user?.authUser && !loading) {
       const nameParts = user.authUser.displayName?.split(' ') || [];
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-      
       form.reset({
-        ...form.getValues(),
-        directorFirstName: firstName,
-        directorLastName: lastName,
+        directorFirstName: nameParts[0] || '',
+        directorLastName: nameParts.slice(1).join(' ') || '',
         email: user.authUser.email || '',
         phone: user.authUser.phoneNumber || '',
       });
     }
-  }, [user, userLoading, form]);
+  }, [user, loading, form]);
 
-  // Rediriger si l'utilisateur a déjà une école
-  useEffect(() => {
-    if (!userLoading && user?.schoolId) {
-      router.push('/dashboard');
-    }
-  }, [user, userLoading, router]);
-
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
   const handleSubmit = async (values: CreateSchoolFormValues) => {
-    if (!user || !user.authUser) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Erreur', 
-        description: 'Veuillez vous reconnecter.' 
-      });
+    if (!user || !user.authUser || !user.authUser.uid || !user.authUser.email) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non valide. Veuillez vous reconnecter.' });
       return;
     }
-
+    
     setIsSubmitting(true);
     setError(null);
-
+  
+    const schoolCreationService = new SchoolCreationService(firestore);
+    
     try {
-      const userUid = user.authUser.uid;
-      const userEmail = user.authUser.email;
-      
-      if (!userUid || !userEmail) {
-        throw new Error('Informations utilisateur incomplètes');
-      }
-
-      const batch = writeBatch(firestore);
-
-      // 1. Générer un code d'école unique
-      const schoolCode = generateSchoolCode();
-
-      // 2. Créer le document de l'école
-      const schoolRef = doc(collection(firestore, 'ecoles'));
-      const schoolId = schoolRef.id;
-
-      const schoolData = {
-        name: values.name.trim(),
-        schoolCode: schoolCode,
-        address: values.address?.trim() || '',
+      const result = await schoolCreationService.createSchool({
+        name: values.name,
+        address: values.address || '',
         mainLogoUrl: logoUrl || '',
-        directorId: userUid,
-        directorFirstName: values.directorFirstName.trim(),
-        directorLastName: values.directorLastName.trim(),
-        phone: values.phone?.trim() || '',
-        email: values.email?.trim() || userEmail,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        status: 'active',
-        isSetupComplete: false,
-        subscription: {
-          plan: 'Essentiel',
-          status: 'trialing',
-          startDate: new Date().toISOString(),
-          endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
-          maxStudents: 50,
-          maxCycles: 5,
-        }
-      };
+        directorId: user.authUser.uid,
+        directorFirstName: values.directorFirstName,
+        directorLastName: values.directorLastName,
+        directorEmail: user.authUser.email,
+        phone: values.phone || '',
+        email: values.email || '',
+      });
       
-      batch.set(schoolRef, schoolData);
-
-
-      // 3. Mettre à jour le document utilisateur
-      const userRef = doc(firestore, 'users', userUid);
-      const userUpdateData = {
-        schoolId: schoolId,
-        schoolRole: 'director',
-        updatedAt: serverTimestamp(),
-      };
-      batch.set(userRef, userUpdateData, { merge: true });
-      
-      // 4. Créer l'entrée dans les membres du personnel de l'école
-      const memberRef = doc(firestore, `ecoles/${schoolId}/personnel`, userUid);
-      const memberData = {
-        uid: userUid,
-        firstName: values.directorFirstName.trim(),
-        lastName: values.directorLastName.trim(),
-        displayName: `${values.directorFirstName.trim()} ${values.directorLastName.trim()}`,
-        email: userEmail,
-        role: 'directeur',
-        adminRole: 'directeur',
-        hireDate: new Date().toISOString(),
-        baseSalary: 0,
-        status: 'Actif',
-        schoolId: schoolId,
-      };
-      batch.set(memberRef, memberData);
-      
-      // Commit all writes
-      await batch.commit();
-
       toast({
         title: 'École créée avec succès !',
-        description: (
-          <div className="mt-2">
-            <p>Votre code d'école: <strong className="text-lg">{schoolCode}</strong></p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Partagez ce code avec vos collaborateurs pour qu'ils puissent vous rejoindre.
-            </p>
-          </div>
-        ),
-        duration: 10000,
+        description: `Code: ${result.schoolCode}. Redirection vers le tableau de bord...`,
+        duration: 5000,
       });
-
-      // Recharger les données utilisateur et le token
-      if (reloadUser) {
-        await reloadUser();
-      }
-      await auth.currentUser?.getIdToken(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      router.replace('/dashboard');
-
+      
+      if (reloadUser) await reloadUser();
+  
+      router.push('/dashboard');
+  
     } catch (error: any) {
-      console.error('Erreur création école:', error);
-      
-      let errorMessage = "Une erreur est survenue lors de la création de l'école.";
-      
-      if (error.code === 'permission-denied') {
-        errorMessage = "Vous n'avez pas la permission de créer une école. Vérifiez vos droits.";
-      }
-      
+      console.error("❌ ERREUR FINALE:", error);
+      let errorMessage = "La création de l'école a échoué. " + error.message;
       setError(errorMessage);
-      toast({ 
-        variant: 'destructive', 
-        title: 'Erreur', 
-        description: errorMessage 
-      });
     } finally {
       setIsSubmitting(false);
     }
@@ -243,24 +138,6 @@ export default function CreateSchoolPage() {
   const storagePath = user?.authUser?.uid 
     ? `school-logos/${user.authUser.uid}/${Date.now()}` 
     : 'school-logos/temp';
-
-  // Afficher un loader pendant le chargement initial pour éviter l'hydratation
-  if (userLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-lg font-semibold">Chargement de votre profil...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Si pas d'utilisateur, rediriger (devrait être géré par AuthGuard mais sécurité supplémentaire)
-  if (!user) {
-    router.push('/auth/login');
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 p-4 md:p-8">
@@ -295,7 +172,6 @@ export default function CreateSchoolPage() {
               </CardHeader>
               
               <CardContent className="space-y-8">
-                {/* Section Logo */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Logo de l'école</h3>
                   <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
@@ -329,133 +205,45 @@ export default function CreateSchoolPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-6">
-                  {/* Informations de l'école */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-lg">Informations de l'établissement</h3>
                     <div className="grid grid-cols-1 gap-4">
-                      <FormField 
-                        control={form.control} 
-                        name="name" 
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nom de l'établissement *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Ex: École Les Lauréats" 
-                                {...field} 
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} 
-                      />
+                      <FormField control={form.control} name="name" render={({ field }) => (
+                          <FormItem><FormLabel>Nom de l'établissement *</FormLabel><FormControl><Input placeholder="Ex: École Les Lauréats" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
+                      )} />
                       
-                      <FormField 
-                        control={form.control} 
-                        name="address" 
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Adresse complète</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Ex: 123 Avenue de l'Éducation, Cocody, Abidjan" 
-                                {...field} 
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} 
-                      />
+                      <FormField control={form.control} name="address" render={({ field }) => (
+                          <FormItem><FormLabel>Adresse complète</FormLabel><FormControl><Input placeholder="Ex: 123 Avenue de l'Éducation, Cocody, Abidjan" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
+                      )} />
                     </div>
                   </div>
 
-                  {/* Informations de contact */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-lg">Coordonnées de contact</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField 
-                        control={form.control} 
-                        name="phone" 
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Téléphone</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="+225 01 23 45 67 89" 
-                                {...field} 
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} 
-                      />
+                      <FormField control={form.control} name="phone" render={({ field }) => (
+                          <FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input placeholder="+225 01 23 45 67 89" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
+                      )} />
                       
-                      <FormField 
-                        control={form.control} 
-                        name="email" 
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Email de contact</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="email"
-                                placeholder="contact@ecole.fr" 
-                                {...field} 
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} 
-                      />
+                      <FormField control={form.control} name="email" render={({ field }) => (
+                          <FormItem><FormLabel>Email de contact</FormLabel><FormControl><Input type="email" placeholder="contact@ecole.fr" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
+                      )} />
                     </div>
                   </div>
 
-                  {/* Informations du directeur */}
                   <div className="space-y-4 pt-4 border-t">
                     <h3 className="font-semibold text-lg flex items-center gap-2">
                       <UserIcon className="h-5 w-5 text-primary" />
                       Informations du directeur
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField 
-                        control={form.control} 
-                        name="directorFirstName" 
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Prénom *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Jean" 
-                                {...field} 
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} 
-                      />
+                      <FormField control={form.control} name="directorFirstName" render={({ field }) => (
+                          <FormItem><FormLabel>Prénom *</FormLabel><FormControl><Input placeholder="Jean" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
+                      )} />
                       
-                      <FormField 
-                        control={form.control} 
-                        name="directorLastName" 
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Nom *</FormLabel>
-                            <FormControl>
-                              <Input 
-                                placeholder="Dupont" 
-                                {...field} 
-                                disabled={isSubmitting}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} 
-                      />
+                      <FormField control={form.control} name="directorLastName" render={({ field }) => (
+                          <FormItem><FormLabel>Nom *</FormLabel><FormControl><Input placeholder="Dupont" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
+                      )} />
                     </div>
                   </div>
                 </div>
@@ -469,63 +257,17 @@ export default function CreateSchoolPage() {
                   </p>
                 </div>
                 <div className="flex gap-3">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={() => router.back()}
-                    disabled={isSubmitting}
-                  >
+                  <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
                     Retour
                   </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmitting || !form.formState.isValid}
-                    className="min-w-[140px]"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Création...
-                      </>
-                    ) : (
-                      'Créer mon école'
-                    )}
+                  <Button type="submit" disabled={isSubmitting || !form.formState.isValid} className="min-w-[140px]">
+                    {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Création...</> : 'Créer mon école'}
                   </Button>
                 </div>
               </CardFooter>
             </form>
           </Form>
         </Card>
-
-        {/* Informations supplémentaires */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-muted/50">
-            <CardContent className="pt-6">
-              <h4 className="font-semibold mb-2">🎓 Rôle de directeur</h4>
-              <p className="text-sm text-muted-foreground">
-                En tant que directeur, vous aurez un accès complet à toutes les fonctionnalités et pourrez gérer les permissions des autres utilisateurs.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-muted/50">
-            <CardContent className="pt-6">
-              <h4 className="font-semibold mb-2">🔑 Code d'accès</h4>
-              <p className="text-sm text-muted-foreground">
-                Un code unique sera généré pour votre école. Partagez-le avec vos collaborateurs pour qu'ils puissent vous rejoindre.
-              </p>
-            </CardContent>
-          </Card>
-          
-          <Card className="bg-muted/50">
-            <CardContent className="pt-6">
-              <h4 className="font-semibold mb-2">⚙️ Configuration</h4>
-              <p className="text-sm text-muted-foreground">
-                Vous pourrez configurer les cycles, classes, et autres paramètres après la création de l'école.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );

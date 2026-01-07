@@ -74,7 +74,8 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Let the AuthGuard handle the redirection
+      toast({ title: "Connexion réussie", description: "Redirection vers votre espace..." });
+      // La redirection est gérée par le AuthGuard / page.tsx
     } catch (error: any) {
       console.error('Erreur de connexion:', error);
       
@@ -106,7 +107,8 @@ export default function LoginPage() {
       });
       
       await signInWithPopup(auth, provider);
-      // Let the AuthGuard handle the redirection
+      toast({ title: "Connexion Google réussie", description: "Redirection vers votre espace..." });
+      // La redirection est gérée par le AuthGuard / page.tsx
     } catch (error: any) {
       console.error('Erreur Google:', error);
       
