@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {useState, useEffect, useCallback} from 'react';
@@ -103,9 +101,35 @@ export function useUser() {
 
 
   useEffect(() => {
-    if (!auth || !firestore) {
+    if (typeof window === 'undefined') {
         setLoading(false);
         return;
+    }
+
+    // Check for parent session on the client side only
+    try {
+        const sessionId = localStorage.getItem('parent_session_id');
+        const sessionSchoolId = localStorage.getItem('parent_school_id');
+        const studentIdsStr = localStorage.getItem('parent_student_ids');
+
+        if (sessionId && sessionSchoolId && studentIdsStr) {
+            setUser({
+                uid: sessionId,
+                schoolId: sessionSchoolId,
+                isParent: true,
+                parentStudentIds: JSON.parse(studentIdsStr),
+                displayName: 'Parent / Tuteur',
+            });
+            setLoading(false);
+            return; // Exit early if parent session is found
+        }
+    } catch (e) {
+        console.error("Error accessing parent session from localStorage:", e);
+    }
+
+    if (!auth || !firestore) {
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
@@ -161,5 +185,3 @@ export function useUser() {
 
   return {user, loading, isDirector, reloadUser, schoolId: user?.schoolId};
 }
-
-    
