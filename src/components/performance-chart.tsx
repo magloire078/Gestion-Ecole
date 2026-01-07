@@ -5,6 +5,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Responsive
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMemo } from 'react';
 import { Skeleton } from './ui/skeleton';
+import { Alert, AlertDescription } from './ui/alert';
 
 interface GradeEntry {
   subject: string;
@@ -15,9 +16,10 @@ interface GradeEntry {
 interface PerformanceChartProps {
   grades: GradeEntry[];
   loading: boolean;
+  error?: string | null;
 }
 
-export function PerformanceChart({ grades, loading }: PerformanceChartProps) {
+export function PerformanceChart({ grades, loading, error }: PerformanceChartProps) {
   
   const performanceData = useMemo(() => {
     if (!grades || grades.length === 0) {
@@ -56,6 +58,12 @@ export function PerformanceChart({ grades, loading }: PerformanceChartProps) {
               <div className="w-full h-full flex items-center justify-center">
                 <Skeleton className="w-full h-full" />
               </div>
+            ) : error ? (
+                 <div className="flex h-full w-full items-center justify-center">
+                    <Alert variant="destructive" className="w-auto">
+                        <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                 </div>
             ) : performanceData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={performanceData}>
