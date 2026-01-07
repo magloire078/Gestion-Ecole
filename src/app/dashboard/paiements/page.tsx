@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { student as Student, class_type as Class } from "@/lib/data-types";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Search, Loader2 } from "lucide-react";
@@ -54,6 +54,7 @@ export default function PaymentsPage() {
   const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
   const [reminderContent, setReminderContent] = useState('');
   const [studentForReminder, setStudentForReminder] = useState<Student | null>(null);
+  const [remindingStudentId, setRemindingStudentId] = useState<string | null>(null);
 
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
@@ -79,10 +80,10 @@ export default function PaymentsPage() {
   };
   
   const handleRemind = async (student: Student) => {
-    if (!student.amountDue || student.amountDue <= 0 || !schoolName) return;
+    if (!student.id || !student.amountDue || student.amountDue <= 0 || !schoolName) return;
 
+    setRemindingStudentId(student.id);
     setStudentForReminder(student);
-    setIsReminderDialogOpen(true);
     setIsGeneratingReminder(true);
     setReminderContent('');
 
@@ -98,6 +99,7 @@ export default function PaymentsPage() {
         setReminderContent("Erreur lors de la génération du message. Veuillez réessayer.");
     } finally {
         setIsGeneratingReminder(false);
+        setIsReminderDialogOpen(true); 
     }
   }
 
@@ -205,8 +207,9 @@ export default function PaymentsPage() {
                             <TableCell className="text-right">
                                <div className="flex justify-end gap-2">
                                 {student.amountDue && student.amountDue > 0 && (
-                                    <Button variant="outline" size="sm" onClick={() => handleRemind(student)}>
-                                        <MessageSquare className="mr-1 h-3.5 w-3.5" /> Relancer
+                                    <Button variant="outline" size="sm" onClick={() => handleRemind(student)} disabled={remindingStudentId === student.id}>
+                                        {remindingStudentId === student.id ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="mr-1 h-3.5 w-3.5" />} 
+                                        Relancer
                                     </Button>
                                 )}
                                 <Button variant="outline" size="sm" asChild>
@@ -232,7 +235,12 @@ export default function PaymentsPage() {
       </div>
     </div>
 
-    <AlertDialog open={isReminderDialogOpen} onOpenChange={setIsReminderDialogOpen}>
+    <AlertDialog open={isReminderDialogOpen} onOpenChange={(open) => {
+        if(!open) {
+            setIsReminderDialogOpen(false);
+            setRemindingStudentId(null);
+        }
+    }}>
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle>Message de Relance pour {studentForReminder?.parent1FirstName} {studentForReminder?.parent1LastName}</AlertDialogTitle>
@@ -264,5 +272,3 @@ export default function PaymentsPage() {
     </>
   );
 }
-
-    
