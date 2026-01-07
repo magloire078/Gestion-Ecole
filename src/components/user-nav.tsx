@@ -68,7 +68,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté(e).",
       });
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
     } catch (error) {
       console.error("Erreur de déconnexion: ", error);
       toast({
@@ -90,7 +90,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   if (!user) {
     return (
-      <Button variant="ghost" onClick={() => router.push('/login')}>
+      <Button variant="ghost" onClick={() => router.push('/auth/login')}>
         Se connecter
       </Button>
     );

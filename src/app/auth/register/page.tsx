@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -61,7 +62,7 @@ export default function RegisterPage() {
       await setDoc(doc(firestore, 'users', user.uid), userData);
 
       toast({ title: 'Compte créé avec succès !' });
-      router.push('/dashboard/onboarding');
+      router.push('/onboarding');
 
     } catch (error: any) {
       console.error('Erreur d\'inscription:', error);

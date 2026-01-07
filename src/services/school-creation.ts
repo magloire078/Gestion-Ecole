@@ -1,5 +1,4 @@
 
-
 'use client';
 import { 
   collection, 
@@ -44,25 +43,22 @@ export class SchoolCreationService {
   }
   
   async createSchool(schoolData: SchoolCreationData) {
-    console.log("=== CRÉATION D'ÉCOLE ===");
-    
     const auth = getAuth();
     const user = auth.currentUser;
     
     if (!user) {
-      throw new Error("❌ Utilisateur non connecté");
+      throw new Error("Utilisateur non connecté");
     }
     
     // Vérification UID
     if (user.uid !== schoolData.directorId) {
-      throw new Error("❌ L'utilisateur ne correspond pas au directeur");
+      throw new Error("L'utilisateur ne correspond pas au directeur");
     }
     
     const batch = writeBatch(this.db);
     
     try {
       // 1. Créer le document ÉCOLE
-      console.log("Étape 1: Création du document école...");
       const schoolRef = doc(collection(this.db, 'ecoles'));
       const schoolId = schoolRef.id;
       const schoolCode = generateSchoolCode(schoolData.name);
@@ -92,10 +88,8 @@ export class SchoolCreationService {
       };
       
       batch.set(schoolRef, schoolDoc);
-      console.log("✅ École pré-enregistrée dans le batch:", schoolId);
 
       // 2. Mettre à jour le document racine de l'UTILISATEUR
-      console.log("Étape 2: Mise à jour du document utilisateur...");
       const userRef = doc(this.db, `utilisateurs/${schoolData.directorId}`);
       
       const userDoc: user_root = {
@@ -103,10 +97,8 @@ export class SchoolCreationService {
       };
       
       batch.set(userRef, userDoc);
-      console.log("✅ Utilisateur pré-enregistré dans le batch");
       
       // 3. Créer le profil PERSONNEL pour le directeur
-      console.log("Étape 3: Création du profil personnel du directeur...");
       const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${user.uid}`);
       const staffProfileData: Omit<staff, 'id'> = {
           uid: user.uid,
@@ -118,22 +110,16 @@ export class SchoolCreationService {
           firstName: schoolData.directorFirstName,
           lastName: schoolData.directorLastName,
           hireDate: new Date().toISOString().split('T')[0],
-          baseSalary: 0, // Le directeur peut définir son salaire plus tard
+          baseSalary: 0,
           status: 'Actif',
       };
       batch.set(staffProfileRef, staffProfileData);
-      console.log("✅ Profil directeur pré-enregistré dans le batch.");
 
       // 4. Exécuter le batch
-      console.log("Étape 4: Commit du batch...");
       await batch.commit();
-      console.log("✅ Batch commit avec succès !");
 
       // 5. Rafraîchir le token pour inclure le schoolId dans les claims (côté serveur)
-      console.log("Étape 5: Rafraîchissement du token...");
       await user.getIdToken(true);
-      
-      console.log("🎉 CRÉATION RÉUSSIE !");
       
       return {
         schoolId,

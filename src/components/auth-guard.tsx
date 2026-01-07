@@ -21,7 +21,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  const publicPages = ['/login', '/register', '/contact', '/survey', '/parent-access'];
+  const publicPages = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'];
   const isPublicPage = publicPages.some(p => pathname.startsWith(p)) || pathname === '/';
   const isOnboardingPage = pathname.startsWith('/onboarding');
 
@@ -31,17 +31,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
     
     if (!user && !isPublicPage) {
-      router.replace('/login');
+      router.replace('/auth/login');
       return;
     }
     
     if (user) {
+      // If user is on a public page, redirect them
       if (isPublicPage) {
         router.replace('/dashboard');
         return;
       }
       
-      const hasSchool = user.schoolId;
+      const hasSchool = !!user.schoolId;
 
       if (hasSchool && isOnboardingPage) {
         router.replace('/dashboard');
