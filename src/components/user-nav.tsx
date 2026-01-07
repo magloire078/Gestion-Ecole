@@ -36,7 +36,7 @@ interface UserNavProps {
 export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
-  const { user: firebaseUser, loading: userLoading } = useUser();
+  const { user, loading: userLoading } = useUser();
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
@@ -45,13 +45,13 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const [isParentSession, setIsParentSession] = useState(false);
 
   useEffect(() => {
-    // Ce hook s'exécute uniquement côté client, après le premier rendu.
     setIsClient(true);
     setIsParentSession(!!localStorage.getItem('parent_session_id'));
   }, []);
 
-  const user = isParentSession ? { isParent: true, displayName: 'Parent / Tuteur', profile: undefined, authUser: undefined } : firebaseUser;
-  const loading = userLoading || !isClient; // L'état est "loading" tant que le client n'a pas vérifié la session
+  const effectiveUser = isParentSession ? { isParent: true, displayName: 'Parent / Tuteur', profile: undefined, authUser: undefined } : user;
+  const loading = userLoading || (isClient && !isParentSession && schoolLoading) || !isClient;
+
 
   const handleLogout = async () => {
     if (isParentSession) {
@@ -88,7 +88,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     );
   }
 
-  if (!user) {
+  if (!effectiveUser) {
     return (
       <Button variant="ghost" onClick={() => router.push('/auth/login')}>
         Se connecter
@@ -96,15 +96,15 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     );
   }
 
-  const isSuperAdmin = user?.profile?.isAdmin === true;
+  const isSuperAdmin = effectiveUser?.profile?.isAdmin === true;
   
-  const displayName = isParentSession ? 'Parent / Tuteur' : user?.profile?.displayName || user?.authUser?.displayName || 'Utilisateur';
+  const displayName = isParentSession ? 'Parent / Tuteur' : effectiveUser?.profile?.displayName || effectiveUser?.authUser?.displayName || 'Utilisateur';
   
   const userRole = isParentSession 
     ? 'Portail Parent' 
     : isSuperAdmin 
       ? 'Super Administrateur' 
-      : (user?.profile?.role === 'directeur' ? 'Directeur' : user?.profile?.role || 'Membre');
+      : (effectiveUser?.profile?.role === 'directeur' ? 'Directeur' : effectiveUser?.profile?.role || 'Membre');
   
   const fallback = displayName 
     ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() 
@@ -119,7 +119,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
 
-  const planName = isSuperAdmin ? null : (schoolLoading ? '...' : subscription?.plan || 'Gratuit');
+  const planName = isSuperAdmin ? null : (subscription?.plan || 'Gratuit');
   
   const UserMenuContent = () => (
     <>
@@ -141,7 +141,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
             )}
           </div>
           
-          {!isParentSession && user?.authUser?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{user.authUser.email}</p>}
+          {!isParentSession && effectiveUser?.authUser?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{effectiveUser.authUser.email}</p>}
         </div>
       </DropdownMenuLabel>
       
@@ -193,7 +193,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")}>
           <Avatar className="h-8 w-8">
-            <SafeImage src={user?.profile?.photoURL || user?.authUser?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
+            <SafeImage src={effectiveUser?.profile?.photoURL || effectiveUser?.authUser?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
             <AvatarFallback>{loading ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
           </Avatar>
            <div className={cn("flex flex-col items-start", collapsed && "hidden")}>
@@ -205,3 +205,4 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     </DropdownMenu>
   );
 }
+
