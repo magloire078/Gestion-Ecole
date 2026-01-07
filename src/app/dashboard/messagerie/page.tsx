@@ -83,7 +83,6 @@ export default function MessagingPage() {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('schoolId', '==', schoolId),
       orderBy('createdAt', 'desc'),
       limit(50)
     );
