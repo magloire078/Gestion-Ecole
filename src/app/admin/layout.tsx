@@ -110,8 +110,9 @@ function AdminLayoutContent({
 }) {
     const { user, loading: userLoading } = useUser();
     const [isVerified, setIsVerified] = useState(false);
+    const [isCheckingSession, setIsCheckingSession] = useState(true);
     
-    // Check session storage on initial load
+    // Check session storage on initial load, only on the client
     useEffect(() => {
         try {
             const verificationTimestamp = sessionStorage.getItem('adminVerificationTimestamp');
@@ -127,6 +128,8 @@ function AdminLayoutContent({
             }
         } catch (e) {
             console.error("Could not access session storage:", e);
+        } finally {
+            setIsCheckingSession(false);
         }
     }, []);
 
@@ -141,7 +144,7 @@ function AdminLayoutContent({
         }
     };
     
-    if (userLoading) {
+    if (userLoading || isCheckingSession) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
                <Loader2 className="h-8 w-8 animate-spin" />
