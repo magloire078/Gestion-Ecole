@@ -332,6 +332,7 @@ export type message = {
     };
     readBy?: string[];
     id?: string;
+    isGeneral?: boolean;
 };
 
 export type absence = {
