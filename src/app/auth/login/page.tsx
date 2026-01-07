@@ -26,7 +26,7 @@ import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
 import { Loader2 } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -142,7 +142,8 @@ export default function LoginPage() {
         <form onSubmit={handleSignIn}>
           <CardContent className="grid gap-4">
             {error && (
-                <Alert variant="destructive" className="py-2 px-3 text-sm">
+                <Alert variant="destructive">
+                    <AlertTitle>Erreur</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
@@ -212,7 +213,7 @@ export default function LoginPage() {
           </span>
         </div>
         
-        <div className="px-6 pb-6 flex flex-col gap-4">
+        <div className="px-6 pb-6 pt-4 flex flex-col gap-4">
           <Button 
             variant="outline" 
             className="w-full" 
