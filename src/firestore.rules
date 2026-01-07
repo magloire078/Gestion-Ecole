@@ -33,13 +33,11 @@ service cloud.firestore {
 
     // Vérifie si la requête provient d'une session parent valide
     function isParentSession(schoolId) {
-      let token = request.auth.token;
-      return token.isParent == true && token.schoolId == schoolId;
+      return request.auth.token.isParent == true && request.auth.token.schoolId == schoolId;
     }
     
      function isParentOfStudentViaSession(studentId) {
-      let token = request.auth.token;
-      return token.isParent == true && studentId in token.studentIds;
+      return request.auth.token.isParent == true && studentId in request.auth.token.studentIds;
     }
     
 
@@ -71,14 +69,10 @@ service cloud.firestore {
     // Vérifie si l'utilisateur a une permission spécifique via son rôle admin
     function hasPermission(schoolId, permission) {
         let profile = getMyStaffProfile(schoolId);
-        if (isDirector(schoolId)) {
-            return true;
-        }
-        if (!('adminRole' in profile) || profile.adminRole == null) {
-            return false;
-        }
-        let roleDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(profile.adminRole)).data;
-        return roleDoc.permissions[permission] == true;
+        return isDirector(schoolId) || 
+               ('adminRole' in profile && 
+                profile.adminRole != null && 
+                get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(profile.adminRole)).data.permissions[permission] == true);
     }
 
     // =================================================================
@@ -194,9 +188,8 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get: if isSchoolMember(schoolId);
-        allow list: if isAuth() && request.query.recipientSchoolId == schoolId;
-        allow update: if isSchoolMember(schoolId);
+        allow get, update: if isSchoolMember(schoolId);
+        allow list: if isSchoolMember(schoolId) && request.query.schoolId == schoolId;
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
