@@ -30,7 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, addDoc, doc, updateDoc, arrayUnion, query, orderBy, serverTimestamp, where, getDoc, limit, Query, DocumentData } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, arrayUnion, query, orderBy, serverTimestamp, getDoc, limit } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -83,7 +83,6 @@ export default function MessagingPage() {
     if (!schoolId) return null;
     return query(
       collection(firestore, `ecoles/${schoolId}/messagerie`),
-      where('schoolId', '==', schoolId),
       orderBy('createdAt', 'desc'),
       limit(50)
     );
@@ -389,3 +388,5 @@ export default function MessagingPage() {
     </>
   );
 }
+
+    
