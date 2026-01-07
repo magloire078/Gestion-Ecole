@@ -1,18 +1,13 @@
-
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { useAuth, useUser, useFirestore } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -24,10 +19,11 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Logo } from '@/components/logo';
 import { useToast } from '@/hooks/use-toast';
-import { Separator } from '@/components/ui/separator';
 import Link from 'next/link';
+import { Separator } from '@/components/ui/separator';
+import { Logo } from '@/components/logo';
+import { Loader2 } from 'lucide-react';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -61,104 +57,40 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false); // New state to toggle between modes
-
   const router = useRouter();
   const auth = useAuth();
-  const firestore = useFirestore();
-  const { user, loading } = useUser();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
-
-
-  if (loading || user) {
-      return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <div className="text-center">
-                <p className="text-lg font-semibold">Chargement...</p>
-                <p className="text-muted-foreground">Vérification de l'authentification.</p>
-            </div>
-        </div>
-      );
-  }
-
-  const handleEmailPasswordSignIn = async () => {
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!email || !password) {
-        toast({ variant: 'destructive', title: 'Champs requis', description: 'Veuillez saisir votre e-mail et votre mot de passe.' });
-        return;
+      toast({ variant: 'destructive', title: 'Champs requis' });
+      return;
     }
     setIsProcessing(true);
     try {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast({ title: 'Connexion réussie', description: 'Vous êtes maintenant connecté(e).' });
-        window.location.href = '/dashboard';
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Erreur de connexion', description: 'Email ou mot de passe incorrect.' });
+      await signInWithEmailAndPassword(auth, email, password);
+      toast({ title: 'Connexion réussie' });
+      router.push('/dashboard');
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erreur de connexion', description: 'Email ou mot de passe incorrect.' });
     } finally {
-        setIsProcessing(false);
+      setIsProcessing(false);
     }
   };
-
-  const handleEmailPasswordSignUp = async () => {
-    if (!email || !password || !displayName) {
-        toast({ variant: 'destructive', title: 'Champs requis', description: 'Veuillez remplir tous les champs.' });
-        return;
-    }
-    setIsProcessing(true);
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName });
-
-        // Un nouvel utilisateur n'a pas de document /utilisateurs/{userId}
-        // Il sera créé lors de l'onboarding (création ou jonction d'école)
-        
-        toast({ title: 'Compte créé', description: 'Votre compte a été créé avec succès. Vous allez être redirigé.' });
-        window.location.href = '/dashboard';
-    } catch (error: any) {
-        if (error.code === 'auth/email-already-in-use') {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Cette adresse e-mail est déjà utilisée.' });
-        } else {
-            toast({ variant: 'destructive', title: 'Erreur', description: "Une erreur est survenue lors de la création du compte." });
-        }
-    } finally {
-        setIsProcessing(false);
-    }
-  };
-
 
   const handleGoogleSignIn = async () => {
     setIsProcessing(true);
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-      toast({
-        title: 'Connexion réussie',
-        description: 'Vous allez être redirigé vers le tableau de bord.',
-      });
-      window.location.href = '/dashboard';
+      toast({ title: 'Connexion réussie' });
+      router.push('/dashboard');
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Erreur de connexion',
-        description: 'Impossible de se connecter avec Google.',
-      });
+      toast({ variant: 'destructive', title: 'Erreur de connexion avec Google.' });
     } finally {
-        setIsProcessing(false);
-    }
-  };
-  
-  const handleSubmit = () => {
-    if (isSignUp) {
-      handleEmailPasswordSignUp();
-    } else {
-      handleEmailPasswordSignIn();
+      setIsProcessing(false);
     }
   };
 
@@ -166,55 +98,47 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-            <div className="mb-4 flex justify-center">
-                 <Logo />
-            </div>
-          <CardTitle className="text-2xl">{isSignUp ? 'Créer un compte' : 'Accès à votre espace'}</CardTitle>
-          <CardDescription>
-            {isSignUp ? 'Créez votre compte pour commencer.' : 'Utilisez votre e-mail et mot de passe.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          {isSignUp && (
-            <div className="grid gap-2">
-                <Label htmlFor="signup-name">Nom complet</Label>
-                <Input id="signup-name" placeholder="Ex: Jean Dupont" value={displayName} onChange={(e) => setDisplayName(e.target.value)} required disabled={isProcessing} />
-            </div>
-          )}
-          <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="directeur@ecole.com" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isProcessing} />
+          <div className="mb-4 flex justify-center">
+            <Logo />
           </div>
-          <div className="grid gap-2">
+          <CardTitle className="text-2xl">Connexion</CardTitle>
+          <CardDescription>Accédez à votre espace GèreEcole.</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSignIn}>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required disabled={isProcessing} />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="password">Mot de passe</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required disabled={isProcessing} />
-          </div>
-        </CardContent>
-        <CardFooter className="flex flex-col gap-4">
-            <Button className="w-full" onClick={handleSubmit} disabled={isProcessing}>
-                {isProcessing ? 'Traitement...' : (isSignUp ? 'Créer mon compte' : 'Se connecter')}
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col gap-4">
+            <Button type="submit" className="w-full" disabled={isProcessing}>
+              {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              {isProcessing ? 'Connexion...' : 'Se connecter'}
             </Button>
-             <p className="text-center text-sm text-muted-foreground">
-                {isSignUp ? 'Vous avez déjà un compte ?' : "Vous n'avez pas de compte ?"}
-                <Button variant="link" className="p-1" onClick={() => setIsSignUp(!isSignUp)}>
-                    {isSignUp ? 'Se connecter' : 'Créez-en un'}
-                </Button>
-            </p>
-        </CardFooter>
+          </CardFooter>
+        </form>
         
-        <div className="relative p-6 pt-0">
-            <Separator />
-            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
+        <div className="relative p-6 pt-2">
+          <Separator />
+          <span className="absolute left-1/2 -translate-x-1/2 -top-1 bg-card px-2 text-xs text-muted-foreground">OU</span>
         </div>
         
         <div className="px-6 pb-6 flex flex-col gap-4">
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
-                <GoogleIcon className="mr-2 h-4 w-4" />
-                Continuer avec Google
+          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isProcessing}>
+            <GoogleIcon className="mr-2 h-4 w-4" />
+            Continuer avec Google
+          </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            Pas encore de compte ?{' '}
+            <Button variant="link" className="p-0" asChild>
+              <Link href="/auth/register">Créez-en un</Link>
             </Button>
-            <Button variant="secondary" className="w-full" asChild>
-                <Link href="/">Retour à l'accueil</Link>
-            </Button>
+          </p>
         </div>
       </Card>
     </div>
