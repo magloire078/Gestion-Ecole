@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth, useFirestore, useUser } from '@/firebase';
-import { doc, setDoc, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -76,7 +76,8 @@ export default function OnboardingPage() {
         displayName: authUser.displayName,
         email: authUser.email,
         role: 'enseignant', // Rôle par défaut
-        joinedAt: new Date().toISOString(),
+        hireDate: new Date().toISOString(),
+        baseSalary: 0,
         status: 'Actif',
         schoolId: schoolId,
       });
