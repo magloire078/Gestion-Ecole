@@ -20,6 +20,9 @@ export interface CombinedUser {
     isParent?: boolean;
     parentStudentIds?: string[];
     schoolId?: string;
+    displayName?: string;
+    photoURL?: string;
+    email?: string;
 }
 
 
@@ -39,29 +42,26 @@ export function useUser() {
   const firestore = useFirestore();
   const [user, setUser] = useState<CombinedUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
   const [isDirector, setIsDirector] = useState(false);
 
   const fetchFullUserProfile = useCallback(async (authUser: FirebaseUser, userRootData: user_root) => {
     try {
-      const effectiveSchoolId = userRootData.schoolId;
-      setSchoolId(effectiveSchoolId);
-
+      const { schoolId } = userRootData;
       const tokenResult = await authUser.getIdTokenResult(true);
-      const isSuperAdmin = (tokenResult.claims.superAdmin as boolean) === true;
+      const isSuperAdmin = !!tokenResult.claims.superAdmin;
 
       if (isSuperAdmin) {
           const superAdminProfile: UserProfile = {
-              uid: authUser.uid, email: authUser.email || '', schoolId: effectiveSchoolId || '',
+              uid: authUser.uid, email: authUser.email || '', schoolId: schoolId || '',
               role: 'super_admin' as any, firstName: 'Super', lastName: 'Admin',
               hireDate: '', baseSalary: 0, displayName: 'Super Admin',
               permissions: { ...allPermissions }, isAdmin: true,
           };
-           setUser({ authUser, uid: authUser.uid, profile: superAdminProfile, schoolId: effectiveSchoolId });
+           setUser({ authUser, uid: authUser.uid, profile: superAdminProfile, schoolId: schoolId, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
            setIsDirector(false);
-      } else if (effectiveSchoolId) {
-          const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
-          const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
+      } else if (schoolId) {
+          const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
+          const schoolDocRef = doc(firestore, 'ecoles', schoolId);
           
           const [profileSnap, schoolSnap] = await Promise.all([
               getDoc(profileRef),
@@ -77,24 +77,24 @@ export function useUser() {
               if (isDirectorFlag) {
                   permissions = { ...allPermissions };
               } else if (profileData.adminRole) {
-                  const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
+                  const roleRef = doc(firestore, `ecoles/${schoolId}/admin_roles`, profileData.adminRole);
                   const roleSnap = await getDoc(roleRef);
                   if (roleSnap.exists()) {
                       permissions = roleSnap.data().permissions || {};
                   }
               }
-              setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: { ...profileData, permissions, isAdmin: false } });
+              setUser({ authUser, uid: authUser.uid, schoolId: schoolId, profile: { ...profileData, permissions, isAdmin: false }, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
           } else {
-               setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: undefined });
+               setUser({ authUser, uid: authUser.uid, schoolId: schoolId, profile: undefined, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
           }
       } else {
-          setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: null });
+          // Utilisateur authentifié mais sans école associée
+          setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: undefined, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
           setIsDirector(false);
       }
     } catch (error) {
       console.error("Erreur dans useUser fetchUserData:", error);
-      setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: null });
-      setSchoolId(null);
+      setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: undefined, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
       setIsDirector(false);
     } finally {
       setLoading(false);
@@ -111,7 +111,6 @@ export function useUser() {
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (!authUser) {
         setUser(null);
-        setSchoolId(null);
         setIsDirector(false);
         setLoading(false);
         return;
@@ -122,19 +121,16 @@ export function useUser() {
       const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
       const unsubUserDoc = onSnapshot(userRootRef, (userRootSnap) => {
           if (userRootSnap.exists()) {
-              const userRootData = userRootSnap.data() as user_root;
-              fetchFullUserProfile(authUser, userRootData);
+              fetchFullUserProfile(authUser, userRootSnap.data() as user_root);
           } else {
               // L'utilisateur est authentifié mais n'a pas encore de document racine (onboarding)
-              setSchoolId(null);
-              setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: null });
+              setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: undefined, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
               setIsDirector(false);
               setLoading(false);
           }
       }, (error) => {
           console.error("Erreur de snapshot sur le document utilisateur:", error);
           setUser(null);
-          setSchoolId(null);
           setIsDirector(false);
           setLoading(false);
       });
@@ -156,15 +152,14 @@ export function useUser() {
         if (userRootSnap.exists()) {
             await fetchFullUserProfile(firebaseUser, userRootSnap.data() as user_root);
         } else {
-            setSchoolId(null);
-            setUser({ authUser: firebaseUser, uid: firebaseUser.uid, profile: undefined, schoolId: null });
+            setUser({ authUser: firebaseUser, uid: firebaseUser.uid, profile: undefined, schoolId: undefined, displayName: firebaseUser.displayName, photoURL: firebaseUser.photoURL, email: firebaseUser.email });
             setIsDirector(false);
             setLoading(false);
         }
     }
   }, [auth, firestore, fetchFullUserProfile]);
 
-  return {user, loading, schoolId, isDirector, reloadUser};
+  return {user, loading, isDirector, reloadUser, schoolId: user?.schoolId};
 }
 
     
