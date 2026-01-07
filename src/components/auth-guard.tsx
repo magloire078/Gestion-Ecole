@@ -3,7 +3,7 @@
 
 import { useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 function AuthProtectionLoader() {
@@ -18,66 +18,92 @@ function AuthProtectionLoader() {
   );
 }
 
+// État pour la session parent, géré côté client uniquement
+interface ParentSession {
+    uid: string;
+    schoolId: string;
+    parentStudentIds: string[];
+    isParent: true;
+    displayName: string;
+}
+
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useUser();
+  const { user: firebaseUser, loading: firebaseUserLoading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
   
+  const [parentSession, setParentSession] = useState<ParentSession | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  // Étape 1: Déterminer si nous sommes sur le client
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Étape 2: Vérifier la session parent UNIQUEMENT sur le client
+  useEffect(() => {
+    if (isClient) {
+        try {
+            const sessionId = localStorage.getItem('parent_session_id');
+            const sessionSchoolId = localStorage.getItem('parent_school_id');
+            const studentIdsStr = localStorage.getItem('parent_student_ids');
+
+            if (sessionId && sessionSchoolId && studentIdsStr) {
+                setParentSession({
+                    uid: sessionId,
+                    schoolId: sessionSchoolId,
+                    isParent: true,
+                    parentStudentIds: JSON.parse(studentIdsStr),
+                    displayName: 'Parent / Tuteur',
+                });
+            }
+        } catch (e) {
+          console.error("Failed to read parent session from local storage", e);
+        }
+    }
+  }, [isClient]);
+
+  const user = parentSession || firebaseUser;
+  const loading = firebaseUserLoading || !isClient;
+
   const publicPages = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'];
   const isPublicPage = publicPages.some(p => pathname.startsWith(p)) || pathname === '/';
   const isOnboardingPage = pathname.startsWith('/onboarding');
-
+  
   useEffect(() => {
-    // Ne faites rien tant que le statut de l'utilisateur n'est pas déterminé
     if (loading) {
-      return; 
+      return;
     }
-    
-    // Si l'utilisateur n'est pas connecté et n'est pas sur une page publique, redirigez-le vers la page de connexion.
+
     if (!user && !isPublicPage) {
       router.replace('/auth/login');
       return;
     }
-    
-    // Si l'utilisateur est connecté :
-    if (user) {
-      // S'il est sur une page publique (comme /login), redirigez-le.
-      if (isPublicPage) {
-        router.replace('/dashboard');
-        return;
-      }
-      
-      const hasSchool = !!user.schoolId;
 
-      // S'il a une école mais est sur une page d'onboarding, redirigez-le au dashboard.
-      if (hasSchool && isOnboardingPage) {
-        router.replace('/dashboard');
-        return;
-      }
-      
-      // S'il n'a pas d'école mais tente d'accéder au dashboard (et n'est pas déjà sur l'onboarding),
-      // redirigez-le vers la page d'onboarding.
-      if (!hasSchool && !isOnboardingPage && pathname.startsWith('/dashboard')) {
-        router.replace('/onboarding');
-        return;
-      }
+    if (user) {
+        if (isPublicPage && !pathname.startsWith('/parent-access')) {
+            router.replace('/dashboard');
+            return;
+        }
+
+        if (!user.isParent) {
+            const hasSchool = !!user.schoolId;
+            if (hasSchool && isOnboardingPage) {
+                router.replace('/dashboard');
+            } else if (!hasSchool && !isOnboardingPage && pathname.startsWith('/dashboard')) {
+                router.replace('/onboarding');
+            }
+        }
     }
-    
   }, [user, loading, pathname, isPublicPage, isOnboardingPage, router]);
 
-  // Affichez un loader tant que la vérification est en cours ET que ce n'est pas une page publique
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Affichez un loader si l'utilisateur est connecté mais n'a pas d'école, le temps que la redirection vers l'onboarding se fasse
-  if (!loading && user && !user.schoolId && !isOnboardingPage && pathname.startsWith('/dashboard')) {
-      return <AuthProtectionLoader />;
-  }
-  
-  // Affichez un loader si l'utilisateur n'est pas connecté et n'est pas sur une page publique, pendant la redirection
-  if (!loading && !user && !isPublicPage) {
-      return <AuthProtectionLoader />;
+  // Si on est sur une page protégée mais sans utilisateur, on affiche le loader pendant la redirection.
+  if (!user && !isPublicPage) {
+    return <AuthProtectionLoader />;
   }
 
   return <>{children}</>;

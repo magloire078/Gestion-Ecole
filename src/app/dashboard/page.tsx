@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useState, useEffect } from 'react';
 import { StatCards } from '@/components/dashboard/stat-cards';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { RecentActivity } from '@/components/dashboard/recent-activity';
@@ -10,16 +10,14 @@ import { PerformanceChart } from '@/components/performance-chart';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
 import { collectionGroup, query, where, getDocs, collection, limit } from 'firebase/firestore';
-import { useState, useEffect, useCallback } from 'react';
-import type { gradeEntry as GradeEntry, cycle as Cycle, student as Student } from '@/lib/data-types';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { ParentStudentCard } from '@/components/parent/student-card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { gradeEntry as GradeEntry, cycle as Cycle, student as Student } from '@/lib/data-types';
 
 // ====================================================================================
 // Loading Skeletons
@@ -84,7 +82,7 @@ const useGradesData = (schoolId?: string | null) => {
           gradesCollectionGroup,
           where('__name__', '>=', `ecoles/${schoolId}/`),
           where('__name__', '<', `ecoles/${schoolId}\uf8ff`),
-          limit(500) // Limiter pour le dashboard
+          limit(500)
         );
         
         const gradesSnapshot = await getDocs(gradesQuery);
@@ -119,36 +117,32 @@ const useGradesData = (schoolId?: string | null) => {
 // ====================================================================================
 // Parent Dashboard Component
 // ====================================================================================
-const ParentDashboard = () => {
-    const { user, loading: userLoading } = useUser();
+interface ParentDashboardState {
+    isParent: boolean;
+    studentIds: string[];
+    schoolId: string;
+}
 
-    if (userLoading) {
-      return <ParentDashboardSkeleton />;
-    }
-
-    if (!user || !user.isParent || !user.schoolId) {
+const ParentDashboard = ({ session }: { session: ParentDashboardState }) => {
+    if (!session.isParent || !session.schoolId) {
       return (
         <Alert>
           <AlertDescription>
-            Vous n'avez pas accès au tableau de bord parent. Veuillez contacter l'administration de l'école.
+            Session parent invalide. Veuillez vous reconnecter.
           </AlertDescription>
         </Alert>
       );
     }
 
-    const studentIds = user.parentStudentIds || [];
-
-    if (studentIds.length === 0) {
+    if (session.studentIds.length === 0) {
       return (
         <div className="space-y-6">
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Portail Parent</h1>
-          </div>
+          <h1 className="text-2xl font-bold">Portail Parent</h1>
           <AnnouncementBanner />
           <Card>
             <CardContent className="pt-6">
               <p className="text-center text-muted-foreground">
-                Aucun élève n'est associé à votre compte parent.
+                Aucun élève n'est associé à votre session. Veuillez contacter l'administration.
               </p>
             </CardContent>
           </Card>
@@ -158,32 +152,19 @@ const ParentDashboard = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Portail Parent</h1>
-                <div className="text-sm text-muted-foreground">
-                  {studentIds.length} {studentIds.length > 1 ? 'enfants' : 'enfant'}
-                </div>
-            </div>
-            
+            <h1 className="text-2xl font-bold">Portail Parent</h1>
             <AnnouncementBanner />
-            
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" /> 
-                      Mes Enfants
-                    </CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Mes Enfants</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-muted-foreground mb-4">
-                      Cliquez sur un enfant pour voir ses informations détaillées (notes, paiements, absences, etc.).
-                    </p>
-                    
+                    <p className="text-muted-foreground mb-4">Cliquez sur un enfant pour voir ses informations détaillées.</p>
                     <div className="space-y-4">
-                        {studentIds.map((studentId, index) => (
+                        {session.studentIds.map(studentId => (
                            <ParentStudentCard 
                              key={studentId} 
-                             schoolId={user.schoolId!} 
+                             schoolId={session.schoolId!} 
                              studentId={studentId}
                            />
                         ))}
@@ -206,7 +187,7 @@ const RegularDashboard = () => {
     schoolId ? query(
       collection(firestore, `ecoles/${schoolId}/eleves`), 
       where('status', '==', 'Actif'),
-      limit(2000) // Limiter pour éviter des charges inutiles sur le dashboard
+      limit(2000)
     ) : null, 
     [firestore, schoolId]
   );
@@ -225,68 +206,34 @@ const RegularDashboard = () => {
   const studentCount = useMemo(() => studentsData?.length || 0, [studentsData]);
   const cycleCount = useMemo(() => cyclesData?.length || 0, [cyclesData]);
 
-  // Afficher le skeleton pendant le chargement
   if (schoolLoading || studentsLoading || cyclesLoading) {
     return <DashboardSkeleton />;
   }
 
-  // Si pas d'école sélectionnée
   if (!schoolId) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Tableau de Bord</h1>
-        </div>
-        
         <Alert>
           <AlertDescription>
-            Veuillez sélectionner une école pour accéder au tableau de bord.
+            Veuillez sélectionner une école ou en créer une pour accéder au tableau de bord.
           </AlertDescription>
         </Alert>
-      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <h1 className="text-2xl font-bold">
           Tableau de Bord {schoolData?.name ? `- ${schoolData.name}` : ''}
-        </h1>
-        <div className="text-sm text-muted-foreground">
-          {studentCount} élèves • {cycleCount} cycles actifs
-        </div>
-      </div>
-      
+      </h1>
       <AnnouncementBanner />
-
-      {schoolId && (
-        <BillingAlerts 
-          schoolId={schoolId} 
-          studentCount={studentCount} 
-          cycleCount={cycleCount} 
-        />
-      )}
-    
+      <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />
       <StatCards schoolId={schoolId} />
-      
-      {gradesError && (
-        <Alert variant="destructive">
-          <AlertDescription>
-            {gradesError}
-          </AlertDescription>
-        </Alert>
-      )}
-      
+      {gradesError && <Alert variant="destructive"><AlertDescription>{gradesError}</AlertDescription></Alert>}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <PerformanceChart 
-            grades={allGrades} 
-            loading={gradesLoading}
-          />
+          <PerformanceChart grades={allGrades} loading={gradesLoading}/>
           <RecentActivity schoolId={schoolId} />
         </div>
-
         <div className="lg:col-span-1 space-y-6">
           <FinanceOverview schoolId={schoolId} />
           <QuickActions />
@@ -301,27 +248,43 @@ const RegularDashboard = () => {
 // ====================================================================================
 function DashboardPageContent() {
     const { user, loading: userLoading } = useUser();
-    
-    if (userLoading) {
-      return <DashboardSkeleton />;
+    const [parentSession, setParentSession] = useState<ParentDashboardState | null>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
+        if (isClient) {
+            const sessionId = localStorage.getItem('parent_session_id');
+            const schoolId = localStorage.getItem('parent_school_id');
+            const studentIds = localStorage.getItem('parent_student_ids');
+            if (sessionId && schoolId && studentIds) {
+                setParentSession({ isParent: true, studentIds: JSON.parse(studentIds), schoolId });
+            }
+        }
+    }, [isClient]);
+
+    if (userLoading || !isClient) {
+        return <DashboardSkeleton />;
     }
 
-    if (user?.isParent) {
-        return <ParentDashboard />;
+    if (parentSession) {
+        return <ParentDashboard session={parentSession} />;
     }
 
-    return <RegularDashboard />;
+    if (user) {
+        return <RegularDashboard />;
+    }
+
+    // Should be caught by AuthGuard, but as a fallback
+    return <DashboardSkeleton />;
 }
 
 export default function DashboardPage() {
     return (
-        <Suspense 
-          fallback={
-            <div className="flex items-center justify-center h-[60vh]">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          }
-        >
+        <Suspense fallback={<DashboardSkeleton />}>
             <DashboardPageContent />
         </Suspense>
     );

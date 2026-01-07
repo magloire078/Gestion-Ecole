@@ -36,25 +36,27 @@ interface UserNavProps {
 export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
-  const { user, loading: userLoading, schoolId } = useUser();
+  // We get the parent session info from AuthGuard, not directly in useUser
+  const { user: firebaseUser, loading: userLoading, schoolId } = useUser();
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
   
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [isParent, setIsParent] = useState(false);
 
   useEffect(() => {
-    if (userLoading || !user) return;
-    
-    if (user && !user.isParent && schoolId === undefined) {
-      setIsTransitioning(true);
-    } else {
-      setIsTransitioning(false);
+    setIsClient(true);
+    if(localStorage.getItem('parent_session_id')) {
+        setIsParent(true);
     }
-  }, [user, schoolId, userLoading]);
+  }, []);
+
+  const user = isParent ? { isParent: true, displayName: 'Parent / Tuteur', profile: undefined, authUser: undefined } : firebaseUser;
+  const loading = userLoading && !isParent;
 
   const handleLogout = async () => {
-    if (user?.isParent) {
+    if (isParent) {
         localStorage.removeItem('parent_session_id');
         localStorage.removeItem('parent_school_id');
         localStorage.removeItem('parent_student_ids');
@@ -79,7 +81,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
 
-  if (userLoading || isTransitioning) {
+  if (loading || !isClient) {
     return (
       <div className={cn("flex items-center gap-2")}>
         <Skeleton className="h-9 w-9 rounded-full" />
@@ -98,9 +100,9 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   const isSuperAdmin = user?.profile?.isAdmin === true;
   
-  const displayName = user.isParent ? 'Parent / Tuteur' : user?.profile?.displayName || user?.authUser?.displayName || 'Utilisateur';
+  const displayName = isParent ? 'Parent / Tuteur' : user?.profile?.displayName || user?.authUser?.displayName || 'Utilisateur';
   
-  const userRole = user.isParent ? 'Portail Parent' : isSuperAdmin 
+  const userRole = isParent ? 'Portail Parent' : isSuperAdmin 
     ? 'Super Administrateur' 
     : (user?.profile?.role === 'directeur' ? 'Directeur' : user?.profile?.role || 'Membre');
   
@@ -139,13 +141,13 @@ export function UserNav({ collapsed = false }: UserNavProps) {
             )}
           </div>
           
-          {!user.isParent && user?.authUser?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{user.authUser.email}</p>}
+          {!isParent && user?.authUser?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{user.authUser.email}</p>}
         </div>
       </DropdownMenuLabel>
       
       <DropdownMenuSeparator />
       
-      {!user.isParent && (
+      {!isParent && (
         <>
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>
@@ -181,7 +183,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       
       <DropdownMenuItem onClick={handleLogout}>
         <LogOutIcon className="mr-2 h-4 w-4" />
-        {user.isParent ? "Quitter le portail" : "Se déconnecter"}
+        {isParent ? "Quitter le portail" : "Se déconnecter"}
       </DropdownMenuItem>
     </>
   );
@@ -192,7 +194,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
         <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")}>
           <Avatar className="h-8 w-8">
             <SafeImage src={user?.profile?.photoURL || user?.authUser?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
-            <AvatarFallback>{schoolLoading || isTransitioning ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
+            <AvatarFallback>{loading ? <Loader2 className="h-3 w-3 animate-spin" /> : fallback}</AvatarFallback>
           </Avatar>
            <div className={cn("flex flex-col items-start", collapsed && "hidden")}>
               <span className="text-sm font-medium leading-none">{displayName}</span>
