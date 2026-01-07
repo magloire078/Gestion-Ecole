@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {useState, useEffect, useCallback} from 'react';
@@ -42,29 +41,6 @@ export function useUser() {
   const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
   const [isDirector, setIsDirector] = useState(false);
 
-  const checkParentSession = useCallback(() => {
-    try {
-        const sessionId = localStorage.getItem('parent_session_id');
-        const sessionSchoolId = localStorage.getItem('parent_school_id');
-        const studentIdsStr = localStorage.getItem('parent_student_ids');
-
-        if (sessionId && sessionSchoolId && studentIdsStr) {
-            setSchoolId(sessionSchoolId);
-            setUser({
-                uid: sessionId,
-                schoolId: sessionSchoolId,
-                isParent: true,
-                parentStudentIds: JSON.parse(studentIdsStr),
-            });
-            setLoading(false);
-            return true;
-        }
-    } catch (e) {
-        console.error("Error accessing parent session from localStorage:", e);
-    }
-    return false;
-  }, []);
-  
   const fetchUserData = useCallback(async (authUser: FirebaseUser) => {
     try {
       const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
@@ -83,7 +59,7 @@ export function useUser() {
               hireDate: '', baseSalary: 0, displayName: 'Super Admin',
               permissions: { ...allPermissions }, isAdmin: true,
           };
-           setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
+           setUser({ authUser, uid: authUser.uid, profile: superAdminProfile, schoolId: effectiveSchoolId });
            setIsDirector(false);
       } else if (effectiveSchoolId) {
           const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
@@ -115,12 +91,12 @@ export function useUser() {
           }
 
       } else {
-          setUser({ authUser, uid: authUser.uid, profile: undefined });
+          setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: null });
           setIsDirector(false);
       }
     } catch (error) {
       console.error("Erreur dans useUser fetchUserData:", error);
-      setUser({ authUser, uid: authUser.uid, profile: undefined });
+      setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: null });
       setSchoolId(null);
       setIsDirector(false);
     } finally {
@@ -131,30 +107,24 @@ export function useUser() {
   const reloadUser = useCallback(async () => {
     if (auth?.currentUser) {
         setLoading(true);
-        await auth.currentUser.getIdToken(true);
+        await auth.currentUser.getIdToken(true); // Force token refresh
         await fetchUserData(auth.currentUser);
     }
   }, [auth, fetchUserData]);
 
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !auth || !firestore) {
+    if (!auth || !firestore) {
         setLoading(false);
-        return;
-    }
-    
-    if (checkParentSession()) {
         return;
     }
 
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (!authUser) {
-        if (!checkParentSession()) {
-          setUser(null);
-          setSchoolId(null);
-          setIsDirector(false);
-          setLoading(false);
-        }
+        setUser(null);
+        setSchoolId(null);
+        setIsDirector(false);
+        setLoading(false);
         return;
       }
       
@@ -163,7 +133,7 @@ export function useUser() {
     });
 
     return () => unsubscribe();
-  }, [auth, firestore, checkParentSession, fetchUserData]);
+  }, [auth, firestore, fetchUserData]);
 
   return {user, loading, schoolId, isDirector, reloadUser};
 }
