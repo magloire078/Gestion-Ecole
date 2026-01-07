@@ -7,6 +7,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  type AuthError,
 } from 'firebase/auth';
 import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -25,6 +26,7 @@ import Link from 'next/link';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/logo';
 import { Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -58,15 +60,17 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const router = useRouter();
+  const [isGoogleProcessing, setIsGoogleProcessing] = useState(false);
   const auth = useAuth();
   const { toast } = useToast();
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     if (!email || !password) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez remplir tous les champs.' });
+      setError('Veuillez remplir tous les champs.');
       return;
     }
     
@@ -76,30 +80,27 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       toast({ title: "Connexion réussie", description: "Redirection vers votre espace..." });
       // La redirection est gérée par le AuthGuard / page.tsx
-    } catch (error: any) {
-      console.error('Erreur de connexion:', error);
+    } catch (error) {
+      const authError = error as AuthError;
+      console.error('Erreur de connexion:', authError.code);
       
       let errorMessage = 'Email ou mot de passe incorrect.';
-      if (error.code === 'auth/user-not-found') {
+      if (authError.code === 'auth/user-not-found') {
         errorMessage = 'Aucun compte trouvé avec cet email.';
-      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      } else if (authError.code === 'auth/wrong-password' || authError.code === 'auth/invalid-credential') {
         errorMessage = 'Mot de passe incorrect.';
-      } else if (error.code === 'auth/too-many-requests') {
+      } else if (authError.code === 'auth/too-many-requests') {
         errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
       }
-      
-      toast({ 
-        variant: 'destructive', 
-        title: 'Erreur de connexion', 
-        description: errorMessage 
-      });
+      setError(errorMessage);
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
-    setIsProcessing(true);
+    setIsGoogleProcessing(true);
+    setError('');
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
@@ -109,23 +110,19 @@ export default function LoginPage() {
       await signInWithPopup(auth, provider);
       toast({ title: "Connexion Google réussie", description: "Redirection vers votre espace..." });
       // La redirection est gérée par le AuthGuard / page.tsx
-    } catch (error: any) {
-      console.error('Erreur Google:', error);
+    } catch (error) {
+      const authError = error as AuthError;
+      console.error('Erreur Google:', authError.code);
       
-      let errorMessage = 'Erreur de connexion avec Google.';
-      if (error.code === 'auth/popup-closed-by-user') {
-        errorMessage = 'La fenêtre de connexion a été fermée.';
-      } else if (error.code === 'auth/popup-blocked') {
-        errorMessage = 'La fenêtre popup a été bloquée. Autorisez les popups pour ce site.';
+      if (authError.code !== 'auth/popup-closed-by-user') {
+          let errorMessage = 'Erreur de connexion avec Google.';
+          if (authError.code === 'auth/popup-blocked') {
+            errorMessage = 'La fenêtre popup a été bloquée. Autorisez les popups pour ce site.';
+          }
+          setError(errorMessage);
       }
-      
-      toast({ 
-        variant: 'destructive', 
-        title: 'Erreur',
-        description: errorMessage 
-      });
     } finally {
-      setIsProcessing(false);
+      setIsGoogleProcessing(false);
     }
   };
 
@@ -144,6 +141,11 @@ export default function LoginPage() {
         
         <form onSubmit={handleSignIn}>
           <CardContent className="grid gap-4">
+            {error && (
+                <Alert variant="destructive" className="py-2 px-3 text-sm">
+                    <AlertDescription>{error}</AlertDescription>
+                </Alert>
+            )}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input 
@@ -153,7 +155,7 @@ export default function LoginPage() {
                 value={email} 
                 onChange={(e) => setEmail(e.target.value)} 
                 required 
-                disabled={isProcessing}
+                disabled={isProcessing || isGoogleProcessing}
                 autoComplete="email"
               />
             </div>
@@ -179,17 +181,17 @@ export default function LoginPage() {
                 value={password} 
                 onChange={(e) => setPassword(e.target.value)} 
                 required 
-                disabled={isProcessing}
+                disabled={isProcessing || isGoogleProcessing}
                 autoComplete="current-password"
               />
             </div>
           </CardContent>
           
-          <CardFooter className="flex flex-col gap-4">
+          <CardFooter>
             <Button 
               type="submit" 
               className="w-full" 
-              disabled={isProcessing || !email || !password}
+              disabled={isProcessing || isGoogleProcessing || !email || !password}
             >
               {isProcessing ? (
                 <>
@@ -215,17 +217,21 @@ export default function LoginPage() {
             variant="outline" 
             className="w-full" 
             onClick={handleGoogleSignIn} 
-            disabled={isProcessing}
+            disabled={isProcessing || isGoogleProcessing}
             type="button"
           >
-            <GoogleIcon className="mr-2 h-4 w-4" />
+            {isGoogleProcessing ? (
+                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                 <GoogleIcon className="mr-2 h-4 w-4" />
+            )}
             Continuer avec Google
           </Button>
           
           <p className="text-center text-sm text-muted-foreground">
             Pas encore de compte ?{' '}
             <Button variant="link" className="p-0 h-auto" asChild>
-              <Link href="/auth/register">Créez-en un</Link>
+              <Link href="/onboarding/create-school">Créez-en un</Link>
             </Button>
           </p>
           
