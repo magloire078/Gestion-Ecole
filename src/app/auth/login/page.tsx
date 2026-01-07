@@ -66,7 +66,7 @@ export default function LoginPage() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast({ variant: 'destructive', title: 'Champs requis' });
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez remplir tous les champs.' });
       return;
     }
     
@@ -74,7 +74,6 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // La redirection est gérée par le AuthGuard
       toast({ 
         title: 'Connexion réussie', 
         description: 'Redirection en cours...' 
@@ -90,11 +89,13 @@ export default function LoginPage() {
         errorMessage = 'Mot de passe incorrect.';
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
+      } else if (error.code === 'auth/invalid-credential') {
+          errorMessage = 'Les identifiants fournis ne sont pas valides.';
       }
       
       toast({ 
         variant: 'destructive', 
-        title: 'Erreur de connexion', 
+        title: 'Erreur', 
         description: errorMessage 
       });
     } finally {
@@ -128,7 +129,7 @@ export default function LoginPage() {
       
       toast({ 
         variant: 'destructive', 
-        title: 'Erreur de connexion avec Google',
+        title: 'Erreur',
         description: errorMessage 
       });
     } finally {
