@@ -36,27 +36,25 @@ interface UserNavProps {
 export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
-  // We get the parent session info from AuthGuard, not directly in useUser
-  const { user: firebaseUser, loading: userLoading, schoolId } = useUser();
+  const { user: firebaseUser, loading: userLoading } = useUser();
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
   
   const [isClient, setIsClient] = useState(false);
-  const [isParent, setIsParent] = useState(false);
+  const [isParentSession, setIsParentSession] = useState(false);
 
   useEffect(() => {
+    // Ce hook s'exécute uniquement côté client, après le premier rendu.
     setIsClient(true);
-    if(localStorage.getItem('parent_session_id')) {
-        setIsParent(true);
-    }
+    setIsParentSession(!!localStorage.getItem('parent_session_id'));
   }, []);
 
-  const user = isParent ? { isParent: true, displayName: 'Parent / Tuteur', profile: undefined, authUser: undefined } : firebaseUser;
-  const loading = userLoading && !isParent;
+  const user = isParentSession ? { isParent: true, displayName: 'Parent / Tuteur', profile: undefined, authUser: undefined } : firebaseUser;
+  const loading = userLoading || !isClient; // L'état est "loading" tant que le client n'a pas vérifié la session
 
   const handleLogout = async () => {
-    if (isParent) {
+    if (isParentSession) {
         localStorage.removeItem('parent_session_id');
         localStorage.removeItem('parent_school_id');
         localStorage.removeItem('parent_student_ids');
@@ -81,7 +79,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
 
-  if (loading || !isClient) {
+  if (loading) {
     return (
       <div className={cn("flex items-center gap-2")}>
         <Skeleton className="h-9 w-9 rounded-full" />
@@ -100,11 +98,13 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   const isSuperAdmin = user?.profile?.isAdmin === true;
   
-  const displayName = isParent ? 'Parent / Tuteur' : user?.profile?.displayName || user?.authUser?.displayName || 'Utilisateur';
+  const displayName = isParentSession ? 'Parent / Tuteur' : user?.profile?.displayName || user?.authUser?.displayName || 'Utilisateur';
   
-  const userRole = isParent ? 'Portail Parent' : isSuperAdmin 
-    ? 'Super Administrateur' 
-    : (user?.profile?.role === 'directeur' ? 'Directeur' : user?.profile?.role || 'Membre');
+  const userRole = isParentSession 
+    ? 'Portail Parent' 
+    : isSuperAdmin 
+      ? 'Super Administrateur' 
+      : (user?.profile?.role === 'directeur' ? 'Directeur' : user?.profile?.role || 'Membre');
   
   const fallback = displayName 
     ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() 
@@ -141,13 +141,13 @@ export function UserNav({ collapsed = false }: UserNavProps) {
             )}
           </div>
           
-          {!isParent && user?.authUser?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{user.authUser.email}</p>}
+          {!isParentSession && user?.authUser?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{user.authUser.email}</p>}
         </div>
       </DropdownMenuLabel>
       
       <DropdownMenuSeparator />
       
-      {!isParent && (
+      {!isParentSession && (
         <>
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>
@@ -183,7 +183,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       
       <DropdownMenuItem onClick={handleLogout}>
         <LogOutIcon className="mr-2 h-4 w-4" />
-        {isParent ? "Quitter le portail" : "Se déconnecter"}
+        {isParentSession ? "Quitter le portail" : "Se déconnecter"}
       </DropdownMenuItem>
     </>
   );

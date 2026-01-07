@@ -40,22 +40,6 @@ const DashboardSkeleton = () => (
   </div>
 );
 
-const ParentDashboardSkeleton = () => (
-  <div className="space-y-6">
-    <Skeleton className="h-8 w-48" />
-    <Skeleton className="h-24 w-full" />
-    <Card>
-      <CardHeader>
-        <Skeleton className="h-6 w-32" />
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-24 w-full" />
-      </CardContent>
-    </Card>
-  </div>
-);
-
 // ====================================================================================
 // Custom Hooks for Data Fetching
 // ====================================================================================
@@ -118,13 +102,12 @@ const useGradesData = (schoolId?: string | null) => {
 // Parent Dashboard Component
 // ====================================================================================
 interface ParentDashboardState {
-    isParent: boolean;
     studentIds: string[];
     schoolId: string;
 }
 
 const ParentDashboard = ({ session }: { session: ParentDashboardState }) => {
-    if (!session.isParent || !session.schoolId) {
+    if (!session.schoolId) {
       return (
         <Alert>
           <AlertDescription>
@@ -259,9 +242,14 @@ function DashboardPageContent() {
         if (isClient) {
             const sessionId = localStorage.getItem('parent_session_id');
             const schoolId = localStorage.getItem('parent_school_id');
-            const studentIds = localStorage.getItem('parent_student_ids');
-            if (sessionId && schoolId && studentIds) {
-                setParentSession({ isParent: true, studentIds: JSON.parse(studentIds), schoolId });
+            const studentIdsStr = localStorage.getItem('parent_student_ids');
+            if (sessionId && schoolId && studentIdsStr) {
+                try {
+                    const studentIds = JSON.parse(studentIdsStr);
+                    setParentSession({ studentIds, schoolId });
+                } catch (e) {
+                    console.error("Failed to parse parent session data from localStorage", e);
+                }
             }
         }
     }, [isClient]);
@@ -278,7 +266,6 @@ function DashboardPageContent() {
         return <RegularDashboard />;
     }
 
-    // Should be caught by AuthGuard, but as a fallback
     return <DashboardSkeleton />;
 }
 

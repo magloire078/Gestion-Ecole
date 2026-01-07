@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -21,13 +22,26 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
 
-  const isPublicPage = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'].some(p => pathname.startsWith(p)) || pathname === '/';
-  const isOnboardingPage = pathname.startsWith('/onboarding');
-  
   useEffect(() => {
-    if (loading) {
-      return; // Ne rien faire tant que l'état de l'utilisateur n'est pas résolu
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient || loading) {
+      return; 
+    }
+
+    const isPublicPage = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'].some(p => pathname.startsWith(p)) || pathname === '/';
+    const isOnboardingPage = pathname.startsWith('/onboarding');
+    const isParentSession = !!localStorage.getItem('parent_session_id');
+
+    if (isParentSession) {
+      if (isPublicPage) {
+        router.replace('/dashboard');
+      }
+      return;
     }
 
     if (!user && !isPublicPage) {
@@ -36,29 +50,30 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (user) {
-        if (isPublicPage && !user.isParent) {
+        if (isPublicPage) {
             router.replace('/dashboard');
             return;
         }
 
-        if (!user.isParent) {
-            const hasSchool = !!user.schoolId;
-            if (hasSchool && isOnboardingPage) {
-                router.replace('/dashboard');
-            } else if (!hasSchool && !isOnboardingPage && pathname.startsWith('/dashboard')) {
-                router.replace('/onboarding');
-            }
+        const hasSchool = !!user.schoolId;
+        if (hasSchool && isOnboardingPage) {
+            router.replace('/dashboard');
+        } else if (!hasSchool && !isOnboardingPage && pathname.startsWith('/dashboard')) {
+            router.replace('/onboarding');
         }
     }
-  }, [user, loading, pathname, isPublicPage, isOnboardingPage, router]);
+  }, [user, loading, pathname, router, isClient]);
 
+  const isPublicPage = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'].some(p => pathname.startsWith(p)) || pathname === '/';
+
+  // Pendant le chargement initial ou sur une page non publique sans utilisateur, afficher le loader.
   if (loading && !isPublicPage) {
     return <AuthProtectionLoader />;
   }
 
-  // Si on est sur une page protégée mais sans utilisateur, on affiche le loader pendant la redirection.
-  if (!user && !isPublicPage) {
-    return <AuthProtectionLoader />;
+  // Gérer le cas où on est sur le client, le chargement est terminé, mais l'utilisateur n'est pas là et la page n'est pas publique.
+  if (isClient && !loading && !user && !isPublicPage && !localStorage.getItem('parent_session_id')) {
+    return <AuthProtectionLoader />; // Affiche le loader pendant la redirection
   }
 
   return <>{children}</>;

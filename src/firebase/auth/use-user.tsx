@@ -1,3 +1,4 @@
+
 'use client';
 
 import {useState, useEffect, useCallback} from 'react';
@@ -15,7 +16,7 @@ export interface CombinedUser {
     uid: string;
     authUser: FirebaseUser;
     profile?: UserProfile;
-    isParent?: false; // Explicitly not a parent in this context
+    isParent?: false; 
     schoolId?: string;
     displayName?: string;
     photoURL?: string;
