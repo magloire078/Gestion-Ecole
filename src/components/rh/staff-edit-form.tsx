@@ -81,17 +81,12 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     const auth = useAuth();
     const { user: currentUser } = useUser();
     const { toast } = useToast();
-    const [todayDateString, setTodayDateString] = useState('');
     const [photoUrl, setPhotoUrl] = useState<string | null>(editingStaff?.photoURL || null);
     
     const [isPayslipOpen, setIsPayslipOpen] = useState(false);
     const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
     const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
     const { schoolData } = useSchoolData();
-
-    useEffect(() => {
-        setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
-    }, []);
 
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(staffSchema),
@@ -110,7 +105,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 const hireDate = fullData.hireDate || editingStaff.hireDate;
                 const formattedHireDate = hireDate && isValid(parseISO(hireDate)) 
                     ? format(parseISO(hireDate), 'yyyy-MM-dd') 
-                    : todayDateString;
+                    : format(new Date(), 'yyyy-MM-dd');
 
                 form.reset({
                     ...editingStaff,
@@ -122,13 +117,13 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 setPhotoUrl(editingStaff.photoURL || null);
             } else {
                 form.reset({
-                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
                 });
                 setPhotoUrl(null);
             }
         }
         loadPrivateData();
-    }, [editingStaff, schoolId, firestore, form, todayDateString]);
+    }, [editingStaff, schoolId, firestore, form]);
     
     const watchedRole = useWatch({ control: form.control, name: 'role' });
 
