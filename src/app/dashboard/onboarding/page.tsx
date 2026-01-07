@@ -1,8 +1,12 @@
 
 'use client';
 import { redirect } from 'next/navigation';
+import { useEffect } from 'react';
 
 // La logique est désormais centralisée dans /onboarding
 export default function OnboardingRedirect() {
-    redirect('/onboarding');
+    useEffect(() => {
+        redirect('/onboarding');
+    }, []);
+    return null;
 }

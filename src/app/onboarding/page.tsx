@@ -1,166 +1,301 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useFirestore, useUser } from '@/firebase';
-import { doc, getDocs, collection, query, where, writeBatch } from 'firebase/firestore';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useUser, useFirestore, useAuth } from "@/firebase";
+import { doc, writeBatch, collection, query, where, getDocs } from "firebase/firestore";
 import { Logo } from '@/components/logo';
+import { FirestorePermissionError } from "@/firebase/errors";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { staff as Staff, user_root } from '@/lib/data-types';
 import { Loader2 } from 'lucide-react';
-import type { staff as Staff } from '@/lib/data-types';
+
+type OnboardingMode = "create" | "join";
 
 export default function OnboardingPage() {
-  const router = useRouter();
+  const { user, loading, reloadUser } = useUser();
   const auth = useAuth();
   const firestore = useFirestore();
-  const { user, loading, reloadUser } = useUser();
+  const router = useRouter();
   const { toast } = useToast();
-  const [loadingAction, setLoadingAction] = useState(false);
+  
+  const [mode, setMode] = useState<OnboardingMode>("create");
   const [schoolCode, setSchoolCode] = useState('');
-  const [error, setError] = useState('');
-
+  const [role, setRole] = useState('enseignant');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // S'assurer que nous sommes côté client
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  // Vérifier si l'utilisateur a déjà une école (côté client uniquement)
+  useEffect(() => {
+    if (!isMounted) return;
+    
     if (!loading && user && user.schoolId) {
-      router.replace('/dashboard');
+      console.log('Utilisateur a déjà une école, redirection vers dashboard');
+      router.push('/dashboard');
     }
-  }, [user, loading, router]);
-
-
-  const handleCreateSchool = () => {
-    router.push('/onboarding/create-school');
-  };
+  }, [user, loading, router, isMounted]);
 
   const handleJoinSchool = async () => {
-    if (!schoolCode.trim()) {
-      setError('Veuillez entrer un code d\'école');
+    if (!isMounted) return;
+    
+    if (!user || !user.uid || !user.displayName || !user.email) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Erreur', 
+        description: 'Utilisateur non authentifié ou informations manquantes.' 
+      });
       return;
     }
-    setLoadingAction(true);
-    setError('');
+    
+    if (!schoolCode.trim()) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Erreur', 
+        description: 'Le code de l\'établissement est requis.' 
+      });
+      return;
+    }
+    
+    if (!role) {
+      toast({ 
+        variant: 'destructive', 
+        title: 'Erreur', 
+        description: 'Veuillez sélectionner votre rôle dans l\'établissement.' 
+      });
+      return;
+    }
+
+    setIsProcessing(true);
 
     try {
-      const authUser = auth.currentUser;
-      if (!authUser) {
-        router.push('/auth/login');
-        return;
-      }
-
       const schoolsRef = collection(firestore, 'ecoles');
-      const q = query(schoolsRef, where('schoolCode', '==', schoolCode.trim().toUpperCase()));
-      const snapshot = await getDocs(q);
+      const q = query(schoolsRef, where("schoolCode", "==", schoolCode.trim()));
+      const querySnapshot = await getDocs(q);
 
-      if (snapshot.empty) {
-        setError('Aucune école trouvée avec ce code');
-        setLoadingAction(false);
+      if (querySnapshot.empty) {
+        toast({ 
+          variant: 'destructive', 
+          title: 'Code Invalide', 
+          description: 'Aucun établissement trouvé avec ce code. Veuillez vérifier et réessayer.' 
+        });
+        setIsProcessing(false);
         return;
       }
 
-      const schoolDoc = snapshot.docs[0];
+      const schoolDoc = querySnapshot.docs[0];
       const schoolId = schoolDoc.id;
+      const nameParts = user.displayName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
 
-      const userRef = doc(firestore, 'users', authUser.uid);
-      const memberRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
+      const rootUserRef = doc(firestore, `users/${user.uid}`);
+      const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
       
-      const batch = writeBatch(firestore);
-
-      batch.update(userRef, { schoolId: schoolId, schoolRole: 'staff' });
-      
-      const memberData: Partial<Staff> = {
-        uid: authUser.uid,
-        firstName: authUser.displayName?.split(' ')[0] || 'Nouveau',
-        lastName: authUser.displayName?.split(' ').slice(1).join(' ') || 'Membre',
-        displayName: authUser.displayName,
-        email: authUser.email,
-        role: 'enseignant', // Rôle par défaut
-        hireDate: new Date().toISOString(),
+      const rootUserData: user_root = { schoolId: schoolId };
+      const staffProfileData: Omit<Staff, 'id'> = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL || '',
+        schoolId: schoolId,
+        role: role as any, 
+        firstName: firstName,
+        lastName: lastName,
+        hireDate: new Date().toISOString().split('T')[0],
         baseSalary: 0,
         status: 'Actif',
-        schoolId: schoolId,
       };
-      
-      batch.set(memberRef, memberData, { merge: true });
 
+      const batch = writeBatch(firestore);
+      batch.set(rootUserRef, rootUserData);
+      batch.set(staffProfileRef, staffProfileData);
       await batch.commit();
 
+      // Rafraîchir le token
+      if (auth?.currentUser) {
+        await auth.currentUser.getIdToken(true);
+      }
+      
+      // Recharger les données utilisateur
       if (reloadUser) {
         await reloadUser();
       }
-      await authUser.getIdToken(true);
-      await new Promise(resolve => setTimeout(resolve, 500));
+
+      toast({
+        title: 'Bienvenue !',
+        description: `Vous avez rejoint l'établissement ${schoolDoc.data().name}. Redirection en cours...`,
+      });
+
+      // Attendre un peu avant la redirection
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      toast({ title: 'Bienvenue !', description: 'Vous avez rejoint une école.'});
+      // Redirection avec replace pour éviter de revenir en arrière
       router.replace('/dashboard');
 
-    } catch (error: any) {
-      console.error('Erreur:', error);
-      setError(error.message);
-      setLoadingAction(false);
+    } catch(error: any) {
+      console.error('Erreur lors de la jonction:', error);
+      
+      const permissionError = new FirestorePermissionError({
+        path: `[BATCH] /users/${user.uid} & /ecoles/${schoolCode}/personnel/${user.uid}`,
+        operation: 'write',
+        requestResourceData: { schoolCode },
+      });
+      errorEmitter.emit('permission-error', permissionError);
+      
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: error.message || 'Une erreur est survenue lors de la jonction.',
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
   
-   if (loading || (user && user.schoolId)) {
+  // Afficher un loader pendant le chargement initial ou si pas encore monté côté client
+  if (!isMounted || loading) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
-          <p>Chargement...</p>
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-lg font-semibold">Chargement...</p>
+          <p className="text-muted-foreground">Vérification de votre compte.</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Si pas d'utilisateur, rediriger vers login
+  if (!user) {
+    // La redirection se fera via le hook useUser ou un middleware
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="text-lg font-semibold">Redirection vers la connexion...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-            <div className="mx-auto mb-4"><Logo /></div>
-          <CardTitle className="text-center">Bienvenue, {user?.displayName || 'Utilisateur'}!</CardTitle>
-          <CardDescription className="text-center">
-            Vous n'êtes associé à aucune école pour le moment.
+          <div className="mb-4 flex justify-center">
+            <Logo />
+          </div>
+          <CardTitle className="text-2xl">Bienvenue sur GèreEcole</CardTitle>
+          <CardDescription>
+            Commencez par créer votre établissement ou rejoignez-en un existant.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="create" className="w-full">
-            <TabsList className="grid grid-cols-2">
-              <TabsTrigger value="create">Créer une école</TabsTrigger>
-              <TabsTrigger value="join">Rejoindre une école</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="create" className="space-y-4 pt-4 text-center">
-              <p className="text-muted-foreground text-sm">
-                Vous êtes le premier de votre établissement ? Créez votre école et devenez administrateur.
-              </p>
-              <Button onClick={handleCreateSchool} className="w-full">
-                Commencer la création
-              </Button>
-            </TabsContent>
-            
-            <TabsContent value="join" className="space-y-4 pt-4">
-              <p className="text-muted-foreground text-sm">
-                Rejoignez une école existante avec un code fourni par l'administrateur.
-              </p>
-              <Input
-                placeholder="Code de l'école (ex: ABC-1234)"
-                value={schoolCode}
-                onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
-                disabled={loadingAction}
-              />
-              {error && <p className="text-destructive text-sm">{error}</p>}
-              <Button 
-                onClick={handleJoinSchool} 
-                className="w-full"
-                disabled={loadingAction || !schoolCode.trim()}
+        <CardContent className="space-y-6">
+          <RadioGroup 
+            defaultValue="create" 
+            onValueChange={(value: OnboardingMode) => setMode(value)} 
+            className="grid grid-cols-2 gap-4"
+            disabled={isProcessing}
+          >
+            <div>
+              <RadioGroupItem value="create" id="create" className="peer sr-only" />
+              <Label 
+                htmlFor="create" 
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-colors"
               >
-                {loadingAction ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                {loadingAction ? 'Recherche...' : 'Rejoindre l\'école'}
-              </Button>
-            </TabsContent>
-          </Tabs>
+                Créer une école
+              </Label>
+            </div>
+            <div>
+              <RadioGroupItem value="join" id="join" className="peer sr-only" />
+              <Label 
+                htmlFor="join" 
+                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-colors"
+              >
+                Rejoindre une école
+              </Label>
+            </div>
+          </RadioGroup>
+
+          {mode === 'create' && (
+            <div className="text-center space-y-4 animate-in fade-in-50">
+              <p className="text-sm text-muted-foreground">
+                Vous serez guidé(e) à travers un assistant pour configurer votre nouvelle école.
+                Vous serez automatiquement désigné comme directeur.
+              </p>
+            </div>
+          )}
+
+          {mode === 'join' && (
+            <div className="space-y-4 animate-in fade-in-50">
+              <div className="grid gap-2">
+                <Label htmlFor="school-code">Code de l'établissement</Label>
+                <Input
+                  id="school-code"
+                  placeholder="Ex: LAU-1234"
+                  value={schoolCode}
+                  onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
+                  disabled={isProcessing}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Demandez ce code à l'administrateur de l'école
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="role">Votre Rôle</Label>
+                <Select onValueChange={setRole} defaultValue={role} disabled={isProcessing}>
+                  <SelectTrigger id="role">
+                    <SelectValue placeholder="Sélectionnez votre rôle..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="enseignant">Enseignant(e)</SelectItem>
+                    <SelectItem value="secretaire">Secrétaire</SelectItem>
+                    <SelectItem value="comptable">Comptable</SelectItem>
+                    <SelectItem value="surveillant">Surveillant(e)</SelectItem>
+                    <SelectItem value="bibliothecaire">Bibliothécaire</SelectItem>
+                    <SelectItem value="infirmier">Infirmier(e)</SelectItem>
+                    <SelectItem value="chauffeur">Chauffeur</SelectItem>
+                    <SelectItem value="personnel">Autre Personnel</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </CardContent>
+        <CardFooter>
+          <Button 
+            className="w-full" 
+            onClick={mode === 'create' 
+              ? () => router.push('/onboarding/create-school') 
+              : handleJoinSchool
+            } 
+            disabled={isProcessing || (mode === 'join' && !schoolCode.trim())}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Traitement en cours...
+              </>
+            ) : mode === 'create' ? (
+              'Continuer vers la Création'
+            ) : (
+              'Rejoindre l\'établissement'
+            )}
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
