@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -17,7 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Logo } from '@/components/ui/logo';
+import { Logo } from '@/components/logo';
 import { Loader2 } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
