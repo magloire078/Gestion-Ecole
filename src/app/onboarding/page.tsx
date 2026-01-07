@@ -70,9 +70,15 @@ export default function OnboardingPage() {
 
       batch.update(userRef, { schoolId: schoolId, schoolRole: 'staff' });
       batch.set(memberRef, {
-        userId: authUser.uid,
+        uid: authUser.uid,
+        firstName: authUser.displayName?.split(' ')[0] || 'Nouveau',
+        lastName: authUser.displayName?.split(' ').slice(1).join(' ') || 'Membre',
+        displayName: authUser.displayName,
+        email: authUser.email,
         role: 'enseignant', // Rôle par défaut
         joinedAt: new Date().toISOString(),
+        status: 'Actif',
+        schoolId: schoolId,
       });
 
       await batch.commit();
@@ -134,7 +140,7 @@ export default function OnboardingPage() {
                 Rejoignez une école existante avec un code fourni par l'administrateur.
               </p>
               <Input
-                placeholder="Code de l'école (ex: ECOLE123)"
+                placeholder="Code de l'école (ex: ABC123)"
                 value={schoolCode}
                 onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
                 disabled={loadingAction}

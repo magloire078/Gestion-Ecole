@@ -1,21 +1,14 @@
-
 'use client';
 import { 
   collection, 
   doc, 
   writeBatch, 
   serverTimestamp,
-  setDoc,
-  getDocs,
-  query,
-  where,
-  limit
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
-import type { school, user_root, staff, system_log } from '@/lib/data-types';
+import type { school, user_root, staff } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { getAuth } from 'firebase/auth';
 
 interface SchoolCreationData {
     name: string;
@@ -43,18 +36,6 @@ export class SchoolCreationService {
   }
   
   async createSchool(schoolData: SchoolCreationData) {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    
-    if (!user) {
-      throw new Error("Utilisateur non connecté");
-    }
-    
-    // Vérification UID
-    if (user.uid !== schoolData.directorId) {
-      throw new Error("L'utilisateur ne correspond pas au directeur");
-    }
-    
     const batch = writeBatch(this.db);
     
     try {
@@ -72,16 +53,16 @@ export class SchoolCreationService {
         directorId: schoolData.directorId,
         directorFirstName: schoolData.directorFirstName,
         directorLastName: schoolData.directorLastName,
-        directorPhone: user.phoneNumber || '',
+        directorPhone: schoolData.phone,
         createdAt: new Date().toISOString(),
         mainLogoUrl: schoolData.mainLogoUrl || '',
         status: 'active',
-        isSetupComplete: false, // Initialisé à false
+        isSetupComplete: false,
         subscription: {
           plan: 'Essentiel',
           status: 'trialing',
           startDate: new Date().toISOString(),
-          endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(), // 30 jours d'essai
+          endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
           maxStudents: 50,
           maxCycles: 5,
         }
@@ -90,21 +71,20 @@ export class SchoolCreationService {
       batch.set(schoolRef, schoolDoc);
 
       // 2. Mettre à jour le document racine de l'UTILISATEUR
-      const userRef = doc(this.db, `utilisateurs/${schoolData.directorId}`);
+      const userRef = doc(this.db, `users/${schoolData.directorId}`);
       
       const userDoc: user_root = {
         schoolId: schoolId,
       };
       
-      batch.set(userRef, userDoc);
+      batch.set(userRef, userDoc, { merge: true });
       
       // 3. Créer le profil PERSONNEL pour le directeur
-      const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${user.uid}`);
-      const staffProfileData: Omit<staff, 'id'> = {
-          uid: user.uid,
-          email: user.email!,
-          displayName: user.displayName || `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
-          photoURL: user.photoURL || '',
+      const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel/${schoolData.directorId}`);
+      const staffProfileData: Omit<staff, 'id' | 'uid'> = {
+          email: schoolData.directorEmail,
+          displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
+          photoURL: '',
           schoolId: schoolId,
           role: 'directeur',
           firstName: schoolData.directorFirstName,
@@ -115,11 +95,7 @@ export class SchoolCreationService {
       };
       batch.set(staffProfileRef, staffProfileData);
 
-      // 4. Exécuter le batch
       await batch.commit();
-
-      // 5. Rafraîchir le token pour inclure le schoolId dans les claims (côté serveur)
-      await user.getIdToken(true);
       
       return {
         schoolId,
@@ -129,19 +105,14 @@ export class SchoolCreationService {
       };
       
     } catch (error: any) {
-      console.error("❌ ERREUR DÉTAILLÉE:", {
-        name: error.name,
-        code: error.code,
-        message: error.message,
-        stack: error.stack
-      });
+      console.error("Erreur détaillée:", error);
       
       errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: '[BATCH] /ecoles & /utilisateurs & /personnel',
+          path: '[BATCH] /ecoles & /users & /personnel',
           operation: 'write'
       }));
       
-      throw new Error(`Échec création: ${error.message}`);
+      throw new Error(`Échec de la création: ${error.message}`);
     }
   }
 }

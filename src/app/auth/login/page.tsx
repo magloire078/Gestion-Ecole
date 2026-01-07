@@ -92,7 +92,6 @@ export default function LoginPage() {
           }
         } catch (error) {
           console.error('Erreur lors de la vérification:', error);
-          // Fallback en cas d'erreur, laisser l'utilisateur sur la page de login
            setIsCheckingUser(false);
         }
       } else {
