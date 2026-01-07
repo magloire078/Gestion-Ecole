@@ -134,7 +134,7 @@ export default function GradeEntryPage() {
     defaultValues: {
       studentId: '',
       type: 'Devoir',
-      date: '', // Initialize as empty, will be set by useEffect
+      date: '', // Initialize as empty
       grade: 0,
       coefficient: 1,
     }
