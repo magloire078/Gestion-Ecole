@@ -149,19 +149,22 @@ export function useUser() {
     const firebaseUser = auth?.currentUser;
     if (firebaseUser) {
         setLoading(true);
+        // Forcer le rafraîchissement du token
+        await firebaseUser.getIdToken(true);
         const userRootRef = doc(firestore, 'utilisateurs', firebaseUser.uid);
         const userRootSnap = await getDoc(userRootRef);
         if (userRootSnap.exists()) {
             await fetchFullUserProfile(firebaseUser, userRootSnap.data() as user_root);
         } else {
-             // L'utilisateur est authentifié mais n'a pas encore de document racine (onboarding)
-              setSchoolId(null);
-              setUser({ authUser: firebaseUser, uid: firebaseUser.uid, profile: undefined, schoolId: null });
-              setIsDirector(false);
-              setLoading(false);
+            setSchoolId(null);
+            setUser({ authUser: firebaseUser, uid: firebaseUser.uid, profile: undefined, schoolId: null });
+            setIsDirector(false);
+            setLoading(false);
         }
     }
   }, [auth, firestore, fetchFullUserProfile]);
 
   return {user, loading, schoolId, isDirector, reloadUser};
 }
+
+    
