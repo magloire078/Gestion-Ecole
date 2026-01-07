@@ -64,26 +64,91 @@ export function useUser() {
     }
     return false;
   }, []);
+  
+  const fetchUserData = useCallback(async (authUser: FirebaseUser) => {
+    try {
+      const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
+      const userRootSnap = await getDoc(userRootRef);
+
+      const effectiveSchoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
+      setSchoolId(effectiveSchoolId);
+      
+      const tokenResult = await authUser.getIdTokenResult(true);
+      const isSuperAdmin = (tokenResult.claims.superAdmin as boolean) === true;
+
+      if (isSuperAdmin) {
+          const superAdminProfile: UserProfile = {
+              uid: authUser.uid, email: authUser.email || '', schoolId: effectiveSchoolId || '',
+              role: 'super_admin' as any, firstName: 'Super', lastName: 'Admin',
+              hireDate: '', baseSalary: 0, displayName: 'Super Admin',
+              permissions: { ...allPermissions }, isAdmin: true,
+          };
+           setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
+           setIsDirector(false);
+      } else if (effectiveSchoolId) {
+          const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
+          const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
+          
+          const [profileSnap, schoolSnap] = await Promise.all([
+              getDoc(profileRef),
+              getDoc(schoolDocRef)
+          ]);
+
+          const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
+          const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
+          setIsDirector(isDirectorFlag);
+          
+          if (profileData) {
+              let permissions: Partial<AdminRole['permissions']> = {};
+              if (isDirectorFlag) {
+                  permissions = { ...allPermissions };
+              } else if (profileData.adminRole) {
+                  const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
+                  const roleSnap = await getDoc(roleRef);
+                  if (roleSnap.exists()) {
+                      permissions = roleSnap.data().permissions || {};
+                  }
+              }
+              setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: { ...profileData, permissions, isAdmin: false } });
+          } else {
+               setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: undefined });
+          }
+
+      } else {
+          setUser({ authUser, uid: authUser.uid, profile: undefined });
+          setIsDirector(false);
+      }
+    } catch (error) {
+      console.error("Erreur dans useUser fetchUserData:", error);
+      setUser({ authUser, uid: authUser.uid, profile: undefined });
+      setSchoolId(null);
+      setIsDirector(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [firestore]);
+  
+  const reloadUser = useCallback(async () => {
+    if (auth?.currentUser) {
+        setLoading(true);
+        await auth.currentUser.getIdToken(true);
+        await fetchUserData(auth.currentUser);
+    }
+  }, [auth, fetchUserData]);
+
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
+    if (typeof window === 'undefined' || !auth || !firestore) {
         setLoading(false);
         return;
     }
     
-    // Si une session parent est trouvée, on ne cherche pas d'utilisateur Firebase.
     if (checkParentSession()) {
         return;
-    }
-    
-    if (!auth || !firestore) {
-      setLoading(false);
-      return;
     }
 
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (!authUser) {
-        // Avant de conclure qu'il n'y a pas d'utilisateur, revérifier la session parent.
         if (!checkParentSession()) {
           setUser(null);
           setSchoolId(null);
@@ -94,71 +159,11 @@ export function useUser() {
       }
       
       setLoading(true);
-
-      try {
-        const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
-        const userRootSnap = await getDoc(userRootRef);
-
-        const effectiveSchoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
-        setSchoolId(effectiveSchoolId);
-        
-        const tokenResult = await authUser.getIdTokenResult(true);
-        const isSuperAdmin = (tokenResult.claims.superAdmin as boolean) === true;
-
-        if (isSuperAdmin) {
-            const superAdminProfile: UserProfile = {
-                uid: authUser.uid, email: authUser.email || '', schoolId: effectiveSchoolId || '',
-                role: 'super_admin' as any, firstName: 'Super', lastName: 'Admin',
-                hireDate: '', baseSalary: 0, displayName: 'Super Admin',
-                permissions: { ...allPermissions }, isAdmin: true,
-            };
-             setUser({ authUser, uid: authUser.uid, profile: superAdminProfile });
-             setIsDirector(false);
-        } else if (effectiveSchoolId) {
-            const profileRef = doc(firestore, `ecoles/${effectiveSchoolId}/personnel`, authUser.uid);
-            const schoolDocRef = doc(firestore, 'ecoles', effectiveSchoolId);
-            
-            const [profileSnap, schoolSnap] = await Promise.all([
-                getDoc(profileRef),
-                getDoc(schoolDocRef)
-            ]);
-
-            const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
-            const isDirectorFlag = schoolSnap.exists() && schoolSnap.data().directorId === authUser.uid;
-            setIsDirector(isDirectorFlag);
-            
-            if (profileData) {
-                let permissions: Partial<AdminRole['permissions']> = {};
-                if (isDirectorFlag) {
-                    permissions = { ...allPermissions };
-                } else if (profileData.adminRole) {
-                    const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
-                    const roleSnap = await getDoc(roleRef);
-                    if (roleSnap.exists()) {
-                        permissions = roleSnap.data().permissions || {};
-                    }
-                }
-                setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: { ...profileData, permissions, isAdmin: false } });
-            } else {
-                 setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: undefined });
-            }
-
-        } else {
-            setUser({ authUser, uid: authUser.uid, profile: undefined });
-            setIsDirector(false);
-        }
-      } catch (error) {
-        console.error("Erreur dans useUser:", error);
-        setUser({ authUser, uid: authUser.uid, profile: undefined });
-        setSchoolId(null);
-        setIsDirector(false);
-      } finally {
-        setLoading(false);
-      }
+      await fetchUserData(authUser);
     });
 
     return () => unsubscribe();
-  }, [auth, firestore, checkParentSession]);
+  }, [auth, firestore, checkParentSession, fetchUserData]);
 
-  return {user, loading, schoolId, isDirector};
+  return {user, loading, schoolId, isDirector, reloadUser};
 }
