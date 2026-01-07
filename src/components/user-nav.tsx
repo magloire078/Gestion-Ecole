@@ -41,6 +41,12 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const router = useRouter();
   const { toast } = useToast();
   
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const loading = userLoading || (user && !user.isParent && schoolLoading);
 
   const handleLogout = async () => {
@@ -69,7 +75,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
 
-  if (loading) {
+  if (loading || !isClient) {
     return (
       <div className={cn("flex items-center gap-2")}>
         <Skeleton className="h-9 w-9 rounded-full" />
