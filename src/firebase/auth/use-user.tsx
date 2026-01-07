@@ -25,7 +25,7 @@ export interface CombinedUser {
 
 const allPermissions = {
     manageUsers: true, viewUsers: true, manageSchools: true, viewSchools: true,
-    manageClasses: true, manageGrades: true, manageSystem: true, viewAnalytics: true,
+    manageClasses: true, manageGrades: true, manageDiscipline: true, manageSystem: true, viewAnalytics: true,
     manageSettings: true, manageBilling: true, manageCommunication: true,
     manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true,
     manageTransport: true, manageInternat: true, manageInventory: true,
@@ -135,7 +135,7 @@ export function useUser() {
                     const roleRef = doc(firestore, `ecoles/${effectiveSchoolId}/admin_roles`, profileData.adminRole);
                     const roleSnap = await getDoc(roleRef);
                     if (roleSnap.exists()) {
-                        permissions = { ...roleSnap.data().permissions };
+                        permissions = roleSnap.data().permissions || {};
                     }
                 }
                 setUser({ authUser, uid: authUser.uid, schoolId: effectiveSchoolId, profile: { ...profileData, permissions, isAdmin: false } });
