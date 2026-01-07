@@ -96,6 +96,7 @@ export default function AbsencesPage() {
 
 
   useEffect(() => {
+    // Set date only on client to avoid hydration mismatch
     setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
   }, []);
 
@@ -118,6 +119,7 @@ export default function AbsencesPage() {
 
   // --- Derived Data ---
   const { todayAbsences, historicAbsences } = useMemo(() => {
+    if (!todayDateString) return { todayAbsences: [], historicAbsences: [] }; // Return empty if date not set
     const today = todayDateString;
     const absences = allAbsencesData?.map(d => ({ id: d.id, ...d.data() } as Absence & {id: string})) || [];
     
@@ -147,7 +149,7 @@ export default function AbsencesPage() {
   const form = useForm<AbsenceFormValues>({
     resolver: zodResolver(absenceSchema),
     defaultValues: {
-      date: '', // Initialize as empty, will be set by useEffect
+      date: '', // Initialize as empty
       type: "Journée entière",
       justified: false,
       reason: "",
@@ -155,24 +157,20 @@ export default function AbsencesPage() {
   });
 
   useEffect(() => {
-      if (todayDateString) {
+      if (isFormOpen) {
           form.reset({
-              ...form.getValues(),
+              studentId: selectedStudent?.id || '',
               date: todayDateString,
+              type: "Journée entière",
+              justified: false,
+              reason: "",
           });
       }
-  }, [todayDateString, form]);
+  }, [isFormOpen, selectedStudent, todayDateString, form]);
 
   const handleOpenForm = (student: Student) => {
     if (!canManageAbsences) return;
     setSelectedStudent(student);
-    form.reset({
-      studentId: student.id,
-      date: todayDateString,
-      type: "Journée entière",
-      justified: false,
-      reason: "",
-    });
     setIsFormOpen(true);
   };
 
@@ -261,7 +259,7 @@ export default function AbsencesPage() {
                   <CardTitle>Liste des Élèves - {classes.find(c => c.id === selectedClassId)?.name}</CardTitle>
                   <CardDescription>
                     {canManageAbsences 
-                      ? `Cliquez sur un élève pour enregistrer une absence pour aujourd'hui (${format(new Date(), 'd MMMM', {locale: fr})}).`
+                      ? `Cliquez sur un élève pour enregistrer une absence pour aujourd'hui (${todayDateString ? format(new Date(todayDateString), 'd MMMM', {locale: fr}) : ''}).`
                       : "Vue en lecture seule. Vous n'avez pas la permission d'enregistrer des absences."
                     }
                   </CardDescription>
