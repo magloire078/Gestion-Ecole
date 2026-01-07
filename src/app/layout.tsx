@@ -2,9 +2,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { MainLayout } from './main-layout';
-import { ThemeProvider } from '@/components/theme-provider';
-import { FirebaseClientProvider } from "@/firebase";
-import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: 'GèreEcole',
@@ -19,17 +16,7 @@ export default function RootLayout({
   return (
     <html lang="fr" suppressHydrationWarning>
       <body>
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-        >
-          <FirebaseClientProvider>
-            <MainLayout>{children}</MainLayout>
-            <Toaster />
-          </FirebaseClientProvider>
-        </ThemeProvider>
+        <MainLayout>{children}</MainLayout>
       </body>
     </html>
   );
