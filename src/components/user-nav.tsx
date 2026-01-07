@@ -40,8 +40,13 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
-  const loading = userLoading || (user && !user.isParent && schoolLoading);
+  const loading = userLoading || (user && !user.isParent && schoolLoading) || !isClient;
 
   const handleLogout = async () => {
     if (user?.isParent) {
