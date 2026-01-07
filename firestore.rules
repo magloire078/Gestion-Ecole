@@ -188,6 +188,7 @@ service cloud.firestore {
 
       match /messagerie/{messageId} {
         allow read, update: if isSchoolMember(schoolId);
+        allow list: if isSchoolMember(schoolId) && request.query.schoolId == schoolId;
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
@@ -299,4 +300,3 @@ service cloud.firestore {
     }
   }
 }
-    
