@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -22,7 +21,7 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
     const recentStudentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
-    const recentMessagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('recipients.all', '==', true), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
+    const recentMessagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('schoolId', '==', schoolId), where('recipients.all', '==', true), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
     const recentBooksQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
 
     const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
