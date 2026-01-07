@@ -68,6 +68,7 @@ interface Message {
     createdAt: { seconds: number, nanoseconds: number };
     readBy?: string[];
     recipients: MessageFormValues['recipients'];
+    schoolId: string;
 }
 
 export default function MessagingPage() {
@@ -389,5 +390,7 @@ export default function MessagingPage() {
     </>
   );
 }
+
+    
 
     
