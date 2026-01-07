@@ -62,8 +62,9 @@ export function useUser() {
       }
       
       setLoading(true);
-      const userRootRef = doc(firestore, 'users', authUser.uid);
+      const userRootRef = doc(firestore, 'utilisateurs', authUser.uid);
 
+      // Using onSnapshot to listen for real-time changes to the user's school association
       const unsubUserDoc = onSnapshot(userRootRef, async (userRootSnap) => {
         try {
             const tokenResult = await authUser.getIdTokenResult(true);
@@ -84,6 +85,7 @@ export function useUser() {
                 const profileRef = doc(firestore, `ecoles/${schoolId}/personnel`, authUser.uid);
                 const schoolDocRef = doc(firestore, 'ecoles', schoolId);
                 
+                // Using getDoc for one-time fetch of related data within the snapshot listener
                 const [profileSnap, schoolSnap] = await Promise.all([getDoc(profileRef), getDoc(schoolDocRef)]);
                 
                 const profileData = profileSnap.exists() ? profileSnap.data() as AppUser : null;
@@ -101,6 +103,7 @@ export function useUser() {
 
                 setUser({ authUser, uid: authUser.uid, schoolId: schoolId, profile: { ...profileData, permissions, isAdmin: false } as UserProfile, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email, isParent: false });
             } else {
+                // User is authenticated but has no school
                 setUser({ authUser, uid: authUser.uid, profile: undefined, schoolId: undefined, isParent: false, displayName: authUser.displayName, photoURL: authUser.photoURL, email: authUser.email });
                 setIsDirector(false);
             }
@@ -118,9 +121,11 @@ export function useUser() {
           setLoading(false);
       });
       
+      // Detach the user document listener when the auth state changes
       return () => unsubUserDoc();
     });
 
+    // Detach the auth state listener on component unmount
     return () => unsubscribe();
   }, [auth, firestore]);
 

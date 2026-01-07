@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -7,7 +8,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
 } from 'firebase/auth';
-import { useAuth, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -61,19 +62,6 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const { toast } = useToast();
-  const { user, loading: userLoading } = useUser();
-
-  if (userLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-muted/40">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-lg font-semibold">Vérification de votre session...</p>
-          <p className="text-sm text-muted-foreground">Veuillez patienter</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();

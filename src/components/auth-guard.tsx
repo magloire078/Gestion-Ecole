@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUser } from '@/firebase';
@@ -31,11 +32,21 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     if (!isClient || loading) {
       return; 
     }
-
+    
+    // Si l'utilisateur est sur une page publique, ne rien faire.
     const isPublicPage = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy'].some(p => pathname.startsWith(p)) || pathname === '/';
+    if (isPublicPage) {
+        // Mais si l'utilisateur est déjà connecté, le rediriger vers le dashboard
+        if (user && user.schoolId) {
+             router.replace('/dashboard');
+        } else if (user && !user.schoolId) {
+             router.replace('/onboarding');
+        }
+        return;
+    }
     
     // Si nous sommes sur une page protégée et qu'il n'y a pas d'utilisateur authentifié
-    if (!isPublicPage && !user) {
+    if (!user) {
       router.replace('/auth/login');
       return;
     }
@@ -48,7 +59,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
   }, [user, loading, pathname, router, isClient]);
 
-  // Affiche un loader pendant que l'état d'authentification se résout côté client
   if (loading || !isClient) {
     return <AuthProtectionLoader />;
   }
