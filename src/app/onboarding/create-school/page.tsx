@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -42,7 +40,7 @@ const createSchoolSchema = z.object({
     .min(2, "Le nom est requis (2 caractères minimum).")
     .max(50, "Le nom est trop long."),
   phone: z.string()
-    .regex(/^[+]?[\d\s\-()]{8,20}$/, "Numéro de téléphone invalide.")
+    .regex(/^[\d\s\-()+.]{8,20}$/, "Numéro de téléphone invalide.")
     .optional()
     .or(z.literal('')),
   email: z.string()
@@ -214,7 +212,7 @@ export default function CreateSchoolPage() {
         await reloadUser();
       }
       await auth.currentUser?.getIdToken(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       router.replace('/dashboard');
 

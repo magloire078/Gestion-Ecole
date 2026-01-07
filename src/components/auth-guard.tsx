@@ -3,7 +3,7 @@
 
 import { useUser } from '@/firebase';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
 function AuthProtectionLoader() {
@@ -19,34 +19,75 @@ function AuthProtectionLoader() {
 }
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading, schoolId } = useUser();
+  const { user, loading } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    if (loading) {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient || loading) {
       return; 
     }
     
-    const isPublicPage = ['/auth/login', '/auth/register', '/auth/forgot-password', '/contact', '/survey', '/parent-access', '/terms', '/privacy', '/onboarding/create-school'].some(p => pathname.startsWith(p)) || pathname === '/';
-    
+    // Pages publiques accessibles à tous
+    const publicPages = [
+      '/', 
+      '/contact', 
+      '/survey', 
+      '/terms', 
+      '/privacy'
+    ];
+    const isPublicPage = publicPages.includes(pathname);
+
+    // Pages d'authentification
+    const authPages = [
+      '/auth/login', 
+      '/auth/register', 
+      '/auth/forgot-password', 
+      '/parent-access'
+    ];
+    const isAuthPage = authPages.includes(pathname);
+
+    // Pages d'onboarding
+    const onboardingPages = [
+      '/onboarding',
+      '/onboarding/create-school'
+    ];
+    const isOnboardingPage = onboardingPages.includes(pathname);
+
     if (user) {
-        if (schoolId && !pathname.startsWith('/dashboard')) {
-            router.replace('/dashboard');
-        } else if (!schoolId && !isPublicPage && !pathname.startsWith('/onboarding')) {
-            router.replace('/onboarding');
+      // Utilisateur connecté
+      if (user.schoolId) {
+        // ...et a une école
+        if (isAuthPage || isOnboardingPage) {
+          router.replace('/dashboard');
         }
+      } else {
+        // ...mais n'a pas d'école
+        if (!isOnboardingPage) {
+          router.replace('/onboarding');
+        }
+      }
     } else {
-        if (!isPublicPage) {
-            router.replace('/auth/login');
-        }
+      // Utilisateur non connecté
+      if (!isPublicPage && !isAuthPage && !isOnboardingPage) {
+        router.replace('/auth/login');
+      }
     }
 
-  }, [user, loading, schoolId, pathname, router]);
+  }, [user, loading, isClient, pathname, router]);
 
-  if (loading) {
+  // Pendant que l'état d'authentification se résout côté client,
+  // pour éviter les flashs d'interface et les erreurs d'hydratation,
+  // nous affichons un loader pour toutes les pages non publiques.
+  if (loading && !publicPages.includes(pathname)) {
     return <AuthProtectionLoader />;
   }
 
+  // Permettre l'affichage du contenu
   return <>{children}</>;
 }

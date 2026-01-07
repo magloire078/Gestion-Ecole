@@ -1,95 +1,1267 @@
 
+
 {
   "entities": {
-    "user": {
-      "title": "User",
-      "description": "Represents a user account in the system.",
+    "user_root": {
+      "title": "Racine Utilisateur",
+      "description": "Un document racine qui associe l'UID d'un utilisateur à l'identifiant de son école.",
       "type": "object",
       "properties": {
-        "uid": { "type": "string", "description": "The user's unique ID from Firebase Auth." },
-        "email": { "type": "string", "format": "email" },
-        "displayName": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "schoolId": { "type": "string", "description": "The ID of the school the user is associated with. Null if none." },
-        "schoolRole": { "type": "string", "enum": ["director", "staff", "parent"], "description": "The user's primary role within their school." },
-        "linkedStudentIds": { "type": "array", "items": { "type": "string" }, "description": "For parent accounts, the list of associated student IDs." }
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
+        "isAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme."}
       },
-      "required": ["uid", "email", "displayName", "createdAt"]
+      "required": ["schoolId"]
     },
     "school": {
-      "title": "School",
-      "description": "Represents an educational institution.",
+        "title": "École",
+        "description": "Un établissement scolaire.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Le nom de l'établissement." },
+            "status": { "type": "string", "enum": ["active", "suspended", "deleted"], "description": "Le statut de l'école." },
+            "deletedAt": { "type": "string", "format": "date-time", "description": "Date à laquelle l'école a été marquée comme supprimée." },
+            "matricule": { "type": "string", "description": "Le numéro matricule de l'établissement." },
+            "cnpsEmployeur": { "type": "string", "description": "Le numéro d'immatriculation CNPS de l'école." },
+            "directorId": { "type": "string", "description": "L'UID du directeur de l'école." },
+            "directorFirstName": { "type": "string", "description": "Le prénom du directeur de l'école." },
+            "directorLastName": { "type": "string", "description": "Le nom de famille du directeur de l'école." },
+            "directorPhone": { "type": "string", "description": "Le numéro de téléphone du directeur." },
+            "schoolCode": { "type": "string", "description": "Un code lisible par l'homme pour rejoindre l'école." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date de création de l'école." },
+            "address": { "type": "string", "description": "Adresse de l'école." },
+            "phone": { "type": "string", "description": "Numéro de téléphone de l'école." },
+            "website": { "type": "string", "description": "Site web de l'école." },
+            "mainLogoUrl": { "type": "string", "format": "uri", "description": "URL du logo principal de l'école." },
+            "email": { "type": "string", "format": "email", "description": "Email de contact de l'école." },
+            "isSetupComplete": { "type": "boolean", "description": "Indique si la configuration initiale de l'école est terminée." },
+            "subscription": {
+                "type": "object",
+                "description": "Détails de l'abonnement de l'école.",
+                "properties": {
+                    "plan": { "type": "string", "enum": ["Essentiel", "Pro", "Premium"], "description": "Le nom du plan." },
+                    "status": { "type": "string", "enum": ["active", "trialing", "past_due", "canceled"], "description": "Le statut de l'abonnement." },
+                    "startDate": { "type": "string", "format": "date-time", "description": "Date de début de l'abonnement." },
+                    "endDate": { "type": "string", "format": "date-time", "description": "Date de fin de l'abonnement." },
+                    "maxStudents": { "type": "number", "description": "Nombre maximum d'élèves autorisés." },
+                    "maxCycles": { "type": "number", "description": "Nombre maximum de cycles autorisés." },
+                    "activeModules": {
+                        "type": "array",
+                        "description": "Liste des modules complémentaires activés.",
+                        "items": { "type": "string", "enum": ["sante", "cantine", "transport", "internat", "immobilier", "activites", "rh"] }
+                    }
+                }
+            }
+        },
+        "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
+    },
+    "parent_profile": {
+      "title": "Profil Parent",
+      "description": "Informations sur un parent ou tuteur, stockées dans une sous-collection de l'élève.",
       "type": "object",
       "properties": {
-        "name": { "type": "string" },
-        "code": { "type": "string", "description": "A short, unique code for joining the school." },
-        "directorId": { "type": "string", "description": "The UID of the user who is the director." },
+          "firstName": { "type": "string" },
+          "lastName": { "type": "string" },
+          "phone": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "isPrimary": { "type": "boolean", "description": "Indique si c'est le contact principal."}
+      }
+    },
+    "parent_session": {
+      "title": "Session Parent",
+      "description": "Un document de session temporaire pour l'accès des parents.",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "studentIds": { "type": "array", "items": { "type": "string"} },
+        "accessCode": { "type": "string" },
+        "isActive": { "type": "boolean" },
         "createdAt": { "type": "string", "format": "date-time" },
-        "settings": {
+        "expiresAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "contact_request": {
+      "title": "Demande de Contact",
+      "description": "Stocke une soumission du formulaire de demande de démo.",
+      "type": "object",
+      "properties": {
+        "firstName": { "type": "string" },
+        "lastName": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "schoolName": { "type": "string" },
+        "schoolType": { "type": "string" },
+        "studentCount": { "type": "string" },
+        "needs": { "type": "array", "items": { "type": "string" } },
+        "message": { "type": "string" },
+        "meetingDate": { "type": "string", "format": "date" },
+        "meetingTime": { "type": "string" },
+        "newsletter": { "type": "boolean" },
+        "submittedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["firstName", "lastName", "email", "schoolName"]
+    },
+    "survey_response": {
+        "title": "Réponse à l'Enquête",
+        "description": "Stocke une soumission du formulaire d'enquête.",
+        "type": "object",
+        "properties": {
+            "schoolName": { "type": "string" },
+            "schoolType": { "type": "string" },
+            "studentCount": { "type": "string" },
+            "currentManagement": { "type": "string" },
+            "painPoints": { "type": "array", "items": { "type": "string" } },
+            "featureInterest": {
+                "type": "object",
+                "properties": {
+                    "pedagogy": { "type": "number" },
+                    "finance": { "type": "number" },
+                    "communication": { "type": "number" },
+                    "schoolLife": { "type": "number" },
+                    "rh": { "type": "number" },
+                    "infra": { "type": "number" }
+                }
+            },
+            "budget": { "type": "string" },
+            "comments": { "type": "string" },
+            "contactEmail": { "type": "string" },
+            "submittedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["schoolName", "schoolType", "studentCount", "currentManagement", "painPoints", "featureInterest", "submittedAt"]
+    },
+    "support_ticket": {
+        "title": "Ticket de Support",
+        "description": "Une demande de support soumise par un utilisateur.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string" },
+            "schoolId": { "type": "string" },
+            "subject": { "type": "string" },
+            "category": { "type": "string" },
+            "description": { "type": "string" },
+            "status": { "type": "string", "enum": ["open", "in_progress", "closed"] },
+            "submittedAt": { "type": "string", "format": "date-time" },
+            "closedAt": { "type": "string", "format": "date-time" },
+            "userDisplayName": { "type": "string" },
+            "userEmail": { "type": "string" }
+        },
+        "required": ["userId", "schoolId", "subject", "category", "description", "status"]
+    },
+    "system_log": {
+      "title": "Journal Système",
+      "description": "Trace toutes les actions critiques effectuées par les super admins.",
+      "type": "object",
+      "properties": {
+        "adminId": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "details": { "type": "object" },
+        "ipAddress": { "type": "string" },
+        "userAgent": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      }
+    },
+    "system_setting": {
+      "title": "Paramètre Système",
+      "description": "Configuration globale de la plateforme.",
+      "type": "object",
+      "properties": {
+        "maintenanceMode": { "type": "boolean" },
+        "registrationEnabled": { "type": "boolean" },
+        "defaultSchoolPlan": { "type": "string" },
+        "smtpSettings": { "type": "object" },
+        "storageQuota": { "type": "number" },
+        "backupFrequency": { "type": "string" },
+        "apiRateLimit": { "type": "number" }
+      }
+    },
+    "admin_role": {
+      "title": "Rôle Administratif",
+      "description": "Définit un ensemble de permissions pour un rôle administratif au sein d'une école.",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "description": "L'ID de l'école à laquelle ce rôle appartient."},
+        "name": { "type": "string", "description": "Nom du rôle (ex: Super Admin, Admin École)." },
+        "description": { "type": "string", "description": "Description des responsabilités du rôle." },
+        "isSystem": { "type": "boolean", "description": "Indique si c'est un rôle système (non-modifiable)." },
+        "permissions": {
           "type": "object",
           "properties": {
-            "address": { "type": "string" },
-            "phone": { "type": "string" },
-            "email": { "type": "string" }
+            "manageUsers": { "type": "boolean" },
+            "viewUsers": { "type": "boolean" },
+            "manageSchools": { "type": "boolean" },
+            "viewSchools": { "type": "boolean" },
+            "manageClasses": { "type": "boolean" },
+            "manageGrades": { "type": "boolean" },
+            "manageDiscipline": { "type": "boolean" },
+            "manageSystem": { "type": "boolean" },
+            "viewAnalytics": { "type": "boolean" },
+            "manageSettings": { "type": "boolean" },
+            "manageBilling": { "type": "boolean" },
+            "manageCommunication": { "type": "boolean" },
+            "manageSchedule": { "type": "boolean" },
+            "manageAttendance": { "type": "boolean" },
+            "manageLibrary": { "type": "boolean" },
+            "manageCantine": { "type": "boolean" },
+            "manageTransport": { "type": "boolean" },
+            "manageInternat": { "type": "boolean" },
+            "manageInventory": { "type": "boolean" },
+            "manageRooms": { "type": "boolean" },
+            "manageActivities": { "type": "boolean" },
+            "manageMedical": { "type": "boolean" },
+            "viewSupportTickets": { "type": "boolean" },
+            "manageSupportTickets": { "type": "boolean" },
+            "apiAccess": { "type": "boolean" },
+            "exportData": { "type": "boolean" }
           }
         }
       },
-      "required": ["name", "code", "directorId", "createdAt"]
+      "required": ["schoolId", "name", "permissions"]
     },
-    "schoolMember": {
-      "title": "School Member",
-      "description": "Represents a user's membership within a school.",
+    "staff": {
+      "title": "Membre du Personnel",
+      "description": "Un membre du personnel de l'école (enseignant ou non-enseignant). Représente aussi le profil utilisateur.",
       "type": "object",
       "properties": {
-        "userId": { "type": "string", "description": "The UID of the user." },
-        "role": { "type": "string", "enum": ["director", "teacher", "secretary", "accountant", "parent"] },
-        "joinedAt": { "type": "string", "format": "date-time" },
-        "permissions": { "type": "array", "items": { "type": "string" } }
+        "uid": { "type": "string", "description": "L'identifiant unique de l'utilisateur (Firebase Auth UID)." },
+        "email": { "type": "string", "format": "email", "description": "L'adresse e-mail de l'utilisateur." },
+        "displayName": { "type": "string", "description": "Le nom d'affichage de l'utilisateur." },
+        "photoURL": { "type": "string", "format": "uri", "description": "L'URL de la photo de profil de l'utilisateur." },
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
+        "isAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super administrateur de la plateforme." },
+        "firstName": { "type": "string", "description": "Le prénom du membre du personnel." },
+        "lastName": { "type": "string", "description": "Le nom de famille du membre du personnel." },
+        "role": { "type": "string", "enum": ["directeur", "directeur_pedagogique", "secretaire", "enseignant", "enseignant_principal", "comptable", "bibliothecaire", "surveillant", "infirmier", "personnel", "chauffeur", "accompagnateur"], "description": "Le rôle de l'utilisateur dans l'école." },
+        "adminRole": { "type": "string", "description": "L'ID du rôle administratif si l'utilisateur est un admin." },
+        "hireDate": { "type": "string", "format": "date", "description": "La date d'embauche." },
+        "phone": { "type": "string", "description": "Le numéro de téléphone." },
+        "matricule": { "type": "string", "description": "Matricule interne de l'employé." },
+        "status": { "type": "string", "enum": ["Actif", "Inactif"], "description": "Statut de l'employé." },
+        "subject": { "type": "string", "description": "La matière principale enseignée (si enseignant)." },
+        "classId": { "type": "string", "description": "L'identifiant de la classe principale supervisée (si enseignant)." },
+        "situationMatrimoniale": { "type": "string", "enum": ["Célibataire", "Marié(e)", "Divorcé(e)", "Veuf(ve)"], "description": "Situation matrimoniale." },
+        "enfants": { "type": "number", "description": "Nombre d'enfants à charge." },
+        "categorie": { "type": "string", "description": "Catégorie professionnelle." },
+        "cnpsEmploye": { "type": "string", "description": "Numéro CNPS de l'employé." },
+        "baseSalary": { "type": "number", "description": "Le salaire de base mensuel." },
+        "indemniteTransportImposable": { "type": "number", "description": "Indemnité de transport imposable." },
+        "indemniteResponsabilite": { "type": "number", "description": "Indemnité de responsabilité." },
+        "indemniteLogement": { "type": "number", "description": "Indemnité de logement." },
+        "indemniteSujetion": { "type": "number", "description": "Indemnité de sujétion." },
+        "indemniteCommunication": { "type": "number", "description": "Indemnité de communication." },
+        "indemniteRepresentation": { "type": "number", "description": "Indemnité de représentation." },
+        "transportNonImposable": { "type": "number", "description": "Transport non imposable." },
+        "banque": { "type": "string", "description": "Nom de la banque." },
+        "numeroCompte": { "type": "string", "description": "Numéro de compte bancaire (sans code banque/guichet/clé)." },
+        "CB": { "type": "string", "description": "Code Banque du RIB." },
+        "CG": { "type": "string", "description": "Code Guichet du RIB." },
+        "Cle_RIB": { "type": "string", "description": "Clé RIB." },
+        "CNPS": { "type": "boolean", "description": "L'employé est-il soumis aux cotisations CNPS ?" }
       },
-      "required": ["userId", "role", "joinedAt"]
+      "required": ["uid", "email", "schoolId", "role", "firstName", "lastName", "hireDate", "baseSalary"]
+    },
+    "parent": {
+      "title": "Parent/Tuteur",
+      "description": "Représente un compte parent/tuteur avec des accès limités aux informations de ses enfants.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "L'UID Firebase Auth du parent." },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string", "format": "uri" },
+        "schoolId": { "type": "string" },
+        "studentIds": {
+          "type": "array",
+          "description": "Liste des IDs des élèves associés à ce parent.",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["uid", "email", "schoolId", "studentIds"]
+    },
+    "student": {
+        "title": "Élève",
+        "description": "Un élève inscrit à l'école.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "matricule": { "type": "string", "description": "Le numéro matricule unique de l'élève." },
+            "firstName": { "type": "string", "description": "Le prénom de l'élève." },
+            "lastName": { "type": "string", "description": "Le nom de famille de l'élève." },
+            "photoUrl": { "type": "string", "format": "uri", "description": "URL de la photo de profil de l'élève." },
+            "status": { "type": "string", "enum": ["Actif", "En attente", "Radié"], "description": "Statut actuel de l'élève." },
+            "classId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
+            "class": { "type": "string", "description": "Le nom de la classe actuelle de l'élève." },
+            "cycle": { "type": "string", "description": "Le nom du cycle actuel de l'élève." },
+            "grade": { "type": "string", "description": "Le nom du niveau de l'élève."},
+            "dateOfBirth": { "type": "string", "format": "date", "description": "La date de naissance de l'élève." },
+            "placeOfBirth": { "type": "string", "description": "Le lieu de naissance de l'élève." },
+            "gender": { "type": "string", "enum": ["Masculin", "Féminin"], "description": "Le sexe de l'élève." },
+            "address": { "type": "string", "description": "L'adresse de l'élève." },
+            "parent1FirstName": { "type": "string", "description": "Le prénom du premier parent/tuteur." },
+            "parent1LastName": { "type": "string", "description": "Le nom de famille du premier parent/tuteur." },
+            "parent1Contact": { "type": "string", "description": "Le contact téléphonique du premier parent/tuteur." },
+            "parent2FirstName": { "type": "string", "description": "Le prénom du deuxième parent/tuteur (optionnel)." },
+            "parent2LastName": { "type": "string", "description": "Le nom de famille du deuxième parent/tuteur (optionnel)." },
+            "parent2Contact": { "type": "string", "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)." },
+            "parentIds": {
+                "type": "array",
+                "description": "Liste des UID des parents/tuteurs associés à cet élève.",
+                "items": { "type": "string" }
+            },
+            "previousSchool": { "type": "string", "description": "L'ancienne école de l'élève (optionnel)." },
+            "tuitionFee": { "type": "number", "description": "Le montant total de la scolarité pour la classe de l'élève." },
+            "discountAmount": { "type": "number", "description": "Le montant de la remise ou de la bourse accordée." },
+            "discountReason": { "type": "string", "description": "La raison de la remise." },
+            "amountDue": { "type": "number", "description": "Le montant restant à payer." },
+            "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
+            "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." },
+            "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
+        },
+        "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
+    },
+     "discipline_incident": {
+      "title": "Incident Disciplinaire",
+      "description": "Un incident disciplinaire enregistré pour un élève.",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["Avertissement Oral", "Avertissement Écrit", "Retenue", "Mise à pied", "Exclusion temporaire", "Exclusion définitive"] },
+        "reason": { "type": "string", "description": "Raison ou description de l'incident." },
+        "reportedById": { "type": "string", "description": "ID du membre du personnel qui a signalé." },
+        "reportedByName": { "type": "string" },
+        "actionsTaken": { "type": "string", "description": "Actions immédiates ou sanctions appliquées." },
+        "parentNotified": { "type": "boolean", "default": false },
+        "followUpNotes": { "type": "string", "description": "Notes de suivi." }
+      },
+      "required": ["studentId", "date", "type", "reason", "reportedById"]
+    },
+    "cycle": {
+        "title": "Cycle",
+        "description": "Un cycle d'enseignement (ex: Maternelle, Primaire).",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "name": { "type": "string", "description": "Nom du cycle (ex: Maternelle)." },
+            "code": { "type": "string", "description": "Code du cycle (ex: MAT)." },
+            "order": { "type": "number", "description": "Ordre d'affichage." },
+            "isActive": { "type": "boolean", "description": "Indique si le cycle est actif pour l'année en cours." },
+            "description": { "type": "string" },
+            "ageRange": {
+                "type": "object",
+                "properties": {
+                    "min": { "type": "number" },
+                    "max": { "type": "number" }
+                }
+            },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" },
+            "color": { "type": "string" }
+        },
+        "required": ["schoolId", "name", "code", "order"]
+    },
+    "niveau": {
+        "title": "Niveau",
+        "description": "Un niveau scolaire au sein d'un cycle (ex: CE1, 6ème).",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "cycleId": { "type": "string" },
+            "name": { "type": "string", "description": "Nom du niveau (ex: CE1)." },
+            "code": { "type": "string", "description": "Code du niveau (ex: CE1)." },
+            "order": { "type": "number" },
+            "ageMin": { "type": "number" },
+            "ageMax": { "type": "number" },
+            "capacity": { "type": "number", "description": "Nombre maximum d'élèves." },
+            "color": { "type": "string", "description": "Couleur pour l'interface." },
+            "description": { "type": "string" },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["schoolId", "cycleId", "name", "code", "order", "ageMin", "ageMax", "capacity"]
+    },
+    "classe": {
+      "title": "Classe",
+      "description": "Une classe spécifique pour une année académique (ex: CE1-A 2024-2025).",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "cycleId": { "type": "string" },
+        "niveauId": { "type": "string" },
+        "name": { "type": "string", "description": "Nom complet (ex: CE1-A)." },
+        "grade": { "type": "string", "description": "Nom du niveau, ex: 'CE1'." },
+        "code": { "type": "string", "description": "Code unique (ex: CE1A)." },
+        "section": { "type": "string", "description": "Section (A, B, C...)." },
+        "academicYear": { "type": "string", "description": "Année académique (ex: 2024-2025)." },
+        "studentCount": { "type": "number" },
+        "maxStudents": { "type": "number" },
+        "mainTeacherId": { "type": "string" },
+        "mainTeacherName": { "type": "string" },
+        "teacherIds": { "type": "array", "items": { "type": "string" } },
+        "coordinatorId": { "type": "string" },
+        "schedule": {
+          "type": "object",
+          "properties": {
+            "startTime": { "type": "string" },
+            "endTime": { "type": "string" },
+            "days": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "classroom": { "type": "string" },
+        "building": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive", "archived"] },
+        "isFull": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["schoolId", "cycleId", "niveauId", "name", "code", "academicYear", "studentCount", "maxStudents", "status", "isFull", "createdBy"]
+    },
+    "studentClassAssignment": {
+        "title": "Affectation Élève-Classe",
+        "description": "Historique de l'affectation d'un élève à une classe pour une année.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "studentId": { "type": "string" },
+            "classeId": { "type": "string" },
+            "academicYear": { "type": "string" },
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time" },
+            "previousClass": { "type": "string" },
+            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
+            "notes": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "createdBy": { "type": "string" }
+        },
+        "required": ["schoolId", "studentId", "classeId", "academicYear", "startDate", "promotionType", "status", "createdBy"]
+    },
+    "timetableEntry": {
+        "title": "Entrée d'Emploi du Temps",
+        "description": "Un cours spécifique dans l'emploi du temps d'une classe.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "classId": { "type": "string" },
+            "teacherId": { "type": "string" },
+            "subject": { "type": "string" },
+            "day": { "type": "string", "enum": ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"] },
+            "startTime": { "type": "string", "description": "Format HH:mm" },
+            "endTime": { "type": "string", "description": "Format HH:mm" },
+            "classroom": { "type": "string" },
+            "color": { "type": "string", "description": "Couleur pour l'affichage" }
+        },
+        "required": ["schoolId", "classId", "teacherId", "subject", "day", "startTime", "endTime"]
+    },
+    "gradeEntry": {
+        "title": "Note",
+        "description": "Une note individuelle pour un élève dans une matière.",
+        "type": "object",
+        "properties": {
+            "subject": { "type": "string", "description": "La matière concernée." },
+            "type": { "type": "string", "enum": ["Interrogation", "Devoir"], "description": "Le type d'évaluation." },
+            "date": { "type": "string", "format": "date", "description": "La date de l'évaluation." },
+            "grade": { "type": "number", "description": "La note obtenue." },
+            "coefficient": { "type": "number", "description": "Le coefficient de la note." }
+        },
+        "required": ["subject", "type", "date", "grade", "coefficient"]
+    },
+    "accountingTransaction": {
+      "title": "Transaction Comptable",
+      "description": "Une transaction financière (revenu ou dépense).",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+        "date": { "type": "string", "format": "date", "description": "La date de la transaction." },
+        "description": { "type": "string", "description": "La description de la transaction." },
+        "category": { "type": "string", "description": "La catégorie de la transaction." },
+        "type": { "type": "string", "enum": ["Revenu", "Dépense"], "description": "Le type de transaction." },
+        "amount": { "type": "number", "description": "Le montant de la transaction." }
+      },
+      "required": ["schoolId", "date", "description", "category", "type", "amount"]
+    },
+    "payment": {
+      "title": "Paiement de scolarité",
+      "description": "Un versement de frais de scolarité pour un élève.",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "format": "date", "description": "La date du paiement." },
+        "amount": { "type": "number", "description": "Le montant payé." },
+        "description": { "type": "string", "description": "Description du paiement (ex: 1ère tranche)." },
+        "accountingTransactionId": { "type": "string", "description": "L'ID de la transaction comptable correspondante." },
+        "payerFirstName": { "type": "string", "description": "Le prénom de la personne qui a effectué le paiement." },
+        "payerLastName": { "type": "string", "description": "Le nom de la personne qui a effectué le paiement." },
+        "payerContact": { "type": "string", "description": "Le contact de la personne qui a effectué le paiement." },
+        "method": { "type": "string", "enum": ["Espèces", "Chèque", "Virement Bancaire", "Paiement Mobile"], "description": "Le mode de paiement utilisé." }
+      },
+      "required": ["date", "amount", "description", "accountingTransactionId", "payerFirstName", "payerLastName", "method"]
+    },
+    "libraryBook": {
+        "title": "Livre de Bibliothèque",
+        "description": "Un livre disponible dans la bibliothèque de l'école.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "title": { "type": "string", "description": "Le titre du livre." },
+            "author": { "type": "string", "description": "L'auteur du livre." },
+            "quantity": { "type": "number", "description": "Le nombre d'exemplaires disponibles." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'ajout du livre." }
+        },
+        "required": ["schoolId", "title", "author", "quantity"]
+    },
+    "libraryLoan": {
+      "title": "Prêt de Livre",
+      "description": "Enregistre un prêt de livre à un élève.",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "borrowedDate": { "type": "string", "format": "date-time" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "returnedDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["borrowed", "returned", "overdue"] }
+      },
+      "required": ["bookId", "studentId", "borrowedDate", "dueDate", "status"]
+    },
+    "message": {
+        "title": "Message",
+        "description": "Un message ou une annonce envoyé(e) via la messagerie interne.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "title": { "type": "string", "description": "Le titre ou l'objet du message." },
+            "content": { "type": "string", "description": "Le corps du message." },
+            "senderId": { "type": "string", "description": "L'UID de l'expéditeur." },
+            "senderName": { "type": "string", "description": "Le nom de l'expéditeur." },
+            "createdAt": { "type": "string", "format": "date-time", "description": "La date d'envoi du message." },
+            "readBy": { "type": "array", "items": { "type": "string" } },
+            "recipients": {
+                "type": "object",
+                "description": "Définit les destinataires du message.",
+                "properties": {
+                    "all": { "type": "boolean", "description": "Envoyer à toute l'école (parents, enseignants, personnel)." },
+                    "teachers": { "type": "boolean", "description": "Envoyer à tous les enseignants." },
+                    "staff": { "type": "boolean", "description": "Envoyer à tout le personnel non-enseignant." },
+                    "classes": {
+                        "type": "array",
+                        "items": { "type": "string" },
+                        "description": "Une liste d'IDs de classes spécifiques à cibler."
+                    }
+                }
+            }
+        },
+        "required": ["schoolId", "title", "content", "senderId", "senderName", "createdAt", "recipients"]
+    },
+    "absence": {
+        "title": "Absence",
+        "description": "Une absence enregistrée pour un élève.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "studentId": { "type": "string", "description": "L'identifiant de l'élève absent." },
+            "studentName": { "type": "string", "description": "Le nom complet de l'élève." },
+            "classId": { "type": "string", "description": "L'identifiant de la classe de l'élève." },
+            "date": { "type": "string", "format": "date", "description": "La date de l'absence." },
+            "type": { "type": "string", "enum": ["Journée entière", "Matin", "Après-midi"], "description": "Le type d'absence." },
+            "justified": { "type": "boolean", "description": "Indique si l'absence est justifiée." },
+            "reason": { "type": "string", "description": "Le motif de l'absence (si justifiée)." },
+            "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." }
+        },
+        "required": ["schoolId", "studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
+    },
+    "fee": {
+        "title": "Frais de Scolarité",
+        "description": "Une structure de frais de scolarité.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+            "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
+            "amount": { "type": "string", "description": "Le montant total des frais." },
+            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
+            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
+        },
+        "required": ["schoolId", "grade", "amount", "installments"]
+    },
+    "subject": {
+        "title": "Matière",
+        "description": "Une matière enseignée dans l'école.",
+        "type": "object",
+        "properties": {
+            "schoolId": { "type": "string" },
+            "name": { "type": "string" },
+            "code": { "type": "string" },
+            "color": { "type": "string" }
+        },
+        "required": ["schoolId", "name"]
+    },
+    "canteenMenu": {
+        "title": "Menu de Cantine",
+        "description": "Détaille le menu pour un jour et un type de repas spécifiques.",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date", "description": "Date du menu (YYYY-MM-DD)." },
+            "mealType": { "type": "string", "enum": ["petit_dejeuner", "dejeuner", "gouter", "diner"], "description": "Type de repas." },
+            "status": { "type": "string", "enum": ["draft", "published", "archived"], "description": "Statut du menu." },
+            "categories": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string", "description": "Nom de la catégorie (Entrée, Plat, etc.)." },
+                        "items": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": { "type": "string" },
+                                    "description": { "type": "string" },
+                                    "allergens": { "type": "array", "items": { "type": "string" } },
+                                    "priceStudent": { "type": "number" },
+                                    "priceStaff": { "type": "number" },
+                                    "options": { "type": "array", "items": { "type": "string" } }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "specialMenus": {
+                "type": "object",
+                "properties": {
+                    "vegetarian": { "type": "object", "properties": {"available": { "type": "boolean" }, "mainCourse": { "type": "string" }} },
+                    "halal": { "type": "object", "properties": {"available": { "type": "boolean" }, "mainCourse": { "type": "string" }} },
+                    "allergies": { "type": "array", "items": { "type": "string" } }
+                }
+            }
+        },
+        "required": ["date", "mealType", "status", "categories"]
+    },
+    "canteenReservation": {
+        "title": "Réservation de Cantine",
+        "description": "Une réservation de repas faite par un élève ou un membre du personnel.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "mealType": { "type": "string", "enum": ["petit_dejeuner", "dejeuner", "gouter", "diner"] },
+            "menuChoice": {
+                "type": "object",
+                "properties": {
+                    "entree": { "type": "string" },
+                    "mainCourse": { "type": "string" },
+                    "dessert": { "type": "string" },
+                    "option": { "type": "string" }
+                }
+            },
+            "specialRequirements": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled", "attended"] },
+            "paymentStatus": { "type": "string", "enum": ["unpaid", "paid", "partially_paid"] },
+            "price": { "type": "number" },
+            "paidAmount": { "type": "number" },
+            "attendanceTime": { "type": "string", "format": "time" },
+            "notes": { "type": "string" }
+        },
+        "required": ["studentId", "date", "mealType", "status", "paymentStatus", "price"]
+    },
+    "canteenSubscription": {
+        "title": "Abonnement Cantine",
+        "description": "Détaille un abonnement de cantine pour un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "type": { "type": "string", "enum": ["ponctuel", "hebdomadaire", "mensuel", "trimestriel", "annuel"] },
+            "startDate": { "type": "string", "format": "date" },
+            "endDate": { "type": "string", "format": "date" },
+            "daysOfWeek": { "type": "array", "items": { "type": "string" } },
+            "mealType": { "type": "string", "enum": ["petit_dejeuner", "dejeuner", "gouter", "diner"] },
+            "price": { "type": "number" },
+            "status": { "type": "string", "enum": ["active", "inactive", "expired"] },
+            "autoRenew": { "type": "boolean" },
+            "missedMeals": { "type": "number" },
+            "remainingMeals": { "type": "number" }
+        },
+        "required": ["studentId", "type", "startDate", "endDate", "price", "status"]
+    },
+    "bus": {
+        "title": "Bus",
+        "description": "Un bus du service de transport scolaire.",
+        "type": "object",
+        "properties": {
+          "registrationNumber": { "type": "string" },
+          "capacity": { "type": "number" },
+          "type": { "type": "string", "enum": ["standard", "minibus", "adapted"] },
+          "features": { "type": "array", "items": { "type": "string" } },
+          "driverId": { "type": "string" },
+          "monitorId": { "type": "string" },
+          "status": { "type": "string", "enum": ["active", "maintenance", "inactive"] },
+          "lastMaintenance": { "type": "string", "format": "date" },
+          "nextMaintenance": { "type": "string", "format": "date" },
+          "insurance": {
+            "type": "object",
+            "properties": {
+              "company": { "type": "string" },
+              "policyNumber": { "type": "string" },
+              "expiryDate": { "type": "string", "format": "date" }
+            }
+          }
+        },
+        "required": ["registrationNumber", "capacity", "type", "status"]
+    },
+    "route": {
+        "title": "Ligne de Transport",
+        "description": "Une ligne de bus avec ses arrêts et son horaire.",
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "busId": { "type": "string" },
+          "driverId": { "type": "string" },
+          "schedule": {
+            "type": "object",
+            "properties": {
+              "morning": { "$ref": "#/entities/routeSchedule" },
+              "evening": { "$ref": "#/entities/routeSchedule" }
+            }
+          },
+          "status": { "type": "string", "enum": ["on_time", "delayed", "cancelled"] },
+          "currentLocation": {
+            "type": "object",
+            "properties": {
+              "lat": { "type": "number" },
+              "lng": { "type": "number" },
+              "timestamp": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "required": ["name", "busId"]
+    },
+     "routeSchedule": {
+      "title": "Horaire de Ligne",
+      "type": "object",
+      "properties": {
+        "startTime": { "type": "string", "format": "time" },
+        "arrivalTime": { "type": "string", "format": "time" },
+        "stops": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "stopId": { "type": "string" },
+              "name": { "type": "string" },
+              "address": { "type": "string" },
+              "scheduledTime": { "type": "string", "format": "time" },
+              "actualTime": { "type": "string", "format": "time" },
+              "students": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "transportSubscription": {
+        "title": "Abonnement Transport",
+        "description": "Un abonnement au service de transport pour un élève.",
+        "type": "object",
+        "properties": {
+          "studentId": { "type": "string" },
+          "routeId": { "type": "string" },
+          "stopId": { "type": "string" },
+          "type": { "type": "string", "enum": ["aller_seul", "retour_seul", "aller_retour"] },
+          "period": { "type": "string", "enum": ["trimestriel", "semestriel", "annuel"] },
+          "startDate": { "type": "string", "format": "date" },
+          "endDate": { "type": "string", "format": "date" },
+          "price": { "type": "number" },
+          "paymentStatus": { "type": "string", "enum": ["unpaid", "paid"] },
+          "status": { "type": "string", "enum": ["active", "inactive"] }
+        },
+        "required": ["studentId", "routeId", "stopId", "type", "period", "price", "status"]
+    },
+    "building": {
+        "title": "Bâtiment",
+        "description": "Un bâtiment (administratif, pédagogique, sportif...).",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string", "enum": ["garcons", "filles", "mixte", "administratif", "pedagogique", "sportif", "autre"] },
+            "capacity": { "type": "number" },
+            "responsableId": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "maintenance", "full"] },
+            "features": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["name", "type", "capacity"]
+    },
+    "room": {
+        "title": "Chambre d'Internat",
+        "description": "Une chambre dans un bâtiment d'internat.",
+        "type": "object",
+        "properties": {
+            "buildingId": { "type": "string" },
+            "number": { "type": "string" },
+            "capacity": { "type": "number" },
+            "status": { "type": "string", "enum": ["available", "occupied", "maintenance"] },
+            "monthlyRate": { "type": "number" }
+        },
+        "required": ["buildingId", "number", "capacity", "status", "monthlyRate"]
+    },
+    "occupant": {
+        "title": "Occupant (Interne)",
+        "description": "Détaille l'occupation d'une chambre par un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "roomId": { "type": "string" },
+            "startDate": { "type": "string", "format": "date" },
+            "status": { "type": "string", "enum": ["active", "pending", "terminated", "suspended"] },
+            "endDate": { "type": "string", "format": "date" },
+            "nextPaymentDue": { "type": "string", "format": "date" }
+        },
+        "required": ["studentId", "roomId", "startDate", "status"]
+    },
+    "log": {
+        "title": "Journal des Entrées/Sorties",
+        "description": "Enregistre un mouvement d'un interne.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "type": { "type": "string", "enum": ["entree", "sortie"] },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "reason": { "type": "string" },
+            "status": { "type": "string", "enum": ["pending", "authorized", "returned", "late", "cancelled"] },
+            "authorizedBy": { "type": "string" }
+        },
+        "required": ["studentId", "type", "timestamp", "reason", "status"]
+    },
+    "materiel": {
+        "title": "Matériel",
+        "description": "Un équipement ou un bien de l'école.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "category": { "type": "string", "enum": ["Mobilier", "Informatique", "Pédagogique", "Sportif", "Autre"] },
+            "quantity": { "type": "number" },
+            "status": { "type": "string", "enum": ["neuf", "bon", "à réparer", "hors_service"] },
+            "locationId": { "type": "string", "description": "ID de la salle ou du bâtiment où se trouve l'équipement." },
+            "acquisitionDate": { "type": "string", "format": "date" },
+            "value": { "type": "number" }
+        },
+        "required": ["name", "category", "quantity", "status", "locationId"]
+    },
+    "salle": {
+        "title": "Salle",
+        "description": "Une salle pouvant être réservée (salle de classe, réunion, etc.).",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "type": { "type": "string", "enum": ["salle_de_classe", "salle_de_reunion", "laboratoire", "amphitheatre", "gymnase"] },
+            "capacity": { "type": "number" },
+            "buildingId": { "type": "string" },
+            "equipments": { "type": "array", "items": { "type": "string" } }
+        },
+        "required": ["name", "type", "capacity"]
+    },
+    "reservation_salle": {
+        "title": "Réservation de Salle",
+        "description": "Une réservation pour une salle spécifique.",
+        "type": "object",
+        "properties": {
+            "salleId": { "type": "string" },
+            "reservedBy": { "type": "string", "description": "UID de l'utilisateur qui réserve." },
+            "eventName": { "type": "string" },
+            "startTime": { "type": "string", "format": "date-time" },
+            "endTime": { "type": "string", "format": "date-time" },
+            "status": { "type": "string", "enum": ["confirmée", "en_attente", "annulée"] },
+            "notes": { "type": "string" }
+        },
+        "required": ["salleId", "reservedBy", "eventName", "startTime", "endTime", "status"]
+    },
+    "tache_maintenance": {
+        "title": "Tâche de Maintenance",
+        "description": "Une tâche de maintenance préventive ou corrective.",
+        "type": "object",
+        "properties": {
+            "title": { "type": "string" },
+            "priority": { "type": "string", "enum": ["haute", "moyenne", "basse"] },
+            "status": { "type": "string", "enum": ["à_faire", "en_cours", "terminée"] },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "assignedTo": { "type": "string", "description": "UID du membre du personnel assigné." },
+            "dueDate": { "type": "string", "format": "date" },
+            "description": { "type": "string" },
+            "location": { "type": "string", "description": "Où la maintenance doit avoir lieu (ex: Salle B102, Bus-01)." }
+        },
+        "required": ["title", "priority", "status", "createdAt"]
+    },
+    "key_trousseau": {
+        "title": "Trousseau de Clés",
+        "description": "Un ensemble de clés identifié pour une zone ou un usage spécifique.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Nom du trousseau (ex: Clés Bâtiment A)." },
+            "description": { "type": "string", "description": "Description (ex: Accès à toutes les salles du 1er étage)." },
+            "keys": { "type": "array", "items": { "type": "string" }, "description": "Liste des identifiants de clés individuelles." },
+            "status": { "type": "string", "enum": ["disponible", "emprunté"], "description": "Statut actuel du trousseau." },
+            "lastHolderId": { "type": "string", "description": "UID du dernier détenteur." }
+        },
+        "required": ["name", "status"]
+    },
+    "key_log": {
+        "title": "Journal des Clés",
+        "description": "Enregistre un emprunt ou un retour de trousseau de clés.",
+        "type": "object",
+        "properties": {
+            "trousseauId": { "type": "string" },
+            "staffId": { "type": "string", "description": "UID du membre du personnel." },
+            "type": { "type": "string", "enum": ["emprunt", "retour"] },
+            "timestamp": { "type": "string", "format": "date-time" },
+            "notes": { "type": "string" }
+        },
+        "required": ["trousseauId", "staffId", "type", "timestamp"]
+    },
+    "dossierMedical": {
+        "title": "Dossier Médical",
+        "description": "Le dossier médical principal d'un élève.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "groupeSanguin": { "type": "string" },
+            "allergies": { "type": "array", "items": { "type": "string" } },
+            "maladiesChroniques": { "type": "array", "items": { "type": "string" } },
+            "urgences": {
+                "type": "object",
+                "properties": {
+                    "contact1": { "type": "string" },
+                    "assurance": { "type": "string" },
+                    "numeroPolice": { "type": "string" }
+                }
+            }
+        },
+        "required": ["studentId"]
+    },
+    "vaccination": {
+        "title": "Vaccination",
+        "description": "Un enregistrement de vaccination.",
+        "type": "object",
+        "properties": {
+            "nom": { "type": "string" },
+            "date": { "type": "string", "format": "date" },
+            "rappel": { "type": "string", "format": "date" }
+        },
+        "required": ["nom", "date"]
+    },
+    "consultation": {
+        "title": "Consultation",
+        "description": "Une consultation médicale enregistrée.",
+        "type": "object",
+        "properties": {
+            "date": { "type": "string", "format": "date-time" },
+            "motif": { "type": "string" },
+            "diagnostic": { "type": "string" },
+            "traitement": { "type": "string" },
+            "medecin": { "type": "string" }
+        },
+        "required": ["date", "motif", "diagnostic"]
+    },
+    "activite": {
+        "title": "Activité Parascolaire",
+        "description": "Une activité sportive, culturelle ou un club.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Nom de l'activité." },
+            "type": { "type": "string", "enum": ["sportive", "culturelle", "club"] },
+            "description": { "type": "string" },
+            "teacherInChargeId": { "type": "string", "description": "ID de l'enseignant responsable." },
+            "schedule": { "type": "string", "description": "Horaire (ex: Mardi 16h-17h)." }
+        },
+        "required": ["name", "type", "teacherInChargeId"]
+    },
+    "inscriptionActivite": {
+        "title": "Inscription à une Activité",
+        "description": "Lie un élève à une activité pour une année donnée.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "activiteId": { "type": "string" },
+            "academicYear": { "type": "string" }
+        },
+        "required": ["studentId", "activiteId", "academicYear"]
+    },
+    "competition": {
+        "title": "Compétition / Événement",
+        "description": "Un événement ou une compétition ponctuelle.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string", "description": "Nom de la compétition." },
+            "date": { "type": "string", "format": "date" },
+            "description": { "type": "string" },
+            "results": { "type": "string", "description": "Résultats globaux de l'événement." }
+        },
+        "required": ["name", "date"]
+    },
+    "participationCompetition": {
+        "title": "Participation à une Compétition",
+        "description": "Détaille la participation d'un élève à une compétition.",
+        "type": "object",
+        "properties": {
+            "studentId": { "type": "string" },
+            "competitionId": { "type": "string" },
+            "rank": { "type": "string", "description": "Classement ou résultat de l'élève." },
+            "notes": { "type": "string" }
+        },
+        "required": ["studentId", "competitionId"]
     }
   },
   "auth": {
     "providers": ["Google", "Email"]
   },
   "firestore": {
-    "/users/{userId}": {
-      "schema": { "$ref": "#/entities/user" },
-      "description": "Stores basic user profile information, separate from school-specific data."
+    "/sessions_parents/{sessionId}": {
+        "schema": { "$ref": "#/entities/parent_session" },
+        "description": "Stocke les sessions temporaires pour l'accès parent."
     },
-    "/schools/{schoolId}": {
+    "/users/{userId}": {
+        "schema": { "$ref": "#/entities/user_root" },
+        "description": "Stocke une correspondance entre l'UID d'un utilisateur et son schoolId pour les vérifications de permissions."
+    },
+     "/support_tickets/{ticketId}": {
+        "schema": { "$ref": "#/entities/support_ticket" },
+        "description": "Stocke les demandes de support soumises par les utilisateurs."
+    },
+    "/contact_requests/{requestId}": {
+        "schema": { "$ref": "#/entities/contact_request" },
+        "description": "Stocke les soumissions du formulaire de contact/démo."
+    },
+    "/survey_responses/{responseId}": {
+        "schema": { "$ref": "#/entities/survey_response" },
+        "description": "Stocke les soumissions du formulaire d'enquête publique."
+    },
+    "/system_logs/{logId}": {
+        "schema": { "$ref": "#/entities/system_log" },
+        "description": "Journalise toutes les actions critiques effectuées sur la plateforme."
+    },
+    "/system_settings/{settingId}": {
+        "schema": { "$ref": "#/entities/system_setting" },
+        "description": "Stocke la configuration globale de la plateforme."
+    },
+    "/ecoles/{schoolId}": {
       "schema": { "$ref": "#/entities/school" },
-      "description": "Stores information about a specific school.",
+      "description": "Stocke les informations générales sur un établissement.",
       "subcollections": {
-        "members": {
-          "path": "members/{userId}",
-          "schema": { "$ref": "#/entities/schoolMember" },
-          "description": "A list of all users who are members of this school."
+        "personnel": {
+          "path": "personnel/{staffId}",
+          "schema": { "$ref": "#/entities/staff" },
+          "description": "Stocke les profils du personnel pour cette école."
+        },
+        "parents": {
+          "path": "parents/{parentId}",
+          "schema": { "$ref": "#/entities/parent" },
+          "description": "Stocke les profils des parents/tuteurs pour cette école."
+        },
+        "admin_roles": {
+          "path": "admin_roles/{roleId}",
+          "schema": { "$ref": "#/entities/admin_role" },
+          "description": "Définit les permissions pour les rôles administratifs de cette école."
+        },
+        "eleves": {
+            "path": "eleves/{studentId}",
+            "schema": { "$ref": "#/entities/student" },
+            "description": "Stocke les profils des élèves pour cette école.",
+            "subcollections": {
+                "parents_tuteurs": {
+                    "path": "parents_tuteurs/{parentId}",
+                    "schema": { "$ref": "#/entities/parent_profile" },
+                    "description": "Stocke les profils des parents pour cet élève."
+                },
+                "notes": {
+                    "path": "notes/{gradeId}",
+                    "schema": { "$ref": "#/entities/gradeEntry" },
+                    "description": "Stocke les notes individuelles d'un élève."
+                },
+                "paiements": {
+                    "path": "paiements/{paymentId}",
+                    "schema": { "$ref": "#/entities/payment" },
+                    "description": "Stocke l'historique des paiements de scolarité pour un élève."
+                },
+                "affectations": {
+                    "path": "affectations/{assignmentId}",
+                    "schema": { "$ref": "#/entities/studentClassAssignment" },
+                    "description": "Stocke l'historique des affectations de classe pour un élève."
+                },
+                "incidents_disciplinaires": {
+                  "path": "incidents_disciplinaires/{incidentId}",
+                  "schema": { "$ref": "#/entities/discipline_incident" },
+                  "description": "Historique des incidents disciplinaires de l'élève."
+                },
+                "dossier_medical": {
+                    "path": "dossier_medical/{dossierId}",
+                    "schema": { "$ref": "#/entities/dossierMedical" },
+                    "description": "Contient le dossier médical de l'élève.",
+                    "subcollections": {
+                        "vaccins": {
+                            "path": "vaccins/{vaccinId}",
+                            "schema": { "$ref": "#/entities/vaccination" },
+                            "description": "Enregistrements des vaccins de l'élève."
+                        },
+                        "consultations": {
+                            "path": "consultations/{consultationId}",
+                            "schema": { "$ref": "#/entities/consultation" },
+                            "description": "Historique des consultations médicales."
+                        }
+                    }
+                }
+            }
+        },
+        "cycles": {
+            "path": "cycles/{cycleId}",
+            "schema": { "$ref": "#/entities/cycle" },
+            "description": "Stocke la liste des cycles d'enseignement pour cette école."
+        },
+        "niveaux": {
+            "path": "niveaux/{niveauId}",
+            "schema": { "$ref": "#/entities/niveau" },
+            "description": "Stocke la liste des niveaux scolaires pour cette école."
         },
         "classes": {
-            "path": "classes/{classId}",
-            "schema": { "type": "object" },
-            "description": "School classes."
+            "path": "classes/{classeId}",
+            "schema": { "$ref": "#/entities/classe" },
+            "description": "Stocke les informations des classes pour cette école."
         },
-        "students": {
-            "path": "students/{studentId}",
-            "schema": { "type": "object" },
-            "description": "Student profiles."
+        "emploi_du_temps": {
+            "path": "emploi_du_temps/{entryId}",
+            "schema": { "$ref": "#/entities/timetableEntry" },
+            "description": "Stocke les entrées de l'emploi du temps pour cette école."
         },
-        "teachers": {
-            "path": "teachers/{teacherId}",
-            "schema": { "type": "object" },
-            "description": "Teacher profiles."
+        "frais_scolarite": {
+            "path": "frais_scolarite/{feeId}",
+            "schema": { "$ref": "#/entities/fee" },
+            "description": "Stocke la structure des frais de scolarité pour cette école."
         },
-        "subjects": {
-            "path": "subjects/{subjectId}",
-            "schema": { "type": "object" },
-            "description": "School subjects."
+        "absences": {
+            "path": "absences/{absenceId}",
+            "schema": { "$ref": "#/entities/absence" },
+            "description": "Stocke l'historique des absences pour cette école."
         },
-        "config": {
-            "path": "config/{configId}",
-            "schema": { "type": "object" },
-            "description": "Configuration documents for the school."
+        "comptabilite": {
+            "path": "comptabilite/{transactionId}",
+            "schema": { "$ref": "#/entities/accountingTransaction" },
+            "description": "Stocke les transactions comptables pour cette école."
+        },
+        "bibliotheque": {
+            "path": "bibliotheque/{bookId}",
+            "schema": { "$ref": "#/entities/libraryBook" },
+            "description": "Stocke les livres de la bibliothèque pour cette école."
+        },
+        "bibliotheque_prets": {
+          "path": "bibliotheque_prets/{loanId}",
+          "schema": { "$ref": "#/entities/libraryLoan" },
+          "description": "Stocke les prêts de livres pour cette école."
+        },
+        "messagerie": {
+            "path": "messagerie/{messageId}",
+            "schema": { "$ref": "#/entities/message" },
+            "description": "Stocke les messages et annonces envoyés via la messagerie interne pour cette école."
+        },
+        "matieres": {
+            "path": "matieres/{subjectId}",
+            "schema": { "$ref": "#/entities/subject" },
+            "description": "Stocke les matières enseignées dans l'école."
+        },
+        "cantine_menus": {
+            "path": "cantine_menus/{menuId}",
+            "schema": { "$ref": "#/entities/canteenMenu" },
+            "description": "Stocke les menus de la cantine."
+        },
+        "cantine_reservations": {
+            "path": "cantine_reservations/{reservationId}",
+            "schema": { "$ref": "#/entities/canteenReservation" },
+            "description": "Stocke les réservations de repas."
+        },
+        "cantine_abonnements": {
+            "path": "cantine_abonnements/{subscriptionId}",
+            "schema": { "$ref": "#/entities/canteenSubscription" },
+            "description": "Stocke les abonnements à la cantine."
+        },
+        "transport_bus": {
+            "path": "transport_bus/{busId}",
+            "schema": { "$ref": "#/entities/bus" },
+            "description": "Stocke la flotte de bus de l'école."
+        },
+        "transport_lignes": {
+            "path": "transport_lignes/{routeId}",
+            "schema": { "$ref": "#/entities/route" },
+            "description": "Définit les lignes de transport et leurs arrêts."
+        },
+        "transport_abonnements": {
+            "path": "transport_abonnements/{subscriptionId}",
+            "schema": { "$ref": "#/entities/transportSubscription" },
+            "description": "Stocke les abonnements au transport des élèves."
+        },
+         "internat_batiments": {
+            "path": "internat_batiments/{buildingId}",
+            "schema": { "$ref": "#/entities/building" },
+            "description": "Gère les bâtiments de l'internat."
+        },
+        "internat_chambres": {
+            "path": "internat_chambres/{roomId}",
+            "schema": { "$ref": "#/entities/room" },
+            "description": "Gère les chambres de l'internat."
+        },
+        "internat_occupants": {
+            "path": "internat_occupants/{occupationId}",
+            "schema": { "$ref": "#/entities/occupant" },
+            "description": "Gère les occupants (internes) des chambres."
+        },
+        "internat_entrees_sorties": {
+            "path": "internat_entrees_sorties/{logId}",
+            "schema": { "$ref": "#/entities/log" },
+            "description": "Journalise les entrées et sorties des internes."
+        },
+        "inventaire": {
+            "path": "inventaire/{materielId}",
+            "schema": { "$ref": "#/entities/materiel" },
+            "description": "Stocke l'inventaire du matériel de l'école."
+        },
+        "cles_trousseaux": {
+            "path": "cles_trousseaux/{trousseauId}",
+            "schema": { "$ref": "#/entities/key_trousseau" },
+            "description": "Liste des trousseaux de clés de l'établissement."
+        },
+        "cles_log": {
+            "path": "cles_log/{logId}",
+            "schema": { "$ref": "#/entities/key_log" },
+            "description": "Journal des mouvements des clés."
+        },
+        "salles": {
+            "path": "salles/{salleId}",
+            "schema": { "$ref": "#/entities/salle" },
+            "description": "Définit les salles réservables de l'école."
+        },
+        "reservations_salles": {
+            "path": "reservations_salles/{reservationId}",
+            "schema": { "$ref": "#/entities/reservation_salle" },
+            "description": "Stocke les réservations des salles."
+        },
+        "maintenance": {
+            "path": "maintenance/{tacheId}",
+            "schema": { "$ref": "#/entities/tache_maintenance" },
+            "description": "Suit les tâches de maintenance de l'établissement."
+        },
+        "activites": {
+            "path": "activites/{activiteId}",
+            "schema": { "$ref": "#/entities/activite" },
+            "description": "Liste des activités parascolaires."
+        },
+        "inscriptions_activites": {
+            "path": "inscriptions_activites/{inscriptionId}",
+            "schema": { "$ref": "#/entities/inscriptionActivite" },
+            "description": "Inscriptions des élèves aux activités."
+        },
+        "competitions": {
+            "path": "competitions/{competitionId}",
+            "schema": { "$ref": "#/entities/competition" },
+            "description": "Liste des compétitions et événements."
+        },
+        "participations_competitions": {
+            "path": "participations_competitions/{participationId}",
+            "schema": { "$ref": "#/entities/participationCompetition" },
+            "description": "Participations des élèves aux compétitions."
         }
       }
     }

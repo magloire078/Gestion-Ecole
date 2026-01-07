@@ -74,28 +74,22 @@ export default function LoginPage() {
     
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({ 
-        title: 'Connexion réussie', 
-        description: 'Redirection en cours...' 
-      });
-      // Le AuthGuard s'occupera de la redirection
+      // Let the AuthGuard handle the redirection
     } catch (error: any) {
       console.error('Erreur de connexion:', error);
       
       let errorMessage = 'Email ou mot de passe incorrect.';
       if (error.code === 'auth/user-not-found') {
         errorMessage = 'Aucun compte trouvé avec cet email.';
-      } else if (error.code === 'auth/wrong-password') {
+      } else if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = 'Mot de passe incorrect.';
       } else if (error.code === 'auth/too-many-requests') {
         errorMessage = 'Trop de tentatives. Veuillez réessayer plus tard.';
-      } else if (error.code === 'auth/invalid-credential') {
-          errorMessage = 'Les identifiants fournis ne sont pas valides.';
       }
       
       toast({ 
         variant: 'destructive', 
-        title: 'Erreur', 
+        title: 'Erreur de connexion', 
         description: errorMessage 
       });
     } finally {
@@ -112,11 +106,7 @@ export default function LoginPage() {
       });
       
       await signInWithPopup(auth, provider);
-      toast({ 
-        title: 'Connexion réussie', 
-        description: 'Redirection en cours...' 
-      });
-      // La redirection est gérée par le AuthGuard
+      // Let the AuthGuard handle the redirection
     } catch (error: any) {
       console.error('Erreur Google:', error);
       

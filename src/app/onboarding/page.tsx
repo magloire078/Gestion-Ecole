@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Logo } from '@/components/logo';
 import { Loader2 } from 'lucide-react';
-import type { staff as Staff, user_root as UserData } from '@/lib/data-types';
+import type { staff as Staff } from '@/lib/data-types';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -69,7 +68,8 @@ export default function OnboardingPage() {
       const batch = writeBatch(firestore);
 
       batch.update(userRef, { schoolId: schoolId, schoolRole: 'staff' });
-      batch.set(memberRef, {
+      
+      const memberData: Partial<Staff> = {
         uid: authUser.uid,
         firstName: authUser.displayName?.split(' ')[0] || 'Nouveau',
         lastName: authUser.displayName?.split(' ').slice(1).join(' ') || 'Membre',
@@ -80,14 +80,17 @@ export default function OnboardingPage() {
         baseSalary: 0,
         status: 'Actif',
         schoolId: schoolId,
-      });
+      };
+      
+      batch.set(memberRef, memberData, { merge: true });
 
       await batch.commit();
 
       if (reloadUser) {
         await reloadUser();
       }
-       await new Promise(resolve => setTimeout(resolve, 500));
+      await authUser.getIdToken(true);
+      await new Promise(resolve => setTimeout(resolve, 500));
       
       toast({ title: 'Bienvenue !', description: 'Vous avez rejoint une école.'});
       router.replace('/dashboard');
@@ -141,7 +144,7 @@ export default function OnboardingPage() {
                 Rejoignez une école existante avec un code fourni par l'administrateur.
               </p>
               <Input
-                placeholder="Code de l'école (ex: ABC123)"
+                placeholder="Code de l'école (ex: ABC-1234)"
                 value={schoolCode}
                 onChange={(e) => setSchoolCode(e.target.value.toUpperCase())}
                 disabled={loadingAction}
