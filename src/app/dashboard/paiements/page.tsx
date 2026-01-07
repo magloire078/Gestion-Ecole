@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { student as Student, class_type as Class } from "@/lib/data-types";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Search, Loader2 } from "lucide-react";
@@ -264,3 +264,5 @@ export default function PaymentsPage() {
     </>
   );
 }
+
+    
