@@ -18,10 +18,10 @@ export interface CombinedUser {
     authUser?: FirebaseUser;
     profile?: UserProfile;
     parentStudentIds?: string[];
-    schoolId?: string;
-    displayName?: string;
-    photoURL?: string;
-    email?: string;
+    schoolId?: string | null;
+    displayName?: string | null;
+    photoURL?: string | null;
+    email?: string | null;
 }
 
 const allPermissions = {
@@ -39,9 +39,8 @@ export function useUser() {
   const auth = useAuth();
   const firestore = useFirestore();
   const [user, setUser] = useState<CombinedUser | null>(null);
-  const [schoolId, setSchoolId] = useState<string | null | undefined>(undefined);
-  const [isDirector, setIsDirector] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isDirector, setIsDirector] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -55,7 +54,7 @@ export function useUser() {
   }, [auth]);
 
   useEffect(() => {
-    if (!isClient || !firestore) {
+    if (!isClient || !firestore || !auth) {
       if(!isClient) setLoading(false);
       return;
     }
@@ -74,7 +73,6 @@ export function useUser() {
                 parentStudentIds: JSON.parse(studentIdsStr),
                 displayName: 'Parent / Tuteur',
             });
-            setSchoolId(sessionSchoolId);
             setLoading(false);
             return; // Exit early if it's a parent session
         }
@@ -82,15 +80,9 @@ export function useUser() {
         console.error("Error reading parent session", e);
     }
     
-    if (!auth) {
-        setLoading(false);
-        return;
-    }
-    
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (!authUser) {
         setUser(null);
-        setSchoolId(null);
         setIsDirector(false);
         setLoading(false);
         return;
@@ -105,7 +97,6 @@ export function useUser() {
             const isSuperAdmin = !!tokenResult.claims.superAdmin;
             
             const currentSchoolId = userRootSnap.exists() ? userRootSnap.data().schoolId : null;
-            setSchoolId(currentSchoolId);
 
             if (isSuperAdmin) {
                 const superAdminProfile: UserProfile = {
@@ -143,7 +134,6 @@ export function useUser() {
         } catch (err) {
             console.error("Error processing user state:", err);
             setUser(null);
-            setSchoolId(null);
             setIsDirector(false);
         } finally {
             setLoading(false);
@@ -151,7 +141,6 @@ export function useUser() {
       }, (error) => {
           console.error("Snapshot error on user document:", error);
           setUser(null);
-          setSchoolId(null);
           setIsDirector(false);
           setLoading(false);
       });
@@ -161,6 +150,8 @@ export function useUser() {
 
     return () => unsubscribe();
   }, [auth, firestore, isClient]);
+  
+  const schoolId = user?.schoolId;
 
   return {user, loading, isDirector, reloadUser, schoolId };
 }
