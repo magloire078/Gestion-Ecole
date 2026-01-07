@@ -67,7 +67,6 @@ interface Message {
     createdAt: { seconds: number, nanoseconds: number };
     readBy?: string[];
     recipients: MessageFormValues['recipients'];
-    recipientSchoolId?: string; // Ajout du champ optionnel
 }
 
 export default function MessagingPage() {
@@ -124,7 +123,6 @@ export default function MessagingPage() {
     const messageData = {
         ...values,
         schoolId,
-        recipientSchoolId: schoolId, // Important pour les règles de sécurité
         senderId: user.authUser.uid,
         senderName: user.authUser.displayName,
         createdAt: serverTimestamp(),
@@ -390,4 +388,3 @@ export default function MessagingPage() {
     </>
   );
 }
-    
