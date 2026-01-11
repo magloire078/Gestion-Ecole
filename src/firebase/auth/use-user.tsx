@@ -1,4 +1,3 @@
-
 'use client';
 
 import {useState, useEffect, useCallback} from 'react';
@@ -54,19 +53,21 @@ export function useUser() {
   }, [auth]);
 
   useEffect(() => {
-    if (!isClient || !firestore || !auth) {
+    if (!isClient || !auth || !firestore) {
       if(!isClient) setLoading(false);
       return;
     }
     
-    // Check for parent session first, only on client
+    // Check for parent session on client side
+    let isParentSession = false;
     try {
         const sessionId = localStorage.getItem('parent_session_id');
         const sessionSchoolId = localStorage.getItem('parent_school_id');
         const studentIdsStr = localStorage.getItem('parent_student_ids');
 
         if (sessionId && sessionSchoolId && studentIdsStr) {
-             setUser({
+            isParentSession = true;
+            setUser({
                 uid: sessionId,
                 isParent: true,
                 schoolId: sessionSchoolId,
@@ -74,10 +75,13 @@ export function useUser() {
                 displayName: 'Parent / Tuteur',
             });
             setLoading(false);
-            return; // Exit early if it's a parent session
         }
     } catch(e) {
         console.error("Error reading parent session", e);
+    }
+    
+    if (isParentSession) {
+        return; // Don't attach Firebase auth listener if it's a parent session
     }
     
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
@@ -91,6 +95,7 @@ export function useUser() {
       setLoading(true);
       const userRootRef = doc(firestore, 'users', authUser.uid);
 
+      // We use onSnapshot to listen for changes in the user's root doc (e.g. school change)
       const unsubUserDoc = onSnapshot(userRootRef, async (userRootSnap) => {
         try {
             const tokenResult = await authUser.getIdTokenResult(true);
