@@ -58,20 +58,25 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const [logReason, setLogReason] = useState('');
   const [isSavingLog, setIsSavingLog] = useState(false);
 
+  // State for date range
+  const [todayStart, setTodayStart] = useState('');
+  const [todayEnd, setTodayEnd] = useState('');
+
+  useEffect(() => {
+    // This effect runs only on the client, after hydration
+    const now = new Date();
+    setTodayStart(format(now, 'yyyy-MM-dd') + 'T00:00:00');
+    setTodayEnd(format(now, 'yyyy-MM-dd') + 'T23:59:59');
+  }, []);
+
   const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
   const occupantsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_occupants`), where('status', '==', 'active')), [firestore, schoolId]);
   const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
   const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)), [firestore, schoolId]);
-  
-  const { todayStart, todayEnd } = useMemo(() => {
-    const now = new Date();
-    return {
-      todayStart: format(now, 'yyyy-MM-dd') + 'T00:00:00',
-      todayEnd: format(now, 'yyyy-MM-dd') + 'T23:59:59',
-    };
-  }, []);
 
   const todayLogsQuery = useMemoFirebase(() => {
+    // Don't run query until date range is set on the client
+    if (!todayStart || !todayEnd) return null; 
     return query(
         collection(firestore, `ecoles/${schoolId}/internat_entrees_sorties`), 
         where('timestamp', '>=', todayStart),

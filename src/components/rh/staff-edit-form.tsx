@@ -96,6 +96,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     });
 
     useEffect(() => {
+        const todayDateString = format(new Date(), 'yyyy-MM-dd');
         async function loadPrivateData() {
             if (editingStaff && schoolId) {
                 const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
@@ -105,7 +106,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 const hireDate = fullData.hireDate || editingStaff.hireDate;
                 const formattedHireDate = hireDate && isValid(parseISO(hireDate)) 
                     ? format(parseISO(hireDate), 'yyyy-MM-dd') 
-                    : format(new Date(), 'yyyy-MM-dd');
+                    : todayDateString;
 
                 form.reset({
                     ...editingStaff,
@@ -117,7 +118,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                 setPhotoUrl(editingStaff.photoURL || null);
             } else {
                 form.reset({
-                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: format(new Date(), 'yyyy-MM-dd'), subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
                 });
                 setPhotoUrl(null);
             }
@@ -345,3 +346,4 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         </>
     );
 }
+
