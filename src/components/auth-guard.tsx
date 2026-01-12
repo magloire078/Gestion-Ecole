@@ -3,7 +3,7 @@
 
 import { useAuthContext } from '@/contexts/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { LoadingScreen } from './ui/loading-screen';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -12,38 +12,44 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   
   useEffect(() => {
+    // Ne pas exécuter la logique de redirection tant que l'état d'auth n'est pas finalisé.
     if (!isInitialized || loading) {
       return; 
     }
     
     const isAuthFlow = pathname.startsWith('/auth') || pathname === '/parent-access';
     const isOnboarding = pathname.startsWith('/onboarding');
+    const publicPages = ['/', '/contact', '/survey', '/terms', '/privacy'];
     
-    // Handle authenticated users (staff/admin or parent)
+    // L'état est maintenant stable, on peut procéder aux redirections.
     if (user || isParentSession) {
       if (hasSchool) {
-        // User is fully authenticated and has a school
         if (isAuthFlow || isOnboarding) {
           router.replace('/dashboard');
         }
-      } else if (!isParentSession) { // Only staff/admins without a school go to onboarding
-        // User is authenticated but hasn't joined/created a school
+      } else if (!isParentSession) {
         if (!isOnboarding) {
           router.replace('/onboarding');
         }
       }
     } else {
-      // Handle unauthenticated users
-      const publicPages = ['/', '/contact', '/survey', '/terms', '/privacy'];
+      // Utilisateur non authentifié
       if (!isAuthFlow && !publicPages.includes(pathname)) {
         router.replace('/auth/login');
       }
     }
 
-  }, [user, isParentSession, hasSchool, isInitialized, loading, pathname, router]);
+  }, [isInitialized, loading, user, isParentSession, hasSchool, pathname, router]);
 
-  if (loading || !isInitialized) {
+  // Affiche un écran de chargement tant que l'initialisation n'est pas terminée.
+  if (!isInitialized) {
     return <LoadingScreen />;
+  }
+
+  // Si l'état est initialisé mais qu'on est sur une page protégée sans être connecté,
+  // on peut afficher un loader pour masquer le contenu le temps que la redirection s'effectue.
+  if (loading && !publicPages.includes(pathname) && !pathname.startsWith('/auth')) {
+      return <LoadingScreen />;
   }
 
   return <>{children}</>;
