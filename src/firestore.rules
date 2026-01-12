@@ -12,10 +12,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Vérifie si l'utilisateur est associé à une école via le document racine /utilisateurs
+    // Vérifie si l'utilisateur est associé à une école via le document racine /users
     function isAssociatedWithSchool(userId, schoolId) {
-      return exists(/databases/$(database)/documents/utilisateurs/$(userId)) &&
-             get(/databases/$(database)/documents/utilisateurs/$(userId)).data.schoolId == schoolId;
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
     }
 
     // SIMPLIFIED: isSchoolMember now only checks the root user document.
@@ -73,29 +73,29 @@ service cloud.firestore {
       allow update: if isAuth() && hasPermission(request.resource.data.schoolId, 'manageSupportTickets');
     }
 
-    match /utilisateurs/{userId} {
+    match /users/{userId} {
       allow get, update, create: if isAuth() && request.auth.uid == userId;
-      allow list, delete: if (get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true) || (isAuth() && request.auth.uid == userId);
+      allow list, delete: if (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) || (isAuth() && request.auth.uid == userId);
     }
     
     match /contact_requests/{requestId} {
       allow create: if true;
-      allow get, list, delete: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+      allow get, list, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     match /survey_responses/{responseId} {
       allow create: if true;
-      allow get, list: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+      allow get, list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
       allow delete: if false;
     }
     
     match /system_logs/{logId} {
-        allow get, list, create: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+        allow get, list, create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
      match /system_settings/{settingId} {
         allow get, list: if isAuth();
-        allow write: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
 
@@ -106,9 +106,9 @@ service cloud.firestore {
     match /ecoles/{schoolId} {
       allow create: if isAuth();
       allow get: if isSchoolMember(schoolId);
-      allow list: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+      allow list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
       allow update: if isDirector(schoolId) || hasPermission(schoolId, 'manageSettings');
-      allow delete: if get(/databases/$(database)/documents/utilisateurs/$(request.auth.uid)).data.isAdmin == true;
+      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
 
       // --- SOUS-COLLECTIONS ---
       
@@ -170,7 +170,6 @@ service cloud.firestore {
 
       match /messagerie/{messageId} {
         allow get, update: if isSchoolMember(schoolId);
-        allow list: if request.auth != null && request.query.schoolId == getUserSchoolId();
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
