@@ -6,7 +6,7 @@ import { User, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, firestore } from '@/firebase/config';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { 
   Users, BookOpen, BarChart, CheckCircle, School, 
   Shield, Calendar, MessageSquare, CreditCard, 
@@ -517,4 +517,3 @@ export default function HomePageContent() {
     </div>
   );
 }
-    
