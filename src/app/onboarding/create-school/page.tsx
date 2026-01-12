@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -37,14 +36,6 @@ const createSchoolSchema = z.object({
   directorLastName: z.string()
     .min(2, "Le nom est requis (2 caractères minimum).")
     .max(50, "Le nom est trop long."),
-  phone: z.string()
-    .regex(/^[\d\s\-()+.]{8,20}$/, "Numéro de téléphone invalide.")
-    .optional()
-    .or(z.literal('')),
-  email: z.string()
-    .email("Email invalide.")
-    .optional()
-    .or(z.literal('')),
 });
 
 type CreateSchoolFormValues = z.infer<typeof createSchoolSchema>;
@@ -62,7 +53,7 @@ export default function CreateSchoolPage() {
   
   const form = useForm<CreateSchoolFormValues>({
     resolver: zodResolver(createSchoolSchema),
-    defaultValues: { name: '', address: '', directorFirstName: '', directorLastName: '', phone: '', email: '' }
+    defaultValues: { name: '', address: '', directorFirstName: '', directorLastName: '' }
   });
   
   useEffect(() => {
@@ -71,8 +62,6 @@ export default function CreateSchoolPage() {
       form.reset({
         directorFirstName: nameParts[0] || '',
         directorLastName: nameParts.slice(1).join(' ') || '',
-        email: user.authUser.email || '',
-        phone: user.authUser.phoneNumber || '',
       });
     }
   }, [user, loading, form]);
@@ -105,13 +94,13 @@ export default function CreateSchoolPage() {
         directorFirstName: values.directorFirstName,
         directorLastName: values.directorLastName,
         directorEmail: user.authUser.email,
-        phone: values.phone || '',
-        email: values.email || '',
+        phone: user.authUser.phoneNumber || '',
+        email: user.authUser.email,
       });
       
       toast({
         title: 'École créée avec succès !',
-        description: `Code: ${result.schoolCode}. Redirection vers le tableau de bord...`,
+        description: `Code: ${'${result.schoolCode}'}. Redirection vers le tableau de bord...`,
         duration: 5000,
       });
       
@@ -133,7 +122,7 @@ export default function CreateSchoolPage() {
   };
 
   const storagePath = user?.authUser?.uid 
-    ? `school-logos/${user.authUser.uid}/${Date.now()}` 
+    ? `school-logos/${'${user.authUser.uid}'}/${'${Date.now()}'}` 
     : 'school-logos/temp';
 
   return (
@@ -211,19 +200,6 @@ export default function CreateSchoolPage() {
                       
                       <FormField control={form.control} name="address" render={({ field }) => (
                           <FormItem><FormLabel>Adresse complète</FormLabel><FormControl><Input placeholder="Ex: 123 Avenue de l'Éducation, Cocody, Abidjan" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
-                      )} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg">Coordonnées de contact</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="phone" render={({ field }) => (
-                          <FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input placeholder="+225 01 23 45 67 89" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
-                      )} />
-                      
-                      <FormField control={form.control} name="email" render={({ field }) => (
-                          <FormItem><FormLabel>Email de contact</FormLabel><FormControl><Input type="email" placeholder="contact@ecole.fr" {...field} disabled={isSubmitting}/></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
                   </div>
