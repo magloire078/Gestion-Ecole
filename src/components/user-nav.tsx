@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { SafeImage } from "./ui/safe-image";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState } from "react";
 
 interface UserNavProps {
   collapsed?: boolean;
@@ -36,17 +35,11 @@ interface UserNavProps {
 export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
-  const { user, loading: userLoading } = useUser();
+  const { user, loading: userLoading, isDirector } = useUser();
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
   
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   const handleLogout = async () => {
     if (user?.isParent) {
         localStorage.removeItem('parent_session_id');
@@ -73,7 +66,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
   
-  const isLoading = !isClient || userLoading || (user && !user.isParent && schoolLoading);
+  const isLoading = userLoading || (user && !user.isParent && schoolLoading);
 
   if (isLoading) {
     return (

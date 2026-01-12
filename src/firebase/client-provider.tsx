@@ -15,7 +15,7 @@ export function FirebaseClientProvider({
 
   if (!firebaseContext) {
     // This can happen during server-side rendering, return null or a loader.
-    return null;
+    return <>{children}</>;
   }
 
   return <FirebaseProvider value={firebaseContext}>{children}</FirebaseProvider>;
