@@ -78,7 +78,7 @@ const plans = [
 ];
 
 
-export default function LandingPageV2() {
+export function LandingPageV2() {
   const router = useRouter();
 
   return (
@@ -121,7 +121,7 @@ export default function LandingPageV2() {
                   <PlayCircle className="h-5 w-5" />Demander une Démo
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" onClick={() => router.push('/auth/register')}>
+              <Button size="lg" variant="outline" onClick={() => router.push('/onboarding')}>
                 Commencer
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -195,7 +195,7 @@ export default function LandingPageV2() {
                                 </ul>
                             </CardContent>
                             <CardFooter>
-                                <Button className="w-full" variant={plan.variant as any} onClick={() => router.push('/auth/register')}>{plan.cta}</Button>
+                                <Button className="w-full" variant={plan.variant as any} onClick={() => router.push('/onboarding')}>{plan.cta}</Button>
                             </CardFooter>
                         </Card>
                     ))}
