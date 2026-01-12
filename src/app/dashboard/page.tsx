@@ -18,7 +18,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { gradeEntry as GradeEntry, cycle as Cycle, student as Student } from '@/lib/data-types';
 import { useRouter } from 'next/navigation';
-import { useAuthContext } from '@/contexts/auth-context';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 
 // ====================================================================================
@@ -87,6 +86,7 @@ const ParentDashboard = ({ user }: ParentDashboardProps) => {
 const RegularDashboard = () => {
   const firestore = useFirestore();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+  
   const { grades, loading: gradesLoading, error: gradesError } = useGradesData(schoolId);
   
   const studentsQuery = useMemoFirebase(() => 
@@ -111,6 +111,7 @@ const RegularDashboard = () => {
   
   const studentCount = useMemo(() => studentsData?.length || 0, [studentsData]);
   const cycleCount = useMemo(() => cyclesData?.length || 0, [cyclesData]);
+  const allGrades = grades;
 
   if (schoolLoading || studentsLoading || cyclesLoading) {
     return <DashboardSkeleton />;
@@ -235,25 +236,14 @@ const DashboardSkeleton = () => (
 // ====================================================================================
 
 function DashboardContent() {
-    const { user: authUser, userData, loading, isInitialized } = useAuthContext();
+    const { user, loading } = useUser();
     
-    if (!isInitialized || loading) {
+    if (loading) {
         return <LoadingScreen />;
     }
     
-    // Pour la compatibilité avec le composant ParentDashboard
-    // On doit reconstruire un objet `user` similaire à l'ancien
-    const legacyUserObject = authUser ? {
-        uid: authUser.uid,
-        isParent: false, // À ajuster si vous réintroduisez les sessions parent
-        parentStudentIds: [],
-        schoolId: userData?.schoolId,
-        displayName: userData?.displayName || authUser.displayName,
-        profile: userData
-    } : null;
-
-    if (legacyUserObject && legacyUserObject.isParent) {
-        return <ParentDashboard user={legacyUserObject as any} />;
+    if (user?.isParent) {
+        return <ParentDashboard user={user} />;
     }
     
     return <RegularDashboard />;
@@ -262,10 +252,10 @@ function DashboardContent() {
 
 export default function DashboardPage() {
     const router = useRouter();
-    const { user, hasSchool, loading, isInitialized } = useAuthContext();
+    const { user, hasSchool, loading } = useUser();
     
     useEffect(() => {
-        if (!isInitialized || loading) return;
+        if (loading) return;
         
         if (!user) {
             router.replace('/auth/login');
@@ -275,10 +265,14 @@ export default function DashboardPage() {
         if (!hasSchool) {
             router.replace('/onboarding');
         }
-    }, [user, hasSchool, loading, isInitialized, router]);
+    }, [user, hasSchool, loading, router]);
     
-    if (loading || !isInitialized || !user || !hasSchool) {
+    if (loading) {
         return <LoadingScreen />;
+    }
+    
+    if (!user || !hasSchool) {
+        return <LoadingScreen />; // Affiche un loader pendant la redirection
     }
     
     return <DashboardContent />;

@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthContext } from '@/contexts/auth-context';
+import { useUser } from '@/firebase'; // Utilisation du hook centralisé
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, BookOpen, BarChart, CheckCircle, School } from 'lucide-react';
@@ -11,11 +11,10 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 
 export default function HomePageContent() {
   const router = useRouter();
-  const { user, hasSchool, loading, isInitialized } = useAuthContext();
+  const { user, loading, hasSchool } = useUser();
   
-  // Redirections après initialisation
   useEffect(() => {
-    if (!isInitialized || loading) return;
+    if (loading) return;
     
     if (user) {
       if (hasSchool) {
@@ -24,10 +23,10 @@ export default function HomePageContent() {
         router.replace('/onboarding');
       }
     }
-  }, [user, hasSchool, loading, isInitialized, router]);
-  
-  // Si l'authentification est en cours ou si l'utilisateur est connecté, afficher un loader
-  if (!isInitialized || loading || user) {
+  }, [user, loading, hasSchool, router]);
+
+  // Si on est en cours de chargement ou si un utilisateur est détecté (et donc une redirection est imminente)
+  if (loading || user) {
     return <LoadingScreen />;
   }
   
@@ -66,7 +65,7 @@ export default function HomePageContent() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Button
               size="lg"
-              onClick={() => router.push('/auth/register')}
+              onClick={() => router.push('/onboarding/create-school')}
               className="px-8 py-3 text-lg"
             >
               S'inscrire gratuitement
