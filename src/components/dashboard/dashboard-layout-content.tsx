@@ -93,12 +93,18 @@ export default function DashboardLayoutContent({ children }: { children: React.R
         <div className={cn("min-h-screen w-full bg-background print:bg-white")}>
           <aside className={cn("fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-card sm:flex print:hidden transition-all duration-300", isNavCollapsed ? "w-20" : "w-64")}>
             <div className={cn("flex h-16 shrink-0 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
-              <Logo 
-                compact={isNavCollapsed} 
-                loading={isLoading}
-                schoolName={schoolData?.name}
-                logoUrl={schoolData?.mainLogoUrl}
-              />
+              {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Skeleton className={cn("rounded-lg", isNavCollapsed ? "h-9 w-9" : "h-8 w-8")} />
+                    {!isNavCollapsed && <Skeleton className="h-5 w-32" />}
+                  </div>
+              ) : (
+                  <Logo 
+                    compact={isNavCollapsed} 
+                    schoolName={schoolData?.name}
+                    logoUrl={schoolData?.mainLogoUrl}
+                  />
+              )}
             </div>
             <nav className="flex-1 overflow-y-auto p-2">
               {isLoading ? (

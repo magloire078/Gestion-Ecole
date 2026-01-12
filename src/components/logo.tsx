@@ -17,23 +17,9 @@ interface LogoProps {
   compact?: boolean;
   schoolName?: string | null;
   logoUrl?: string | null;
-  loading?: boolean;
 }
 
-export function Logo({ compact = false, schoolName, logoUrl, loading }: LogoProps) {
-  if (loading) {
-    return (
-       <div className="flex items-center gap-2 text-primary font-semibold">
-          <Skeleton className={cn("rounded-lg", compact ? "h-9 w-9" : "h-8 w-8")} />
-          {!compact && (
-            <div className="flex flex-col">
-              <Skeleton className="h-5 w-32" />
-            </div>
-          )}
-      </div>
-    )
-  }
-
+export function Logo({ compact = false, schoolName, logoUrl }: LogoProps) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
         <SafeImage 

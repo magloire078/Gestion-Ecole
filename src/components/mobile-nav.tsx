@@ -1,10 +1,10 @@
 
-
 "use client";
 import { Logo } from './logo';
 import { useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { MainNav } from './main-nav';
+import { Skeleton } from './ui/skeleton';
 
 interface MobileNavProps {
     loading: boolean;
@@ -27,14 +27,26 @@ export function MobileNav({ loading, schoolName, logoUrl }: MobileNavProps) {
   return (
     <div className='flex flex-col h-full bg-card'>
         <div className="flex h-16 shrink-0 items-center border-b px-6">
-            <Logo 
-              loading={loading}
-              schoolName={schoolName}
-              logoUrl={logoUrl}
-            />
+           {loading ? (
+                <div className="flex items-center gap-2">
+                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-5 w-32" />
+                </div>
+            ) : (
+                <Logo 
+                  schoolName={schoolName}
+                  logoUrl={logoUrl}
+                />
+            )}
         </div>
         <nav className="flex-1 overflow-y-auto p-4">
-            <MainNav {...navProps} />
+             {loading ? (
+                  <div className="space-y-2 p-2">
+                      {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+                  </div>
+              ) : (
+                  <MainNav {...navProps} />
+              )}
         </nav>
     </div>
   );
