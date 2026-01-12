@@ -2,13 +2,15 @@
 
 import { useAuthContext } from '@/contexts/auth-context';
 import type { User as FirebaseUser } from 'firebase/auth';
+import type { UserProfile } from '@/lib/data-types';
+import { useEffect, useState } from 'react';
 
-// This is a simplified user object for consistent use across the app
+
 export interface AppUser {
     uid: string;
     isParent: boolean;
     authUser?: FirebaseUser;
-    profile?: any; // Consider creating a specific UserProfile type
+    profile?: UserProfile; 
     parentStudentIds?: string[];
     schoolId?: string | null;
     displayName?: string | null;
@@ -18,6 +20,22 @@ export interface AppUser {
 
 export function useUser() {
   const authContext = useAuthContext();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return {
+      user: null,
+      loading: true,
+      isDirector: false,
+      schoolId: undefined,
+      hasSchool: false,
+      reloadUser: async () => {},
+    };
+  }
   
   if (authContext.isParentSession) {
     return {
@@ -27,7 +45,9 @@ export function useUser() {
         schoolId: authContext.schoolId,
         parentStudentIds: authContext.parentStudentIds,
         displayName: 'Parent / Tuteur',
-      },
+        profile: undefined,
+        authUser: undefined,
+      } as AppUser,
       loading: authContext.loading,
       hasSchool: authContext.hasSchool,
       schoolId: authContext.schoolId,
@@ -41,12 +61,12 @@ export function useUser() {
         uid: authContext.user.uid,
         isParent: false,
         authUser: authContext.user,
-        profile: authContext.userData,
+        profile: authContext.userData || undefined,
         schoolId: authContext.schoolId,
         displayName: authContext.userData?.displayName || authContext.user.displayName,
         photoURL: authContext.userData?.photoURL || authContext.user.photoURL,
         email: authContext.user.email,
-    } : null,
+    } as AppUser : null,
     loading: authContext.loading,
     hasSchool: authContext.hasSchool,
     schoolId: authContext.schoolId,
