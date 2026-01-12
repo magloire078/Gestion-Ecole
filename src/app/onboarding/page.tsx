@@ -1,14 +1,15 @@
-import dynamic from 'next/dynamic';
-import { LoadingScreen } from '@/components/ui/loading-screen';
 
-const OnboardingPageClient = dynamic(
-  () => import('./onboarding-page-client'),
-  {
-    ssr: false,
-    loading: () => <LoadingScreen />,
-  }
-);
+'use client';
 
-export default function OnboardingPage() {
-  return <OnboardingPageClient />;
+import { AuthGuard } from "@/components/auth-guard";
+import OnboardingPageClient from '../dashboard/onboarding/onboarding-page-client';
+
+function SecuredOnboardingPage() {
+    return (
+        <AuthGuard>
+            <OnboardingPageClient />
+        </AuthGuard>
+    )
 }
+
+export default SecuredOnboardingPage;

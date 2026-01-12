@@ -1,53 +1,74 @@
+
 'use client';
 
-import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
-import { getFirebase } from '.';
+import { firebaseApp, firebaseAuth, firebaseFirestore, firebaseStorage } from './config';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
+import { ThemeProvider } from '@/components/theme-provider';
 
-// 1. Définir le type du contexte
 export interface FirebaseContextValue {
-  firebaseApp: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-  storage: FirebaseStorage;
+  firebaseApp: FirebaseApp | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
+  storage: FirebaseStorage | null;
 }
 
-// 2. Créer le contexte
-const FirebaseContext = createContext<FirebaseContextValue | null>(null);
+const FirebaseContext = createContext<FirebaseContextValue>({
+  firebaseApp: null,
+  auth: null,
+  firestore: null,
+  storage: null,
+});
 
-// 3. Créer le composant fournisseur principal
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  // `useMemo` garantit que l'initialisation ne se produit qu'une seule fois.
-  const firebaseContext = useMemo(() => getFirebase(), []);
+  const [isClient, setIsClient] = useState(false);
 
-  // Si le contexte n'est pas encore prêt (par exemple, lors du rendu serveur),
-  // on ne rend rien ou un loader pour éviter les erreurs.
-  if (!firebaseContext) {
-    return null; 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Ne rend le contenu que sur le client pour éviter les erreurs d'hydratation
+  if (!isClient) {
+    return null;
   }
 
+  const contextValue = {
+    firebaseApp,
+    auth: firebaseAuth,
+    firestore: firebaseFirestore,
+    storage: firebaseStorage,
+  };
+
   return (
-    <FirebaseContext.Provider value={firebaseContext}>
-      {children}
-      <FirebaseErrorListener />
+    <FirebaseContext.Provider value={contextValue}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        {children}
+        {isClient && <FirebaseErrorListener />}
+      </ThemeProvider>
     </FirebaseContext.Provider>
   );
 }
 
-// 4. Créer les hooks pour consommer le contexte
-export const useFirebase = () => {
+export const useFirebase = (): FirebaseContextValue => {
   const context = useContext(FirebaseContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseClientProvider');
+  }
+  // On s'assure que les services sont disponibles avant de les retourner
+  if (!context.auth || !context.firestore || !context.storage) {
+    if (typeof window !== 'undefined') {
+        // This case should ideally not happen if provider logic is correct
+        console.warn("Firebase services are not yet available.");
+    }
   }
   return context;
 };
 
-export const useFirebaseApp = () => useFirebase().firebaseApp;
-export const useAuth = () => useFirebase().auth;
-export const useFirestore = () => useFirebase().firestore;
-export const useStorage = () => useFirebase().storage;
+export const useFirebaseApp = () => useFirebase().firebaseApp!;
+export const useAuth = () => useFirebase().auth!;
+export const useFirestore = () => useFirebase().firestore!;
+export const useStorage = () => useFirebase().storage!;

@@ -101,7 +101,7 @@ export function useUser() {
 
   return {
     user,
-    loading,
+    loading: loading || !isClient,
     hasSchool: !!user?.schoolId,
     schoolId: user?.schoolId,
     isDirector,

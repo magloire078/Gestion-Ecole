@@ -1,7 +1,8 @@
 
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, initializeFirestore, memoryLocalCache } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Your web app's Firebase configuration
 export const firebaseConfig = {
@@ -13,22 +14,35 @@ export const firebaseConfig = {
   appId: "1:97019754371:web:4822d9c017bf4be808e8b6"
 };
 
-
 let app: FirebaseApp;
 let auth: Auth;
 let firestore: Firestore;
+let storage: FirebaseStorage;
 
-if (typeof window !== 'undefined') {
+function getFirebaseInstances() {
+  if (typeof window === 'undefined') {
+    return { app: null, auth: null, firestore: null, storage: null };
+  }
+
   if (!getApps().length) {
     app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    // Utiliser initializeFirestore pour configurer le cache mémoire
+    firestore = initializeFirestore(app, {
+        localCache: memoryLocalCache(),
+    });
+    storage = getStorage(app);
   } else {
     app = getApp();
+    auth = getAuth(app);
+    firestore = getFirestore(app);
+    storage = getStorage(app);
   }
-  auth = getAuth(app);
-  firestore = getFirestore(app);
+  return { app, auth, firestore, storage };
 }
 
-// Exporting the initialized services
-// We avoid exporting 'app' directly to encourage using the service-specific exports.
-// @ts-ignore
-export { auth, firestore };
+const instances = getFirebaseInstances();
+export const firebaseApp = instances.app;
+export const firebaseAuth = instances.auth;
+export const firebaseFirestore = instances.firestore;
+export const firebaseStorage = instances.storage;
