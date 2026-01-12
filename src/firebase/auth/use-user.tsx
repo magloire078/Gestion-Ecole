@@ -28,7 +28,6 @@ export function useUser() {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // This effect runs once on component mount to confirm we are on the client.
     setIsClient(true);
   }, []);
 
@@ -36,16 +35,14 @@ export function useUser() {
       const currentUser = getAuth().currentUser;
       if (currentUser) {
         await currentUser.reload();
-        // The onIdTokenChanged listener will handle the state update automatically.
       }
   }, []);
 
   useEffect(() => {
-    // Only run this effect on the client.
     if (!isClient) return;
 
-    const handleAuthChange = async (firebaseUser: FirebaseUser | null) => {
-      setLoading(true); // Start loading whenever auth state might be changing.
+    const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
+      setLoading(true);
 
       if (firebaseUser) {
         const userRootRef = doc(firestore, 'users', firebaseUser.uid);
@@ -75,9 +72,11 @@ export function useUser() {
         } catch (error) {
           console.error("Error fetching user data:", error);
           setUser(null);
+        } finally {
+            setLoading(false);
         }
       } else {
-         // Check for parent session in localStorage if no Firebase user is found.
+         // Parent session logic is now also inside the effect
          const parentSessionId = localStorage.getItem('parent_session_id');
          const parentSchoolId = localStorage.getItem('parent_school_id');
          const parentStudentIdsStr = localStorage.getItem('parent_student_ids');
@@ -91,11 +90,9 @@ export function useUser() {
          } else {
             setUser(null);
          }
+         setLoading(false);
       }
-      setLoading(false); // Finished loading after all checks are done.
-    };
-    
-    const unsubscribe = onIdTokenChanged(auth, handleAuthChange);
+    });
 
     return () => unsubscribe();
   }, [isClient, firestore]);
