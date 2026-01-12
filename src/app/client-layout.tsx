@@ -1,10 +1,9 @@
 'use client';
 
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { Suspense } from "react";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 
 
@@ -14,7 +13,6 @@ export function ClientLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <Suspense fallback={<LoadingScreen />}>
       <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -22,11 +20,12 @@ export function ClientLayout({
           disableTransitionOnChange
       >
         <FirebaseClientProvider>
+          <Suspense fallback={<LoadingScreen />}>
             {children}
-            <Toaster />
+          </Suspense>
+          <Toaster />
         </FirebaseClientProvider>
       </ThemeProvider>
-    </Suspense>
   );
 }
     

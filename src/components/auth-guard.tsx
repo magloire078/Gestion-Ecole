@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/firebase/auth/use-user';
+import { useUser } from '@/firebase';
 import { LoadingScreen } from './ui/loading-screen';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -10,39 +10,37 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, hasSchool, loading } = useUser();
   const [isClient, setIsClient] = useState(false);
 
+  // This ensures that the component only runs on the client side.
   useEffect(() => {
     setIsClient(true);
   }, []);
 
   useEffect(() => {
-    // Ne rien faire tant qu'on n'est pas sur le client ou que l'authentification charge
+    // Wait until loading is complete and we are on the client
     if (!isClient || loading) {
       return; 
     }
 
-    // Si le chargement est terminé et qu'il n'y a pas d'utilisateur, rediriger vers la connexion
+    // If no user is authenticated, redirect to login
     if (!user) {
       router.replace('/auth/login');
       return;
     }
     
-    // Si l'utilisateur est connecté mais n'a pas d'école, rediriger vers l'onboarding
-    if (user && !hasSchool) {
+    // If user is authenticated but has no school association (and is not a parent), redirect to onboarding
+    if (user && !user.isParent && !hasSchool) {
       router.replace('/onboarding');
       return;
     }
+
   }, [isClient, user, hasSchool, loading, router]);
   
-  // Affiche un loader pendant que la vérification initiale se fait côté client
-  if (!isClient || loading) {
-    return <LoadingScreen />;
-  }
-
-  // Affiche un loader pendant que la redirection s'effectue pour éviter les flashs de contenu.
-  if (!user || !hasSchool) {
+  // While loading or on the server, show a loading screen.
+  // Also show loading if a redirection is imminent to prevent content flash.
+  if (loading || !isClient || !user || (!user.isParent && !hasSchool)) {
     return <LoadingScreen />;
   }
   
-  // Si tout est bon, affiche le contenu protégé
+  // If all checks pass, render the children components.
   return <>{children}</>;
 }

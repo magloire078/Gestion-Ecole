@@ -6,8 +6,7 @@ import {getAuth, Auth} from 'firebase/auth';
 import {getFirestore, Firestore, initializeFirestore, memoryLocalCache} from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import {firebaseConfig} from './config';
-export * from './provider';
-export * from './client-provider';
+export * from './client-provider'; // Exporte le nouveau fournisseur et les hooks associés
 export * from './auth/use-user';
 export * from './firestore/use-doc';
 export * from './firestore/use-collection';
@@ -25,8 +24,6 @@ function initializeFirebase() {
   if (!getApps().length) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
-    // Use memory cache which is simpler and less prone to corruption
-    // in dev environments with hot-reloading.
     firestore = initializeFirestore(app, {
       localCache: memoryLocalCache(),
     });
@@ -40,7 +37,6 @@ function initializeFirebase() {
   return {app, auth, firestore, storage};
 }
 
-// Memoize the firebase instance to prevent re-initialization on every render
 const firebaseInstance = initializeFirebase();
 
 export function getFirebase() {
