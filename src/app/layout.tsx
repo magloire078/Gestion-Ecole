@@ -1,11 +1,13 @@
-
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
-import { ClientLayout } from './client-layout';
+import { ClientLayoutWrapper } from './client-layout-wrapper';
+
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'GèreEcole',
-  description: 'Gestion scolaire simplifiée',
+  title: 'GèreEcole - Gestion scolaire simplifiée',
+  description: 'La solution complète pour gérer les élèves, les notes, les paiements et la communication scolaire.',
 };
 
 export default function RootLayout({
@@ -14,9 +16,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
-      <body>
-        <ClientLayout>{children}</ClientLayout>
+    <html lang="fr" suppressHydrationWarning>
+      <body className={inter.className}>
+        <ClientLayoutWrapper>
+          {children}
+        </ClientLayoutWrapper>
       </body>
     </html>
   );

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense, useMemo, useState, useEffect } from 'react';
@@ -18,85 +17,9 @@ import { ParentStudentCard } from '@/components/parent/student-card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { gradeEntry as GradeEntry, cycle as Cycle, student as Student } from '@/lib/data-types';
-
-// ====================================================================================
-// Loading Skeletons
-// ====================================================================================
-
-const DashboardSkeleton = () => (
-  <div className="space-y-6">
-    <Skeleton className="h-8 w-48" />
-    <Skeleton className="h-24 w-full" />
-    <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-      <div className="lg:col-span-2 space-y-6">
-        <Skeleton className="h-80 w-full" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-      <div className="lg:col-span-1 space-y-6">
-        <Skeleton className="h-64 w-full" />
-        <Skeleton className="h-48 w-full" />
-      </div>
-    </div>
-  </div>
-);
-
-// ====================================================================================
-// Custom Hooks for Data Fetching
-// ====================================================================================
-
-const useGradesData = (schoolId?: string | null) => {
-  const firestore = useFirestore();
-  const [grades, setGrades] = useState<GradeEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!schoolId || !firestore) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchGrades = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const gradesCollectionGroup = collectionGroup(firestore, 'notes');
-        const gradesQuery = query(
-          gradesCollectionGroup,
-          where('__name__', '>=', `ecoles/${schoolId}/`),
-          where('__name__', '<', `ecoles/${schoolId}￿`),
-          limit(500)
-        );
-        
-        const gradesSnapshot = await getDocs(gradesQuery);
-        const fetchedGrades: GradeEntry[] = [];
-        
-        gradesSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (data && data.subject && typeof data.grade === 'number' && typeof data.coefficient === 'number') {
-             fetchedGrades.push({
-              ...data,
-              id: doc.id,
-              date: data.date,
-            } as GradeEntry);
-          }
-        });
-        
-        setGrades(fetchedGrades);
-      } catch (err) {
-        console.error("Erreur lors de la récupération des notes:", err);
-        setError("Impossible de charger les données des notes");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGrades();
-  }, [schoolId, firestore]);
-
-  return { grades, loading, error };
-};
+import { useRouter } from 'next/navigation';
+import { useAuthContext } from '@/contexts/auth-context';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 // ====================================================================================
 // Parent Dashboard Component
@@ -106,7 +29,7 @@ interface ParentDashboardProps {
 }
 
 const ParentDashboard = ({ user }: ParentDashboardProps) => {
-    if (!user.schoolId || !user.parentStudentIds) {
+    if (!user.schoolId) {
       return (
         <Alert>
           <AlertDescription>
@@ -116,7 +39,7 @@ const ParentDashboard = ({ user }: ParentDashboardProps) => {
       );
     }
     
-    if (user.parentStudentIds.length === 0) {
+    if (!user.parentStudentIds || user.parentStudentIds.length === 0) {
       return (
         <div className="space-y-6">
           <h1 className="text-2xl font-bold">Portail Parent</h1>
@@ -157,13 +80,14 @@ const ParentDashboard = ({ user }: ParentDashboardProps) => {
     );
 };
 
+
 // ====================================================================================
 // Regular Dashboard Component
 // ====================================================================================
 const RegularDashboard = () => {
   const firestore = useFirestore();
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
-  const { grades: allGrades, loading: gradesLoading, error: gradesError } = useGradesData(schoolId);
+  const { grades, loading: gradesLoading, error: gradesError } = useGradesData(schoolId);
   
   const studentsQuery = useMemoFirebase(() => 
     schoolId ? query(
@@ -225,27 +149,137 @@ const RegularDashboard = () => {
   );
 };
 
+
+// ====================================================================================
+// Custom Hooks for Data Fetching
+// ====================================================================================
+
+const useGradesData = (schoolId?: string | null) => {
+  const firestore = useFirestore();
+  const [grades, setGrades] = useState<GradeEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!schoolId || !firestore) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchGrades = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const gradesCollectionGroup = collectionGroup(firestore, 'notes');
+        const gradesQuery = query(
+          gradesCollectionGroup,
+          where('__name__', '>=', `ecoles/${schoolId}/`),
+          where('__name__', '<', `ecoles/${schoolId}￿`),
+          limit(500)
+        );
+        
+        const gradesSnapshot = await getDocs(gradesQuery);
+        const fetchedGrades: GradeEntry[] = [];
+        
+        gradesSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data && data.subject && typeof data.grade === 'number' && typeof data.coefficient === 'number') {
+             fetchedGrades.push({
+              ...data,
+              id: doc.id,
+              date: data.date,
+            } as GradeEntry);
+          }
+        });
+        
+        setGrades(fetchedGrades);
+      } catch (err) {
+        console.error("Erreur lors de la récupération des notes:", err);
+        setError("Impossible de charger les données des notes");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGrades();
+  }, [schoolId, firestore]);
+
+  return { grades, loading, error };
+};
+
+
+// ====================================================================================
+// Loading Skeletons
+// ====================================================================================
+
+const DashboardSkeleton = () => (
+  <div className="space-y-6">
+    <Skeleton className="h-8 w-48" />
+    <Skeleton className="h-24 w-full" />
+    <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+      <div className="lg:col-span-2 space-y-6">
+        <Skeleton className="h-80 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+      <div className="lg:col-span-1 space-y-6">
+        <Skeleton className="h-64 w-full" />
+        <Skeleton className="h-48 w-full" />
+      </div>
+    </div>
+  </div>
+);
+
 // ====================================================================================
 // Main Page Component
 // ====================================================================================
-function DashboardPageContent() {
-    const { user, loading: userLoading } = useUser();
-    
-    if (userLoading) {
-        return <DashboardSkeleton />;
-    }
 
-    if (user?.isParent) {
-        return <ParentDashboard user={user} />;
+function DashboardContent() {
+    const { user: authUser, userData, loading, isInitialized } = useAuthContext();
+    
+    if (!isInitialized || loading) {
+        return <LoadingScreen />;
+    }
+    
+    // Pour la compatibilité avec le composant ParentDashboard
+    // On doit reconstruire un objet `user` similaire à l'ancien
+    const legacyUserObject = authUser ? {
+        uid: authUser.uid,
+        isParent: false, // À ajuster si vous réintroduisez les sessions parent
+        parentStudentIds: [],
+        schoolId: userData?.schoolId,
+        displayName: userData?.displayName || authUser.displayName,
+        profile: userData
+    } : null;
+
+    if (legacyUserObject && legacyUserObject.isParent) {
+        return <ParentDashboard user={legacyUserObject as any} />;
     }
     
     return <RegularDashboard />;
 }
 
+
 export default function DashboardPage() {
-    return (
-        <Suspense fallback={<DashboardSkeleton />}>
-            <DashboardPageContent />
-        </Suspense>
-    );
+    const router = useRouter();
+    const { user, hasSchool, loading, isInitialized } = useAuthContext();
+    
+    useEffect(() => {
+        if (!isInitialized || loading) return;
+        
+        if (!user) {
+            router.replace('/auth/login');
+            return;
+        }
+        
+        if (!hasSchool) {
+            router.replace('/onboarding');
+        }
+    }, [user, hasSchool, loading, isInitialized, router]);
+    
+    if (loading || !isInitialized || !user || !hasSchool) {
+        return <LoadingScreen />;
+    }
+    
+    return <DashboardContent />;
 }
