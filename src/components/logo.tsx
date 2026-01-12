@@ -1,13 +1,11 @@
 
-
 'use client';
 
 import Link from 'next/link';
-import { useSchoolData } from '@/hooks/use-school-data';
-import { Skeleton } from './ui/skeleton';
 import { SafeImage } from './ui/safe-image';
 import { cn } from '@/lib/utils';
 import { BookOpen } from 'lucide-react';
+import { Skeleton } from './ui/skeleton';
 
 const DefaultLogo = ({ compact }: { compact?: boolean }) => (
     <div className={cn("flex items-center justify-center bg-primary/10 rounded-lg text-primary", compact ? "h-9 w-9" : "h-8 w-8")}>
@@ -15,10 +13,14 @@ const DefaultLogo = ({ compact }: { compact?: boolean }) => (
     </div>
 );
 
+interface LogoProps {
+  compact?: boolean;
+  schoolName?: string | null;
+  logoUrl?: string | null;
+  loading?: boolean;
+}
 
-export function Logo({ compact = false }: { compact?: boolean }) {
-  const { schoolData, loading } = useSchoolData();
-
+export function Logo({ compact = false, schoolName, logoUrl, loading }: LogoProps) {
   if (loading) {
     return (
        <div className="flex items-center gap-2 text-primary font-semibold">
@@ -35,8 +37,8 @@ export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
         <SafeImage 
-            src={schoolData?.mainLogoUrl} 
-            alt={schoolData?.name || 'Logo École'} 
+            src={logoUrl} 
+            alt={schoolName || 'Logo École'} 
             width={36} 
             height={36} 
             className={cn("object-contain transition-all duration-300", compact ? "h-9 w-9" : "h-8 w-8")}
@@ -44,7 +46,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
         />
         {!compact && (
           <div className="flex flex-col">
-            <h1 className="text-lg font-bold font-headline leading-tight">{schoolData?.name || 'GèreEcole'}</h1>
+            <h1 className="text-lg font-bold font-headline leading-tight">{schoolName || 'GèreEcole'}</h1>
           </div>
         )}
     </Link>

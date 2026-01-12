@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -29,7 +30,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: userLoading, isDirector } = useUser();
-  const { subscription, loading: schoolLoading } = useSchoolData();
+  const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -85,20 +86,24 @@ export default function DashboardLayoutContent({ children }: { children: React.R
     collapsed: isNavCollapsed,
   };
 
+  const isLoading = userLoading || schoolLoading;
 
   return (
       <TooltipProvider>
         <div className={cn("min-h-screen w-full bg-background print:bg-white")}>
           <aside className={cn("fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-card sm:flex print:hidden transition-all duration-300", isNavCollapsed ? "w-20" : "w-64")}>
             <div className={cn("flex h-16 shrink-0 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
-              <Logo compact={isNavCollapsed} />
+              <Logo 
+                compact={isNavCollapsed} 
+                loading={isLoading}
+                schoolName={schoolData?.name}
+                logoUrl={schoolData?.mainLogoUrl}
+              />
             </div>
             <nav className="flex-1 overflow-y-auto p-2">
-              {userLoading || schoolLoading ? (
+              {isLoading ? (
                   <div className="space-y-2 p-2">
-                      <Skeleton className="h-8 w-full" />
-                      <Skeleton className="h-8 w-full" />
-                      <Skeleton className="h-8 w-full" />
+                      {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
                   </div>
               ) : (
                   <MainNav {...navProps} />
@@ -132,7 +137,11 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="left" className="w-full max-w-xs p-0 bg-card text-card-foreground border-r-0">
-                    <MobileNav />
+                    <MobileNav 
+                      loading={isLoading}
+                      schoolName={schoolData?.name}
+                      logoUrl={schoolData?.mainLogoUrl}
+                    />
                   </SheetContent>
                 </Sheet>
 
