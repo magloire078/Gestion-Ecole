@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { SafeImage } from './ui/safe-image';
 import { cn } from '@/lib/utils';
 import { BookOpen } from 'lucide-react';
-import { Skeleton } from './ui/skeleton';
 
 const DefaultLogo = ({ compact }: { compact?: boolean }) => (
     <div className={cn("flex items-center justify-center bg-primary/10 rounded-lg text-primary", compact ? "h-9 w-9" : "h-8 w-8")}>
