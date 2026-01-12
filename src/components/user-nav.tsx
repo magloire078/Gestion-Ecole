@@ -40,6 +40,11 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const handleLogout = async () => {
     if (user?.isParent) {
@@ -69,10 +74,10 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   
   const isLoading = userLoading || (user && !user.isParent && schoolLoading);
 
-  if (isLoading) {
+  if (!isClient || isLoading) {
     return (
-      <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "justify-start")}>
-        <Skeleton className="h-9 w-9 rounded-full" />
+      <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "w-full justify-start p-1 pr-2")}>
+        <Skeleton className="h-8 w-8 rounded-full" />
         {!collapsed && (<div className="flex flex-col space-y-1"><Skeleton className="h-3 w-20" /><Skeleton className="h-2 w-16" /></div>)}
       </div>
     );
