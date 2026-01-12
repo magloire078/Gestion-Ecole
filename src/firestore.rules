@@ -75,27 +75,27 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get, update, create: if isAuth() && request.auth.uid == userId;
-      allow list, delete: if (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) || (isAuth() && request.auth.uid == userId);
+      allow list, delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) || (isAuth() && request.auth.uid == userId);
     }
     
     match /contact_requests/{requestId} {
       allow create: if true;
-      allow get, list, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow get, list, delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     match /survey_responses/{responseId} {
       allow create: if true;
-      allow get, list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow get, list: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
       allow delete: if false;
     }
     
     match /system_logs/{logId} {
-        allow get, list, create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        allow get, list, create: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
      match /system_settings/{settingId} {
         allow get, list: if isAuth();
-        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        allow write: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
 
@@ -106,9 +106,9 @@ service cloud.firestore {
     match /ecoles/{schoolId} {
       allow create: if isAuth();
       allow get: if isSchoolMember(schoolId);
-      allow list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow list: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
       allow update: if isDirector(schoolId) || hasPermission(schoolId, 'manageSettings');
-      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
 
       // --- SOUS-COLLECTIONS ---
       

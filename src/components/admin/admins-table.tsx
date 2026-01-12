@@ -1,3 +1,4 @@
+
 // src/components/admin/admins-table.tsx
 'use client';
 import { useMemo, useEffect, useState } from 'react';
@@ -12,9 +13,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { SafeImage } from '../ui/safe-image';
 import type { UserProfile } from '@/lib/data-types';
 
-// Note: This component now relies on the `isAdmin` flag in the Firestore profile,
-// which is a fallback. The proper check is done via custom claims in use-user.tsx
-// To get a full list of admins based on custom claims, a backend function would be required.
 export function AdminsTable() {
   const firestore = useFirestore();
   const [admins, setAdmins] = useState<UserProfile[]>([]);
@@ -25,8 +23,6 @@ export function AdminsTable() {
       if (!firestore) return;
       setLoading(true);
       try {
-        // This query finds users who have the isAdmin flag set in their profile,
-        // which acts as a fallback or secondary indicator.
         const personnelQuery = query(collectionGroup(firestore, 'personnel'), where('isAdmin', '==', true));
         const querySnapshot = await getDocs(personnelQuery);
         const adminList: UserProfile[] = [];
@@ -99,3 +95,5 @@ export function AdminsTable() {
     </Card>
   );
 }
+
+    
