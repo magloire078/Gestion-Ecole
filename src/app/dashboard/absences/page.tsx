@@ -157,7 +157,7 @@ export default function AbsencesPage() {
   });
 
   useEffect(() => {
-      if (isFormOpen) {
+      if (isFormOpen && todayDateString) {
           form.reset({
               studentId: selectedStudent?.id || '',
               date: todayDateString,

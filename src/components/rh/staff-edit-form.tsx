@@ -101,7 +101,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     });
 
     useEffect(() => {
-        if (!todayDateString) return; // Ne rien faire si la date n'est pas encore définie
+        if (!todayDateString) return; 
 
         async function loadPrivateData() {
             if (editingStaff && schoolId) {

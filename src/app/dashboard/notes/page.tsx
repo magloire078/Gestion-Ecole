@@ -141,10 +141,26 @@ export default function GradeEntryPage() {
   });
 
   useEffect(() => {
-    if (todayDateString && !form.getValues('date')) {
-        form.reset({ ...form.getValues(), date: todayDateString });
+    if (isFormOpen && todayDateString) {
+        if (editingGrade) {
+            form.reset({
+                studentId: editingGrade.studentId,
+                type: editingGrade.type,
+                grade: editingGrade.grade,
+                coefficient: editingGrade.coefficient,
+                date: editingGrade.date,
+            });
+        } else {
+            form.reset({
+                studentId: '',
+                type: 'Devoir',
+                date: todayDateString,
+                grade: 0,
+                coefficient: 1,
+            });
+        }
     }
-  }, [todayDateString, form]);
+  }, [isFormOpen, editingGrade, form, todayDateString]);
 
   // --- Effects ---
   useEffect(() => {
@@ -182,28 +198,6 @@ export default function GradeEntryPage() {
 
     fetchGrades();
   }, [selectedSubject, studentsInClass, schoolId, firestore]);
-  
-  useEffect(() => {
-    if (isFormOpen) {
-        if (editingGrade) {
-            form.reset({
-                studentId: editingGrade.studentId,
-                type: editingGrade.type,
-                grade: editingGrade.grade,
-                coefficient: editingGrade.coefficient,
-                date: editingGrade.date,
-            });
-        } else {
-            form.reset({
-                studentId: '',
-                type: 'Devoir',
-                date: todayDateString,
-                grade: 0,
-                coefficient: 1,
-            });
-        }
-    }
-  }, [isFormOpen, editingGrade, form, todayDateString]);
 
 
   const handleOpenFormDialog = (grade: GradeEntry | null) => {
@@ -520,5 +514,3 @@ export default function GradeEntryPage() {
     </>
   );
 }
-
-    
