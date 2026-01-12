@@ -8,7 +8,7 @@ import {
   DocumentData,
   FirestoreError,
 } from 'firebase/firestore';
-import {useFirestore} from '../provider';
+import {useFirestore} from '../client-provider';
 import { FirestorePermissionError } from '../errors';
 import { errorEmitter } from '../error-emitter';
 

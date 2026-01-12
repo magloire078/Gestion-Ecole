@@ -11,7 +11,7 @@ import {
   CollectionReference,
   DocumentReference,
 } from 'firebase/firestore';
-import {useFirestore} from '../provider';
+import {useFirestore} from '../client-provider';
 import { FirestorePermissionError } from '../errors';
 import { errorEmitter } from '../error-emitter';
 import { useToast } from '@/hooks/use-toast';
