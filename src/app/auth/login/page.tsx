@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -10,7 +11,7 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { auth, firestore } from '@/firebase/config';
+import { useAuth, useFirestore } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,13 +63,15 @@ export default function ModernLoginPage() {
   const [activeField, setActiveField] = useState<'email' | 'password' | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || !auth || !firestore) return;
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
@@ -81,16 +84,20 @@ export default function ModernLoginPage() {
             } else {
               router.replace('/onboarding');
             }
+          } else {
+             router.replace('/onboarding');
           }
         } catch (error) {
           console.error('Erreur vérification utilisateur:', error);
+           setIsCheckingAuth(false);
         }
+      } else {
+        setIsCheckingAuth(false);
       }
-      setIsCheckingAuth(false);
     });
 
     return () => unsubscribe();
-  }, [mounted, router]);
+  }, [mounted, auth, firestore, router]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -447,3 +454,5 @@ export default function ModernLoginPage() {
     </div>
   );
 }
+
+    
