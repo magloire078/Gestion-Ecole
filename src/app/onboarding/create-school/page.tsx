@@ -30,10 +30,7 @@ const createSchoolSchema = z.object({
   name: z.string()
     .min(3, "Le nom de l'école doit avoir au moins 3 caractères.")
     .max(100, "Le nom est trop long."),
-  address: z.string()
-    .min(5, "L'adresse doit avoir au moins 5 caractères.")
-    .optional()
-    .or(z.literal('')),
+  address: z.string().optional(),
   directorFirstName: z.string()
     .min(2, "Le prénom est requis (2 caractères minimum).")
     .max(50, "Le prénom est trop long."),
