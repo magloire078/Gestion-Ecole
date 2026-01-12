@@ -7,10 +7,11 @@ import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import { UserProfile } from '@/lib/data-types';
 import { allPermissions } from '@/lib/permissions';
 
-
 interface AuthContextType {
   user: User | null;
   userData: UserProfile | null;
+  isParentSession: boolean;
+  parentStudentIds: string[];
   loading: boolean;
   isInitialized: boolean;
   hasSchool: boolean;
@@ -27,6 +28,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserProfile | null>(null);
+  const [isParentSession, setIsParentSession] = useState(false);
+  const [parentStudentIds, setParentStudentIds] = useState<string[]>([]);
+  const [parentSchoolId, setParentSchoolId] = useState<string | null>(null);
+  
   const [loading, setLoading] = useState(true);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDirector, setIsDirector] = useState(false);
@@ -38,8 +43,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [auth]);
 
   useEffect(() => {
-    if (!auth || !firestore) {
+    if (typeof window === 'undefined' || !auth || !firestore) {
       return;
+    }
+    
+    // Check for parent session in localStorage first
+    try {
+        const sessionId = localStorage.getItem('parent_session_id');
+        const sessionSchoolId = localStorage.getItem('parent_school_id');
+        const studentIdsStr = localStorage.getItem('parent_student_ids');
+
+        if (sessionId && sessionSchoolId && studentIdsStr) {
+            setIsParentSession(true);
+            setParentStudentIds(JSON.parse(studentIdsStr));
+            setParentSchoolId(sessionSchoolId);
+            setLoading(false);
+            setIsInitialized(true);
+            return; // Stop further auth checks if it's a parent session
+        }
+    } catch(e) {
+        console.error("Error reading parent session from localStorage", e);
     }
 
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
@@ -108,15 +131,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [auth, firestore, isInitialized]);
+  }, [auth, firestore, isInitialized, reloadUser]);
 
   const value: AuthContextType = {
     user,
     userData,
+    isParentSession,
+    parentStudentIds,
     loading,
     isInitialized,
-    hasSchool: !!userData?.schoolId,
-    schoolId: userData?.schoolId,
+    hasSchool: !!userData?.schoolId || !!parentSchoolId,
+    schoolId: userData?.schoolId || parentSchoolId || undefined,
     isDirector,
     reloadUser,
   };
@@ -131,7 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuthContext() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuthContext doit être utilisé dans un AuthProvider');
+    throw new Error('useAuthContext must be used within an AuthProvider');
   }
   return context;
 }

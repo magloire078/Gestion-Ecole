@@ -1,93 +1,50 @@
 
 'use client';
 
-import { useUser } from '@/firebase';
+import { useAuthContext } from '@/contexts/auth-context';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
-
-function AuthProtectionLoader() {
-  return (
-    <div className="flex h-screen w-full items-center justify-center bg-background">
-      <div className="text-center space-y-4">
-        <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
-        <p className="text-lg font-semibold">Chargement de votre session...</p>
-        <p className="text-muted-foreground">Veuillez patienter.</p>
-      </div>
-    </div>
-  );
-}
+import { LoadingScreen } from './ui/loading-screen';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useUser();
+  const { user, isParentSession, hasSchool, isInitialized, loading } = useAuthContext();
   const router = useRouter();
   const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-
+  
   useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient || loading) {
+    if (!isInitialized || loading) {
       return; 
     }
     
-    // Pages publiques accessibles à tous
-    const publicPages = [
-      '/', 
-      '/contact', 
-      '/survey', 
-      '/terms', 
-      '/privacy'
-    ];
-    const isPublicPage = publicPages.includes(pathname);
-
-    // Pages d'authentification
-    const authPages = [
-      '/auth/login', 
-      '/auth/register', 
-      '/auth/forgot-password', 
-      '/parent-access'
-    ];
-    const isAuthPage = authPages.includes(pathname);
-
-    // Pages d'onboarding
-    const onboardingPages = [
-      '/onboarding',
-      '/onboarding/create-school'
-    ];
-    const isOnboardingPage = onboardingPages.includes(pathname);
-
-    if (user) {
-      // Utilisateur connecté
-      if (user.schoolId) {
-        // ...et a une école
-        if (isAuthPage || isOnboardingPage) {
+    const isAuthFlow = pathname.startsWith('/auth') || pathname === '/parent-access';
+    const isOnboarding = pathname.startsWith('/onboarding');
+    
+    // Handle authenticated users (staff/admin or parent)
+    if (user || isParentSession) {
+      if (hasSchool) {
+        // User is fully authenticated and has a school
+        if (isAuthFlow || isOnboarding) {
           router.replace('/dashboard');
         }
-      } else {
-        // ...mais n'a pas d'école
-        if (!isOnboardingPage) {
+      } else if (!isParentSession) { // Only staff/admins without a school go to onboarding
+        // User is authenticated but hasn't joined/created a school
+        if (!isOnboarding) {
           router.replace('/onboarding');
         }
       }
     } else {
-      // Utilisateur non connecté
-      if (!isPublicPage && !isAuthPage && !isOnboardingPage) {
+      // Handle unauthenticated users
+      const publicPages = ['/', '/contact', '/survey', '/terms', '/privacy'];
+      if (!isAuthFlow && !publicPages.includes(pathname)) {
         router.replace('/auth/login');
       }
     }
 
-  }, [user, loading, isClient, pathname, router]);
+  }, [user, isParentSession, hasSchool, isInitialized, loading, pathname, router]);
 
-  // Pendant que l'état d'authentification se résout côté client,
-  // pour éviter les flashs d'interface et les erreurs d'hydratation,
-  // nous affichons un loader pour toutes les pages non publiques.
-  if (loading && !publicPages.includes(pathname)) {
-    return <AuthProtectionLoader />;
+  if (loading || !isInitialized) {
+    return <LoadingScreen />;
   }
 
-  // Permettre l'affichage du contenu
   return <>{children}</>;
 }

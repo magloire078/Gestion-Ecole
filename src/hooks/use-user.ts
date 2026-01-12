@@ -1,32 +1,56 @@
 'use client';
 
 import { useAuthContext } from '@/contexts/auth-context';
+import type { User as FirebaseUser } from 'firebase/auth';
+
+// This is a simplified user object for consistent use across the app
+export interface AppUser {
+    uid: string;
+    isParent: boolean;
+    authUser?: FirebaseUser;
+    profile?: any; // Consider creating a specific UserProfile type
+    parentStudentIds?: string[];
+    schoolId?: string | null;
+    displayName?: string | null;
+    photoURL?: string | null;
+    email?: string | null;
+}
 
 export function useUser() {
-  const auth = useAuthContext();
+  const authContext = useAuthContext();
   
+  if (authContext.isParentSession) {
+    return {
+      user: {
+        uid: localStorage.getItem('parent_session_id') || 'parent_session',
+        isParent: true,
+        schoolId: authContext.schoolId,
+        parentStudentIds: authContext.parentStudentIds,
+        displayName: 'Parent / Tuteur',
+      },
+      loading: authContext.loading,
+      hasSchool: authContext.hasSchool,
+      schoolId: authContext.schoolId,
+      isDirector: false,
+      reloadUser: async () => {},
+    };
+  }
+
   return {
-    user: auth.user ? { 
-        ...auth.user, 
-        profile: auth.userData, 
-        uid: auth.user.uid,
-        isParent: false, // This hook is for staff/admins
-        schoolId: auth.schoolId,
-        parentStudentIds: [],
+    user: authContext.user ? {
+        uid: authContext.user.uid,
+        isParent: false,
+        authUser: authContext.user,
+        profile: authContext.userData,
+        schoolId: authContext.schoolId,
+        displayName: authContext.userData?.displayName || authContext.user.displayName,
+        photoURL: authContext.userData?.photoURL || authContext.user.photoURL,
+        email: authContext.user.email,
     } : null,
-    loading: auth.loading,
-    isInitialized: auth.isInitialized,
-    hasSchool: auth.hasSchool,
-    schoolId: auth.schoolId,
-    isDirector: auth.isDirector,
-    reloadUser: auth.reloadUser,
-    
-    // For compatibility with your existing code
-    authUser: auth.user,
-    uid: auth.user?.uid,
-    email: auth.user?.email,
-    displayName: auth.user?.displayName,
-    photoURL: auth.user?.photoURL,
-    profile: auth.userData,
+    loading: authContext.loading,
+    hasSchool: authContext.hasSchool,
+    schoolId: authContext.schoolId,
+    isDirector: authContext.isDirector,
+    reloadUser: authContext.reloadUser,
   };
 }
