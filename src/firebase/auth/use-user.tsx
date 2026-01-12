@@ -5,8 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { onIdTokenChanged, getAuth } from 'firebase/auth';
-import { useFirestore } from '../client-provider';
-import { auth } from '../config';
+import { useFirestore, useAuth } from '../client-provider';
 import type { UserProfile, user_root } from '@/lib/data-types';
 
 export interface AppUser {
@@ -25,6 +24,7 @@ export function useUser() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
+  const auth = useAuth(); // Utiliser le hook pour obtenir l'instance auth
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -32,14 +32,15 @@ export function useUser() {
   }, []);
 
   const reloadUser = useCallback(async () => {
-      const currentUser = getAuth().currentUser;
+      const authInstance = getAuth();
+      const currentUser = authInstance.currentUser;
       if (currentUser) {
         await currentUser.reload();
       }
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
+    if (!isClient || !auth) return; // Ne pas continuer si nous ne sommes pas sur le client ou si auth n'est pas prêt
 
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       setLoading(true);
@@ -76,7 +77,6 @@ export function useUser() {
             setLoading(false);
         }
       } else {
-         // Parent session logic is now also inside the effect
          const parentSessionId = localStorage.getItem('parent_session_id');
          const parentSchoolId = localStorage.getItem('parent_school_id');
          const parentStudentIdsStr = localStorage.getItem('parent_student_ids');
@@ -95,7 +95,7 @@ export function useUser() {
     });
 
     return () => unsubscribe();
-  }, [isClient, firestore]);
+  }, [isClient, firestore, auth]);
 
   const isDirector = user?.profile?.role === 'directeur';
 
