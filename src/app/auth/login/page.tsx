@@ -232,7 +232,7 @@ export default function LoginPage() {
           <p className="text-center text-sm text-muted-foreground">
             Pas encore de compte ?{' '}
             <Button variant="link" className="p-0 h-auto" asChild>
-              <Link href="/onboarding/create-school">Créez-en un</Link>
+              <Link href="/onboarding">Créez-en un</Link>
             </Button>
           </p>
           
