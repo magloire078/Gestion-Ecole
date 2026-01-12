@@ -87,6 +87,12 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
     const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
     const { schoolData } = useSchoolData();
+    const [todayDateString, setTodayDateString] = useState('');
+
+    useEffect(() => {
+        // Set date only on client to avoid hydration mismatch
+        setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
+    }, []);
 
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(staffSchema),
@@ -96,7 +102,6 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     });
 
     useEffect(() => {
-        const todayDateString = format(new Date(), 'yyyy-MM-dd');
         async function loadPrivateData() {
             if (editingStaff && schoolId) {
                 const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
@@ -116,7 +121,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                     adminRole: fullData.adminRole || '',
                 });
                 setPhotoUrl(editingStaff.photoURL || null);
-            } else {
+            } else if (todayDateString) { // Ensure todayDateString is available before resetting
                 form.reset({
                     firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
                 });
@@ -124,7 +129,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
             }
         }
         loadPrivateData();
-    }, [editingStaff, schoolId, firestore, form]);
+    }, [editingStaff, schoolId, firestore, form, todayDateString]);
     
     const watchedRole = useWatch({ control: form.control, name: 'role' });
 
@@ -347,3 +352,4 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     );
 }
 
+    
