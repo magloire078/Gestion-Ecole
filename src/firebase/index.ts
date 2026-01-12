@@ -1,5 +1,4 @@
 
-
 import * as React from 'react';
 import {initializeApp, getApp, getApps, FirebaseApp} from 'firebase/app';
 import {getAuth, Auth} from 'firebase/auth';
