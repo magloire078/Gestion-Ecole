@@ -419,7 +419,7 @@ export default function ModernLoginPage() {
                 className="p-0 h-auto text-sm font-semibold text-primary hover:text-primary/80"
                 asChild
               >
-                <Link href="/auth/register">
+                <Link href="/onboarding">
                   Créer un compte
                 </Link>
               </Button>
@@ -454,5 +454,3 @@ export default function ModernLoginPage() {
     </div>
   );
 }
-
-    
