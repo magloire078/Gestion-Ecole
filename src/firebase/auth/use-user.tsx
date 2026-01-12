@@ -1,17 +1,18 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth, firestore } from '@/firebase/config';
+import { onAuthStateChanged, onIdTokenChanged, getAuth } from 'firebase/auth';
+import { useFirestore } from '../provider';
+import { auth } from '../config';
 import type { UserProfile, user_root } from '@/lib/data-types';
 
 export interface AppUser {
     uid: string;
     isParent: boolean;
-    authUser: FirebaseUser;
+    authUser: FirebaseUser | null;
     profile?: UserProfile; 
     parentStudentIds?: string[];
     schoolId?: string | null;
@@ -20,75 +21,83 @@ export interface AppUser {
     email?: string | null;
 }
 
-// This hook is now self-contained and manages the full auth state.
 export function useUser() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const firestore = useFirestore();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
+  const reloadUser = useCallback(async () => {
+      const currentUser = getAuth().currentUser;
+      if (currentUser) {
+        await currentUser.reload();
+        // The onIdTokenChanged listener will handle the update
+      }
+  }, []);
+
   useEffect(() => {
     if (!isClient) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const handleAuthChange = async (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         setLoading(true);
         const userRootRef = doc(firestore, 'users', firebaseUser.uid);
-        const userRootDoc = await getDoc(userRootRef);
-        
-        let schoolId: string | null = null;
-        if (userRootDoc.exists()) {
-          schoolId = (userRootDoc.data() as user_root).schoolId;
-        }
+        try {
+          const userRootDoc = await getDoc(userRootRef);
+          let schoolId: string | null = null;
+          let userProfile: UserProfile | undefined = undefined;
 
-        let userProfile: UserProfile | undefined = undefined;
-        if (schoolId) {
+          if (userRootDoc.exists()) {
+            schoolId = (userRootDoc.data() as user_root).schoolId;
+          }
+
+          if (schoolId) {
             const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${firebaseUser.uid}`);
             const profileSnap = await getDoc(staffProfileRef);
             if (profileSnap.exists()) {
-                userProfile = profileSnap.data() as UserProfile;
+              userProfile = profileSnap.data() as UserProfile;
             }
-        }
-        
-        setUser({
-          uid: firebaseUser.uid,
-          authUser: firebaseUser,
-          isParent: false,
-          schoolId: schoolId,
-          profile: userProfile,
-          displayName: userProfile?.displayName || firebaseUser.displayName,
-          email: firebaseUser.email,
-          photoURL: userProfile?.photoURL || firebaseUser.photoURL,
-        });
+          }
+          
+          setUser({
+            uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: schoolId,
+            profile: userProfile, displayName: userProfile?.displayName || firebaseUser.displayName,
+            email: firebaseUser.email, photoURL: userProfile?.photoURL || firebaseUser.photoURL,
+          });
 
-      } else {
-        // Check for parent session in localStorage
-        const parentSessionId = localStorage.getItem('parent_session_id');
-        const parentSchoolId = localStorage.getItem('parent_school_id');
-        const parentStudentIdsStr = localStorage.getItem('parent_student_ids');
-        
-        if (parentSessionId && parentSchoolId && parentStudentIdsStr) {
-             setUser({
-                uid: parentSessionId,
-                isParent: true,
-                schoolId: parentSchoolId,
-                parentStudentIds: JSON.parse(parentStudentIdsStr),
-                displayName: 'Parent / Tuteur',
-                // @ts-ignore - authUser is not available for parent sessions
-                authUser: null, 
-            });
-        } else {
-            setUser(null);
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          setUser(null); // Reset user on error
+        } finally {
+          setLoading(false);
         }
+      } else {
+         const parentSessionId = localStorage.getItem('parent_session_id');
+         const parentSchoolId = localStorage.getItem('parent_school_id');
+         const parentStudentIdsStr = localStorage.getItem('parent_student_ids');
+
+         if (parentSessionId && parentSchoolId && parentStudentIdsStr) {
+            setUser({
+              uid: parentSessionId, isParent: true, schoolId: parentSchoolId,
+              parentStudentIds: JSON.parse(parentStudentIdsStr),
+              displayName: 'Parent / Tuteur', authUser: null,
+            });
+         } else {
+            setUser(null);
+         }
+         setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+    
+    // onIdTokenChanged is more responsive to custom claims changes
+    const unsubscribe = onIdTokenChanged(auth, handleAuthChange);
 
     return () => unsubscribe();
-  }, [isClient]);
+  }, [isClient, firestore]);
 
   const isDirector = user?.profile?.role === 'directeur';
 
@@ -98,10 +107,6 @@ export function useUser() {
     hasSchool: !!user?.schoolId,
     schoolId: user?.schoolId,
     isDirector,
-    reloadUser: async () => {
-      if (auth.currentUser) {
-        await auth.currentUser.reload();
-      }
-    },
+    reloadUser,
   };
 }

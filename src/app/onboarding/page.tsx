@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,40 +16,39 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { staff as Staff, user_root } from '@/lib/data-types';
 import { Loader2 } from 'lucide-react';
+import { LoadingScreen } from '@/components/ui/loading-screen';
 
 type OnboardingMode = "create" | "join";
 
 export default function OnboardingPage() {
-  const { user, loading, reloadUser } = useUser();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const router = useRouter();
+  const { user, loading, hasSchool, reloadUser } = useUser();
+  const firestore = useFirestore();
   const { toast } = useToast();
   
   const [mode, setMode] = useState<OnboardingMode>("create");
   const [schoolCode, setSchoolCode] = useState('');
   const [role, setRole] = useState('enseignant');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
   
-  // S'assurer que nous sommes côté client
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
-  
-  // Vérifier si l'utilisateur a déjà une école (côté client uniquement)
-  useEffect(() => {
-    if (!isMounted) return;
+    if (loading) return;
     
-    if (!loading && user && user.schoolId) {
-      console.log('Utilisateur a déjà une école, redirection vers dashboard');
-      router.push('/dashboard');
+    if (user && hasSchool) {
+      router.replace('/dashboard');
     }
-  }, [user, loading, router, isMounted]);
-
+  }, [user, hasSchool, loading, router]);
+  
+  if (loading) {
+    return <LoadingScreen />;
+  }
+  
+  if (!user) {
+    router.replace('/auth/login');
+    return <LoadingScreen />;
+  }
+  
   const handleJoinSchool = async () => {
-    if (!isMounted) return;
-    
     if (!user || !user.uid || !user.displayName || !user.email) {
       toast({ 
         variant: 'destructive', 
@@ -82,7 +80,7 @@ export default function OnboardingPage() {
 
     try {
       const schoolsRef = collection(firestore, 'ecoles');
-      const q = query(schoolsRef, where("schoolCode", "==", schoolCode.trim()));
+      const q = query(schoolsRef, where("schoolCode", "==", schoolCode.trim().toUpperCase()));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
@@ -104,7 +102,7 @@ export default function OnboardingPage() {
       const rootUserRef = doc(firestore, `users/${user.uid}`);
       const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
       
-      const rootUserData: user_root = { schoolId: schoolId };
+      const rootUserData: user_root = { schoolId: schoolId, isAdmin: false };
       const staffProfileData: Omit<Staff, 'id'> = {
         uid: user.uid,
         email: user.email,
@@ -123,37 +121,24 @@ export default function OnboardingPage() {
       batch.set(rootUserRef, rootUserData);
       batch.set(staffProfileRef, staffProfileData);
       await batch.commit();
-
-      // Rafraîchir le token
-      if (auth?.currentUser) {
-        await auth.currentUser.getIdToken(true);
-      }
       
-      // Recharger les données utilisateur
-      if (reloadUser) {
-        await reloadUser();
-      }
+      await reloadUser();
 
       toast({
         title: 'Bienvenue !',
         description: `Vous avez rejoint l'établissement ${schoolDoc.data().name}. Redirection en cours...`,
       });
-
-      // Attendre un peu avant la redirection
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Redirection avec replace pour éviter de revenir en arrière
       router.replace('/dashboard');
 
     } catch(error: any) {
       console.error('Erreur lors de la jonction:', error);
       
-      const permissionError = new FirestorePermissionError({
+      errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: `[BATCH] /users/${user.uid} & /ecoles/${schoolCode}/personnel/${user.uid}`,
         operation: 'write',
         requestResourceData: { schoolCode },
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      }));
       
       toast({
         variant: 'destructive',
@@ -165,32 +150,6 @@ export default function OnboardingPage() {
     }
   };
   
-  // Afficher un loader pendant le chargement initial ou si pas encore monté côté client
-  if (!isMounted || loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-lg font-semibold">Chargement...</p>
-          <p className="text-muted-foreground">Vérification de votre compte.</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Si pas d'utilisateur, rediriger vers login
-  if (!user) {
-    // La redirection se fera via le hook useUser ou un middleware
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-          <p className="text-lg font-semibold">Redirection vers la connexion...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-md">
@@ -206,7 +165,7 @@ export default function OnboardingPage() {
         <CardContent className="space-y-6">
           <RadioGroup 
             defaultValue="create" 
-            onValueChange={(value: OnboardingMode) => setMode(value)} 
+            onValueChange={(value: any) => setMode(value)} 
             className="grid grid-cols-2 gap-4"
             disabled={isProcessing}
           >

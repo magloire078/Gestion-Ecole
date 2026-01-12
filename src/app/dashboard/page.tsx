@@ -235,7 +235,7 @@ const DashboardSkeleton = () => (
 // Main Page Component
 // ====================================================================================
 
-function DashboardContent() {
+function DashboardPageContent() {
     const { user, loading } = useUser();
     
     if (loading) {
@@ -267,13 +267,9 @@ export default function DashboardPage() {
         }
     }, [user, hasSchool, loading, router]);
     
-    if (loading) {
-        return <LoadingScreen />;
+    if (loading || !user || !hasSchool) {
+        return <LoadingScreen />; // Affiche un loader pendant la vérification et la redirection
     }
     
-    if (!user || !hasSchool) {
-        return <LoadingScreen />; // Affiche un loader pendant la redirection
-    }
-    
-    return <DashboardContent />;
+    return <DashboardPageContent />;
 }

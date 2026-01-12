@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -8,7 +7,6 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Bell, Menu, Search, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
-import { AuthGuard } from '@/components/auth-guard';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -20,6 +18,7 @@ import { SearchModal } from '@/components/search-modal';
 import { NotificationsPanel } from '@/components/notifications-panel';
 import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
@@ -217,10 +216,21 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const { user, loading, hasSchool } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) {
+      router.replace('/auth/login');
+    } else if (!hasSchool) {
+      router.replace('/onboarding');
+    }
+  }, [user, loading, hasSchool, router]);
+
+  if (loading || !user || !hasSchool) {
+    return <LoadingScreen />;
+  }
   
-  return (
-    <AuthGuard>
-      <DashboardContent>{children}</DashboardContent>
-    </AuthGuard>
-  );
+  return <DashboardContent>{children}</DashboardContent>;
 }
