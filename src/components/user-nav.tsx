@@ -27,6 +27,7 @@ import { cn } from "@/lib/utils";
 import { SafeImage } from "./ui/safe-image";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
 
 interface UserNavProps {
   collapsed?: boolean;
