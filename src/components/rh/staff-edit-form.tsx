@@ -90,7 +90,6 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     const [todayDateString, setTodayDateString] = useState('');
 
     useEffect(() => {
-        // Set date only on client to avoid hydration mismatch
         setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
     }, []);
 
@@ -102,6 +101,8 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
     });
 
     useEffect(() => {
+        if (!todayDateString) return; // Ne rien faire si la date n'est pas encore définie
+
         async function loadPrivateData() {
             if (editingStaff && schoolId) {
                 const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
@@ -121,7 +122,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                     adminRole: fullData.adminRole || '',
                 });
                 setPhotoUrl(editingStaff.photoURL || null);
-            } else if (todayDateString) { // Ensure todayDateString is available before resetting
+            } else {
                 form.reset({
                     firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
                 });
@@ -351,5 +352,3 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
         </>
     );
 }
-
-    

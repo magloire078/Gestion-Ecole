@@ -184,7 +184,9 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
     });
 
     useEffect(() => {
-        if (student && isOpen) {
+        if (!isOpen) return;
+
+        if (student && todayDateString) {
             paymentForm.reset({
                 paymentAmount: 0,
                 paymentDescription: `Scolarité - ${student.firstName} ${student.lastName}`,
@@ -296,4 +298,3 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
         </Dialog>
     );
 }
-
