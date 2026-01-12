@@ -24,7 +24,7 @@ export function useUser() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
-  const auth = useAuth(); // Utiliser le hook pour obtenir l'instance auth
+  const auth = useAuth();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -40,7 +40,7 @@ export function useUser() {
   }, []);
 
   useEffect(() => {
-    if (!isClient || !auth) return; // Ne pas continuer si nous ne sommes pas sur le client ou si auth n'est pas prêt
+    if (!isClient || !auth) return;
 
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       setLoading(true);
