@@ -1,22 +1,22 @@
 
 import type { Metadata } from 'next';
 import './globals.css';
-import { MainLayout } from './main-layout';
+import { ClientLayout } from './client-layout';
 
 export const metadata: Metadata = {
   title: 'GèreEcole',
-  description: 'Solution de gestion scolaire',
+  description: 'Gestion scolaire simplifiée',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr">
       <body>
-        <MainLayout>{children}</MainLayout>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );
