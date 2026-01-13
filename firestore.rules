@@ -14,8 +14,7 @@ service cloud.firestore {
 
     // Vérifie si l'utilisateur est associé à une école via le document racine /users
     function isAssociatedWithSchool(userId, schoolId) {
-      return exists(/databases/$(database)/documents/users/$(userId)) &&
-             get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
+      return get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
     }
 
     // SIMPLIFIED: isSchoolMember now only checks the root user document.
@@ -49,11 +48,15 @@ service cloud.firestore {
     
     // Vérifie si l'utilisateur a une permission spécifique via son rôle admin
     function hasPermission(schoolId, permission) {
+        // Le directeur a toutes les permissions par défaut
+        if (isDirector(schoolId)) {
+          return true;
+        }
         let profile = getMyStaffProfile(schoolId);
-        return isDirector(schoolId) || 
-               ('adminRole' in profile && 
+        // Vérifie les permissions du rôle admin assigné
+        return 'adminRole' in profile && 
                 profile.adminRole != null && 
-                get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(profile.adminRole)).data.permissions[permission] == true);
+                get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(profile.adminRole)).data.permissions[permission] == true;
     }
 
     // =================================================================
@@ -74,29 +77,32 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, list: if isAuth();
-      allow create, update: if isAuth() && request.auth.uid == userId;
-      allow delete: if (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+      // Tout utilisateur authentifié peut lire les documents users (pour résoudre schoolId)
+      allow get: if isAuth(); 
+      allow list: if isAuth();
+      // Seul l'utilisateur concerné ou un admin peut écrire.
+      allow update, create: if isAuth() && request.auth.uid == userId;
+      allow delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
     }
     
     match /contact_requests/{requestId} {
       allow create: if true;
-      allow get, list, delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow get, list, delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
     match /survey_responses/{responseId} {
       allow create: if true;
-      allow get, list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow get, list: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
       allow delete: if false;
     }
     
     match /system_logs/{logId} {
-        allow get, list, create: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        allow get, list, create: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
     
      match /system_settings/{settingId} {
         allow get, list: if isAuth();
-        allow write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+        allow write: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
 
@@ -107,9 +113,9 @@ service cloud.firestore {
     match /ecoles/{schoolId} {
       allow create: if isAuth();
       allow get: if isSchoolMember(schoolId);
-      allow list: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow list: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
       allow update: if isDirector(schoolId) || hasPermission(schoolId, 'manageSettings');
-      allow delete: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+      allow delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
 
       // --- SOUS-COLLECTIONS ---
       
@@ -142,7 +148,7 @@ service cloud.firestore {
 
         match /{subcollection}/{docId} {
              allow get, list: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId))) || (isParentSession(schoolId) && isParentOfStudentViaSession(studentId));
-             allow write: if isSchoolMember(schoolId);
+             allow write: if hasPermission(schoolId, 'manageUsers');
         }
       }
       
@@ -170,8 +176,7 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get, update: if isSchoolMember(schoolId);
-        allow list: if isAuth() && isSchoolMember(schoolId);
+        allow get, list, update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
@@ -222,11 +227,7 @@ service cloud.firestore {
       }
        match /batiments/{buildingId} {
         allow get, list: if isSchoolMember(schoolId);
-        allow write: if hasPermission(schoolId, 'manageInventory');
-      }
-       match /internat_batiments/{buildingId} {
-        allow get, list: if isSchoolMember(schoolId);
-        allow write: if hasPermission(schoolId, 'manageInternat');
+        allow write: if hasPermission(schoolId, 'manageInventory') || hasPermission(schoolId, 'manageInternat');
       }
        match /internat_chambres/{roomId} {
         allow get, list: if isSchoolMember(schoolId);
@@ -287,5 +288,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
