@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -12,18 +11,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Vérifie si l'utilisateur est associé à une école via le document racine /users
     function isAssociatedWithSchool(userId, schoolId) {
-      let userDoc = get(/databases/$(database)/documents/users/$(userId));
-      return userDoc.data.schoolId == schoolId;
+      return get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
     }
 
-    // SIMPLIFIED: isSchoolMember now only checks the root user document.
     function isSchoolMember(schoolId) {
         return isAuth() && isAssociatedWithSchool(request.auth.uid, schoolId);
     }
     
-     // Vérifie si la requête provient d'une session parent valide
     function isParentSession(schoolId) {
       return request.auth.token.isParent == true && request.auth.token.schoolId == schoolId;
     }
@@ -32,26 +27,20 @@ service cloud.firestore {
       return request.auth.token.isParent == true && studentId in request.auth.token.studentIds;
     }
     
-    // Vérifie si l'UID de l'utilisateur est dans le tableau parentIds d'un élève
     function isParentOfStudent(studentDoc) {
         return isAuth() && request.auth.uid in studentDoc.data.parentIds;
     }
 
-    // Obtient le profil du personnel de l'utilisateur qui fait la requête
     function getMyStaffProfile(schoolId) {
         return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
 
-    // Vérifie si l'utilisateur qui fait la requête est le directeur de l'école
     function isDirector(schoolId) {
       return isAuth() && request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
     }
     
-    // Vérifie si l'utilisateur a une permission spécifique via son rôle admin
     function hasPermission(schoolId, permission) {
-      // Le directeur a toutes les permissions par défaut
       return isDirector(schoolId) || (
-        // Vérifie les permissions du rôle admin assigné
         'adminRole' in getMyStaffProfile(schoolId) &&
         getMyStaffProfile(schoolId).adminRole != null &&
         get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(getMyStaffProfile(schoolId).adminRole)).data.permissions[permission] == true
@@ -63,9 +52,9 @@ service cloud.firestore {
     // =================================================================
 
     match /sessions_parents/{sessionId} {
-      allow read: if false; // Pas de lecture directe
-      allow create: if isAuth(); // Seuls les utilisateurs authentifiés (le personnel) peuvent créer
-      allow update: if isAuth(); // Permet au personnel d'invalider le code
+      allow read: if false;
+      allow create: if isAuth();
+      allow update: if isAuth();
       allow delete: if false;
     }
     
@@ -77,8 +66,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get, list: if isAuth(); 
-      allow create: if isAuth() && request.auth.uid == userId; // Un utilisateur peut créer son propre document /users
-      allow update: if isAuth() && request.auth.uid == userId;
+      allow create, update: if isAuth() && request.auth.uid == userId;
       allow delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
     }
@@ -130,8 +118,7 @@ service cloud.firestore {
       
       match /personnel/{staffId} {
         allow get, list: if isSchoolMember(schoolId);
-        // On autorise la création si l'utilisateur a la permission OU s'il crée son propre profil
-        allow create: if isAuth() && (hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId && request.resource.data.uid == request.auth.uid));
+        allow create: if isAuth() && (request.auth.uid == staffId); // Allow creating own profile
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
