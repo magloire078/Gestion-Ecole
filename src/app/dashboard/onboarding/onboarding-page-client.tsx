@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,12 @@ export default function OnboardingPageClient() {
   if (!user) {
     router.replace('/auth/login');
     return <LoadingScreen />;
+  }
+
+  // Si l'utilisateur a déjà une école (peut-être après une action dans un autre onglet), le rediriger.
+  if (hasSchool) {
+      router.replace('/dashboard');
+      return <LoadingScreen />;
   }
   
   const handleJoinSchool = async () => {

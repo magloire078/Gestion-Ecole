@@ -2,12 +2,13 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUser } from '@/firebase';
 import { LoadingScreen } from './ui/loading-screen';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, hasSchool, loading } = useUser();
 
   useEffect(() => {
@@ -22,18 +23,18 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
     
-    // Si l'utilisateur est connecté mais n'est pas un parent et n'a pas d'école,
-    // le rediriger vers le processus d'onboarding.
-    if (user && !user.isParent && !hasSchool) {
-      router.replace('/onboarding');
+    // Si l'utilisateur est connecté mais n'est pas un parent, n'a pas d'école
+    // ET n'est pas déjà sur la page d'onboarding, le rediriger.
+    if (user && !user.isParent && !hasSchool && pathname !== '/dashboard/onboarding') {
+      router.replace('/dashboard/onboarding');
       return;
     }
 
-  }, [user, hasSchool, loading, router]);
+  }, [user, hasSchool, loading, router, pathname]);
   
   // Affiche un écran de chargement tant que l'état n'est pas résolu
-  // ou si une redirection est en cours.
-  if (loading || !user || (!user.isParent && !hasSchool)) {
+  // ou si une redirection est en cours (sauf si on est sur la page d'onboarding elle-même).
+  if (loading || !user || (!user.isParent && !hasSchool && pathname !== '/dashboard/onboarding')) {
     return <LoadingScreen />;
   }
   
