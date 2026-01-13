@@ -1,11 +1,18 @@
 'use client';
-// Ce layout est maintenant un simple "pass-through".
-// La logique d'authentification et de mise en page est gérée dans `page.tsx`
-// pour assurer un rendu entièrement côté client et éviter les erreurs d'hydratation.
+
+import { AuthGuard } from "@/components/auth-guard";
+import DashboardLayoutContent from "@/components/dashboard-layout-content";
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <AuthGuard>
+      <DashboardLayoutContent>
+        {children}
+      </DashboardLayoutContent>
+    </AuthGuard>
+  );
 }
