@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Building2, PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
 import Link from 'next/link';
 import {
@@ -27,6 +27,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface Building {
   id: string;
@@ -53,7 +56,6 @@ interface BuildingManagerProps {
   addBuildingButtonText: string;
   addRoomLink: string;
   BuildingFormComponent: React.FC<any>;
-  onDelete: (buildingId: string, buildingName: string, roomCount: number) => Promise<void>;
 }
 
 export function BuildingManager({
@@ -67,9 +69,9 @@ export function BuildingManager({
   addBuildingButtonText,
   addRoomLink,
   BuildingFormComponent,
-  onDelete
 }: BuildingManagerProps) {
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
@@ -110,10 +112,34 @@ export function BuildingManager({
   };
   
   const handleDeleteConfirm = () => {
-    if (buildingToDelete) {
-      onDelete(buildingToDelete.id, buildingToDelete.name, roomsByBuilding[buildingToDelete.id]?.length || 0);
+    if (!buildingToDelete) return;
+    const roomCount = roomsByBuilding[buildingToDelete.id]?.length || 0;
+
+    if (roomCount > 0) {
+      toast({
+        variant: "destructive",
+        title: "Action impossible",
+        description: `Vous ne pouvez pas supprimer un bâtiment qui contient encore ${roomCount} salle(s)/chambre(s).`
+      });
       setBuildingToDelete(null);
+      return;
     }
+    
+    const docRef = doc(firestore, `ecoles/${schoolId}/${buildingCollectionName}/${buildingToDelete.id}`);
+    deleteDoc(docRef)
+    .then(() => {
+        toast({ title: "Bâtiment supprimé", description: `Le bâtiment "${buildingToDelete.name}" a été supprimé.` });
+    })
+    .catch(e => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        });
+        errorEmitter.emit('permission-error', permissionError);
+    })
+    .finally(() => {
+        setBuildingToDelete(null);
+    })
   };
 
   if (isLoading) {
@@ -219,6 +245,7 @@ export function BuildingManager({
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

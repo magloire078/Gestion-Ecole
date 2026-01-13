@@ -1,5 +1,4 @@
 
-
 {
   "entities": {
     "user_root": {
@@ -1198,7 +1197,12 @@
         "batiments": {
             "path": "batiments/{buildingId}",
             "schema": { "$ref": "#/entities/building" },
-            "description": "Gère les bâtiments de l'établissement (pédagogique, admin, internat, etc.)."
+            "description": "Gère les bâtiments de l'établissement (pédagogique, admin, etc.)."
+        },
+         "internat_batiments": {
+            "path": "internat_batiments/{buildingId}",
+            "schema": { "$ref": "#/entities/building" },
+            "description": "Gère les bâtiments de l'internat."
         },
         "internat_chambres": {
             "path": "internat_chambres/{roomId}",
@@ -1269,15 +1273,3 @@
     }
   }
 }
-
-    
-
-    
-
-
-    
-
-
-
-
-
