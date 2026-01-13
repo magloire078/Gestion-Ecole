@@ -29,11 +29,11 @@ export default function BatimentsPage() {
     }
 
     try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_batiments`, buildingId));
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/batiments`, buildingId));
       toast({ title: "Bâtiment supprimé", description: `Le bâtiment "${buildingName}" a été supprimé.` });
     } catch (e) {
        const permissionError = new FirestorePermissionError({
-        path: `ecoles/${schoolId}/internat_batiments/${buildingId}`,
+        path: `ecoles/${schoolId}/batiments/${buildingId}`,
         operation: 'delete',
       });
       errorEmitter.emit('permission-error', permissionError);
@@ -54,7 +54,7 @@ export default function BatimentsPage() {
   return (
     <BuildingManager
       schoolId={schoolId}
-      buildingCollectionName="internat_batiments"
+      buildingCollectionName="batiments"
       roomCollectionName="internat_chambres"
       pageTitle="Gestion des Bâtiments de l'Internat"
       pageDescription="Gérez les bâtiments et dortoirs de l'internat."

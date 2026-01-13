@@ -14,8 +14,7 @@ service cloud.firestore {
 
     // Vérifie si l'utilisateur est associé à une école via le document racine /users
     function isAssociatedWithSchool(userId, schoolId) {
-      let userDoc = get(/databases/$(database)/documents/users/$(userId));
-      return userDoc.data.schoolId == schoolId;
+      return get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
     }
 
     // SIMPLIFIED: isSchoolMember now only checks the root user document.
@@ -49,11 +48,11 @@ service cloud.firestore {
     
     // Vérifie si l'utilisateur a une permission spécifique via son rôle admin
     function hasPermission(schoolId, permission) {
-        let profile = getMyStaffProfile(schoolId);
         // Le directeur a toutes les permissions par défaut
         if (isDirector(schoolId)) {
           return true;
         }
+        let profile = getMyStaffProfile(schoolId);
         // Vérifie les permissions du rôle admin assigné
         return 'adminRole' in profile && 
                 profile.adminRole != null && 
@@ -177,8 +176,8 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get, update: if isSchoolMember(schoolId);
-        allow list: if isAuth() && isSchoolMember(schoolId);
+        allow get, list: if isSchoolMember(schoolId);
+        allow update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
@@ -227,9 +226,9 @@ service cloud.firestore {
         allow list: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageTransport');
       }
-       match /internat_batiments/{buildingId} {
+       match /batiments/{buildingId} {
         allow get, list: if isSchoolMember(schoolId);
-        allow write: if hasPermission(schoolId, 'manageInternat');
+        allow write: if hasPermission(schoolId, 'manageInventory') || hasPermission(schoolId, 'manageInternat');
       }
        match /internat_chambres/{roomId} {
         allow get, list: if isSchoolMember(schoolId);
