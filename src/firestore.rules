@@ -14,8 +14,8 @@ service cloud.firestore {
 
     // Vérifie si l'utilisateur est associé à une école via le document racine /users
     function isAssociatedWithSchool(userId, schoolId) {
-      return exists(/databases/$(database)/documents/users/$(userId)) &&
-             get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
+      let userDoc = get(/databases/$(database)/documents/users/$(userId));
+      return userDoc.data.schoolId == schoolId;
     }
 
     // SIMPLIFIED: isSchoolMember now only checks the root user document.
@@ -50,10 +50,14 @@ service cloud.firestore {
     // Vérifie si l'utilisateur a une permission spécifique via son rôle admin
     function hasPermission(schoolId, permission) {
         let profile = getMyStaffProfile(schoolId);
-        return isDirector(schoolId) || 
-               ('adminRole' in profile && 
+        // Le directeur a toutes les permissions par défaut
+        if (isDirector(schoolId)) {
+          return true;
+        }
+        // Vérifie les permissions du rôle admin assigné
+        return 'adminRole' in profile && 
                 profile.adminRole != null && 
-                get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(profile.adminRole)).data.permissions[permission] == true);
+                get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(profile.adminRole)).data.permissions[permission] == true;
     }
 
     // =================================================================
@@ -74,8 +78,12 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, update, create: if isAuth() && request.auth.uid == userId;
-      allow list, delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) || (isAuth() && request.auth.uid == userId);
+      // Tout utilisateur authentifié peut lire les documents users (pour résoudre schoolId)
+      allow get: if isAuth(); 
+      allow list: if isAuth();
+      // Seul l'utilisateur concerné ou un admin peut écrire.
+      allow update, create: if isAuth() && request.auth.uid == userId;
+      allow delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
     }
     
     match /contact_requests/{requestId} {
@@ -282,4 +290,4 @@ service cloud.firestore {
   }
 }
 
-    
+  
