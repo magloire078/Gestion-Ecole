@@ -234,7 +234,7 @@ export default function ModernLoginPage() {
           <div className="flex items-center gap-4">
             <div className="flex -space-x-2">
               {['bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-pink-400'].map((color, i) => (
-                <div key={i} className={`h-8 w-8 rounded-full border-2 border-white ${'${color}'}`} />
+                <div key={i} className={`h-8 w-8 rounded-full border-2 border-white ${color}`} />
               ))}
             </div>
             <div className="text-white/80 text-sm">
@@ -291,7 +291,7 @@ export default function ModernLoginPage() {
                   <Mail className="h-4 w-4" />
                   Adresse email
                 </Label>
-                <div className={`relative transition-all duration-200 ${'${activeField === \'email\' ? \'ring-2 ring-primary ring-offset-2 rounded-lg\' : \'\'}'}`}>
+                <div className={`relative transition-all duration-200 ${activeField === 'email' ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}>
                   <Input
                     id="email"
                     type="email"
@@ -326,7 +326,7 @@ export default function ModernLoginPage() {
                     </Link>
                   </Button>
                 </div>
-                <div className={`relative transition-all duration-200 ${'${activeField === \'password\' ? \'ring-2 ring-primary ring-offset-2 rounded-lg\' : \'\'}'}`}>
+                <div className={`relative transition-all duration-200 ${activeField === 'password' ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}>
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
