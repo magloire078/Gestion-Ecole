@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -31,6 +32,10 @@ export default function OnboardingPageClient() {
   const [role, setRole] = useState('enseignant');
   const [isProcessing, setIsProcessing] = useState(false);
   
+  // This useEffect was causing an infinite redirect loop.
+  // The AuthGuard component already handles redirecting to /dashboard if the user has a school.
+  // This page's only job is to show the create/join options if the user lands here.
+  /*
   useEffect(() => {
     if (loading) return;
     
@@ -38,6 +43,7 @@ export default function OnboardingPageClient() {
       router.replace('/dashboard');
     }
   }, [user, hasSchool, loading, router]);
+  */
   
   if (loading) {
     return <LoadingScreen />;
@@ -238,7 +244,7 @@ export default function OnboardingPageClient() {
           <Button 
             className="w-full" 
             onClick={mode === 'create' 
-              ? () => router.push('/onboarding/create-school') 
+              ? () => router.push('/dashboard/onboarding/create-school') 
               : handleJoinSchool
             } 
             disabled={isProcessing || (mode === 'join' && !schoolCode.trim())}
