@@ -41,7 +41,6 @@ export function useUser() {
 
   useEffect(() => {
     if (!isClient || !auth) {
-        // Attendre que le client soit prêt et que l'auth soit initialisée
         return;
     }
 
@@ -90,14 +89,30 @@ export function useUser() {
          const parentStudentIdsStr = localStorage.getItem('parent_student_ids');
 
          if (parentSessionId && parentSchoolId && parentStudentIdsStr) {
-            setUser({
-              uid: parentSessionId, 
-              isParent: true, 
-              schoolId: parentSchoolId,
-              parentStudentIds: JSON.parse(parentStudentIdsStr),
-              displayName: 'Parent / Tuteur', 
-              authUser: null,
-            });
+            try {
+                const sessionRef = doc(firestore, 'sessions_parents', parentSessionId);
+                const sessionDoc = await getDoc(sessionRef);
+
+                if (sessionDoc.exists() && sessionDoc.data().isActive && new Date(sessionDoc.data().expiresAt.toDate()) > new Date()) {
+                    setUser({
+                      uid: parentSessionId, 
+                      isParent: true, 
+                      schoolId: parentSchoolId,
+                      parentStudentIds: JSON.parse(parentStudentIdsStr),
+                      displayName: 'Parent / Tuteur', 
+                      authUser: null,
+                    });
+                } else {
+                    // Session invalide ou expirée, on nettoie
+                    localStorage.removeItem('parent_session_id');
+                    localStorage.removeItem('parent_school_id');
+                    localStorage.removeItem('parent_student_ids');
+                    setUser(null);
+                }
+            } catch (e) {
+                console.error("Error validating parent session:", e);
+                setUser(null);
+            }
          } else {
             setUser(null);
          }
