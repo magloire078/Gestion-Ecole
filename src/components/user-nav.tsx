@@ -41,10 +41,22 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (userLoading || !user) return;
+    
+    if (user && !user.isParent && !user.schoolId) {
+      setIsTransitioning(true);
+    } else {
+      setIsTransitioning(false);
+    }
+  }, [user, userLoading]);
   
   const handleLogout = async () => {
     if (user?.isParent) {
@@ -72,7 +84,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
   
-  const isLoading = userLoading || (user && !user.isParent && schoolLoading);
+  const isLoading = userLoading || (user && !user.isParent && schoolLoading) || isTransitioning;
 
   if (!isClient || isLoading) {
     return (
@@ -98,7 +110,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     ? 'Portail Parent' 
     : isSuperAdmin 
       ? 'Super Administrateur' 
-      : (user?.profile?.role === 'directeur' ? 'Directeur' : user?.profile?.role || 'Membre');
+      : (isDirector ? 'Directeur' : user?.profile?.role || 'Membre');
   
   const fallback = displayName 
     ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() 
