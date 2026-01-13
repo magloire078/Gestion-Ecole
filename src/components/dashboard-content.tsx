@@ -9,7 +9,7 @@ import { FinanceOverview } from '@/components/dashboard/finance-overview';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore, useUser, useCollection, useMemoFirebase } from '@/firebase';
-import { collectionGroup, query, where, getDocs, collection, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -19,6 +19,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { gradeEntry as GradeEntry, cycle as Cycle, student as Student } from '@/lib/data-types';
 import { LoadingScreen } from "@/components/ui/loading-screen";
+import { useGradesData } from '@/hooks/use-grades-data';
 
 // ====================================================================================
 // Parent Dashboard Component
@@ -149,66 +150,6 @@ const RegularDashboard = () => {
     </div>
   );
 };
-
-
-// ====================================================================================
-// Custom Hooks for Data Fetching
-// ====================================================================================
-
-const useGradesData = (schoolId?: string | null) => {
-  const firestore = useFirestore();
-  const [grades, setGrades] = useState<GradeEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!schoolId || !firestore) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchGrades = async () => {
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const gradesCollectionGroup = collectionGroup(firestore, 'notes');
-        const gradesQuery = query(
-          gradesCollectionGroup,
-          where('__name__', '>=', `ecoles/${schoolId}/`),
-          where('__name__', '<', `ecoles/${schoolId}￿`),
-          limit(500)
-        );
-        
-        const gradesSnapshot = await getDocs(gradesQuery);
-        const fetchedGrades: GradeEntry[] = [];
-        
-        gradesSnapshot.forEach(doc => {
-          const data = doc.data();
-          if (data && data.subject && typeof data.grade === 'number' && typeof data.coefficient === 'number') {
-             fetchedGrades.push({
-              ...data,
-              id: doc.id,
-              date: data.date,
-            } as GradeEntry);
-          }
-        });
-        
-        setGrades(fetchedGrades);
-      } catch (err) {
-        console.error("Erreur lors de la récupération des notes:", err);
-        setError("Impossible de charger les données des notes");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchGrades();
-  }, [schoolId, firestore]);
-
-  return { grades, loading, error };
-};
-
 
 // ====================================================================================
 // Loading Skeletons
