@@ -121,7 +121,7 @@ service cloud.firestore {
       
       match /personnel/{staffId} {
         allow get, list: if isSchoolMember(schoolId);
-        allow create: if isAuth() && (hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId);
+        allow create: if isAuth() && (hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId && request.resource.data.uid == request.auth.uid));
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
@@ -327,3 +327,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
