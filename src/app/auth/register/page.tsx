@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -85,7 +86,7 @@ export default function ModernRegisterPage() {
         title: "✅ Compte créé avec succès", 
         description: "Redirection vers la configuration de votre école..." 
       });
-      router.push('/onboarding/create-school');
+      router.push('/dashboard/onboarding');
     } catch (error) {
       const authError = error as AuthError;
       console.error('Erreur d\'inscription:', authError.code);
@@ -113,7 +114,7 @@ export default function ModernRegisterPage() {
         title: "✅ Connexion Google réussie", 
         description: "Redirection vers la configuration de votre école..." 
       });
-      router.push('/onboarding');
+      router.push('/dashboard/onboarding');
     } catch (error) {
       const authError = error as AuthError;
       console.error('Erreur Google:', authError.code);
