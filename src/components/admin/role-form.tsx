@@ -18,30 +18,7 @@ import { ScrollArea } from '../ui/scroll-area';
 import { Separator } from '../ui/separator';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-
-const allPermissionsList = [
-    { id: 'manageUsers', label: 'Gérer Utilisateurs', desc: 'Créer, modifier, supprimer élèves et personnel.' },
-    { id: 'viewUsers', label: 'Voir Utilisateurs', desc: 'Consulter les listes et profils.' },
-    { id: 'manageClasses', label: 'Gérer Classes', desc: 'Créer, modifier la structure scolaire.' },
-    { id: 'manageGrades', label: 'Gérer Notes', desc: 'Saisir et modifier les notes des élèves.' },
-    { id: 'manageDiscipline', label: 'Gérer Discipline', desc: "Suivre et gérer les incidents disciplinaires."},
-    { id: 'manageBilling', label: 'Gérer Facturation', desc: 'Gérer les paiements, frais et comptabilité.' },
-    { id: 'manageCommunication', label: 'Gérer Communication', desc: 'Envoyer des messages à la communauté.' },
-    { id: 'manageSchedule', label: 'Gérer Emploi du temps', desc: 'Modifier les emplois du temps.' },
-    { id: 'manageAttendance', label: 'Gérer Absences', desc: 'Enregistrer les absences des élèves.' },
-    { id: 'manageLibrary', label: 'Gérer Bibliothèque', desc: 'Ajouter/supprimer des livres.' },
-    { id: 'manageCantine', label: 'Gérer Cantine', desc: 'Gérer les menus et réservations.' },
-    { id: 'manageTransport', label: 'Gérer Transport', desc: 'Gérer la flotte, les lignes et abonnements.' },
-    { id: 'manageInternat', label: 'Gérer Internat', desc: 'Gérer les bâtiments, chambres et occupants.' },
-    { id: 'manageInventory', label: 'Gérer Inventaire', desc: 'Gérer le matériel de l\'école.' },
-    { id: 'manageRooms', label: 'Gérer Salles', desc: 'Créer et modifier les salles.' },
-    { id: 'manageActivities', label: 'Gérer Activités', desc: 'Gérer les activités parascolaires.' },
-    { id: 'manageMedical', label: 'Gérer Dossiers Médicaux', desc: 'Accès et modification des dossiers de santé.' },
-    { id: 'manageSettings', label: 'Gérer Paramètres École', desc: 'Modifier les paramètres de l\'établissement.' },
-    { id: 'manageSystem', label: 'Gérer le Système', desc: 'Accès aux paramètres globaux (super-admin).' },
-] as const;
-
-type PermissionId = typeof allPermissionsList[number]['id'];
+import { allPermissionsList, type PermissionId } from '@/lib/permissions';
 
 const roleFormSchema = z.object({
   name: z.string().min(2, "Le nom du rôle est requis."),
