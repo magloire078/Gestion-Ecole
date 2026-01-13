@@ -232,28 +232,28 @@ export default function OnboardingPageClient() {
               </div>
             </div>
           )}
+           <CardFooter className="p-0 pt-4">
+              <Button 
+                className="w-full" 
+                onClick={mode === 'create' 
+                  ? () => router.push('/dashboard/onboarding/create-school') 
+                  : handleJoinSchool
+                } 
+                disabled={isProcessing || (mode === 'join' && !schoolCode.trim())}
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Traitement en cours...
+                  </>
+                ) : mode === 'create' ? (
+                  'Continuer vers la Création'
+                ) : (
+                  'Rejoindre l\'établissement'
+                )}
+              </Button>
+          </CardFooter>
         </CardContent>
-        <CardFooter>
-          <Button 
-            className="w-full" 
-            onClick={mode === 'create' 
-              ? () => router.push('/dashboard/onboarding/create-school') 
-              : handleJoinSchool
-            } 
-            disabled={isProcessing || (mode === 'join' && !schoolCode.trim())}
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Traitement en cours...
-              </>
-            ) : mode === 'create' ? (
-              'Continuer vers la Création'
-            ) : (
-              'Rejoindre l\'établissement'
-            )}
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );
