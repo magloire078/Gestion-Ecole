@@ -148,7 +148,7 @@ service cloud.firestore {
 
         match /{subcollection}/{docId} {
              allow get, list: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId))) || (isParentSession(schoolId) && isParentOfStudentViaSession(studentId));
-             allow write: if isSchoolMember(schoolId);
+             allow write: if hasPermission(schoolId, 'manageUsers');
         }
       }
       
@@ -176,8 +176,7 @@ service cloud.firestore {
       }
 
       match /messagerie/{messageId} {
-        allow get, list: if isSchoolMember(schoolId);
-        allow update: if isSchoolMember(schoolId);
+        allow get, list, update: if isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
