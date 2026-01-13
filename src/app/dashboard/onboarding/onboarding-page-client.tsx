@@ -1,1 +1,1 @@
-// This file is now obsolete. The logic has been moved to /src/app/onboarding/page.tsx
+// This file is now obsolete. The logic has been moved to /src/app/onboarding/onboarding-page-client.tsx
