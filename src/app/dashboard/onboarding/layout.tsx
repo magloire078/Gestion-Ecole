@@ -1,0 +1,1 @@
+// This file is now obsolete. The layout is handled by /src/app/onboarding/layout.tsx
