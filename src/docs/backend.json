@@ -1195,10 +1195,10 @@
             "schema": { "$ref": "#/entities/transportSubscription" },
             "description": "Stocke les abonnements au transport des élèves."
         },
-         "internat_batiments": {
-            "path": "internat_batiments/{buildingId}",
+        "batiments": {
+            "path": "batiments/{buildingId}",
             "schema": { "$ref": "#/entities/building" },
-            "description": "Gère les bâtiments de l'internat."
+            "description": "Gère les bâtiments de l'établissement (pédagogique, admin, internat, etc.)."
         },
         "internat_chambres": {
             "path": "internat_chambres/{roomId}",
@@ -1276,6 +1276,7 @@
 
 
     
+
 
 
 
