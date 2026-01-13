@@ -41,22 +41,10 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
-  const [isTransitioning, setIsTransitioning] = useState(false);
-
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    if (userLoading || !user) return;
-    
-    if (user && !user.isParent && !user.schoolId) {
-      setIsTransitioning(true);
-    } else {
-      setIsTransitioning(false);
-    }
-  }, [user, userLoading]);
   
   const handleLogout = async () => {
     if (user?.isParent) {
@@ -84,7 +72,9 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
   
-  const isLoading = userLoading || (user && !user.isParent && schoolLoading) || isTransitioning;
+  // Affiche un état de chargement si les données de l'utilisateur ou de l'école sont en cours de chargement,
+  // ou s'il y a une transition (utilisateur connecté mais école pas encore chargée).
+  const isLoading = userLoading || (user && !user.isParent && schoolLoading) || (user && !user.isParent && !schoolData);
 
   if (!isClient || isLoading) {
     return (
