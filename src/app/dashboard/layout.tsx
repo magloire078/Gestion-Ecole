@@ -1,7 +1,7 @@
 'use client';
 
 import { AuthGuard } from "@/components/auth-guard";
-import DashboardLayoutContent from "@/components/dashboard-layout-content";
+import DashboardLayoutContent from "@/components/dashboard/dashboard-layout-content";
 
 export default function DashboardLayout({
   children,
