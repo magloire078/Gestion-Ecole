@@ -40,7 +40,10 @@ export function useUser() {
   }, []);
 
   useEffect(() => {
-    if (!isClient || !auth) return;
+    if (!isClient || !auth) {
+        // Attendre que le client soit prêt et que l'auth soit initialisée
+        return;
+    }
 
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
       setLoading(true);
@@ -65,9 +68,14 @@ export function useUser() {
           }
           
           setUser({
-            uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: schoolId,
-            profile: userProfile, displayName: userProfile?.displayName || firebaseUser.displayName,
-            email: firebaseUser.email, photoURL: userProfile?.photoURL || firebaseUser.photoURL,
+            uid: firebaseUser.uid,
+            authUser: firebaseUser, 
+            isParent: false, 
+            schoolId: schoolId,
+            profile: userProfile, 
+            displayName: userProfile?.displayName || firebaseUser.displayName,
+            email: firebaseUser.email, 
+            photoURL: userProfile?.photoURL || firebaseUser.photoURL,
           });
 
         } catch (error) {
@@ -83,9 +91,12 @@ export function useUser() {
 
          if (parentSessionId && parentSchoolId && parentStudentIdsStr) {
             setUser({
-              uid: parentSessionId, isParent: true, schoolId: parentSchoolId,
+              uid: parentSessionId, 
+              isParent: true, 
+              schoolId: parentSchoolId,
               parentStudentIds: JSON.parse(parentStudentIdsStr),
-              displayName: 'Parent / Tuteur', authUser: null,
+              displayName: 'Parent / Tuteur', 
+              authUser: null,
             });
          } else {
             setUser(null);
