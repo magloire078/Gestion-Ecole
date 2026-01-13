@@ -12,7 +12,7 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Vérifie si l'utilisateur est associé à une école via le document racine /utilisateurs
+    // Vérifie si l'utilisateur est associé à une école via le document racine /users
     function isAssociatedWithSchool(userId, schoolId) {
       return exists(/databases/$(database)/documents/users/$(userId)) &&
              get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
@@ -74,8 +74,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, update, create: if isAuth() && request.auth.uid == userId;
-      allow list, delete: if (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true) || (isAuth() && request.auth.uid == userId);
+      allow get, list: if isAuth();
+      allow create, update: if isAuth() && request.auth.uid == userId;
+      allow delete: if (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
     }
     
     match /contact_requests/{requestId} {
@@ -170,7 +171,7 @@ service cloud.firestore {
 
       match /messagerie/{messageId} {
         allow get, update: if isSchoolMember(schoolId);
-        allow list: if request.auth != null && request.query.schoolId == getUserSchoolId();
+        allow list: if isAuth() && isSchoolMember(schoolId);
         allow create: if hasPermission(schoolId, 'manageCommunication');
       }
       
@@ -286,3 +287,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
