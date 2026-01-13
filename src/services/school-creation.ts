@@ -93,7 +93,8 @@ export class SchoolCreationService {
       
       // 4. Créer le profil PERSONNEL pour le directeur
       const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
-      const staffProfileData: Omit<staff, 'id' | 'uid'> = {
+      const staffProfileData: Omit<staff, 'id'> = {
+          uid: schoolData.directorId, // Ajout de l'UID
           email: schoolData.directorEmail,
           displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
           photoURL: '',

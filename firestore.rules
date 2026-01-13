@@ -14,7 +14,8 @@ service cloud.firestore {
 
     // Vérifie si l'utilisateur est associé à une école via le document racine /users
     function isAssociatedWithSchool(userId, schoolId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
+      let userDoc = get(/databases/$(database)/documents/users/$(userId));
+      return userDoc.data.schoolId == schoolId;
     }
 
     // SIMPLIFIED: isSchoolMember now only checks the root user document.
@@ -47,7 +48,6 @@ service cloud.firestore {
     }
     
     // Vérifie si l'utilisateur a une permission spécifique via son rôle admin
-    // CORRIGÉE : pas de 'if' ou 'let', utilisation d'opérateurs logiques
     function hasPermission(schoolId, permission) {
       // Le directeur a toutes les permissions par défaut
       return isDirector(schoolId) || (
@@ -76,11 +76,9 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      // Tout utilisateur authentifié peut lire les documents users (pour résoudre schoolId)
-      allow get: if isAuth(); 
-      allow list: if isAuth();
-      // Seul l'utilisateur concerné ou un admin peut écrire.
-      allow update, create: if isAuth() && request.auth.uid == userId;
+      allow get, list: if isAuth(); 
+      allow create: if isAuth() && request.auth.uid == userId; // Un utilisateur peut créer son propre document /users
+      allow update: if isAuth() && request.auth.uid == userId;
       allow delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
                        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
     }
@@ -132,7 +130,8 @@ service cloud.firestore {
       
       match /personnel/{staffId} {
         allow get, list: if isSchoolMember(schoolId);
-        allow create: if isAuth() && (hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId);
+        // On autorise la création si l'utilisateur a la permission OU s'il crée son propre profil
+        allow create: if isAuth() && (hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId && request.resource.data.uid == request.auth.uid));
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
@@ -161,7 +160,6 @@ service cloud.firestore {
           allow write: if hasPermission(schoolId, 'manageDiscipline');
         }
 
-        // CORRIGÉ : syntaxe correcte pour le match générique
         match /{subcollection}/{documentId} {
           allow get, list: if isSchoolMember(schoolId) || 
                             isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId))) || 
@@ -339,5 +337,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
