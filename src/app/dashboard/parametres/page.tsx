@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { useUser, useAuth, useFirestore } from "@/hooks/use-user";
+import { useUser, useAuth, useFirestore } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2, Users, Check, User, Phone, Globe, Loader2, CheckCircle, School, Building, Mail, Briefcase } from "lucide-react";
 import { useForm } from 'react-hook-form';

@@ -14,7 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { allSubjects } from '@/lib/subjects';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { useFirestore, useAuth, useUser } from '@/hooks/use-user';
+import { useFirestore, useAuth, useUser } from '@/firebase';
 import { doc, setDoc, getDoc, writeBatch, collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings } from '@/lib/data-types';
