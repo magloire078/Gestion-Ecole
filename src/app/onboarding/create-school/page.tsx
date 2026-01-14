@@ -51,7 +51,6 @@ export default function CreateSchoolPage() {
   const { toast } = useToast();
   
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isCreationSuccess, setIsCreationSuccess] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFirestoreReady, setIsFirestoreReady] = useState(false);
@@ -67,13 +66,6 @@ export default function CreateSchoolPage() {
     },
     mode: 'onChange',
   });
-  
-  // Surveille la valeur `hasSchool`. Si elle passe à `true` et que la création a réussi, redirige.
-  useEffect(() => {
-    if (isCreationSuccess && hasSchool) {
-      router.replace('/dashboard');
-    }
-  }, [isCreationSuccess, hasSchool, router]);
   
   // Vérifier que Firestore est prêt
   useEffect(() => {
@@ -134,8 +126,11 @@ export default function CreateSchoolPage() {
           duration: 5000,
         });
         
-        await reloadUser();
-        setIsCreationSuccess(true); // Signale que la création a réussi pour le useEffect
+        // Attendre un court instant pour laisser la base de données se synchroniser, puis recharger complètement la page.
+        // C'est la méthode la plus fiable pour s'assurer que tous les hooks ont le nouvel état.
+        setTimeout(() => {
+            window.location.href = '/dashboard';
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Erreur création école:', error);
@@ -158,8 +153,7 @@ export default function CreateSchoolPage() {
         description: errorMessage,
       });
       setIsProcessing(false);
-    } 
-    // Ne pas mettre le `finally` ici, la redirection est gérée par le useEffect
+    }
   };
 
   if (userLoading) {

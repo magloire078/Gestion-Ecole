@@ -16,6 +16,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ParentDashboard } from '@/components/parent/parent-dashboard';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 const DashboardSkeleton = () => (
   <div className="space-y-6">
@@ -48,8 +50,11 @@ const RegularDashboard = () => {
   if (!schoolId) {
     return (
         <Alert>
-          <AlertDescription>
-            Veuillez sélectionner une école ou en créer une pour accéder au tableau de bord.
+          <AlertDescription className="flex flex-col items-center gap-4 text-center">
+            <span>Veuillez sélectionner une école ou en créer une pour accéder au tableau de bord.</span>
+             <Button asChild>
+                <Link href="/onboarding">Commencer la configuration</Link>
+            </Button>
           </AlertDescription>
         </Alert>
     );

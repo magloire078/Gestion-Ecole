@@ -79,7 +79,7 @@ export class SchoolCreationService {
           description: 'Accès complet à toutes les fonctionnalités de l\'école.',
           schoolId: schoolId,
           isSystem: true,
-          permissions: { manageUsers: true, viewUsers: true, manageClasses: true, manageGrades: true, manageDiscipline: true, manageSettings: true, manageBilling: true, manageCommunication: true, manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true, manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true, viewSupportTickets: true, manageSupportTickets: true }
+          permissions: { manageUsers: true, viewUsers: true, manageClasses: true, manageGrades: true, manageDiscipline: true, manageSettings: true, manageBilling: true, manageCommunication: true, manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true, manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true, viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true }
       };
       batch.set(directorRoleRef, directorRoleData);
 

@@ -19,7 +19,6 @@ import { SearchModal } from '@/components/search-modal';
 import { NotificationsPanel } from '@/components/notifications-panel';
 import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
-import { LoadingScreen } from "@/components/ui/loading-screen";
 
 
 export default function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
@@ -86,7 +85,8 @@ export default function DashboardLayoutContent({ children }: { children: React.R
     collapsed: isNavCollapsed,
   };
 
-  const isLoading = userLoading || schoolLoading;
+  const isLoading = userLoading || (user && !user.isParent && schoolLoading) || (user && !user.isParent && !schoolData);
+
 
   return (
       <TooltipProvider>
