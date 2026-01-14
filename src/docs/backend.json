@@ -3,13 +3,24 @@
   "entities": {
     "user_root": {
       "title": "Racine Utilisateur",
-      "description": "Un document racine qui associe l'UID d'un utilisateur à l'identifiant de son école.",
+      "description": "Un document racine qui associe l'UID d'un utilisateur à ses affiliations scolaires.",
       "type": "object",
       "properties": {
-        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
-        "isAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme."}
-      },
-      "required": ["schoolId"]
+        "schools": {
+          "type": "array",
+          "description": "Liste des écoles auxquelles l'utilisateur est affilié.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "schoolId": { "type": "string", "description": "L'identifiant de l'école." },
+              "role": { "type": "string", "description": "Le rôle de l'utilisateur dans cette école." }
+            },
+            "required": ["schoolId", "role"]
+          }
+        },
+        "activeSchoolId": { "type": "string", "description": "L'ID de l'école actuellement sélectionnée par l'utilisateur." },
+        "isSuperAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme." }
+      }
     },
     "school": {
         "title": "École",
@@ -428,13 +439,13 @@
             "classeId": { "type": "string" },
             "academicYear": { "type": "string" },
             "startDate": { "type": "string", "format": "date-time" },
+            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
+            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
+            "createdBy": { "type": "string" },
             "endDate": { "type": "string", "format": "date-time" },
             "previousClass": { "type": "string" },
-            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
             "notes": { "type": "string" },
-            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "createdBy": { "type": "string" }
+            "createdAt": { "type": "string", "format": "date-time" }
         },
         "required": ["schoolId", "studentId", "classeId", "academicYear", "startDate", "promotionType", "status", "createdBy"]
     },
