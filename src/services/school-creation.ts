@@ -51,19 +51,11 @@ export class SchoolCreationService {
   }
 
   async createSchool(data: CreateSchoolData): Promise<CreateSchoolResult> {
-    const { 
-      doc: fbDoc, 
-      setDoc: fbSetDoc, 
-      collection: fbCollection, 
-      writeBatch: fbWriteBatch, 
-      serverTimestamp: fbServerTimestamp
-    } = await import('firebase/firestore');
-
-    const batch = fbWriteBatch(this.firestore);
+    const batch = writeBatch(this.firestore);
     
     try {
       // 1. Créer le document ÉCOLE
-      const schoolRef = fbDoc(fbCollection(this.firestore, 'ecoles'));
+      const schoolRef = doc(collection(this.firestore, 'ecoles'));
       const schoolId = schoolRef.id;
       const schoolCode = this.generateSchoolCode(data.name);
       
@@ -94,7 +86,7 @@ export class SchoolCreationService {
       batch.set(schoolRef, schoolDoc);
 
       // 2. Créer le rôle système "Directeur"
-      const directorRoleRef = fbDoc(fbCollection(this.firestore, `ecoles/${schoolId}/admin_roles`));
+      const directorRoleRef = doc(collection(this.firestore, `ecoles/${schoolId}/admin_roles`));
       const directorRoleData: Omit<admin_role, 'id'> = {
           name: 'Directeur',
           description: 'Accès complet à toutes les fonctionnalités de l\'école.',
@@ -105,7 +97,7 @@ export class SchoolCreationService {
       batch.set(directorRoleRef, directorRoleData);
 
       // 3. Mettre à jour le document racine de l'UTILISATEUR
-      const userRef = fbDoc(this.firestore, 'users', data.directorId);
+      const userRef = doc(this.firestore, 'users', data.directorId);
       const userDoc: user_root = {
         schools: [{ schoolId: schoolId, role: 'directeur' }],
         activeSchoolId: schoolId,
@@ -114,7 +106,7 @@ export class SchoolCreationService {
       batch.set(userRef, userDoc, { merge: true });
       
       // 4. Créer le profil PERSONNEL pour le directeur
-      const staffProfileRef = fbDoc(this.firestore, `ecoles/${schoolId}/personnel`, data.directorId);
+      const staffProfileRef = doc(this.firestore, `ecoles/${schoolId}/personnel`, data.directorId);
       const staffProfileData: Omit<staff, 'id'> = {
           uid: data.directorId,
           email: data.directorEmail,
