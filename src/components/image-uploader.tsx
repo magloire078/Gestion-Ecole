@@ -1,42 +1,35 @@
 
 'use client';
 
-import { useState, useRef, ChangeEvent, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useImageUpload } from '@/hooks/use-image-upload';
-import Image from 'next/image';
-import { Loader2, Upload, Camera, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
 interface ImageUploaderProps {
   onUploadComplete: (url: string) => void;
-  onDeleteComplete?: () => void;
+  onUploadError?: (error: string) => void;
   storagePath: string;
-  currentImageUrl?: string;
-  className?: string;
+  maxSize?: number; // in bytes
+  acceptedTypes?: string[];
   children: React.ReactNode;
 }
 
 export function ImageUploader({ 
     onUploadComplete,
-    onDeleteComplete,
-    storagePath, 
-    currentImageUrl,
+    onUploadError,
+    storagePath,
+    maxSize = 2 * 1024 * 1024, // 2MB default
+    acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'],
     children, 
 }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const [localPreview, setLocalPreview] = useState<string | null>(currentImageUrl || null);
   
-  useEffect(() => {
-    setLocalPreview(currentImageUrl || null);
-  }, [currentImageUrl]);
-
   const handleSuccess = (url: string) => {
     onUploadComplete(url);
-    setLocalPreview(url);
     toast({
       title: 'Téléversement réussi',
       description: "L'image a été enregistrée.",
@@ -44,34 +37,30 @@ export function ImageUploader({
   };
 
   const handleError = (errorMessage: string) => {
+    onUploadError?.(errorMessage);
     toast({
       variant: 'destructive',
       title: 'Erreur de téléversement',
       description: errorMessage,
     });
   };
-
-  const handleDeleteSuccess = () => {
-    setLocalPreview(null);
-    onDeleteComplete?.();
-    toast({
-      title: 'Image supprimée',
-      description: "L'image a été supprimée avec succès.",
-    });
-  };
-
-  const { upload, remove, getPathFromUrl, isUploading, isDeleting, progress } = useImageUpload({
+  
+  const { upload, isUploading, progress } = useImageUpload({
     onSuccess: handleSuccess,
     onError: handleError,
-    onDeleteSuccess: handleDeleteSuccess
   });
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => setLocalPreview(e.target?.result as string);
-      reader.readAsDataURL(file);
+      if (file.size > maxSize) {
+        handleError(`La taille du fichier dépasse la limite de ${maxSize / 1024 / 1024}MB.`);
+        return;
+      }
+      if (!acceptedTypes.includes(file.type)) {
+         handleError(`Type de fichier non supporté. Types acceptés : ${acceptedTypes.join(', ')}.`);
+        return;
+      }
       upload(file, storagePath);
     }
   };
@@ -80,18 +69,6 @@ export function ImageUploader({
     if (isUploading) return;
     fileInputRef.current?.click();
   };
-  
-  const handleDelete = () => {
-    if (!currentImageUrl) return;
-    const path = getPathFromUrl(currentImageUrl);
-    if(path) {
-        remove(path);
-    } else {
-        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de déterminer le chemin de l'image pour la suppression."})
-    }
-  }
-  
-  const isLoading = isUploading || isDeleting;
 
   return (
     <div className="relative group">
@@ -100,46 +77,19 @@ export function ImageUploader({
         ref={fileInputRef}
         onChange={handleFileChange}
         className="hidden"
-        accept="image/*"
-        disabled={isLoading}
+        accept={acceptedTypes.join(',')}
+        disabled={isUploading}
       />
       
-      <div className={cn("cursor-pointer relative", isLoading && "cursor-not-allowed")}>
+      <div className={cn("cursor-pointer", isUploading && "cursor-not-allowed")} onClick={triggerFileSelect}>
         {children}
-        <div 
-          onClick={triggerFileSelect}
-          className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-            {isLoading ? (
-                <div className="w-16 h-16 flex items-center justify-center bg-background/80 rounded-full">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-            ) : (
-                <div className="w-10 h-10 flex items-center justify-center bg-background/80 rounded-full">
-                    <Camera className="h-5 w-5" />
-                </div>
-            )}
-        </div>
-        {currentImageUrl && (
-            <Button 
-                type="button"
-                variant="destructive" 
-                size="icon" 
-                className="absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={handleDelete}
-                disabled={isLoading}
-            >
-                <Trash2 className="h-3 w-3" />
-            </Button>
+        {isUploading && (
+          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center rounded-full transition-opacity">
+              <Loader2 className="h-8 w-8 animate-spin text-white" />
+              <Progress value={progress} className="w-16 h-1 mt-2 bg-white/20 [&>div]:bg-white" />
+          </div>
         )}
       </div>
-      
-      {isUploading && (
-        <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-full px-2">
-          <Progress value={progress} className="h-1 w-full" />
-        </div>
-      )}
-
     </div>
   );
 }
