@@ -37,7 +37,8 @@ export function useUser() {
       const authInstance = getAuth();
       const currentUser = authInstance.currentUser;
       if (currentUser) {
-        await currentUser.reload();
+        // Force a refresh of the ID token, which will trigger onIdTokenChanged
+        await currentUser.getIdToken(true);
       }
   }, []);
 

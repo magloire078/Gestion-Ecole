@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -125,7 +126,7 @@ export default function CreateSchoolPage() {
       });
 
       if (result.success) {
-        await reloadUser();
+        await reloadUser(); // Forcer la mise à jour de l'état utilisateur
         toast({
           title: '🎉 École créée avec succès !',
           description: (
