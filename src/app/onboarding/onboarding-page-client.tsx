@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -8,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore } from "@/firebase";
-import { doc, writeBatch, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, writeBatch, collection, query, where, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -96,10 +97,11 @@ export default function OnboardingPageClient() {
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      const rootUserRef = doc(firestore, `users/${user.uid}`);
+      const userRootRef = doc(firestore, `users/${user.uid}`);
       const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
       
-      const rootUserData: user_root = { schoolId: schoolId, isAdmin: false };
+      const batch = writeBatch(firestore);
+
       const staffProfileData: Omit<Staff, 'id'> = {
         uid: user.uid,
         email: user.email,
@@ -113,10 +115,18 @@ export default function OnboardingPageClient() {
         baseSalary: 0,
         status: 'Actif',
       };
-
-      const batch = writeBatch(firestore);
-      batch.set(rootUserRef, rootUserData);
       batch.set(staffProfileRef, staffProfileData);
+      
+      // Update the user_root document by adding the new school to the array
+      const userRootSnap = await getDoc(userRootRef);
+      const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || [] : [];
+      const updatedSchools = [...currentSchools, { schoolId, role }];
+      const userRootData: Partial<user_root> = {
+          schools: updatedSchools,
+          activeSchoolId: schoolId, // Set the newly joined school as active
+      };
+      batch.set(userRootRef, userRootData, { merge: true });
+
       await batch.commit();
       
       await reloadUser();

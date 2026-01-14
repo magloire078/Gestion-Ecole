@@ -86,15 +86,16 @@ export class SchoolCreationService {
       // 3. Mettre à jour le document racine de l'UTILISATEUR
       const userRef = doc(this.db, 'users', schoolData.directorId);
       const userDoc: user_root = {
-        schoolId: schoolId,
-        isAdmin: false, // Default to false
+        schools: [{ schoolId: schoolId, role: 'directeur' }],
+        activeSchoolId: schoolId,
+        isSuperAdmin: false,
       };
       batch.set(userRef, userDoc, { merge: true });
       
       // 4. Créer le profil PERSONNEL pour le directeur
       const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
       const staffProfileData: Omit<staff, 'id'> = {
-          uid: schoolData.directorId, // Ajout de l'UID
+          uid: schoolData.directorId,
           email: schoolData.directorEmail,
           displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
           photoURL: '',

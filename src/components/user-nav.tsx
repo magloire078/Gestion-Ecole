@@ -17,7 +17,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon } from "lucide-react";
+import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,7 @@ interface UserNavProps {
 export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
-  const { user, loading: userLoading, isDirector } = useUser();
+  const { user, loading: userLoading, isDirector, setActiveSchool } = useUser();
   const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
@@ -72,8 +72,6 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     }
   };
   
-  // Affiche un état de chargement si les données de l'utilisateur ou de l'école sont en cours de chargement,
-  // ou s'il y a une transition (utilisateur connecté mais école pas encore chargée).
   const isLoading = userLoading || (user && !user.isParent && schoolLoading) || (user && !user.isParent && !schoolData);
 
   if (!isClient || isLoading) {
@@ -132,9 +130,6 @@ export function UserNav({ collapsed = false }: UserNavProps) {
           
           <div className="flex items-center gap-1">
             <p className="text-xs leading-none text-muted-foreground capitalize">{userRole.replace(/_/g, ' ')}</p>
-            {schoolData?.name && !isSuperAdmin && !user.isParent && (
-              <><span className="text-xs text-muted-foreground">•</span><p className="text-xs leading-none text-muted-foreground truncate max-w-[120px]">{schoolData.name}</p></>
-            )}
           </div>
           
           {!user.isParent && user?.email && <p className="text-xs leading-none text-muted-foreground pt-1 truncate">{user.email}</p>}
@@ -145,6 +140,27 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       
       {!user.isParent && (
         <>
+          {user.schools && user.schools.length > 1 && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <ChevronsUpDown className="mr-2 h-4 w-4" />
+                <span>Changer d'établissement</span>
+              </DropdownMenuSubTrigger>
+              <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                  {user.schools.map(school => (
+                    <DropdownMenuItem key={school.schoolId} onClick={() => setActiveSchool(school.schoolId)} disabled={school.schoolId === schoolData?.id}>
+                       {school.schoolId === schoolData?.id && <Check className="mr-2 h-4 w-4" />}
+                       <span className={cn(school.schoolId !== schoolData?.id && "ml-6")}>
+                           École {school.schoolId.substring(0,6)}...
+                       </span>
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuPortal>
+            </DropdownMenuSub>
+          )}
+
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>
               <School className="mr-2 h-4 w-4" />
