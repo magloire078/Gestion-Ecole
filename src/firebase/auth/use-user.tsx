@@ -146,10 +146,28 @@ export function useUser() {
     }
     
     const userRootRef = doc(firestore, 'users', user.uid);
-    await updateDoc(userRootRef, { activeSchoolId: schoolId });
-    // Le rechargement sera géré par le listener onIdTokenChanged/onSnapshot
-    // Pour une réactivité immédiate, on peut forcer un re-fetch ou une mise à jour locale
-    window.location.reload(); // La solution la plus simple pour tout recharger avec le nouveau contexte
+    try {
+        await updateDoc(userRootRef, { activeSchoolId: schoolId });
+        
+        // Mettre à jour le profil utilisateur localement après le changement d'école active
+        const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
+        const profileSnap = await getDoc(staffProfileRef);
+        const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : undefined;
+
+        setUser(prevUser => {
+            if (!prevUser) return null;
+            return {
+                ...prevUser,
+                schoolId: schoolId,
+                profile: userProfile,
+                displayName: userProfile?.displayName || prevUser.authUser?.displayName,
+                photoURL: userProfile?.photoURL || prevUser.authUser?.photoURL,
+            };
+        });
+        
+    } catch(e) {
+        console.error("Failed to set active school:", e);
+    }
   };
 
   return {
