@@ -11,12 +11,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAssociatedWithSchool(userId, schoolId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data.schoolId == schoolId;
+    function getUserData(userId) {
+        return get(/databases/$(database)/documents/users/$(userId)).data;
     }
 
+    function getSchoolIdsForUser(userId) {
+        return getUserData(userId).schools.map(s => s.schoolId);
+    }
+    
     function isSchoolMember(schoolId) {
-        return isAuth() && isAssociatedWithSchool(request.auth.uid, schoolId);
+        return isAuth() && schoolId in getSchoolIdsForUser(request.auth.uid);
     }
     
     function isParentSession(schoolId) {
@@ -34,7 +38,7 @@ service cloud.firestore {
     function getMyStaffProfile(schoolId) {
         return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
-
+    
     function isDirector(schoolId) {
       return isAuth() && request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
     }
@@ -65,38 +69,38 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow get, list: if isAuth(); 
+      allow get, list: if isAuth();
       allow create, update: if isAuth() && request.auth.uid == userId;
       allow delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                       get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true);
+                       getUserData(request.auth.uid).isSuperAdmin == true);
     }
     
     match /contact_requests/{requestId} {
       allow create: if true;
       allow get, list, delete: if isAuth() && 
                                  exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+                                 getUserData(request.auth.uid).isSuperAdmin == true;
     }
     
     match /survey_responses/{responseId} {
       allow create: if true;
       allow get, list: if isAuth() && 
                          exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+                         getUserData(request.auth.uid).isSuperAdmin == true;
       allow delete: if false;
     }
     
     match /system_logs/{logId} {
       allow get, list, create: if isAuth() && 
                                  exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                                 get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+                                 getUserData(request.auth.uid).isSuperAdmin == true;
     }
     
     match /system_settings/{settingId} {
       allow get, list: if isAuth();
       allow write: if isAuth() && 
                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+                     getUserData(request.auth.uid).isSuperAdmin == true;
     }
 
     // =================================================================
@@ -108,17 +112,17 @@ service cloud.firestore {
       allow get: if isSchoolMember(schoolId);
       allow list: if isAuth() && 
                     exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+                    getUserData(request.auth.uid).isSuperAdmin == true;
       allow update: if isDirector(schoolId) || hasPermission(schoolId, 'manageSettings');
       allow delete: if isAuth() && 
                      exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+                     getUserData(request.auth.uid).isSuperAdmin == true;
 
       // --- SOUS-COLLECTIONS ---
       
       match /personnel/{staffId} {
         allow get, list: if isSchoolMember(schoolId);
-        allow create: if isAuth() && (request.auth.uid == staffId); // Allow creating own profile
+        allow create: if isAuth() && (hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId && request.resource.data.schoolId == schoolId));
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }

@@ -4,13 +4,24 @@
   "entities": {
     "user_root": {
       "title": "Racine Utilisateur",
-      "description": "Un document racine qui associe l'UID d'un utilisateur à l'identifiant de son école.",
+      "description": "Un document racine qui associe l'UID d'un utilisateur à ses affiliations scolaires.",
       "type": "object",
       "properties": {
-        "schoolId": { "type": "string", "description": "L'identifiant de l'école à laquelle l'utilisateur appartient." },
-        "isAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme."}
-      },
-      "required": ["schoolId"]
+        "schools": {
+          "type": "array",
+          "description": "Liste des écoles auxquelles l'utilisateur est affilié.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "schoolId": { "type": "string", "description": "L'identifiant de l'école." },
+              "role": { "type": "string", "description": "Le rôle de l'utilisateur dans cette école." }
+            },
+            "required": ["schoolId", "role"]
+          }
+        },
+        "activeSchoolId": { "type": "string", "description": "L'ID de l'école actuellement sélectionnée par l'utilisateur." },
+        "isSuperAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme." }
+      }
     },
     "school": {
         "title": "École",
