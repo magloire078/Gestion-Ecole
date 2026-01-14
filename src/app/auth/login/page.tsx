@@ -7,17 +7,14 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   type AuthError,
-  onAuthStateChanged,
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
-import { useAuth, useFirestore } from '@/firebase';
+import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Logo } from '@/components/logo';
-import { Loader2, Mail, Lock, Eye, EyeOff, ChevronRight, School, Sparkles } from 'lucide-react';
+import { School, Sparkles, Mail, Lock, Eye, EyeOff, ChevronRight, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -57,50 +54,11 @@ export default function ModernLoginPage() {
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGoogleProcessing, setIsGoogleProcessing] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  const [mounted, setMounted] = useState(false);
   const [activeField, setActiveField] = useState<'email' | 'password' | null>(null);
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  const firestore = useFirestore();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || !auth || !firestore) return;
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const userDoc = await getDoc(doc(firestore, 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            // L'utilisateur a déjà des écoles, on le redirige vers le tableau de bord
-            if (userData.schools && userData.schools.length > 0) {
-              router.replace('/dashboard');
-            } else {
-              // L'utilisateur est connecté mais n'a pas d'école, on l'envoie à l'onboarding
-              router.replace('/onboarding');
-            }
-          } else {
-             // L'utilisateur est nouveau, on l'envoie à l'onboarding
-             router.replace('/onboarding');
-          }
-        } catch (error) {
-          console.error('Erreur vérification utilisateur:', error);
-           setIsCheckingAuth(false);
-        }
-      } else {
-        setIsCheckingAuth(false);
-      }
-    });
-
-    return () => unsubscribe();
-  }, [mounted, auth, firestore, router]);
-
+  
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -118,6 +76,7 @@ export default function ModernLoginPage() {
         title: "🎉 Connexion réussie", 
         description: "Redirection vers votre espace personnel..." 
       });
+      router.push('/dashboard');
     } catch (error) {
       const authError = error as AuthError;
       console.error('Erreur de connexion:', authError.code);
@@ -153,6 +112,7 @@ export default function ModernLoginPage() {
         title: "✅ Connexion Google réussie", 
         description: "Redirection vers votre espace..." 
       });
+      router.push('/dashboard');
     } catch (error) {
       const authError = error as AuthError;
       console.error('Erreur Google:', authError.code);
@@ -170,25 +130,6 @@ export default function ModernLoginPage() {
       setIsGoogleProcessing(false);
     }
   };
-
-  if (!mounted || isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-white to-secondary/5">
-        <div className="text-center space-y-6">
-          <div className="relative">
-            <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-            <div className="relative">
-              <School className="h-16 w-16 mx-auto text-primary animate-pulse" />
-            </div>
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold mb-2">Chargement de votre espace</h2>
-            <p className="text-sm text-muted-foreground">Vérification en cours...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
