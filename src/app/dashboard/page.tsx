@@ -8,7 +8,7 @@ import { RecentActivity } from '@/components/dashboard/recent-activity';
 import { FinanceOverview } from '@/components/dashboard/finance-overview';
 import { PerformanceChart } from '@/components/performance-chart';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { useGradesData } from '@/hooks/use-grades-data';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';

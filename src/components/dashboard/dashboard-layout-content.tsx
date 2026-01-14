@@ -11,7 +11,7 @@ import { MobileNav } from '@/components/mobile-nav';
 import { cn } from '@/lib/utils';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';

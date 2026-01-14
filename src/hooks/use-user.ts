@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onIdTokenChanged, getAuth } from 'firebase/auth';
-import { useFirestore, useAuth } from '../client-provider';
+import { useFirestore, useAuth } from '../firebase/client-provider';
 import type { UserProfile, user_root } from '@/lib/data-types';
 
 export interface AppUser {

@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
+import { useFirestore } from '@/firebase';
 import { SchoolCreationService } from '@/services/school-creation';
 import { Logo } from '@/components/logo';
 import { ImageUploader } from '@/components/image-uploader';
@@ -80,6 +81,14 @@ export default function CreateSchoolPage() {
       form.setValue('email', user.email);
     }
   }, [user, form]);
+  
+  useEffect(() => {
+      // Si `hasSchool` devient vrai après une mise à jour, redirigez.
+      if (hasSchool) {
+          router.replace('/dashboard');
+      }
+  }, [hasSchool, router]);
+
 
   const handleSubmit = async (values: CreateSchoolFormValues) => {
     if (!user || !user.uid) {

@@ -3,7 +3,7 @@
 
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { LoadingScreen } from './ui/loading-screen';
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {

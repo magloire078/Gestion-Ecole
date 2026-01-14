@@ -1,7 +1,7 @@
 
 "use client";
 import { Logo } from './logo';
-import { useUser } from '@/firebase';
+import { useUser } from '@/hooks/use-user';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { MainNav } from './main-nav';
 import { Skeleton } from './ui/skeleton';

@@ -3,7 +3,7 @@
 // Exportez directement les hooks dont vous avez besoin depuis leur emplacement.
 // Cela rend les imports dans le reste de l'application plus clairs.
 
-export { useUser } from './auth/use-user';
+export { useUser } from '@/hooks/use-user';
 export { useCollection } from './firestore/use-collection';
 export { useDoc } from './firestore/use-doc';
 
