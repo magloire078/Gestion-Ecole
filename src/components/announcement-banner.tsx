@@ -3,8 +3,8 @@
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Megaphone, ArrowRight } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
-import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useMemo } from 'react';
+import { useFirestore, useCollection } from "@/firebase";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { collection, query, orderBy, limit, where } from "firebase/firestore";
 import type { message as Message } from "@/lib/data-types";
@@ -16,7 +16,7 @@ export function AnnouncementBanner() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   
-  const latestMessageQuery = useMemoFirebase(() => {
+  const latestMessageQuery = useMemo(() => {
       if (!schoolId) return null;
       // Query for the latest message sent to everyone
       return query(
