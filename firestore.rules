@@ -1,26 +1,24 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Autorise la lecture/écriture sur toutes les sous-collections d'une école 
-    // pour tout utilisateur authentifié.
-    // C'est cette règle qui corrige l'erreur de "list".
-    match /ecoles/{schoolId}/{allPaths=**} {
-       allow read, write: if request.auth != null;
-    }
     
-    // Permet la création de demandes de contact et d'enquêtes par n'importe qui.
+    // Règle de base pour le développement : autoriser la lecture et l'écriture
+    // pour tout utilisateur authentifié sur n'importe quel document.
+    // Cela couvre les opérations `get`, `list`, `create`, `update`, `delete`.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Règle spécifique pour permettre aux utilisateurs non authentifiés de soumettre
+    // le formulaire de contact. La règle plus générale ci-dessus s'appliquera pour les autres opérations.
     match /contact_requests/{requestId} {
       allow create: if true;
     }
-    match /survey_responses/{responseId} {
+    
+    // Règle spécifique pour permettre aux utilisateurs non authentifiés de soumettre
+    // le formulaire d'enquête.
+     match /survey_responses/{responseId} {
       allow create: if true;
-    }
-
-    // Règle de secours pour les collections de premier niveau (users, system_logs, etc.)
-    // La règle plus spécifique pour /ecoles/ sera prioritaire.
-    match /{document=**} {
-      allow read, write: if request.auth != null;
     }
   }
 }
