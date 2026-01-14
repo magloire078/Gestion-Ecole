@@ -18,7 +18,11 @@ service cloud.firestore {
     function getSchoolIdsForUser(userId) {
       // Renvoie une liste d'ID d'école ou une liste vide si non trouvé
       let userData = getUserData(userId);
-      return (userData.schools != null) ? userData.schools.map(s => s.schoolId) : [];
+      let schoolIds = [];
+      if (userData.schools != null) {
+        return userData.schools.map(s => s.schoolId);
+      }
+      return schoolIds;
     }
     
     function isSchoolMember(schoolId) {
@@ -31,8 +35,8 @@ service cloud.firestore {
     
     function isParentOfStudentViaSession(studentId) {
       return isAuth() && request.auth.token.isParent == true && 
-             (request.auth.token.studentIds != null && 
-              request.auth.token.studentIds.hasAny([studentId]));
+             request.auth.token.studentIds != null && 
+             request.auth.token.studentIds.hasAny([studentId]);
     }
     
     function isParentOfStudent(studentDoc) {
@@ -51,10 +55,11 @@ service cloud.firestore {
     }
     
     function hasPermission(schoolId, permission) {
+      let staffProfile = getMyStaffProfile(schoolId);
       return isDirector(schoolId) || (
-        getMyStaffProfile(schoolId).adminRole != null &&
-        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(getMyStaffProfile(schoolId).adminRole)) &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(getMyStaffProfile(schoolId).adminRole)).data.permissions[permission] == true
+        staffProfile.adminRole != null &&
+        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)) &&
+        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true
       );
     }
 
@@ -78,8 +83,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get, list: if isAuth();
       allow create, update: if isAuth() && request.auth.uid == userId;
-      allow delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                       getUserData(request.auth.uid).isSuperAdmin == true);
+      allow delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                       getUserData(request.auth.uid).isSuperAdmin == true;
     }
     
     match /contact_requests/{requestId} {
@@ -335,3 +340,4 @@ service cloud.firestore {
     }
   }
 }
+    
