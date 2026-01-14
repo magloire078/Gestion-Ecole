@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { useUser, useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { useUser, useFirestore, useCollection } from "@/firebase";
 import { collection, query, orderBy, limit, doc, updateDoc, arrayUnion, getDoc, writeBatch, where } from "firebase/firestore";
 import { Skeleton } from "./ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
@@ -39,7 +39,7 @@ export function NotificationsPanel({
   const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
 
   // Correction: La requête est maintenant plus spécifique pour contourner les problèmes de permissions 'list'
-  const notificationsQuery = useMemoFirebase(() => {
+  const notificationsQuery = useMemo(() => {
     if (!schoolId) return null;
     // On ne récupère que les 20 messages les plus récents qui sont destinés à tout le monde
     // pour éviter les problèmes de permissions sur un list() complet.

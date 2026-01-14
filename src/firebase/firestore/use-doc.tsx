@@ -53,7 +53,7 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
     });
 
     return () => unsubscribe();
-  }, [ref, firestore, options]);
+  }, [ref?.path, firestore, options]); // Changed dependency to a stable string
 
   return {data, loading, error};
 }

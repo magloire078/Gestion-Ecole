@@ -46,7 +46,7 @@ export function useCollection<T>(query: Query<T> | null) {
     });
 
     return () => unsubscribe();
-  }, [query, firestore]);
+  }, [JSON.stringify(query), firestore]); // Changed dependency to a string representation
   
   const add = (data: DocumentData): void => {
     if (!query) {
