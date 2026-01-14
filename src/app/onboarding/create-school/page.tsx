@@ -126,22 +126,13 @@ export default function CreateSchoolPage() {
       });
 
       if (result.success) {
-        await reloadUser(); // Forcer la mise à jour de l'état utilisateur
         toast({
           title: '🎉 École créée avec succès !',
-          description: (
-            <div className="mt-2 space-y-2">
-              <p><strong>{values.name}</strong> a été créée avec succès.</p>
-              <p className="font-mono bg-primary/10 p-2 rounded text-sm">
-                Code d'invitation : <span className="font-bold">{result.schoolCode}</span>
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Conservez ce code pour inviter vos collaborateurs.
-              </p>
-            </div>
-          ),
-          duration: 10000,
+          description: "Redirection vers votre tableau de bord...",
+          duration: 5000,
         });
+        // Forcer le rafraîchissement des données utilisateur avant de rediriger
+        await reloadUser();
         router.replace('/dashboard');
       }
     } catch (error: any) {

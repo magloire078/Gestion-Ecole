@@ -1,7 +1,8 @@
 
+
 'use client';
 
-import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
@@ -25,17 +26,6 @@ const FirebaseContext = createContext<FirebaseContextValue>({
 });
 
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Ne rend le contenu que sur le client pour éviter les erreurs d'hydratation
-  if (!isClient) {
-    return null;
-  }
-
   const contextValue = {
     firebaseApp,
     auth: firebaseAuth,
@@ -47,7 +37,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     <FirebaseContext.Provider value={contextValue}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         {children}
-        {isClient && <FirebaseErrorListener />}
+        <FirebaseErrorListener />
       </ThemeProvider>
     </FirebaseContext.Provider>
   );

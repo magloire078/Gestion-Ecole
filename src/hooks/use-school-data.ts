@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -42,14 +43,12 @@ export function useSchoolData() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Ne rien faire si schoolId n'est pas encore défini (undefined)
-        if (typeof authSchoolId === 'undefined' || !firestore) {
-             setLoading(userLoading);
-             return;
+        if (userLoading) {
+            setLoading(true);
+            return;
         }
 
-        // Si schoolId est null, il n'y a pas d'école, on arrête de charger
-        if (authSchoolId === null) {
+        if (!authSchoolId || !firestore) {
             setSchoolData(null);
             setLoading(false);
             document.title = DEFAULT_TITLE;

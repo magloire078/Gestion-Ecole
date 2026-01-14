@@ -90,7 +90,7 @@ export function useUser() {
               isParent: false,
               schoolId: null, // Pas encore d'école
               schools: [],
-              displayName: firebaseUser.displayName, // Assurez-vous que ces champs sont propagés
+              displayName: firebaseUser.displayName,
               email: firebaseUser.email,
               photoURL: firebaseUser.photoURL,
             });
@@ -172,7 +172,8 @@ export function useUser() {
     } catch(e) {
         console.error("Failed to set active school:", e);
     } finally {
-      setLoading(false);
+      // Force reload to ensure all dependent hooks get the new state
+      window.location.reload();
     }
   };
 
