@@ -18,7 +18,11 @@ interface FinanceOverviewProps {
 export function FinanceOverview({ schoolId }: FinanceOverviewProps) {
     const firestore = useFirestore();
 
-    const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+    const studentsQuery = useMemoFirebase(() => {
+        if (!firestore || !schoolId) return null;
+        return query(collection(firestore, `ecoles/${schoolId}/eleves`));
+    }, [firestore, schoolId]);
+    
     const { data: studentsData, loading } = useCollection(studentsQuery);
 
     const [financeStats, setFinanceStats] = useState({

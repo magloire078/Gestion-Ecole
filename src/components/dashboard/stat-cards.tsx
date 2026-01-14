@@ -2,8 +2,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
-import { collection, query, getDocs, getCountFromServer, where } from 'firebase/firestore';
+import { useFirestore, useMemoFirebase } from '@/firebase';
+import { collection, query, getCountFromServer, where } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -33,26 +33,28 @@ export function StatCards({ schoolId }: { schoolId: string }) {
         const fetchStats = async () => {
           setLoading(true);
           try {
+            const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
+            const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
+            const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
+            const booksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
+
             const [
               studentsSnapshot,
               teachersSnapshot,
               classesSnapshot,
               booksSnapshot,
             ] = await Promise.all([
-              getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/eleves`))),
-              getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'))),
-              getCountFromServer(query(collection(firestore, `ecoles/${schoolId}/classes`))),
-              getDocs(query(collection(firestore, `ecoles/${schoolId}/bibliotheque`))),
+              getCountFromServer(studentsQuery),
+              getCountFromServer(teachersQuery),
+              getCountFromServer(classesQuery),
+              getCountFromServer(booksQuery),
             ]);
 
-            const booksData = booksSnapshot.docs.map(doc => doc.data() as LibraryBook);
-            const totalBooks = booksData.reduce((sum, book) => sum + (book.quantity || 0), 0);
-    
             setStats({
               students: studentsSnapshot.data().count,
               teachers: teachersSnapshot.data().count,
               classes: classesSnapshot.data().count,
-              books: totalBooks,
+              books: booksSnapshot.data().count, // On compte le nombre de titres, pas la quantité totale
             });
     
           } catch (error) {
