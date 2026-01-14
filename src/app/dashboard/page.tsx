@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Suspense } from 'react';
@@ -11,12 +12,10 @@ import { useUser } from '@/firebase';
 import { useGradesData } from '@/hooks/use-grades-data';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Users } from 'lucide-react';
-import { ParentStudentCard } from '@/components/parent/student-card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingScreen } from '@/components/ui/loading-screen';
+import { ParentDashboard } from '@/components/parent/parent-dashboard';
 
 const DashboardSkeleton = () => (
   <div className="space-y-6">
@@ -35,33 +34,6 @@ const DashboardSkeleton = () => (
   </div>
 );
 
-const ParentDashboard = () => {
-    const { user } = useUser();
-
-    if (!user || !user.isParent || !user.schoolId) {
-        return null;
-    }
-
-    return (
-        <div className="space-y-6">
-             <h1 className="text-2xl font-bold">Portail Parent</h1>
-            <AnnouncementBanner />
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Users className="h-5 w-5" /> Mes Enfants</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-muted-foreground mb-4">Cliquez sur un enfant pour voir ses informations détaillées.</p>
-                    <div className="space-y-3">
-                        {(user.parentStudentIds || []).map(studentId => (
-                           <ParentStudentCard key={studentId} schoolId={user.schoolId!} studentId={studentId} />
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    )
-}
 
 const RegularDashboard = () => {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -115,7 +87,7 @@ function DashboardPageContent() {
     }
     
     if (user?.isParent) {
-        return <ParentDashboard />;
+        return <ParentDashboard user={user} />;
     }
     
     return <RegularDashboard />;
