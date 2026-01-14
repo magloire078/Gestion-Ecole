@@ -59,7 +59,7 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { class_type as Class, staff as Staff, timetableEntry } from '@/lib/data-types';
 import { cn } from "@/lib/utils";
-import { allSubjects } from "@/lib/data";
+import { allSubjects } from "@/lib/subjects";
 
 const timetableSchema = z.object({
   classId: z.string().min(1, { message: "La classe est requise." }),
