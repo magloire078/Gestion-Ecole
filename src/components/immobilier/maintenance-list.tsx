@@ -37,8 +37,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, addDoc, setDoc, deleteDoc, doc, orderBy } from 'firebase/firestore';
-import { useSchoolData } from '@/hooks/use-school-data';
+import { collection, query, addDoc, setDoc, deleteDoc, doc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -60,8 +59,12 @@ const tacheSchema = z.object({
 
 type TacheFormValues = z.infer<typeof tacheSchema>;
 
-export default function MaintenancePage() {
-  const { schoolId, loading: schoolLoading } = useSchoolData();
+interface MaintenanceListProps {
+  schoolId: string;
+  limit?: number;
+}
+
+export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
@@ -72,7 +75,11 @@ export default function MaintenancePage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [tacheToDelete, setTacheToDelete] = useState<(TacheMaintenance & { id: string }) | null>(null);
 
-  const tachesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/maintenance`), orderBy('createdAt', 'desc')) : null, [firestore, schoolId]);
+  const tachesQuery = useMemoFirebase(() => {
+    const baseQuery = query(collection(firestore, `ecoles/${schoolId}/maintenance`), orderBy('createdAt', 'desc'));
+    return limit ? query(baseQuery, firestoreLimit(limit)) : baseQuery;
+  }, [firestore, schoolId, limit]);
+
   const { data: tachesData, loading: tachesLoading } = useCollection(tachesQuery);
   const taches: (TacheMaintenance & { id: string })[] = useMemo(() => tachesData?.map(d => ({ id: d.id, ...d.data() } as TacheMaintenance & { id: string })) || [], [tachesData]);
   
@@ -156,7 +163,7 @@ export default function MaintenancePage() {
     }
   };
   
-  const isLoading = schoolLoading || tachesLoading || staffLoading;
+  const isLoading = tachesLoading || staffLoading;
 
   return (
     <>
@@ -180,7 +187,7 @@ export default function MaintenancePage() {
             <TableHeader><TableRow><TableHead>Titre</TableHead><TableHead>Priorité</TableHead><TableHead>Statut</TableHead><TableHead>Assigné à</TableHead><TableHead>Échéance</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
               {isLoading ? (
-                [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
+                [...Array(limit || 5)].map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
               ) : taches.length > 0 ? (
                 taches.map(tache => (
                   <TableRow key={tache.id}>
