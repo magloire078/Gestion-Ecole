@@ -1,3 +1,2 @@
-
-// This file is obsolete and has been emptied. 
-// The redirection logic is now handled by /src/app/dashboard/rh/page.tsx.
+// This file is now obsolete. The logic has been moved to /src/app/dashboard/rh/personnel/page.tsx.
+// It is kept to avoid breaking imports during the transition, but its content is cleared.
