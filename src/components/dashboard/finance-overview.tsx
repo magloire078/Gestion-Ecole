@@ -1,8 +1,7 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useState, useEffect, useMemo } from 'react';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -18,7 +17,7 @@ interface FinanceOverviewProps {
 export function FinanceOverview({ schoolId }: FinanceOverviewProps) {
     const firestore = useFirestore();
 
-    const studentsQuery = useMemoFirebase(() => {
+    const studentsQuery = useMemo(() => {
         if (!firestore || !schoolId) return null;
         return query(collection(firestore, `ecoles/${schoolId}/eleves`));
     }, [firestore, schoolId]);
