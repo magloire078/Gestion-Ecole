@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useMemo } from 'react';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -20,9 +21,9 @@ interface RecentActivityProps {
 export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
-    const recentStudentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
-    const recentMessagesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
-    const recentBooksQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
+    const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
+    const recentMessagesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
+    const recentBooksQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
 
     const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
     const { data: messagesData, loading: messagesLoading } = useCollection(recentMessagesQuery);
