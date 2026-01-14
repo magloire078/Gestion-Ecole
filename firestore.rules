@@ -1,22 +1,18 @@
+
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Règle générale pour les collections racines (users, tickets, etc.)
-    // Permet la lecture/écriture si l'utilisateur est authentifié.
-    match /{document}/{id} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Règle spécifique pour l'école et TOUTES ses sous-collections
-    // C'est la règle cruciale qui autorise l'opération 'list' sur messagerie, etc.
-    match /ecoles/{schoolId}/{allPaths=**} {
+    // Autorise toutes les opérations de lecture et d'écriture pour n'importe quel utilisateur authentifié
+    // sur n'importe quel document de la base de données.
+    // La syntaxe {allPaths=**} assure que la règle s'applique récursivement à toutes les sous-collections.
+    match /{allPaths=**} {
       allow read, write: if request.auth != null;
     }
 
     // Règle pour permettre aux utilisateurs non authentifiés de soumettre
-    // le formulaire de contact.
+    // le formulaire de contact. Elle doit être plus spécifique que la règle générale.
     match /contact_requests/{requestId} {
       allow create: if true;
       allow read, write: if request.auth != null;
