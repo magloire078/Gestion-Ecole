@@ -221,7 +221,7 @@ service cloud.firestore {
         allow read: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageLibrary');
       }
-
+      
       match /cantine_menus/{menuId} {
         allow get, list: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageCantine');
