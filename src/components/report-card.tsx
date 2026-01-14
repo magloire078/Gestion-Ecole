@@ -12,7 +12,6 @@ import type { staff as Staff, student as Student, class_type as Class } from '@/
 import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { SafeImage } from './ui/safe-image';
-import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 
 
 // --- Interfaces ---
@@ -154,41 +153,9 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);
 
     const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
-        const isCouncilComment = !subject;
-
-        if (isCouncilComment) {
-            setIsGeneratingCouncilComment(true);
-        } else if (subject && teacherName && average !== undefined) {
-             setSubjectAppreciations(prev => ({...prev, [subject]: { text: '', isGenerating: true }}));
-        } else {
-            return;
-        }
-        
-        try {
-            const input = {
-                studentName: student.firstName || 'L\'élève',
-                teacherName: teacherName || mainTeacher?.firstName || 'Le professeur',
-                subject: subject || 'toutes les matières',
-                average: average || generalAverage,
-            };
-            const response = await generateReportCardComment(input);
-            if (response.comment) {
-                 if (isCouncilComment) {
-                    setCouncilComment(response.comment);
-                } else {
-                    setSubjectAppreciations(prev => ({...prev, [subject!]: { text: response.comment, isGenerating: false }}));
-                }
-                toast({ title: "Commentaire généré !" });
-            }
-        } catch (error) {
-             toast({ variant: 'destructive', title: "Erreur de l'IA", description: "Impossible de générer le commentaire." });
-        } finally {
-             if (isCouncilComment) {
-                setIsGeneratingCouncilComment(false);
-            } else {
-                setSubjectAppreciations(prev => ({...prev, [subject!]: { ...prev[subject!], isGenerating: false }}));
-            }
-        }
+        setIsGeneratingCouncilComment(true);
+        toast({ title: "Fonctionnalité désactivée", description: "La génération de commentaires par IA a été temporairement désactivée." });
+        setIsGeneratingCouncilComment(false);
     };
     
    const handlePrint = () => {
