@@ -145,11 +145,11 @@ export function useUser() {
         return;
     }
     
+    setLoading(true);
     const userRootRef = doc(firestore, 'users', user.uid);
     try {
         await updateDoc(userRootRef, { activeSchoolId: schoolId });
         
-        // Mettre à jour le profil utilisateur localement après le changement d'école active
         const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
         const profileSnap = await getDoc(staffProfileRef);
         const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : undefined;
@@ -167,6 +167,8 @@ export function useUser() {
         
     } catch(e) {
         console.error("Failed to set active school:", e);
+    } finally {
+      setLoading(false);
     }
   };
 
