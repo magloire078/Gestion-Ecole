@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -52,6 +51,7 @@ export default function CreateSchoolPage() {
   const { toast } = useToast();
   
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isCreationSuccess, setIsCreationSuccess] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFirestoreReady, setIsFirestoreReady] = useState(false);
@@ -68,17 +68,19 @@ export default function CreateSchoolPage() {
     mode: 'onChange',
   });
   
-  // Initialisation et vérifications
+  // Surveille la valeur `hasSchool`. Si elle passe à `true` et que la création a réussi, redirige.
   useEffect(() => {
-    if (!userLoading && hasSchool) {
+    if (isCreationSuccess && hasSchool) {
       router.replace('/dashboard');
     }
-    
-    // Vérifier que Firestore est prêt
+  }, [isCreationSuccess, hasSchool, router]);
+  
+  // Vérifier que Firestore est prêt
+  useEffect(() => {
     if (firestore) {
       setIsFirestoreReady(true);
     }
-  }, [userLoading, hasSchool, router, firestore]);
+  }, [firestore]);
 
   // Mettre à jour l'email si l'utilisateur est connecté
   useEffect(() => {
@@ -131,16 +133,14 @@ export default function CreateSchoolPage() {
           description: "Redirection vers votre tableau de bord...",
           duration: 5000,
         });
-        // Forcer le rafraîchissement des données utilisateur avant de rediriger
+        
         await reloadUser();
-        router.replace('/dashboard');
+        setIsCreationSuccess(true); // Signale que la création a réussi pour le useEffect
       }
     } catch (error: any) {
       console.error('Erreur création école:', error);
       
-      // Messages d'erreur spécifiques
       let errorMessage = "Une erreur inattendue est survenue.";
-      
       if (error.message?.includes('permissions')) {
         errorMessage = "Permissions insuffisantes. Vérifiez les règles de sécurité Firestore.";
       } else if (error.message?.includes('already exists')) {
@@ -157,9 +157,9 @@ export default function CreateSchoolPage() {
         title: 'Échec de la création',
         description: errorMessage,
       });
-    } finally {
       setIsProcessing(false);
-    }
+    } 
+    // Ne pas mettre le `finally` ici, la redirection est gérée par le useEffect
   };
 
   if (userLoading) {
@@ -196,7 +196,6 @@ export default function CreateSchoolPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 p-4 md:p-8">
       <div className="mx-auto max-w-2xl">
-        {/* En-tête */}
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
             <Logo />
@@ -207,7 +206,6 @@ export default function CreateSchoolPage() {
           </p>
         </div>
 
-        {/* Carte principale */}
         <Card className="border shadow-lg">
           <CardHeader className="pb-6">
             <CardTitle className="flex items-center gap-2">
@@ -220,17 +218,13 @@ export default function CreateSchoolPage() {
           </CardHeader>
 
           <CardContent className="space-y-8">
-            {/* Message d'erreur */}
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-
-            {/* Formulaire */}
             <Form {...form}>
               <form id="create-school-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                {/* Logo */}
                 <div className="space-y-4">
                   <div className="text-center">
                     <FormLabel className="text-base">Logo de l'école</FormLabel>
@@ -269,8 +263,6 @@ export default function CreateSchoolPage() {
                     </FormItem>
                   )} />
                 </div>
-
-                {/* Nom de l'école */}
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
@@ -290,8 +282,6 @@ export default function CreateSchoolPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-
-                {/* Adresse */}
                 <FormField control={form.control} name="address" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
@@ -311,8 +301,6 @@ export default function CreateSchoolPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
-
-                {/* Téléphone et Email */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField control={form.control} name="phone" render={({ field }) => (
                     <FormItem>
@@ -358,8 +346,6 @@ export default function CreateSchoolPage() {
                 </div>
               </form>
             </Form>
-
-            {/* Note importante */}
             <Alert className="bg-primary/5 border-primary/20">
               <AlertDescription className="text-sm">
                 <strong>Important :</strong> Après la création, vous recevrez un code d'invitation unique 
@@ -398,8 +384,6 @@ export default function CreateSchoolPage() {
             </Button>
           </CardFooter>
         </Card>
-
-        {/* Informations supplémentaires */}
         <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-muted/30">
             <CardContent className="pt-6">
