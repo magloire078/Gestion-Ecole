@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Check, School, ArrowRight, PlayCircle, FileText, Users, Wallet, Briefcase } from 'lucide-react';
@@ -18,7 +19,7 @@ const featureCategories = [
     {
         title: "Finances & Administration",
         icon: Wallet,
-        features: ["Suivi de la scolarité", "Facturation & Reçus", "Comptabilité générale", "Gestion du personnel & Paie"]
+        features: ["Suivi de la scolarité", "Facturation & Reçus", "Gestion multi-établissements", "Comptabilité générale"]
     },
      {
         title: "Vie Scolaire Intégrée",
@@ -107,13 +108,13 @@ export function LandingPageV2() {
         {/* Hero Section */}
         <section className="py-20 text-center">
           <div className="container">
-            <Badge variant="outline" className="mb-4 text-primary border-primary/30">La solution complète pour l'école moderne</Badge>
+            <Badge variant="outline" className="mb-4 text-primary border-primary/30">La solution complète pour les groupes scolaires</Badge>
             <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
-              Gérez votre établissement <br />
+              Gérez vos établissements <br />
               <span className="text-primary">avec simplicité et puissance.</span>
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
-              De l'inscription des élèves à la gestion de la paie, GèreEcole centralise tous les aspects de votre administration scolaire sur une plateforme unifiée et intuitive.
+              De l'inscription des élèves à la gestion de la paie, GèreEcole centralise tous les aspects de votre administration pour un ou plusieurs établissements.
             </p>
             <div className="mt-8 flex justify-center gap-4">
                <Button size="lg" asChild>
