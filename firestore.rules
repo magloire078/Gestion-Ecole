@@ -1,21 +1,20 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Règles TEMPORAIRES pour développement
+    
+    // Règle globale pour les utilisateurs authentifiés
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
-    
+
     // Permettre la création de contact_requests par n'importe qui
     match /contact_requests/{requestId} {
       allow create: if true;
-      allow read, write: if request.auth != null;
     }
     
     // Permettre la création de survey_responses par n'importe qui
     match /survey_responses/{responseId} {
       allow create: if true;
-      allow read, write: if request.auth != null;
     }
   }
 }
