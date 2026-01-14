@@ -5,59 +5,80 @@ import {
   doc, 
   writeBatch, 
   serverTimestamp,
+  getDoc,
+  query,
+  where,
+  getDocs,
+  updateDoc
 } from 'firebase/firestore';
 import type { Firestore } from 'firebase/firestore';
 import type { school, user_root, staff, admin_role } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 
-interface SchoolCreationData {
-    name: string;
-    address: string;
-    mainLogoUrl: string;
-    phone: string;
-    email: string;
-    directorId: string;
-    directorFirstName: string;
-    directorLastName: string;
-    directorEmail: string;
+export interface CreateSchoolData {
+  name: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  mainLogoUrl?: string;
+  directorId: string;
+  directorFirstName: string;
+  directorLastName: string;
+  directorEmail: string;
 }
 
-const generateSchoolCode = (name: string): string => {
+export interface CreateSchoolResult {
+  success: boolean;
+  schoolId?: string;
+  schoolCode?: string;
+  error?: string;
+}
+
+export class SchoolCreationService {
+  constructor(private firestore: Firestore) {}
+
+  private generateSchoolCode(name: string): string {
     const prefix = name.substring(0, 3).toUpperCase().replace(/\s/g, '');
     const randomNumber = Math.floor(1000 + Math.random() * 9000);
     return `${prefix}-${randomNumber}`;
-};
-
-export class SchoolCreationService {
-  private db: Firestore;
-
-  constructor(firestore: Firestore) {
-    this.db = firestore;
   }
-  
-  async createSchool(schoolData: SchoolCreationData) {
-    const batch = writeBatch(this.db);
+
+  private getDirectorPermissions() {
+    return {
+      manageUsers: true, viewUsers: true, manageClasses: true, manageGrades: true, manageDiscipline: true, manageSettings: true, manageBilling: true, manageCommunication: true, manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true, manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true, viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true,
+    };
+  }
+
+  async createSchool(data: CreateSchoolData): Promise<CreateSchoolResult> {
+    const { 
+      doc: fbDoc, 
+      setDoc: fbSetDoc, 
+      collection: fbCollection, 
+      writeBatch: fbWriteBatch, 
+      serverTimestamp: fbServerTimestamp
+    } = await import('firebase/firestore');
+
+    const batch = fbWriteBatch(this.firestore);
     
     try {
       // 1. Créer le document ÉCOLE
-      const schoolRef = doc(collection(this.db, 'ecoles'));
+      const schoolRef = fbDoc(fbCollection(this.firestore, 'ecoles'));
       const schoolId = schoolRef.id;
-      const schoolCode = generateSchoolCode(schoolData.name);
+      const schoolCode = this.generateSchoolCode(data.name);
       
       const schoolDoc: school = {
-        name: schoolData.name,
-        address: schoolData.address || '',
-        phone: schoolData.phone || '',
-        email: schoolData.email || '',
+        name: data.name,
+        address: data.address || '',
+        phone: data.phone || '',
+        email: data.email || '',
         schoolCode: schoolCode,
-        directorId: schoolData.directorId,
-        directorFirstName: schoolData.directorFirstName,
-        directorLastName: schoolData.directorLastName,
-        directorEmail: schoolData.directorEmail,
-        directorPhone: schoolData.phone,
+        directorId: data.directorId,
+        directorFirstName: data.directorFirstName,
+        directorLastName: data.directorLastName,
+        directorEmail: data.directorEmail,
         createdAt: new Date().toISOString(),
-        mainLogoUrl: schoolData.mainLogoUrl || '',
+        mainLogoUrl: data.mainLogoUrl || '',
         status: 'active',
         isSetupComplete: false,
         subscription: {
@@ -73,18 +94,18 @@ export class SchoolCreationService {
       batch.set(schoolRef, schoolDoc);
 
       // 2. Créer le rôle système "Directeur"
-      const directorRoleRef = doc(collection(this.db, `ecoles/${schoolId}/admin_roles`));
+      const directorRoleRef = fbDoc(fbCollection(this.firestore, `ecoles/${schoolId}/admin_roles`));
       const directorRoleData: Omit<admin_role, 'id'> = {
           name: 'Directeur',
           description: 'Accès complet à toutes les fonctionnalités de l\'école.',
           schoolId: schoolId,
           isSystem: true,
-          permissions: { manageUsers: true, viewUsers: true, manageClasses: true, manageGrades: true, manageDiscipline: true, manageSettings: true, manageBilling: true, manageCommunication: true, manageSchedule: true, manageAttendance: true, manageLibrary: true, manageCantine: true, manageTransport: true, manageInternat: true, manageInventory: true, manageRooms: true, manageActivities: true, manageMedical: true, viewSupportTickets: true, manageSupportTickets: true, apiAccess: true, exportData: true }
+          permissions: this.getDirectorPermissions()
       };
       batch.set(directorRoleRef, directorRoleData);
 
       // 3. Mettre à jour le document racine de l'UTILISATEUR
-      const userRef = doc(this.db, 'users', schoolData.directorId);
+      const userRef = fbDoc(this.firestore, 'users', data.directorId);
       const userDoc: user_root = {
         schools: [{ schoolId: schoolId, role: 'directeur' }],
         activeSchoolId: schoolId,
@@ -93,17 +114,17 @@ export class SchoolCreationService {
       batch.set(userRef, userDoc, { merge: true });
       
       // 4. Créer le profil PERSONNEL pour le directeur
-      const staffProfileRef = doc(this.db, `ecoles/${schoolId}/personnel`, schoolData.directorId);
+      const staffProfileRef = fbDoc(this.firestore, `ecoles/${schoolId}/personnel`, data.directorId);
       const staffProfileData: Omit<staff, 'id'> = {
-          uid: schoolData.directorId,
-          email: schoolData.directorEmail,
-          displayName: `${schoolData.directorFirstName} ${schoolData.directorLastName}`,
+          uid: data.directorId,
+          email: data.directorEmail,
+          displayName: `${data.directorFirstName} ${data.directorLastName}`,
           photoURL: '',
           schoolId: schoolId,
           role: 'directeur',
           adminRole: directorRoleRef.id,
-          firstName: schoolData.directorFirstName,
-          lastName: schoolData.directorLastName,
+          firstName: data.directorFirstName,
+          lastName: data.directorLastName,
           hireDate: new Date().toISOString().split('T')[0],
           baseSalary: 0,
           status: 'Actif',
@@ -113,10 +134,9 @@ export class SchoolCreationService {
       await batch.commit();
       
       return {
+        success: true,
         schoolId,
         schoolCode,
-        success: true,
-        message: "École créée avec succès!"
       };
       
     } catch (error: any) {
@@ -127,7 +147,10 @@ export class SchoolCreationService {
           operation: 'write'
       }));
       
-      throw new Error(`Échec de la création: ${error.message}`);
+      return {
+        success: false,
+        error: error.message || 'Erreur inconnue lors de la création'
+      };
     }
   }
 }
