@@ -51,7 +51,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -83,7 +83,7 @@ export default function AccountingPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const canManageBilling = !!user?.profile?.permissions?.manageBilling;
 
-  const transactionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), orderBy("date", "desc")) : null, [firestore, schoolId]);
+  const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), orderBy("date", "desc")) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
   const transactions = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & {id: string})) || [], [transactionsData]);
 
