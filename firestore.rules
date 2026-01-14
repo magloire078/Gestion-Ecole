@@ -4,18 +4,26 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // RÈGLES TEMPORAIRES POUR LE DÉVELOPPEMENT
-    // PERMET TOUT AUX UTILISATEURS AUTHENTIFIÉS
-    match /{document=**} {
+    
+    // Règle pour autoriser l'accès aux collections racines
+    // et, plus important encore, aux sous-collections des écoles.
+    match /{path=**}/documents/{document} {
       allow read, write: if request.auth != null;
     }
-    
-    // Exception : contact_requests peut être créé par n'importe qui
+
+    // Cette règle plus spécifique garantit que l'accès aux sous-collections
+    // d'une école est bien autorisé pour tout utilisateur authentifié.
+    match /ecoles/{schoolId}/{document=**} {
+        allow read, write: if request.auth != null;
+    }
+
+    // Exception : la création de demandes de contact est publique
     match /contact_requests/{requestId} {
       allow create: if true;
       allow read, write: if request.auth != null;
     }
     
-    // Exception : survey_responses peut être créé par n'importe qui
+    // Exception : la création de réponses aux enquêtes est publique
     match /survey_responses/{responseId} {
       allow create: if true;
       allow read, write: if request.auth != null;
