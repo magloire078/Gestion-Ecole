@@ -1,15 +1,19 @@
+// Ce fichier sert de point d'entrée centralisé pour les services et hooks Firebase.
 
-import * as React from 'react';
-export * from './client-provider';
-export * from './auth/use-user';
-export * from './firestore/use-doc';
-export * from './firestore/use-collection';
+// Exportez directement les hooks dont vous avez besoin depuis leur emplacement.
+// Cela rend les imports dans le reste de l'application plus clairs.
 
-// Ce hook est conservé pour la stabilité des références Firestore/Storage dans les composants.
-export function useMemoFirebase<T>(
-  factory: () => T,
-  deps: React.DependencyList
-) {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  return React.useMemo(factory, deps);
-}
+export { useUser } from './auth/use-user';
+export { useCollection } from './firestore/use-collection';
+export { useDoc } from './firestore/use-doc';
+
+// Exportez les fournisseurs et les instances de service si nécessaire.
+// Note : Les composants doivent privilégier les hooks (useAuth, useFirestore) plutôt que d'importer directement les instances.
+export {
+  FirebaseClientProvider,
+  useFirebase,
+  useAuth,
+  useFirestore,
+  useStorage,
+  useFirebaseApp,
+} from './client-provider';

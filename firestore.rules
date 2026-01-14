@@ -1,12 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permettre un accès complet aux sous-collections des écoles pour les utilisateurs authentifiés
-    match /ecoles/{schoolId}/{document=**} {
-      allow read, write: if request.auth != null;
-    }
-    
-    // Règle générique pour les autres collections de premier niveau
+    // Règles TEMPORAIRES pour développement
     match /{document=**} {
       allow read, write: if request.auth != null;
     }
