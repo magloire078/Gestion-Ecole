@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -26,7 +26,7 @@ export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAle
   const [dueStudentsCount, setDueStudentsCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const dueStudentsQuery = useMemoFirebase(() =>
+  const dueStudentsQuery = useMemo(() =>
     query(collection(firestore, `ecoles/${schoolId}/eleves`), where('amountDue', '>', 0))
   , [firestore, schoolId]);
 
