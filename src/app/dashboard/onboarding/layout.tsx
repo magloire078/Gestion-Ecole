@@ -1,1 +1,2 @@
-// This file is now obsolete. The layout is handled by /src/app/onboarding/layout.tsx
+// This file is obsolete and will be removed in a future cleanup.
+// The layout is now handled by /src/app/onboarding/layout.tsx.
