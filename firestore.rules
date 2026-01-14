@@ -1,20 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Règle globale pour les utilisateurs authentifiés
-    match /{document=**} {
-      allow read, write: if request.auth != null;
-    }
 
-    // Permettre la création de contact_requests par n'importe qui
+    // Autorise la lecture/écriture sur toutes les sous-collections d'une école 
+    // pour tout utilisateur authentifié.
+    // C'est cette règle qui corrige l'erreur de "list".
+    match /ecoles/{schoolId}/{allPaths=**} {
+       allow read, write: if request.auth != null;
+    }
+    
+    // Permet la création de demandes de contact et d'enquêtes par n'importe qui.
     match /contact_requests/{requestId} {
       allow create: if true;
     }
-    
-    // Permettre la création de survey_responses par n'importe qui
     match /survey_responses/{responseId} {
       allow create: if true;
+    }
+
+    // Règle de secours pour les collections de premier niveau (users, system_logs, etc.)
+    // La règle plus spécifique pour /ecoles/ sera prioritaire.
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
