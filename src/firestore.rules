@@ -13,43 +13,54 @@ service cloud.firestore {
     }
 
     function getUserData(userId) {
-        return get(/databases/$(database)/documents/users/$(userId)).data;
+      return get(/databases/$(database)/documents/users/$(userId)).data;
     }
 
     function getSchoolIdsForUser(userId) {
-        // Renvoie une liste d'ID d'école ou une liste vide si non trouvé
-        return getUserData(userId).get('schools', []).map(s => s.get('schoolId', ''));
+      // Renvoie une liste d'ID d'école ou une liste vide si non trouvé
+      let userData = getUserData(userId);
+      let schoolIds = [];
+      if (userData.schools != null) {
+        return userData.schools.map(s => s.schoolId);
+      }
+      return schoolIds;
     }
     
     function isSchoolMember(schoolId) {
-        return isAuth() && schoolId in getSchoolIdsForUser(request.auth.uid);
+      return isAuth() && getSchoolIdsForUser(request.auth.uid).hasAny([schoolId]);
     }
     
     function isParentSession(schoolId) {
-      return request.auth.token.isParent == true && request.auth.token.schoolId == schoolId;
+      return isAuth() && request.auth.token.isParent == true && request.auth.token.schoolId == schoolId;
     }
     
-     function isParentOfStudentViaSession(studentId) {
-      return request.auth.token.isParent == true && studentId in request.auth.token.studentIds;
+    function isParentOfStudentViaSession(studentId) {
+      return isAuth() && request.auth.token.isParent == true && 
+             request.auth.token.studentIds != null && 
+             request.auth.token.studentIds.hasAny([studentId]);
     }
     
     function isParentOfStudent(studentDoc) {
-        return isAuth() && request.auth.uid in studentDoc.data.parentIds;
+      return isAuth() && studentDoc.data.parentIds != null && 
+             studentDoc.data.parentIds.hasAny([request.auth.uid]);
     }
 
     function getMyStaffProfile(schoolId) {
-        return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
+      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
     
     function isDirector(schoolId) {
-      return isAuth() && request.auth.uid == get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+      return isAuth() && 
+             exists(/databases/$(database)/documents/ecoles/$(schoolId)) &&
+             get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
     
     function hasPermission(schoolId, permission) {
+      let staffProfile = getMyStaffProfile(schoolId);
       return isDirector(schoolId) || (
-        'adminRole' in getMyStaffProfile(schoolId) &&
-        getMyStaffProfile(schoolId).adminRole != null &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(getMyStaffProfile(schoolId).adminRole)).data.permissions[permission] == true
+        staffProfile.adminRole != null &&
+        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)) &&
+        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true
       );
     }
 
@@ -73,8 +84,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get, list: if isAuth();
       allow create, update: if isAuth() && request.auth.uid == userId;
-      allow delete: if (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-                       getUserData(request.auth.uid).isSuperAdmin == true);
+      allow delete: if exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+                       getUserData(request.auth.uid).isSuperAdmin == true;
     }
     
     match /contact_requests/{requestId} {
@@ -124,7 +135,6 @@ service cloud.firestore {
       
       match /personnel/{staffId} {
         allow get, list: if isSchoolMember(schoolId);
-        // MODIFICATION ICI: on autorise la création si l'UID de l'utilisateur correspond au document
         allow create: if isAuth() && (request.auth.uid == staffId || hasPermission(schoolId, 'manageUsers'));
         allow update: if (isAuth() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow delete: if hasPermission(schoolId, 'manageUsers');
@@ -331,5 +341,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
