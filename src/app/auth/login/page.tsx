@@ -78,12 +78,15 @@ export default function ModernLoginPage() {
           const userDoc = await getDoc(doc(firestore, 'users', user.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            if (userData.schoolId) {
+            // L'utilisateur a déjà des écoles, on le redirige vers le tableau de bord
+            if (userData.schools && userData.schools.length > 0) {
               router.replace('/dashboard');
             } else {
+              // L'utilisateur est connecté mais n'a pas d'école, on l'envoie à l'onboarding
               router.replace('/onboarding');
             }
           } else {
+             // L'utilisateur est nouveau, on l'envoie à l'onboarding
              router.replace('/onboarding');
           }
         } catch (error) {
@@ -206,7 +209,7 @@ export default function ModernLoginPage() {
             </div>
             
             <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-              Gérez votre école
+              Gérez vos établissements
               <span className="block text-white/90 mt-2">avec sérénité</span>
             </h1>
             
