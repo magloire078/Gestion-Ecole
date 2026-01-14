@@ -1,4 +1,5 @@
 
+
 {
   "entities": {
     "user_root": {
@@ -439,13 +440,13 @@
             "classeId": { "type": "string" },
             "academicYear": { "type": "string" },
             "startDate": { "type": "string", "format": "date-time" },
-            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
-            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
-            "createdBy": { "type": "string" },
             "endDate": { "type": "string", "format": "date-time" },
             "previousClass": { "type": "string" },
+            "promotionType": { "type": "string", "enum": ["normal", "redoublement", "avancement"] },
             "notes": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" }
+            "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "createdBy": { "type": "string" }
         },
         "required": ["schoolId", "studentId", "classeId", "academicYear", "startDate", "promotionType", "status", "createdBy"]
     },
@@ -577,8 +578,8 @@
             "date": { "type": "string", "format": "date", "description": "La date de l'absence." },
             "type": { "type": "string", "enum": ["Journée entière", "Matin", "Après-midi"], "description": "Le type d'absence." },
             "justified": { "type": "boolean", "description": "Indique si l'absence est justifiée." },
-            "reason": { "type": "string", "description": "Le motif de l'absence (si justifiée)." },
-            "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." }
+            "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." },
+            "reason": { "type": "string", "description": "Le motif de l'absence (si justifiée)." }
         },
         "required": ["schoolId", "studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
     },
@@ -590,8 +591,8 @@
             "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
             "grade": { "type": "string", "description": "Le niveau scolaire concerné par les frais." },
             "amount": { "type": "string", "description": "Le montant total des frais." },
-            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." },
-            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." }
+            "installments": { "type": "string", "description": "Options de paiement en plusieurs fois." },
+            "details": { "type": "string", "description": "Détails supplémentaires sur les frais." }
         },
         "required": ["schoolId", "grade", "amount", "installments"]
     },
