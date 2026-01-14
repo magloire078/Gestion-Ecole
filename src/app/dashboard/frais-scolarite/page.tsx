@@ -30,19 +30,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Combobox } from "@/components/ui/combobox";
-import { schoolClasses } from '@/lib/data';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { fee as Fee } from "@/lib/data-types";
+import type { fee as Fee, niveau as Niveau } from "@/lib/data-types";
 import { useMemo, useState, useEffect } from "react";
 import { SafeImage } from "@/components/ui/safe-image";
 
@@ -81,9 +80,14 @@ export default function FeesPage() {
   const { user } = useUser();
   const canManageBilling = !!user?.profile?.permissions?.manageBilling;
   
-  const feesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
+  const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+  
+  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
+  const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+  const niveaux = useMemo(() => niveauxData?.map(doc => doc.data() as Niveau) || [], [niveauxData]);
+
 
   const [isFeeGridDialogOpen, setIsFeeGridDialogOpen] = useState(false);
   const [editingFee, setEditingFee] = useState<Fee | null>(null);
@@ -203,9 +207,13 @@ export default function FeesPage() {
     return Promise.resolve({ value: newGrade, label: newGrade });
   };
 
-  const isLoading = schoolDataLoading || feesLoading;
+  const isLoading = schoolDataLoading || feesLoading || niveauxLoading;
 
-  const gradeOptions = useMemo(() => schoolClasses.map(c => ({ value: c.name, label: c.name })), []);
+  const gradeOptions = useMemo(() => {
+    const uniqueGradeNames = [...new Set(niveaux.map(n => n.name).filter(Boolean))];
+    uniqueGradeNames.sort((a, b) => a.localeCompare(b));
+    return uniqueGradeNames.map(name => ({ value: name, label: name }));
+  }, [niveaux]);
 
   const formatCurrency = (value: number | string) => {
     const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9]/g, '')) : value;
@@ -350,7 +358,7 @@ export default function FeesPage() {
                       )}
                     />
                      <FormField
-                      control={feeForm.control}
+                      control={form.control}
                       name="details"
                       render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-start gap-4">
@@ -390,3 +398,5 @@ export default function FeesPage() {
     </>
   );
 }
+
+    
