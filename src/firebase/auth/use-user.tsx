@@ -83,12 +83,15 @@ export function useUser() {
           } else {
             // L'utilisateur est authentifié mais n'a pas de document 'user_root',
             // il doit passer par l'onboarding.
-            setUser({
+             setUser({
               uid: firebaseUser.uid,
               authUser: firebaseUser,
               isParent: false,
               schoolId: null, // Pas encore d'école
               schools: [],
+              displayName: firebaseUser.displayName, // Assurez-vous que ces champs sont propagés
+              email: firebaseUser.email,
+              photoURL: firebaseUser.photoURL,
             });
           }
 
