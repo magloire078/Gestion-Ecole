@@ -4,21 +4,23 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    // Allow public creation for contact and survey forms
+    // Allow public creation for forms
     match /contact_requests/{requestId} {
       allow create: if true;
-      // Allow authenticated users to manage them
-      allow read, update, delete, list: if request.auth != null;
     }
      match /survey_responses/{responseId} {
       allow create: if true;
-       // Allow authenticated users to manage them
-      allow read, update, delete, list: if request.auth != null;
+    }
+    
+    // Pour la messagerie, n'autoriser que la lecture de documents individuels
+    // et la création, mais pas le listage de toute la collection.
+    match /ecoles/{schoolId}/messagerie/{messageId} {
+      allow get, write: if request.auth != null;
     }
 
-    // Default rule: allow authenticated users to read/write everything else.
-    // This is a broad rule for development.
-    match /{path=**} {
+    // Allow authenticated users to read and write to any other document.
+    // This is a permissive rule for development.
+    match /{document=**} {
       allow read, write: if request.auth != null;
     }
   }

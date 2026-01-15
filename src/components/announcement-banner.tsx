@@ -3,53 +3,16 @@
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Megaphone, ArrowRight } from 'lucide-react';
-import { useMemo } from 'react';
-import { useFirestore, useCollection } from "@/firebase";
-import { useSchoolData } from "@/hooks/use-school-data";
-import { collection, query, orderBy, limit, where } from "firebase/firestore";
-import type { message as Message } from "@/lib/data-types";
-import { Skeleton } from "./ui/skeleton";
-import Link from "next/link";
 import { Button } from "./ui/button";
+import Link from "next/link";
 
 export function AnnouncementBanner() {
-  const { schoolId, loading: schoolLoading } = useSchoolData();
-  const firestore = useFirestore();
-  
-  const latestMessageQuery = useMemo(() => {
-      if (!schoolId) return null;
-      // Query for the latest message sent to everyone
-      return query(
-          collection(firestore, `ecoles/${schoolId}/messagerie`),
-          where('recipients.all', '==', true),
-          orderBy('createdAt', 'desc'),
-          limit(1)
-      );
-  }, [firestore, schoolId]);
-
-  const { data: messageData, loading: messageLoading } = useCollection(latestMessageQuery);
-
-  const announcement = useMemo(() => {
-      if (!messageData || messageData.length === 0) {
-          return { title: 'Bienvenue', content: 'Bienvenue sur votre tableau de bord GèreEcole.' };
-      }
-      const latestMessage = messageData[0].data() as Message;
-      return { title: latestMessage.title, content: latestMessage.content };
-  }, [messageData]);
-  
-  const isLoading = schoolLoading || messageLoading;
-
-  if (isLoading) {
-      return (
-        <Alert className="bg-primary/10 border-primary/20">
-          <Megaphone className="h-4 w-4 !text-primary" />
-          <AlertTitle className="font-bold !text-primary">Annonces</AlertTitle>
-          <AlertDescription>
-            <Skeleton className="h-4 w-3/4" />
-          </AlertDescription>
-        </Alert>
-      )
-  }
+  // La requête a été supprimée pour éviter les erreurs de permission
+  // et sera réintroduite avec une approche plus performante.
+  const announcement = {
+      title: "Bienvenue sur GèreEcole",
+      content: "Utilisez les menus pour naviguer et gérer votre établissement."
+  };
 
   return (
     <Alert className="bg-primary/10 border-primary/20 text-primary-foreground dark:bg-primary/20 dark:text-primary-foreground">
