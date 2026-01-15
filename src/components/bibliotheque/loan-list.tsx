@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState } from 'react';
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import { format, isPast } from 'date-fns';
@@ -28,9 +27,9 @@ export function LoanList({ schoolId }: { schoolId: string }) {
   const canManageLibrary = !!user?.profile?.permissions?.manageLibrary;
   const { toast } = useToast();
 
-  const loansQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque_prets`), orderBy('borrowedDate', 'desc')), [firestore, schoolId]);
-  const booksQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)), [firestore, schoolId]);
-  const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+  const loansQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque_prets`), orderBy('borrowedDate', 'desc')), [firestore, schoolId]);
+  const booksQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)), [firestore, schoolId]);
+  const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
 
   const { data: loansData, loading: loansLoading } = useCollection(loansQuery);
   const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
