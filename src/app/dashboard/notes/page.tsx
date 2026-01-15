@@ -46,7 +46,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -106,11 +106,11 @@ export default function GradeEntryPage() {
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
   // --- Data Fetching ---
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
+  const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const studentsQuery = useMemoFirebase(() =>
+  const studentsQuery = useMemo(() =>
     schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', selectedClassId)) : null
   , [firestore, schoolId, selectedClassId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
