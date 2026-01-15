@@ -4,26 +4,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
-    match /{path=**}/messagerie/{messageId} {
-      // Allow reading public announcements
-      allow list: if request.auth != null && request.query.limit <= 20 && request.query.where[0][2] == true;
-      // Allow general read/write for authenticated users on individual messages
-      allow read, write: if request.auth != null;
-    }
-
+    // Allow public creation for forms
     match /contact_requests/{requestId} {
       allow create: if true;
-      allow read, write: if request.auth != null;
     }
-    
      match /survey_responses/{responseId} {
       allow create: if true;
-      allow read, write: if request.auth != null;
     }
 
-    // Default rule: allow authenticated users to read/write everything else.
-    // This needs to be last to not override more specific rules.
-    match /{path=**} {
+    // Allow any authenticated user to read and write to any other document.
+    // This is a permissive rule for development.
+    match /{document=**} {
       allow read, write: if request.auth != null;
     }
   }
