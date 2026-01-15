@@ -1,0 +1,21 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Allow users to submit contact and survey forms
+    match /contact_requests/{requestId} {
+      allow create: if true;
+    }
+     match /survey_responses/{responseId} {
+      allow create: if true;
+    }
+
+    // Allow authenticated users to read/write everything.
+    // This is a simple rule for development, can be refined for production.
+    match /{path=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
