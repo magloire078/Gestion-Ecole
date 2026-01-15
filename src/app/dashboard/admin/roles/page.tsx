@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +39,7 @@ export default function RolesPage() {
   const [roleToDelete, setRoleToDelete] = useState<(AdminRole & { id: string }) | null>(null);
 
 
-  const rolesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [firestore, schoolId]);
+  const rolesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [firestore, schoolId]);
   const { data: rolesData, loading: rolesLoading } = useCollection(rolesQuery);
   const roles: (AdminRole & { id: string })[] = useMemo(() => rolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & { id: string })) || [], [rolesData]);
 

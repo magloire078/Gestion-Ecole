@@ -3,7 +3,7 @@
 
 import { useParams, notFound } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import { collection, doc, query, where, addDoc, deleteDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -35,14 +35,14 @@ export default function CompetitionParticipantsPage() {
   const [selectedStudent, setSelectedStudent] = useState('');
   const [rank, setRank] = useState('');
 
-  const competitionRef = useMemoFirebase(() => (schoolId && competitionId) ? doc(firestore, `ecoles/${schoolId}/competitions/${competitionId}`) : null, [firestore, schoolId, competitionId]);
+  const competitionRef = useMemo(() => (schoolId && competitionId) ? doc(firestore, `ecoles/${schoolId}/competitions/${competitionId}`) : null, [firestore, schoolId, competitionId]);
   const { data: competitionData, loading: competitionLoading } = useDoc<Competition>(competitionRef);
 
-  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const students = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student & { id: string })) || [], [studentsData]);
 
-  const participantsQuery = useMemoFirebase(() => (schoolId && competitionId) ? query(collection(firestore, `ecoles/${schoolId}/participations_competitions`), where('competitionId', '==', competitionId)) : null, [firestore, schoolId, competitionId]);
+  const participantsQuery = useMemo(() => (schoolId && competitionId) ? query(collection(firestore, `ecoles/${schoolId}/participations_competitions`), where('competitionId', '==', competitionId)) : null, [firestore, schoolId, competitionId]);
   const { data: participantsData, loading: participantsLoading } = useCollection(participantsQuery);
 
   const participants: ParticipationWithStudentName[] = useMemo(() => {

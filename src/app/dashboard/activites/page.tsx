@@ -35,7 +35,7 @@ import { MoreHorizontal, PlusCircle, Trash2, Edit, Trophy, List, UserPlus, Users
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, addDoc, setDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -103,11 +103,11 @@ function ActivitesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [activiteToDelete, setActiviteToDelete] = useState<(Activite & { id: string }) | null>(null);
   
-  const activitesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/activites`)) : null, [firestore, schoolId]);
+  const activitesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/activites`)) : null, [firestore, schoolId]);
   const { data: activitesData, loading: activitesLoading } = useCollection(activitesQuery);
   const activites: (Activite & { id: string })[] = useMemo(() => activitesData?.map(d => ({ id: d.id, ...d.data() } as Activite & { id: string })) || [], [activitesData]);
 
-  const teachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  const teachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
   const teachers: (Staff & { id: string })[] = useMemo(() => teachersData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [teachersData]);
 
@@ -242,11 +242,11 @@ function InscriptionsPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   
-  const inscriptionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/inscriptions_activites`)) : null, [firestore, schoolId]);
+  const inscriptionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/inscriptions_activites`)) : null, [firestore, schoolId]);
   const { data: inscriptionsData, loading: inscriptionsLoading } = useCollection(inscriptionsQuery);
-  const activitesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/activites`)) : null, [firestore, schoolId]);
+  const activitesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/activites`)) : null, [firestore, schoolId]);
   const { data: activitesData, loading: activitesLoading } = useCollection(activitesQuery);
-  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
 
   const activites: (Activite & { id: string })[] = useMemo(() => activitesData?.map(d => ({ id: d.id, ...d.data() } as Activite & { id: string })) || [], [activitesData]);
@@ -343,7 +343,7 @@ function CompetitionsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [competitionToDelete, setCompetitionToDelete] = useState<(Competition & { id: string }) | null>(null);
 
-  const competitionsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/competitions`)) : null, [firestore, schoolId]);
+  const competitionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/competitions`)) : null, [firestore, schoolId]);
   const { data: competitionsData, loading: competitionsLoading } = useCollection(competitionsQuery);
   const competitions = useMemo(() => competitionsData?.map(d => ({ id: d.id, ...d.data() } as Competition & { id: string })) || [], [competitionsData]);
 
