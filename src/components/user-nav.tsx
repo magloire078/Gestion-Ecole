@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check } from "lucide-react";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { useUser } from "@/hooks/use-user";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -53,7 +53,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     if (schoolError) {
       toast({
         variant: "destructive",
-        title: "Erreur de données",
+        title: "Erreur de chargement",
         description: "Impossible de charger les données de l'école.",
       });
     }
@@ -71,9 +71,9 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const handleRegularLogout = async () => {
     try {
       await signOut(auth);
-      // Clean up local storage as a good practice
+      // Nettoyer toutes les données sensibles du localStorage pour plus de sécurité
       Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('firebase:')) {
+        if (key.startsWith('firebase:') || key.startsWith('parent_')) {
           localStorage.removeItem(key);
         }
       });
@@ -94,7 +94,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   const handleLogout = user?.isParent ? handleParentLogout : handleRegularLogout;
   
-  const isLoading = userLoading || (user && !user.isParent && (schoolLoading));
+  const isLoading = userLoading || (user && !user.isParent && (schoolLoading || !schoolData));
 
 
   if (!isClient || isLoading) {
@@ -126,15 +126,6 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const fallback = displayName 
     ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() 
     : 'U';
-
-  const getPlanBadgeClasses = (plan?: SubscriptionPlan) => {
-    switch (plan) {
-      case 'Essentiel': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800';
-      case 'Pro': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
-      case 'Premium': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
   
   const planName = isSuperAdmin ? null : (subscription?.plan || 'Gratuit');
   
@@ -224,6 +215,15 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   );
   
   const hasPhoto = !!user?.photoURL;
+  
+  const getPlanBadgeClasses = (plan?: SubscriptionPlan) => {
+    switch (plan) {
+      case 'Essentiel': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800';
+      case 'Pro': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
+      case 'Premium': return 'bg-violet-100 text-violet-800 border-violet-200 dark:bg-violet-900/50 dark:text-violet-300 dark:border-violet-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   return (
     <DropdownMenu>
