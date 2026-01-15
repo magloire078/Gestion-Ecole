@@ -3,25 +3,27 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Autorise toutes les opérations de lecture et d'écriture pour n'importe quel utilisateur authentifié
-    // sur n'importe quel document de la base de données.
-    // La syntaxe {allPaths=**} assure que la règle s'applique récursivement à toutes les sous-collections.
-    match /{allPaths=**} {
+    
+    match /{path=**}/messagerie/{messageId} {
+      // Allow reading public announcements
+      allow list: if request.auth != null && request.query.limit <= 20 && request.query.where[0][2] == true;
+      // Allow general read/write for authenticated users on individual messages
       allow read, write: if request.auth != null;
     }
 
-    // Règle pour permettre aux utilisateurs non authentifiés de soumettre
-    // le formulaire de contact. Elle doit être plus spécifique que la règle générale.
     match /contact_requests/{requestId} {
       allow create: if true;
       allow read, write: if request.auth != null;
     }
     
-    // Règle pour permettre aux utilisateurs non authentifiés de soumettre
-    // le formulaire d'enquête.
      match /survey_responses/{responseId} {
       allow create: if true;
+      allow read, write: if request.auth != null;
+    }
+
+    // Default rule: allow authenticated users to read/write everything else.
+    // This needs to be last to not override more specific rules.
+    match /{path=**} {
       allow read, write: if request.auth != null;
     }
   }
