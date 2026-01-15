@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, BookUser, Building, Hash, Pencil, Loader2, CreditCard, FileText, CalendarDays, FileSignature, KeyRound, UserX, Megaphone, Shield } from 'lucide-react';
 import React, { useMemo, useState, useEffect, Suspense } from 'react';
-import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
+import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -70,21 +70,21 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId, refreshTrigger]);
+  const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId, refreshTrigger]);
   const { data: studentData, loading: studentLoading, error } = useDoc<Student>(studentRef);
   
   const student = studentData as Student | null;
-  const classRef = useMemoFirebase(() => student?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
+  const classRef = useMemo(() => student?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
-  const teacherRef = useMemoFirebase(() => studentClass?.mainTeacherId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
+  const teacherRef = useMemo(() => studentClass?.mainTeacherId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) : null, [studentClass, schoolId, firestore]);
   const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
   
-  const allSchoolClassesQuery = useMemoFirebase(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId, canManageUsers]);
+  const allSchoolClassesQuery = useMemo(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId, canManageUsers]);
   const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
-  const feesQuery = useMemoFirebase(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId, canManageUsers]);
+  const feesQuery = useMemo(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId, canManageUsers]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
-  const niveauxQuery = useMemoFirebase(() => canManageUsers ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId, canManageUsers]);
+  const niveauxQuery = useMemo(() => canManageUsers ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId, canManageUsers]);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
 
   const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);

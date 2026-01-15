@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
@@ -49,8 +49,8 @@ export function CyclesManager() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<(Cycle & { id: string }) | null>(null);
 
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
-  const niveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
+  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
+  const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
 
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);

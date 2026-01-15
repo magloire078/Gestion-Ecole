@@ -2,12 +2,13 @@
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StudentInfoSheet } from '@/components/student-info-sheet';
 import type { student as Student } from '@/lib/data-types';
+import { useMemo } from 'react';
 
 export default function StudentSheetPage() {
   const params = useParams();
@@ -37,7 +38,7 @@ interface StudentSheetContentProps {
 
 function StudentSheetContent({ eleveId, schoolId, schoolData }: StudentSheetContentProps) {
   const firestore = useFirestore();
-  const studentRef = useMemoFirebase(() => 
+  const studentRef = useMemo(() => 
     doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`)
   , [firestore, schoolId, eleveId]);
 

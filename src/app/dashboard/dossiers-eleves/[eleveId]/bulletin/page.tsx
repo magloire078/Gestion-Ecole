@@ -3,7 +3,7 @@
 
 import { notFound, useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
-import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { ReportCard } from '@/components/report-card';
@@ -40,16 +40,16 @@ interface StudentReportContentProps {
 function StudentReportContent({ eleveId, schoolId, schoolData }: StudentReportContentProps) {
   const firestore = useFirestore();
   
-  const studentRef = useMemoFirebase(() => 
+  const studentRef = useMemo(() => 
     doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`)
   , [firestore, schoolId, eleveId]);
   const { data: studentData, loading: studentLoading } = useDoc<StudentWithClass>(studentRef);
 
-  const gradesQuery = useMemoFirebase(() =>
+  const gradesQuery = useMemo(() =>
     query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/notes`))
   , [firestore, schoolId, eleveId]);
   
-  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+  const teachersQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
 
   const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);

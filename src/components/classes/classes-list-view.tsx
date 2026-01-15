@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -28,7 +28,7 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
     const { user } = useUser();
     const canManageClasses = user?.profile?.permissions?.manageClasses;
 
-    const classesQuery = useMemoFirebase(() => {
+    const classesQuery = useMemo(() => {
         if (!schoolId) return null;
         const baseQuery = collection(firestore, `ecoles/${schoolId}/classes`);
         if (cycleId === 'all') {

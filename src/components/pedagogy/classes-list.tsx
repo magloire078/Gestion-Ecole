@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Search, LayoutGrid, List, PlusCircle } from 'lucide-react';
 import { ClassesGridView } from '@/components/classes/classes-grid-view';
 import { ClassesListView } from '@/components/classes/classes-list-view';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { cycle as Cycle } from '@/lib/data-types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
@@ -30,13 +30,13 @@ export function ClassesList() {
 
   const isDirectorOrAdmin = user?.profile?.permissions?.manageClasses;
 
-  const cyclesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
+  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [schoolId, firestore]);
   const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
 
   const cycles = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle & { id: string })).sort((a,b) => a.order - b.order) || [], [cyclesData]);
 
-  const allTeachersQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
-  const allNiveauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
+  const allTeachersQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
+  const allNiveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [schoolId, firestore]);
   const { data: teachersData, loading: teachersLoading } = useCollection(allTeachersQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(allNiveauxQuery);
   

@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -112,7 +112,7 @@ export function ClassesGridView({ cycleId, searchQuery, onEdit }: ClassesGridVie
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
 
-  const classesQuery = useMemoFirebase(() => {
+  const classesQuery = useMemo(() => {
     if (!schoolId) return null;
     const baseQuery = collection(firestore, `ecoles/${schoolId}/classes`);
     if (cycleId === 'all') {
@@ -121,7 +121,7 @@ export function ClassesGridView({ cycleId, searchQuery, onEdit }: ClassesGridVie
     return query(baseQuery, where('cycleId', '==', cycleId));
   }, [schoolId, cycleId, firestore]);
 
-  const teachersQuery = useMemoFirebase(() => {
+  const teachersQuery = useMemo(() => {
     if (!schoolId) return null;
     return query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
   }, [schoolId, firestore]);

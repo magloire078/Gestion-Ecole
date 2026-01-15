@@ -3,7 +3,7 @@
 
 import { notFound, useParams } from 'next/navigation';
 import { useMemo } from 'react';
-import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { PrintableTimetable } from '@/components/printable-timetable';
@@ -45,7 +45,7 @@ interface StudentTimetableContentProps {
 function StudentTimetableContent({ eleveId, schoolId, schoolName }: StudentTimetableContentProps) {
   const firestore = useFirestore();
 
-  const studentRef = useMemoFirebase(() => 
+  const studentRef = useMemo(() => 
     doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`)
   , [firestore, schoolId, eleveId]);
 
@@ -53,11 +53,11 @@ function StudentTimetableContent({ eleveId, schoolId, schoolName }: StudentTimet
   const student = studentData;
   const classId = student?.classId;
 
-  const timetableQuery = useMemoFirebase(() =>
+  const timetableQuery = useMemo(() =>
     (classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
   , [firestore, schoolId, classId]);
 
-  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')), [firestore, schoolId]);
+  const teachersQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')), [firestore, schoolId]);
 
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);
