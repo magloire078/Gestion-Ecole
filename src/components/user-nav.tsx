@@ -65,11 +65,18 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     localStorage.removeItem('parent_student_ids');
     toast({ title: "Déconnexion réussie", description: "Vous avez quitté le portail parent." });
     router.push('/parent-access');
+    router.refresh();
   };
-
+  
   const handleRegularLogout = async () => {
     try {
       await signOut(auth);
+      // Clean up local storage as a good practice
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('firebase:')) {
+          localStorage.removeItem(key);
+        }
+      });
       toast({
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté(e).",
@@ -87,7 +94,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
 
   const handleLogout = user?.isParent ? handleParentLogout : handleRegularLogout;
   
-  const isLoading = userLoading || (user && !user.isParent && (schoolLoading || !schoolData));
+  const isLoading = userLoading || (user && !user.isParent && (schoolLoading));
+
 
   if (!isClient || isLoading) {
     return (
@@ -214,6 +222,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       </DropdownMenuItem>
     </>
   );
+  
+  const hasPhoto = !!user?.photoURL;
 
   return (
     <DropdownMenu>
@@ -224,8 +234,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
            <div className={cn("flex flex-col items-start", collapsed && "hidden")}>
-              <span className="text-sm font-medium leading-none">{displayName}</span>
-            </div>
+              <span className="text-sm font-medium leading-none">{hasPhoto ? displayName : userRole}</span>
+           </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-64" align="end" forceMount><UserMenuContent /></DropdownMenuContent>
