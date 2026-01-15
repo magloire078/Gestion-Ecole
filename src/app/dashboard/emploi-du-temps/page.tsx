@@ -47,7 +47,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
@@ -89,9 +89,9 @@ export default function TimetablePage() {
   const [selectedClassId, setSelectedClassId] = useState<string>('all');
 
   // --- Firestore Data Hooks ---
-  const timetableQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`)) : null, [firestore, schoolId]);
-  const personnelQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
+  const timetableQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`)) : null, [firestore, schoolId]);
+  const personnelQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
+  const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
@@ -494,6 +494,8 @@ export default function TimetablePage() {
     </>
   );
 }
+    
+
     
 
     
