@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check } from "lucide-react";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { useUser } from "@/hooks/use-user";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -218,3 +218,5 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     </DropdownMenu>
   );
 }
+
+    
