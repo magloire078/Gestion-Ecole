@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -40,7 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -72,11 +71,11 @@ export function BookList({ schoolId }: BookListProps) {
   const { user } = useUser();
   const canManageLibrary = !!user?.profile?.permissions?.manageLibrary;
   
-  const booksQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)), [firestore, schoolId]);
+  const booksQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)), [firestore, schoolId]);
   const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
   const books: (LibraryBook & { id: string })[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook & { id: string })) || [], [booksData]);
   
-  const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+  const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const students: (Student & {id:string})[] = useMemo(() => studentsData?.map(d => ({id: d.id, ...d.data()} as Student & {id: string})) || [], [studentsData]);
 
