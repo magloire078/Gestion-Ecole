@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check } from "lucide-react";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth } from "@/firebase";
 import { useUser } from "@/hooks/use-user";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -34,11 +34,13 @@ interface UserNavProps {
   collapsed?: boolean;
 }
 
+type SubscriptionPlan = 'Essentiel' | 'Pro' | 'Premium' | 'Gratuit' | null;
+
 export function UserNav({ collapsed = false }: UserNavProps) {
   const { theme, setTheme } = useTheme();
   const auth = useAuth();
   const { user, loading: userLoading, isDirector, setActiveSchool } = useUser();
-  const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
+  const { schoolData, subscription, loading: schoolLoading, error: schoolError } = useSchoolData();
   const router = useRouter();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
@@ -46,23 +48,33 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  const handleLogout = async () => {
-    if (user?.isParent) {
-        localStorage.removeItem('parent_session_id');
-        localStorage.removeItem('parent_school_id');
-        localStorage.removeItem('parent_student_ids');
-        toast({ title: "Déconnexion réussie", description: "Vous avez quitté le portail parent." });
-        window.location.href = '/parent-access';
-        return;
+
+  useEffect(() => {
+    if (schoolError) {
+      toast({
+        variant: "destructive",
+        title: "Erreur de données",
+        description: "Impossible de charger les données de l'école.",
+      });
     }
+  }, [schoolError, toast]);
+  
+  const handleParentLogout = () => {
+    localStorage.removeItem('parent_session_id');
+    localStorage.removeItem('parent_school_id');
+    localStorage.removeItem('parent_student_ids');
+    toast({ title: "Déconnexion réussie", description: "Vous avez quitté le portail parent." });
+    router.push('/parent-access');
+  };
+
+  const handleRegularLogout = async () => {
     try {
       await signOut(auth);
       toast({
         title: "Déconnexion réussie",
         description: "Vous avez été déconnecté(e).",
       });
-      window.location.href = '/auth/login';
+      router.push('/auth/login');
     } catch (error) {
       console.error("Erreur de déconnexion: ", error);
       toast({
@@ -72,13 +84,15 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       });
     }
   };
+
+  const handleLogout = user?.isParent ? handleParentLogout : handleRegularLogout;
   
-  const isLoading = userLoading || (user && !user.isParent && schoolLoading) || (user && !user.isParent && !schoolData);
+  const isLoading = userLoading || (user && !user.isParent && (schoolLoading || !schoolData));
 
   if (!isClient || isLoading) {
     return (
       <div className={cn("flex items-center gap-2", collapsed ? "justify-center" : "w-full justify-start p-1 pr-2")}>
-        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className={cn("rounded-full", collapsed ? "h-9 w-9" : "h-8 w-8")} />
         {!collapsed && (<div className="flex flex-col space-y-1"><Skeleton className="h-3 w-20" /><Skeleton className="h-2 w-16" /></div>)}
       </div>
     );
@@ -105,7 +119,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() 
     : 'U';
 
-  const getPlanBadgeClasses = (plan?: 'Essentiel' | 'Pro' | 'Premium') => {
+  const getPlanBadgeClasses = (plan?: SubscriptionPlan) => {
     switch (plan) {
       case 'Essentiel': return 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800';
       case 'Pro': return 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800';
@@ -123,7 +137,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium leading-none">{displayName}</p>
             {planName && !isSuperAdmin && (
-              <Badge className={cn("text-xs", getPlanBadgeClasses(subscription?.plan as any))}>
+              <Badge className={cn("text-xs", getPlanBadgeClasses(subscription?.plan))}>
                 {planName}
               </Badge>
             )}
@@ -204,8 +218,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")}>
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")} aria-label="Menu utilisateur">
+          <Avatar className={cn(collapsed ? "h-9 w-9" : "h-8 w-8")}>
             <SafeImage src={user?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
@@ -218,5 +232,3 @@ export function UserNav({ collapsed = false }: UserNavProps) {
     </DropdownMenu>
   );
 }
-
-    

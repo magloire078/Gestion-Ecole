@@ -4,7 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, updateDoc as firestoreUpdateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, updateDoc as firestoreUpdateDoc, FirestoreError } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { getAuth } from 'firebase/auth';
@@ -21,6 +21,7 @@ export interface Subscription {
 }
 
 interface SchoolData extends DocumentData {
+    id?: string;
     name?: string;
     directorId?: string;
     directorFirstName?: string;
@@ -41,6 +42,7 @@ export function useSchoolData() {
     const firestore = useFirestore();
     const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (userLoading) {
@@ -64,13 +66,15 @@ export function useSchoolData() {
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
                 setSchoolData(null);
+                setError("Données de l'école non trouvées.");
             }
             setLoading(false);
-        }, (error) => {
-             console.error("Error fetching school data:", error);
+        }, (err: FirestoreError) => {
+             console.error("Error fetching school data:", err);
              const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
              errorEmitter.emit('permission-error', permissionError);
              setSchoolData(null);
+             setError(err.message);
              setLoading(false);
         });
 
@@ -111,7 +115,8 @@ export function useSchoolData() {
         directorName: `${schoolData?.directorFirstName || ''} ${schoolData?.directorLastName || ''}`.trim(),
         subscription: schoolData?.subscription,
         mainLogoUrl: schoolData?.mainLogoUrl,
-        loading, 
+        loading,
+        error,
         updateSchoolData 
     };
 }

@@ -9,6 +9,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import type { staff as Staff, school as School } from '@/lib/data-types';
 
+interface SchoolInfo extends School {
+  name: string;
+  address?: string;
+  mainLogoUrl?: string;
+  directorFirstName?: string;
+  directorLastName?: string;
+}
+
 export default function StaffSheetPage() {
   const params = useParams();
   const staffId = params.staffId as string;
@@ -49,12 +57,4 @@ export default function StaffSheetPage() {
       />
     </div>
   );
-}
-
-interface SchoolInfo {
-  name: string;
-  address?: string;
-  mainLogoUrl?: string;
-  directorFirstName?: string;
-  directorLastName?: string;
 }

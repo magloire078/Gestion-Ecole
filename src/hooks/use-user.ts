@@ -8,6 +8,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onIdTokenChanged, getAuth } from 'firebase/auth';
 import { useFirestore, useAuth } from '../firebase/client-provider';
 import type { UserProfile, user_root } from '@/lib/data-types';
+import { useRouter } from 'next/navigation';
 
 export interface AppUser {
     uid: string;
@@ -27,6 +28,7 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
   const auth = useAuth();
+  const router = useRouter();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -172,8 +174,9 @@ export function useUser() {
     } catch(e) {
         console.error("Failed to set active school:", e);
     } finally {
-      // Force reload to ensure all dependent hooks get the new state
-      window.location.reload();
+      // Refresh the page to ensure all dependent hooks get the new state
+      router.refresh();
+      setLoading(false);
     }
   };
 
