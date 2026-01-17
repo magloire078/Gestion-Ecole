@@ -1,8 +1,7 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useState, useEffect, useMemo } from 'react';
+import { useFirestore, useDoc } from '@/firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +16,7 @@ import { Loader2, Wrench } from 'lucide-react';
 export const SystemSettings = () => {
     const firestore = useFirestore();
     const { toast } = useToast();
-    const settingsRef = useMemoFirebase(() => doc(firestore, 'system_settings/default'), [firestore]);
+    const settingsRef = useMemo(() => doc(firestore, 'system_settings/default'), [firestore]);
     const { data: settingsData, loading: settingsLoading } = useDoc(settingsRef);
     
     const [maintenanceMode, setMaintenanceMode] = useState(false);

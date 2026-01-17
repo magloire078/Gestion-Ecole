@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Plus, Eye, Edit, Database, Trash2, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -27,7 +26,7 @@ import { cn } from '@/lib/utils';
 interface School {
     id: string;
     name: string;
-    createdAt: { seconds: number; nanoseconds: number };
+    createdAt: string;
     status?: 'active' | 'suspended' | 'deleted';
     subscription: {
         plan: 'Essentiel' | 'Pro' | 'Premium';
@@ -48,7 +47,7 @@ export function SchoolsTable() {
   const [schoolToRestore, setSchoolToRestore] = useState<School | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  const schoolsQuery = useMemoFirebase(() => query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc')), [firestore]);
+  const schoolsQuery = useMemo(() => query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc')), [firestore]);
   const { data: schoolsData, loading: schoolsLoading } = useCollection(schoolsQuery);
 
   const schools: School[] = useMemo(() => schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [], [schoolsData]);
@@ -154,7 +153,7 @@ export function SchoolsTable() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {school.createdAt ? format(new Date(school.createdAt.seconds * 1000), 'dd/MM/yyyy') : 'N/A'}
+                  {school.createdAt ? format(new Date(school.createdAt), 'dd/MM/yyyy', {locale: fr}) : 'N/A'}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">

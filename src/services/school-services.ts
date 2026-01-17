@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField, collection } from "firebase/firestore";
@@ -35,13 +34,13 @@ export const deleteSchool = async (
         target: schoolRef.path,
         details: { schoolId: schoolId, status: 'deleted' },
         ipAddress: 'N/A (client-side)',
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
     };
     batch.set(logRef, logData);
     
     const schoolUpdate = {
       status: 'deleted',
-      deletedAt: serverTimestamp()
+      deletedAt: new Date().toISOString()
     };
     batch.update(schoolRef, schoolUpdate);
 
@@ -86,7 +85,7 @@ export const restoreSchool = async (
         target: schoolRef.path,
         details: { schoolId: schoolId, status: 'active' },
         ipAddress: 'N/A (client-side)',
-        timestamp: serverTimestamp(),
+        timestamp: new Date().toISOString(),
     });
 
     batch.update(schoolRef, {

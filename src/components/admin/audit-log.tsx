@@ -1,13 +1,12 @@
-
 'use client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from '@/components/ui/table';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemo } from '@/firebase';
 import { collection, query, orderBy, limit as firestoreLimit, getDocs, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '../ui/badge';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -28,7 +27,7 @@ export const AuditLog = ({ limit }: { limit: number }) => {
   const [adminMap, setAdminMap] = useState<Map<string, string>>(new Map());
   const [adminsLoading, setAdminsLoading] = useState(true);
 
-  const logsQuery = useMemoFirebase(() => 
+  const logsQuery = useMemo(() => 
     query(collection(firestore, 'system_logs'), orderBy('timestamp', 'desc'), firestoreLimit(limit)),
     [firestore, limit]
   );
@@ -92,7 +91,7 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                     logs.map(log => (
                         <TableRow key={log.id}>
                             <TableCell className="text-xs text-muted-foreground">
-                                {format(new Date(log.timestamp), 'dd/MM HH:mm:ss')}
+                                {log.timestamp ? format(new Date(log.timestamp), 'dd/MM HH:mm:ss') : 'Date inconnue'}
                             </TableCell>
                             <TableCell className="text-xs font-medium">{adminMap.get(log.adminId) || log.adminId}</TableCell>
                             <TableCell>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,7 +21,7 @@ export function DashboardStatCards() {
   });
   const [loading, setLoading] = useState(true);
   
-  // Ces valeurs sont actuellement statiques mais pourraient être dynamiques à l'avenir
+  // These values are currently static but could be dynamic in the future
   const [systemHealth, setSystemHealth] = useState({
     status: 'healthy',
     uptime: 99.9,

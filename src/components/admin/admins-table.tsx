@@ -1,5 +1,3 @@
-
-// src/components/admin/admins-table.tsx
 'use client';
 import { useMemo, useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -95,5 +93,3 @@ export function AdminsTable() {
     </Card>
   );
 }
-
-    

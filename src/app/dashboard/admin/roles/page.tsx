@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -123,7 +122,7 @@ export default function RolesPage() {
                                     <div className="flex items-center gap-2">
                                         {role.isSystem && <Badge variant="secondary">Système</Badge>}
                                         {canManageSettings && !role.isSystem && (
-                                            <DropdownMenu onOpenChange={(open) => open && (event?.stopPropagation())}>
+                                            <DropdownMenu onOpenChange={(open) => { if(open) event?.stopPropagation()}}>
                                                 <DropdownMenuTrigger asChild>
                                                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
                                                         <MoreHorizontal className="h-4 w-4" />
