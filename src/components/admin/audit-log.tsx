@@ -1,12 +1,12 @@
 'use client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from '@/components/ui/table';
-import { useFirestore, useCollection, useMemo } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { collection, query, orderBy, limit as firestoreLimit, getDocs, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '../ui/skeleton';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from '../ui/badge';
 import type { UserProfile } from '@/lib/data-types';
 
