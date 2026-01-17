@@ -65,7 +65,7 @@ const RegularDashboard = () => {
       <h1 className="text-2xl font-bold">
           Tableau de Bord {schoolData?.name ? `- ${schoolData.name}` : ''}
       </h1>
-      <AnnouncementBanner />
+      
       <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />
       <StatCards schoolId={schoolId} />
       {gradesError && <Alert variant="destructive"><AlertDescription>{gradesError}</AlertDescription></Alert>}
