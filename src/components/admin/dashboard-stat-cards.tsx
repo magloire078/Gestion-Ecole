@@ -12,6 +12,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import type { school as School } from '@/lib/data-types';
+import { cn } from '@/lib/utils';
 
 export function DashboardStatCards() {
   const firestore = useFirestore();
@@ -60,7 +61,7 @@ export function DashboardStatCards() {
   }, [firestore]);
 
   const StatCard = ({ title, value, icon: Icon, loading, colorClass }: { title: string, value: string | number, icon: React.ElementType, loading: boolean, colorClass?: string }) => (
-    <Card className={colorClass?.replace('text-', 'border-')}>
+    <Card className={cn("shadow-md", colorClass?.replace('text-', 'border-'))}>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div>
@@ -80,7 +81,7 @@ export function DashboardStatCards() {
         value={systemHealth.status === 'healthy' ? '✅ Opérationnel' : '⚠️ Dégradé'} 
         icon={Cpu} 
         loading={false}
-        colorClass={systemHealth.status === 'healthy' ? 'text-green-500' : 'text-amber-500'}
+        colorClass="text-green-500"
       />
       <StatCard 
         title="Uptime (30j)" 
