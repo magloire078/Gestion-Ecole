@@ -3,16 +3,13 @@
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import Link from 'next/link';
-import { MessageSquare, User, BookOpen } from 'lucide-react';
-import type { student, message, libraryBook } from '@/lib/data-types';
+import { User, BookOpen } from 'lucide-react';
+import type { student, libraryBook } from '@/lib/data-types';
 
 interface RecentActivityProps {
     schoolId: string;
@@ -22,20 +19,18 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
     const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
-    const recentMessagesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), where('schoolId', '==', schoolId), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
     const recentBooksQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
 
     const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
-    const { data: messagesData, loading: messagesLoading } = useCollection(recentMessagesQuery);
     const { data: booksData, loading: booksLoading } = useCollection(recentBooksQuery);
     
-    const loading = studentsLoading || messagesLoading || booksLoading;
+    const loading = studentsLoading || booksLoading;
 
     const recentItems = [
         ...(studentsData?.map(doc => ({ type: 'student', ...doc.data() } as student & { type: 'student' })) || []),
-        ...(messagesData?.map(doc => ({ type: 'message', ...doc.data() } as message & { type: 'message' })) || []),
         ...(booksData?.map(doc => ({ type: 'book', ...doc.data() } as libraryBook & { type: 'book' })) || []),
-    ].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+    ].sort((a, b) => ((b.createdAt as any)?.seconds || 0) - ((a.createdAt as any)?.seconds || 0));
+
 
     if (!schoolId) {
         return (
@@ -83,13 +78,11 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                         <div key={index} className="flex items-center gap-4">
                             <div className="p-2 bg-muted rounded-full">
                                 {item.type === 'student' && <User className="h-5 w-5 text-muted-foreground" />}
-                                {item.type === 'message' && <MessageSquare className="h-5 w-5 text-muted-foreground" />}
                                 {item.type === 'book' && <BookOpen className="h-5 w-5 text-muted-foreground" />}
                             </div>
                             <div className="flex-1">
                                 <p className="text-sm font-medium">
                                     {item.type === 'student' && `Nouvel élève : ${item.firstName} ${item.lastName}`}
-                                    {item.type === 'message' && `Nouveau message : "${item.title}"`}
                                     {item.type === 'book' && `Nouveau livre : ${item.title}`}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
