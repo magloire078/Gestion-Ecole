@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -19,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { motion } from 'framer-motion';
 
 type PlanName = 'Essentiel' | 'Pro' | 'Premium';
 type ModuleName = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
@@ -137,6 +136,27 @@ export default function SubscriptionPage() {
         }
     ];
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+            staggerChildren: 0.1,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+            duration: 0.5,
+            },
+        },
+    };
+
     if (isLoading) {
         return (
              <div className="space-y-6">
@@ -183,47 +203,53 @@ export default function SubscriptionPage() {
                 </Card>
             )}
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <motion.div 
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 {plans.map(plan => {
                     const current = isCurrentPlan(plan.name as PlanName);
                     return (
-                        <Card key={plan.name} className={cn("flex flex-col transform transition-transform duration-300 hover:scale-[1.02] hover:shadow-2xl", current && "border-2 border-primary shadow-2xl scale-[1.02]")}>
-                            <CardHeader className="text-center">
-                                <CardTitle className="text-2xl flex items-center justify-center gap-2">
-                                    <span>{plan.name}</span>
-                                    {current && <Badge variant="default" className="text-xs">Actuel</Badge>}
-                                </CardTitle>
-                                <CardDescription>{plan.description}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
-                                <div>
-                                    <div className="text-center mb-6">
-                                        <span className="text-4xl font-bold">{plan.price}</span>
-                                        <span className="text-muted-foreground">{plan.priceDescription}</span>
+                        <motion.div key={plan.name} variants={itemVariants}>
+                            <Card className={cn("flex flex-col h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl", current && "border-2 border-primary shadow-2xl scale-[1.02]")}>
+                                <CardHeader className="text-center">
+                                    <CardTitle className="text-2xl flex items-center justify-center gap-2">
+                                        <span>{plan.name}</span>
+                                        {current && <Badge variant="default" className="text-xs">Actuel</Badge>}
+                                    </CardTitle>
+                                    <CardDescription>{plan.description}</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
+                                    <div>
+                                        <div className="text-center mb-6">
+                                            <span className="text-4xl font-bold">{plan.price}</span>
+                                            <span className="text-muted-foreground">{plan.priceDescription}</span>
+                                        </div>
+                                        <ul className="space-y-3 text-sm">
+                                            {plan.features.map(feature => (
+                                                <li key={feature} className="flex items-start gap-3">
+                                                    <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
+                                                    <span>{feature}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
                                     </div>
-                                    <ul className="space-y-3 text-sm">
-                                        {plan.features.map(feature => (
-                                            <li key={feature} className="flex items-start gap-3">
-                                                <CheckCircle className="h-5 w-5 text-emerald-500 mt-0.5 shrink-0" />
-                                                <span>{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                                <div className="pt-6 border-t">
-                                     <h4 className="text-sm font-semibold mb-3">Limites du plan :</h4>
-                                     <ul className="space-y-3 text-sm text-muted-foreground">
-                                        {plan.limits.map(limit => (
-                                            <li key={limit.text} className="flex items-center gap-3">
-                                                <limit.icon className="h-4 w-4" />
-                                                <span>{limit.text}</span>
-                                            </li>
-                                        ))}
-                                     </ul>
-                                </div>
-                            </CardContent>
-                            <CardFooter>
-                               {current ? (
+                                    <div className="pt-6 border-t">
+                                        <h4 className="text-sm font-semibold mb-3">Limites du plan :</h4>
+                                        <ul className="space-y-3 text-sm text-muted-foreground">
+                                            {plan.limits.map(limit => (
+                                                <li key={limit.text} className="flex items-center gap-3">
+                                                    <limit.icon className="h-4 w-4" />
+                                                    <span>{limit.text}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </CardContent>
+                                <CardFooter>
+                                {current ? (
                                    <Button className="w-full" disabled>Votre Plan Actuel</Button>
                                 ) : (
                                     <Button 
@@ -237,10 +263,11 @@ export default function SubscriptionPage() {
                                     </Button>
                                 )}
                             </CardFooter>
-                        </Card>
+                            </Card>
+                        </motion.div>
                     )
                 })}
-            </div>
+            </motion.div>
             {error && (
                 <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
