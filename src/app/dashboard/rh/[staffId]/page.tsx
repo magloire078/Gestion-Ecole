@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -16,7 +17,6 @@ import type { staff as Staff, class_type as Class, admin_role as AdminRole, time
 import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
-import { SafeImage } from '@/components/ui/safe-image';
 import { StaffEditForm } from '@/components/rh/staff-edit-form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -212,7 +212,7 @@ export default function StaffProfilePage() {
                                 currentImageUrl={staffMember.photoURL}
                             >
                                 <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
-                                    <SafeImage src={staffMember.photoURL} alt={staffFullName} width={96} height={96} className="rounded-full" />
+                                    <AvatarImage src={staffMember.photoURL || undefined} alt={staffFullName} />
                                     <AvatarFallback>{fallback}</AvatarFallback>
                                 </Avatar>
                             </ImageUploader>

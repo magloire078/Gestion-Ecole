@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { SafeImage } from './ui/safe-image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { BookOpen } from 'lucide-react';
 
@@ -21,14 +21,12 @@ interface LogoProps {
 export function Logo({ compact = false, schoolName, logoUrl }: LogoProps) {
   return (
     <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
-        <SafeImage 
-            src={logoUrl} 
-            alt={schoolName || 'Logo École'} 
-            width={36} 
-            height={36} 
-            className={cn("object-contain transition-all duration-300", compact ? "h-9 w-9" : "h-8 w-8")}
-            fallback={<DefaultLogo compact={compact} />}
-        />
+        <Avatar className={cn("bg-transparent", compact ? "h-9 w-9" : "h-8 w-8")}>
+            <AvatarImage src={logoUrl || undefined} alt={schoolName || 'Logo École'} className="object-contain" />
+            <AvatarFallback className="bg-transparent">
+                 <DefaultLogo compact={compact} />
+            </AvatarFallback>
+        </Avatar>
         {!compact && (
           <div className="flex flex-col">
             <h1 className="text-lg font-bold font-headline leading-tight">{schoolName || 'GèreEcole'}</h1>

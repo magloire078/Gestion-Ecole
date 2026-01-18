@@ -25,7 +25,6 @@ import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "./ui/skeleton";
 import { cn } from "@/lib/utils";
-import { SafeImage } from "./ui/safe-image";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
@@ -230,7 +229,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className={cn("h-auto rounded-full p-0 flex items-center gap-2", collapsed ? "w-9 h-9" : "w-full justify-start p-1 pr-2")} aria-label="Menu utilisateur">
           <Avatar className={cn(collapsed ? "h-9 w-9" : "h-8 w-8")}>
-            <SafeImage src={user?.photoURL} alt={displayName} width={32} height={32} className="rounded-full" />
+            <AvatarImage src={user?.photoURL || undefined} alt={displayName} />
             <AvatarFallback>{fallback}</AvatarFallback>
           </Avatar>
            <div className={cn("flex flex-col items-start", collapsed && "hidden")}>

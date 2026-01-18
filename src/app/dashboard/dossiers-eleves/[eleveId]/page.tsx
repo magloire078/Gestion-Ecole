@@ -20,7 +20,6 @@ import type { staff as Staff, class_type as Class, student as Student, fee as Fe
 import { ImageUploader } from '@/components/image-uploader';
 import { useToast } from '@/hooks/use-toast';
 import { updateStudentPhoto } from '@/services/student-services';
-import { SafeImage } from '@/components/ui/safe-image';
 import { StudentEditForm } from '@/components/student-edit-form';
 import { PaymentsTab } from '@/components/students/payments-tab';
 import { GradesTab } from '@/components/students/grades-tab';
@@ -158,7 +157,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                              currentImageUrl={student.photoUrl}
                         >
                             <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
-                                <SafeImage src={student.photoUrl} alt={studentFullName} width={64} height={64} className="rounded-full" />
+                                <AvatarImage src={student.photoUrl || undefined} alt={studentFullName} />
                                 <AvatarFallback>{fallback}</AvatarFallback>
                             </Avatar>
                         </ImageUploader>

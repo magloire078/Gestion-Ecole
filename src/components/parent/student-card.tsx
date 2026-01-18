@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -7,7 +8,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import type { student as Student, gradeEntry as GradeEntry, absence as Absence } from '@/lib/data-types';
-import { SafeImage } from '../ui/safe-image';
 import { ChevronRight, TrendingUp, Wallet, UserX } from 'lucide-react';
 import { useMemo } from 'react';
 import { useCollection } from '@/firebase';
@@ -80,7 +80,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
                 <CardHeader className="flex flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1">
                         <Avatar className="h-16 w-16">
-                            <SafeImage src={student.photoUrl} alt={studentFullName} />
+                            <AvatarImage src={student.photoUrl || undefined} alt={studentFullName} />
                             <AvatarFallback className="text-xl">{fallback}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1">

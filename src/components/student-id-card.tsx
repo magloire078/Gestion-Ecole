@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useRef } from 'react';
@@ -8,7 +9,6 @@ import { Printer, Download } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import QRCode from "react-qr-code";
 import type { student as Student } from '@/lib/data-types';
-import { SafeImage } from './ui/safe-image';
 
 interface SchoolInfo {
   name: string;
@@ -41,7 +41,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
                 <div ref={cardRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-blue-900/50 p-6 rounded-t-xl">
                     <header className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-2">
-                             {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={40} height={40} className="object-contain" />}
+                             {school.mainLogoUrl && <AvatarImage src={school.mainLogoUrl} alt={school.name} className="object-contain h-10 w-10" />}
                             <h1 className="font-bold text-lg">{school.name}</h1>
                         </div>
                         <p className="text-xs font-mono">Année {`${currentYear - 1}-${currentYear}`}</p>
@@ -49,7 +49,7 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
 
                     <div className="flex items-center gap-6">
                         <Avatar className="h-28 w-28 border-4 border-white shadow-md">
-                            <SafeImage src={student.photoUrl} alt={studentFullName} width={112} height={112} data-ai-hint="student portrait" className="rounded-full" />
+                            <AvatarImage src={student.photoUrl || undefined} alt={studentFullName} data-ai-hint="student portrait" />
                             <AvatarFallback className="text-3xl">{fallback}</AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
