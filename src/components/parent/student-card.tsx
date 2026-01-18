@@ -1,7 +1,6 @@
-
 'use client';
 
-import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { doc, collection, query, orderBy, limit, where } from 'firebase/firestore';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +10,7 @@ import type { student as Student, gradeEntry as GradeEntry, absence as Absence }
 import { SafeImage } from '../ui/safe-image';
 import { ChevronRight, TrendingUp, Wallet, UserX } from 'lucide-react';
 import { useMemo } from 'react';
+import { useCollection } from '@/firebase';
 
 interface ParentStudentCardProps {
     schoolId: string;
@@ -30,13 +30,13 @@ const calculateGeneralAverage = (grades: GradeEntry[]) => {
 export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProps) {
     const firestore = useFirestore();
 
-    const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`), [firestore, schoolId, studentId]);
+    const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`), [firestore, schoolId, studentId]);
     const { data: student, loading: studentLoading } = useDoc<Student>(studentRef);
 
-    const gradesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`)), [firestore, schoolId, studentId]);
+    const gradesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`)), [firestore, schoolId, studentId]);
     const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
     
-    const absencesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/absences`), where('studentId', '==', studentId), orderBy('date', 'desc'), limit(30)), [firestore, schoolId, studentId]);
+    const absencesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/absences`), where('studentId', '==', studentId), orderBy('date', 'desc'), limit(30)), [firestore, schoolId, studentId]);
     const { data: absencesData, loading: absencesLoading } = useCollection(absencesQuery);
     
     const studentAbsences = useMemo(() => absencesData?.length || 0, [absencesData]);
@@ -75,7 +75,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
     const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (
-        <Link href={`/dashboard/dossiers-eleves/${studentId}`}>
+        <Link href={`/dashboard/parent/student/${studentId}`}>
             <Card className="hover:bg-muted/50 transition-colors">
                 <CardHeader className="flex flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4 flex-1">
