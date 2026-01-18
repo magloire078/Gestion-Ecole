@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -296,5 +294,3 @@ function PageContent({ eleveId, schoolId, schoolLoading }: { eleveId: string, sc
     <StudentProfileContent eleveId={eleveId} schoolId={schoolId} initialTab={initialTab} />
   );
 }
-
-    

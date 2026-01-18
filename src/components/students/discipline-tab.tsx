@@ -6,7 +6,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -49,7 +49,7 @@ export function DisciplineTab({ schoolId, studentId }: DisciplineTabProps) {
 
     const [isFormOpen, setIsFormOpen] = useState(false);
 
-    const incidentsQuery = useMemoFirebase(() => 
+    const incidentsQuery = useMemo(() => 
         query(
             collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/incidents_disciplinaires`), 
             orderBy('date', 'desc')
@@ -193,5 +193,3 @@ export function DisciplineTab({ schoolId, studentId }: DisciplineTabProps) {
         </>
     );
 }
-
-    
