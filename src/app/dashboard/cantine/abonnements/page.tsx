@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -14,7 +13,7 @@ import { PlusCircle, Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { canteenSubscription as CanteenSubscription, student as Student } from '@/lib/data-types';
-import { SubscriptionForm } from './subscription-form';
+import { SubscriptionForm } from '@/components/cantine/subscription-form';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,13 +33,15 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { useSchoolData } from '@/hooks/use-school-data';
 
 interface SubscriptionWithStudentName extends CanteenSubscription {
     studentName?: string;
     id: string;
 }
 
-export function SubscriptionList({ schoolId }: { schoolId: string }) {
+export default function AbonnementsCantinePage() {
+  const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
@@ -52,8 +53,8 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<(SubscriptionWithStudentName) | null>(null);
 
-  const subscriptionsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`)), [firestore, schoolId]);
-  const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+  const subscriptionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`)) : null, [firestore, schoolId]);
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
 
   const { data: subscriptionsData, loading: subscriptionsLoading } = useCollection(subscriptionsQuery);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
@@ -105,7 +106,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
     }
   };
 
-  const isLoading = subscriptionsLoading || studentsLoading;
+  const isLoading = schoolLoading || subscriptionsLoading || studentsLoading;
   
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -122,7 +123,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
         <CardHeader>
           <div className="flex justify-between items-center">
             <div>
-              <CardTitle>Abonnements Cantine</CardTitle>
+              <CardTitle>Abonnements à la Cantine</CardTitle>
               <CardDescription>Liste des élèves abonnés au service de cantine.</CardDescription>
             </div>
             {canManageContent && (
@@ -205,7 +206,7 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
                 </DialogDescription>
             </DialogHeader>
             <SubscriptionForm 
-                schoolId={schoolId}
+                schoolId={schoolId!}
                 students={(studentsData?.docs || []).map(d => ({id: d.id, ...d.data()} as Student & {id: string}))}
                 subscription={editingSubscription}
                 onSave={handleFormSave}

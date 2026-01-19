@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DailyMenu } from '@/components/cantine/daily-menu';
@@ -6,7 +5,6 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { SubscriptionList } from '@/components/cantine/subscription-list';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
@@ -67,7 +65,22 @@ export default function CantinePage() {
                 </Card>
             </TabsContent>
              <TabsContent value="abonnements" className="mt-6">
-                <SubscriptionList schoolId={schoolId} />
+                 <Card className="flex flex-col items-center justify-center h-64 text-center">
+                    <CardHeader>
+                        <CardTitle>Gestion des Abonnements</CardTitle>
+                        <CardDescription>
+                           Accédez à la page dédiée pour voir et gérer tous les abonnements à la cantine.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild>
+                            <Link href="/dashboard/cantine/abonnements">
+                                Voir les abonnements
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </TabsContent>
         </Tabs>
     </div>
