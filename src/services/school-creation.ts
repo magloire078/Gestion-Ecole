@@ -32,6 +32,7 @@ export class SchoolCreationService {
     try {
       // Import dynamique pour éviter les problèmes de SSR
       const { doc, writeBatch, collection, serverTimestamp } = await import('firebase/firestore');
+      const { getStorage, ref, uploadString } = await import('firebase/storage');
       
       const batch = writeBatch(this.firestore);
 
@@ -94,6 +95,15 @@ export class SchoolCreationService {
       batch.set(personnelRef, personnelData);
       
       await batch.commit();
+
+      // 5. Créer un fichier placeholder pour initialiser le dossier de l'école dans Storage
+      const storage = getStorage(this.firestore.app);
+      const placeholderPath = `ecoles/${schoolId}/.placeholder`;
+      const placeholderRef = ref(storage, placeholderPath);
+      await uploadString(placeholderRef, 'Init').catch(err => {
+        // Log l'erreur mais ne pas faire échouer la création de l'école
+        console.warn(`Could not create storage placeholder for school ${schoolId}:`, err);
+      });
       
       return {
         success: true,
