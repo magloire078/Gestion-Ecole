@@ -244,7 +244,7 @@ export default function CreateSchoolPage() {
                             field.onChange(url); 
                             setLogoUrl(url); 
                           }}
-                          storagePath={`school-logos/${user.uid}/`}
+                          storagePath={`temp-logos/${user.uid}/`}
                         >
                           <div className="relative group cursor-pointer">
                             <Avatar className="h-32 w-32 border-4 border-background shadow-lg group-hover:opacity-90 transition-opacity">

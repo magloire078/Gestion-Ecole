@@ -221,7 +221,7 @@ export default function SettingsPage() {
                                 {field.value && <img src={field.value} alt="Logo" className="w-20 h-20 object-contain border rounded-md p-1" />}
                                  <div className="space-y-2 flex-1">
                                     <FormLabel>Logo de l'école</FormLabel>
-                                    <ImageUploader onUploadComplete={handleLogoUploadComplete} storagePath={`ecoles/${schoolId || 'logos'}/`}>
+                                    <ImageUploader onUploadComplete={handleLogoUploadComplete} storagePath={`ecoles/${schoolId}/logos/`}>
                                         <Button type="button" variant="outline" disabled={!schoolId}>
                                           <span className="flex items-center gap-2"> <Upload className="h-4 w-4"/> {field.value ? "Changer" : "Télécharger"} </span>
                                         </Button>
