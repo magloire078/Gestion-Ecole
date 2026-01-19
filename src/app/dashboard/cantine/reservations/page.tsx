@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,8 +39,8 @@ export default function ReservationsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<ReservationWithStudentName | null>(null);
 
-  const reservationsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cantine_reservations`)) : null, [firestore, schoolId]);
-  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
+  const reservationsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cantine_reservations`)) : null, [firestore, schoolId]);
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
 
   const { data: reservationsData, loading: reservationsLoading } = useCollection(reservationsQuery);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);

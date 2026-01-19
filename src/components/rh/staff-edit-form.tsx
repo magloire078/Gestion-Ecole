@@ -13,7 +13,7 @@ import { Dialog, DialogFooter, DialogContent, DialogHeader, DialogTitle, DialogD
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { allSubjects } from '@/lib/subjects';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useAuth, useUser } from '@/firebase';
 import { doc, setDoc, getDoc, writeBatch, collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";

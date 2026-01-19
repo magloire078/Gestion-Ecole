@@ -37,7 +37,7 @@ import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, addDoc, setDoc, deleteDoc, doc, updateDoc, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -82,15 +82,15 @@ export default function ClesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [trousseauToDelete, setTrousseauToDelete] = useState<(KeyTrousseau & { id: string }) | null>(null);
 
-  const trousseauxQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_trousseaux`)) : null, [firestore, schoolId]);
+  const trousseauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_trousseaux`)) : null, [firestore, schoolId]);
   const { data: trousseauxData, loading: trousseauxLoading } = useCollection(trousseauxQuery);
   const trousseaux = useMemo(() => trousseauxData?.map(d => ({ id: d.id, ...d.data() } as KeyTrousseau & { id: string })) || [], [trousseauxData]);
   
-  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   const staffMembers = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as staff & { id: string })) || [], [staffData]);
   
-  const logsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_log`), orderBy('timestamp', 'desc')) : null, [firestore, schoolId]);
+  const logsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cles_log`), orderBy('timestamp', 'desc')) : null, [firestore, schoolId]);
   const { data: logsData, loading: logsLoading } = useCollection(logsQuery);
   
   const trousseauxMap = useMemo(() => new Map(trousseaux.map(t => [t.id, t.name])), [trousseaux]);

@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,8 +52,8 @@ export function SubscriptionList({ schoolId }: { schoolId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [subscriptionToDelete, setSubscriptionToDelete] = useState<(SubscriptionWithStudentName) | null>(null);
 
-  const subscriptionsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`)), [firestore, schoolId]);
-  const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+  const subscriptionsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/cantine_abonnements`)), [firestore, schoolId]);
+  const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
 
   const { data: subscriptionsData, loading: subscriptionsLoading } = useCollection(subscriptionsQuery);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
