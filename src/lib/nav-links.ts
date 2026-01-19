@@ -33,6 +33,7 @@ import {
     KeyRound,
     Handshake,
     LifeBuoy,
+    ShieldAlert,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -67,6 +68,7 @@ export const NAV_LINKS: NavGroup[] = [
       icon: School,
       links: [
         { href: '/dashboard/dossiers-eleves', label: 'Élèves', icon: Users, permission: 'viewUsers' },
+        { href: '/dashboard/discipline', label: 'Discipline', icon: ShieldAlert, permission: 'manageDiscipline' },
         { href: '/dashboard/sante', label: 'Santé', icon: HeartPulse, permission: 'manageMedical', module: 'sante' },
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
