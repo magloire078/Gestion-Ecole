@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Bot, Loader2 } from 'lucide-react';
@@ -30,7 +30,7 @@ const studentSchema = z.object({
   discountReason: z.string().optional(),
   amountDue: z.coerce.number().min(0, "Le montant dû ne peut pas être négatif."),
   tuitionStatus: z.enum(['Soldé', 'En retard', 'Partiel']),
-  status: z.enum(['Actif', 'En attente', 'Radié']),
+  status: z.enum(['Actif', 'En attente', 'Transféré', 'Diplômé', 'Radié']),
   feedback: z.string().optional(),
   grade: z.string().optional(),
 });
@@ -201,7 +201,22 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
                         </FormItem>
                     )}
                     />
-                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut Élève</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif</SelectItem><SelectItem value="En attente">En attente</SelectItem><SelectItem value="Radié">Radié</SelectItem></SelectContent></Select></FormItem>)} />
+                    <FormField control={form.control} name="status" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Statut Élève</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                    <SelectItem value="Actif">Actif</SelectItem>
+                                    <SelectItem value="En attente">En attente</SelectItem>
+                                    <SelectSeparator />
+                                    <SelectItem value="Transféré">Transféré</SelectItem>
+                                    <SelectItem value="Diplômé">Diplômé</SelectItem>
+                                    <SelectItem value="Radié">Radié</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </FormItem>
+                    )} />
                 </TabsContent>
                 <TabsContent value="tuition" className="mt-0 space-y-4">
                     <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
@@ -242,3 +257,5 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
     </Form>
   );
 }
+
+    

@@ -215,7 +215,7 @@ export type student = {
     matricule: string;
     firstName: string;
     lastName: string;
-    status: "Actif" | "En attente" | "Radié";
+    status: "Actif" | "En attente" | "Transféré" | "Diplômé" | "Radié";
     dateOfBirth: string;
     placeOfBirth: string;
     gender: "Masculin" | "Féminin";
@@ -241,6 +241,7 @@ export type student = {
     feedback?: string;
     createdAt?: string;
     inscriptionYear?: number;
+    id?: string;
 };
 
 export type discipline_incident = {
@@ -285,6 +286,7 @@ export type niveau = {
     description?: string;
     createdAt?: string;
     updatedAt?: string;
+    id?: string;
 };
 
 export type classe = {
@@ -314,6 +316,7 @@ export type classe = {
     building?: string;
     createdAt?: string;
     updatedAt?: string;
+    id?: string;
 };
 
 export type studentClassAssignment = {
@@ -341,6 +344,7 @@ export type timetableEntry = {
     endTime: string;
     classroom?: string;
     color?: string;
+    id?: string;
 };
 
 export type gradeEntry = {
@@ -349,6 +353,7 @@ export type gradeEntry = {
     date: string;
     grade: number;
     coefficient: number;
+    id?: string;
 };
 
 export type accountingTransaction = {
@@ -369,6 +374,7 @@ export type payment = {
     payerLastName: string;
     method: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
     payerContact?: string;
+    id?: string;
 };
 
 export type libraryBook = {
@@ -377,6 +383,7 @@ export type libraryBook = {
     author: string;
     quantity: number;
     createdAt?: string;
+    id?: string;
 };
 
 export type libraryLoan = {
@@ -394,7 +401,7 @@ export type message = {
     content: string;
     senderId: string;
     senderName: string;
-    createdAt: string;
+    createdAt: any;
     recipients: {
         all?: boolean;
         teachers?: boolean;
@@ -414,6 +421,7 @@ export type absence = {
     justified: boolean;
     recordedBy: string;
     reason?: string;
+    id?: string;
 };
 
 export type fee = {
@@ -422,6 +430,7 @@ export type fee = {
     amount: string;
     installments: string;
     details?: string;
+    id?: string;
 };
 
 export type subject = {
@@ -457,6 +466,7 @@ export type canteenMenu = {
         };
         allergies?: string[];
     };
+    id?: string;
 };
 
 export type canteenReservation = {
@@ -490,6 +500,7 @@ export type canteenSubscription = {
     autoRenew?: boolean;
     missedMeals?: number;
     remainingMeals?: number;
+    id?: string;
 };
 
 export type bus = {
@@ -548,7 +559,8 @@ export type transportSubscription = {
     status: "active" | "inactive";
     startDate: string;
     endDate: string;
-    paymentStatus: "unpaid" | "paid";
+    paymentStatus?: "unpaid" | "paid";
+    id?: string;
 };
 
 export type building = {
@@ -700,3 +712,5 @@ export interface UserProfile extends staff {
     permissions?: Partial<admin_role['permissions']>;
     isAdmin?: boolean;
 }
+
+    

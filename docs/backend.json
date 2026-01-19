@@ -300,7 +300,7 @@
             "firstName": { "type": "string", "description": "Le prénom de l'élève." },
             "lastName": { "type": "string", "description": "Le nom de famille de l'élève." },
             "photoUrl": { "type": "string", "format": "uri", "description": "URL de la photo de profil de l'élève." },
-            "status": { "type": "string", "enum": ["Actif", "En attente", "Radié"], "description": "Statut actuel de l'élève." },
+            "status": { "type": "string", "enum": ["Actif", "En attente", "Transféré", "Diplômé", "Radié"], "description": "Statut actuel de l'élève." },
             "classId": { "type": "string", "description": "L'identifiant de la classe actuelle de l'élève." },
             "class": { "type": "string", "description": "Le nom de la classe actuelle de l'élève." },
             "cycle": { "type": "string", "description": "Le nom du cycle actuel de l'élève." },
@@ -1285,3 +1285,5 @@
     }
   }
 }
+
+    

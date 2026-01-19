@@ -64,10 +64,13 @@ const getStatusBadgeVariant = (status: Student['status']) => {
     switch (status) {
         case 'Actif':
             return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
-        case 'Radié':
-            return 'bg-destructive/80 text-destructive-foreground';
         case 'En attente':
             return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
+        case 'Transféré':
+        case 'Diplômé':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        case 'Radié':
+            return 'bg-destructive/80 text-destructive-foreground';
         default:
             return 'bg-secondary text-secondary-foreground';
     }
@@ -100,8 +103,9 @@ export default function StudentsPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const students = useMemo(() => {
+    const activeStatuses = ['Actif', 'En attente'];
     return allStudents
-      .filter(student => student.status !== 'Radié') // Exclure les élèves radiés
+      .filter(student => activeStatuses.includes(student.status))
       .filter(student =>
         `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -378,3 +382,5 @@ export default function StudentsPage() {
     </>
   );
 }
+
+    
