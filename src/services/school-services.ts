@@ -1,3 +1,4 @@
+
 'use client';
 
 import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField, collection } from "firebase/firestore";
@@ -10,17 +11,17 @@ import { FirestorePermissionError } from "@/firebase/errors";
  * @param schoolId - L'ID de l'école à marquer comme supprimée.
  * @param adminId - L'ID de l'administrateur qui effectue l'action.
  */
-export const deleteSchool = async (
+export const deleteSchool = (
     firestore: Firestore,
     schoolId: string,
     adminId: string,
 ): Promise<void> => {
     
     if (!schoolId) {
-        throw new Error("L'ID de l'école est requis pour la suppression.");
+        return Promise.reject(new Error("L'ID de l'école est requis pour la suppression."));
     }
      if (!adminId) {
-        throw new Error("L'ID de l'administrateur est requis pour la journalisation.");
+        return Promise.reject(new Error("L'ID de l'administrateur est requis pour la journalisation."));
     }
     
     const schoolRef = doc(firestore, `ecoles/${schoolId}`);
@@ -50,7 +51,6 @@ export const deleteSchool = async (
             operation: 'write',
         });
         errorEmitter.emit('permission-error', permissionError);
-        // Rethrow pour que l'appelant puisse aussi gérer l'erreur
         throw permissionError;
     });
 };
@@ -62,16 +62,16 @@ export const deleteSchool = async (
  * @param schoolId - L'ID de l'école à restaurer.
  * @param adminId - L'ID de l'administrateur qui effectue l'action.
  */
-export const restoreSchool = async (
+export const restoreSchool = (
     firestore: Firestore,
     schoolId: string,
     adminId: string,
 ): Promise<void> => {
     if (!schoolId) {
-        throw new Error("L'ID de l'école est requis pour la restauration.");
+       return Promise.reject(new Error("L'ID de l'école est requis pour la restauration."));
     }
     if (!adminId) {
-        throw new Error("L'ID de l'administrateur est requis pour la journalisation.");
+        return Promise.reject(new Error("L'ID de l'administrateur est requis pour la journalisation."));
     }
 
     const schoolRef = doc(firestore, `ecoles/${schoolId}`);

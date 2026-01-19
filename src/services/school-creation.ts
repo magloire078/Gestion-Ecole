@@ -112,7 +112,6 @@ export class SchoolCreationService {
       };
       
     } catch (error: any) {
-      console.error('Erreur création école:', error);
        errorEmitter.emit('permission-error', new FirestorePermissionError({
           path: '[BATCH] /ecoles & /users & /personnel',
           operation: 'write'

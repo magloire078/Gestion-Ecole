@@ -126,7 +126,7 @@ export default function StudentsPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteStudent = async () => {
+  const handleDeleteStudent = () => {
     if (!schoolId || !studentToDelete || !studentToDelete.id) return;
 
     const batch = writeBatch(firestore);
@@ -139,19 +139,21 @@ export default function StudentsPage() {
         batch.update(classDocRef, { studentCount: increment(-1) });
     }
 
-    try {
-        await batch.commit();
+    batch.commit()
+    .then(() => {
         toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
-    } catch(serverError) {
+    })
+    .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: `[BATCH WRITE] /ecoles/${schoolId}/eleves/${studentToDelete.id} and class update`,
             operation: 'delete'
         });
         errorEmitter.emit('permission-error', permissionError);
-    } finally {
+    })
+    .finally(() => {
         setIsDeleteDialogOpen(false);
         setStudentToDelete(null);
-    }
+    });
   }
   
   const getAge = (dateOfBirth: string | undefined) => {
@@ -257,7 +259,7 @@ export default function StudentsPage() {
                                 </Avatar>
                                 <div>
                                     <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
-                                        <p className="font-medium">{student.firstName} {student.lastName}</p>
+                                        <p className="font-medium">{student.firstName} ${student.lastName}</p>
                                     </Link>
                                     <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id?.substring(0,8)}</div>
                                 </div>

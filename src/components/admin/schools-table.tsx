@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -56,40 +57,45 @@ export function SchoolsTable() {
     setSchoolToDelete(school);
   };
   
-  const handleDeleteSchool = async () => {
+  const handleDeleteSchool = () => {
     if (!schoolToDelete || !user?.uid) return;
     
     setIsDeleting(true);
-    try {
-        await deleteSchool(firestore, schoolToDelete.id, user.uid);
+    deleteSchool(firestore, schoolToDelete.id, user.uid)
+      .then(() => {
         toast({
             title: "École mise à la corbeille",
             description: `L'école "${schoolToDelete.name}" a été marquée comme supprimée.`,
         });
-    } catch (error) {
-        // L'erreur est déjà gérée et notifiée par l'error emitter dans le service
-    } finally {
+      })
+      .catch((error) => {
+        // L'erreur est déjà gérée par le service. Pas besoin de toast ici.
+        console.error("Component caught error during school deletion:", error);
+      })
+      .finally(() => {
         setIsDeleting(false);
         setSchoolToDelete(null);
-    }
+      });
   };
 
-  const handleRestoreSchool = async (school: School) => {
+  const handleRestoreSchool = (school: School) => {
     if (!user?.uid) return;
     setSchoolToRestore(school);
     setIsRestoring(true);
-    try {
-        await restoreSchool(firestore, school.id, user.uid);
-        toast({
-            title: "École restaurée",
-            description: `L'école "${school.name}" est à nouveau active.`,
+    restoreSchool(firestore, school.id, user.uid)
+        .then(() => {
+             toast({
+                title: "École restaurée",
+                description: `L'école "${school.name}" est à nouveau active.`,
+            });
+        })
+        .catch((error) => {
+            // Erreur gérée par le service.
+        })
+        .finally(() => {
+            setIsRestoring(false);
+            setSchoolToRestore(null);
         });
-    } catch (error) {
-         // L'erreur est déjà gérée et notifiée par l'error emitter dans le service
-    } finally {
-        setIsRestoring(false);
-        setSchoolToRestore(null);
-    }
   }
 
   const getPlanBadgeVariant = (plan: string) => {
