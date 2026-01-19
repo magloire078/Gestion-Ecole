@@ -68,6 +68,18 @@ export function useUser() {
                 const profileSnap = await getDoc(staffProfileRef);
                 if (profileSnap.exists()) {
                     userProfile = profileSnap.data() as UserProfile;
+                    // Check for adminRole and fetch permissions
+                    if (userProfile.adminRole) {
+                        const roleRef = doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`);
+                        try {
+                            const roleSnap = await getDoc(roleRef);
+                            if (roleSnap.exists()) {
+                                userProfile.permissions = roleSnap.data().permissions;
+                            }
+                        } catch (e) {
+                            console.error("Error fetching admin role:", e);
+                        }
+                    }
                 }
             }
             
@@ -141,7 +153,7 @@ export function useUser() {
     });
 
     return () => unsubscribe();
-  }, [isClient, firestore, auth]);
+  }, [isClient, firestore, auth, reloadUser]);
 
   const isDirector = user?.profile?.role === 'directeur';
   
@@ -155,28 +167,14 @@ export function useUser() {
     const userRootRef = doc(firestore, 'users', user.uid);
     try {
         await updateDoc(userRootRef, { activeSchoolId: schoolId });
-        
-        const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
-        const profileSnap = await getDoc(staffProfileRef);
-        const userProfile = profileSnap.exists() ? profileSnap.data() as UserProfile : undefined;
-
-        setUser(prevUser => {
-            if (!prevUser) return null;
-            return {
-                ...prevUser,
-                schoolId: schoolId,
-                profile: userProfile,
-                displayName: userProfile?.displayName || prevUser.authUser?.displayName,
-                photoURL: userProfile?.photoURL || prevUser.authUser?.photoURL,
-            };
-        });
-        
+        // After updating the active school, we can just reload the user data
+        // which will re-trigger the main useEffect
+        await reloadUser();
+        router.refresh(); // Refresh Next.js router cache
     } catch(e) {
         console.error("Failed to set active school:", e);
     } finally {
-      // Refresh the page to ensure all dependent hooks get the new state
-      router.refresh();
-      setLoading(false);
+      // setLoading(false) will be handled by the main useEffect
     }
   };
 
