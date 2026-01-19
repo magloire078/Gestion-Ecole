@@ -131,15 +131,12 @@ export default function CreateSchoolPage() {
       if (result.success) {
         toast({
           title: '🎉 École créée avec succès !',
-          description: "Redirection vers votre tableau de bord...",
+          description: "Étape suivante : configuration de la structure.",
           duration: 5000,
         });
         
-        // Attendre un court instant pour laisser la base de données se synchroniser, puis recharger complètement la page.
-        // C'est la méthode la plus fiable pour s'assurer que tous les hooks ont le nouvel état.
-        setTimeout(() => {
-            window.location.href = '/dashboard';
-        }, 1000);
+        // On redirige vers la page de configuration de la structure
+        router.push('/onboarding/setup-structure');
       }
     } catch (error: any) {
       console.error('Erreur création école:', error);
@@ -434,3 +431,5 @@ export default function CreateSchoolPage() {
     </div>
   );
 }
+
+    
