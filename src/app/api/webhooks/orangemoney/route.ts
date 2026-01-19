@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
@@ -59,8 +58,11 @@ export async function POST(request: Request) {
     }
 
     const schoolData = schoolSnap.data() as school;
-    const currentEndDate = new Date(schoolData.subscription?.endDate || Date.now());
-    const newEndDate = addMonths(currentEndDate, durationMonths);
+    
+    // If subscription is expired, start new subscription from today. Otherwise, extend.
+    const subEndDate = schoolData.subscription?.endDate ? new Date(schoolData.subscription.endDate) : new Date();
+    const startDate = subEndDate < new Date() ? new Date() : subEndDate;
+    const newEndDate = addMonths(startDate, durationMonths);
 
     const subscriptionUpdate = {
         'subscription.status': 'active',
