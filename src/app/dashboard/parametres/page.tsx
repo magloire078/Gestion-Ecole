@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -16,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ImageUploader } from "@/components/image-uploader";
+import { ImageUploader } from '@/components/image-uploader';
 import { useRouter } from "next/navigation";
 import {
   AlertDialog,
@@ -32,6 +31,7 @@ import { doc, deleteDoc } from 'firebase/firestore';
 import { signOut } from "firebase/auth";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
+import { SafeImage } from '@/components/ui/safe-image';
 
 const settingsSchema = z.object({
   name: z.string().min(1, "Le nom de l'école est requis."),
@@ -177,7 +177,7 @@ export default function SettingsPage() {
       return;
     }
     try {
-      const userRootRef = doc(firestore, 'utilisateurs', user.authUser.uid);
+      const userRootRef = doc(firestore, 'users', user.authUser.uid);
       await deleteDoc(userRootRef);
       await signOut(auth);
       toast({ title: "Compte réinitialisé", description: "Vous allez être redirigé vers la page de connexion." });
@@ -217,16 +217,14 @@ export default function SettingsPage() {
                     <CardContent className="space-y-6">
                          <FormField control={form.control} name="mainLogoUrl" render={({ field }) => (
                             <FormItem>
+                                <FormLabel>Logo de l'école</FormLabel>
                                 <div className="flex items-center gap-4">
-                                {field.value && <img src={field.value} alt="Logo" className="w-20 h-20 object-contain border rounded-md p-1" />}
-                                 <div className="space-y-2 flex-1">
-                                    <FormLabel>Logo de l'école</FormLabel>
+                                    <SafeImage src={field.value} alt="Logo" width={80} height={80} className="object-contain border rounded-md p-1 bg-muted" />
                                     <ImageUploader onUploadComplete={handleLogoUploadComplete} storagePath={`ecoles/${schoolId}/logos/`}>
                                         <Button type="button" variant="outline" disabled={!schoolId}>
-                                          <span className="flex items-center gap-2"> <Upload className="h-4 w-4"/> {field.value ? "Changer" : "Télécharger"} </span>
+                                            <span className="flex items-center gap-2"> <Upload className="h-4 w-4"/> {field.value ? "Changer le logo" : "Télécharger un logo"} </span>
                                         </Button>
                                     </ImageUploader>
-                                 </div>
                                 </div>
                             </FormItem>
                          )} />
