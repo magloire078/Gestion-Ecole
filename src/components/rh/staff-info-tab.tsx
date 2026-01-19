@@ -39,7 +39,7 @@ export function StaffInfoTab({ staff }: StaffInfoTabProps) {
                 <CardContent className="space-y-3">
                     <InfoRow label="Catégorie professionnelle" value={staff.categorie} />
                     <InfoRow label="N° CNPS" value={staff.cnpsEmploye} />
-                    <InfoRow label="Soumis à la CNPS" value={staff.CNPS ? 'Oui' : 'Non'} />
+                    <InfoRow label="Soumis CNPS" value={staff.CNPS ? 'Oui' : 'Non'} />
                 </CardContent>
             </Card>
              <Card>

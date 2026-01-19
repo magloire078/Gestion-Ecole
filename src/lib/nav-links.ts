@@ -99,7 +99,8 @@ export const NAV_LINKS: NavGroup[] = [
       group: "RH & Paie",
       icon: Briefcase,
       links: [
-        { href: '/dashboard/rh', label: 'Personnel & Paie', icon: Users, permission: 'viewUsers', module: 'rh' },
+        { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
+        { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
       ]
     },
     {

@@ -51,6 +51,7 @@ import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { StaffEditForm } from "@/components/rh/staff-edit-form";
 import { Input } from "@/components/ui/input";
+import { deleteStaffMember } from "@/services/staff-services";
 
 type StaffMember = Staff & { id: string };
 
@@ -98,14 +99,13 @@ export default function PersonnelPage() {
   
   const handleDelete = () => {
     if (!schoolId || !staffToDelete) return;
-    const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffToDelete.id}`);
     
-    deleteDoc(staffDocRef)
+    deleteStaffMember(firestore, schoolId, staffToDelete.id, staffToDelete.role)
       .then(() => {
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
       }).catch((serverError) => {
-        const permissionError = new FirestorePermissionError({ path: staffDocRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+        // L'erreur est gérée par le service, pas besoin de toast ici.
+        console.error("Erreur lors de la suppression du membre du personnel :", serverError);
       }).finally(() => {
         setIsDeleteDialogOpen(false);
         setStaffToDelete(null);
@@ -289,7 +289,7 @@ export default function PersonnelPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <StaffEditForm
-                      schoolId={schoolId}
+                      schoolId={schoolId!}
                       editingStaff={editingStaff}
                       classes={classes}
                       adminRoles={adminRoles}
