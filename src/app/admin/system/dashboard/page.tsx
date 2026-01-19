@@ -11,9 +11,29 @@ import {
 import { SystemMetrics } from '@/components/admin/system-metrics';
 import { AuditLog } from '@/components/admin/audit-log';
 import { DashboardStatCards } from '@/components/admin/dashboard-stat-cards';
+import { useEffect, useState } from 'react';
+import { useFirestore } from '@/firebase';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 
 export default function SystemAdminDashboard() {
+  const firestore = useFirestore();
+  const [pendingSchools, setPendingSchools] = useState(0);
+  const [loadingAlerts, setLoadingAlerts] = useState(true);
+
+  useEffect(() => {
+    if (!firestore) return;
+    setLoadingAlerts(true);
+    const q = query(collection(firestore, 'ecoles'), where('subscription.status', '==', 'trialing'));
+    getCountFromServer(q)
+      .then(snap => setPendingSchools(snap.data().count))
+      .catch(console.error)
+      .finally(() => setLoadingAlerts(false));
+  }, [firestore]);
+
   return (
     <div className="space-y-6">
       
@@ -60,15 +80,24 @@ export default function SystemAdminDashboard() {
                   </div>
                 </div>
                 
-                <div className="p-3 border rounded-lg bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
-                  <div className="flex items-start gap-3">
-                    <Users className="h-5 w-5 text-blue-600 mt-0.5" />
-                    <div>
-                      <p className="font-medium">3 nouvelles écoles en attente</p>
-                      <p className="text-sm text-muted-foreground">Validation requise</p>
+                {loadingAlerts ? (
+                  <Skeleton className="h-20 w-full" />
+                ) : pendingSchools > 0 && (
+                  <div className="p-3 border rounded-lg bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800">
+                    <div className="flex items-start gap-3">
+                      <Users className="h-5 w-5 text-blue-600 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="font-medium">{pendingSchools} nouvelle(s) école(s) en attente</p>
+                        <p className="text-sm text-muted-foreground">Validation ou suivi requis pour les écoles en période d'essai.</p>
+                      </div>
+                      <Button asChild variant="outline" size="sm">
+                        <Link href="/admin/system/schools">
+                          Voir
+                        </Link>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </CardContent>
           </Card>
