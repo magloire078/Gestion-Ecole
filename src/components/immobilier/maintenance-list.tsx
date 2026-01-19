@@ -43,9 +43,10 @@ import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { tache_maintenance as TacheMaintenance, staff } from '@/lib/data-types';
+import type { tache_maintenance as TacheMaintenance, staff, salle as Salle, bus as Bus } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 
 const tacheSchema = z.object({
   title: z.string().min(1, "Le titre est requis."),
@@ -75,7 +76,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [tacheToDelete, setTacheToDelete] = useState<(TacheMaintenance & { id: string }) | null>(null);
 
-  const tachesQuery = useMemoFirebase(() => {
+  const tachesQuery = useMemo(() => {
     const baseQuery = query(collection(firestore, `ecoles/${schoolId}/maintenance`), orderBy('createdAt', 'desc'));
     return limit ? query(baseQuery, firestoreLimit(limit)) : baseQuery;
   }, [firestore, schoolId, limit]);
@@ -83,11 +84,31 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
   const { data: tachesData, loading: tachesLoading } = useCollection(tachesQuery);
   const taches: (TacheMaintenance & { id: string })[] = useMemo(() => tachesData?.map(d => ({ id: d.id, ...d.data() } as TacheMaintenance & { id: string })) || [], [tachesData]);
   
-  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   const staffMembers: (staff & { id: string })[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as staff & { id: string })) || [], [staffData]);
-  
   const staffMap = useMemo(() => new Map(staffMembers.map(s => [s.id, `${s.firstName} ${s.lastName}`])), [staffMembers]);
+
+  const sallesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
+  const busesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
+  const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
+  const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
+
+  const salles = useMemo(() => sallesData?.map(d => ({ id: d.id, ...d.data() } as Salle & { id: string })) || [], [sallesData]);
+  const buses = useMemo(() => busesData?.map(d => ({ id: d.id, ...d.data() } as Bus & { id: string })) || [], [busesData]);
+
+  const locationOptions = useMemo(() => {
+    const salleOptions = salles.map(s => ({ value: `salle:${s.id}`, label: `Salle: ${s.name}` }));
+    const busOptions = buses.map(b => ({ value: `bus:${b.id}`, label: `Bus: ${b.registrationNumber}` }));
+    return [...salleOptions, ...busOptions];
+  }, [salles, buses]);
+
+  const locationMap = useMemo(() => {
+    const map = new Map<string, string>();
+    salles.forEach(s => map.set(`salle:${s.id}`, `Salle: ${s.name}`));
+    buses.forEach(b => map.set(`bus:${b.id}`, `Bus: ${b.registrationNumber}`));
+    return map;
+  }, [salles, buses]);
 
   const form = useForm<TacheFormValues>({
     resolver: zodResolver(tacheSchema),
@@ -163,7 +184,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
     }
   };
   
-  const isLoading = tachesLoading || staffLoading;
+  const isLoading = tachesLoading || staffLoading || sallesLoading || busesLoading;
 
   return (
     <>
@@ -184,10 +205,10 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Titre</TableHead><TableHead>Priorité</TableHead><TableHead>Statut</TableHead><TableHead>Assigné à</TableHead><TableHead>Échéance</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Titre</TableHead><TableHead>Priorité</TableHead><TableHead>Statut</TableHead><TableHead>Assigné à</TableHead><TableHead>Emplacement</TableHead><TableHead>Échéance</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
               {isLoading ? (
-                [...Array(limit || 5)].map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
+                [...Array(limit || 5)].map((_, i) => <TableRow key={i}><TableCell colSpan={7}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
               ) : taches.length > 0 ? (
                 taches.map(tache => (
                   <TableRow key={tache.id}>
@@ -195,6 +216,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
                     <TableCell><Badge variant={getPriorityBadgeVariant(tache.priority)} className="capitalize">{tache.priority}</Badge></TableCell>
                     <TableCell><Badge variant={getStatusBadgeVariant(tache.status)} className="capitalize">{tache.status.replace(/_/g, ' ')}</Badge></TableCell>
                     <TableCell>{tache.assignedTo ? staffMap.get(tache.assignedTo) || 'N/A' : 'Non assigné'}</TableCell>
+                    <TableCell>{tache.location ? (locationMap.get(tache.location) || tache.location) : 'N/A'}</TableCell>
                     <TableCell>{tache.dueDate ? format(new Date(tache.dueDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
                     <TableCell className="text-right">
                        <DropdownMenu>
@@ -208,7 +230,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
                   </TableRow>
                 ))
               ) : (
-                <TableRow><TableCell colSpan={6} className="h-24 text-center">Aucune tâche de maintenance pour le moment.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="h-24 text-center">Aucune tâche de maintenance pour le moment.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -230,7 +252,28 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
               </div>
               <FormField control={form.control} name="assignedTo" render={({ field }) => <FormItem><FormLabel>Assigner à</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un membre..."/></SelectTrigger></FormControl><SelectContent>{staffMembers.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select></FormItem>} />
               <div className="grid grid-cols-2 gap-4">
-                 <FormField control={form.control} name="location" render={({ field }) => <FormItem><FormLabel>Emplacement</FormLabel><FormControl><Input placeholder="Ex: Bloc B, Toilettes" {...field} /></FormControl></FormItem>} />
+                 <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Emplacement</FormLabel>
+                            <FormControl>
+                                <Combobox
+                                    placeholder="Sélectionner ou créer un lieu"
+                                    searchPlaceholder="Chercher un lieu..."
+                                    options={locationOptions}
+                                    value={field.value || ''}
+                                    onValueChange={field.onChange}
+                                    onCreate={(value) => {
+                                        field.onChange(value);
+                                        return Promise.resolve({ value, label: value });
+                                    }}
+                                />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
                  <FormField control={form.control} name="dueDate" render={({ field }) => <FormItem><FormLabel>Échéance</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>} />
               </div>
             </form>
