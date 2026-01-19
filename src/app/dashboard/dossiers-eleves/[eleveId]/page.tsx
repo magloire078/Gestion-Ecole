@@ -104,6 +104,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
     try {
         await updateStudentPhoto(firestore, schoolId, eleveId, url);
         toast({ title: 'Photo de profil mise à jour !' });
+        setRefreshTrigger(prev => prev + 1);
     } catch (error) {
         // Error is handled by the service
     }

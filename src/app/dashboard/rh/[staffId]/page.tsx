@@ -147,8 +147,9 @@ export default function StaffProfilePage() {
     const router = useRouter();
     
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
   
-    const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId]);
+    const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId, refreshKey]);
     const { data: staffMember, loading: staffLoading, error } = useDoc<Staff>(staffRef);
 
     // Queries for the edit form, can load in background
@@ -176,6 +177,7 @@ export default function StaffProfilePage() {
         try {
             await updateStaffPhoto(firestore, schoolId!, staffId, url);
             toast({ title: 'Photo de profil mise à jour !' });
+            setRefreshKey(prev => prev + 1);
         } catch (error) {
             // L'erreur est gérée dans le service via l'emitter
         }
