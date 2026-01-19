@@ -12,10 +12,11 @@ service cloud.firestore {
       allow create: if true;
     }
     
-    // Pour la messagerie, n'autoriser que la lecture de documents individuels
-    // et la création, mais pas le listage de toute la collection.
+    // Pour la messagerie, autoriser la lecture d'un document individuel,
+    // la création, et le listage d'un nombre limité de documents.
     match /ecoles/{schoolId}/messagerie/{messageId} {
       allow get, write: if request.auth != null;
+      allow list: if request.auth != null && request.query.limit <= 10;
     }
 
     // Allow authenticated users to read and write to any other document.
