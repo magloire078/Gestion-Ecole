@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -12,9 +11,9 @@ import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { SalleForm } from './salle-form';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import Link from 'next/link';
@@ -30,7 +29,7 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [salleToDelete, setSalleToDelete] = useState<(Salle & { id: string }) | null>(null);
 
-  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
+  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/batiments`)), [firestore, schoolId]);
   const sallesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
 
   const { data: buildingsData, loading: buildingsLoading } = useCollection(buildingsQuery);
