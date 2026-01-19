@@ -117,7 +117,7 @@ export default function HealthPage() {
     };
     
     fetchHealthData();
-  }, [schoolId, firestore, studentsMap]); // Re-run if studentsMap is updated
+  }, [schoolId, firestore, studentsMap, studentsLoading]);
 
   const isLoading = schoolLoading || studentsLoading || userLoading || dataLoading;
 
