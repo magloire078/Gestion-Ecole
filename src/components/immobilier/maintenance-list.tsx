@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -6,31 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useForm } from 'react-hook-form';
@@ -45,8 +24,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { tache_maintenance as TacheMaintenance, staff, salle as Salle, bus as Bus } from '@/lib/data-types';
 import { format } from 'date-fns';
-import { Textarea } from '@/components/ui/textarea';
-import { Combobox } from '@/components/ui/combobox';
+import { Combobox } from '../ui/combobox';
 
 const tacheSchema = z.object({
   title: z.string().min(1, "Le titre est requis."),
@@ -84,13 +62,13 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
   const { data: tachesData, loading: tachesLoading } = useCollection(tachesQuery);
   const taches: (TacheMaintenance & { id: string })[] = useMemo(() => tachesData?.map(d => ({ id: d.id, ...d.data() } as TacheMaintenance & { id: string })) || [], [tachesData]);
   
-  const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   const staffMembers: (staff & { id: string })[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as staff & { id: string })) || [], [staffData]);
   const staffMap = useMemo(() => new Map(staffMembers.map(s => [s.id, `${s.firstName} ${s.lastName}`])), [staffMembers]);
 
-  const sallesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
-  const busesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
+  const sallesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
+  const busesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
   const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
   const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
 
@@ -119,7 +97,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
     form.reset(
       editingTache 
         ? { ...editingTache, dueDate: editingTache.dueDate ? format(new Date(editingTache.dueDate), 'yyyy-MM-dd') : '' }
-        : { priority: 'moyenne', status: 'à_faire', title: '', description: '', location: '', assignedTo: '' }
+        : { priority: 'moyenne', status: 'à_faire', title: '', description: '', location: '', assignedTo: '', dueDate: '' }
     );
   }, [isFormOpen, editingTache, form]);
 
@@ -195,7 +173,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
               <CardTitle>Suivi de la Maintenance</CardTitle>
               <CardDescription>Gérez les tâches de maintenance préventive et corrective.</CardDescription>
             </div>
-            {canManageContent && (
+            {canManageContent && !limit && (
               <Button onClick={() => { setEditingTache(null); setIsFormOpen(true); }}>
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Nouvelle Tâche
@@ -205,7 +183,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
         </CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>Titre</TableHead><TableHead>Priorité</TableHead><TableHead>Statut</TableHead><TableHead>Assigné à</TableHead><TableHead>Emplacement</TableHead><TableHead>Échéance</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Titre</TableHead><TableHead>Priorité</TableHead><TableHead>Statut</TableHead><TableHead>Assigné à</TableHead><TableHead>Emplacement</TableHead><TableHead>Échéance</TableHead>{!limit && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
             <TableBody>
               {isLoading ? (
                 [...Array(limit || 5)].map((_, i) => <TableRow key={i}><TableCell colSpan={7}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
@@ -218,15 +196,17 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
                     <TableCell>{tache.assignedTo ? staffMap.get(tache.assignedTo) || 'N/A' : 'Non assigné'}</TableCell>
                     <TableCell>{tache.location ? (locationMap.get(tache.location) || tache.location) : 'N/A'}</TableCell>
                     <TableCell>{tache.dueDate ? format(new Date(tache.dueDate), 'dd/MM/yyyy') : 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                       <DropdownMenu>
+                    {!limit && canManageContent && (
+                      <TableCell className="text-right">
+                        <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => { setEditingTache(tache); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(tache)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
-                    </TableCell>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               ) : (
@@ -237,7 +217,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
         </CardContent>
       </Card>
       
-       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingTache ? 'Modifier la' : 'Nouvelle'} tâche de maintenance</DialogTitle>
