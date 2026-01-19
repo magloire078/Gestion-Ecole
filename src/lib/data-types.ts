@@ -289,7 +289,7 @@ export type niveau = {
     id?: string;
 };
 
-export type classe = {
+export type class_type = {
     schoolId: string;
     cycleId: string;
     niveauId: string;
