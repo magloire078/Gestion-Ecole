@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Banknote, Loader2 } from 'lucide-react';
+import { FileText, Banknote, Loader2, Files } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, getDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -15,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, school as OrganizationSettings } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
-import { PayslipPreview } from '@/components/payroll/payslip-template';
+import { PayslipPreview, BulkPayslipPreview } from '@/components/payroll/payslip-template';
 
 export default function PaiePage() {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -26,6 +25,11 @@ export default function PaiePage() {
   const [isPayslipOpen, setIsPayslipOpen] = useState(false);
   const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  
+  const [isBulkPayslipOpen, setIsBulkPayslipOpen] = useState(false);
+  const [bulkPayslipDetails, setBulkPayslipDetails] = useState<PayslipDetails[] | null>(null);
+  const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+
 
   const staffQuery = useMemoFirebase(() => {
     if (!schoolId) return null;
@@ -49,7 +53,6 @@ export default function PaiePage() {
     setIsPayslipOpen(true);
 
     try {
-        // We need to fetch the full document to get all payroll fields
         const fullStaffDoc = await getDoc(doc(firestore, `ecoles/${schoolId}/personnel/${staffMember.id!}`));
         if(!fullStaffDoc.exists()) throw new Error("Staff member not found");
 
@@ -69,6 +72,45 @@ export default function PaiePage() {
     }
   };
 
+  const handleGenerateAllPayslips = async () => {
+    if (!schoolData || staffWithSalary.length === 0) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Aucun personnel avec salaire à traiter ou données de l\'école non chargées.' });
+        return;
+    }
+    setIsBulkGenerating(true);
+    setBulkPayslipDetails(null);
+    
+    try {
+        const payslipDate = new Date().toISOString();
+        const allDetailsPromises = staffWithSalary.map(async (staffMember) => {
+            const fullStaffDoc = await getDoc(doc(firestore, `ecoles/${schoolId}/personnel/${staffMember.id}`));
+            if (fullStaffDoc.exists()) {
+                return getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as OrganizationSettings);
+            }
+            return null;
+        });
+
+        const allDetails = (await Promise.all(allDetailsPromises)).filter(Boolean) as PayslipDetails[];
+
+        if(allDetails.length === 0) {
+            throw new Error("Aucun bulletin n'a pu être généré.");
+        }
+        
+        setBulkPayslipDetails(allDetails);
+        setIsBulkPayslipOpen(true);
+
+    } catch (e) {
+        console.error(e);
+        toast({
+            variant: "destructive",
+            title: "Erreur de génération en masse",
+            description: "Impossible de générer tous les bulletins de paie.",
+        });
+    } finally {
+        setIsBulkGenerating(false);
+    }
+  };
+
 
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
@@ -76,10 +118,20 @@ export default function PaiePage() {
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Banknote />Gestion de la Paie</CardTitle>
-          <CardDescription>
-            Générez et consultez les bulletins de paie de votre personnel.
-          </CardDescription>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2"><Banknote />Gestion de la Paie</CardTitle>
+              <CardDescription>
+                Générez et consultez les bulletins de paie de votre personnel.
+              </CardDescription>
+            </div>
+            {canManageBilling && staffWithSalary.length > 0 && (
+                <Button onClick={handleGenerateAllPayslips} disabled={isBulkGenerating}>
+                    {isBulkGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Files className="mr-2 h-4 w-4" />}
+                    {isBulkGenerating ? 'Génération en cours...' : 'Générer Tous les Bulletins'}
+                </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -151,6 +203,31 @@ export default function PaiePage() {
               ) : (
                   <div className="flex items-center justify-center h-96">
                       <p className="text-muted-foreground">La prévisualisation du bulletin n'a pas pu être générée.</p>
+                  </div>
+              )}
+            </div>
+        </DialogContent>
+      </Dialog>
+
+       <Dialog open={isBulkPayslipOpen} onOpenChange={setIsBulkPayslipOpen}>
+        <DialogContent className="max-w-4xl p-0">
+             <DialogHeader className="p-6 pb-0">
+              <DialogTitle>Aperçu des Bulletins de Paie</DialogTitle>
+              <DialogDescription>
+                Prévisualisation de tous les bulletins générés.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="p-6 pt-2">
+              {isBulkGenerating ? (
+                  <div className="flex items-center justify-center h-96">
+                      <Loader2 className="mr-2 h-8 w-8 animate-spin"/>
+                      <p>Génération des bulletins...</p>
+                  </div>
+              ) : bulkPayslipDetails && bulkPayslipDetails.length > 0 ? (
+                  <BulkPayslipPreview detailsArray={bulkPayslipDetails} />
+              ) : (
+                  <div className="flex items-center justify-center h-96">
+                      <p className="text-muted-foreground">Aucun bulletin n'a pu être généré.</p>
                   </div>
               )}
             </div>

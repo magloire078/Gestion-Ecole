@@ -166,20 +166,14 @@ export function PayslipPreview({ details }: { details: PayslipDetails }) {
   const printRef = React.useRef<HTMLDivElement>(null);
 
   const handlePrint = () => {
-    const printContent = printRef.current;
+    const printContent = printRef.current?.innerHTML;
     if (printContent) {
       const printWindow = window.open('', '', 'height=800,width=1000');
       if (printWindow) {
         printWindow.document.write('<html><head><title>Bulletin de Paie</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="all">');
-        printWindow.document.write(`
-            <style>
-              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              .no-print { display: none; }
-            </style>
-        `);
+        printWindow.document.write('<style>@media print { .no-print { display: none !important; } .printable-card { border: none !important; box-shadow: none !important; } @page { size: A4; margin: 20mm; } }</style>');
         printWindow.document.write('</head><body>');
-        printWindow.document.write(printContent.innerHTML);
+        printWindow.document.write(printContent);
         printWindow.document.write('</body></html>');
         printWindow.document.close();
         printWindow.focus();
@@ -204,4 +198,46 @@ export function PayslipPreview({ details }: { details: PayslipDetails }) {
       </div>
     </div>
   );
+}
+
+export function BulkPayslipPreview({ detailsArray }: { detailsArray: PayslipDetails[] }) {
+    const printRef = React.useRef<HTMLDivElement>(null);
+
+    const handlePrint = () => {
+        const printContent = printRef.current?.innerHTML;
+        if (printContent) {
+            const printWindow = window.open('', '', 'height=800,width=1000');
+            if (printWindow) {
+                printWindow.document.write('<html><head><title>Bulletins de Paie</title>');
+                printWindow.document.write('<style>@media print { .no-print { display: none !important; } .page-break { page-break-after: always; } }</style>');
+                printWindow.document.write('</head><body>');
+                printWindow.document.write(printContent);
+                printWindow.document.write('</body></html>');
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    printWindow.close();
+                }, 500);
+            }
+        }
+    };
+
+    return (
+        <div>
+            <div className="max-h-[70vh] overflow-y-auto bg-gray-200 p-4" ref={printRef}>
+                {detailsArray.map((details, index) => (
+                    <div key={index} className="page-break">
+                        <PayslipTemplate details={details} />
+                    </div>
+                ))}
+            </div>
+            <div className="mt-4 flex justify-end no-print">
+                <Button onClick={handlePrint}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Imprimer Tous les Bulletins
+                </Button>
+            </div>
+        </div>
+    );
 }
