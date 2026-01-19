@@ -42,9 +42,9 @@ service firebase.storage {
       allow write: if isAuth() && request.auth.uid == userId;
     }
     
-    // Photos de profil des élèves: le directeur ou un enseignant peut écrire
+    // Photos de profil des élèves: le directeur ou le personnel autorisé peut écrire
     match /ecoles/{schoolId}/eleves/{studentId}/avatars/{imageId} {
-       allow write: if isDirector(schoolId) || getStaffRole(request.auth.uid, schoolId) == 'enseignant';
+       allow write: if isDirector(schoolId) || getStaffRole(request.auth.uid, schoolId) in ['directeur_pedagogique', 'secretaire', 'enseignant', 'enseignant_principal'];
     }
     
     // Photos de profil du personnel: le directeur ou le membre lui-même peut écrire
