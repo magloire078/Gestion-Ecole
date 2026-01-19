@@ -1,19 +1,21 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
-import { addDays, format, startOfWeek, endOfWeek } from 'date-fns';
+import { addDays, format, startOfDay, endOfDay, isEqual, parse } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, PlusCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ReservationForm } from './reservation-form';
 import type { salle as Salle, reservation_salle as Reservation, staff as Staff } from '@/lib/data-types';
 import { Skeleton } from '../ui/skeleton';
-import Link from 'next/link';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Calendar as CalendarIcon } from 'lucide-react';
 
 const timeSlots = Array.from({ length: 11 }, (_, i) => `${String(i + 7).padStart(2, '0')}:00`);
 
@@ -26,9 +28,6 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingReservation, setEditingReservation] = useState<(Reservation & { id: string }) | null>(null);
   const [preselectedSlot, setPreselectedSlot] = useState<{ time: string, date: Date, salleId: string } | null>(null);
-
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
 
   const sallesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
   const reservationsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/reservations_salles`)), [firestore, schoolId]);
@@ -49,9 +48,26 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
     return map;
   }, [staffData]);
 
-  const weekDates = useMemo(() => {
-    return Array.from({ length: 6 }).map((_, i) => addDays(weekStart, i));
-  }, [weekStart]);
+  const reservationsBySalleAndTime = useMemo(() => {
+    const grid: Record<string, Record<string, Reservation & {id: string}>> = {};
+    const startOfSelectedDay = startOfDay(currentDate);
+
+    const dayReservations = reservations.filter(res => {
+        const resDate = new Date(res.startTime);
+        return isEqual(startOfDay(resDate), startOfSelectedDay);
+    });
+
+    dayReservations.forEach(res => {
+        const startTime = format(new Date(res.startTime), 'HH:00');
+        if (!grid[res.salleId]) {
+            grid[res.salleId] = {};
+        }
+        grid[res.salleId][startTime] = res;
+    });
+
+    return grid;
+  }, [reservations, currentDate]);
+
 
   const handleOpenForm = (reservation: Reservation | null = null, slotInfo: { time: string, date: Date, salleId: string } | null = null) => {
     setEditingReservation(reservation as (Reservation & { id: string }) | null);
@@ -65,19 +81,27 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
     <>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <CardTitle>Calendrier des Salles</CardTitle>
               <CardDescription>
-                Semaine du {format(weekStart, 'd MMMM', { locale: fr })} au {format(weekEnd, 'd MMMM yyyy', { locale: fr })}
+                Aperçu des réservations pour le {format(currentDate, 'EEEE d MMMM yyyy', { locale: fr })}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, -7))}><ChevronLeft className="h-4 w-4" /></Button>
-              <Button variant="outline" size="sm" onClick={() => setCurrentDate(new Date())}>Aujourd'hui</Button>
-              <Button variant="outline" size="icon" onClick={() => setCurrentDate(addDays(currentDate, 7))}><ChevronRight className="h-4 w-4" /></Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Popover>
+                <PopoverTrigger asChild>
+                    <Button variant={"outline"} className="w-full sm:w-auto justify-start text-left font-normal">
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {format(currentDate, 'PPP', { locale: fr })}
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar mode="single" selected={currentDate} onSelect={(d) => d && setCurrentDate(d)} initialFocus/>
+                </PopoverContent>
+              </Popover>
               {canManageContent && (
-                <Button onClick={() => handleOpenForm()}>
+                <Button onClick={() => handleOpenForm()} className="w-full sm:w-auto">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Réserver
                 </Button>
@@ -87,59 +111,49 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse min-w-[800px]">
               <thead className="bg-muted">
                 <tr>
-                  <th className="sticky left-0 bg-muted p-2 border w-28"></th>
-                  {weekDates.map(date => (
-                    <th key={date.toISOString()} className="p-2 border text-center font-semibold">
-                      <div className="capitalize">{format(date, 'EEEE', { locale: fr })}</div>
-                      <div className="text-sm text-muted-foreground">{format(date, 'd/MM')}</div>
+                  <th className="sticky left-0 bg-muted p-2 border text-sm w-28">Heure</th>
+                  {salles.map(salle => (
+                    <th key={salle.id} className="p-2 border text-center font-semibold text-sm">
+                      {salle.name}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {salles.map(salle => (
-                  <tr key={salle.id}>
-                    <td className="sticky left-0 bg-muted p-2 border text-center font-semibold">
-                        <div className="text-sm">{salle.name}</div>
-                        <div className="text-xs text-muted-foreground">{salle.capacity} places</div>
-                    </td>
-                    {weekDates.map(date => {
-                        const dateString = format(date, 'yyyy-MM-dd');
-                        const dayReservations = reservations.filter(r => r.salleId === salle.id && r.startTime.startsWith(dateString));
-                        return (
-                             <td key={date.toISOString()} className="p-1 border align-top relative group">
-                                <div className="space-y-1">
-                                    {dayReservations.map(res => (
-                                        <div key={res.id} className="p-2 bg-primary/10 rounded-md text-xs cursor-pointer hover:bg-primary/20" onClick={() => handleOpenForm(res)}>
-                                            <div className="font-bold text-primary">{res.eventName}</div>
-                                            <div className="text-muted-foreground">{format(new Date(res.startTime), 'HH:mm')} - {format(new Date(res.endTime), 'HH:mm')}</div>
-                                            <div className="text-muted-foreground text-xs">Par: {staffMap.get(res.reservedBy) || 'Inconnu'}</div>
+                {isLoading ? (
+                  timeSlots.map(time => (
+                    <tr key={time}><td colSpan={salles.length + 1}><Skeleton className="h-20 w-full"/></td></tr>
+                  ))
+                ) : (
+                  timeSlots.map(time => (
+                    <tr key={time}>
+                      <td className="sticky left-0 bg-muted p-2 border text-center text-xs font-mono">{time}</td>
+                      {salles.map(salle => {
+                          const reservation = reservationsBySalleAndTime[salle.id]?.[time];
+                          return (
+                            <td key={salle.id} className="p-1 border align-top h-24 relative group" onClick={() => !reservation && canManageContent && handleOpenForm(null, { date: currentDate, time, salleId: salle.id })}>
+                               {reservation ? (
+                                    <div className="p-2 bg-primary/10 rounded-md text-xs h-full flex flex-col justify-center cursor-pointer hover:bg-primary/20" onClick={() => canManageContent && handleOpenForm(reservation)}>
+                                        <div className="font-bold text-primary">{reservation.eventName}</div>
+                                        <div className="text-muted-foreground">{format(new Date(reservation.startTime), 'HH:mm')} - {format(new Date(reservation.endTime), 'HH:mm')}</div>
+                                        <div className="text-muted-foreground text-xs truncate">Par: {staffMap.get(reservation.reservedBy) || 'Inconnu'}</div>
+                                    </div>
+                               ) : (
+                                    canManageContent && (
+                                        <div className="h-full w-full flex items-center justify-center">
+                                            <PlusCircle className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </div>
-                                    ))}
-                                </div>
-                                {canManageContent && (
-                                    <Button variant="ghost" size="icon" className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100" onClick={() => handleOpenForm(null, { date, time: '08:00', salleId: salle.id })}>
-                                        <PlusCircle className="h-5 w-5 text-muted-foreground" />
-                                    </Button>
-                                )}
-                             </td>
-                        )
-                    })}
-                  </tr>
-                ))}
-                {isLoading && (
-                    <TableRow>
-                        <TableCell colSpan={7} className="h-48"><Skeleton className="w-full h-full" /></TableCell>
-                    </TableRow>
+                                    )
+                               )}
+                            </td>
+                          );
+                      })}
+                    </tr>
+                  ))
                 )}
-                 {!isLoading && salles.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={7} className="h-48 text-center text-muted-foreground">Aucune salle n'a été créée. <Link href="/dashboard/immobilier/salles" className="text-primary underline">Ajoutez-en une</Link> pour commencer.</TableCell>
-                    </TableRow>
-                 )}
               </tbody>
             </table>
           </div>
