@@ -1,10 +1,11 @@
+
 'use client';
 
 import { Suspense } from 'react';
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, User, BookUser, Wallet } from 'lucide-react';
+import { ArrowLeft, User, BookUser, Wallet, Shield, CalendarDays } from 'lucide-react';
 import React, { useMemo } from 'react';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -23,6 +24,8 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ParentDisciplineTab } from '@/components/parent/parent-discipline-tab';
+import { ParentTimetableTab } from '@/components/parent/parent-timetable-tab';
 
 function ParentStudentProfileSkeleton() {
     return (
@@ -137,9 +140,11 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
             </div>
 
             <Tabs defaultValue={initialTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger value="grades">Résultats</TabsTrigger>
                     <TabsTrigger value="absences">Absences</TabsTrigger>
+                    <TabsTrigger value="discipline">Discipline</TabsTrigger>
+                    <TabsTrigger value="timetable">Emploi du temps</TabsTrigger>
                     <TabsTrigger value="payments">Paiements</TabsTrigger>
                     <TabsTrigger value="info">Informations</TabsTrigger>
                 </TabsList>
@@ -148,6 +153,12 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
                 </TabsContent>
                 <TabsContent value="absences" className="mt-6">
                     <AbsencesTab schoolId={schoolId} studentId={studentId} />
+                </TabsContent>
+                <TabsContent value="discipline" className="mt-6">
+                    <ParentDisciplineTab schoolId={schoolId} studentId={studentId} />
+                </TabsContent>
+                <TabsContent value="timetable" className="mt-6">
+                    <ParentTimetableTab schoolId={schoolId} student={student} />
                 </TabsContent>
                 <TabsContent value="payments" className="mt-6">
                     <ParentPaymentsTab student={student} />
