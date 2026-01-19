@@ -13,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature, CreditCard, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature, CreditCard, Edit, Trash2, UserX } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -100,7 +100,9 @@ export default function StudentsPage() {
 
   const [searchTerm, setSearchTerm] = useState("");
   const students = useMemo(() => {
-    return allStudents.filter(student =>
+    return allStudents
+      .filter(student => student.status !== 'Radié') // Exclure les élèves radiés
+      .filter(student =>
         `${student.firstName} ${student.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.matricule?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -129,24 +131,28 @@ export default function StudentsPage() {
   const handleDeleteStudent = () => {
     if (!schoolId || !studentToDelete || !studentToDelete.id) return;
 
+    const wasActive = studentToDelete.status !== 'Radié';
+
     const batch = writeBatch(firestore);
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToDelete.id}`);
     
-    batch.delete(studentDocRef);
+    // Set status to "Radié" instead of deleting
+    batch.update(studentDocRef, { status: 'Radié' });
 
-    if (studentToDelete.classId) {
+    // Decrement student count only if they were active and in a class
+    if (wasActive && studentToDelete.classId) {
         const classDocRef = doc(firestore, `ecoles/${schoolId}/classes/${studentToDelete.classId}`);
         batch.update(classDocRef, { studentCount: increment(-1) });
     }
 
     batch.commit()
     .then(() => {
-        toast({ title: "Élève supprimé", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été supprimé(e).` });
+        toast({ title: "Élève radié", description: `L'élève ${studentToDelete.firstName} ${studentToDelete.lastName} a été marqué(e) comme radié(e).` });
     })
     .catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: `[BATCH WRITE] /ecoles/${schoolId}/eleves/${studentToDelete.id} and class update`,
-            operation: 'delete'
+            operation: 'update'
         });
         errorEmitter.emit('permission-error', permissionError);
     })
@@ -308,7 +314,7 @@ export default function StudentsPage() {
                                             <>
                                                 <DropdownMenuSeparator />
                                                 <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(student)}>
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                                    <UserX className="mr-2 h-4 w-4" /> Radier
                                                 </DropdownMenuItem>
                                             </>
                                         )}
@@ -358,14 +364,14 @@ export default function StudentsPage() {
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <DialogHeader>
-            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogTitle>Radier l'élève ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. L'élève <strong>{studentToDelete?.firstName} {studentToDelete?.lastName}</strong> sera définitivement supprimé(e). Les données de sa classe seront mises à jour.
+              Cette action marquera l'élève <strong>{studentToDelete?.firstName} {studentToDelete?.lastName}</strong> comme "Radié". Il n'apparaîtra plus dans les listes actives, mais ses données seront conservées et consultables sur sa fiche. La capacité de la classe sera mise à jour.
             </AlertDialogDescription>
           </DialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+            <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive hover:bg-destructive/90">Radier l'élève</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
