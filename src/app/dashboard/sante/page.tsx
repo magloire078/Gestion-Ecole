@@ -12,16 +12,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Search, HeartPulse, ShieldAlert, Syringe, Users } from "lucide-react";
-import { useState, useMemo } from "react";
+import { Search, HeartPulse, ShieldAlert, Syringe, Users, CalendarClock } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, limit, orderBy, getDocs, collectionGroup } from "firebase/firestore";
+import { collection, query, limit, orderBy, getDocs, collectionGroup, where } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import type { student as Student, dossierMedical as DossierMedical, consultation as Consultation } from "@/lib/data-types";
-import { format } from "date-fns";
+import type { student as Student, dossierMedical as DossierMedical, consultation as Consultation, vaccination as Vaccination } from "@/lib/data-types";
+import { format, isPast } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export default function HealthPage() {
@@ -32,6 +32,8 @@ export default function HealthPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [stats, setStats] = useState({ withAllergies: 0 });
   const [recentConsultations, setRecentConsultations] = useState<(Consultation & {studentName: string})[]>([]);
+  const [upcomingReminders, setUpcomingReminders] = useState<(Vaccination & { studentName: string; studentId: string; id: string; rappelDate: Date })[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
   
@@ -48,48 +50,76 @@ export default function HealthPage() {
   }, [allStudents, searchTerm]);
   
   useEffect(() => {
-    if (!schoolId) return;
+    if (!schoolId || !firestore || studentsMap.size === 0) {
+        if (!studentsLoading) setDataLoading(false);
+        return;
+    };
     
-    // Fetch stats
-    const fetchStats = async () => {
-        const dossiersWithAllergiesQuery = query(collectionGroup(firestore, 'dossier_medical'), where('allergies', '!=', []));
-        const snapshot = await getDocs(dossiersWithAllergiesQuery);
-        let count = 0;
-        snapshot.forEach(doc => {
-            if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
-                count++;
-            }
-        });
-        setStats({ withAllergies: count });
-    };
+    const fetchHealthData = async () => {
+        setDataLoading(true);
 
-    // Fetch recent consultations
-    const fetchRecentConsultations = async () => {
-        const consultationsQuery = query(collectionGroup(firestore, 'consultations'), orderBy('date', 'desc'), limit(5));
-        const snapshot = await getDocs(consultationsQuery);
-        const consultations: (Consultation & {studentName: string})[] = [];
-        snapshot.forEach(doc => {
-             if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
-                const data = doc.data() as Consultation;
-                const studentId = doc.ref.parent.parent?.parent?.id; // ecoles/{schoolId}/eleves/{studentId}/...
-                if (studentId) {
-                     consultations.push({
-                        ...data,
-                        studentName: studentsMap.get(studentId) || 'Élève inconnu',
-                     });
+        const statsPromise = (async () => {
+            const dossiersWithAllergiesQuery = query(collectionGroup(firestore, 'dossier_medical'), where('allergies', '!=', []));
+            const snapshot = await getDocs(dossiersWithAllergiesQuery);
+            let count = 0;
+            snapshot.forEach(doc => doc.ref.path.startsWith(`ecoles/${schoolId}`) && count++);
+            setStats({ withAllergies: count });
+        })();
+
+        const consultationsPromise = (async () => {
+            const consultationsQuery = query(collectionGroup(firestore, 'consultations'), orderBy('date', 'desc'), limit(5));
+            const snapshot = await getDocs(consultationsQuery);
+            const consultations: (Consultation & {studentName: string})[] = [];
+            snapshot.forEach(doc => {
+                if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
+                    const studentId = doc.ref.parent.parent?.parent?.id;
+                    if (studentId) {
+                        consultations.push({ ...(doc.data() as Consultation), studentName: studentsMap.get(studentId) || 'Élève inconnu' });
+                    }
                 }
-             }
-        });
-        setRecentConsultations(consultations);
+            });
+            setRecentConsultations(consultations);
+        })();
+
+        const remindersPromise = (async () => {
+            const today = new Date();
+            const next30Days = new Date(today);
+            next30Days.setDate(today.getDate() + 30);
+
+            const vaccinsQuery = query(collectionGroup(firestore, 'vaccins'), where('rappel', '>=', today.toISOString().split('T')[0]));
+            const snapshot = await getDocs(vaccinsQuery);
+            const reminders: (Vaccination & { studentName: string; studentId: string; id: string; rappelDate: Date })[] = [];
+            snapshot.forEach(doc => {
+                if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
+                    const data = doc.data() as Vaccination;
+                    if (data.rappel) {
+                        const rappelDate = new Date(data.rappel);
+                        if (rappelDate <= next30Days) {
+                            const studentId = doc.ref.parent.parent?.parent?.id;
+                            if (studentId) {
+                                reminders.push({ ...data, id: doc.id, studentId, studentName: studentsMap.get(studentId) || 'Élève inconnu', rappelDate });
+                            }
+                        }
+                    }
+                }
+            });
+            reminders.sort((a,b) => a.rappelDate.getTime() - b.rappelDate.getTime());
+            setUpcomingReminders(reminders);
+        })();
+
+        try {
+            await Promise.all([statsPromise, consultationsPromise, remindersPromise]);
+        } catch (error) {
+            console.error("Error fetching health data:", error);
+        } finally {
+            setDataLoading(false);
+        }
     };
+    
+    fetchHealthData();
+  }, [schoolId, firestore, studentsMap]); // Re-run if studentsMap is updated
 
-    fetchStats();
-    if (studentsMap.size > 0) {
-      fetchRecentConsultations();
-    }
-  }, [schoolId, firestore, studentsMap]);
-
-  const isLoading = schoolLoading || studentsLoading || userLoading;
+  const isLoading = schoolLoading || studentsLoading || userLoading || dataLoading;
 
   return (
     <div className="space-y-6">
@@ -121,12 +151,12 @@ export default function HealthPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Prochain Rappel Vaccin</CardTitle>
+            <CardTitle className="text-sm font-medium">Rappels (30j)</CardTitle>
              <Syringe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-             {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">N/A</div>}
-            <p className="text-xs text-muted-foreground">Fonctionnalité à venir</p>
+             {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{upcomingReminders.length}</div>}
+            <p className="text-xs text-muted-foreground">Prochains rappels de vaccins</p>
           </CardContent>
         </Card>
       </div>
@@ -191,34 +221,62 @@ export default function HealthPage() {
                     </Table>
                 </CardContent>
             </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle>Consultations Récentes</CardTitle>
-                    <CardDescription>Dernières visites à l'infirmerie.</CardDescription>
-                </CardHeader>
-                 <CardContent className="space-y-3">
-                    {isLoading ? (
-                        [...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
-                    ) : recentConsultations.length > 0 ? (
-                      recentConsultations.map(c => (
-                        <div key={c.id} className="flex items-center gap-3">
-                          <div className="p-2 bg-muted rounded-full">
-                            <HeartPulse className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{c.studentName}</div>
-                            <div className="text-xs text-muted-foreground">{c.motif}</div>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {format(new Date(c.date), 'dd/MM', { locale: fr })}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                        <p className="text-center text-sm text-muted-foreground py-8">Aucune consultation récente.</p>
-                    )}
-                 </CardContent>
-            </Card>
+            <div className="space-y-6">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Consultations Récentes</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {isLoading ? (
+                            [...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                        ) : recentConsultations.length > 0 ? (
+                        recentConsultations.map((c, idx) => (
+                            <div key={idx} className="flex items-center gap-3">
+                            <div className="p-2 bg-muted rounded-full">
+                                <HeartPulse className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1">
+                                <div className="font-medium text-sm">{c.studentName}</div>
+                                <div className="text-xs text-muted-foreground">{c.motif}</div>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                                {format(new Date(c.date), 'dd/MM', { locale: fr })}
+                            </div>
+                            </div>
+                        ))
+                        ) : (
+                            <p className="text-center text-sm text-muted-foreground py-4">Aucune consultation récente.</p>
+                        )}
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle>Prochains Rappels de Vaccins</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {isLoading ? (
+                            [...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
+                        ) : upcomingReminders.length > 0 ? (
+                        upcomingReminders.map(r => (
+                            <div key={r.id} className="flex items-center gap-3">
+                                <div className="p-2 bg-muted rounded-full">
+                                    <CalendarClock className="h-5 w-5 text-amber-600" />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="font-medium text-sm">{r.studentName}</div>
+                                    <div className="text-xs text-muted-foreground">Rappel: {r.nom}</div>
+                                </div>
+                                <div className="text-xs font-semibold text-amber-700">
+                                    {format(r.rappelDate, 'dd/MM/yy', { locale: fr })}
+                                </div>
+                            </div>
+                        ))
+                        ) : (
+                            <p className="text-center text-sm text-muted-foreground py-4">Aucun rappel imminent.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
        </div>
     </div>
   );
