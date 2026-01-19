@@ -1,71 +1,120 @@
-
 'use client';
 
 import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, collectionGroup, where } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { User, BookOpen } from 'lucide-react';
-import type { student, libraryBook } from '@/lib/data-types';
+import { User, BookOpen, CreditCard, UserX } from 'lucide-react';
+import type { student, libraryBook, payment, absence } from '@/lib/data-types';
 
 interface RecentActivityProps {
     schoolId: string;
 }
 
+// Define a unified activity item type
+type ActivityItem = {
+    id: string;
+    type: 'student' | 'book' | 'payment' | 'absence';
+    timestamp: number;
+    content: string;
+    icon: React.ElementType;
+};
+
 export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
-    const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
-    const recentBooksQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/bibliotheque`), orderBy('createdAt', 'desc'), limit(3)) : null, [firestore, schoolId]);
+    const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    const recentPaymentsQuery = useMemo(() => schoolId ? query(collectionGroup(firestore, 'paiements'), where('__name__', '>=', `ecoles/${schoolId}/`), where('__name__', '<', `ecoles/${schoolId}￿`), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    const recentAbsencesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    
+    // We need all students to map IDs to names for payments
+    const allStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
 
     const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
-    const { data: booksData, loading: booksLoading } = useCollection(recentBooksQuery);
+    const { data: paymentsData, loading: paymentsLoading } = useCollection(recentPaymentsQuery);
+    const { data: absencesData, loading: absencesLoading } = useCollection(recentAbsencesQuery);
+    const { data: allStudentsData, loading: allStudentsLoading } = useCollection(allStudentsQuery);
+
+    const studentMap = useMemo(() => {
+        const map = new Map<string, string>();
+        allStudentsData?.forEach(doc => {
+            const student = doc.data() as student;
+            map.set(doc.id, `${student.firstName} ${student.lastName}`);
+        });
+        return map;
+    }, [allStudentsData]);
+
+    const loading = studentsLoading || paymentsLoading || absencesLoading || allStudentsLoading;
+
+    const recentItems: ActivityItem[] = useMemo(() => {
+        if (loading && !studentMap.size) return []; // Don't compute until all data is available
+
+        const activities: ActivityItem[] = [];
+
+        studentsData?.forEach(doc => {
+            const data = doc.data() as student;
+            const ts = (data.createdAt as any)?.seconds;
+            if (ts) {
+                activities.push({
+                    id: doc.id,
+                    type: 'student',
+                    timestamp: ts * 1000,
+                    content: `Nouvel élève : ${data.firstName} ${data.lastName}`,
+                    icon: User
+                });
+            }
+        });
+        
+        paymentsData?.forEach(doc => {
+            const data = doc.data() as payment;
+            const pathSegments = doc.ref.path.split('/');
+            const studentId = pathSegments[pathSegments.length - 3];
+            const studentName = studentMap.get(studentId) || 'un élève';
+            if(data.date){
+                activities.push({
+                    id: doc.id,
+                    type: 'payment',
+                    timestamp: parseISO(data.date).getTime(),
+                    content: `Paiement de ${data.amount.toLocaleString('fr-FR')} CFA reçu de ${studentName}`,
+                    icon: CreditCard
+                });
+            }
+        });
+
+        absencesData?.forEach(doc => {
+            const data = doc.data() as absence;
+            if(data.date){
+                activities.push({
+                    id: doc.id,
+                    type: 'absence',
+                    timestamp: parseISO(data.date).getTime(),
+                    content: `Absence enregistrée pour ${data.studentName}`,
+                    icon: UserX
+                });
+            }
+        });
+
+        return activities.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
+
+    }, [loading, studentsData, paymentsData, absencesData, studentMap]);
     
-    const loading = studentsLoading || booksLoading;
-
-    const recentItems = [
-        ...(studentsData?.map(doc => ({ type: 'student', ...doc.data() } as student & { type: 'student' })) || []),
-        ...(booksData?.map(doc => ({ type: 'book', ...doc.data() } as libraryBook & { type: 'book' })) || []),
-    ].sort((a, b) => ((b.createdAt as any)?.seconds || 0) - ((a.createdAt as any)?.seconds || 0));
-
-
     if (!schoolId) {
-        return (
-             <Card>
-                <CardHeader>
-                    <CardTitle>Activité Récente</CardTitle>
-                    <CardDescription>Derniers ajouts dans votre établissement.</CardDescription>
-                </CardHeader>
-                 <CardContent>
-                    <div className="space-y-4">
-                        {[...Array(3)].map((_, i) => (
-                             <div key={i} className="flex items-center gap-4">
-                                <Skeleton className="h-10 w-10 rounded-full" />
-                                <div className="flex-1 space-y-1">
-                                    <Skeleton className="h-4 w-3/4" />
-                                    <Skeleton className="h-3 w-1/4" />
-                                </div>
-                            </div>
-                         ))}
-                    </div>
-                </CardContent>
-            </Card>
-        )
+        return null;
     }
 
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Activité Récente</CardTitle>
-                <CardDescription>Derniers ajouts dans votre établissement.</CardDescription>
+                <CardDescription>Derniers événements dans votre établissement.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
                     {loading ? (
-                         [...Array(3)].map((_, i) => (
+                         [...Array(5)].map((_, i) => (
                              <div key={i} className="flex items-center gap-4">
                                 <Skeleton className="h-10 w-10 rounded-full" />
                                 <div className="flex-1 space-y-1">
@@ -74,19 +123,15 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                                 </div>
                             </div>
                          ))
-                    ) : recentItems.length > 0 ? recentItems.slice(0, 5).map((item: any, index) => (
-                        <div key={index} className="flex items-center gap-4">
+                    ) : recentItems.length > 0 ? recentItems.map((item) => (
+                        <div key={item.id} className="flex items-center gap-4">
                             <div className="p-2 bg-muted rounded-full">
-                                {item.type === 'student' && <User className="h-5 w-5 text-muted-foreground" />}
-                                {item.type === 'book' && <BookOpen className="h-5 w-5 text-muted-foreground" />}
+                                <item.icon className="h-5 w-5 text-muted-foreground" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-sm font-medium">
-                                    {item.type === 'student' && `Nouvel élève : ${item.firstName} ${item.lastName}`}
-                                    {item.type === 'book' && `Nouveau livre : ${item.title}`}
-                                </p>
+                                <p className="text-sm font-medium">{item.content}</p>
                                 <p className="text-xs text-muted-foreground">
-                                    {item.createdAt?.seconds ? formatDistanceToNow(new Date(item.createdAt.seconds * 1000), { addSuffix: true, locale: fr }) : 'il y a quelques instants'}
+                                    {item.timestamp ? formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: fr }) : ''}
                                 </p>
                             </div>
                         </div>
@@ -96,5 +141,5 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                 </div>
             </CardContent>
         </Card>
-    )
+    );
 }
