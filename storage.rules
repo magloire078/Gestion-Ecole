@@ -3,62 +3,63 @@ rules_version = '2';
 service firebase.storage {
   match /b/greecole.firebasestorage.app/o {
 
-    function isAuth() {
+    // =================================
+    //         HELPER FUNCTIONS
+    // =================================
+
+    function isSignedIn() {
       return request.auth != null;
     }
 
+    // Correctly checks if the user is associated with the school via the /users/{userId} document
     function isSchoolMember(schoolId) {
-      return request.auth != null && request.auth.token.schoolId == schoolId;
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schools.exists(s => s.schoolId == schoolId);
     }
 
-    function getDirectorId(schoolId) {
-        return get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId;
+    // Gets the staff profile to check for role
+    function getStaffProfile(schoolId) {
+      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
     }
 
+    // Checks if the user is a director of the school
     function isDirector(schoolId) {
-        return isAuth() && request.auth.uid == getDirectorId(schoolId);
+        return isSchoolMember(schoolId) && getStaffProfile(schoolId).role == 'directeur';
     }
     
-    function isStaffMember(schoolId, userId) {
-        return exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId));
-    }
-    
-    function getStaffRole(userId, schoolId) {
-        return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(userId)).data.role;
-    }
+    // =================================
+    //              RULES
+    // =================================
 
-    // Accès en lecture pour tous les membres de l'école
+    // General read access for school members
     match /ecoles/{schoolId}/{allPaths=**} {
       allow read: if isSchoolMember(schoolId);
     }
-
-    // Logos: seul le directeur peut écrire
-    match /ecoles/{schoolId}/logos/{imageId} {
+    
+    // Temporary logo uploads during school creation
+    match /temp-logos/{userId}/{allPaths=**} {
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+    
+    // Main school logo (school settings page)
+    match /ecoles/{schoolId}/logos/{allPaths=**} {
       allow write: if isDirector(schoolId);
     }
     
-    // Chemin temporaire pour le logo pendant la création de l'école
-    match /temp-logos/{userId}/{allPaths=**} {
-      allow write: if isAuth() && request.auth.uid == userId;
+    // Student photos in their profile or during registration
+    match /ecoles/{schoolId}/eleves/{studentId}/avatars/{allPaths=**} {
+       allow write: if isDirector(schoolId) || (isSchoolMember(schoolId) && getStaffProfile(schoolId).role in ['directeur_pedagogique', 'secretaire']);
     }
-    
-    // Photos de profil des élèves: le directeur ou le personnel autorisé peut écrire
-    match /ecoles/{schoolId}/eleves/{studentId}/avatars/{imageId} {
-       allow write: if isDirector(schoolId) || getStaffRole(request.auth.uid, schoolId) in ['directeur_pedagogique', 'secretaire', 'enseignant', 'enseignant_principal'];
-    }
-    
-    // Photos de profil du personnel: le directeur ou le membre lui-même peut écrire
-    match /ecoles/{schoolId}/staff/{staffId}/avatars/{imageId} {
-       allow write: if isDirector(schoolId) || request.auth.uid == staffId;
-    }
-    
-    // Photos de profil temporaires pendant l'inscription/création
-     match /ecoles/{schoolId}/student-photos/{imageId} {
-        allow write: if isSchoolMember(schoolId);
-     }
-     match /ecoles/{schoolId}/staff-photos/{imageId} {
-        allow write: if isSchoolMember(schoolId);
-     }
 
+    // Temporary photos during student registration
+    match /ecoles/{schoolId}/student-photos/{allPaths=**} {
+        allow write: if isDirector(schoolId) || (isSchoolMember(schoolId) && getStaffProfile(schoolId).role in ['directeur_pedagogique', 'secretaire']);
+    }
+    
+    // Staff photos
+    match /ecoles/{schoolId}/staff/{staffId}/avatars/{allPaths=**} {
+       allow write: if isDirector(schoolId) || (isSignedIn() && request.auth.uid == staffId);
+    }
   }
 }
