@@ -4,10 +4,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -135,36 +135,44 @@ export function CyclesManager() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Code</TableHead><TableHead>Niveaux</TableHead><TableHead>Statut</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-6 w-full"/></TableCell></TableRow>)
-              ) : cycles.length > 0 ? (
-                cycles.map(cycle => (
-                  <TableRow key={cycle.id}>
-                    <TableCell className="font-medium flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: cycle.color}} />
-                        {cycle.name}
-                    </TableCell>
-                    <TableCell><Badge variant="outline">{cycle.code}</Badge></TableCell>
-                    <TableCell>{niveauxCountByCycle[cycle.id] || 0}</TableCell>
-                    <TableCell><Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge></TableCell>
-                    <TableCell className="text-right">
-                      {isDirectorOrAdmin && (
-                        <>
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenForm(cycle)}><Edit className="h-4 w-4"/></Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setItemToDelete(cycle); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow><TableCell colSpan={5} className="text-center h-24">Aucun cycle créé.</TableCell></TableRow>
+            {isLoading ? (
+                <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                </div>
+            ) : cycles.length > 0 ? (
+                <Accordion type="multiple" className="w-full space-y-2">
+                    {cycles.map(cycle => (
+                    <AccordionItem value={cycle.id} key={cycle.id} className="border-b-0">
+                        <AccordionTrigger className="p-3 bg-muted hover:bg-muted/80 rounded-lg hover:no-underline [&[data-state=open]>div>svg]:rotate-180">
+                            <div className="flex justify-between items-center w-full">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full" style={{backgroundColor: cycle.color}} />
+                                    <span className="font-semibold">{cycle.name}</span>
+                                    <Badge variant="outline">{cycle.code}</Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-muted-foreground mr-2">
+                                    <span>{niveauxCountByCycle[cycle.id] || 0} Niveaux</span>
+                                    <Badge variant={cycle.isActive ? 'secondary' : 'outline'}>{cycle.isActive ? 'Actif' : 'Inactif'}</Badge>
+                                </div>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="pt-2 pl-10">
+                            <p className="text-sm text-muted-foreground">Ordre d'affichage: {cycle.order}</p>
+                            {isDirectorOrAdmin && (
+                                <div className="mt-2">
+                                    <Button variant="ghost" size="sm" onClick={() => handleOpenForm(cycle)}><Edit className="h-4 w-4 mr-2"/>Modifier</Button>
+                                    <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { setItemToDelete(cycle); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 mr-2"/>Supprimer</Button>
+                                </div>
+                            )}
+                        </AccordionContent>
+                    </AccordionItem>
+                    ))}
+                </Accordion>
+            ) : (
+                <div className="text-center h-24 flex items-center justify-center text-muted-foreground">Aucun cycle créé.</div>
               )}
-            </TableBody>
-          </Table>
         </CardContent>
       </Card>
 

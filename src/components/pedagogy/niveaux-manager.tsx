@@ -5,6 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -58,9 +59,17 @@ export function NiveauxManager() {
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   
   const cycles: (Cycle & {id: string})[] = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle & {id: string})).sort((a,b) => a.order - b.order) || [], [cyclesData]);
-  const niveaux: (Niveau & { id: string })[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })).sort((a,b) => a.order - b.order) || [], [niveauxData]);
+  const niveaux: (Niveau & { id: string })[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
   const classes: (Classe & {id: string})[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Classe & {id: string})) || [], [classesData]);
 
+  const niveauxByCycle = useMemo(() => {
+    const grouped = cycles.map(cycle => ({
+      ...cycle,
+      niveaux: niveaux.filter(n => n.cycleId === cycle.id).sort((a,b) => a.order - b.order)
+    }));
+    return grouped;
+  }, [cycles, niveaux]);
+  
   const form = useForm<NiveauFormValues>({
     resolver: zodResolver(niveauSchema),
     defaultValues: { name: '', code: '', order: 1, cycleId: '', capacity: 30 }
@@ -94,9 +103,10 @@ export function NiveauxManager() {
     });
   };
 
-  const handleOpenForm = (niveau: (Niveau & { id: string }) | null) => {
+  const handleOpenForm = (niveau: (Niveau & { id: string }) | null, cycleId?: string) => {
     setEditingNiveau(niveau);
-    form.reset(niveau || { name: '', code: '', order: 1, cycleId: '', capacity: 30 });
+    const defaultCycleId = cycleId || (cycles.length > 0 ? cycles[0].id : '');
+    form.reset(niveau || { name: '', code: '', order: 1, cycleId: defaultCycleId, capacity: 30 });
     setIsFormOpen(true);
   };
   
@@ -129,32 +139,71 @@ export function NiveauxManager() {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Cycle</TableHead><TableHead>Capacité</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-6 w-full"/></TableCell></TableRow>)
-              ) : niveaux.length > 0 ? (
-                niveaux.map(niveau => (
-                  <TableRow key={niveau.id}>
-                    <TableCell className="font-medium">{niveau.name}</TableCell>
-                    <TableCell>{cycles.find(c => c.id === niveau.cycleId)?.name || 'N/A'}</TableCell>
-                    <TableCell>{niveau.capacity}</TableCell>
-                    <TableCell className="text-right">
-                      {isDirectorOrAdmin && (
-                        <>
-                          <Button variant="ghost" size="icon" onClick={() => handleOpenForm(niveau)}><Edit className="h-4 w-4"/></Button>
-                          <Button variant="ghost" size="icon" onClick={() => { setItemToDelete(niveau); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                        </>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow><TableCell colSpan={4} className="text-center h-24">Aucun niveau créé.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+           {isLoading ? (
+                <div className="space-y-2">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-32 w-full" />
+                </div>
+            ) : niveauxByCycle.length > 0 ? (
+                <Accordion type="multiple" defaultValue={niveauxByCycle.map(c => c.id)} className="w-full space-y-2">
+                    {niveauxByCycle.map(cycle => (
+                        <AccordionItem value={cycle.id} key={cycle.id} className="border-b-0">
+                             <AccordionTrigger className="p-3 bg-muted hover:bg-muted/80 rounded-t-lg hover:no-underline [&[data-state=open]>div>svg]:rotate-180">
+                                <div className="flex justify-between items-center w-full">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 rounded-full" style={{backgroundColor: cycle.color}} />
+                                        <span className="font-semibold">{cycle.name}</span>
+                                    </div>
+                                    {isDirectorOrAdmin && (
+                                        <Button variant="ghost" size="sm" className="mr-2" onClick={(e) => { e.stopPropagation(); handleOpenForm(null, cycle.id); }}>
+                                            <PlusCircle className="mr-2 h-4 w-4"/> Ajouter un niveau
+                                        </Button>
+                                    )}
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="border border-t-0 rounded-b-lg p-0">
+                                {cycle.niveaux.length > 0 ? (
+                                    <Table>
+                                        <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Nom du Niveau</TableHead>
+                                            <TableHead>Code</TableHead>
+                                            <TableHead>Ordre</TableHead>
+                                            <TableHead>Capacité</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                        {cycle.niveaux.map(niveau => (
+                                            <TableRow key={niveau.id}>
+                                                <TableCell className="font-medium">{niveau.name}</TableCell>
+                                                <TableCell>{niveau.code}</TableCell>
+                                                <TableCell>{niveau.order}</TableCell>
+                                                <TableCell>{niveau.capacity}</TableCell>
+                                                <TableCell className="text-right">
+                                                    {isDirectorOrAdmin && (
+                                                    <>
+                                                        <Button variant="ghost" size="icon" onClick={() => handleOpenForm(niveau)}><Edit className="h-4 w-4"/></Button>
+                                                        <Button variant="ghost" size="icon" onClick={() => { setItemToDelete(niveau); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                                    </>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        </TableBody>
+                                    </Table>
+                                ) : (
+                                     <p className="text-center text-muted-foreground py-4">Aucun niveau dans ce cycle.</p>
+                                )}
+                            </AccordionContent>
+                        </AccordionItem>
+                    ))}
+                </Accordion>
+            ) : (
+                 <div className="text-center h-24 flex items-center justify-center text-muted-foreground">Aucun cycle créé pour y ajouter des niveaux.</div>
+            )}
         </CardContent>
       </Card>
       
