@@ -13,11 +13,11 @@ service cloud.firestore {
     }
     
     function isSchoolMember(schoolId) {
-      let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       return isSignedIn() &&
-             exists(userRootPath) &&
-             get(userRootPath).data.schools != null &&
-             schoolId in get(userRootPath).data.schools;
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             'schools' in userDoc.data &&
+             schoolId in userDoc.data.schools;
     }
     
     function isSuperAdmin() {
@@ -27,25 +27,28 @@ service cloud.firestore {
 
     function hasPermission(schoolId, permission) {
         let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
-        let staffDocExists = exists(staffDocPath);
-        let staffData = staffDocExists ? get(staffDocPath).data : {};
-        let isAdminRole = 'adminRole' in staffData && staffData.adminRole != null;
-        let rolePath = isAdminRole ? /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffData.adminRole) : /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/dummy;
-        let roleExists = isAdminRole ? exists(rolePath) : false;
-        let roleData = roleExists ? get(rolePath).data : {};
-        let roleHasPermission = 'permissions' in roleData && permission in roleData.permissions && roleData.permissions[permission] == true;
-
+        
+        // This structure is safer. Check existence before getting data.
         return isSuperAdmin() || (
-            isSchoolMember(schoolId) &&
-            staffDocExists &&
-            (staffData.role == 'directeur' || (isAdminRole && roleExists && roleHasPermission))
+          isSchoolMember(schoolId) &&
+          exists(staffDocPath) &&
+          (
+            get(staffDocPath).data.role == 'directeur' ||
+            (
+              get(staffDocPath).data.adminRole != null &&
+              exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffDocPath).data.adminRole)) &&
+              // Check if permissions map exists before trying to access a key on it
+              'permissions' in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffDocPath).data.adminRole)).data &&
+              get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffDocPath).data.adminRole)).data.permissions[permission] == true
+            )
+          )
         );
     }
 
 
     function isParentOfStudent(studentDoc) {
       return isSignedIn() &&
-             studentDoc.data.parentIds != null &&
+             'parentIds' in studentDoc.data && studentDoc.data.parentIds != null &&
              request.auth.uid in studentDoc.data.parentIds;
     }
 
@@ -76,8 +79,8 @@ service cloud.firestore {
     }
     
     match /sessions_parents/{sessionId} {
-      allow create: if isSchoolMember(request.resource.data.schoolId); 
-      allow read: if isSuperAdmin();
+      allow create: if true; 
+      allow read: if true;
       allow update, delete: if isSuperAdmin();
     }
 
@@ -129,7 +132,7 @@ service cloud.firestore {
 
     match /ecoles/{schoolId}/personnel/{staffId} {
         allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
-        allow create: if isSignedIn() && request.auth.uid == staffId;
+        allow create: if request.auth.uid == staffId;
         allow update: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers')) || (request.auth.uid == staffId);
         allow delete: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
@@ -193,8 +196,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/incidents_disciplinaires/{incidentId} {
-        allow read: if isSchoolMember(schoolId);
-        allow write: if hasPermission(schoolId, 'manageDiscipline');
+      allow read, write: if hasPermission(schoolId, 'manageDiscipline');
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
@@ -217,8 +219,9 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow list: if isSchoolMember(schoolId);
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     
