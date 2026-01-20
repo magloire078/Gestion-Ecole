@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -30,11 +29,14 @@ service cloud.firestore {
     
     function hasPermission(schoolId, permission) {
       let staffProfile = getStaffProfile(schoolId);
-      let hasAdminRolePermission = staffProfile.adminRole != null &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true;
+      // Check for role existence before trying to access its properties
+      if (!('adminRole' in staffProfile) || staffProfile.adminRole == null) {
+          return staffProfile.role == 'directeur' || isSuperAdmin();
+      }
+      let hasAdminRolePermission = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true;
       return staffProfile.role == 'directeur' || isSuperAdmin() || hasAdminRolePermission;
     }
-    
+
     function isParentOfStudent(studentDoc) {
       return isSignedIn() &&
              'parentIds' in studentDoc.data &&
@@ -116,8 +118,14 @@ service cloud.firestore {
     // --- Sub-collections of /ecoles/{schoolId} ---
 
     match /ecoles/{schoolId}/personnel/{staffId} {
-        allow read: if isSchoolMember(schoolId);
-        allow write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
+        allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
+        
+        // Allow creating/updating if you are an admin OR you are acting on your own profile.
+        allow create, update: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers')) || 
+                                 (request.auth.uid == staffId);
+
+        // Only an admin can delete profiles.
+        allow delete: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
     match /ecoles/{schoolId}/parents/{parentId} {
@@ -141,7 +149,8 @@ service cloud.firestore {
                          (subcollection == 'notes' && hasPermission(schoolId, 'manageGrades')) ||
                          (subcollection == 'paiements' && hasPermission(schoolId, 'manageBilling')) ||
                          (subcollection == 'dossier_medical' && hasPermission(schoolId, 'manageMedical')) ||
-                         (subcollection == 'affectations' && hasPermission(schoolId, 'manageUsers'))
+                         (subcollection == 'affectations' && hasPermission(schoolId, 'manageUsers')) ||
+                         (subcollection == 'incidents_disciplinaires' && hasPermission(schoolId, 'manageDiscipline'))
                        );
     }
     
