@@ -16,11 +16,11 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { staff as Staff, user_root } from '@/lib/data-types';
+import type { staff as Staff, user_root, parent as Parent, parent_session } from '@/lib/data-types';
 import { Loader2 } from 'lucide-react';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 
-type OnboardingMode = "create" | "join";
+type OnboardingMode = "create" | "join" | "parent";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -32,6 +32,7 @@ export default function OnboardingPage() {
   const [schoolCode, setSchoolCode] = useState('');
   const [role, setRole] = useState('enseignant');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [parentAccessCode, setParentAccessCode] = useState('');
   
   if (loading) {
     return <LoadingScreen />;
@@ -159,30 +160,118 @@ export default function OnboardingPage() {
     }
   };
   
+  const handleParentJoin = async () => {
+    if (!user || !user.uid) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
+        return;
+    }
+    if (!parentAccessCode.trim()) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Le code d\'accès parent est requis.' });
+        return;
+    }
+
+    setIsProcessing(true);
+    
+    try {
+        const sessionsRef = collection(firestore, 'sessions_parents');
+        const q = query(sessionsRef, where("accessCode", "==", parentAccessCode.trim()), where("isActive", "==", true));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            toast({ variant: 'destructive', title: 'Code Invalide', description: 'Ce code d\'accès est invalide, expiré ou a déjà été utilisé.' });
+            setIsProcessing(false);
+            return;
+        }
+
+        const sessionDoc = querySnapshot.docs[0];
+        const sessionData = sessionDoc.data() as parent_session;
+
+        // Check expiration
+        if (sessionData.expiresAt && new Date(sessionData.expiresAt) < new Date()) {
+            // Optional: You could also run a cleanup function to deactivate expired codes.
+            await updateDoc(sessionDoc.ref, { isActive: false });
+            toast({ variant: 'destructive', title: 'Code Expiré', description: 'Ce code d\'accès a expiré. Veuillez en demander un nouveau.' });
+            setIsProcessing(false);
+            return;
+        }
+
+        const schoolId = sessionData.schoolId!;
+        const studentIds = sessionData.studentIds!;
+        const batch = writeBatch(firestore);
+
+        // 1. Update user's root document with school affiliation
+        const userRootRef = doc(firestore, `users/${user.uid}`);
+        const userRootSnap = await getDoc(userRootRef);
+        const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || {} : {};
+        const updatedSchools = { ...currentSchools, [schoolId]: 'parent' };
+        batch.set(userRootRef, { schools: updatedSchools, activeSchoolId: schoolId }, { merge: true });
+
+        // 2. Create/Update parent profile in the school's subcollection
+        const parentProfileRef = doc(firestore, `ecoles/${schoolId}/parents/${user.uid}`);
+        const parentProfileSnap = await getDoc(parentProfileRef);
+        const existingStudentIds = parentProfileSnap.exists() ? (parentProfileSnap.data() as Parent).studentIds || [] : [];
+        const newStudentIds = [...new Set([...existingStudentIds, ...studentIds])]; // Merge and remove duplicates
+        batch.set(parentProfileRef, { 
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            photoURL: user.photoURL,
+            schoolId: schoolId,
+            studentIds: newStudentIds
+        }, { merge: true });
+        
+        // 3. Update student(s) with parent's UID
+        for (const studentId of studentIds) {
+            const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
+            const studentSnap = await getDoc(studentRef);
+            if (studentSnap.exists()) {
+                const studentData = studentSnap.data();
+                const parentIds = [...new Set([...(studentData.parentIds || []), user.uid])];
+                batch.update(studentRef, { parentIds: parentIds });
+            }
+        }
+        
+        // 4. Deactivate the session code
+        batch.update(sessionDoc.ref, { isActive: false });
+
+        await batch.commit();
+        await reloadUser();
+        
+        toast({ title: 'Accès parent activé!', description: 'Vous pouvez maintenant consulter les informations de votre enfant.'});
+        router.replace('/dashboard');
+        
+    } catch(error: any) {
+        console.error('Erreur lors de la liaison parent:', error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue.' });
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+  
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
             <Logo />
           </div>
           <CardTitle className="text-2xl">Bienvenue sur GèreEcole</CardTitle>
           <CardDescription>
-            Commencez par créer votre établissement ou rejoignez-en un existant.
+            Commencez par créer votre établissement ou rejoignez-en un.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <RadioGroup 
             defaultValue="create" 
             onValueChange={(value: any) => setMode(value)} 
-            className="grid grid-cols-2 gap-4"
+            className="grid grid-cols-3 gap-4"
             disabled={isProcessing}
           >
             <div>
               <RadioGroupItem value="create" id="create" className="peer sr-only" />
               <Label 
                 htmlFor="create" 
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-colors"
+                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-colors h-full"
               >
                 Créer une école
               </Label>
@@ -191,9 +280,18 @@ export default function OnboardingPage() {
               <RadioGroupItem value="join" id="join" className="peer sr-only" />
               <Label 
                 htmlFor="join" 
-                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-colors"
+                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-colors h-full"
               >
-                Rejoindre une école
+                Rejoindre (Personnel)
+              </Label>
+            </div>
+             <div>
+              <RadioGroupItem value="parent" id="parent" className="peer sr-only" />
+              <Label 
+                htmlFor="parent" 
+                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary cursor-pointer transition-colors h-full"
+              >
+                Accès Parent
               </Label>
             </div>
           </RadioGroup>
@@ -201,8 +299,7 @@ export default function OnboardingPage() {
           {mode === 'create' && (
             <div className="text-center space-y-4 animate-in fade-in-50">
               <p className="text-sm text-muted-foreground">
-                Vous serez guidé(e) à travers un assistant pour configurer votre nouvelle école.
-                Vous serez automatiquement désigné comme directeur.
+                Vous serez guidé(e) pour configurer votre nouvelle école et en deviendrez le directeur.
               </p>
             </div>
           )}
@@ -219,7 +316,7 @@ export default function OnboardingPage() {
                   disabled={isProcessing}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Demandez ce code à l'administrateur de l'école
+                  Demandez ce code à l'administrateur de l'école.
                 </p>
               </div>
               <div className="grid gap-2">
@@ -242,24 +339,47 @@ export default function OnboardingPage() {
               </div>
             </div>
           )}
+
+           {mode === 'parent' && (
+            <div className="space-y-4 animate-in fade-in-50">
+              <div className="grid gap-2">
+                <Label htmlFor="parent-code">Code d'accès Parent</Label>
+                <Input
+                  id="parent-code"
+                  placeholder="Code à 6 chiffres"
+                  value={parentAccessCode}
+                  onChange={(e) => setParentAccessCode(e.target.value)}
+                  disabled={isProcessing}
+                  maxLength={6}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Ce code vous a été fourni par l'administration de l'école.
+                </p>
+              </div>
+            </div>
+          )}
+
           <CardFooter className="p-0 pt-4">
               <Button 
                 className="w-full" 
-                onClick={mode === 'create' 
-                  ? () => router.push('/onboarding/create-school') 
-                  : handleJoinSchool
+                onClick={
+                  mode === 'create' ? () => router.push('/onboarding/create-school') 
+                  : mode === 'join' ? handleJoinSchool
+                  : handleParentJoin
                 } 
-                disabled={isProcessing || (mode === 'join' && !schoolCode.trim())}
+                disabled={
+                  isProcessing || 
+                  (mode === 'join' && !schoolCode.trim()) ||
+                  (mode === 'parent' && parentAccessCode.length < 6)
+                }
               >
                 {isProcessing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Traitement en cours...
+                    Vérification en cours...
                   </>
-                ) : mode === 'create' ? (
-                  'Continuer vers la Création'
                 ) : (
-                  'Rejoindre l\'établissement'
+                  'Continuer'
                 )}
               </Button>
           </CardFooter>
