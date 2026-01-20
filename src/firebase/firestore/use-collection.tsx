@@ -35,15 +35,24 @@ export function useCollection<T>(query: Query<T> | null) {
       setData(snapshot.docs);
       setLoading(false);
     }, async (serverError) => {
-        let path = 'unknown path';
-        const internalQuery = (query as any)?._query;
-        if (internalQuery) {
-            if (internalQuery.path) {
-                path = internalQuery.path.segments.join('/');
-            } else if (internalQuery.collectionGroup) {
-                path = `collectionGroup: ${internalQuery.collectionGroup}`;
+        let path = 'unknown_path'; // Default value
+        try {
+            // This is an internal property, but it's the most reliable way to get path info.
+            const internalQuery = (query as any)?._query;
+            if (internalQuery) {
+                if (internalQuery.path?.segments?.length > 0) {
+                    path = internalQuery.path.segments.join('/');
+                } else if (internalQuery.collectionGroup) {
+                    path = `collectionGroup: ${internalQuery.collectionGroup}`;
+                }
+            } else if ((query as any).path) {
+                // This might catch cases where the query is a direct CollectionReference
+                path = (query as any).path;
             }
+        } catch (e) {
+            console.error("Could not determine path for FirestorePermissionError", e);
         }
+
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'list',
