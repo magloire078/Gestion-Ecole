@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pencil, CalendarDays } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
-import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
+import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,7 +30,7 @@ import { StaffInfoTab } from '@/components/rh/staff-info-tab';
 
 function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: string }) {
     const firestore = useFirestore();
-    const classRef = useMemoFirebase(() => classId ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) : null, [schoolId, classId, firestore]);
+    const classRef = useMemo(() => classId ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) : null, [schoolId, classId, firestore]);
     const { data: mainClass, loading } = useDoc<Class>(classRef);
 
     if (loading) return <Skeleton className="h-5 w-24" />;
@@ -46,7 +46,7 @@ function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: stri
 
 function AdminRoleInfo({ schoolId, adminRoleId }: { schoolId: string, adminRoleId?: string }) {
     const firestore = useFirestore();
-    const adminRoleRef = useMemoFirebase(() => adminRoleId ? doc(firestore, `ecoles/${schoolId}/admin_roles/${adminRoleId}`) : null, [schoolId, adminRoleId, firestore]);
+    const adminRoleRef = useMemo(() => adminRoleId ? doc(firestore, `ecoles/${schoolId}/admin_roles/${adminRoleId}`) : null, [schoolId, adminRoleId, firestore]);
     const { data: adminRole, loading } = useDoc<AdminRole>(adminRoleRef);
 
     if (loading) return <Skeleton className="h-5 w-32" />;
@@ -63,8 +63,8 @@ function AdminRoleInfo({ schoolId, adminRoleId }: { schoolId: string, adminRoleI
 
 function TimetableTab({ schoolId, staffId }: { schoolId: string, staffId: string }) {
     const firestore = useFirestore();
-    const timetableQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)), [firestore, schoolId, staffId]);
-    const classesQuery = useMemoFirebase(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
+    const timetableQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)), [firestore, schoolId, staffId]);
+    const classesQuery = useMemo(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
 
     const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -149,14 +149,14 @@ export default function StaffProfilePage() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
   
-    const staffRef = useMemoFirebase(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId, refreshKey]);
+    const staffRef = useMemo(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId, refreshKey]);
     const { data: staffMember, loading: staffLoading, error } = useDoc<Staff>(staffRef);
 
     // Queries for the edit form, can load in background
-    const allSchoolClassesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+    const allSchoolClassesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
     const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
 
-    const allAdminRolesQuery = useMemoFirebase(() => schoolId ? collection(firestore, `ecoles/${schoolId}/admin_roles`) : null, [firestore, schoolId]);
+    const allAdminRolesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/admin_roles`) : null, [firestore, schoolId]);
     const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
     
     const allSchoolClasses = useMemo(() => allSchoolClassesData?.docs.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);

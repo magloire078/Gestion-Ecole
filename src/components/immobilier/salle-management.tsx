@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import type { building, salle as Salle } from '@/lib/data-types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,8 +31,8 @@ export function SalleManagement({ schoolId }: { schoolId: string }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [salleToDelete, setSalleToDelete] = useState<(Salle & { id: string }) | null>(null);
 
-  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/batiments`)), [firestore, schoolId]);
-  const sallesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
+  const buildingsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/batiments`)), [firestore, schoolId]);
+  const sallesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
 
   const { data: buildingsData, loading: buildingsLoading } = useCollection(buildingsQuery);
   const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);

@@ -50,7 +50,6 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { allSubjects } from '@/lib/subjects';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -60,7 +59,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-
+import type { subject as Subject } from '@/lib/data-types';
 
 // --- Interfaces ---
 interface Student {
@@ -115,6 +114,11 @@ export default function GradeEntryPage() {
   , [firestore, schoolId, selectedClassId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+
+  const subjectsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [firestore, schoolId]);
+  const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
+  const subjects = useMemo(() => subjectsData?.map(d => d.data() as Subject) || [], [subjectsData]);
+
 
   // --- UI State ---
   const [allGradesForSubject, setAllGradesForSubject] = useState<GradeEntry[]>([]);
@@ -284,7 +288,7 @@ export default function GradeEntryPage() {
   };
 
 
-  const isLoading = schoolLoading || classesLoading;
+  const isLoading = schoolLoading || classesLoading || subjectsLoading;
   const isDataLoading = studentsLoading || isGradesLoading;
 
   return (
@@ -313,8 +317,8 @@ export default function GradeEntryPage() {
                 <SelectValue placeholder="Sélectionner une matière" />
               </SelectTrigger>
               <SelectContent>
-                {allSubjects.map(subject => (
-                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                {subjects.map(subject => (
+                  <SelectItem key={subject.name} value={subject.name}>{subject.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

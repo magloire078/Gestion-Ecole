@@ -3,7 +3,7 @@
 
 import { useParams, notFound, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
-import { useDoc, useFirestore, useMemoFirebase, useCollection } from '@/firebase';
+import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -46,13 +46,13 @@ export default function ClassDetailsPage() {
     const firestore = useFirestore();
 
     // Fetch Class Details
-    const classRef = useMemoFirebase(() => 
+    const classRef = useMemo(() => 
         (schoolId && classId) ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) : null
     , [firestore, schoolId, classId]);
     const { data: classData, loading: classLoading } = useDoc<Class>(classRef);
 
     // Fetch Students in this class
-    const studentsQuery = useMemoFirebase(() =>
+    const studentsQuery = useMemo(() =>
         (schoolId && classId) ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', classId)) : null
     , [firestore, schoolId, classId]);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);

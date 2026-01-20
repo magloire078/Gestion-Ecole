@@ -12,13 +12,12 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogFooter, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { allSubjects } from '@/lib/subjects';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
 import { useFirestore, useAuth, useUser } from '@/firebase';
 import { doc, setDoc, getDoc, writeBatch, collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings, subject as Subject } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { format, parseISO, isValid } from 'date-fns';
@@ -74,10 +73,11 @@ interface StaffEditFormProps {
     editingStaff: (Staff & { id: string }) | null;
     classes: Class[];
     adminRoles: (AdminRole & {id: string})[];
+    subjects: (Subject & { id: string })[];
     onFormSubmit: () => void;
 }
 
-export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onFormSubmit }: StaffEditFormProps) {
+export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, subjects, onFormSubmit }: StaffEditFormProps) {
     const firestore = useFirestore();
     const auth = useAuth();
     const { user: currentUser } = useUser();
@@ -259,7 +259,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, onF
                             <FormField control={form.control} name="adminRole" render={({ field }) => (<FormItem><FormLabel>Rôle Administratif (Permissions)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Aucun rôle admin" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">Aucun</SelectItem>{adminRoles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
                             {watchedRole === 'enseignant' && (
                                 <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
-                                    <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{allSubjects.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                                    <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{subjects.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
                                 </div>
                             )}

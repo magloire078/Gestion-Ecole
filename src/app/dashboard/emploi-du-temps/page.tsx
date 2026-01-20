@@ -57,9 +57,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { class_type as Class, staff as Staff, timetableEntry } from '@/lib/data-types';
+import type { class_type as Class, staff as Staff, timetableEntry, subject as Subject } from '@/lib/data-types';
 import { cn } from "@/lib/utils";
-import { allSubjects } from "@/lib/subjects";
 
 const timetableSchema = z.object({
   classId: z.string().min(1, { message: "La classe est requise." }),
@@ -92,14 +91,17 @@ export default function TimetablePage() {
   const timetableQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`)) : null, [firestore, schoolId]);
   const personnelQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant')) : null, [firestore, schoolId]);
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
-  
+  const subjectsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [firestore, schoolId]);
+
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: personnelData, loading: personnelLoading } = useCollection(personnelQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+  const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
   
   const timetable: timetableEntry[] = useMemo(() => timetableData?.map(d => ({ id: d.id, ...d.data() } as timetableEntry)) || [], [timetableData]);
   const teachers: (Staff & {id: string})[] = useMemo(() => personnelData?.map(d => ({ id: d.id, ...d.data() } as Staff & {id: string})) || [], [personnelData]);
   const classes: (Class & {id: string})[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [classesData]);
+  const subjects = useMemo(() => subjectsData?.map(d => d.data() as Subject) || [], [subjectsData]);
 
   // --- UI State ---
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -250,7 +252,7 @@ export default function TimetablePage() {
     });
   };
 
-  const isLoading = schoolLoading || timetableLoading || personnelLoading || classesLoading;
+  const isLoading = schoolLoading || timetableLoading || personnelLoading || classesLoading || subjectsLoading;
   
   const renderForm = () => (
       <Form {...form}>
@@ -302,7 +304,7 @@ export default function TimetablePage() {
                     <SelectTrigger><SelectValue placeholder="Sélectionner une matière" /></SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                      {allSubjects.map((subject) => (<SelectItem key={subject} value={subject}>{subject}</SelectItem>))}
+                      {subjects.map((subject) => (<SelectItem key={subject.name} value={subject.name}>{subject.name}</SelectItem>))}
                   </SelectContent>
                 </Select>
                 <FormMessage className="col-start-2 col-span-3" />
@@ -438,11 +440,13 @@ export default function TimetablePage() {
                                         {timetableGrid[time]?.[day]?.map(entry => {
                                             const teacher = teachers.find(t => t.id === entry.teacherId);
                                             const classInfo = classes.find(c => c.id === entry.classId);
+                                            const subjectInfo = subjects.find(s => s.name === entry.subject);
+                                            const color = entry.color || subjectInfo?.color || '#3b82f6';
                                             return (
-                                                <div key={entry.id} className="bg-blue-50 dark:bg-blue-900/30 p-2 rounded-lg text-xs mb-1 relative" style={{ backgroundColor: entry.color ? `${entry.color}1A` : undefined, borderColor: entry.color, borderLeftWidth: '3px'}}>
-                                                    <p className="font-bold" style={{ color: entry.color }}>{entry.subject}</p>
+                                                <div key={entry.id} className="p-2 rounded-lg text-xs mb-1 relative" style={{ backgroundColor: `${color}1A`, borderColor: color, borderLeftWidth: '3px'}}>
+                                                    <p className="font-bold" style={{ color: color }}>{entry.subject}</p>
                                                     <p className="text-muted-foreground">{teacher ? `${teacher.firstName[0]}. ${teacher.lastName}` : 'N/A'}</p>
-                                                    {selectedClassId === 'all' && <p className="font-semibold" style={{ color: entry.color }}>{classInfo?.name}</p>}
+                                                    {selectedClassId === 'all' && <p className="font-semibold" style={{ color: color }}>{classInfo?.name}</p>}
                                                     {canManageClasses && (
                                                       <DropdownMenu>
                                                           <DropdownMenuTrigger className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "absolute top-0 right-0 h-6 w-6 opacity-0 group-hover:opacity-100")}>

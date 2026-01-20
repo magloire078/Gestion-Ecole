@@ -29,7 +29,7 @@ import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, addDoc, setDoc, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -61,11 +61,11 @@ export default function BusManagementPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [busToDelete, setBusToDelete] = useState<(Bus & { id: string }) | null>(null);
 
-  const busesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
+  const busesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
   const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
   const buses: (Bus & { id: string })[] = useMemo(() => busesData?.map(d => ({ id: d.id, ...d.data() } as Bus & { id: string })) || [], [busesData]);
 
-  const driversQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'chauffeur')) : null, [firestore, schoolId]);
+  const driversQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'chauffeur')) : null, [firestore, schoolId]);
   const { data: driversData, loading: driversLoading } = useCollection(driversQuery);
   const drivers: (Staff & { id: string })[] = useMemo(() => driversData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [driversData]);
 

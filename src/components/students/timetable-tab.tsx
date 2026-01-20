@@ -5,7 +5,7 @@ import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { staff as Staff, student as Student } from '@/lib/data-types';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 
@@ -28,11 +28,11 @@ export const StudentTimetableTab: React.FC<StudentTimetableTabProps> = ({ studen
   const firestore = useFirestore();
   const classId = student.classId;
 
-  const timetableQuery = useMemoFirebase(() =>
+  const timetableQuery = useMemo(() =>
     (classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
   , [firestore, schoolId, classId]);
 
-  const teachersQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+  const teachersQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
 
   const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
   const { data: teachersData, loading: teachersLoading } = useCollection(teachersQuery);

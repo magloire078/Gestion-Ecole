@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { collection, getDocs, query } from 'firebase/firestore';
 import type { route as Route, bus as Bus, staff as Staff } from '@/lib/data-types';
 
@@ -21,9 +21,9 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const [selectedRouteId, setSelectedRouteId] = useState<string | null>(null);
 
-  const routesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/transport_lignes`)), [firestore, schoolId]);
-  const busesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/transport_bus`)), [firestore, schoolId]);
-  const driversQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+  const routesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_lignes`)), [firestore, schoolId]);
+  const busesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_bus`)), [firestore, schoolId]);
+  const driversQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
 
   const { data: routesData, loading: routesLoading } = useCollection(routesQuery);
   const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
@@ -52,10 +52,9 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
       return (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-24" />
+              ))}
           </div>
            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                <Skeleton className="lg:col-span-1 h-96 w-full" />

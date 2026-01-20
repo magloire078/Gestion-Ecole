@@ -15,8 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Search, HeartPulse, ShieldAlert, Syringe, Users, CalendarClock } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
-import { collection, query, limit, orderBy, getDocs, collectionGroup, where } from "firebase/firestore";
+import { useCollection, useFirestore, useUser } from "@/firebase";
+import { collection, query, limit, orderBy, getDocs, collectionGroup, where } from 'firebase/firestore';
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,7 +35,7 @@ export default function HealthPage() {
   const [upcomingReminders, setUpcomingReminders] = useState<(Vaccination & { studentName: string; studentId: string; id: string; rappelDate: Date })[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  const studentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
   
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
 

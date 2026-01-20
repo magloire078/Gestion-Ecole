@@ -18,7 +18,7 @@ import {
   Pencil,
   Bell
 } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, addDoc, orderBy, limit } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -69,12 +69,12 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
     setTodayEnd(format(now, 'yyyy-MM-dd') + 'T23:59:59');
   }, []);
 
-  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
-  const occupantsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_occupants`), where('status', '==', 'active')), [firestore, schoolId]);
-  const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
-  const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)), [firestore, schoolId]);
+  const buildingsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/internat_batiments`)), [firestore, schoolId]);
+  const occupantsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/internat_occupants`), where('status', '==', 'active')), [firestore, schoolId]);
+  const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+  const roomsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/internat_chambres`)), [firestore, schoolId]);
 
-  const todayLogsQuery = useMemoFirebase(() => {
+  const todayLogsQuery = useMemo(() => {
     // Don't run query until date range is set on the client
     if (!todayStart || !todayEnd) return null; 
     return query(

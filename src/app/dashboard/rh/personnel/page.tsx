@@ -1,4 +1,5 @@
 
+
 'use client';
 import {
   Table,
@@ -44,7 +45,7 @@ import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import type { staff as Staff, admin_role as AdminRole } from '@/lib/data-types';
+import type { staff as Staff, admin_role as AdminRole, subject as Subject } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
@@ -154,6 +155,9 @@ export default function PersonnelPage() {
   const { data: adminRolesData, loading: adminRolesLoading } = useCollection(adminRolesQuery);
   const adminRoles: (AdminRole & {id: string})[] = useMemo(() => adminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [adminRolesData]);
 
+  const subjectsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [schoolId, firestore]);
+  const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
+  const subjects = useMemo(() => subjectsData?.map(d => ({ id: d.id, ...d.data() } as Subject & {id: string})) || [], [subjectsData]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -185,7 +189,7 @@ export default function PersonnelPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading || userLoading;
+  const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading || userLoading || subjectsLoading;
 
   const renderStaffCard = (member: StaffMember) => {
     const fullName = `${member.firstName} ${member.lastName}`;
@@ -300,7 +304,9 @@ export default function PersonnelPage() {
             </TabsList>
             <TabsContent value="teachers" className="mt-6">
                 {isLoading ? (
-                    <Skeleton className="h-64 w-full" />
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+                    </div>
                 ) : teachers.length > 0 ? (
                     viewMode === 'grid' ? (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -317,7 +323,9 @@ export default function PersonnelPage() {
             </TabsContent>
              <TabsContent value="staff" className="mt-6">
                 {isLoading ? (
-                     <Skeleton className="h-64 w-full" />
+                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                        {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+                    </div>
                 ) : otherStaff.length > 0 ? (
                      viewMode === 'grid' ? (
                         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -365,6 +373,7 @@ export default function PersonnelPage() {
                       editingStaff={editingStaff}
                       classes={classes}
                       adminRoles={adminRoles}
+                      subjects={subjects}
                       onFormSubmit={() => {
                           setIsFormOpen(false);
                           setEditingStaff(null);
