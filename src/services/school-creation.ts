@@ -1,4 +1,5 @@
 
+
 'use client';
 import { Firestore } from 'firebase/firestore';
 import type { school as SchoolData, user_root, staff } from '@/lib/data-types';
@@ -70,7 +71,7 @@ export class SchoolCreationService {
       // 3. Mettre à jour l'utilisateur
       const userRef = doc(this.firestore, 'users', data.directorId);
       const userRootData: user_root = {
-        schools: [{ schoolId, role: 'directeur' }],
+        schools: { [schoolId]: 'directeur' },
         activeSchoolId: schoolId,
         isSuperAdmin: false,
       };

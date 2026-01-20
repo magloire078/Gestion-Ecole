@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -117,10 +118,11 @@ export default function OnboardingPage() {
       };
       batch.set(staffProfileRef, staffProfileData);
       
-      // Update the user_root document by adding the new school to the array
+      // Update the user_root document by adding the new school to the schools map
       const userRootSnap = await getDoc(userRootRef);
-      const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || [] : [];
-      const updatedSchools = [...currentSchools, { schoolId, role }];
+      const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || {} : {};
+      const updatedSchools = { ...currentSchools, [schoolId]: role };
+
       const userRootData: Partial<user_root> = {
           schools: updatedSchools,
           activeSchoolId: schoolId, // Set the newly joined school as active

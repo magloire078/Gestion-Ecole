@@ -8,16 +8,9 @@
       "type": "object",
       "properties": {
         "schools": {
-          "type": "array",
-          "description": "Liste des écoles auxquelles l'utilisateur est affilié.",
-          "items": {
-            "type": "object",
-            "properties": {
-              "schoolId": { "type": "string", "description": "L'identifiant de l'école." },
-              "role": { "type": "string", "description": "Le rôle de l'utilisateur dans cette école." }
-            },
-            "required": ["schoolId", "role"]
-          }
+          "type": "object",
+          "description": "Map des écoles affiliées, avec l'ID de l'école comme clé et le rôle comme valeur.",
+          "additionalProperties": { "type": "string", "description": "Le rôle de l'utilisateur dans l'école." }
         },
         "activeSchoolId": { "type": "string", "description": "L'ID de l'école actuellement sélectionnée par l'utilisateur." },
         "isSuperAdmin": { "type": "boolean", "description": "Indique si l'utilisateur est un super-admin de la plateforme." }

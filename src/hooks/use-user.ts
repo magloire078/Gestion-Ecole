@@ -17,7 +17,7 @@ export interface AppUser {
     profile?: UserProfile; 
     parentStudentIds?: string[];
     schoolId?: string | null; // L'école actuellement active
-    schools?: { schoolId: string, role: string }[]; // Toutes les écoles de l'utilisateur
+    schools?: { [key: string]: string }; // Toutes les écoles de l'utilisateur
     displayName?: string | null;
     photoURL?: string | null;
     email?: string | null;
@@ -59,13 +59,16 @@ export function useUser() {
           
           if (userRootDoc.exists()) {
             const userData = userRootDoc.data() as user_root;
-            const schoolAffiliations = userData.schools || [];
-            const activeSchoolId = userData.activeSchoolId || schoolAffiliations[0]?.schoolId || null;
+            const schoolAffiliations = userData.schools || {};
+            const schoolIds = Object.keys(schoolAffiliations);
+            const activeSchoolId = userData.activeSchoolId && schoolAffiliations[userData.activeSchoolId]
+                ? userData.activeSchoolId
+                : schoolIds[0] || null;
             
             if (activeSchoolId) {
-                const activeAffiliation = schoolAffiliations.find(s => s.schoolId === activeSchoolId);
+                const activeRole = schoolAffiliations[activeSchoolId];
                 
-                if (activeAffiliation?.role === 'parent') {
+                if (activeRole === 'parent') {
                     // This is a parent user for the active school
                     const parentProfileRef = doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`);
                     const parentProfileSnap = await getDoc(parentProfileRef);
@@ -119,7 +122,7 @@ export function useUser() {
 
           } else {
             // Authenticated user but no user_root doc -> needs onboarding
-             setUser({ uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: null, schools: [], displayName: firebaseUser.displayName, email: firebaseUser.email, photoURL: firebaseUser.photoURL });
+             setUser({ uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: null, schools: {}, displayName: firebaseUser.displayName, email: firebaseUser.email, photoURL: firebaseUser.photoURL });
           }
 
         } catch (error) {
@@ -141,7 +144,7 @@ export function useUser() {
   const isDirector = user?.profile?.role === 'directeur';
   
   const setActiveSchool = async (schoolId: string) => {
-    if (!user || user.isParent || !user.schools?.some(s => s.schoolId === schoolId)) {
+    if (!user || user.isParent || !user.schools || !user.schools[schoolId]) {
         console.error("Action non autorisée ou école invalide.");
         return;
     }

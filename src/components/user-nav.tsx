@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -153,7 +154,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       
       {!user.isParent && (
         <>
-          {user.schools && user.schools.length > 1 && (
+          {user.schools && Object.keys(user.schools).length > 1 && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
                 <ChevronsUpDown className="mr-2 h-4 w-4" />
@@ -161,11 +162,11 @@ export function UserNav({ collapsed = false }: UserNavProps) {
               </DropdownMenuSubTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuSubContent>
-                  {user.schools.map(school => (
-                    <DropdownMenuItem key={school.schoolId} onClick={() => setActiveSchool(school.schoolId)} disabled={school.schoolId === schoolData?.id}>
-                       {school.schoolId === schoolData?.id && <Check className="mr-2 h-4 w-4" />}
-                       <span className={cn(school.schoolId !== schoolData?.id && "ml-6")}>
-                           École {school.schoolId.substring(0,6)}...
+                  {Object.entries(user.schools).map(([schoolId, role]) => (
+                    <DropdownMenuItem key={schoolId} onClick={() => setActiveSchool(schoolId)} disabled={schoolId === schoolData?.id}>
+                       {schoolId === schoolData?.id && <Check className="mr-2 h-4 w-4" />}
+                       <span className={cn(schoolId !== schoolData?.id && "ml-6")}>
+                           École {schoolId.substring(0,6)}...
                        </span>
                     </DropdownMenuItem>
                   ))}

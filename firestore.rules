@@ -14,14 +14,14 @@ service cloud.firestore {
     
     function isSchoolMember(schoolId) {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && 
+      return isSignedIn() &&
              exists(userRootPath) &&
-             get(userRootPath).data.schools.exists(s => s.schoolId == schoolId);
+             schoolId in get(userRootPath).data.schools;
     }
     
     function isSuperAdmin() {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin == true;
+      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin;
     }
 
     function getStaffProfile(schoolId) {
