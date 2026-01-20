@@ -35,7 +35,15 @@ export function useCollection<T>(query: Query<T> | null) {
       setData(snapshot.docs);
       setLoading(false);
     }, async (serverError) => {
-        const path = (query as any)._query?.path?.segments.join('/') || 'unknown path';
+        let path = 'unknown path';
+        const internalQuery = (query as any)?._query;
+        if (internalQuery) {
+            if (internalQuery.path) {
+                path = internalQuery.path.segments.join('/');
+            } else if (internalQuery.collectionGroup) {
+                path = `collectionGroup: ${internalQuery.collectionGroup}`;
+            }
+        }
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'list',
@@ -46,22 +54,36 @@ export function useCollection<T>(query: Query<T> | null) {
     });
 
     return () => unsubscribe();
-  }, [(query as any)?._query?.path?.segments.join('/'), firestore]); // Stabilize dependency
+  }, [query, firestore]);
   
   const add = (data: DocumentData): void => {
     if (!query) {
         toast({ variant: 'destructive', title: 'Erreur', description: "La requête n'est pas définie." });
         return;
     }
-    const collRef = query.firestore.collection((query as any)._query.path.segments.join('/')) as CollectionReference<DocumentData>;
+
+    let path = '';
+    const internalQuery = (query as any)?._query;
+    if (internalQuery) {
+        if (internalQuery.path) {
+            path = internalQuery.path.segments.join('/');
+        } else {
+            toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'ajouter un document à une requête de groupe de collections." });
+            return;
+        }
+    }
+    if (!path) {
+        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de déterminer le chemin de la collection." });
+        return;
+    }
+    
+    const collRef = collection(firestore, path) as CollectionReference<DocumentData>;
     
     addDoc(collRef, data)
     .then((docRef) => {
         // Opération réussie, le listener onSnapshot mettra à jour l'UI.
-        // On peut afficher un toast si nécessaire.
     })
     .catch((serverError) => {
-        const path = (query as any)._query?.path?.segments.join('/') || 'unknown path';
         const permissionError = new FirestorePermissionError({
             path: path,
             operation: 'create',
