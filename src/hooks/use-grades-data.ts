@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,8 +27,7 @@ export const useGradesData = (schoolId?: string | null) => {
         const gradesCollectionGroup = collectionGroup(firestore, 'notes');
         const gradesQuery = query(
           gradesCollectionGroup,
-          where('__name__', '>=', `ecoles/${schoolId}/`),
-          where('__name__', '<', `ecoles/${schoolId}￿`),
+          where('schoolId', '==', schoolId),
           limit(500)
         );
         
@@ -59,3 +59,5 @@ export const useGradesData = (schoolId?: string | null) => {
 
   return { grades, loading, error };
 };
+
+    

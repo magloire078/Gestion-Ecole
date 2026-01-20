@@ -217,6 +217,7 @@ export default function GradeEntryPage() {
     }
     
     const gradeData = {
+      schoolId: schoolId,
       subject: selectedSubject,
       type: values.type,
       date: values.date,
@@ -519,3 +520,5 @@ export default function GradeEntryPage() {
     </>
   );
 }
+
+    

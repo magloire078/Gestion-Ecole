@@ -42,6 +42,18 @@ service cloud.firestore {
     function isParentOfStudent(studentDoc) {
       return isSignedIn() && request.auth.uid in studentDoc.data.parentIds;
     }
+
+    // =================================
+    //      COLLECTION GROUP RULES
+    // =================================
+    match /{path=**}/notes/{gradeId} {
+      // This allows 'list' operations (collection group queries) for school members with 'viewUsers' permission.
+      // The query MUST include a `where('schoolId', '==', '...')` clause.
+      allow read: if isSchoolMember(resource.data.schoolId) && hasPermission(resource.data.schoolId, 'viewUsers');
+      
+      // Writes via collection group queries are not intended. Direct writes are handled by more specific rules.
+      allow write: if false;
+    }
     
     // =================================
     //         PUBLIC COLLECTIONS
@@ -294,3 +306,5 @@ service cloud.firestore {
 
   }
 }
+
+    
