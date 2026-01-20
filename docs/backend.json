@@ -447,7 +447,10 @@
             "notes": { "type": "string" },
             "status": { "type": "string", "enum": ["active", "transferred", "graduated", "withdrawn"] },
             "createdAt": { "type": "string", "format": "date-time" },
-            "createdBy": { "type": "string" }
+            "createdBy": { "type": "string" },
+            "className": { "type": "string", "description": "Nom dénormalisé de la classe pour des requêtes plus simples." },
+            "gradeName": { "type": "string", "description": "Nom dénormalisé du niveau." },
+            "cycleName": { "type": "string", "description": "Nom dénormalisé du cycle." }
         },
         "required": ["schoolId", "studentId", "classeId", "academicYear", "startDate", "promotionType", "status", "createdBy"]
     },

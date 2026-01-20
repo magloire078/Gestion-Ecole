@@ -1,5 +1,14 @@
 
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "eleves",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "classId", "order": "ASCENDING" },
+        { "fieldPath": "lastName", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
