@@ -4,11 +4,11 @@
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
-import { BookOpen } from 'lucide-react';
+import { School } from 'lucide-react';
 
 const DefaultLogo = ({ compact }: { compact?: boolean }) => (
     <div className={cn("flex items-center justify-center bg-primary/10 rounded-lg text-primary", compact ? "h-9 w-9" : "h-8 w-8")}>
-        <BookOpen className={cn(compact ? "h-6 w-6" : "h-5 w-5")} />
+        <School className={cn(compact ? "h-6 w-6" : "h-5 w-5")} />
     </div>
 );
 
