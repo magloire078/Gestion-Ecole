@@ -363,6 +363,7 @@ export type gradeEntry = {
 
 export type accountingTransaction = {
     schoolId: string;
+    studentId?: string;
     date: string;
     description: string;
     category: string;
@@ -728,3 +729,5 @@ export interface UserProfile extends staff {
     permissions?: Partial<admin_role['permissions']>;
     isAdmin?: boolean;
 }
+
+    

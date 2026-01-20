@@ -57,7 +57,7 @@ service cloud.firestore {
     }
 
     match /{path=**}/paiements/{paymentId} {
-      allow read: if (isSchoolMember(resource.data.schoolId) && hasPermission(resource.data.schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)));
+      allow get: if (isSchoolMember(resource.data.schoolId) && hasPermission(resource.data.schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)));
       allow write: if hasPermission(resource.data.schoolId, 'manageBilling');
     }
     
@@ -324,3 +324,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

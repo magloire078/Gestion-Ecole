@@ -489,6 +489,7 @@
       "type": "object",
       "properties": {
         "schoolId": { "type": "string", "description": "L'identifiant de l'école parente." },
+        "studentId": { "type": "string", "description": "L'ID de l'élève si la transaction est liée à un élève." },
         "date": { "type": "string", "format": "date", "description": "La date de la transaction." },
         "description": { "type": "string", "description": "La description de la transaction." },
         "category": { "type": "string", "description": "La catégorie de la transaction." },
@@ -1309,5 +1310,7 @@
     }
   }
 }
+
+    
 
     

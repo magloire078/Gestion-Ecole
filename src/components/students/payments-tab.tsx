@@ -219,6 +219,7 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
             schoolId: schoolData.id, date: values.paymentDate,
             description: values.paymentDescription || `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
             category: 'Scolarité', type: 'Revenu', amount: amountPaid,
+            studentId: student.id,
         });
         
         const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolData.id}/eleves/${student.id}/paiements`));
@@ -300,3 +301,5 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
         </Dialog>
     );
 }
+
+    

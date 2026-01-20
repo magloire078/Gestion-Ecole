@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { User, BookOpen, CreditCard, UserX } from 'lucide-react';
-import type { student, libraryBook, payment, absence } from '@/lib/data-types';
+import type { student, libraryBook, payment, absence, accountingTransaction } from '@/lib/data-types';
 
 interface RecentActivityProps {
     schoolId: string;
@@ -28,7 +28,13 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
     const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore, schoolId]);
-    const recentPaymentsQuery = useMemo(() => schoolId ? query(collectionGroup(firestore, 'paiements'), where('schoolId', '==', schoolId), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    const recentPaymentsQuery = useMemo(() => schoolId ? query(
+        collection(firestore, `ecoles/${schoolId}/comptabilite`), 
+        where('category', '==', 'Scolarité'),
+        where('type', '==', 'Revenu'),
+        orderBy('date', 'desc'), 
+        limit(5)
+    ) : null, [firestore, schoolId]);
     const recentAbsencesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
     
     // We need all students to map IDs to names for payments
@@ -70,8 +76,8 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         });
         
         paymentsData?.forEach(doc => {
-            const data = doc.data() as payment;
-            const studentName = studentMap.get(data.studentId) || 'un élève';
+            const data = doc.data() as accountingTransaction;
+            const studentName = data.studentId ? studentMap.get(data.studentId) || 'un élève' : 'un élève';
             if(data.date){
                 activities.push({
                     id: doc.id,
@@ -142,3 +148,5 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         </Card>
     );
 }
+
+    
