@@ -371,6 +371,8 @@ export type accountingTransaction = {
 };
 
 export type payment = {
+    schoolId: string;
+    studentId: string;
     date: string;
     amount: number;
     description: string;

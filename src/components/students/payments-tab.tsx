@@ -223,6 +223,8 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
         
         const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolData.id}/eleves/${student.id}/paiements`));
         batch.set(paymentHistoryRef, {
+            schoolId: schoolData.id,
+            studentId: student.id,
             date: values.paymentDate, amount: amountPaid, description: values.paymentDescription,
             accountingTransactionId: newTransactionRef.id, payerFirstName: values.payerFirstName,
             payerLastName: values.payerLastName, payerContact: values.payerContact, method: values.paymentMethod,

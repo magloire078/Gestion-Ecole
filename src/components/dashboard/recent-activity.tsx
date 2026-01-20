@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -27,7 +28,7 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
     const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore, schoolId]);
-    const recentPaymentsQuery = useMemo(() => schoolId ? query(collectionGroup(firestore, 'paiements'), where('__name__', '>=', `ecoles/${schoolId}/`), where('__name__', '<', `ecoles/${schoolId}￿`), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    const recentPaymentsQuery = useMemo(() => schoolId ? query(collectionGroup(firestore, 'paiements'), where('schoolId', '==', schoolId), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
     const recentAbsencesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
     
     // We need all students to map IDs to names for payments
@@ -70,9 +71,7 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         
         paymentsData?.forEach(doc => {
             const data = doc.data() as payment;
-            const pathSegments = doc.ref.path.split('/');
-            const studentId = pathSegments[pathSegments.length - 3];
-            const studentName = studentMap.get(studentId) || 'un élève';
+            const studentName = studentMap.get(data.studentId) || 'un élève';
             if(data.date){
                 activities.push({
                     id: doc.id,
