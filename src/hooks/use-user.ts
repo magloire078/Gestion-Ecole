@@ -7,7 +7,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { onIdTokenChanged, getAuth } from 'firebase/auth';
 import { useFirestore, useAuth } from '../firebase/client-provider';
-import type { UserProfile, user_root } from '@/lib/data-types';
+import type { UserProfile, user_root, parent as Parent } from '@/lib/data-types';
 import { useRouter } from 'next/navigation';
 
 export interface AppUser {
@@ -61,53 +61,65 @@ export function useUser() {
             const userData = userRootDoc.data() as user_root;
             const schoolAffiliations = userData.schools || [];
             const activeSchoolId = userData.activeSchoolId || schoolAffiliations[0]?.schoolId || null;
-            let userProfile: UserProfile | undefined = undefined;
-
+            
             if (activeSchoolId) {
-                const staffProfileRef = doc(firestore, `ecoles/${activeSchoolId}/personnel/${firebaseUser.uid}`);
-                const profileSnap = await getDoc(staffProfileRef);
-                if (profileSnap.exists()) {
-                    userProfile = profileSnap.data() as UserProfile;
-                    // Check for adminRole and fetch permissions
-                    if (userProfile.adminRole) {
-                        const roleRef = doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`);
-                        try {
+                const activeAffiliation = schoolAffiliations.find(s => s.schoolId === activeSchoolId);
+                
+                if (activeAffiliation?.role === 'parent') {
+                    // This is a parent user for the active school
+                    const parentProfileRef = doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`);
+                    const parentProfileSnap = await getDoc(parentProfileRef);
+                    const parentData = parentProfileSnap.data() as Parent;
+                    
+                    setUser({
+                        uid: firebaseUser.uid,
+                        authUser: firebaseUser,
+                        isParent: true,
+                        schoolId: activeSchoolId,
+                        schools: schoolAffiliations,
+                        parentStudentIds: parentData?.studentIds || [],
+                        displayName: parentData?.displayName || firebaseUser.displayName,
+                        email: firebaseUser.email,
+                        photoURL: parentData?.photoURL || firebaseUser.photoURL,
+                    });
+
+                } else {
+                    // This is a staff member
+                    const staffProfileRef = doc(firestore, `ecoles/${activeSchoolId}/personnel/${firebaseUser.uid}`);
+                    const profileSnap = await getDoc(staffProfileRef);
+                    let userProfile: UserProfile | undefined = undefined;
+                    
+                    if (profileSnap.exists()) {
+                        userProfile = profileSnap.data() as UserProfile;
+                        if (userProfile.adminRole) {
+                            const roleRef = doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`);
                             const roleSnap = await getDoc(roleRef);
                             if (roleSnap.exists()) {
                                 userProfile.permissions = roleSnap.data().permissions;
                             }
-                        } catch (e) {
-                            console.error("Error fetching admin role:", e);
                         }
                     }
+                    
+                    setUser({
+                        uid: firebaseUser.uid,
+                        authUser: firebaseUser,
+                        isParent: false,
+                        schoolId: activeSchoolId,
+                        schools: schoolAffiliations,
+                        profile: userProfile,
+                        displayName: userProfile?.displayName || firebaseUser.displayName,
+                        email: firebaseUser.email,
+                        photoURL: userProfile?.photoURL || firebaseUser.photoURL,
+                    });
                 }
+            } else {
+                 // Authenticated user with a user_root doc, but no active school (e.g. affiliation removed)
+                 setUser({ uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: null, schools: schoolAffiliations, displayName: firebaseUser.displayName, email: firebaseUser.email, photoURL: firebaseUser.photoURL });
             }
-            
-            setUser({
-              uid: firebaseUser.uid,
-              authUser: firebaseUser, 
-              isParent: false, 
-              schoolId: activeSchoolId, // École active
-              schools: schoolAffiliations, // Liste de toutes les écoles
-              profile: userProfile, 
-              displayName: userProfile?.displayName || firebaseUser.displayName,
-              email: firebaseUser.email, 
-              photoURL: userProfile?.photoURL || firebaseUser.photoURL,
-            });
 
           } else {
-            // L'utilisateur est authentifié mais n'a pas de document 'user_root',
-            // il doit passer par l'onboarding.
-             setUser({
-              uid: firebaseUser.uid,
-              authUser: firebaseUser,
-              isParent: false,
-              schoolId: null, // Pas encore d'école
-              schools: [],
-              displayName: firebaseUser.displayName,
-              email: firebaseUser.email,
-              photoURL: firebaseUser.photoURL,
-            });
+            // Authenticated user but no user_root doc -> needs onboarding
+             setUser({ uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: null, schools: [], displayName: firebaseUser.displayName, email: firebaseUser.email, photoURL: firebaseUser.photoURL });
           }
 
         } catch (error) {
@@ -117,43 +129,14 @@ export function useUser() {
             setLoading(false);
         }
       } else {
-         const parentSessionId = localStorage.getItem('parent_session_id');
-         const parentSchoolId = localStorage.getItem('parent_school_id');
-         const parentStudentIdsStr = localStorage.getItem('parent_student_ids');
-
-         if (parentSessionId && parentSchoolId && parentStudentIdsStr) {
-            try {
-                const sessionRef = doc(firestore, 'sessions_parents', parentSessionId);
-                const sessionDoc = await getDoc(sessionRef);
-
-                if (sessionDoc.exists() && sessionDoc.data().isActive && new Date(sessionDoc.data().expiresAt.toDate()) > new Date()) {
-                    setUser({
-                      uid: parentSessionId, 
-                      isParent: true, 
-                      schoolId: parentSchoolId,
-                      parentStudentIds: JSON.parse(parentStudentIdsStr),
-                      displayName: 'Parent / Tuteur', 
-                      authUser: null,
-                    });
-                } else {
-                    localStorage.removeItem('parent_session_id');
-                    localStorage.removeItem('parent_school_id');
-                    localStorage.removeItem('parent_student_ids');
-                    setUser(null);
-                }
-            } catch (e) {
-                console.error("Error validating parent session:", e);
-                setUser(null);
-            }
-         } else {
-            setUser(null);
-         }
+         // No firebaseUser, so no user is logged in.
+         setUser(null);
          setLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, [isClient, firestore, auth, reloadUser]);
+  }, [isClient, firestore, auth, reloadUser, router]); // router added to deps
 
   const isDirector = user?.profile?.role === 'directeur';
   
@@ -167,14 +150,10 @@ export function useUser() {
     const userRootRef = doc(firestore, 'users', user.uid);
     try {
         await updateDoc(userRootRef, { activeSchoolId: schoolId });
-        // After updating the active school, we can just reload the user data
-        // which will re-trigger the main useEffect
         await reloadUser();
-        router.refresh(); // Refresh Next.js router cache
+        router.refresh(); 
     } catch(e) {
         console.error("Failed to set active school:", e);
-    } finally {
-      // setLoading(false) will be handled by the main useEffect
     }
   };
 

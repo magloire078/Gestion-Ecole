@@ -39,6 +39,10 @@ service cloud.firestore {
         return false;
     }
     
+    function isParentOfStudent(studentDoc) {
+      return isSignedIn() && request.auth.uid in studentDoc.data.parentIds;
+    }
+    
     // =================================
     //         PUBLIC COLLECTIONS
     // =================================
@@ -54,8 +58,9 @@ service cloud.firestore {
     }
     
     match /sessions_parents/{sessionId} {
-      allow create: if isSignedIn(); // Only authenticated staff can create sessions
-      allow read: if true; // Public read to find the session by code
+      // Allow creation by staff, disallow for parent access for now
+      allow create: if isSchoolMember(request.resource.data.schoolId); 
+      allow read: if isSuperAdmin(); // No public read anymore
       allow update, delete: if isSuperAdmin();
     }
 
@@ -110,17 +115,26 @@ service cloud.firestore {
         allow write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
+    match /ecoles/{schoolId}/parents/{parentId} {
+        allow read: if isSchoolMember(schoolId) || request.auth.uid == parentId;
+        allow write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
+    }
+    
     match /ecoles/{schoolId}/admin_roles/{roleId} {
       allow read, write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageSettings');
     }
 
     match /ecoles/{schoolId}/eleves/{studentId} {
-        allow read: if isSchoolMember(schoolId);
+        allow read: if isSchoolMember(schoolId) || isParentOfStudent(resource);
         allow write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
     match /ecoles/{schoolId}/eleves/{studentId}/{subcollection}/{docId} {
-        allow read: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers');
+        function isOwner() {
+          return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)).data.parentIds;
+        }
+        
+        allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isOwner();
         allow write: if (isSchoolMember(schoolId) && (
                          (subcollection == 'notes' && hasPermission(schoolId, 'manageGrades')) ||
                          (subcollection == 'paiements' && hasPermission(schoolId, 'manageBilling')) ||
@@ -131,7 +145,10 @@ service cloud.firestore {
     }
     
      match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId}/{subcollection}/{docId} {
-         allow read: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers');
+         function isOwner() {
+          return isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)).data.parentIds;
+        }
+         allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isOwner();
          allow write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageMedical');
      }
     
