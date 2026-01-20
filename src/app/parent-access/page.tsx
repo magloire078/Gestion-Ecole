@@ -58,7 +58,7 @@ export default function ParentAccessPage() {
 
             toast({ title: 'Accès autorisé', description: 'Redirection vers votre portail...' });
             
-            window.location.href = '/dashboard';
+            router.push('/dashboard');
 
         } catch (error) {
             console.error("Erreur de connexion parent:", error);
@@ -71,7 +71,7 @@ export default function ParentAccessPage() {
         <div className="min-h-screen flex flex-col lg:flex-row">
             {/* Côté gauche - Illustration */}
             <div className="lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden text-white">
-                <div className="absolute inset-0 bg-grid-white/10 bg-grid [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+                <div className="absolute inset-0 bg-primary/10 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
                 
                 <div className="relative z-10">
                     <Link href="/" className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors">
