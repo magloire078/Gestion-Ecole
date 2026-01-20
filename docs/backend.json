@@ -335,6 +335,8 @@
       "type": "object",
       "properties": {
         "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "classId": { "type": "string" },
         "date": { "type": "string", "format": "date-time" },
         "type": { "type": "string", "enum": ["Avertissement Oral", "Avertissement Écrit", "Retenue", "Mise à pied", "Exclusion temporaire", "Exclusion définitive"] },
         "reason": { "type": "string", "description": "Raison ou description de l'incident." },
@@ -1098,11 +1100,6 @@
                     "schema": { "$ref": "#/entities/studentClassAssignment" },
                     "description": "Stocke l'historique des affectations de classe pour un élève."
                 },
-                "incidents_disciplinaires": {
-                  "path": "incidents_disciplinaires/{incidentId}",
-                  "schema": { "$ref": "#/entities/discipline_incident" },
-                  "description": "Historique des incidents disciplinaires de l'élève."
-                },
                 "dossier_medical": {
                     "path": "dossier_medical/{dossierId}",
                     "schema": { "$ref": "#/entities/dossierMedical" },
@@ -1151,6 +1148,11 @@
             "path": "absences/{absenceId}",
             "schema": { "$ref": "#/entities/absence" },
             "description": "Stocke l'historique des absences pour cette école."
+        },
+        "incidents_disciplinaires": {
+          "path": "incidents_disciplinaires/{incidentId}",
+          "schema": { "$ref": "#/entities/discipline_incident" },
+          "description": "Historique de tous les incidents disciplinaires de l'école."
         },
         "comptabilite": {
             "path": "comptabilite/{transactionId}",

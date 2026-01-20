@@ -21,7 +21,7 @@ service cloud.firestore {
     
     function isSuperAdmin() {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin;
+      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin == true;
     }
 
     function getStaffProfile(schoolId) {
@@ -140,7 +140,6 @@ service cloud.firestore {
         allow write: if isSchoolMember(schoolId) && (
                          (subcollection == 'notes' && hasPermission(schoolId, 'manageGrades')) ||
                          (subcollection == 'paiements' && hasPermission(schoolId, 'manageBilling')) ||
-                         (subcollection == 'incidents_disciplinaires' && hasPermission(schoolId, 'manageDiscipline')) ||
                          (subcollection == 'dossier_medical' && hasPermission(schoolId, 'manageMedical')) ||
                          (subcollection == 'affectations' && hasPermission(schoolId, 'manageUsers'))
                        );
@@ -180,6 +179,11 @@ service cloud.firestore {
     match /ecoles/{schoolId}/absences/{absenceId} {
         allow read: if isSchoolMember(schoolId);
         allow write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageAttendance');
+    }
+    
+    match /ecoles/{schoolId}/incidents_disciplinaires/{incidentId} {
+        allow read: if isSchoolMember(schoolId);
+        allow write: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageDiscipline');
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
