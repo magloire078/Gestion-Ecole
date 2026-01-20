@@ -15,26 +15,33 @@ service cloud.firestore {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
       return isSignedIn() &&
              exists(userRootPath) &&
-             'schools' in get(userRootPath).data && get(userRootPath).data.schools != null &&
+             'schools' in get(userRootPath).data &&
+             get(userRootPath).data.schools != null &&
              schoolId in get(userRootPath).data.schools;
     }
     
     function isSuperAdmin() {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin == true;
+      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin;
     }
 
     function hasPermission(schoolId, permission) {
-      let staffProfile = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
+      let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
       
-      return isSuperAdmin() || 
-             (isSchoolMember(schoolId) && staffProfile.role == 'directeur') ||
-             (
-               isSchoolMember(schoolId) && 
-               'adminRole' in staffProfile && staffProfile.adminRole != null &&
-               exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)) &&
-               get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true
-             );
+      let staffProfileExists = exists(staffDocPath);
+      let staffProfile = get(staffDocPath).data;
+
+      // Check for director role
+      let isDirectorRole = staffProfileExists && staffProfile.role == 'directeur';
+
+      // Check for admin role with permission
+      let hasAdminPermission = staffProfileExists &&
+                               'adminRole' in staffProfile &&
+                               staffProfile.adminRole != null &&
+                               exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)) &&
+                               get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission];
+                               
+      return isSuperAdmin() || (isSchoolMember(schoolId) && (isDirectorRole || hasAdminPermission));
     }
 
     function isParentOfStudent(studentDoc) {
