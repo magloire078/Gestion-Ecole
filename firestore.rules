@@ -15,7 +15,7 @@ service cloud.firestore {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
       return isSignedIn() &&
              exists(userRootPath) &&
-             get(userRootPath).data.schools != null &&
+             'schools' in get(userRootPath).data && get(userRootPath).data.schools != null &&
              schoolId in get(userRootPath).data.schools;
     }
     
@@ -24,21 +24,16 @@ service cloud.firestore {
       return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin == true;
     }
 
-    function getStaffProfile(schoolId) {
-      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
-    }
-    
     function hasPermission(schoolId, permission) {
-      let staffProfile = getStaffProfile(schoolId);
-      let adminRoleId = staffProfile.get('adminRole', null);
+      let staffProfile = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
       
       return isSuperAdmin() || 
              (isSchoolMember(schoolId) && staffProfile.role == 'directeur') ||
              (
                isSchoolMember(schoolId) && 
-               adminRoleId != null &&
-               exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRoleId)) &&
-               get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRoleId)).data.permissions[permission] == true
+               'adminRole' in staffProfile && staffProfile.adminRole != null &&
+               exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)) &&
+               get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true
              );
     }
 
