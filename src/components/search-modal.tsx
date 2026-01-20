@@ -1,105 +1,143 @@
 
 'use client';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Search, X, Clock, FileText, User, School } from "lucide-react";
-import { useState, useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
+import { Search, User, Briefcase, Loader2 } from "lucide-react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useSchoolData } from "@/hooks/use-school-data";
+import { useFirestore, useCollection } from "@/firebase";
+import { collection, query } from "firebase/firestore";
+import type { student as Student, staff as Staff } from '@/lib/data-types';
+import Link from 'next/link';
+import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
 
-export function SearchModal({ isOpen, onClose, onSearch }: {
+export function SearchModal({ isOpen, onClose }: {
   isOpen: boolean;
   onClose: () => void;
-  onSearch: (query: string) => void;
 }) {
-  const [query, setQuery] = useState('');
+  const [queryValue, setQueryValue] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const { schoolId } = useSchoolData();
+  const firestore = useFirestore();
+
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [schoolId, firestore]);
+  const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [schoolId, firestore]);
+  
+  const { data: studentsDocs, loading: studentsLoading } = useCollection(studentsQuery);
+  const { data: staffDocs, loading: staffLoading } = useCollection(staffQuery);
+
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(queryValue);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [queryValue]);
+
+  const searchResults = useMemo(() => {
+    if (!debouncedQuery || (!studentsDocs && !staffDocs)) {
+      return { students: [], staff: [] };
+    }
+    
+    const lowercasedQuery = debouncedQuery.toLowerCase();
+    
+    const students = (studentsDocs || [])
+      .map(doc => ({ id: doc.id, ...doc.data() } as Student & {id: string}))
+      .filter(s => 
+        s.firstName?.toLowerCase().includes(lowercasedQuery) ||
+        s.lastName?.toLowerCase().includes(lowercasedQuery) ||
+        s.matricule?.toLowerCase().includes(lowercasedQuery)
+      ).slice(0, 5);
+      
+    const staff = (staffDocs || [])
+      .map(doc => ({ id: doc.id, ...doc.data() } as Staff & {id: string}))
+      .filter(s => 
+        s.displayName?.toLowerCase().includes(lowercasedQuery) ||
+        s.email?.toLowerCase().includes(lowercasedQuery) ||
+        s.role?.toLowerCase().includes(lowercasedQuery)
+      ).slice(0, 5);
+
+    return { students, staff };
+
+  }, [debouncedQuery, studentsDocs, staffDocs]);
+
+  useEffect(() => {
+    if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
+    } else {
+      setQueryValue('');
     }
   }, [isOpen]);
+  
+  const handleItemClick = () => {
+      onClose();
+  }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (query.trim()) {
-      onSearch(query.trim());
-    }
-  };
-
-  const recentSearches = ['Jean Dupont', 'Mathématiques 4ème', 'Bulletin trimestriel'];
+  const isLoading = studentsLoading || staffLoading;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6">
-          <DialogTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Recherche globale
-          </DialogTitle>
-        </DialogHeader>
+        <div className="flex items-center gap-2 p-4 border-b">
+          <Search className="h-5 w-5 text-muted-foreground" />
+          <Input
+            ref={inputRef}
+            value={queryValue}
+            onChange={(e) => setQueryValue(e.target.value)}
+            placeholder="Rechercher élèves, personnel..."
+            className="border-0 shadow-none focus-visible:ring-0 h-auto p-0 text-base bg-transparent"
+          />
+        </div>
         
-        <form onSubmit={handleSubmit} className="px-6 pt-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Rechercher élèves, cours, documents..."
-              className="pl-10 pr-10 h-12 text-base"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery('')}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2"
-              >
-                <X className="h-4 w-4 text-gray-400" />
-              </button>
+        <div className="max-h-[60vh] min-h-[10rem] overflow-y-auto">
+            {isLoading && debouncedQuery && (
+                <div className="p-6 flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
             )}
-          </div>
-        </form>
+            {!isLoading && debouncedQuery && searchResults.students.length === 0 && searchResults.staff.length === 0 && (
+                <div className="p-6 text-center text-muted-foreground">
+                    Aucun résultat trouvé pour "{debouncedQuery}"
+                </div>
+            )}
 
-        {!query && recentSearches.length > 0 && (
-          <div className="px-6 py-4 border-t">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Recherches récentes</h3>
-            <div className="space-y-1">
-              {recentSearches.map((search, i) => (
-                <button
-                  key={i}
-                  onClick={() => setQuery(search)}
-                  className="flex items-center gap-3 w-full p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-left"
-                >
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span>{search}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+            {!isLoading && searchResults.students.length > 0 && (
+                <div className="p-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground px-2 mb-2">Élèves</h3>
+                    <div className="space-y-1">
+                        {searchResults.students.map(student => (
+                            <Link key={student.id} href={`/dashboard/dossiers-eleves/${student.id}`} onClick={handleItemClick} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors">
+                                <Avatar className="h-8 w-8"><AvatarImage src={student.photoUrl || ''} /><AvatarFallback>{student.firstName?.[0]}{student.lastName?.[0]}</AvatarFallback></Avatar>
+                                <div>
+                                    <p className="text-sm font-medium">{student.firstName} {student.lastName}</p>
+                                    <p className="text-xs text-muted-foreground">{student.class}</p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-        {query && (
-          <div className="px-6 py-4 border-t">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Élèves
-                </h3>
-                {/* Résultats élèves */}
-              </div>
-              <div className="space-y-2">
-                <h3 className="text-sm font-medium flex items-center gap-2">
-                  <School className="h-4 w-4" />
-                  Cours
-                </h3>
-                {/* Résultats cours */}
-              </div>
-            </div>
-          </div>
-        )}
+             {!isLoading && searchResults.staff.length > 0 && (
+                <div className="p-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground px-2 mb-2">Personnel</h3>
+                     <div className="space-y-1">
+                        {searchResults.staff.map(member => (
+                            <Link key={member.id} href={`/dashboard/rh/${member.id}`} onClick={handleItemClick} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors">
+                                <Avatar className="h-8 w-8"><AvatarImage src={member.photoURL || ''} /><AvatarFallback>{member.firstName?.[0]}{member.lastName?.[0]}</AvatarFallback></Avatar>
+                                <div>
+                                    <p className="text-sm font-medium">{member.firstName} {member.lastName}</p>
+                                    <p className="text-xs text-muted-foreground capitalize">{member.role?.replace(/_/g, ' ')}</p>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
       </DialogContent>
     </Dialog>
   );

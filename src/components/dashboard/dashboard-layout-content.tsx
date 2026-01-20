@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -9,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Bell, Menu, Search, PanelLeftClose, PanelRightClose } from 'lucide-react';
 import { MobileNav } from '@/components/mobile-nav';
 import { cn } from '@/lib/utils';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useUser } from '@/hooks/use-user';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -71,11 +70,6 @@ export default function DashboardLayoutContent({ children }: { children: React.R
   };
 
   const breadcrumbs = generateBreadcrumbs();
-
-  const handleSearch = useCallback((query: string) => {
-    console.log('Recherche:', query);
-    setIsSearchOpen(false);
-  }, [router]);
   
   const navProps = {
     isSuperAdmin: user?.profile?.isAdmin === true,
@@ -214,7 +208,6 @@ export default function DashboardLayoutContent({ children }: { children: React.R
           <SearchModal
             isOpen={isSearchOpen}
             onClose={() => setIsSearchOpen(false)}
-            onSearch={handleSearch}
           />
 
           <NotificationsPanel
