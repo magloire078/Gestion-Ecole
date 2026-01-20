@@ -44,8 +44,9 @@ import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import type { materiel as Materiel, salle as Salle } from '@/lib/data-types';
+import type { materiel as Materiel, salle as Salle, bus as Bus, building } from '@/lib/data-types';
 import { format } from 'date-fns';
+import { Combobox } from '@/components/ui/combobox';
 
 const materielSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
@@ -75,10 +76,43 @@ export default function InventairePage() {
   const { data: inventaireData, loading: inventaireLoading } = useCollection(inventaireQuery);
   const inventaire: (Materiel & { id: string })[] = useMemo(() => inventaireData?.map(d => ({ id: d.id, ...d.data() } as Materiel & { id: string })) || [], [inventaireData]);
 
+  // Fetch all possible locations
   const sallesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
+  const batimentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/batiments`)) : null, [firestore, schoolId]);
+  const busesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
+  
   const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
-  const salles = useMemo(() => sallesData?.map(doc => ({ id: doc.id, ...doc.data() } as Salle & {id: string})) || [], [sallesData]);
-  const salleMap = useMemo(() => new Map(salles.map(s => [s.id, s.name])), [salles]);
+  const { data: batimentsData, loading: batimentsLoading } = useCollection(batimentsQuery);
+  const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
+
+  const { locationOptions, locationMap } = useMemo(() => {
+      const options: { value: string, label: string }[] = [];
+      const map = new Map<string, string>();
+      
+      (sallesData || []).forEach(doc => {
+          const salle = { id: doc.id, ...doc.data() } as Salle & {id: string};
+          const value = `salle:${salle.id}`;
+          const label = `Salle: ${salle.name}`;
+          options.push({ value, label });
+          map.set(value, label);
+      });
+      (batimentsData || []).forEach(doc => {
+          const batiment = { id: doc.id, ...doc.data() } as building & {id: string};
+          const value = `batiment:${batiment.id}`;
+          const label = `Bâtiment: ${batiment.name}`;
+          options.push({ value, label });
+          map.set(value, label);
+      });
+      (busesData || []).forEach(doc => {
+          const bus = { id: doc.id, ...doc.data() } as Bus & {id: string};
+          const value = `bus:${bus.id}`;
+          const label = `Bus: ${bus.registrationNumber}`;
+          options.push({ value, label });
+          map.set(value, label);
+      });
+
+      return { locationOptions: options, locationMap: map };
+  }, [sallesData, batimentsData, busesData]);
 
   const form = useForm<MaterielFormValues>({
     resolver: zodResolver(materielSchema),
@@ -143,7 +177,7 @@ export default function InventairePage() {
     }
   };
   
-  const isLoading = schoolLoading || inventaireLoading || sallesLoading;
+  const isLoading = schoolLoading || inventaireLoading || sallesLoading || batimentsLoading || busesLoading;
 
   return (
     <>
@@ -174,7 +208,7 @@ export default function InventairePage() {
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell>{item.category}</TableCell>
                     <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{salleMap.get(item.locationId) || item.locationId}</TableCell>
+                    <TableCell>{locationMap.get(item.locationId) || item.locationId}</TableCell>
                     <TableCell><Badge variant={getStatusBadgeVariant(item.status)} className="capitalize">{item.status.replace(/_/g, ' ')}</Badge></TableCell>
                     {canManageContent && (
                         <TableCell className="text-right">
@@ -210,7 +244,30 @@ export default function InventairePage() {
                 <FormField control={form.control} name="quantity" render={({ field }) => <FormItem><FormLabel>Quantité</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>} />
                 <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="neuf">Neuf</SelectItem><SelectItem value="bon">Bon</SelectItem><SelectItem value="à réparer">À réparer</SelectItem><SelectItem value="hors_service">Hors service</SelectItem></SelectContent></Select></FormItem>} />
               </div>
-              <FormField control={form.control} name="locationId" render={({ field }) => <FormItem><FormLabel>Emplacement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir une salle..."/></SelectTrigger></FormControl><SelectContent>{salles.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+              <FormField
+                control={form.control}
+                name="locationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Emplacement</FormLabel>
+                    <FormControl>
+                      <Combobox
+                        placeholder="Choisir un emplacement"
+                        searchPlaceholder="Chercher un lieu..."
+                        options={locationOptions}
+                        value={field.value}
+                        onValueChange={field.onChange}
+                        onCreate={(value) => {
+                            field.onChange(value);
+                            toast({title: `Emplacement "${value}" sera sauvegardé tel quel.`})
+                            return Promise.resolve({ value, label: value });
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField control={form.control} name="acquisitionDate" render={({ field }) => <FormItem><FormLabel>Date d'acquisition</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>} />
             </form>
           </Form>
