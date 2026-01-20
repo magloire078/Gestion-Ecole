@@ -1,5 +1,4 @@
 
-'use server';
 
 // This file is now dedicated to payroll-specific configurations.
 // Billing configurations have been moved to billing-calculator.ts to avoid circular dependencies.

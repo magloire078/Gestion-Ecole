@@ -1,5 +1,4 @@
 
-'use server';
 
 import { isValid, parseISO, lastDayOfMonth, format, differenceInYears, differenceInMonths, differenceInDays, addYears, addMonths } from "date-fns";
 import { fr } from "date-fns/locale";

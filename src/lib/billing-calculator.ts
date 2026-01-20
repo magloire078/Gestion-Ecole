@@ -1,5 +1,4 @@
 
-'use server';
 import { collection, getCountFromServer, query, where, type Firestore } from 'firebase/firestore';
 import type { school as School, student as Student, cycle as Cycle } from '@/lib/data-types';
 
