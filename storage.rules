@@ -11,11 +11,13 @@ service firebase.storage {
       return request.auth != null;
     }
 
-    // Correctly checks if the user is associated with the school via the /users/{userId} document
     function isSchoolMember(schoolId) {
+      let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      let userData = get(userRootPath).data;
       return isSignedIn() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schools.exists(s => s.schoolId == schoolId);
+             exists(userRootPath) &&
+             'schools' in userData && userData.schools != null &&
+             schoolId in userData.schools;
     }
 
     // Gets the staff profile to check for role
