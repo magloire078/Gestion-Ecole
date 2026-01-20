@@ -28,7 +28,7 @@ const createSchoolSchema = z.object({
   name: z.string()
     .min(3, "Le nom de l'école doit comporter au moins 3 caractères.")
     .max(100, "Le nom de l'école est trop long."),
-  drena: z.string().optional(),
+  drena: z.string().min(1, "La DRENA de tutelle est requise."),
   address: z.string()
     .min(5, "L'adresse doit comporter au moins 5 caractères.")
     .max(200, "L'adresse est trop longue.")
@@ -271,7 +271,7 @@ export default function CreateSchoolPage() {
                     <FormItem>
                         <FormLabel className="flex items-center gap-2">
                             <Building className="h-4 w-4" />
-                            DRENA de tutelle
+                            DRENA de tutelle *
                         </FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
