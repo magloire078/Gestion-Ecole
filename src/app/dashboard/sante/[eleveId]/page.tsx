@@ -2,7 +2,7 @@
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
-import { useDoc, useFirestore, useMemoFirebase, useCollection, useUser } from '@/firebase';
+import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, addDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -74,16 +74,16 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
   }
 
   // --- Data Fetching ---
-  const studentRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId]);
+  const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId]);
   const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
 
-  const dossierRef = useMemoFirebase(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}`), [firestore, schoolId, eleveId, refreshKey]);
+  const dossierRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}`), [firestore, schoolId, eleveId, refreshKey]);
   const { data: dossierData, loading: dossierLoading } = useDoc<DossierMedical>(dossierRef);
 
-  const vaccinsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/vaccins`)), [firestore, schoolId, eleveId, refreshKey]);
+  const vaccinsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/vaccins`)), [firestore, schoolId, eleveId, refreshKey]);
   const { data: vaccinsData, loading: vaccinsLoading } = useCollection(vaccinsQuery);
   
-  const consultationsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/consultations`)), [firestore, schoolId, eleveId, refreshKey]);
+  const consultationsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${eleveId}/dossier_medical/${eleveId}/consultations`)), [firestore, schoolId, eleveId, refreshKey]);
   const { data: consultationsData, loading: consultationsLoading } = useCollection(consultationsQuery);
 
   const student = studentData as Student | null;

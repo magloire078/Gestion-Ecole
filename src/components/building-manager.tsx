@@ -7,7 +7,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Building2, PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
 import Link from 'next/link';
@@ -77,8 +77,8 @@ export function BuildingManager({
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
   const [buildingToDelete, setBuildingToDelete] = useState<Building | null>(null);
 
-  const buildingsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/${buildingCollectionName}`)), [firestore, schoolId, buildingCollectionName]);
-  const roomsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/${roomCollectionName}`)), [firestore, schoolId, roomCollectionName]);
+  const buildingsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/${buildingCollectionName}`)), [firestore, schoolId, buildingCollectionName]);
+  const roomsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/${roomCollectionName}`)), [firestore, schoolId, roomCollectionName]);
 
   const { data: buildingsData, loading: buildingsLoading } = useCollection(buildingsQuery);
   const { data: roomsData, loading: roomsLoading } = useCollection(roomsQuery);

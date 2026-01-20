@@ -2,14 +2,14 @@
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PayslipPreview } from '@/components/payroll/payslip-template';
 import type { staff as Staff, school as School } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 function PayslipPageSkeleton() {
     return (
@@ -30,7 +30,7 @@ export default function StaffPayslipPage() {
   const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(true);
 
-  const staffRef = useMemoFirebase(() =>
+  const staffRef = useMemo(() =>
     (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null
   , [firestore, schoolId, staffId]);
 

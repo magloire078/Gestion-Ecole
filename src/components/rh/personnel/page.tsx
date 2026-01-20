@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2, Search } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2, Search, List, LayoutGrid } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -38,13 +38,13 @@ import {
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useCollection, useFirestore, useMemoFirebase, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, doc, query } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
-import type { staff as Staff, admin_role as AdminRole } from '@/lib/data-types';
+import type { staff as Staff, admin_role as AdminRole, subject as Subject } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
@@ -55,6 +55,68 @@ import { deleteStaffMember } from "@/services/staff-services";
 
 type StaffMember = Staff & { id: string };
 
+const StaffTable = ({ staff, onEdit, onDelete, classes }: { staff: StaffMember[], onEdit: (member: StaffMember) => void, onDelete: (member: StaffMember) => void, classes: Class[] }) => {
+    const router = useRouter();
+
+    return (
+        <Card>
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nom</TableHead>
+                            <TableHead>Rôle</TableHead>
+                            <TableHead>Contact</TableHead>
+                            <TableHead>Classe Principale</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {staff.map(member => {
+                            const fullName = `${member.firstName} ${member.lastName}`;
+                            const fallback = `${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase();
+                            const className = classes.find(c => c.id === member.classId)?.name;
+
+                            return (
+                                <TableRow key={member.id}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <Avatar className="h-10 w-10">
+                                                <AvatarImage src={member.photoURL || undefined} alt={fullName} />
+                                                <AvatarFallback>{fallback}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <Link href={`/dashboard/rh/${member.id}`} className="font-medium hover:underline">{fullName}</Link>
+                                                <div className="text-xs text-muted-foreground">{member.email}</div>
+                                            </div>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="capitalize">{member.role?.replace(/_/g, ' ')}</TableCell>
+                                    <TableCell>{member.phone || 'N/A'}</TableCell>
+                                    <TableCell>{className || 'N/A'}</TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>Voir Profil</DropdownMenuItem>
+                                                <DropdownMenuItem onClick={() => onEdit(member)}>Modifier</DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem className="text-destructive" onClick={() => onDelete(member)}>Supprimer</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    )
+}
+
 export default function PersonnelPage() {
   const firestore = useFirestore();
   const router = useRouter();
@@ -64,10 +126,11 @@ export default function PersonnelPage() {
   
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
-  const staffQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
+  const staffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`)) : null, [firestore, schoolId]);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   const { teachers, otherStaff } = useMemo(() => {
     const allStaff: StaffMember[] = staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [];
@@ -83,14 +146,17 @@ export default function PersonnelPage() {
     }
   }, [staffData, searchTerm]);
 
-  const classesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [schoolId, firestore]);
+  const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [schoolId, firestore]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
 
-  const adminRolesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [schoolId, firestore]);
+  const adminRolesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/admin_roles`)) : null, [schoolId, firestore]);
   const { data: adminRolesData, loading: adminRolesLoading } = useCollection(adminRolesQuery);
   const adminRoles: (AdminRole & {id: string})[] = useMemo(() => adminRolesData?.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [adminRolesData]);
 
+  const subjectsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [schoolId, firestore]);
+  const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
+  const subjects = useMemo(() => subjectsData?.map(d => ({ id: d.id, ...d.data() } as Subject & {id: string})) || [], [subjectsData]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -122,7 +188,7 @@ export default function PersonnelPage() {
     setIsDeleteDialogOpen(true);
   };
 
-  const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading || userLoading;
+  const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading || userLoading || subjectsLoading;
 
   const renderStaffCard = (member: StaffMember) => {
     const fullName = `${member.firstName} ${member.lastName}`;
@@ -207,15 +273,20 @@ export default function PersonnelPage() {
     <>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-                placeholder="Rechercher par nom ou email..." 
-                className="pl-10"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-            />
-          </div>
+            <div className="flex items-center gap-2 flex-1">
+                <div className="relative w-full max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input 
+                        placeholder="Rechercher par nom ou email..." 
+                        className="pl-10"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                 <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>
+                    {viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                </Button>
+            </div>
           {canManageUsers && (
             <Button onClick={() => handleOpenFormDialog(null)}>
               <span className="flex items-center gap-2">
@@ -236,9 +307,13 @@ export default function PersonnelPage() {
                         {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
                     </div>
                 ) : teachers.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {teachers.map(renderStaffCard)}
-                    </div>
+                    viewMode === 'grid' ? (
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {teachers.map(renderStaffCard)}
+                        </div>
+                    ) : (
+                        <StaffTable staff={teachers} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
+                    )
                 ) : (
                     <Card className="flex items-center justify-center h-48">
                         <p className="text-muted-foreground">Aucun enseignant trouvé.</p>
@@ -247,13 +322,17 @@ export default function PersonnelPage() {
             </TabsContent>
              <TabsContent value="staff" className="mt-6">
                 {isLoading ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                         {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
                     </div>
                 ) : otherStaff.length > 0 ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {otherStaff.map(renderStaffCard)}
-                    </div>
+                     viewMode === 'grid' ? (
+                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                            {otherStaff.map(renderStaffCard)}
+                        </div>
+                     ) : (
+                        <StaffTable staff={otherStaff} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
+                     )
                 ) : (
                     <Card className="flex items-center justify-center h-48">
                         <p className="text-muted-foreground">Aucun autre membre du personnel trouvé.</p>
@@ -289,10 +368,11 @@ export default function PersonnelPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <StaffEditForm
-                      schoolId={schoolId}
+                      schoolId={schoolId!}
                       editingStaff={editingStaff}
                       classes={classes}
                       adminRoles={adminRoles}
+                      subjects={subjects}
                       onFormSubmit={() => {
                           setIsFormOpen(false);
                           setEditingStaff(null);
