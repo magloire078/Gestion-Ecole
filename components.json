@@ -22,7 +22,8 @@
     "forms": "@/components/forms",
     "charts": "@/components/charts",
     "data": "@/components/data",
-    "navigation": "@/components/navigation"
+    "navigation": "@/components/navigation",
+    "rh": "@/components/rh"
   },
   "iconLibrary": "lucide"
 }

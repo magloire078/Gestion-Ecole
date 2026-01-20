@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileText, Banknote, Loader2, Files } from 'lucide-react';
+import { FileText, Banknote, Loader2, Files, Users, DollarSign } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { collection, query, where, getDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, school as OrganizationSettings } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview, BulkPayslipPreview } from '@/components/payroll/payslip-template';
+import { PayrollChart } from '@/components/rh/payroll-chart';
 
 export default function PaiePage() {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -42,6 +43,17 @@ export default function PaiePage() {
 
   const isLoading = schoolLoading || userLoading || staffLoading;
   
+  const { totalSalaryMass, averageSalary } = useMemo(() => {
+    if (staffWithSalary.length === 0) {
+      return { totalSalaryMass: 0, averageSalary: 0 };
+    }
+    const total = staffWithSalary.reduce((acc, staff) => acc + (staff.baseSalary || 0), 0);
+    return {
+      totalSalaryMass: total,
+      averageSalary: total / staffWithSalary.length,
+    };
+  }, [staffWithSalary]);
+
   const handleGeneratePayslip = async (staffMember: Staff) => {
     if (!schoolData) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Données de l\'école non chargées.'});
@@ -116,73 +128,116 @@ export default function PaiePage() {
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle className="flex items-center gap-2"><Banknote />Gestion de la Paie</CardTitle>
-              <CardDescription>
-                Générez et consultez les bulletins de paie de votre personnel.
-              </CardDescription>
+      <div className="space-y-6">
+        <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Masse Salariale Mensuelle</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? <Skeleton className="h-8 w-32" /> : <div className="text-2xl font-bold">{formatCurrency(totalSalaryMass)}</div>}
+                    <p className="text-xs text-muted-foreground">Estimation basée sur les salaires de base</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Employés sur la Paie</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? <Skeleton className="h-8 w-16" /> : <div className="text-2xl font-bold">{staffWithSalary.length}</div>}
+                    <p className="text-xs text-muted-foreground">Employés avec un salaire de base défini</p>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Salaire Moyen</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    {isLoading ? <Skeleton className="h-8 w-24" /> : <div className="text-2xl font-bold">{formatCurrency(averageSalary)}</div>}
+                     <p className="text-xs text-muted-foreground">Moyenne des salaires de base</p>
+                </CardContent>
+            </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-3">
+                <PayrollChart staff={staffWithSalary} />
             </div>
-            {canManageBilling && staffWithSalary.length > 0 && (
-                <Button onClick={handleGenerateAllPayslips} disabled={isBulkGenerating}>
-                    {isBulkGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Files className="mr-2 h-4 w-4" />}
-                    {isBulkGenerating ? 'Génération en cours...' : 'Générer Tous les Bulletins'}
-                </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Rôle</TableHead>
-                <TableHead>Salaire de Base</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(3)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                    <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
-                  </TableRow>
-                ))
-              ) : staffWithSalary.length > 0 ? (
-                staffWithSalary.map(staff => (
-                  <TableRow key={staff.id}>
-                    <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
-                    <TableCell className="capitalize">{staff.role}</TableCell>
-                    <TableCell className="font-mono">{formatCurrency(staff.baseSalary)}</TableCell>
-                    <TableCell>
-                      <Badge variant={staff.status === 'Actif' ? 'secondary' : 'outline'}>{staff.status}</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {canManageBilling && (
-                          <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(staff)}>
-                            <FileText className="mr-2 h-4 w-4" />
-                            Générer Bulletin
-                          </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="text-center h-24">Aucun membre du personnel avec un salaire défini.</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            
+            <div className="lg:col-span-3">
+                <Card>
+                    <CardHeader>
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div>
+                        <CardTitle className="flex items-center gap-2"><Banknote />Gestion de la Paie</CardTitle>
+                        <CardDescription>
+                            Générez et consultez les bulletins de paie de votre personnel.
+                        </CardDescription>
+                        </div>
+                        {canManageBilling && staffWithSalary.length > 0 && (
+                            <Button onClick={handleGenerateAllPayslips} disabled={isBulkGenerating}>
+                                {isBulkGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Files className="mr-2 h-4 w-4" />}
+                                {isBulkGenerating ? 'Génération en cours...' : 'Générer Tous les Bulletins'}
+                            </Button>
+                        )}
+                    </div>
+                    </CardHeader>
+                    <CardContent>
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>Nom</TableHead>
+                            <TableHead>Rôle</TableHead>
+                            <TableHead>Salaire de Base</TableHead>
+                            <TableHead>Statut</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {isLoading ? (
+                            [...Array(3)].map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-16" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
+                            </TableRow>
+                            ))
+                        ) : staffWithSalary.length > 0 ? (
+                            staffWithSalary.map(staff => (
+                            <TableRow key={staff.id}>
+                                <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
+                                <TableCell className="capitalize">{staff.role}</TableCell>
+                                <TableCell className="font-mono">{formatCurrency(staff.baseSalary)}</TableCell>
+                                <TableCell>
+                                <Badge variant={staff.status === 'Actif' ? 'secondary' : 'outline'}>{staff.status}</Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                {canManageBilling && (
+                                    <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(staff)}>
+                                        <FileText className="mr-2 h-4 w-4" />
+                                        Générer Bulletin
+                                    </Button>
+                                )}
+                                </TableCell>
+                            </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                            <TableCell colSpan={5} className="text-center h-24">Aucun membre du personnel avec un salaire défini.</TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      </div>
       
       <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>
         <DialogContent className="max-w-4xl p-0">
