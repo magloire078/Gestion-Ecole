@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -60,7 +59,11 @@ export function useUser() {
           if (userRootDoc.exists()) {
             const userData = userRootDoc.data() as user_root;
             const schoolAffiliations = userData.schools || {};
-            const schoolIds = Object.keys(schoolAffiliations);
+            const allSchoolIds = Object.keys(schoolAffiliations);
+            
+            // Filter out invalid IDs that might be array indices from corrupted data
+            const schoolIds = allSchoolIds.filter(id => id.length > 10); 
+            
             const activeSchoolId = userData.activeSchoolId && schoolAffiliations[userData.activeSchoolId]
                 ? userData.activeSchoolId
                 : schoolIds[0] || null;

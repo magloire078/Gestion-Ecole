@@ -1,7 +1,7 @@
 
 'use client';
 
-import { doc, updateDoc, Firestore, writeBatch, getDoc, arrayRemove, collection, addDoc } from "firebase/firestore";
+import { doc, updateDoc, Firestore, writeBatch, getDoc, deleteField, collection } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import type { user_root } from "@/lib/data-types";
@@ -17,15 +17,15 @@ export const updateStaffPhoto = async (
     firestore: Firestore,
     schoolId: string,
     staffId: string,
-    photoURL: string
+    photoUrl: string
 ): Promise<void> => {
     
     if (!schoolId || !staffId) {
-        throw new Error("L'ID de l'école et du membre du personnel sont requis.");
+        throw new Error("L'ID de l'école et de l'élève sont requis.");
     }
     
     const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
-    const dataToUpdate = { photoURL };
+    const dataToUpdate = { photoURL: photoUrl };
 
     return updateDoc(staffRef, dataToUpdate)
     .catch(error => {
@@ -39,6 +39,7 @@ export const updateStaffPhoto = async (
         throw permissionError;
     });
 };
+
 
 /**
  * Supprime un membre du personnel d'une école et met à jour son document utilisateur racine.
@@ -66,21 +67,16 @@ export const deleteStaffMember = async (
     if (userRootSnap.exists()) {
         const userData = userRootSnap.data() as user_root;
         
-        // Find the specific school object to remove, as arrayRemove needs an exact match.
-        const schoolToRemove = (userData.schools || []).find(s => s.schoolId === schoolId);
+        const updateData: { [key: string]: any } = {
+            [`schools.${schoolId}`]: deleteField()
+        };
 
-        if (schoolToRemove) {
-            const updateData: { [key: string]: any } = {
-                schools: arrayRemove(schoolToRemove)
-            };
-
-            // If the active school is the one being removed, update it
-            if (userData.activeSchoolId === schoolId) {
-                 const otherSchools = (userData.schools || []).filter(s => s.schoolId !== schoolId);
-                 updateData.activeSchoolId = otherSchools.length > 0 ? otherSchools[0].schoolId : null;
-            }
-            batch.update(userRootRef, updateData);
+        // If the active school is the one being removed, find a new one to set as active.
+        if (userData.activeSchoolId === schoolId) {
+             const remainingSchoolIds = Object.keys(userData.schools || {}).filter(id => id !== schoolId);
+             updateData.activeSchoolId = remainingSchoolIds.length > 0 ? remainingSchoolIds[0] : null;
         }
+        batch.update(userRootRef, updateData);
     }
     
     return batch.commit().catch(error => {
