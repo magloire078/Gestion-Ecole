@@ -277,6 +277,7 @@ export default function StaffProfilePage() {
                   editingStaff={staffMember}
                   classes={allSchoolClasses}
                   adminRoles={allAdminRoles}
+                  subjects={[]}
                   onFormSubmit={() => setIsEditDialogOpen(false)}
                />
             </DialogContent>
@@ -300,3 +301,5 @@ function StaffDetailSkeleton() {
         </div>
     )
 }
+
+    

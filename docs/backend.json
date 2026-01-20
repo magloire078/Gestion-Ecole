@@ -66,7 +66,7 @@
                 }
             }
         },
-        "required": ["name", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
+        "required": ["name", "drena", "directorId", "directorFirstName", "directorLastName", "schoolCode", "status"]
     },
     "parent_profile": {
       "title": "Profil Parent",
@@ -1286,5 +1286,7 @@
     }
   }
 }
+
+    
 
     
