@@ -14,34 +14,32 @@ service cloud.firestore {
     
     function isSchoolMember(schoolId) {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let userRoot = get(userRootPath).data;
       return isSignedIn() &&
              exists(userRootPath) &&
-             userRoot.schools != null &&
-             schoolId in userRoot.schools;
+             get(userRootPath).data.schools != null &&
+             schoolId in get(userRootPath).data.schools;
     }
     
     function isSuperAdmin() {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin;
+      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin == true;
     }
 
     function hasPermission(schoolId, permission) {
-      let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
-      // Check for director role or admin role with specific permission
-      return isSuperAdmin() || (
-        isSchoolMember(schoolId) &&
-        exists(staffDocPath) &&
-        (
-          get(staffDocPath).data.role == 'directeur' ||
-          (
-            'adminRole' in get(staffDocPath).data &&
-            get(staffDocPath).data.adminRole != null &&
-            exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffDocPath).data.adminRole)) &&
-            get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffDocPath).data.adminRole)).data.permissions[permission]
-          )
-        )
-      );
+        let staffDocPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
+        let staffDocExists = exists(staffDocPath);
+        let staffData = staffDocExists ? get(staffDocPath).data : {};
+        let isAdminRole = 'adminRole' in staffData && staffData.adminRole != null;
+        let rolePath = isAdminRole ? /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffData.adminRole) : /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/dummy;
+        let roleExists = isAdminRole ? exists(rolePath) : false;
+        let roleData = roleExists ? get(rolePath).data : {};
+        let roleHasPermission = 'permissions' in roleData && permission in roleData.permissions && roleData.permissions[permission] == true;
+
+        return isSuperAdmin() || (
+            isSchoolMember(schoolId) &&
+            staffDocExists &&
+            (staffData.role == 'directeur' || (isAdminRole && roleExists && roleHasPermission))
+        );
     }
 
 
@@ -219,9 +217,9 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow read, update: if resource.data.userId == request.auth.uid;
+      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSchoolMember(schoolId);
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
-      allow delete: if resource.data.userId == request.auth.uid;
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
