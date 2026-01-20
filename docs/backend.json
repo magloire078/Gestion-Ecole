@@ -322,7 +322,7 @@
             "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." },
-            "updatedAt": { "type": "string", "format": "date-time", "description": "Date de la dernière modification." },
+            "updatedAt": { "type": "object", "description": "Date de la dernière modification." },
             "createdBy": { "type": "string", "description": "UID de l'utilisateur qui a créé le dossier." },
             "updatedBy": { "type": "string", "description": "UID de l'utilisateur qui a fait la dernière modification." },
             "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
@@ -568,6 +568,20 @@
             }
         },
         "required": ["schoolId", "title", "content", "senderId", "senderName", "createdAt", "recipients"]
+    },
+    "notification": {
+        "title": "Notification",
+        "description": "Une notification pour un utilisateur spécifique.",
+        "type": "object",
+        "properties": {
+            "userId": { "type": "string", "description": "L'UID de l'utilisateur destinataire." },
+            "title": { "type": "string" },
+            "content": { "type": "string" },
+            "href": { "type": "string", "description": "Lien vers la page concernée." },
+            "isRead": { "type": "boolean", "default": false },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["userId", "title", "content", "isRead", "createdAt"]
     },
     "absence": {
         "title": "Absence",
@@ -1173,6 +1187,11 @@
             "path": "messagerie/{messageId}",
             "schema": { "$ref": "#/entities/message" },
             "description": "Stocke les messages et annonces envoyés via la messagerie interne pour cette école."
+        },
+        "notifications": {
+            "path": "notifications/{notificationId}",
+            "schema": { "$ref": "#/entities/notification" },
+            "description": "Stocke les notifications pour les utilisateurs de l'école."
         },
         "matieres": {
             "path": "matieres/{subjectId}",

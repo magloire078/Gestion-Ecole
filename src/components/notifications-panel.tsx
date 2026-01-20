@@ -1,20 +1,20 @@
 
+
 'use client';
 
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { Bell, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-
-// The Notification interface is kept for potential future use, but is not actively fetched.
-interface Notification {
-  id: string;
-  title: string;
-  content: string;
-  senderName: string;
-  readBy?: string[];
-  createdAt: { seconds: number; nanoseconds: number };
-}
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Bell, CheckCheck } from "lucide-react";
+import { Button } from "./ui/button";
+import { useUser, useFirestore } from "@/firebase";
+import { writeBatch, doc, updateDoc } from "firebase/firestore";
+import { Skeleton } from "./ui/skeleton";
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import Link from 'next/link';
+import { ScrollArea } from "./ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { useNotifications } from "@/hooks/use-notifications";
+import type { notification as Notification } from '@/lib/data-types';
 
 export function NotificationsPanel({ 
   isOpen, 
@@ -24,48 +24,85 @@ export function NotificationsPanel({
   onClose: () => void;
 }) {
   
-  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const { notifications, unreadCount, loading } = useNotifications();
 
-  const handleClose = () => {
-    setSelectedNotification(null);
+  const handleMarkAsRead = async (notificationId: string) => {
+    if (!user?.schoolId) return;
+    const notifRef = doc(firestore, `ecoles/${user.schoolId}/notifications`, notificationId);
+    await updateDoc(notifRef, { isRead: true });
+  };
+  
+  const handleMarkAllAsRead = async () => {
+    if (!user?.schoolId || unreadCount === 0) return;
+    const batch = writeBatch(firestore);
+    notifications.forEach(notif => {
+      if (!notif.isRead) {
+        const notifRef = doc(firestore, `ecoles/${user.schoolId}/notifications`, notif.id);
+        batch.update(notifRef, { isRead: true });
+      }
+    });
+    await batch.commit();
+  };
+
+  const handleNotificationClick = (notification: Notification & { id: string }) => {
+    if (!notification.isRead) {
+      handleMarkAsRead(notification.id);
+    }
     onClose();
-  }
+  };
   
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && handleClose()}>
+    <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
         <SheetHeader className="p-6 border-b">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
-              Notifications
+              Notifications {unreadCount > 0 && <Badge>{unreadCount}</Badge>}
             </SheetTitle>
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
+                <CheckCheck className="mr-2 h-4 w-4" />
+                Tout marquer comme lu
+              </Button>
+            )}
           </div>
         </SheetHeader>
 
-        {selectedNotification ? (
-            <div className="p-6 flex-1 overflow-y-auto">
-                 <Button variant="ghost" onClick={() => setSelectedNotification(null)} className="mb-4 -ml-4">
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Retour aux notifications
-                </Button>
-                <h3 className="font-bold text-lg">{selectedNotification.title}</h3>
-                <p className="text-xs text-muted-foreground mb-4">
-                    {/* Static placeholder */}
-                    Par {selectedNotification.senderName} • il y a quelques instants
-                </p>
-                <div className="prose dark:prose-invert text-sm whitespace-pre-wrap">
-                    {selectedNotification.content}
+        <ScrollArea className="flex-1">
+            {loading ? (
+                <div className="p-6 space-y-4">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
                 </div>
-            </div>
-        ) : (
-             <div className="overflow-y-auto flex-1">
+            ) : notifications.length > 0 ? (
+                <div className="divide-y">
+                    {notifications.map(notification => (
+                        <Link key={notification.id} href={notification.href || '#'} passHref>
+                          <div 
+                              className={cn(
+                                "p-4 hover:bg-muted/50 cursor-pointer", 
+                                !notification.isRead && "bg-blue-50 dark:bg-blue-900/20"
+                              )}
+                              onClick={() => handleNotificationClick(notification)}
+                          >
+                              <p className="font-semibold">{notification.title}</p>
+                              <p className="text-sm text-muted-foreground">{notification.content}</p>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {notification.createdAt ? formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true, locale: fr }) : ''}
+                              </p>
+                          </div>
+                        </Link>
+                    ))}
+                </div>
+            ) : (
                 <div className="p-8 text-center h-full flex flex-col justify-center items-center">
                     <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-muted-foreground">Aucune notification pour le moment.</p>
-                    <p className="text-xs text-muted-foreground mt-2">La fonctionnalité de notification est en cours d'amélioration.</p>
+                    <p className="text-muted-foreground">Vous n'avez aucune notification.</p>
                 </div>
-            </div>
-        )}
+            )}
+        </ScrollArea>
       </SheetContent>
     </Sheet>
   );

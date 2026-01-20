@@ -18,7 +18,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check } from "lucide-react";
+import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check, Bell } from "lucide-react";
 import { useAuth, useFirestore } from "@/firebase";
 import { useUser } from "@/hooks/use-user";
 import { signOut } from "firebase/auth";
@@ -29,6 +29,9 @@ import { cn } from "@/lib/utils";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
+import { useNotifications } from "@/hooks/use-notifications";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+
 
 interface UserNavProps {
   collapsed?: boolean;
@@ -41,6 +44,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const auth = useAuth();
   const { user, loading: userLoading, isDirector, setActiveSchool } = useUser();
   const { schoolData, subscription, loading: schoolLoading, error: schoolError } = useSchoolData();
+  const { unreadCount, loading: notificationsLoading } = useNotifications();
   const router = useRouter();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);

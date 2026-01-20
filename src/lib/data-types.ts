@@ -238,6 +238,9 @@ export type student = {
     discountReason?: string;
     feedback?: string;
     createdAt?: string;
+    updatedAt?: any; 
+    createdBy?: string;
+    updatedBy?: string;
     inscriptionYear?: number;
     id?: string;
 };
@@ -707,6 +710,15 @@ export type participationCompetition = {
     competitionId: string;
     rank?: string;
     notes?: string;
+};
+
+export type notification = {
+    userId: string;
+    title: string;
+    content: string;
+    href: string;
+    isRead: boolean;
+    createdAt: string;
 };
 
 
