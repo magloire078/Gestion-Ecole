@@ -13,11 +13,10 @@ service cloud.firestore {
     
     function isSchoolMember(schoolId) {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let userData = get(userRootPath).data;
       return isSignedIn() &&
              exists(userRootPath) &&
-             'schools' in userData && userData.schools != null &&
-             schoolId in userData.schools;
+             'schools' in get(userRootPath).data && get(userRootPath).data.schools != null &&
+             schoolId in get(userRootPath).data.schools;
     }
     
     function isSuperAdmin() {
@@ -31,13 +30,16 @@ service cloud.firestore {
     
     function hasPermission(schoolId, permission) {
       let staffProfile = getStaffProfile(schoolId);
-      let adminRoleRef = /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole);
+      // It's safer to check for the existence of adminRole before trying to use it in the path
+      let adminRoleId = staffProfile.get('adminRole', null);
+      
       return isSuperAdmin() || 
-             staffProfile.role == 'directeur' ||
+             (isSchoolMember(schoolId) && staffProfile.role == 'directeur') ||
              (
-               'adminRole' in staffProfile && staffProfile.adminRole != null &&
-               exists(adminRoleRef) &&
-               get(adminRoleRef).data.permissions[permission]
+               isSchoolMember(schoolId) && 
+               adminRoleId != null &&
+               exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRoleId)) &&
+               get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRoleId)).data.permissions[permission]
              );
     }
 
@@ -309,3 +311,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

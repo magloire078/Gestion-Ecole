@@ -13,11 +13,10 @@ service firebase.storage {
 
     function isSchoolMember(schoolId) {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      let userData = get(userRootPath).data;
       return isSignedIn() &&
              exists(userRootPath) &&
-             'schools' in userData && userData.schools != null &&
-             schoolId in userData.schools;
+             'schools' in get(userRootPath).data && get(userRootPath).data.schools != null &&
+             schoolId in get(userRootPath).data.schools;
     }
 
     // Gets the staff profile to check for role
@@ -65,3 +64,5 @@ service firebase.storage {
     }
   }
 }
+
+    
