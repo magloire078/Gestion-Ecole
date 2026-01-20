@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -61,6 +62,7 @@ export default function RegistrationPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
+  const { user } = useUser();
 
   const [step, setStep] = useState(1);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -138,6 +140,10 @@ export default function RegistrationPage() {
       });
       return;
     }
+    if (!user || !user.uid) {
+        toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
+        return;
+    }
     
     form.clearErrors();
 
@@ -178,6 +184,8 @@ export default function RegistrationPage() {
       tuitionStatus: tuitionFee > 0 ? 'Partiel' : 'Soldé' as const,
       feedback: '',
       createdAt: serverTimestamp(),
+      createdBy: user.uid,
+      updatedAt: serverTimestamp(),
       inscriptionYear: currentYear,
     };
     

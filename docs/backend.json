@@ -322,6 +322,9 @@
             "tuitionStatus": { "type": "string", "enum": ["Soldé", "En retard", "Partiel"], "description": "Le statut du paiement de la scolarité." },
             "feedback": { "type": "string", "description": "Appréciation générale sur l'élève." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'inscription de l'élève." },
+            "updatedAt": { "type": "string", "format": "date-time", "description": "Date de la dernière modification." },
+            "createdBy": { "type": "string", "description": "UID de l'utilisateur qui a créé le dossier." },
+            "updatedBy": { "type": "string", "description": "UID de l'utilisateur qui a fait la dernière modification." },
             "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
         },
         "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]

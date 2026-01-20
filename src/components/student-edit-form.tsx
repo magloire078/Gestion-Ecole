@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -12,8 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Bot, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
-import { doc, writeBatch, increment } from 'firebase/firestore';
+import { useFirestore, useUser } from '@/firebase';
+import { doc, writeBatch, increment, serverTimestamp } from 'firebase/firestore';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
@@ -49,6 +50,7 @@ interface StudentEditFormProps {
 export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onFormSubmit }: StudentEditFormProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user } = useUser();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -103,6 +105,10 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
 
   const handleEditStudent = async (values: StudentFormValues) => {
+    if (!user?.uid) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
+        return;
+    }
     setIsSaving(true);
     const oldClassId = student.classId;
     const newClassId = values.classId;
@@ -129,6 +135,8 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
         tuitionStatus: values.tuitionStatus,
         status: values.status,
         feedback: values.feedback || '',
+        updatedAt: serverTimestamp(),
+        updatedBy: user.uid,
     };
     
     batch.update(studentDocRef, updatedData);
