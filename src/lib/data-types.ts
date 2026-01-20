@@ -13,6 +13,7 @@ export type user_root = {
 
 export type school = {
     name: string;
+    drena?: string;
     status: "active" | "suspended" | "deleted";
     directorId: string;
     directorFirstName: string;
@@ -712,5 +713,3 @@ export interface UserProfile extends staff {
     permissions?: Partial<admin_role['permissions']>;
     isAdmin?: boolean;
 }
-
-    

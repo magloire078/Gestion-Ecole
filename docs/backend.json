@@ -29,6 +29,7 @@
         "type": "object",
         "properties": {
             "name": { "type": "string", "description": "Le nom de l'établissement." },
+            "drena": { "type": "string", "description": "La DRENA de tutelle de l'établissement." },
             "status": { "type": "string", "enum": ["active", "suspended", "deleted"], "description": "Le statut de l'école." },
             "deletedAt": { "type": "string", "format": "date-time", "description": "Date à laquelle l'école a été marquée comme supprimée." },
             "matricule": { "type": "string", "description": "Le numéro matricule de l'établissement." },

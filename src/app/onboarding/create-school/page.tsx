@@ -20,12 +20,15 @@ import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, ArrowLeft, Upload, Building, MapPin, Phone, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { DRENA_LIST } from '@/lib/drena-data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Schéma de validation amélioré
 const createSchoolSchema = z.object({
   name: z.string()
     .min(3, "Le nom de l'école doit comporter au moins 3 caractères.")
     .max(100, "Le nom de l'école est trop long."),
+  drena: z.string().optional(),
   address: z.string()
     .min(5, "L'adresse doit comporter au moins 5 caractères.")
     .max(200, "L'adresse est trop longue.")
@@ -60,6 +63,7 @@ export default function CreateSchoolPage() {
     resolver: zodResolver(createSchoolSchema),
     defaultValues: {
       name: '',
+      drena: '',
       address: '',
       phone: '',
       email: user?.email || '',
@@ -263,6 +267,32 @@ export default function CreateSchoolPage() {
                     </FormItem>
                   )} />
                 </div>
+                 <FormField control={form.control} name="drena" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                            <Building className="h-4 w-4" />
+                            DRENA de tutelle
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger className="h-12">
+                                    <SelectValue placeholder="Sélectionnez votre DRENA" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {DRENA_LIST.map((drena) => (
+                                    <SelectItem key={drena.name} value={drena.name}>
+                                        {drena.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormDescription>
+                            Direction Régionale de l'Éducation Nationale de tutelle.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                )} />
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
@@ -431,5 +461,3 @@ export default function CreateSchoolPage() {
     </div>
   );
 }
-
-    

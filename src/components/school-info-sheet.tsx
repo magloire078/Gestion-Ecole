@@ -4,7 +4,7 @@
 import React, { useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Printer, User, Phone, Map, Globe, Building, Hash } from 'lucide-react';
+import { Printer, User, Phone, Map, Globe, Building, Hash, Shield } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { school as School } from '@/lib/data-types';
@@ -87,6 +87,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
                         </div>
                          <div className="space-y-4">
                             <h3 className="font-bold text-lg border-b pb-1 text-primary">Informations Administratives</h3>
+                            <InfoRow icon={Shield} label="DRENA de tutelle" value={school.drena} />
                             <InfoRow icon={Hash} label="Matricule Établissement" value={school.matricule} />
                             <InfoRow icon={Hash} label="N° CNPS Employeur" value={school.cnpsEmployeur} />
                             <InfoRow icon={Hash} label="Code d'invitation" value={school.schoolCode} />

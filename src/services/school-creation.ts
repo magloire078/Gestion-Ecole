@@ -8,6 +8,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 
 export interface CreateSchoolData {
   name: string;
+  drena?: string;
   address?: string;
   phone?: string;
   email?: string;
@@ -44,6 +45,7 @@ export class SchoolCreationService {
       // 2. Créer le document de l'école
       const schoolData: Omit<SchoolData, 'id'> = {
         name: data.name,
+        drena: data.drena,
         address: data.address,
         phone: data.phone,
         email: data.email,

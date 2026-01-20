@@ -1,0 +1,23 @@
+
+export const DRENA_LIST = [
+  { name: "DRENA Abidjan 1", region: "Abidjan" },
+  { name: "DRENA Abidjan 2", region: "Abidjan" },
+  { name: "DRENA Abidjan 3", region: "Abidjan" },
+  { name: "DRENA Abidjan 4", region: "Abidjan" },
+  { name: "DRENA Yamoussoukro", region: "Yamoussoukro" },
+  { name: "DRENA Touba", region: "Bafing" },
+  { name: "DRENA Tiassalé", region: "Agneby-Tiassa" },
+  { name: "DRENA Soubré", region: "Nawa" },
+  { name: "DRENA Divo", region: "Lôh-Djiboua" },
+  { name: "DRENA Guiglo", region: "Cavally" },
+  { name: "DRENA Adzopé", region: "La Mé" },
+  { name: "DRENA San Pedro", region: "San-Pédro" },
+  { name: "DRENA Gagnoa", region: "Gôh" },
+  { name: "DRENA Bondoukou", region: "Gontougo" },
+  { name: "DRENA Bouaké 1", region: "Gbêkê" },
+  { name: "DRENA Bouaké 2", region: "Gbêkê" },
+  { name: "DRENA Korhogo", region: "Poro" },
+  { name: "DRENA Man", region: "Tonkpi" },
+  { name: "DRENA Daloa", region: "Haut-Sassandra" },
+  { name: "DRENA Aboisso", region: "Sud-Comoé" },
+];
