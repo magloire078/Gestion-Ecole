@@ -582,8 +582,8 @@
             "date": { "type": "string", "format": "date", "description": "La date de l'absence." },
             "type": { "type": "string", "enum": ["Journée entière", "Matin", "Après-midi"], "description": "Le type d'absence." },
             "justified": { "type": "boolean", "description": "Indique si l'absence est justifiée." },
-            "reason": { "type": "string", "description": "Le motif de l'absence (si justifiée)." },
-            "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." }
+            "recordedBy": { "type": "string", "description": "L'UID de l'utilisateur qui a enregistré l'absence." },
+            "reason": { "type": "string", "description": "Le motif de l'absence (si justifiée)." }
         },
         "required": ["schoolId", "studentId", "studentName", "classId", "date", "type", "justified", "recordedBy"]
     },

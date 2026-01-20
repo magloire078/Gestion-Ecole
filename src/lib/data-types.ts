@@ -333,6 +333,9 @@ export type studentClassAssignment = {
     previousClass?: string;
     notes?: string;
     createdAt?: string;
+    className?: string;
+    gradeName?: string;
+    cycleName?: string;
 };
 
 export type timetableEntry = {
