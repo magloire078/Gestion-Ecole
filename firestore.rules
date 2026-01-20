@@ -29,12 +29,15 @@ service cloud.firestore {
     
     function hasPermission(schoolId, permission) {
       let staffProfile = getStaffProfile(schoolId);
-      // Check for role existence before trying to access its properties
-      if (!('adminRole' in staffProfile) || staffProfile.adminRole == null) {
-          return staffProfile.role == 'directeur' || isSuperAdmin();
-      }
-      let hasAdminRolePermission = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole)).data.permissions[permission] == true;
-      return staffProfile.role == 'directeur' || isSuperAdmin() || hasAdminRolePermission;
+      let adminRoleRef = /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.adminRole);
+      
+      return isSuperAdmin() || 
+             staffProfile.role == 'directeur' ||
+             (
+               'adminRole' in staffProfile && staffProfile.adminRole != null &&
+               exists(adminRoleRef) &&
+               get(adminRoleRef).data.permissions[permission] == true
+             );
     }
 
     function isParentOfStudent(studentDoc) {
@@ -119,12 +122,9 @@ service cloud.firestore {
 
     match /ecoles/{schoolId}/personnel/{staffId} {
         allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
-        
-        // Allow creating/updating if you are an admin OR you are acting on your own profile.
-        allow create, update: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers')) || 
+        allow create: if (request.auth.uid == staffId);
+        allow update: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers')) || 
                                  (request.auth.uid == staffId);
-
-        // Only an admin can delete profiles.
         allow delete: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
     
@@ -310,3 +310,4 @@ service cloud.firestore {
     }
   }
 }
+    
