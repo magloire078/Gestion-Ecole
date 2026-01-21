@@ -1,22 +1,17 @@
-
-
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { Building, Bank, Hash, Users, Hand, Calendar } from 'lucide-react';
+import { Bank, Hash, Users, Hand } from 'lucide-react';
 import type { staff as Staff } from '@/lib/data-types';
 
 interface StaffInfoTabProps {
     staff: Staff;
 }
 
-const InfoRow = ({ label, value }: { label: string, value?: string | number | null }) => (
+const InfoRow = ({ label, value }: { label: string, value?: string | number | boolean | null }) => (
     <div className="grid grid-cols-3 gap-2 text-sm">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-semibold col-span-2">{value || 'N/A'}</span>
+        <span className="font-semibold col-span-2">{typeof value === 'boolean' ? (value ? 'Oui' : 'Non') : (value || 'N/A')}</span>
     </div>
 );
 
@@ -39,7 +34,7 @@ export function StaffInfoTab({ staff }: StaffInfoTabProps) {
                 <CardContent className="space-y-3">
                     <InfoRow label="Catégorie professionnelle" value={staff.categorie} />
                     <InfoRow label="N° CNPS" value={staff.cnpsEmploye} />
-                    <InfoRow label="Soumis CNPS" value={staff.CNPS ? 'Oui' : 'Non'} />
+                    <InfoRow label="Soumis CNPS" value={staff.CNPS} />
                 </CardContent>
             </Card>
              <Card>
@@ -57,5 +52,3 @@ export function StaffInfoTab({ staff }: StaffInfoTabProps) {
         </div>
     );
 }
-
-    

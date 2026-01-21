@@ -5,7 +5,7 @@
 import { notFound, useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pencil, CalendarDays } from 'lucide-react';
+import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pencil, CalendarDays, Banknote } from 'lucide-react';
 import React, { useMemo, useState, useEffect } from 'react';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { group } from 'd3-array';
 import { StaffInfoTab } from '@/components/rh/staff-info-tab';
+import { StaffPayrollTab } from '@/components/rh/staff-payroll-tab';
 
 
 // ====================================================================================
@@ -251,12 +252,16 @@ export default function StaffProfilePage() {
                 {/* Colonne de droite */}
                 <div className="lg:col-span-2 flex flex-col gap-6">
                      <Tabs defaultValue="timetable">
-                        <TabsList>
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="timetable">Emploi du Temps</TabsTrigger>
+                            <TabsTrigger value="payroll">Paie</TabsTrigger>
                             <TabsTrigger value="info">Informations</TabsTrigger>
                         </TabsList>
                         <TabsContent value="timetable" className="mt-4">
                              <TimetableTab schoolId={schoolId!} staffId={staffId} />
+                        </TabsContent>
+                        <TabsContent value="payroll" className="mt-4">
+                            <StaffPayrollTab staff={staffMember} />
                         </TabsContent>
                         <TabsContent value="info" className="mt-4">
                             <StaffInfoTab staff={staffMember} />
@@ -301,5 +306,3 @@ function StaffDetailSkeleton() {
         </div>
     )
 }
-
-    
