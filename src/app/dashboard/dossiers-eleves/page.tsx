@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import {
@@ -13,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap } from "lucide-react";
+import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -61,6 +59,7 @@ import { StudentEditForm } from "@/components/student-edit-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentsTable } from '@/components/dossiers/students-table';
+import { StudentsGrid } from '@/components/dossiers/students-grid';
 
 
 const StatCard = ({ title, value, icon: Icon, description, loading }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading: boolean }) => (
@@ -107,6 +106,7 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('active');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { activeStudents, archivedStudents, filteredActiveStudents } = useMemo(() => {
     const filteredBySearch = allStudents.filter(student =>
@@ -282,14 +282,14 @@ export default function StudentsPage() {
                     {classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}
                 </SelectContent>
             </Select>
-            <div className="flex gap-2 ml-auto">
-                <Button variant="outline" onClick={() => toast({title: "Bientôt disponible", description: "L'importation de données sera bientôt disponible."})}>
-                    <Upload className="mr-2 h-4 w-4" /> Importer
+            <div className="flex items-center gap-2 ml-auto">
+                 <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent')}>
+                    <List className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" onClick={() => toast({title: "Bientôt disponible", description: "L'exportation de données sera bientôt disponible."})}>
-                    <Download className="mr-2 h-4 w-4" /> Exporter
+                <Button variant="outline" size="icon" onClick={() => setViewMode('grid')} className={cn(viewMode === 'grid' && 'bg-accent')}>
+                    <LayoutGrid className="h-4 w-4" />
                 </Button>
-                 <Button variant="outline" onClick={handlePrint}>
+                <Button variant="outline" onClick={handlePrint}>
                     <Printer className="mr-2 h-4 w-4" /> Imprimer la liste
                 </Button>
             </div>
@@ -301,26 +301,48 @@ export default function StudentsPage() {
                 <TabsTrigger value="archived">Archives ({archivedStudents.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="active" className="mt-4">
-                <StudentsTable
-                    students={studentsToShow}
-                    isLoading={isLoading}
-                    canManageUsers={canManageUsers}
-                    actionType="active"
-                    onEdit={handleOpenEditDialog}
-                    onArchive={handleOpenArchiveDialog}
-                    onRestore={handleOpenRestoreDialog}
-                />
+                {viewMode === 'list' ? (
+                     <StudentsTable
+                        students={studentsToShow}
+                        isLoading={isLoading}
+                        canManageUsers={canManageUsers}
+                        actionType="active"
+                        onEdit={handleOpenEditDialog}
+                        onArchive={handleOpenArchiveDialog}
+                        onRestore={handleOpenRestoreDialog}
+                    />
+                ) : (
+                    <StudentsGrid
+                        students={studentsToShow}
+                        isLoading={isLoading}
+                        actionType="active"
+                        onEdit={handleOpenEditDialog}
+                        onArchive={handleOpenArchiveDialog}
+                        onRestore={handleOpenRestoreDialog}
+                    />
+                )}
             </TabsContent>
             <TabsContent value="archived" className="mt-4">
-                 <StudentsTable
-                    students={studentsToShow}
-                    isLoading={isLoading}
-                    canManageUsers={canManageUsers}
-                    actionType="archived"
-                    onEdit={handleOpenEditDialog}
-                    onArchive={handleOpenArchiveDialog}
-                    onRestore={handleOpenRestoreDialog}
-                />
+                 {viewMode === 'list' ? (
+                     <StudentsTable
+                        students={studentsToShow}
+                        isLoading={isLoading}
+                        canManageUsers={canManageUsers}
+                        actionType="archived"
+                        onEdit={handleOpenEditDialog}
+                        onArchive={handleOpenArchiveDialog}
+                        onRestore={handleOpenRestoreDialog}
+                    />
+                 ) : (
+                    <StudentsGrid
+                        students={studentsToShow}
+                        isLoading={isLoading}
+                        actionType="archived"
+                        onEdit={handleOpenEditDialog}
+                        onArchive={handleOpenArchiveDialog}
+                        onRestore={handleOpenRestoreDialog}
+                    />
+                 )}
             </TabsContent>
         </Tabs>
       </div>
