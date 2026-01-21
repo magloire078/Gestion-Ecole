@@ -9,7 +9,7 @@ import { collection, getCountFromServer, query, where, orderBy, limit } from 'fi
 import { useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaintenanceList } from '@/components/immobilier/maintenance-list';
-
+import { InventorySummary } from '@/components/immobilier/inventory-summary';
 
 interface ImmobilierStats {
     equipements: number;
@@ -93,7 +93,14 @@ export default function ImmobilierDashboardPage() {
         <StatCard title="Réservations" value={stats?.reservations ?? 0} icon={CalendarCheck} description="Réservations de salles confirmées" loading={loading} />
       </div>
 
-      <MaintenanceList schoolId={schoolId!} limit={5} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+            <MaintenanceList schoolId={schoolId!} limit={5} />
+        </div>
+        <div className="lg:col-span-1">
+            <InventorySummary schoolId={schoolId!} />
+        </div>
+      </div>
     </div>
   );
 }
