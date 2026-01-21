@@ -1,3 +1,4 @@
+
 {
   "$schema": "https://ui.shadcn.com/schema.json",
   "style": "new-york",
@@ -23,7 +24,8 @@
     "charts": "@/components/charts",
     "data": "@/components/data",
     "navigation": "@/components/navigation",
-    "rh": "@/components/rh"
+    "rh": "@/components/rh",
+    "dossiers": "@/components/dossiers"
   },
   "iconLibrary": "lucide"
 }
