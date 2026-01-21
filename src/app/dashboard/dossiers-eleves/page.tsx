@@ -53,7 +53,7 @@ import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
-import { differenceInYears, differenceInMonths, addYears } from "date-fns";
+import { differenceInYears, addYears, differenceInMonths } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -84,7 +84,7 @@ const getAge = (dateOfBirth: string | undefined) => {
       const today = new Date();
       const years = differenceInYears(today, birthDate);
       const monthDate = addYears(birthDate, years);
-      const months = differenceInMonths(today, dateAfterMonths);
+      const months = differenceInMonths(today, monthDate);
       
       let ageString = `${years} an${years > 1 ? 's' : ''}`;
       if (months > 0) {
@@ -100,7 +100,7 @@ interface StudentsTableProps {
     students: Student[];
     isLoading: boolean;
     canManageUsers: boolean;
-    actionType: 'archive' | 'restore';
+    actionType: 'active' | 'archived';
     onEdit: (student: Student) => void;
     onArchive: (student: Student) => void;
     onRestore: (student: Student) => void;
@@ -442,7 +442,7 @@ export default function StudentsPage() {
                     students={activeStudents}
                     isLoading={isLoading}
                     canManageUsers={canManageUsers}
-                    actionType="archive"
+                    actionType="active"
                     onEdit={handleOpenEditDialog}
                     onArchive={handleOpenArchiveDialog}
                     onRestore={handleOpenRestoreDialog}
