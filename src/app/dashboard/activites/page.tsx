@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -31,7 +30,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { MoreHorizontal, PlusCircle, Trash2, Edit, Trophy, List, UserPlus, Users } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Edit, Trophy, List, UserPlus, Users, LayoutDashboard } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,6 +48,7 @@ import Link from 'next/link';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ActivitesDashboard } from '@/components/activites/dashboard';
 
 // Schemas
 const activiteSchema = z.object({
@@ -76,22 +76,37 @@ const competitionSchema = z.object({
 type CompetitionFormValues = z.infer<typeof competitionSchema>;
 
 
-export default function ActivitesModulePage() {
-  return (
-        <Tabs defaultValue="activites" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+export default function ActivitesPage() {
+    const { schoolId, loading } = useSchoolData();
+
+    if(loading || !schoolId) {
+        return (
+            <div className="space-y-6">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-64 w-full" />
+            </div>
+        );
+    }
+  
+    return (
+        <Tabs defaultValue="dashboard" className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="dashboard"><LayoutDashboard className="mr-2 h-4 w-4" />Vue d'ensemble</TabsTrigger>
                 <TabsTrigger value="activites"><Trophy className="mr-2 h-4 w-4" />Activités</TabsTrigger>
                 <TabsTrigger value="inscriptions"><UserPlus className="mr-2 h-4 w-4" />Inscriptions</TabsTrigger>
                 <TabsTrigger value="competitions"><List className="mr-2 h-4 w-4" />Compétitions</TabsTrigger>
             </TabsList>
-            <TabsContent value="activites" className="mt-6"><ActivitesPage /></TabsContent>
-            <TabsContent value="inscriptions" className="mt-6"><InscriptionsPage /></TabsContent>
-            <TabsContent value="competitions" className="mt-6"><CompetitionsPage /></TabsContent>
+            <TabsContent value="dashboard" className="mt-6">
+                <ActivitesDashboard schoolId={schoolId} />
+            </TabsContent>
+            <TabsContent value="activites" className="mt-6"><GestionActivitesPage /></TabsContent>
+            <TabsContent value="inscriptions" className="mt-6"><GestionInscriptionsPage /></TabsContent>
+            <TabsContent value="competitions" className="mt-6"><GestionCompetitionsPage /></TabsContent>
         </Tabs>
-  )
+    )
 }
 
-function ActivitesPage() {
+function GestionActivitesPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user } = useUser();
@@ -233,7 +248,7 @@ function ActivitesPage() {
   );
 }
 
-function InscriptionsPage() {
+function GestionInscriptionsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user } = useUser();
@@ -331,7 +346,7 @@ function InscriptionsPage() {
   );
 }
 
-function CompetitionsPage() {
+function GestionCompetitionsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user } = useUser();
