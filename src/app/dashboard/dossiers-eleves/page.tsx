@@ -11,9 +11,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature, CreditCard, Edit, Trash2, UserX, UserCheck } from "lucide-react";
+import { PlusCircle, MoreHorizontal, Eye, Search, Printer, Upload, Download, FileText, CalendarDays, FileSignature, CreditCard, Edit, Trash2, UserX, UserCheck, Users, School, GraduationCap } from "lucide-react";
 import { useState, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -57,7 +57,7 @@ import { differenceInYears, differenceInMonths, addYears } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from "@/lib/data-types";
+import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau, cycle as Cycle } from "@/lib/data-types";
 import { StudentEditForm } from "@/components/student-edit-form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -84,7 +84,7 @@ const getAge = (dateOfBirth: string | undefined) => {
       const today = new Date();
       const years = differenceInYears(today, birthDate);
       const monthDate = addYears(birthDate, years);
-      const months = differenceInMonths(today, monthDate);
+      const months = differenceInMonths(today, dateAfterMonths);
       
       let ageString = `${years} an${years > 1 ? 's' : ''}`;
       if (months > 0) {
@@ -220,6 +220,20 @@ const StudentsTable = ({ students, isLoading, canManageUsers, actionType, onEdit
     )
 }
 
+const StatCard = ({ title, value, icon: Icon, description, loading }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading: boolean }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            {loading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{value}</div>}
+            {description && !loading && <p className="text-xs text-muted-foreground">{description}</p>}
+        </CardContent>
+    </Card>
+);
+
+
 export default function StudentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
@@ -233,16 +247,19 @@ export default function StudentsPage() {
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
+  const cyclesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/cycles`)) : null, [firestore, schoolId]);
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+  const { data: cyclesData, loading: cyclesLoading } = useCollection(cyclesQuery);
   
   const allStudents: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
   const niveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
+  const cycles: Cycle[] = useMemo(() => cyclesData?.map(d => ({ id: d.id, ...d.data() } as Cycle)) || [], [cyclesData]);
 
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -259,6 +276,18 @@ export default function StudentsPage() {
         archivedStudents: filterBySearch(archived),
     }
   }, [allStudents, searchTerm]);
+  
+  const stats = useMemo(() => {
+    const boys = activeStudents.filter(s => s.gender === 'Masculin').length;
+    const girls = activeStudents.filter(s => s.gender === 'Féminin').length;
+    return {
+        total: activeStudents.length,
+        boys,
+        girls,
+        classes: classes.length,
+        cycles: cycles.length
+    }
+}, [activeStudents, classes, cycles]);
 
 
   // Edit Student State
@@ -351,7 +380,7 @@ export default function StudentsPage() {
           });
   }
   
-  const isLoading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading || userLoading;
+  const isLoading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading || userLoading || cyclesLoading;
   
   const handlePrint = () => {
     window.print();
@@ -371,6 +400,14 @@ export default function StudentsPage() {
               </Button>
             )}
         </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 print:hidden">
+            <StatCard title="Élèves Actifs" value={stats.total} icon={Users} loading={isLoading} />
+            <StatCard title="Garçons / Filles" value={`${stats.boys} / ${stats.girls}`} icon={Users} loading={isLoading} />
+            <StatCard title="Classes" value={stats.classes} icon={School} loading={isLoading} description={`${classes.length} classes au total.`} />
+            <StatCard title="Cycles" value={stats.cycles} icon={GraduationCap} loading={isLoading} description={`${cycles.length} cycles au total.`} />
+        </div>
+
         <div className="flex flex-col sm:flex-row items-center gap-2 print:hidden">
             <div className="relative w-full sm:max-w-xs">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
