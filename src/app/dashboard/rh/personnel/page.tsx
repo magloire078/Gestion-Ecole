@@ -1,5 +1,3 @@
-
-
 'use client';
 import {
   Table,
@@ -11,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2, Search, List, LayoutGrid } from "lucide-react";
+import { PlusCircle, MoreHorizontal, FileText, BookUser, Mail, Phone, Trash2, Search, List, LayoutGrid, Users, Briefcase, Shield } from "lucide-react";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -55,6 +53,18 @@ import { Input } from "@/components/ui/input";
 import { deleteStaffMember } from "@/services/staff-services";
 
 type StaffMember = Staff & { id: string };
+
+const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: string | number, icon: React.ElementType, loading: boolean }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            {loading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{value}</div>}
+        </CardContent>
+    </Card>
+);
 
 const StaffTable = ({ staff, onEdit, onDelete, classes }: { staff: StaffMember[], onEdit: (member: StaffMember) => void, onDelete: (member: StaffMember) => void, classes: Class[] }) => {
     const router = useRouter();
@@ -273,6 +283,12 @@ export default function PersonnelPage() {
   return (
     <>
       <div className="space-y-6">
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard title="Total du Personnel" value={staffData?.length || 0} icon={Users} loading={isLoading} />
+            <StatCard title="Enseignants" value={teachers.length} icon={BookUser} loading={isLoading} />
+            <StatCard title="Autres Rôles" value={otherStaff.length} icon={Briefcase} loading={isLoading} />
+            <StatCard title="Rôles Admin" value={adminRoles.length} icon={Shield} loading={isLoading} />
+        </div>
         <div className="flex justify-between items-center">
             <div className="flex items-center gap-2 flex-1">
                 <div className="relative w-full max-w-sm">
