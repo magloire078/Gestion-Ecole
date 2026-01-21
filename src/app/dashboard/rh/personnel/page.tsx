@@ -51,6 +51,8 @@ import { useRouter } from "next/navigation";
 import { StaffEditForm } from "@/components/rh/staff-edit-form";
 import { Input } from "@/components/ui/input";
 import { deleteStaffMember } from "@/services/staff-services";
+import { StaffGrid } from '@/components/rh/staff-grid'; // New import
+import { StaffTable } from '@/components/rh/staff-table'; // New import
 
 type StaffMember = Staff & { id: string };
 
@@ -65,68 +67,6 @@ const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value:
         </CardContent>
     </Card>
 );
-
-const StaffTable = ({ staff, onEdit, onDelete, classes }: { staff: StaffMember[], onEdit: (member: StaffMember) => void, onDelete: (member: StaffMember) => void, classes: Class[] }) => {
-    const router = useRouter();
-
-    return (
-        <Card>
-            <CardContent className="p-0">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Nom</TableHead>
-                            <TableHead>Rôle</TableHead>
-                            <TableHead>Contact</TableHead>
-                            <TableHead>Classe Principale</TableHead>
-                            <TableHead className="text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {staff.map(member => {
-                            const fullName = `${member.firstName} ${member.lastName}`;
-                            const fallback = `${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase();
-                            const className = classes.find(c => c.id === member.classId)?.name;
-
-                            return (
-                                <TableRow key={member.id}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-10 w-10">
-                                                <AvatarImage src={member.photoURL || undefined} alt={fullName} />
-                                                <AvatarFallback>{fallback}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <Link href={`/dashboard/rh/${member.id}`} className="font-medium hover:underline">{fullName}</Link>
-                                                <div className="text-xs text-muted-foreground">{member.email}</div>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="capitalize">{member.role?.replace(/_/g, ' ')}</TableCell>
-                                    <TableCell>{member.phone || 'N/A'}</TableCell>
-                                    <TableCell>{className || 'N/A'}</TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>Voir Profil</DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => onEdit(member)}>Modifier</DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="text-destructive" onClick={() => onDelete(member)}>Supprimer</DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        })}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    )
-}
 
 export default function PersonnelPage() {
   const firestore = useFirestore();
@@ -201,85 +141,6 @@ export default function PersonnelPage() {
 
   const isLoading = schoolLoading || staffLoading || classesLoading || adminRolesLoading || userLoading || subjectsLoading;
 
-  const renderStaffCard = (member: StaffMember) => {
-    const fullName = `${member.firstName} ${member.lastName}`;
-    const fallback = `${member.firstName?.[0] || ''}${member.lastName?.[0] || ''}`.toUpperCase();
-    const className = classes.find(c => c.id === member.classId)?.name;
-
-    return (
-        <Card key={member.id} className="flex flex-col">
-          <Link href={`/dashboard/rh/${member.id}`} className="flex-1 flex flex-col hover:bg-accent/50 rounded-t-xl transition-colors">
-            <CardHeader>
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
-                            <AvatarImage src={member.photoURL || `https://picsum.photos/seed/${member.id}/100`} alt={fullName} data-ai-hint="person face" />
-                            <AvatarFallback>{fallback}</AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <CardTitle>{fullName}</CardTitle>
-                            <CardDescription className="capitalize">{member.role === 'enseignant' ? member.subject : member.role?.replace(/_/g, ' ')}</CardDescription>
-                        </div>
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="flex-1 space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center">
-                    <Mail className="mr-2 h-4 w-4" />
-                    <span className="truncate">{member.email}</span>
-                </div>
-                {member.phone && (
-                    <div className="flex items-center">
-                        <Phone className="mr-2 h-4 w-4" />
-                        <span className="truncate">{member.phone}</span>
-                    </div>
-                )}
-                {className && (
-                     <div className="flex items-center">
-                        <BookUser className="mr-2 h-4 w-4" />
-                        <span>Classe principale: <strong>{className}</strong></span>
-                    </div>
-                )}
-            </CardContent>
-          </Link>
-           <CardFooter className="pt-4 border-t">
-              <div className="flex w-full items-center justify-between">
-                  <Button asChild size="sm">
-                      <Link href={`/dashboard/rh/${member.id}`}>
-                        <BookUser className="mr-2 h-4 w-4" />
-                        Voir Profil
-                      </Link>
-                  </Button>
-                  {canManageUsers && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/fiche`)}>
-                            <FileText className="mr-2 h-4 w-4" />Imprimer Fiche
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}/bulletin`)}>
-                            <FileText className="mr-2 h-4 w-4" />Bulletin de Paie
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleOpenFormDialog(member)}>
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(member)}>
-                            Supprimer
-                          </DropdownMenuItem>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
-                  )}
-              </div>
-            </CardFooter>
-        </Card>
-    );
-  }
-
   return (
     <>
       <div className="space-y-6">
@@ -300,8 +161,11 @@ export default function PersonnelPage() {
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                 <Button variant="outline" size="icon" onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>
-                    {viewMode === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                 <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className={viewMode === 'list' ? 'bg-accent' : ''}>
+                    <List className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => setViewMode('grid')} className={viewMode === 'grid' ? 'bg-accent' : ''}>
+                    <LayoutGrid className="h-4 w-4" />
                 </Button>
             </div>
           {canManageUsers && (
@@ -319,42 +183,22 @@ export default function PersonnelPage() {
                 <TabsTrigger value="staff">Autre Personnel ({otherStaff.length})</TabsTrigger>
             </TabsList>
             <TabsContent value="teachers" className="mt-6">
-                {isLoading ? (
-                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
-                    </div>
-                ) : teachers.length > 0 ? (
+                 {isLoading ? <Skeleton className="h-64 w-full" /> : (
                     viewMode === 'grid' ? (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {teachers.map(renderStaffCard)}
-                        </div>
+                        <StaffGrid staff={teachers} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
                     ) : (
                         <StaffTable staff={teachers} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
                     )
-                ) : (
-                    <Card className="flex items-center justify-center h-48">
-                        <p className="text-muted-foreground">Aucun enseignant trouvé.</p>
-                    </Card>
-                )}
+                 )}
             </TabsContent>
              <TabsContent value="staff" className="mt-6">
-                {isLoading ? (
-                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                        {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
-                    </div>
-                ) : otherStaff.length > 0 ? (
-                     viewMode === 'grid' ? (
-                        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                            {otherStaff.map(renderStaffCard)}
-                        </div>
-                     ) : (
+                 {isLoading ? <Skeleton className="h-64 w-full" /> : (
+                    viewMode === 'grid' ? (
+                        <StaffGrid staff={otherStaff} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
+                    ) : (
                         <StaffTable staff={otherStaff} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
-                     )
-                ) : (
-                    <Card className="flex items-center justify-center h-48">
-                        <p className="text-muted-foreground">Aucun autre membre du personnel trouvé.</p>
-                    </Card>
-                )}
+                    )
+                 )}
             </TabsContent>
         </Tabs>
       </div>
