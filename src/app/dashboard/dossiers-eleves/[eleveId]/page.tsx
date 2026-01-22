@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -70,9 +71,9 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
   
   // --- Data Fetching ---
   const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId, refreshTrigger]);
-  const { data: studentData, loading: studentLoading, error } = useDoc<Student>(studentRef);
+  const { data: studentData, loading: studentLoading, error } = useDoc<Student & {id: string}>(studentRef);
   
-  const student = studentData as Student | null;
+  const student = studentData;
   const classRef = useMemo(() => student?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
@@ -227,7 +228,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                         <AbsencesTab schoolId={schoolId} studentId={eleveId} />
                     </TabsContent>
                     <TabsContent value="discipline" className="mt-6">
-                        <DisciplineTab schoolId={schoolId} studentId={eleveId} />
+                        <DisciplineTab schoolId={schoolId} student={student} />
                     </TabsContent>
                     <TabsContent value="timetable" className="mt-6">
                         <StudentTimetableTab schoolId={schoolId} student={student} />

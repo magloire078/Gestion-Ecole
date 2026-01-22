@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -17,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student } from '@/lib/data-types';
+import { useEffect } from 'react';
 
 const incidentSchema = z.object({
   studentId: z.string().min(1, "Veuillez sélectionner un élève."),
@@ -32,9 +32,10 @@ interface IncidentFormProps {
     schoolId: string;
     students: (Student & {id: string})[];
     onSave: () => void;
+    student?: Student & { id: string };
 }
 
-export function IncidentForm({ schoolId, students, onSave }: IncidentFormProps) {
+export function IncidentForm({ schoolId, students, onSave, student }: IncidentFormProps) {
     const { user } = useUser();
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -42,6 +43,7 @@ export function IncidentForm({ schoolId, students, onSave }: IncidentFormProps) 
     const form = useForm<IncidentFormValues>({
         resolver: zodResolver(incidentSchema),
         defaultValues: {
+            studentId: student?.id || '',
             type: 'Avertissement Oral',
             reason: '',
             actionsTaken: '',
@@ -49,21 +51,41 @@ export function IncidentForm({ schoolId, students, onSave }: IncidentFormProps) 
         }
     });
 
+    useEffect(() => {
+        if (student) {
+            form.setValue('studentId', student.id!);
+        }
+    }, [student, form]);
+
     const handleAddIncident = async (values: IncidentFormValues) => {
         if (!user || !user.authUser) {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté pour effectuer cette action.' });
             return;
         }
 
+        const studentId = student?.id || values.studentId;
+        const studentInfo = student || students.find(s => s.id === studentId);
+
+        if (!studentInfo) {
+            toast({ variant: 'destructive', title: 'Erreur', description: "Informations de l'élève introuvables." });
+            return;
+        }
+
         const incidentData = {
-            ...values,
+            studentId: studentInfo.id,
+            studentName: `${studentInfo.firstName} ${studentInfo.lastName}`,
+            classId: studentInfo.classId,
             date: new Date().toISOString(),
+            type: values.type,
+            reason: values.reason,
+            actionsTaken: values.actionsTaken,
+            parentNotified: values.parentNotified,
             reportedById: user.authUser.uid,
             reportedByName: user.authUser.displayName || 'Système',
             followUpNotes: '',
         };
 
-        const collectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${values.studentId}/incidents_disciplinaires`);
+        const collectionRef = collection(firestore, `ecoles/${schoolId}/incidents_disciplinaires`);
         addDoc(collectionRef, incidentData)
             .then(() => {
                 toast({ title: 'Incident enregistré', description: "Le nouvel incident disciplinaire a été ajouté." });
@@ -82,9 +104,11 @@ export function IncidentForm({ schoolId, students, onSave }: IncidentFormProps) 
     return (
          <Form {...form}>
             <form onSubmit={form.handleSubmit(handleAddIncident)} className="space-y-4">
-                 <FormField control={form.control} name="studentId" render={({ field }) => (
-                    <FormItem><FormLabel>Élève concerné</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => (<SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-                 )}/>
+                 {!student && (
+                     <FormField control={form.control} name="studentId" render={({ field }) => (
+                        <FormItem><FormLabel>Élève concerné</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => (<SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+                     )}/>
+                 )}
                  <FormField control={form.control} name="type" render={({ field }) => (
                     <FormItem><FormLabel>Type d'incident/sanction</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Avertissement Oral">Avertissement Oral</SelectItem><SelectItem value="Avertissement Écrit">Avertissement Écrit</SelectItem><SelectItem value="Retenue">Retenue</SelectItem><SelectItem value="Mise à pied">Mise à pied</SelectItem><SelectItem value="Exclusion temporaire">Exclusion temporaire</SelectItem><SelectItem value="Exclusion définitive">Exclusion définitive</SelectItem></SelectContent></Select><FormMessage /></FormItem>
                  )}/>

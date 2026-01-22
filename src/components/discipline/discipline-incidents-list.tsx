@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -6,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, collectionGroup, where } from 'firebase/firestore';
+import { collection, query, orderBy, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -33,9 +34,7 @@ export function DisciplineIncidentsList({ schoolId }: { schoolId: string }) {
 
     const incidentsQuery = useMemo(() =>
         query(
-            collectionGroup(firestore, 'incidents_disciplinaires'),
-            where('__name__', '>=', `ecoles/${schoolId}/`),
-            where('__name__', '<', `ecoles/${schoolId}￿`),
+            collection(firestore, `ecoles/${schoolId}/incidents_disciplinaires`),
             orderBy('date', 'desc')
         ),
         [firestore, schoolId]
@@ -59,24 +58,20 @@ export function DisciplineIncidentsList({ schoolId }: { schoolId: string }) {
     const incidents = useMemo(() => {
         const allIncidents: IncidentWithDetails[] = incidentsData?.map(d => {
             const data = d.data() as DisciplineIncident;
-            const studentInfo = studentMap.get(data.studentId);
             return {
                 id: d.id,
                 ...data,
-                studentName: studentInfo?.name || 'Élève inconnu',
-                className: studentInfo?.classId ? classMap.get(studentInfo.classId) : 'N/A'
+                studentName: data.studentName,
+                className: data.classId ? classMap.get(data.classId) : 'N/A'
             };
         }) || [];
         
         if (selectedClassId === 'all') {
             return allIncidents;
         }
-        return allIncidents.filter(inc => {
-            const studentInfo = studentMap.get(inc.studentId);
-            return studentInfo?.classId === selectedClassId;
-        });
+        return allIncidents.filter(inc => inc.classId === selectedClassId);
 
-    }, [incidentsData, studentMap, classMap, selectedClassId]);
+    }, [incidentsData, classMap, selectedClassId]);
 
     const getTypeBadgeVariant = (type: string) => {
         if (type.includes('Exclusion') || type.includes('Mise à pied')) return 'destructive';
