@@ -201,7 +201,10 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-        allow read, write: if hasPermission(schoolId, 'manageBilling');
+      allow get, update, delete: if hasPermission(schoolId, 'manageBilling');
+    }
+    match /ecoles/{schoolId}/comptabilite {
+      allow list, create: if hasPermission(schoolId, 'manageBilling');
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
