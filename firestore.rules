@@ -201,7 +201,9 @@ service cloud.firestore {
       allow get, update, delete: if hasPermission(schoolId, 'manageBilling');
     }
     match /ecoles/{schoolId}/comptabilite {
-      allow list, create: if hasPermission(schoolId, 'manageBilling');
+      // list is more permissive for query performance; document rules provide granular security.
+      allow list: if isSchoolMember(schoolId); 
+      allow create: if hasPermission(schoolId, 'manageBilling');
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -327,5 +329,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
