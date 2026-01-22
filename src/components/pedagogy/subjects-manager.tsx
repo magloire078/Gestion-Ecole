@@ -1,6 +1,4 @@
-
 'use client';
-
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,18 +21,17 @@ import { errorEmitter } from '@/firebase/error-emitter';
 
 const subjectSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
-  code: z.string().min(2, "Le code est requis.").max(10, "Le code ne peut excéder 10 caractères."),
+  code: z.string().min(2, "Le code est requis.").max(10),
   color: z.string().optional(),
 });
 type SubjectFormValues = z.infer<typeof subjectSchema>;
-
 
 export function SubjectsManager() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const isDirectorOrAdmin = user?.profile?.permissions?.manageClasses;
+  const isDirectorOrAdmin = !!user?.profile?.permissions?.manageClasses || user?.profile?.role === 'directeur';
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<(Subject & { id: string }) | null>(null);
@@ -43,18 +40,13 @@ export function SubjectsManager() {
 
   const subjectsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [schoolId, firestore]);
   const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
-
   const subjects: (Subject & { id: string })[] = useMemo(() => subjectsData?.map(d => ({ id: d.id, ...d.data() } as Subject & { id: string })) || [], [subjectsData]);
-
+  
   const form = useForm<SubjectFormValues>({
     resolver: zodResolver(subjectSchema),
     defaultValues: { name: '', code: '', color: '#8B5CF6' }
   });
-  
-  useEffect(() => {
-    form.reset(editingSubject || { name: '', code: '', color: '#8B5CF6' });
-  }, [isFormOpen, editingSubject, form]);
-  
+
   const handleFormSubmit = (values: SubjectFormValues) => {
     if (!schoolId) return;
 
@@ -67,17 +59,16 @@ export function SubjectsManager() {
       toast({ title: `Matière ${editingSubject ? 'modifiée' : 'créée'}` });
       setIsFormOpen(false);
     }).catch(error => {
-      const path = editingSubject ? `ecoles/${schoolId}/matieres/${editingSubject.id}` : `ecoles/${schoolId}/matieres`;
-      const operation = editingSubject ? 'update' : 'create';
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData: dataToSave }));
+      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/matieres`, operation: 'write', requestResourceData: dataToSave }));
     });
   };
   
   const handleOpenForm = (subject: (Subject & { id: string }) | null) => {
     setEditingSubject(subject);
+    form.reset(subject || { name: '', code: '', color: '#8B5CF6' });
     setIsFormOpen(true);
   };
-  
+
   const handleDelete = async () => {
     if (!schoolId || !itemToDelete) return;
     await deleteDoc(doc(firestore, `ecoles/${schoolId}/matieres`, itemToDelete.id));
@@ -89,21 +80,21 @@ export function SubjectsManager() {
   const isLoading = schoolLoading || subjectsLoading;
 
   return (
-      <>
-        <Card>
-            <CardHeader>
-            <div className="flex justify-between items-center">
-                <div>
-                    <CardTitle>Matières Enseignées</CardTitle>
-                    <CardDescription>Gérez les matières proposées dans votre établissement.</CardDescription>
-                </div>
-                {isDirectorOrAdmin && <Button size="sm" onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4"/>Nouvelle Matière</Button>}
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div>
+                <CardTitle>Matières Enseignées</CardTitle>
+                <CardDescription>Gérez les matières proposées dans l'établissement.</CardDescription>
             </div>
-            </CardHeader>
-            <CardContent>
+            {isDirectorOrAdmin && <Button size="sm" onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4"/>Nouvelle Matière</Button>}
+          </div>
+        </CardHeader>
+        <CardContent>
             {isLoading ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                    {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
                 </div>
             ) : subjects.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -123,41 +114,33 @@ export function SubjectsManager() {
                     ))}
                 </div>
             ) : (
-                 <div className="text-center h-24 flex items-center justify-center text-muted-foreground">Aucune matière créée.</div>
-            )}
-            </CardContent>
-        </Card>
+                <div className="text-center h-24 flex items-center justify-center text-muted-foreground">Aucune matière créée.</div>
+              )}
+        </CardContent>
+      </Card>
 
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent>
-                <DialogHeader><DialogTitle>{editingSubject ? 'Modifier' : 'Nouvelle'} Matière</DialogTitle></DialogHeader>
-                <Form {...form}>
-                    <form id="subject-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="name" render={({ field }) => (
-                            <FormItem><FormLabel>Nom de la matière</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <div className="grid grid-cols-2 gap-4">
-                            <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="color" render={({ field }) => (<FormItem><FormLabel>Couleur</FormLabel><FormControl><Input type="color" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>)} />
-                        </div>
-                    </form>
-                </Form>
-                <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="subject-form" disabled={form.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
-            </DialogContent>
-        </Dialog>
-        
-        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-                    <AlertDialogDescription>La matière <strong>"{itemToDelete?.name}"</strong> sera supprimée.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-      </>
-  )
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{editingSubject ? 'Modifier' : 'Nouvelle'} Matière</DialogTitle></DialogHeader>
+          <Form {...form}>
+            <form id="subject-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
+              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la matière</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="color" render={({ field }) => (<FormItem><FormLabel>Couleur</FormLabel><FormControl><Input type="color" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+            </form>
+          </Form>
+          <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="subject-form" disabled={form.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader><AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle><AlertDialogDescription>L'élément <strong>"{itemToDelete?.name}"</strong> sera supprimé. Cette action est irréversible.</AlertDialogDescription></AlertDialogHeader>
+            <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }

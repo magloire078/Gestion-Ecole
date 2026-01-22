@@ -1,6 +1,4 @@
-
 'use client';
-
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +8,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,7 +39,7 @@ export function CyclesManager() {
   const firestore = useFirestore();
   const { user } = useUser();
   const { toast } = useToast();
-  const isDirectorOrAdmin = user?.profile?.permissions?.manageClasses;
+  const isDirectorOrAdmin = !!user?.profile?.permissions?.manageClasses || user?.profile?.role === 'directeur';
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCycle, setEditingCycle] = useState<(Cycle & { id: string }) | null>(null);
