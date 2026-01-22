@@ -2,12 +2,13 @@
 'use client';
 
 import { notFound, useParams } from 'next/navigation';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import type { staff as Staff, school as School } from '@/lib/data-types';
+import { useMemo } from 'react';
 
 interface SchoolInfo extends School {
   name: string;
@@ -22,7 +23,7 @@ export default function StaffSheetPage() {
   const staffId = params.staffId as string;
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
-  const staffRef = useMemoFirebase(() => 
+  const staffRef = useMemo(() => 
     (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null
   , [schoolId, staffId]);
   

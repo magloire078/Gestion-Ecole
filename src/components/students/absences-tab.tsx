@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,7 +20,7 @@ interface AbsencesTabProps {
 export function AbsencesTab({ schoolId, studentId }: AbsencesTabProps) {
     const firestore = useFirestore();
 
-    const absencesQuery = useMemoFirebase(() => 
+    const absencesQuery = useMemo(() => 
         query(
             collection(firestore, `ecoles/${schoolId}/absences`), 
             where('studentId', '==', studentId),

@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, orderBy, collectionGroup, where } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -31,7 +31,7 @@ export function DisciplineIncidentsList({ schoolId }: { schoolId: string }) {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedClassId, setSelectedClassId] = useState('all');
 
-    const incidentsQuery = useMemoFirebase(() =>
+    const incidentsQuery = useMemo(() =>
         query(
             collectionGroup(firestore, 'incidents_disciplinaires'),
             where('__name__', '>=', `ecoles/${schoolId}/`),
@@ -43,10 +43,10 @@ export function DisciplineIncidentsList({ schoolId }: { schoolId: string }) {
 
     const { data: incidentsData, loading: incidentsLoading } = useCollection(incidentsQuery);
     
-    const studentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
+    const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
     
-    const classesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/classes`)), [firestore, schoolId]);
+    const classesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/classes`)), [firestore, schoolId]);
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
 
     const students = useMemo(() => studentsData?.map(doc => ({ id: doc.id, ...doc.data() } as Student & {id: string})) || [], [studentsData]);
