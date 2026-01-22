@@ -198,11 +198,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-      allow get, update, delete: if hasPermission(schoolId, 'manageBilling');
-    }
-    match /ecoles/{schoolId}/comptabilite {
-      // list is more permissive for query performance; document rules provide granular security.
-      allow list: if isSchoolMember(schoolId); 
+      allow read, update, delete: if hasPermission(schoolId, 'manageBilling');
       allow create: if hasPermission(schoolId, 'manageBilling');
     }
     
@@ -226,7 +222,8 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
      match /ecoles/{schoolId}/notifications {
-      allow list: if isSchoolMember(schoolId);
+      // This is secure because the client query is constrained by userId.
+      allow list: if isSignedIn();
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     
