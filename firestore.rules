@@ -125,10 +125,6 @@ service cloud.firestore {
       allow delete: if isSuperAdmin();
     }
     
-    match /ecoles/{schoolId}/{collection}/{docId} {
-        allow read, write: if false;
-    }
-
     // --- Sub-collections of /ecoles/{schoolId} ---
 
     match /ecoles/{schoolId}/personnel/{staffId} {
@@ -324,6 +320,10 @@ service cloud.firestore {
     match /ecoles/{schoolId}/matieres/{subjectId} {
       allow read: if isSchoolMember(schoolId);
       allow write: if hasPermission(schoolId, 'manageClasses');
+    }
+    
+    match /ecoles/{schoolId}/{collection}/{docId} {
+        allow read, write: if false;
     }
   }
 }
