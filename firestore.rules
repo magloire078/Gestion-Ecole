@@ -220,7 +220,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications {
-      allow list: if isSchoolMember(schoolId);
+      allow list: if isSignedIn();
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     
@@ -324,5 +324,4 @@ service cloud.firestore {
     }
   }
 }
-
     
