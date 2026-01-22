@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSchoolData } from '@/hooks/use-school-data';

@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BuildingManager } from '@/components/building-manager';
-import { BuildingForm } from '@/components/internat/building-form';
+import { BuildingForm } from '@/components/immobilier/building-form';
 
 export default function BatimentsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
