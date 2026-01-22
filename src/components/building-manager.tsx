@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -7,7 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Badge } from '@/components/ui/badge';
 import { Building2, PlusCircle, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase'; // Import useUser
 import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import { Skeleton } from './ui/skeleton';
 import Link from 'next/link';
@@ -30,6 +29,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import type { PermissionId } from '@/lib/permissions'; // Import PermissionId type
 
 interface Building {
   id: string;
@@ -56,6 +56,7 @@ interface BuildingManagerProps {
   addBuildingButtonText: string;
   addRoomLink: string;
   BuildingFormComponent: React.FC<any>;
+  permission: PermissionId; // Add permission prop
 }
 
 export function BuildingManager({
@@ -69,9 +70,14 @@ export function BuildingManager({
   addBuildingButtonText,
   addRoomLink,
   BuildingFormComponent,
+  permission, // Destructure permission prop
 }: BuildingManagerProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
+  const { user } = useUser(); // Get user
+  
+  // Determine if the user has management permissions
+  const canManage = user?.profile?.permissions?.[permission] || user?.profile?.role === 'directeur';
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingBuilding, setEditingBuilding] = useState<Building | null>(null);
@@ -159,10 +165,12 @@ export function BuildingManager({
           <h2 className="text-xl font-semibold">{pageTitle}</h2>
           <p className="text-muted-foreground">{pageDescription}</p>
         </div>
-        <Button onClick={() => handleOpenForm(null)}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          {addBuildingButtonText}
-        </Button>
+        {canManage && ( // Check permission
+          <Button onClick={() => handleOpenForm(null)}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            {addBuildingButtonText}
+          </Button>
+        )}
       </div>
 
       {buildings.length > 0 ? (
@@ -178,18 +186,22 @@ export function BuildingManager({
                     </div>
                   </AccordionTrigger>
                    <div className="flex items-center gap-2 pl-4">
-                        <Button variant="outline" size="sm" asChild>
-                            <Link href={addRoomLink}>Gérer les salles</Link>
-                        </Button>
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                            <DropdownMenuItem onClick={() => handleOpenForm(building)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive" onClick={() => setBuildingToDelete(building)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
+                        {canManage && ( // Check permission
+                          <>
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={addRoomLink}>Gérer les salles</Link>
+                            </Button>
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleOpenForm(building)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={() => setBuildingToDelete(building)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                          </>
+                        )}
                     </div>
               </div>
               <AccordionContent>
@@ -215,9 +227,11 @@ export function BuildingManager({
       ) : (
          <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
             <p>Aucun bâtiment créé.</p>
-            <Button variant="link" onClick={() => handleOpenForm(null)}>
-              Cliquez ici pour en ajouter un.
-            </Button>
+            {canManage && ( // Check permission
+              <Button variant="link" onClick={() => handleOpenForm(null)}>
+                Cliquez ici pour en ajouter un.
+              </Button>
+            )}
         </div>
       )}
 
@@ -249,3 +263,4 @@ export function BuildingManager({
     </>
   );
 }
+    

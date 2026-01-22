@@ -30,6 +30,9 @@ export default function BatimentsPage() {
       addBuildingButtonText="Ajouter un bâtiment"
       addRoomLink="/dashboard/immobilier/salles"
       BuildingFormComponent={BuildingForm}
+      permission="manageRooms" // Pass the correct permission key
     />
   );
 }
+
+    

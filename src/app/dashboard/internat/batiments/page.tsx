@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -31,6 +30,9 @@ export default function BatimentsPage() {
       addBuildingButtonText="Ajouter un bâtiment"
       addRoomLink="/dashboard/internat/chambres"
       BuildingFormComponent={BuildingForm}
+      permission="manageInternat" // Pass the correct permission key
     />
   );
 }
+
+    
