@@ -139,7 +139,6 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/admin_roles/{roleId} {
-      // FIX: Break circular dependency. Allow any member to read role definitions.
       allow read: if isSchoolMember(schoolId);
       allow write: if hasPermission(schoolId, 'manageSettings');
     }
@@ -198,7 +197,8 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-      allow read, update, delete: if hasPermission(schoolId, 'manageBilling');
+      allow list: if isSchoolMember(schoolId);
+      allow get, update, delete: if hasPermission(schoolId, 'manageBilling');
       allow create: if hasPermission(schoolId, 'manageBilling');
     }
     
@@ -222,8 +222,7 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
      match /ecoles/{schoolId}/notifications {
-      // This is secure because the client query is constrained by userId.
-      allow list: if isSignedIn();
+      allow list: if isSchoolMember(schoolId);
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     
