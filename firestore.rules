@@ -218,8 +218,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
      match /ecoles/{schoolId}/notifications {
       allow list: if isSchoolMember(schoolId);
@@ -318,10 +317,6 @@ service cloud.firestore {
     match /ecoles/{schoolId}/matieres/{subjectId} {
       allow read: if isSchoolMember(schoolId);
       allow write: if hasPermission(schoolId, 'manageClasses');
-    }
-    
-    match /ecoles/{schoolId}/{collection}/{docId} {
-        allow read, write: if false;
     }
   }
 }
