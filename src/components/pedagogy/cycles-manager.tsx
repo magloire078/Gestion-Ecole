@@ -22,6 +22,7 @@ import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { cycle as Cycle, niveau as Niveau } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const cycleSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
