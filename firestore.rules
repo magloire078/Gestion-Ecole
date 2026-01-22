@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -47,7 +46,7 @@ service cloud.firestore {
              'parentIds' in studentDoc.data && studentDoc.data.parentIds != null &&
              request.auth.uid in studentDoc.data.parentIds;
     }
-
+    
     // =================================
     //      COLLECTION GROUP RULES
     // =================================
@@ -225,7 +224,7 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
      match /ecoles/{schoolId}/notifications {
-      allow list: if isSignedIn();
+      allow list: if isSchoolMember(schoolId);
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     
