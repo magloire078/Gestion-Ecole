@@ -133,7 +133,7 @@ service cloud.firestore {
 
     match /ecoles/{schoolId}/personnel/{staffId} {
         allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
-        allow create: if isSignedIn() && request.auth.uid == staffId;
+        allow create: if (isSignedIn() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
         allow update: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers')) || (request.auth.uid == staffId);
         allow delete: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
     }
@@ -168,7 +168,7 @@ service cloud.firestore {
         allow read: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageClasses');
     }
-    match /ecoles/{schoolId}/cycles {
+     match /ecoles/{schoolId}/cycles {
         allow list: if isSchoolMember(schoolId);
     }
     
