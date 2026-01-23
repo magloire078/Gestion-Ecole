@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -25,9 +26,9 @@ service cloud.firestore {
     }
 
     function isDirector(schoolId) {
-        return isSchoolMember(schoolId) &&
-               exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.role == 'directeur';
+        return isSignedIn() &&
+               exists(/databases/$(database)/documents/ecoles/$(schoolId)) &&
+               get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
 
     function hasPermission(schoolId, permission) {
@@ -222,7 +223,7 @@ service cloud.firestore {
       allow update, delete, create: if hasPermission(schoolId, 'manageBilling');
     }
      match /ecoles/{schoolId}/comptabilite {
-      allow list: if hasPermission(schoolId, 'manageBilling');
+      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -250,10 +251,10 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
      match /ecoles/{schoolId}/notifications {
       allow list: if isSignedIn(); // The client-side query MUST enforce security
-      allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
