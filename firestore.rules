@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -25,19 +24,21 @@ service cloud.firestore {
       return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin; // Simplified
     }
 
+    function isDirector(schoolId) {
+        return isSchoolMember(schoolId) &&
+               exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.role == 'directeur';
+    }
+
     function hasPermission(schoolId, permission) {
         // This function must be a single boolean expression.
-        return isSuperAdmin() || (
+        // A director has all permissions within their school.
+        return isSuperAdmin() || isDirector(schoolId) || (
             isSchoolMember(schoolId) &&
             exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
-            (
-                get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.role == 'directeur' ||
-                (
-                    get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole != null &&
-                    exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)) &&
-                    get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions[permission]
-                )
-            )
+            get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole != null &&
+            exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)) &&
+            get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions[permission]
         );
     }
 
