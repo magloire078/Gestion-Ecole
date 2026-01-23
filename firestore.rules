@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -220,7 +221,7 @@ service cloud.firestore {
       allow update, delete, create: if hasPermission(schoolId, 'manageBilling');
     }
      match /ecoles/{schoolId}/comptabilite {
-      allow list: if isSchoolMember(schoolId);
+      allow list: if hasPermission(schoolId, 'manageBilling');
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -247,10 +248,10 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow read, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
      match /ecoles/{schoolId}/notifications {
-      allow list: if isSignedIn();
+      allow list: if isSignedIn(); // The client-side query MUST enforce security
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     
