@@ -135,12 +135,12 @@ service cloud.firestore {
 
     match /ecoles/{schoolId}/personnel/{staffId} {
         allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
-        // Creating a staff profile is allowed if you are creating your own, or if you are the director.
-        allow create: if (isSignedIn() && request.auth.uid == staffId) || isDirector(schoolId);
-        // Updating a staff profile is allowed if you are updating your own, or if you are the director.
-        allow update: if isDirector(schoolId) || (request.auth.uid == staffId);
-        // Only directors can delete staff profiles.
-        allow delete: if isDirector(schoolId);
+        
+        // Allow user to create/update their own profile
+        allow create, update: if isSignedIn() && request.auth.uid == staffId;
+
+        // Allow a director to manage all staff profiles in their school
+        allow create, update, delete: if isDirector(schoolId);
     }
     match /ecoles/{schoolId}/personnel {
         allow list: if isSchoolMember(schoolId);
@@ -162,6 +162,11 @@ service cloud.firestore {
     }
     match /ecoles/{schoolId}/eleves {
         allow list: if isSchoolMember(schoolId);
+    }
+    
+    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId} {
+         allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+         allow write: if hasPermission(schoolId, 'manageMedical');
     }
     
      match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId}/{subcollection}/{docId} {
@@ -255,9 +260,7 @@ service cloud.firestore {
     match /ecoles/{schoolId}/notifications/{notificationId} {
       allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
-    }
-     match /ecoles/{schoolId}/notifications {
-      allow list: if isSignedIn(); // The client-side query MUST enforce security
+      allow list: if isSignedIn();
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
@@ -356,10 +359,7 @@ service cloud.firestore {
     match /ecoles/{schoolId}/matieres {
       allow list: if isSchoolMember(schoolId);
     }
-    
-    match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId}/{subcollection}/{docId} {
-        allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-        allow write: if hasPermission(schoolId, 'manageMedical');
-    }
   }
 }
+
+    
