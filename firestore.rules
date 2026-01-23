@@ -135,9 +135,12 @@ service cloud.firestore {
 
     match /ecoles/{schoolId}/personnel/{staffId} {
         allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
-        allow create: if (isSignedIn() && request.auth.uid == staffId) || hasPermission(schoolId, 'manageUsers');
-        allow update: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers')) || (request.auth.uid == staffId);
-        allow delete: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageUsers');
+        // Creating a staff profile is allowed if you are creating your own, or if you are the director.
+        allow create: if (isSignedIn() && request.auth.uid == staffId) || isDirector(schoolId);
+        // Updating a staff profile is allowed if you are updating your own, or if you are the director.
+        allow update: if isDirector(schoolId) || (request.auth.uid == staffId);
+        // Only directors can delete staff profiles.
+        allow delete: if isDirector(schoolId);
     }
     match /ecoles/{schoolId}/personnel {
         allow list: if isSchoolMember(schoolId);
