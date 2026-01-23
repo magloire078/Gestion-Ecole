@@ -12,23 +12,27 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    function getUserData() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
     function isSchoolMember(schoolId) {
-      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      let userData = getUserData();
       return isSignedIn() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             userDoc.data.schools != null && // More robust check
-             schoolId in userDoc.data.schools;
+             'schools' in userData && userData.schools != null &&
+             schoolId in userData.schools;
+    }
+    
+    function isDirector(schoolId) {
+      let userData = getUserData();
+      return isSignedIn() &&
+             'schools' in userData && userData.schools != null &&
+             userData.schools[schoolId] == 'directeur';
     }
     
     function isSuperAdmin() {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin; // Simplified
-    }
-
-    function isDirector(schoolId) {
-        return isSignedIn() &&
-               exists(/databases/$(database)/documents/ecoles/$(schoolId)) &&
-               get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin;
     }
 
     function hasPermission(schoolId, permission) {
@@ -258,9 +262,10 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get, update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow list: if isSignedIn();
+      allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
@@ -361,5 +366,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
