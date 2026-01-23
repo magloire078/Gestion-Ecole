@@ -1,9 +1,11 @@
 
 'use client';
 
-import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField, collection } from "firebase/firestore";
+import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField, collection, query, where, getDocs, limit } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { DEMO_SCHOOL_NAME } from "@/lib/demo-data";
+
 
 /**
  * Marque une école comme "supprimée" (soft delete) dans Firestore et enregistre l'action dans les logs système.
@@ -101,5 +103,56 @@ export const restoreSchool = (
         errorEmitter.emit('permission-error', permissionError);
         throw permissionError;
     });
+};
+
+/**
+ * Réinitialise la période d'essai de l'école de démonstration.
+ */
+export const resetDemoTrial = async (
+    firestore: Firestore,
+    adminId: string
+): Promise<void> => {
+    const schoolsRef = collection(firestore, 'ecoles');
+    const demoQuery = query(schoolsRef, where('name', '==', DEMO_SCHOOL_NAME), limit(1));
+    
+    try {
+        const querySnapshot = await getDocs(demoQuery);
+        if (querySnapshot.empty) {
+            throw new Error("L'école de démonstration n'a pas été trouvée.");
+        }
+        
+        const demoSchoolDoc = querySnapshot.docs[0];
+        const schoolRef = demoSchoolDoc.ref;
+
+        const newSubscription = {
+            plan: 'Essentiel',
+            status: 'trialing',
+            startDate: new Date().toISOString(),
+            endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
+        };
+
+        const logRef = doc(collection(firestore, 'system_logs'));
+        const batch = writeBatch(firestore);
+
+        batch.set(logRef, {
+            adminId,
+            action: 'demo.trial-reset',
+            target: schoolRef.path,
+            details: { schoolId: schoolRef.id },
+            timestamp: new Date().toISOString(),
+        });
+        
+        batch.update(schoolRef, { subscription: newSubscription });
+
+        await batch.commit();
+
+    } catch (error: any) {
+        console.error("Error resetting demo trial:", error);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `ecoles/ (recherche de ${DEMO_SCHOOL_NAME})`,
+            operation: 'write',
+        }));
+        throw error;
+    }
 };
     
