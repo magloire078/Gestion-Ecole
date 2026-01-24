@@ -36,7 +36,7 @@ import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, addDoc, setDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -72,14 +72,14 @@ export default function InventairePage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [materielToDelete, setMaterielToDelete] = useState<(Materiel & { id: string }) | null>(null);
 
-  const inventaireQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/inventaire`)) : null, [firestore, schoolId]);
+  const inventaireQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/inventaire`)) : null, [firestore, schoolId]);
   const { data: inventaireData, loading: inventaireLoading } = useCollection(inventaireQuery);
   const inventaire: (Materiel & { id: string })[] = useMemo(() => inventaireData?.map(d => ({ id: d.id, ...d.data() } as Materiel & { id: string })) || [], [inventaireData]);
 
   // Fetch all possible locations
-  const sallesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
-  const batimentsQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/batiments`)) : null, [firestore, schoolId]);
-  const busesQuery = useMemoFirebase(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
+  const sallesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
+  const batimentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/batiments`)) : null, [firestore, schoolId]);
+  const busesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
   
   const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
   const { data: batimentsData, loading: batimentsLoading } = useCollection(batimentsQuery);
@@ -255,7 +255,7 @@ export default function InventairePage() {
                         placeholder="Choisir un emplacement"
                         searchPlaceholder="Chercher un lieu..."
                         options={locationOptions}
-                        value={field.value}
+                        value={field.value || ''}
                         onValueChange={field.onChange}
                         onCreate={(value) => {
                             field.onChange(value);

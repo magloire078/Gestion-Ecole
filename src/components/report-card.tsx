@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Bot, Printer, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { SafeImage } from './ui/safe-image';
 
@@ -78,7 +78,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
 
 
     // Fetch the student's class to get the mainTeacherId
-    const classRef = useMemoFirebase(() =>
+    const classRef = useMemo(() =>
         (student.schoolId && student.classId) ? doc(firestore, `ecoles/${student.schoolId}/classes/${student.classId}`) : null
     , [firestore, student.schoolId, student.classId]);
     const { data: classData } = useDoc<Class>(classRef);

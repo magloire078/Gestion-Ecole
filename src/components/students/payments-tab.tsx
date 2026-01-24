@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, doc, orderBy, query, writeBatch } from 'firebase/firestore';
 import { format } from 'date-fns';
@@ -57,7 +57,7 @@ export function PaymentsTab({ student, onPaymentSuccess }: PaymentsTabProps) {
     const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
-    const paymentsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/paiements`), orderBy('date', 'desc')), [firestore, schoolId, student.id]);
+    const paymentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/paiements`), orderBy('date', 'desc')), [firestore, schoolId, student.id]);
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
     const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);

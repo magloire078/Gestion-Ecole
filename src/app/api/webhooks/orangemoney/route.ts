@@ -4,19 +4,18 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 
-// Initialisez Firebase Admin SDK s'il n'est pas déjà initialisé
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON || '{}');
-
-if (getApps().length === 0) {
+// Initialize Firebase Admin SDK if not already initialized
+// and if the service account is available (to prevent build errors)
+if (process.env.FIREBASE_ADMIN_SDK_JSON && !getApps().length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON);
   initializeApp({
     credential: cert(serviceAccount)
   });
 }
 
-const db = getFirestore();
-
 export async function POST(request: Request) {
   try {
+    const db = getFirestore();
     const body = await request.json();
     console.log("Received Orange Money IPN:", JSON.stringify(body, null, 2));
 
@@ -79,6 +78,10 @@ export async function POST(request: Request) {
     
   } catch (error: any) {
     console.error("Error processing Orange Money IPN:", error);
+     // Check for initialization error
+    if (error.message.includes("The default Firebase app does not exist")) {
+        return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
+    }
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }

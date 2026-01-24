@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
@@ -6,12 +5,14 @@ import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 import Stripe from 'stripe';
 
-// Initialize Firebase Admin SDK
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON || '{}');
-if (getApps().length === 0) {
-  initializeApp({ credential: cert(serviceAccount) });
+// Initialize Firebase Admin SDK if not already initialized
+// and if the service account is available (to prevent build errors)
+if (process.env.FIREBASE_ADMIN_SDK_JSON && !getApps().length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON);
+  initializeApp({
+    credential: cert(serviceAccount)
+  });
 }
-const db = getFirestore();
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -32,6 +33,17 @@ export async function POST(request: Request) {
     console.error(`❌ Error message: ${err.message}`);
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
+  
+  let db;
+  try {
+    db = getFirestore();
+  } catch (error: any) {
+     if (error.message.includes("The default Firebase app does not exist")) {
+        return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+  }
+
 
   // Handle the event
   switch (event.type) {

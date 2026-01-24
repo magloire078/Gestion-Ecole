@@ -4,15 +4,18 @@ import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 
-// Initialize Firebase Admin SDK
-const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON || '{}');
-if (getApps().length === 0) {
-  initializeApp({ credential: cert(serviceAccount) });
+// Initialize Firebase Admin SDK if not already initialized
+// and if the service account is available (to prevent build errors)
+if (process.env.FIREBASE_ADMIN_SDK_JSON && !getApps().length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON);
+  initializeApp({
+    credential: cert(serviceAccount)
+  });
 }
-const db = getFirestore();
 
 export async function POST(request: Request) {
   try {
+    const db = getFirestore();
     const body = await request.json();
     console.log("Received Wave Webhook:", body);
 
@@ -84,6 +87,10 @@ export async function POST(request: Request) {
 
   } catch (error: any) {
     console.error("Error processing Wave webhook:", error);
+     // Check for initialization error
+    if (error.message.includes("The default Firebase app does not exist")) {
+        return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
+    }
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
 }

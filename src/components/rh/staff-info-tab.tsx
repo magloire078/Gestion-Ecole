@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bank, Hash, Users, Hand } from 'lucide-react';
+import { Landmark, Hash, Users, Hand } from 'lucide-react';
 import type { staff as Staff } from '@/lib/data-types';
 
 interface StaffInfoTabProps {
@@ -39,7 +39,7 @@ export function StaffInfoTab({ staff }: StaffInfoTabProps) {
             </Card>
              <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Bank className="h-5 w-5" /> Coordonnées Bancaires</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Landmark className="h-5 w-5" /> Coordonnées Bancaires</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                     <InfoRow label="Banque" value={staff.banque} />

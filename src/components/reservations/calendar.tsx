@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import { addDays, format, startOfDay, endOfDay, isEqual, parse } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -29,9 +29,9 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
   const [editingReservation, setEditingReservation] = useState<(Reservation & { id: string }) | null>(null);
   const [preselectedSlot, setPreselectedSlot] = useState<{ time: string, date: Date, salleId: string } | null>(null);
 
-  const sallesQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
-  const reservationsQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/reservations_salles`)), [firestore, schoolId]);
-  const staffQuery = useMemoFirebase(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+  const sallesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/salles`)), [firestore, schoolId]);
+  const reservationsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/reservations_salles`)), [firestore, schoolId]);
+  const staffQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
 
   const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
   const { data: reservationsData, loading: reservationsLoading } = useCollection(reservationsQuery);

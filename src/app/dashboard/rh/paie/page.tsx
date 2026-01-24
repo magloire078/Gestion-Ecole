@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Banknote, Loader2, Files, Users, DollarSign } from 'lucide-react';
-import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, getDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,7 +32,7 @@ export default function PaiePage() {
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
 
 
-  const staffQuery = useMemoFirebase(() => {
+  const staffQuery = useMemo(() => {
     if (!schoolId) return null;
     return query(collection(firestore, `ecoles/${schoolId}/personnel`), where('baseSalary', '>', 0));
   }, [firestore, schoolId]);

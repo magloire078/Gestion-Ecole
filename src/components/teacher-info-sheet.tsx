@@ -5,7 +5,7 @@
 import React, { useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Printer, User, Cake, MapPin, Phone, Mail, Book, BookUser, Hash, Building, Bank, Users, Hand } from 'lucide-react';
+import { Printer, User, Cake, MapPin, Phone, Mail, Book, BookUser, Hash, Building, Landmark, Users, Hand } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -136,9 +136,9 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                              <div className="space-y-4 md:col-span-2">
                                 <h4 className="font-bold text-lg border-b pb-1">Coordonnées Bancaires</h4>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-                                    <InfoRow icon={Bank} label="Banque" value={teacher.banque} />
-                                    <InfoRow icon={Bank} label="N° Compte" value={teacher.numeroCompte} />
-                                    <InfoRow icon={Bank} label="RIB" value={`${teacher.CB || ''} ${teacher.CG || ''} ${teacher.Cle_RIB || ''}`.trim()} />
+                                    <InfoRow icon={Landmark} label="Banque" value={teacher.banque} />
+                                    <InfoRow icon={Landmark} label="N° Compte" value={teacher.numeroCompte} />
+                                    <InfoRow icon={Landmark} label="RIB" value={`${teacher.CB || ''} ${teacher.CG || ''} ${teacher.Cle_RIB || ''}`.trim()} />
                                 </div>
                             </div>
                         </div>
