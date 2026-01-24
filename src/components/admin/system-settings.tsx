@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { Loader2, Wrench } from 'lucide-react';
+import { Loader2, Wrench, Banknote } from 'lucide-react';
 
 export const SystemSettings = () => {
     const firestore = useFirestore();
@@ -20,20 +20,29 @@ export const SystemSettings = () => {
     const { data: settingsData, loading: settingsLoading } = useDoc(settingsRef);
     
     const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [paymentProviders, setPaymentProviders] = useState({
+        stripe: true,
+        orangeMoney: true,
+        mtn: true,
+        wave: true,
+    });
     const [isSaving, setIsSaving] = useState(false);
     
     useEffect(() => {
         if (settingsData) {
             setMaintenanceMode(settingsData.maintenanceMode || false);
+            if (settingsData.paymentProviders) {
+                setPaymentProviders(settingsData.paymentProviders);
+            }
         }
     }, [settingsData]);
 
     const handleSave = async () => {
         setIsSaving(true);
-        const dataToSave = { maintenanceMode };
+        const dataToSave = { maintenanceMode, paymentProviders };
         setDoc(settingsRef, dataToSave, { merge: true })
         .then(() => {
-            toast({ title: "Paramètres sauvegardés", description: "Le mode maintenance a été mis à jour."});
+            toast({ title: "Paramètres sauvegardés", description: "Les paramètres système ont été mis à jour."});
         })
         .catch(e => {
              const permissionError = new FirestorePermissionError({
@@ -47,40 +56,74 @@ export const SystemSettings = () => {
         });
     };
     
+    const handleProviderToggle = (provider: keyof typeof paymentProviders) => {
+        setPaymentProviders(prev => ({ ...prev, [provider]: !prev[provider] }));
+    }
+
     if (settingsLoading) {
-        return <Skeleton className="h-48 w-full" />
+        return <Skeleton className="h-96 w-full" />
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Wrench className="h-5 w-5" />
-                    Maintenance & Configuration Globale
-                </CardTitle>
-                <CardDescription>Gérez l'état de la plateforme.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                        <Label htmlFor="maintenance-mode" className="font-semibold">Mode Maintenance</Label>
-                        <p className="text-sm text-muted-foreground">
-                            Lorsque activé, seuls les super-admins peuvent se connecter.
-                        </p>
+        <div className="space-y-6">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wrench className="h-5 w-5" />
+                        Maintenance & Configuration Globale
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <Label htmlFor="maintenance-mode" className="font-semibold">Mode Maintenance</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Lorsque activé, seuls les super-admins peuvent se connecter.
+                            </p>
+                        </div>
+                        <Switch
+                            id="maintenance-mode"
+                            checked={maintenanceMode}
+                            onCheckedChange={setMaintenanceMode}
+                        />
                     </div>
-                    <Switch
-                        id="maintenance-mode"
-                        checked={maintenanceMode}
-                        onCheckedChange={setMaintenanceMode}
-                    />
-                </div>
-            </CardContent>
-            <CardFooter>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                     <CardTitle className="flex items-center gap-2">
+                        <Banknote className="h-5 w-5" />
+                        Moyens de Paiement
+                    </CardTitle>
+                    <CardDescription>Activez ou désactivez les fournisseurs de paiement pour les abonnements.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <Label htmlFor="stripe-switch" className="font-semibold">Stripe (Carte Bancaire)</Label>
+                        <Switch id="stripe-switch" checked={paymentProviders.stripe} onCheckedChange={() => handleProviderToggle('stripe')} />
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <Label htmlFor="orange-switch" className="font-semibold">Orange Money</Label>
+                        <Switch id="orange-switch" checked={paymentProviders.orangeMoney} onCheckedChange={() => handleProviderToggle('orangeMoney')} />
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <Label htmlFor="mtn-switch" className="font-semibold">MTN Mobile Money</Label>
+                        <Switch id="mtn-switch" checked={paymentProviders.mtn} onCheckedChange={() => handleProviderToggle('mtn')} />
+                    </div>
+                     <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <Label htmlFor="wave-switch" className="font-semibold">Wave</Label>
+                        <Switch id="wave-switch" checked={paymentProviders.wave} onCheckedChange={() => handleProviderToggle('wave')} />
+                    </div>
+                </CardContent>
+            </Card>
+
+            <div className="flex justify-end">
                  <Button onClick={handleSave} disabled={isSaving}>
                     {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                     Enregistrer les modifications
                 </Button>
-            </CardFooter>
-        </Card>
+            </div>
+        </div>
     );
 };

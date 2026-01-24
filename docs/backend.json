@@ -178,7 +178,17 @@
         "smtpSettings": { "type": "object" },
         "storageQuota": { "type": "number" },
         "backupFrequency": { "type": "string" },
-        "apiRateLimit": { "type": "number" }
+        "apiRateLimit": { "type": "number" },
+        "paymentProviders": {
+            "type": "object",
+            "description": "Configuration des fournisseurs de paiement.",
+            "properties": {
+                "stripe": { "type": "boolean" },
+                "orangeMoney": { "type": "boolean" },
+                "mtn": { "type": "boolean" },
+                "wave": { "type": "boolean" }
+            }
+        }
       }
     },
     "admin_role": {
