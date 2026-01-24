@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Skeleton } from '../ui/skeleton';
 import { Users, Building, DollarSign } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collection, getCountFromServer, getDocs, query, collectionGroup } from 'firebase/firestore';
 import type { school as School } from '@/lib/data-types';
 
@@ -15,6 +15,7 @@ const TARIFAIRE = {
 
 export const SystemMetrics = () => {
   const firestore = useFirestore();
+  const { user } = useUser();
   const [metrics, setMetrics] = useState({
     totalSchools: 0,
     totalUsers: 0,
@@ -23,7 +24,10 @@ export const SystemMetrics = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore || !user?.profile?.isAdmin) {
+        setLoading(false);
+        return;
+    }
 
     const fetchMetrics = async () => {
       setLoading(true);
@@ -61,7 +65,7 @@ export const SystemMetrics = () => {
     };
 
     fetchMetrics();
-  }, [firestore]);
+  }, [firestore, user?.profile?.isAdmin]);
 
 
   const formatNumber = (num: number) => {

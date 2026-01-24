@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 
 export function DashboardStatCards() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const [stats, setStats] = useState({
     activeSchools: 0,
     activeSubscriptions: 0
@@ -29,7 +30,10 @@ export function DashboardStatCards() {
   });
   
   useEffect(() => {
-    if (!firestore) return;
+    if (!firestore || !user?.profile?.isAdmin) {
+        setLoading(false);
+        return;
+    }
 
     const fetchStats = async () => {
         setLoading(true);
@@ -58,7 +62,7 @@ export function DashboardStatCards() {
     };
 
     fetchStats();
-  }, [firestore]);
+  }, [firestore, user?.profile?.isAdmin]);
 
   const StatCard = ({ title, value, icon: Icon, loading, colorClass }: { title: string, value: string | number, icon: React.ElementType, loading: boolean, colorClass?: string }) => (
     <Card className={cn("shadow-md", colorClass?.replace('text-', 'border-'))}>
