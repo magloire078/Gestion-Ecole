@@ -32,7 +32,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} />
+            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} data-ai-hint="app logo" />
           </div>
           <CardTitle className="text-2xl">Bienvenue sur la Démo</CardTitle>
           <CardDescription>
@@ -250,7 +250,7 @@ export default function OnboardingPage() {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-             <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} />
+             <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} data-ai-hint="app logo" />
           </div>
           <CardTitle className="text-2xl">Bienvenue sur GèreEcole</CardTitle>
           <CardDescription>

@@ -91,7 +91,7 @@ export function LandingPageV2() {
         <div className="container flex h-16 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={28} height={28} className="object-contain" />
+              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={28} height={28} className="object-contain" data-ai-hint="app logo" />
               <span className="font-bold">GèreEcole</span>
             </Link>
           </div>
@@ -128,6 +128,17 @@ export function LandingPageV2() {
                 Commencer
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
+            </div>
+             <div className="mt-12">
+              <Image
+                src={placeholderImages.heroImage}
+                alt="GèreEcole - Application de gestion scolaire"
+                width={1200}
+                height={800}
+                className="rounded-xl shadow-2xl mx-auto"
+                priority
+                data-ai-hint="school children app"
+              />
             </div>
           </div>
         </section>
@@ -233,7 +244,7 @@ export function LandingPageV2() {
       <footer className="border-t">
         <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-             <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={24} height={24} className="object-contain" />
+             <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={24} height={24} className="object-contain" data-ai-hint="app logo"/>
             <span>© {new Date().getFullYear()} GèreEcole. Tous droits réservés.</span>
           </div>
           <nav className="flex gap-4">

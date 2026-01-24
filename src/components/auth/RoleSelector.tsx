@@ -11,7 +11,7 @@ export default function RoleSelector({ onSelectRole }: RoleSelectorProps) {
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-6 p-8 bg-white rounded-lg shadow">
         <div className="text-center">
-            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} className="mx-auto mb-4" />
+            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} className="mx-auto mb-4" data-ai-hint="app logo" />
           <h1 className="text-3xl font-bold text-gray-900">GèreEcole</h1>
           <p className="mt-2 text-gray-600">Sélectionnez votre rôle</p>
         </div>

@@ -24,6 +24,7 @@ export function Logo({ compact = false, schoolName, logoUrl }: LogoProps) {
                     alt={`${finalSchoolName} Logo`}
                     fill
                     className="object-contain"
+                    data-ai-hint="app logo"
                 />
             </div>
             {!compact && (
