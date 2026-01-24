@@ -276,6 +276,9 @@ service cloud.firestore {
       allow read, update, delete: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
+    match /ecoles/{schoolId}/notifications {
+      allow list: if isSchoolMember(schoolId);
+    }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
       allow read: if isSchoolMember(schoolId);
