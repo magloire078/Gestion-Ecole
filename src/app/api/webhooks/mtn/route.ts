@@ -1,19 +1,21 @@
 
 import { NextResponse } from 'next/server';
 import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, App as AdminApp } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!getApps().length) {
-  initializeApp();
+function getAdminApp(): AdminApp {
+    if (getApps().length > 0) {
+        return getApps()[0]!;
+    }
+    return initializeApp();
 }
 
 
 export async function POST(request: Request) {
   try {
-    const db = getFirestore();
+    const db = getFirestore(getAdminApp());
     const body = await request.json();
     console.log("Received MTN MoMo IPN:", JSON.stringify(body, null, 2));
 

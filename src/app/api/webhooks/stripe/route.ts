@@ -1,14 +1,16 @@
 
 import { NextResponse } from 'next/server';
 import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
-import { initializeApp, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps, App as AdminApp } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 import Stripe from 'stripe';
 
-// Initialize Firebase Admin SDK if not already initialized
-if (!getApps().length) {
-  initializeApp();
+function getAdminApp(): AdminApp {
+    if (getApps().length > 0) {
+        return getApps()[0]!;
+    }
+    return initializeApp();
 }
 
 // Initialize Stripe
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
   
   let db;
   try {
-    db = getFirestore();
+    db = getFirestore(getAdminApp());
   } catch (error: any) {
      if (error.message.includes("The default Firebase app does not exist")) {
         return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
