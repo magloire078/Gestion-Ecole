@@ -166,7 +166,7 @@ service cloud.firestore {
     match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId} {
          allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
          allow write: if hasPermission(schoolId, 'manageMedical');
-    }
+     }
     
      match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId}/{subcollection}/{docId} {
          allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
