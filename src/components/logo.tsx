@@ -1,29 +1,44 @@
-
 'use client';
 
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { ShieldCheck } from 'lucide-react';
+import { SafeImage } from './ui/safe-image';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 interface LogoProps {
   compact?: boolean;
   schoolName?: string | null;
-  logoUrl?: string | null; // Prop is kept for compatibility but not used
+  disableLink?: boolean;
 }
 
-export function Logo({ compact = false, schoolName }: LogoProps) {
+export function Logo({ compact = false, schoolName, disableLink = false }: LogoProps) {
     const finalSchoolName = schoolName || 'GèreEcole';
 
+    const LogoContent = () => (
+      <div className={cn("flex items-center gap-3 text-foreground font-semibold", !disableLink && "group")}>
+          <div className={cn("relative transition-transform", compact ? "h-10 w-10" : "h-14 w-14", !disableLink && "group-hover:scale-105")}>
+            <SafeImage
+              src={placeholderImages.mainAppLogo}
+              alt={`${finalSchoolName} logo`}
+              fill
+              style={{objectFit: 'contain'}}
+            />
+          </div>
+          {!compact && (
+          <div className="flex flex-col">
+              <h1 className="text-xl font-bold leading-tight">{finalSchoolName}</h1>
+          </div>
+          )}
+      </div>
+    );
+
+    if (disableLink) {
+      return <LogoContent />;
+    }
+
     return (
-        <Link href="/dashboard" className="flex items-center gap-3 text-foreground font-semibold group">
-            <div className={cn("p-2 bg-primary rounded-lg group-hover:scale-105 transition-transform")}>
-                <ShieldCheck className={cn("text-primary-foreground", compact ? "h-6 w-6" : "h-7 w-7")} />
-            </div>
-            {!compact && (
-            <div className="flex flex-col">
-                <h1 className="text-xl font-bold leading-tight">{finalSchoolName}</h1>
-            </div>
-            )}
+        <Link href="/dashboard">
+          <LogoContent />
         </Link>
     );
 }

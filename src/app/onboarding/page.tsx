@@ -11,8 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from '@/hooks/use-user';
 import { useFirestore } from "@/firebase";
 import { doc, writeBatch, collection, query, where, getDocs, getDoc, updateDoc } from "firebase/firestore";
-import Image from 'next/image';
-import placeholderImages from '@/lib/placeholder-images.json';
+import { Logo } from '@/components/logo';
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -32,7 +31,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} data-ai-hint="app logo" />
+            <Logo disableLink />
           </div>
           <CardTitle className="text-2xl">Bienvenue sur la Démo</CardTitle>
           <CardDescription>
@@ -250,7 +249,7 @@ export default function OnboardingPage() {
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
           <div className="mb-4 flex justify-center">
-             <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} data-ai-hint="app logo" />
+             <Logo disableLink />
           </div>
           <CardTitle className="text-2xl">Bienvenue sur GèreEcole</CardTitle>
           <CardDescription>

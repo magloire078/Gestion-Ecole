@@ -133,7 +133,7 @@ export default function ModernRegisterPage() {
         <div className="absolute inset-0 bg-primary/10 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
         
         <div className="relative z-10">
-          <Logo />
+          <Logo disableLink />
           
           <div className="mt-12 lg:mt-20 max-w-lg">
             <div className="flex items-center gap-2 mb-4">
@@ -180,7 +180,7 @@ export default function ModernRegisterPage() {
         <div className="w-full max-w-md space-y-6">
           {/* En-tête */}
           <div className="text-center space-y-2">
-            <div className="flex justify-center mb-4"><Logo /></div>
+            <div className="flex justify-center mb-4"><Logo disableLink /></div>
             <h2 className="text-3xl font-bold tracking-tight">
               Créer votre compte
             </h2>

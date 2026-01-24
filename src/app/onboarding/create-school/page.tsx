@@ -21,8 +21,7 @@ import { Loader2, ArrowLeft, Upload, Building, MapPin, Phone, Mail } from 'lucid
 import Link from 'next/link';
 import { DRENA_LIST } from '@/lib/drena-data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Image from 'next/image';
-import placeholderImages from '@/lib/placeholder-images.json';
+import { Logo } from '@/components/logo';
 
 // Schéma de validation amélioré
 const createSchoolSchema = z.object({
@@ -203,7 +202,7 @@ export default function CreateSchoolPage() {
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} />
+            <Logo disableLink />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Créer votre Établissement</h1>
           <p className="mt-2 text-muted-foreground">
