@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Check, ArrowRight, PlayCircle, FileText, Users, Wallet, Briefcase } from 'lucide-react';
@@ -91,7 +90,7 @@ export function LandingPageV2() {
         <div className="container flex h-16 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={28} height={28} className="object-contain" data-ai-hint="app logo" />
+              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={32} height={32} className="object-contain" data-ai-hint="app logo" />
               <span className="font-bold">GèreEcole</span>
             </Link>
           </div>
