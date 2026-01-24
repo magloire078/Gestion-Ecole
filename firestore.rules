@@ -8,12 +8,12 @@ service cloud.firestore {
     //         HELPER FUNCTIONS
     // =================================
     
-    function isSignedIn() {
-      return request.auth != null;
-    }
-    
     function getUserData() {
         return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
     }
 
     function isSchoolMember(schoolId) {
@@ -24,10 +24,9 @@ service cloud.firestore {
     }
     
     function isDirector(schoolId) {
-      let userData = getUserData();
-      return isSignedIn() &&
-             'schools' in userData && userData.schools != null &&
-             userData.schools[schoolId] == 'directeur';
+        return isSignedIn() &&
+               exists(/databases/$(database)/documents/ecoles/$(schoolId)) &&
+               get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
     }
     
     function isSuperAdmin() {
@@ -97,6 +96,9 @@ service cloud.firestore {
     match /system_logs/{logId} {
       allow read, write: if isSuperAdmin();
     }
+     match /system_logs {
+      allow list: if isSuperAdmin();
+    }
     
     match /system_settings/{settingId} {
       allow read: if isSignedIn(); 
@@ -137,8 +139,8 @@ service cloud.firestore {
     // --- Sub-collections of /ecoles/{schoolId} ---
 
     match /ecoles/{schoolId}/personnel/{staffId} {
-        allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
         allow create, update: if request.auth.uid == staffId || isDirector(schoolId);
+        allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
         allow delete: if isDirector(schoolId);
     }
     match /ecoles/{schoolId}/personnel {
