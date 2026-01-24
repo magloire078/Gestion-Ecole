@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Sparkles, Mail, Lock, Eye, EyeOff, ChevronRight, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -137,60 +137,25 @@ export default function ModernLoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Côté gauche - Illustration */}
-      <div className="lg:w-1/2 bg-primary p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/10 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
-        
-        <div className="relative z-10">
-          <Logo disableLink/>
-          
-          <div className="mt-12 lg:mt-20 max-w-lg">
-            <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-5 w-5 text-white/80" />
-              <span className="text-sm font-medium text-white/80">LA SOLUTION DE RÉFÉRENCE</span>
-            </div>
-            
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-              Gérez vos établissements
-              <span className="block text-white/90 mt-2">avec sérénité</span>
+      <div className="hidden lg:block lg:w-1/2 relative">
+        <Image
+          src="https://firebasestorage.googleapis.com/v0/b/greecole.firebasestorage.app/o/Images%2FImage%20Login.png?alt=media&token=60eefec8-fdb9-40dc-a05f-cdf821d0992f"
+          alt="Illustration de la page de connexion GèreEcole"
+          fill
+          className="object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/50 via-primary/20 to-transparent" />
+        <div className="absolute top-8 left-8 z-10">
+            <Logo disableLink />
+        </div>
+        <div className="absolute bottom-8 left-8 text-white z-10 max-w-md">
+            <h1 className="text-4xl font-bold [text-shadow:_0_2px_4px_rgb(0_0_0_/_40%)]">
+              Gérez avec sérénité.
             </h1>
-            
-            <p className="text-lg text-white/80 mb-8">
-              Rejoignez des centaines d'établissements qui simplifient leur gestion quotidienne avec GèreEcole.
+            <p className="mt-4 text-lg opacity-90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_20%)]">
+              La solution complète pour la gestion scolaire en Afrique.
             </p>
-            
-            <div className="space-y-4">
-              {[
-                "📊 Tableaux de bord personnalisés",
-                "👥 Gestion centralisée des élèves",
-                "💰 Suivi financier en temps réel",
-                "📱 Accessible sur tous vos appareils"
-              ].map((feature, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <div className="h-2 w-2 rounded-full bg-white/60" />
-                  <span className="text-white/90">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-        
-        <div className="relative z-10 mt-8 lg:mt-0">
-          <div className="flex items-center gap-4">
-            <div className="flex -space-x-2">
-              {['bg-blue-400', 'bg-green-400', 'bg-purple-400', 'bg-pink-400'].map((color, i) => (
-                <div key={i} className={`h-8 w-8 rounded-full border-2 border-primary/50 ${color}`} />
-              ))}
-            </div>
-            <div className="text-white/80 text-sm">
-              <p className="font-medium">+500 établissements</p>
-              <p className="text-white/60">nous font déjà confiance</p>
-            </div>
-          </div>
-        </div>
-        
-        {/* Effets décoratifs */}
-        <div className="absolute top-1/4 -left-32 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
       </div>
 
       {/* Côté droit - Formulaire */}
