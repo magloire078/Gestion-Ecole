@@ -91,7 +91,7 @@ export function LandingPageV2() {
         <div className="container flex h-20 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={48} height={48} className="object-contain" data-ai-hint="app logo" />
+              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={56} height={56} className="object-contain" data-ai-hint="app logo" />
               <span className="font-bold text-lg">GèreEcole</span>
             </Link>
           </div>
@@ -108,7 +108,7 @@ export function LandingPageV2() {
 
       <main>
         {/* Hero Section */}
-        <section className="py-20 text-center">
+        <section className="py-12 text-center">
           <div className="container">
             <Badge variant="outline" className="mb-4 text-primary border-primary/30">La solution complète pour les groupes scolaires</Badge>
             <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
@@ -134,7 +134,7 @@ export function LandingPageV2() {
                 src={placeholderImages.heroImage}
                 alt="GèreEcole - Application de gestion scolaire"
                 width={900}
-                height={720}
+                height={600}
                 className="rounded-xl shadow-2xl mx-auto"
                 priority
                 data-ai-hint="school children app"
@@ -144,7 +144,7 @@ export function LandingPageV2() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-20 bg-muted/40">
+        <section id="features" className="py-16 bg-muted/40">
           <div className="container">
             <div className="text-center">
               <h2 className="text-3xl font-bold">Une plateforme tout-en-un</h2>
@@ -178,7 +178,7 @@ export function LandingPageV2() {
         </section>
         
         {/* Pricing Section */}
-        <section id="pricing" className="py-20">
+        <section id="pricing" className="py-16">
             <div className="container">
                  <div className="text-center">
                     <h2 className="text-3xl font-bold">Un tarif adapté à chaque école</h2>
@@ -218,7 +218,7 @@ export function LandingPageV2() {
         </section>
 
         {/* Survey CTA Section */}
-        <section id="survey-cta" className="py-20 bg-muted/40">
+        <section id="survey-cta" className="py-16 bg-muted/40">
           <div className="container text-center">
             <FileText className="mx-auto h-12 w-12 text-primary" />
             <h2 className="mt-4 text-3xl font-bold">
