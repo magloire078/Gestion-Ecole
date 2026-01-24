@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -16,7 +17,7 @@ export function Logo({ compact = false, schoolName, disableLink = false }: LogoP
 
     const LogoContent = () => (
       <div className={cn("flex items-center gap-3 text-foreground font-semibold", !disableLink && "group")}>
-          <div className={cn("relative transition-transform", compact ? "h-10 w-10" : "h-14 w-14", !disableLink && "group-hover:scale-105")}>
+          <div className={cn("relative transition-transform rounded-full overflow-hidden", compact ? "h-10 w-10" : "h-14 w-14", !disableLink && "group-hover:scale-105")}>
             <SafeImage
               src={placeholderImages.mainAppLogo}
               alt={`${finalSchoolName} logo`}
