@@ -20,7 +20,6 @@ export function useCollection<T>(query: Query<T> | null) {
   const [data, setData] = useState<QueryDocumentSnapshot<T>[] | null>(null);
   const [loading, setLoading] = useState(true);
   const firestore = useFirestore();
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!query || !firestore) {
@@ -65,43 +64,5 @@ export function useCollection<T>(query: Query<T> | null) {
     return () => unsubscribe();
   }, [query, firestore]);
   
-  const add = (data: DocumentData): void => {
-    if (!query) {
-        toast({ variant: 'destructive', title: 'Erreur', description: "La requête n'est pas définie." });
-        return;
-    }
-
-    let path = '';
-    const internalQuery = (query as any)?._query;
-    if (internalQuery) {
-        if (internalQuery.path) {
-            path = internalQuery.path.segments.join('/');
-        } else {
-            toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'ajouter un document à une requête de groupe de collections." });
-            return;
-        }
-    }
-    if (!path) {
-        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de déterminer le chemin de la collection." });
-        return;
-    }
-    
-    const collRef = collection(firestore, path) as CollectionReference<DocumentData>;
-    
-    addDoc(collRef, data)
-    .then((docRef) => {
-        // Opération réussie, le listener onSnapshot mettra à jour l'UI.
-    })
-    .catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: path,
-            operation: 'create',
-            requestResourceData: data,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  }
-
-
-  return {data: data || [], loading, add };
+  return {data: data || [], loading };
 }
