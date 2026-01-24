@@ -6,13 +6,6 @@ import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 import Stripe from 'stripe';
 
-function getAdminApp(): AdminApp {
-    if (getApps().length > 0) {
-        return getApps()[0]!;
-    }
-    return initializeApp();
-}
-
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20',
@@ -35,7 +28,10 @@ export async function POST(request: Request) {
   
   let db;
   try {
-    db = getFirestore(getAdminApp());
+    if (getApps().length === 0) {
+      initializeApp();
+    }
+    db = getFirestore();
   } catch (error: any) {
      if (error.message.includes("The default Firebase app does not exist")) {
         return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });

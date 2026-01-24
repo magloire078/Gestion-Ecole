@@ -6,7 +6,7 @@ import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 
 function getAdminApp(): AdminApp {
-    if (getApps().length > 0) {
+    if (getApps().length) {
         return getApps()[0]!;
     }
     return initializeApp();
@@ -15,7 +15,10 @@ function getAdminApp(): AdminApp {
 
 export async function POST(request: Request) {
   try {
-    const db = getFirestore(getAdminApp());
+    if (getApps().length === 0) {
+      initializeApp();
+    }
+    const db = getFirestore();
     const body = await request.json();
     console.log("Received MTN MoMo IPN:", JSON.stringify(body, null, 2));
 

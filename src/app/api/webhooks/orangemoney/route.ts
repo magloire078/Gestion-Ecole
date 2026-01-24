@@ -5,16 +5,12 @@ import { initializeApp, getApps, App as AdminApp } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 
-function getAdminApp(): AdminApp {
-    if (getApps().length > 0) {
-        return getApps()[0]!;
-    }
-    return initializeApp();
-}
-
 export async function POST(request: Request) {
   try {
-    const db = getFirestore(getAdminApp());
+    if (getApps().length === 0) {
+      initializeApp();
+    }
+    const db = getFirestore();
     const body = await request.json();
     console.log("Received Orange Money IPN:", JSON.stringify(body, null, 2));
 

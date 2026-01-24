@@ -68,12 +68,12 @@ export class SchoolCreationService {
       
       batch.set(schoolRef, schoolData);
       
-      // 3. Mettre à jour l'utilisateur
+      // 3. Mettre à jour l'utilisateur pour en faire un super admin
       const userRef = doc(this.firestore, 'users', data.directorId);
       const userRootData: user_root = {
         schools: { [schoolId]: 'directeur' },
         activeSchoolId: schoolId,
-        isSuperAdmin: false,
+        isSuperAdmin: true, // Le créateur de l'école est désormais Super Admin
       };
       batch.set(userRef, userRootData, { merge: true });
       
