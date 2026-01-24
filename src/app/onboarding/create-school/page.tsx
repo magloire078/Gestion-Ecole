@@ -15,13 +15,14 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/hooks/use-user';
 import { useFirestore } from '@/firebase';
 import { SchoolCreationService } from '@/services/school-creation';
-import { Logo } from '@/components/logo';
 import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, ArrowLeft, Upload, Building, MapPin, Phone, Mail } from 'lucide-react';
 import Link from 'next/link';
 import { DRENA_LIST } from '@/lib/drena-data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Image from 'next/image';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 // Schéma de validation amélioré
 const createSchoolSchema = z.object({
@@ -202,7 +203,7 @@ export default function CreateSchoolPage() {
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
-            <Logo />
+            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={64} height={64} />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">Créer votre Établissement</h1>
           <p className="mt-2 text-muted-foreground">

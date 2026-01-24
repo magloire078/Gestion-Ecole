@@ -1,13 +1,15 @@
 
 'use client';
 
-import { Check, School, ArrowRight, PlayCircle, FileText, Users, Wallet, Briefcase } from 'lucide-react';
+import { Check, ArrowRight, PlayCircle, FileText, Users, Wallet, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 
 const featureCategories = [
@@ -23,7 +25,7 @@ const featureCategories = [
     },
      {
         title: "Vie Scolaire Intégrée",
-        icon: School,
+        icon: Users,
         features: ["Gestion de la cantine", "Suivi du transport scolaire", "Administration de l'internat", "Activités parascolaires"]
     },
     {
@@ -89,7 +91,7 @@ export function LandingPageV2() {
         <div className="container flex h-16 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <School className="h-6 w-6 text-primary" />
+              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={28} height={28} className="object-contain" />
               <span className="font-bold">GèreEcole</span>
             </Link>
           </div>
@@ -231,7 +233,7 @@ export function LandingPageV2() {
       <footer className="border-t">
         <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-             <School className="h-5 w-5" />
+             <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={24} height={24} className="object-contain" />
             <span>© {new Date().getFullYear()} GèreEcole. Tous droits réservés.</span>
           </div>
           <nav className="flex gap-4">
