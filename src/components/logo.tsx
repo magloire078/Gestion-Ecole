@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -18,7 +17,7 @@ export function Logo({ compact = false, schoolName, logoUrl }: LogoProps) {
 
     return (
         <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
-            <div className={cn("relative h-14 w-14")}>
+            <div className={cn("relative h-16 w-16")}>
                 <SafeImage 
                     src={finalLogoUrl} 
                     alt={`${finalSchoolName} Logo`}

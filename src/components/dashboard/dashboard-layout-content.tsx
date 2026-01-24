@@ -90,7 +90,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
             <div className={cn("flex h-20 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
               {isLoading ? (
                   <div className="flex items-center gap-2">
-                    <Skeleton className={cn("rounded-lg h-14 w-14")} />
+                    <Skeleton className={cn("rounded-lg h-16 w-16")} />
                     {!isNavCollapsed && <Skeleton className="h-5 w-32" />}
                   </div>
               ) : (

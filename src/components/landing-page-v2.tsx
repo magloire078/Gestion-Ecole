@@ -133,8 +133,8 @@ export function LandingPageV2() {
               <Image
                 src={placeholderImages.heroImage}
                 alt="GèreEcole - Application de gestion scolaire"
-                width={1000}
-                height={800}
+                width={900}
+                height={720}
                 className="rounded-xl shadow-2xl mx-auto"
                 priority
                 data-ai-hint="school children app"
