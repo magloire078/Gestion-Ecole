@@ -17,7 +17,7 @@ export function Logo({ compact = false, schoolName, logoUrl }: LogoProps) {
 
     return (
         <Link href="/dashboard" className="flex items-center gap-2 text-primary font-semibold">
-            <div className={cn("relative h-16 w-16")}>
+            <div className={cn("relative h-24 w-24")}>
                 <SafeImage 
                     src={finalLogoUrl} 
                     alt={`${finalSchoolName} Logo`}

@@ -26,10 +26,10 @@ export function MobileNav({ loading, schoolName, logoUrl }: MobileNavProps) {
 
   return (
     <div className='flex flex-col h-full bg-card'>
-        <div className="flex h-16 shrink-0 items-center border-b px-6">
+        <div className="flex h-28 shrink-0 items-center border-b px-6">
            {loading ? (
                 <div className="flex items-center gap-2">
-                    <Skeleton className="h-8 w-8 rounded-lg" />
+                    <Skeleton className="h-24 w-24 rounded-lg" />
                     <Skeleton className="h-5 w-32" />
                 </div>
             ) : (

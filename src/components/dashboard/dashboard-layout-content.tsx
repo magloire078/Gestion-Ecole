@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -29,7 +28,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: userLoading, isDirector } = useUser();
-  const { schoolData, subscription, loading: schoolLoading } = useSchoolData();
+  const { schoolData, subscription, loading: schoolLoading, error: schoolError } = useSchoolData();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,10 +86,10 @@ export default function DashboardLayoutContent({ children }: { children: React.R
       <TooltipProvider>
         <div className={cn("min-h-screen w-full bg-background print:bg-white")}>
           <aside className={cn("fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-card sm:flex print:hidden transition-all duration-300", isNavCollapsed ? "w-20" : "w-64")}>
-            <div className={cn("flex h-20 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
+            <div className={cn("flex h-28 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
               {isLoading ? (
                   <div className="flex items-center gap-2">
-                    <Skeleton className={cn("rounded-lg h-16 w-16")} />
+                    <Skeleton className={cn("rounded-lg h-24 w-24")} />
                     {!isNavCollapsed && <Skeleton className="h-5 w-32" />}
                   </div>
               ) : (
