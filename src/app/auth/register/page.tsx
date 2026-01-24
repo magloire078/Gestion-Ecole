@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -128,7 +129,7 @@ export default function ModernRegisterPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Côté gauche - Illustration */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden">
+      <div className="lg:w-1/2 bg-gradient-to-br from-primary to-blue-700 p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-primary/10 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
         
         <div className="relative z-10">
@@ -200,11 +201,8 @@ export default function ModernRegisterPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <Alert variant="destructive" className="border-l-4 border-l-red-500">
-                  <AlertDescription className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-500" />
-                    {error}
-                  </AlertDescription>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
               </motion.div>
             )}
@@ -215,10 +213,7 @@ export default function ModernRegisterPage() {
             <div className="space-y-5">
               {/* Nom complet */}
               <div className="space-y-2">
-                <Label htmlFor="displayName" className="text-sm font-medium flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  Nom complet
-                </Label>
+                <Label htmlFor="displayName">Nom complet</Label>
                 <div className={`relative transition-all duration-200 ${activeField === 'displayName' ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}>
                   <Input
                     id="displayName"
@@ -238,10 +233,7 @@ export default function ModernRegisterPage() {
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  Adresse email
-                </Label>
+                <Label htmlFor="email">Adresse email</Label>
                 <div className={`relative transition-all duration-200 ${activeField === 'email' ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}>
                   <Input
                     id="email"
@@ -261,10 +253,7 @@ export default function ModernRegisterPage() {
 
               {/* Mot de passe */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    Mot de passe
-                </Label>
+                <Label htmlFor="password">Mot de passe</Label>
                 <div className={`relative transition-all duration-200 ${activeField === 'password' ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}>
                   <Input
                     id="password"

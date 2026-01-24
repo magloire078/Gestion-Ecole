@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -49,7 +50,7 @@ export default function ModernForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/40 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center space-y-2">
             <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary/10 mb-4">
@@ -73,11 +74,8 @@ export default function ModernForgotPasswordPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
               >
-                <Alert variant="destructive" className="border-l-4 border-l-red-500">
-                  <AlertDescription className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-500" />
-                    {error}
-                  </AlertDescription>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
                 </Alert>
               </motion.div>
             )}
@@ -90,10 +88,7 @@ export default function ModernForgotPasswordPage() {
         ) : (
             <form onSubmit={handlePasswordReset} className="space-y-6">
                 <div className="space-y-2">
-                    <Label htmlFor="email" className="text-sm font-medium flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        Adresse email
-                    </Label>
+                    <Label htmlFor="email">Adresse email</Label>
                     <div className="relative">
                         <Input
                         id="email"
