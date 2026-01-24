@@ -270,7 +270,7 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
     match /ecoles/{schoolId}/notifications {
-      allow list: if isSignedIn();
+      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
