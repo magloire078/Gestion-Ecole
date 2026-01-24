@@ -64,7 +64,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
   const pathname = usePathname();
 
   const hasAccess = (permission?: PermissionKey, module?: Module) => {
-    if (isSuperAdmin || isDirector) {
+    if (isSuperAdmin) {
       return true;
     }
 

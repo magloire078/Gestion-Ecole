@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -8,6 +9,7 @@ import { onIdTokenChanged, getAuth } from 'firebase/auth';
 import { useFirestore, useAuth } from '../firebase/client-provider';
 import type { UserProfile, user_root, parent as Parent } from '@/lib/data-types';
 import { useRouter } from 'next/navigation';
+import { allPermissions } from '@/lib/permissions';
 
 export interface AppUser {
     uid: string;
@@ -94,7 +96,11 @@ export function useUser() {
                     const profileSnap = await getDoc(staffProfileRef);
                     if (profileSnap.exists()) {
                         userProfile = profileSnap.data() as UserProfile;
-                        if (userProfile.adminRole) {
+
+                        if (userProfile.role === 'directeur') {
+                            // Un directeur a toutes les permissions sur son école.
+                            userProfile.permissions = allPermissions;
+                        } else if (userProfile.adminRole) {
                             const roleRef = doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`);
                             const roleSnap = await getDoc(roleRef);
                             if (roleSnap.exists()) {
@@ -105,10 +111,9 @@ export function useUser() {
                 }
                 
                 // Ensure profile exists for super admins, and isAdmin is set correctly
-                // This is the single source of truth for super admin status
                 if (isSuperAdmin) {
                     if (!userProfile) {
-                        userProfile = {} as UserProfile; // Create profile if it doesn't exist (e.g. admin not in any school)
+                        userProfile = {} as UserProfile;
                     }
                     userProfile.isAdmin = true;
                 }
