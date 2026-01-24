@@ -12,18 +12,26 @@ service cloud.firestore {
     }
 
     function isSchoolMember(schoolId) {
-      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+      if (!userDoc.exists()) {
+        return false;
+      }
+      let userData = userDoc.data;
       return isSignedIn() &&
-             exists(userDocPath) &&
-             'schools' in get(userDocPath).data &&
-             get(userDocPath).data.schools != null &&
-             schoolId in get(userDocPath).data.schools;
+             'schools' in userData && userData.schools != null &&
+             schoolId in userData.schools;
     }
     
     function isDirector(schoolId) {
-      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSchoolMember(schoolId) && 
-             get(userDocPath).data.schools[schoolId] == 'directeur';
+        let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
+         if (!userDoc.exists()) {
+            return false;
+        }
+        let userData = userDoc.data;
+        return isSchoolMember(schoolId) && 
+            'schools' in userData && userData.schools != null &&
+             schoolId in userData.schools &&
+             userData.schools[schoolId] == 'directeur';
     }
     
     function isSuperAdmin() {
@@ -35,7 +43,6 @@ service cloud.firestore {
     }
 
     function hasPermission(schoolId, permission) {
-        // isDirector and isSchoolMember are now robust, which makes this function more robust.
         return isDirector(schoolId) || (
             isSchoolMember(schoolId) &&
             exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
@@ -145,10 +152,8 @@ service cloud.firestore {
     // --- Sub-collections of /ecoles/{schoolId} ---
 
     match /ecoles/{schoolId}/personnel/{staffId} {
-      // Allow creation if the user is creating their own profile for a new school, OR if a director is adding someone.
       allow create: if (isSignedIn() && request.auth.uid == staffId && !exists(/databases/$(database)/documents/ecoles/$(schoolId))) || isDirector(schoolId);
       allow read: if isSchoolMember(schoolId);
-       // Allow a user to update their own profile (but not their role), or a director to update anything.
       allow update: if (isDirector(schoolId)) || (request.auth.uid == staffId && request.resource.data.role == resource.data.role);
       allow delete: if isDirector(schoolId);
     }
@@ -268,12 +273,8 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-    match /ecoles/{schoolId}/notifications {
-      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
