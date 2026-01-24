@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
@@ -5,12 +6,8 @@ import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 
 // Initialize Firebase Admin SDK if not already initialized
-// and if the service account is available (to prevent build errors)
-if (process.env.FIREBASE_ADMIN_SDK_JSON && !getApps().length) {
-  const serviceAccount = JSON.parse(process.env.FIREBASE_ADMIN_SDK_JSON);
-  initializeApp({
-    credential: cert(serviceAccount)
-  });
+if (!getApps().length) {
+  initializeApp();
 }
 
 
