@@ -24,15 +24,19 @@ service cloud.firestore {
     }
     
     function isDirector(schoolId) {
-      let staffProfilePath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
-      return isSignedIn() &&
-             exists(staffProfilePath) &&
-             get(staffProfilePath).data.role == 'directeur';
+        let userData = getUserData();
+        return isSignedIn() &&
+                'schools' in userData && userData.schools != null &&
+                schoolId in userData.schools &&
+                userData.schools[schoolId] == 'directeur';
     }
     
     function isSuperAdmin() {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin == true;
+      return isSignedIn() && 
+             exists(userRootPath) && 
+             'isSuperAdmin' in get(userRootPath).data && 
+             get(userRootPath).data.isSuperAdmin == true;
     }
 
     function hasPermission(schoolId, permission) {
@@ -144,8 +148,10 @@ service cloud.firestore {
     // --- Sub-collections of /ecoles/{schoolId} ---
 
     match /ecoles/{schoolId}/personnel/{staffId} {
-      allow create: if (request.auth.uid == staffId && (request.resource.data.role != 'directeur' || !exists(/databases/$(database)/documents/ecoles/$(schoolId))));
+      // Allow creation if the user is creating their own profile for a new school, OR if a director is adding someone.
+      allow create: if (isSignedIn() && request.auth.uid == staffId && !exists(/databases/$(database)/documents/ecoles/$(schoolId))) || isDirector(schoolId);
       allow read: if isSchoolMember(schoolId);
+       // Allow a user to update their own profile (but not their role), or a director to update anything.
       allow update: if (isDirector(schoolId)) || (request.auth.uid == staffId && request.resource.data.role == resource.data.role);
       allow delete: if isDirector(schoolId);
     }
@@ -371,5 +377,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
