@@ -18,6 +18,10 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ParentDashboard } from '@/components/parent/parent-dashboard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { StudentDemographics } from '@/components/analytics/student-demographics';
+import { TuitionAnalytics } from '@/components/analytics/tuition-analytics';
+import { AttendanceAnalytics } from '@/components/analytics/attendance-analytics';
+
 
 const DashboardSkeleton = () => (
   <div className="space-y-6">
@@ -69,6 +73,15 @@ const RegularDashboard = () => {
       <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />
       <StatCards schoolId={schoolId} />
       {gradesError && <Alert variant="destructive"><AlertDescription>{gradesError}</AlertDescription></Alert>}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <StudentDemographics schoolId={schoolId} />
+        <AttendanceAnalytics schoolId={schoolId} />
+      </div>
+      <div className="grid grid-cols-1 gap-6">
+        <TuitionAnalytics schoolId={schoolId} />
+      </div>
+
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
           <PerformanceChart grades={grades} loading={gradesLoading} error={gradesError}/>
