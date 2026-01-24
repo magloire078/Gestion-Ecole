@@ -127,8 +127,8 @@ export function UserNav({ collapsed = false }: UserNavProps) {
       ? 'Super Administrateur' 
       : (isDirector ? 'Directeur' : user?.profile?.role || 'Membre');
   
-  const fallback = displayName 
-    ? displayName.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() 
+  const fallback = displayName
+    ? displayName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()
     : 'U';
   
   const planName = isSuperAdmin ? null : (subscription?.plan || 'Gratuit');
