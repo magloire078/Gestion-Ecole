@@ -12,7 +12,7 @@ interface MobileNavProps {
     logoUrl?: string | null;
 }
 
-export function MobileNav({ loading, schoolName, logoUrl }: MobileNavProps) {
+export function MobileNav({ loading, schoolName }: MobileNavProps) {
   const { user, isDirector } = useUser();
   const { subscription } = useSchoolData();
 
@@ -26,16 +26,15 @@ export function MobileNav({ loading, schoolName, logoUrl }: MobileNavProps) {
 
   return (
     <div className='flex flex-col h-full bg-card'>
-        <div className="flex h-28 shrink-0 items-center border-b px-6">
+        <div className="flex h-20 shrink-0 items-center border-b px-6">
            {loading ? (
                 <div className="flex items-center gap-2">
-                    <Skeleton className="h-24 w-24 rounded-lg" />
+                    <Skeleton className="h-10 w-10 rounded-lg" />
                     <Skeleton className="h-5 w-32" />
                 </div>
             ) : (
                 <Logo 
                   schoolName={schoolName}
-                  logoUrl={logoUrl}
                 />
             )}
         </div>

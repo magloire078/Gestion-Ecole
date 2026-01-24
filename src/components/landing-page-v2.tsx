@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import placeholderImages from '@/lib/placeholder-images.json';
+import { Logo } from './logo';
 
 
 const featureCategories = [
@@ -91,8 +92,7 @@ export function LandingPageV2() {
         <div className="container flex h-20 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={56} height={56} className="object-contain" data-ai-hint="app logo" />
-              <span className="font-bold text-lg">GèreEcole</span>
+              <Logo />
             </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
@@ -244,7 +244,7 @@ export function LandingPageV2() {
       <footer className="border-t">
         <div className="container flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-             <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={24} height={24} className="object-contain" data-ai-hint="app logo"/>
+             <Logo compact />
             <span>© {new Date().getFullYear()} GèreEcole. Tous droits réservés.</span>
           </div>
           <nav className="flex gap-4">

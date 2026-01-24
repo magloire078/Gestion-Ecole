@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -14,11 +15,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { School, Sparkles, Mail, Lock, Eye, EyeOff, ChevronRight, Loader2 } from 'lucide-react';
+import { Sparkles, Mail, Lock, Eye, EyeOff, ChevronRight, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import placeholderImages from '@/lib/placeholder-images.json';
+import { Logo } from '@/components/logo';
+
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -136,14 +137,11 @@ export default function ModernLoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Côté gauche - Illustration */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-primary to-blue-700 p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden">
+      <div className="lg:w-1/2 bg-primary p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 bg-primary/10 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
         
         <div className="relative z-10">
-          <Link href="/" className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors">
-            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={32} height={32} data-ai-hint="app logo"/>
-            <span className="text-lg font-semibold">GèreEcole</span>
-          </Link>
+          <Logo />
           
           <div className="mt-12 lg:mt-20 max-w-lg">
             <div className="flex items-center gap-2 mb-4">
@@ -200,7 +198,7 @@ export default function ModernLoginPage() {
         <div className="w-full max-w-md space-y-6">
           {/* En-tête */}
           <div className="text-center space-y-2">
-            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={56} height={56} className="mx-auto mb-4" data-ai-hint="app logo" />
+             <div className="flex justify-center mb-4"><Logo /></div>
             <h2 className="text-3xl font-bold tracking-tight">
               Bienvenue à bord
             </h2>
