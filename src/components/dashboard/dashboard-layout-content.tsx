@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -86,10 +87,10 @@ export default function DashboardLayoutContent({ children }: { children: React.R
       <TooltipProvider>
         <div className={cn("min-h-screen w-full bg-background print:bg-white")}>
           <aside className={cn("fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-card sm:flex print:hidden transition-all duration-300", isNavCollapsed ? "w-20" : "w-64")}>
-            <div className={cn("flex h-16 shrink-0 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
+            <div className={cn("flex h-20 items-center border-b px-6", isNavCollapsed && "justify-center px-2")}>
               {isLoading ? (
                   <div className="flex items-center gap-2">
-                    <Skeleton className={cn("rounded-lg h-10 w-10")} />
+                    <Skeleton className={cn("rounded-lg h-14 w-14")} />
                     {!isNavCollapsed && <Skeleton className="h-5 w-32" />}
                   </div>
               ) : (

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Check, ArrowRight, PlayCircle, FileText, Users, Wallet, Briefcase } from 'lucide-react';
@@ -87,11 +88,11 @@ export function LandingPageV2() {
     <div className="bg-background text-foreground">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center">
+        <div className="container flex h-20 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2">
-              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={32} height={32} className="object-contain" data-ai-hint="app logo" />
-              <span className="font-bold">GèreEcole</span>
+              <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={48} height={48} className="object-contain" data-ai-hint="app logo" />
+              <span className="font-bold text-lg">GèreEcole</span>
             </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
@@ -132,7 +133,7 @@ export function LandingPageV2() {
               <Image
                 src={placeholderImages.heroImage}
                 alt="GèreEcole - Application de gestion scolaire"
-                width={1200}
+                width={1000}
                 height={800}
                 className="rounded-xl shadow-2xl mx-auto"
                 priority
