@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -8,27 +7,23 @@ service cloud.firestore {
     //         HELPER FUNCTIONS
     // =================================
     
-    function getUserData() {
-        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isSchoolMember(schoolId) {
-      let userData = getUserData();
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
       return isSignedIn() &&
-             'schools' in userData && userData.schools != null &&
-             schoolId in userData.schools;
+             exists(userDocPath) &&
+             'schools' in get(userDocPath).data &&
+             get(userDocPath).data.schools != null &&
+             schoolId in get(userDocPath).data.schools;
     }
     
     function isDirector(schoolId) {
-        let userData = getUserData();
-        return isSignedIn() &&
-                'schools' in userData && userData.schools != null &&
-                schoolId in userData.schools &&
-                userData.schools[schoolId] == 'directeur';
+      let userDocPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isSchoolMember(schoolId) && 
+             get(userDocPath).data.schools[schoolId] == 'directeur';
     }
     
     function isSuperAdmin() {
@@ -40,13 +35,15 @@ service cloud.firestore {
     }
 
     function hasPermission(schoolId, permission) {
-        // Cette fonction doit être une seule expression booléenne.
+        // isDirector and isSchoolMember are now robust, which makes this function more robust.
         return isDirector(schoolId) || (
             isSchoolMember(schoolId) &&
             exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
             get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole != null &&
             exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)) &&
-            get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions[permission]
+            // Safe check for the permission key
+            permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions &&
+            get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions[permission] == true
         );
     }
 
