@@ -144,10 +144,10 @@ service cloud.firestore {
     // --- Sub-collections of /ecoles/{schoolId} ---
 
     match /ecoles/{schoolId}/personnel/{staffId} {
-        allow create: if isDirector(schoolId);
-        allow read: if isSchoolMember(schoolId);
-        allow update: if isDirector(schoolId) || request.auth.uid == staffId;
-        allow delete: if isDirector(schoolId);
+      allow create: if isDirector(schoolId);
+      allow read: if isSchoolMember(schoolId);
+      allow update: if isDirector(schoolId) || request.auth.uid == staffId;
+      allow delete: if isDirector(schoolId);
     }
     match /ecoles/{schoolId}/personnel {
         allow list: if isSchoolMember(schoolId);
@@ -238,7 +238,7 @@ service cloud.firestore {
       allow update, delete, create: if hasPermission(schoolId, 'manageBilling');
     }
      match /ecoles/{schoolId}/comptabilite {
-      allow list: if isSchoolMember(schoolId);
+      allow list: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageBilling');
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {

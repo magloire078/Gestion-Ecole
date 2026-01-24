@@ -1,10 +1,11 @@
+
 'use client';
 import { useMemo, useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2 } from 'lucide-react';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser } from '@/firebase';
 import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -13,12 +14,13 @@ import type { UserProfile } from '@/lib/data-types';
 
 export function AdminsTable() {
   const firestore = useFirestore();
+  const { user } = useUser();
   const [admins, setAdmins] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAdmins = async () => {
-      if (!firestore) return;
+      if (!firestore || !user?.profile?.isAdmin) return;
       setLoading(true);
       try {
         const personnelQuery = query(collectionGroup(firestore, 'personnel'), where('isAdmin', '==', true));
@@ -35,7 +37,7 @@ export function AdminsTable() {
       }
     };
     fetchAdmins();
-  }, [firestore]);
+  }, [firestore, user?.profile?.isAdmin]);
 
 
   return (

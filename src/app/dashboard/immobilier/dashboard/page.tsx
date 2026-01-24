@@ -3,10 +3,10 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { GanttChartSquare, Wrench, Building, CalendarCheck } from 'lucide-react';
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, getCountFromServer, query, where, orderBy, limit } from 'firebase/firestore';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MaintenanceList } from '@/components/immobilier/maintenance-list';
 import { InventorySummary } from '@/components/immobilier/inventory-summary';

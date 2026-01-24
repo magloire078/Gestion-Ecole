@@ -1,7 +1,8 @@
+
 'use client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableRow, TableHeader, TableHead } from '@/components/ui/table';
-import { useFirestore, useCollection } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, orderBy, limit as firestoreLimit, getDocs, collectionGroup } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -23,13 +24,16 @@ type SystemLog = {
 
 export const AuditLog = ({ limit }: { limit: number }) => {
   const firestore = useFirestore();
+  const { user } = useUser();
   
   const [adminMap, setAdminMap] = useState<Map<string, string>>(new Map());
   const [adminsLoading, setAdminsLoading] = useState(true);
 
   const logsQuery = useMemo(() => 
-    query(collection(firestore, 'system_logs'), orderBy('timestamp', 'desc'), firestoreLimit(limit)),
-    [firestore, limit]
+    (user?.profile?.isAdmin)
+    ? query(collection(firestore, 'system_logs'), orderBy('timestamp', 'desc'), firestoreLimit(limit))
+    : null,
+    [firestore, limit, user?.profile?.isAdmin]
   );
   
   const { data: logsData, loading: logsLoading } = useCollection(logsQuery);

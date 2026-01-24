@@ -1,7 +1,7 @@
 
 import { NextResponse } from 'next/server';
 import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase-admin/firestore';
-import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
 import type { school } from '@/lib/data-types';
 import Stripe from 'stripe';

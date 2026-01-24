@@ -48,7 +48,12 @@ export function SchoolsTable() {
   const [schoolToRestore, setSchoolToRestore] = useState<School | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
 
-  const schoolsQuery = useMemo(() => query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc')), [firestore]);
+  const schoolsQuery = useMemo(() => 
+    user?.profile?.isAdmin
+      ? query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc'))
+      : null, 
+    [firestore, user?.profile?.isAdmin]
+  );
   const { data: schoolsData, loading: schoolsLoading } = useCollection(schoolsQuery);
 
   const schools: School[] = useMemo(() => schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [], [schoolsData]);
