@@ -58,43 +58,40 @@ export function useUser() {
           
           if (userRootDoc.exists()) {
             const userData = userRootDoc.data() as user_root;
+            const isSuperAdmin = userData.isSuperAdmin === true;
             const schoolAffiliations = userData.schools || {};
-            const allSchoolIds = Object.keys(schoolAffiliations);
-            
-            // Filter out invalid IDs that might be array indices from corrupted data
-            const schoolIds = allSchoolIds.filter(id => id.length > 10); 
+            const schoolIds = Object.keys(schoolAffiliations).filter(id => id.length > 10); 
             
             const activeSchoolId = userData.activeSchoolId && schoolAffiliations[userData.activeSchoolId]
                 ? userData.activeSchoolId
                 : schoolIds[0] || null;
             
-            if (activeSchoolId) {
-                const activeRole = schoolAffiliations[activeSchoolId];
-                
-                if (activeRole === 'parent') {
-                    // This is a parent user for the active school
-                    const parentProfileRef = doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`);
-                    const parentProfileSnap = await getDoc(parentProfileRef);
-                    const parentData = parentProfileSnap.data() as Parent;
-                    
-                    setUser({
-                        uid: firebaseUser.uid,
-                        authUser: firebaseUser,
-                        isParent: true,
-                        schoolId: activeSchoolId,
-                        schools: schoolAffiliations,
-                        parentStudentIds: parentData?.studentIds || [],
-                        displayName: parentData?.displayName || firebaseUser.displayName,
-                        email: firebaseUser.email,
-                        photoURL: parentData?.photoURL || firebaseUser.photoURL,
-                    });
+            const activeRole = activeSchoolId ? schoolAffiliations[activeSchoolId] : null;
 
-                } else {
-                    // This is a staff member
+            if (activeSchoolId && activeRole === 'parent') {
+                // Parent logic
+                const parentProfileRef = doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`);
+                const parentProfileSnap = await getDoc(parentProfileRef);
+                const parentData = parentProfileSnap.data() as Parent;
+                
+                setUser({
+                    uid: firebaseUser.uid,
+                    authUser: firebaseUser,
+                    isParent: true,
+                    schoolId: activeSchoolId,
+                    schools: schoolAffiliations,
+                    parentStudentIds: parentData?.studentIds || [],
+                    displayName: parentData?.displayName || firebaseUser.displayName,
+                    email: firebaseUser.email,
+                    photoURL: parentData?.photoURL || firebaseUser.photoURL,
+                });
+            } else {
+                // Staff member or Super Admin (even without school)
+                let userProfile: UserProfile | undefined = undefined;
+
+                if (activeSchoolId) {
                     const staffProfileRef = doc(firestore, `ecoles/${activeSchoolId}/personnel/${firebaseUser.uid}`);
                     const profileSnap = await getDoc(staffProfileRef);
-                    let userProfile: UserProfile | undefined = undefined;
-                    
                     if (profileSnap.exists()) {
                         userProfile = profileSnap.data() as UserProfile;
                         if (userProfile.adminRole) {
@@ -105,22 +102,28 @@ export function useUser() {
                             }
                         }
                     }
-                    
-                    setUser({
-                        uid: firebaseUser.uid,
-                        authUser: firebaseUser,
-                        isParent: false,
-                        schoolId: activeSchoolId,
-                        schools: schoolAffiliations,
-                        profile: userProfile,
-                        displayName: userProfile?.displayName || firebaseUser.displayName,
-                        email: firebaseUser.email,
-                        photoURL: userProfile?.photoURL || firebaseUser.photoURL,
-                    });
                 }
-            } else {
-                 // Authenticated user with a user_root doc, but no active school (e.g. affiliation removed)
-                 setUser({ uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: null, schools: schoolAffiliations, displayName: firebaseUser.displayName, email: firebaseUser.email, photoURL: firebaseUser.photoURL });
+                
+                // Ensure profile exists for super admins, and isAdmin is set correctly
+                // This is the single source of truth for super admin status
+                if (isSuperAdmin) {
+                    if (!userProfile) {
+                        userProfile = {} as UserProfile; // Create profile if it doesn't exist (e.g. admin not in any school)
+                    }
+                    userProfile.isAdmin = true;
+                }
+                
+                setUser({
+                    uid: firebaseUser.uid,
+                    authUser: firebaseUser,
+                    isParent: false,
+                    schoolId: activeSchoolId,
+                    schools: schoolAffiliations,
+                    profile: userProfile,
+                    displayName: userProfile?.displayName || firebaseUser.displayName,
+                    email: firebaseUser.email,
+                    photoURL: userProfile?.photoURL || firebaseUser.photoURL,
+                });
             }
 
           } else {
