@@ -24,18 +24,19 @@ service cloud.firestore {
     }
     
     function isDirector(schoolId) {
-        return isSignedIn() &&
-               exists(/databases/$(database)/documents/ecoles/$(schoolId)) &&
-               get(/databases/$(database)/documents/ecoles/$(schoolId)).data.directorId == request.auth.uid;
+      let userData = getUserData();
+      return isSignedIn() &&
+             'schools' in userData && userData.schools != null &&
+             userData.schools[schoolId] == 'directeur';
     }
     
     function isSuperAdmin() {
       let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin;
+      return isSignedIn() && exists(userRootPath) && get(userRootPath).data.isSuperAdmin == true;
     }
 
     function hasPermission(schoolId, permission) {
-        // This function must be a single boolean expression.
+        // Cette fonction doit être une seule expression booléenne.
         return isDirector(schoolId) || (
             isSchoolMember(schoolId) &&
             exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
@@ -129,18 +130,23 @@ service cloud.firestore {
     //         SCHOOL DATA
     // =================================
     
+    match /ecoles {
+      allow list: if isSuperAdmin();
+    }
+
     match /ecoles/{schoolId} {
-      allow read: if isSchoolMember(schoolId);
+      allow read: if isSchoolMember(schoolId) || isSuperAdmin();
       allow create: if isSignedIn();
-      allow update: if hasPermission(schoolId, 'manageSettings');
+      allow update: if hasPermission(schoolId, 'manageSettings') || isSuperAdmin();
       allow delete: if isSuperAdmin();
     }
     
     // --- Sub-collections of /ecoles/{schoolId} ---
 
     match /ecoles/{schoolId}/personnel/{staffId} {
-        allow create, update: if request.auth.uid == staffId || isDirector(schoolId);
-        allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
+        allow create: if isDirector(schoolId);
+        allow read: if isSchoolMember(schoolId);
+        allow update: if isDirector(schoolId) || request.auth.uid == staffId;
         allow delete: if isDirector(schoolId);
     }
     match /ecoles/{schoolId}/personnel {
