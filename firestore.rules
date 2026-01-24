@@ -273,11 +273,11 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow read, update, delete: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
+      allow read, update, delete: if isSchoolMember(schoolId) && (resource.data.userId == request.auth.uid || hasPermission(schoolId, 'manageCommunication'));
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     match /ecoles/{schoolId}/notifications {
-      allow list: if isSchoolMember(schoolId) && request.auth.uid != null;
+      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
