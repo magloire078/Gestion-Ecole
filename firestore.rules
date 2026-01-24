@@ -37,8 +37,7 @@ service cloud.firestore {
 
     function hasPermission(schoolId, permission) {
         // This function must be a single boolean expression.
-        // A director has all permissions within their school.
-        return isSuperAdmin() || isDirector(schoolId) || (
+        return isDirector(schoolId) || (
             isSchoolMember(schoolId) &&
             exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
             get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole != null &&
@@ -139,12 +138,8 @@ service cloud.firestore {
 
     match /ecoles/{schoolId}/personnel/{staffId} {
         allow read: if isSchoolMember(schoolId) || request.auth.uid == staffId;
-        
-        // Allow user to create/update their own profile
-        allow create, update: if isSignedIn() && request.auth.uid == staffId;
-
-        // Allow a director to manage all staff profiles in their school
-        allow create, update, delete: if isDirector(schoolId);
+        allow create, update: if request.auth.uid == staffId || isDirector(schoolId);
+        allow delete: if isDirector(schoolId);
     }
     match /ecoles/{schoolId}/personnel {
         allow list: if isSchoolMember(schoolId);
@@ -263,9 +258,11 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
       allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow list: if isSignedIn();
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+    match /ecoles/{schoolId}/notifications {
+      allow list: if isSignedIn();
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
