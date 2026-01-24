@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -18,6 +17,8 @@ import Link from 'next/link';
 import { School, Sparkles, Mail, Lock, Eye, EyeOff, ChevronRight, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -140,11 +141,11 @@ export default function ModernLoginPage() {
         
         <div className="relative z-10">
           <Link href="/" className="inline-flex items-center gap-2 text-white/90 hover:text-white transition-colors">
-            <School className="h-6 w-6" />
+            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={32} height={32} data-ai-hint="app logo"/>
             <span className="text-lg font-semibold">GèreEcole</span>
           </Link>
           
-          <div className="mt-16 lg:mt-24 max-w-lg">
+          <div className="mt-12 lg:mt-20 max-w-lg">
             <div className="flex items-center gap-2 mb-4">
               <Sparkles className="h-5 w-5 text-white/80" />
               <span className="text-sm font-medium text-white/80">LA SOLUTION DE RÉFÉRENCE</span>
@@ -196,12 +197,10 @@ export default function ModernLoginPage() {
 
       {/* Côté droit - Formulaire */}
       <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-background">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-6">
           {/* En-tête */}
           <div className="text-center space-y-2">
-            <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary/10 mb-4">
-              <School className="h-8 w-8 text-primary" />
-            </div>
+            <Image src={placeholderImages.mainAppLogo} alt="GèreEcole Logo" width={56} height={56} className="mx-auto mb-4" data-ai-hint="app logo" />
             <h2 className="text-3xl font-bold tracking-tight">
               Bienvenue à bord
             </h2>
