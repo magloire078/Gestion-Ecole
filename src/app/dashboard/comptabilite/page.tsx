@@ -20,6 +20,9 @@ import { Button } from "@/components/ui/button";
 import {
   PlusCircle,
   MoreHorizontal,
+  TrendingUp,
+  TrendingDown,
+  Scale
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -76,6 +79,20 @@ const transactionSchema = z.object({
 });
 
 type TransactionFormValues = z.infer<typeof transactionSchema>;
+
+const StatCard = ({ title, value, icon: Icon, description, loading, colorClass }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading: boolean, colorClass?: string }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            <Icon className={cn("h-4 w-4 text-muted-foreground", colorClass)} />
+        </CardHeader>
+        <CardContent>
+            {loading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{value}</div>}
+            {description && !loading && <p className="text-xs text-muted-foreground">{description}</p>}
+        </CardContent>
+    </Card>
+);
+
 
 export default function AccountingPage() {
   const firestore = useFirestore();
@@ -222,6 +239,17 @@ export default function AccountingPage() {
 
   const categoryOptions = allCategories[watchedType].map(cat => ({ value: cat, label: cat }));
   const isLoading = schoolLoading || transactionsLoading;
+
+  const stats = useMemo(() => {
+    const totalRevenu = transactions
+        .filter(t => t.type === 'Revenu')
+        .reduce((sum, t) => sum + t.amount, 0);
+    const totalDepense = transactions
+        .filter(t => t.type === 'Dépense')
+        .reduce((sum, t) => sum + t.amount, 0);
+    const solde = totalRevenu - totalDepense;
+    return { totalRevenu, totalDepense, solde };
+  }, [transactions]);
   
   const renderFormContent = () => (
     <Form {...form}>
@@ -326,6 +354,12 @@ export default function AccountingPage() {
           <p className="text-muted-foreground">
             Suivez les revenus, les dépenses et la santé financière de votre école.
           </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+            <StatCard title="Total des Revenus" value={formatCurrency(stats.totalRevenu)} icon={TrendingUp} loading={isLoading} colorClass="text-emerald-500" />
+            <StatCard title="Total des Dépenses" value={formatCurrency(stats.totalDepense)} icon={TrendingDown} loading={isLoading} colorClass="text-destructive" />
+            <StatCard title="Solde Actuel" value={formatCurrency(stats.solde)} icon={Scale} loading={isLoading} colorClass={stats.solde >= 0 ? 'text-emerald-500' : 'text-destructive'} />
         </div>
 
         { !isLoading && transactions.length > 0 && <AccountingCharts transactions={transactions} /> }
