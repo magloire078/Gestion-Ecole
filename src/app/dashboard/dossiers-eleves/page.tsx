@@ -93,7 +93,7 @@ export default function StudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('active');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const { activeStudents, archivedStudents, filteredActiveStudents } = useMemo(() => {
     const filteredBySearch = allStudents.filter(student =>

@@ -115,7 +115,7 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                         </Avatar>
                                         <div>
                                             <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
-                                                <p className="font-medium">{student.firstName} {student.lastName}</p>
+                                                <p className="font-medium">{student.firstName} ${student.lastName}</p>
                                             </Link>
                                             <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id?.substring(0,8)}</div>
                                         </div>
