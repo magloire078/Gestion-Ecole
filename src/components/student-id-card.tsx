@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useRef } from 'react';
@@ -31,8 +30,8 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
   const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   const currentYear = new Date().getFullYear();
 
-  // Le contenu du QR Code peut être l'ID de l'élève ou son matricule
-  const qrCodeValue = student.id || student.matricule;
+  // Le QR code est maintenant un lien direct vers le profil de l'élève
+  const qrCodeValue = `${process.env.NEXT_PUBLIC_BASE_URL || window.location.origin}/dashboard/dossiers-eleves/${student.id}`;
 
   return (
     <div className="max-w-md mx-auto">
@@ -41,7 +40,12 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
                 <div ref={cardRef} className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-800 dark:to-blue-900/50 p-6 rounded-t-xl">
                     <header className="flex justify-between items-center mb-6">
                         <div className="flex items-center gap-2">
-                             {school.mainLogoUrl && <AvatarImage src={school.mainLogoUrl} alt={school.name} className="object-contain h-10 w-10" />}
+                             {school.mainLogoUrl && (
+                                <Avatar className="h-10 w-10 rounded-md">
+                                    <AvatarImage src={school.mainLogoUrl} alt={school.name} className="object-contain" />
+                                    <AvatarFallback>{school.name?.[0]}</AvatarFallback>
+                                </Avatar>
+                            )}
                             <h1 className="font-bold text-lg">{school.name}</h1>
                         </div>
                         <p className="text-xs font-mono">Année {`${currentYear - 1}-${currentYear}`}</p>
