@@ -11,8 +11,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -30,35 +28,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, addDoc, setDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { materiel as Materiel, salle as Salle, bus as Bus, building } from '@/lib/data-types';
-import { format } from 'date-fns';
-import { Combobox } from '@/components/ui/combobox';
-
-const materielSchema = z.object({
-  name: z.string().min(1, "Le nom est requis."),
-  category: z.enum(["Mobilier", "Informatique", "Pédagogique", "Sportif", "Autre"]),
-  quantity: z.coerce.number().min(1, "La quantité doit être au moins de 1."),
-  status: z.enum(["neuf", "bon", "à réparer", "hors_service"]),
-  locationId: z.string().min(1, "L'emplacement est requis."),
-  acquisitionDate: z.string().optional(),
-  value: z.coerce.number().min(0).optional(),
-});
-
-type MaterielFormValues = z.infer<typeof materielSchema>;
+import { MaterielForm } from '@/components/immobilier/materiel-form';
 
 export default function InventairePage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -113,39 +92,6 @@ export default function InventairePage() {
 
       return { locationOptions: options, locationMap: map };
   }, [sallesData, batimentsData, busesData]);
-
-  const form = useForm<MaterielFormValues>({
-    resolver: zodResolver(materielSchema),
-    defaultValues: { category: "Mobilier", status: "bon", quantity: 1 },
-  });
-
-  useEffect(() => {
-    form.reset(
-      editingMateriel 
-        ? { ...editingMateriel, acquisitionDate: editingMateriel.acquisitionDate ? format(new Date(editingMateriel.acquisitionDate), 'yyyy-MM-dd') : '' }
-        : { category: "Mobilier", status: "bon", quantity: 1, locationId: '', name: '', acquisitionDate: format(new Date(), 'yyyy-MM-dd') }
-    );
-  }, [isFormOpen, editingMateriel, form]);
-
-  const handleFormSubmit = async (values: MaterielFormValues) => {
-    if (!schoolId) return;
-
-    const dataToSave = { ...values, schoolId };
-
-    const promise = editingMateriel
-        ? setDoc(doc(firestore, `ecoles/${schoolId}/inventaire`, editingMateriel.id), dataToSave, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/inventaire`), dataToSave);
-    try {
-        await promise;
-        toast({ title: `Matériel ${editingMateriel ? 'modifié' : 'ajouté'}`, description: `L'équipement ${values.name} a été enregistré.` });
-        setIsFormOpen(false);
-    } catch (e) {
-        const path = `ecoles/${schoolId}/inventaire/${editingMateriel?.id || '(new)'}`;
-        const operation = editingMateriel ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
-    }
-  };
 
   const handleOpenDeleteDialog = (materiel: Materiel & { id: string }) => {
     setMaterielToDelete(materiel);
@@ -236,45 +182,12 @@ export default function InventairePage() {
           <DialogHeader>
             <DialogTitle>{editingMateriel ? 'Modifier' : 'Ajouter'} un équipement</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form id="materiel-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Nom de l'équipement</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-              <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Catégorie</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Mobilier">Mobilier</SelectItem><SelectItem value="Informatique">Informatique</SelectItem><SelectItem value="Pédagogique">Pédagogique</SelectItem><SelectItem value="Sportif">Sportif</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent></Select></FormItem>} />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="quantity" render={({ field }) => <FormItem><FormLabel>Quantité</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>} />
-                <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="neuf">Neuf</SelectItem><SelectItem value="bon">Bon</SelectItem><SelectItem value="à réparer">À réparer</SelectItem><SelectItem value="hors_service">Hors service</SelectItem></SelectContent></Select></FormItem>} />
-              </div>
-              <FormField
-                control={form.control}
-                name="locationId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Emplacement</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        placeholder="Choisir un emplacement"
-                        searchPlaceholder="Chercher un lieu..."
-                        options={locationOptions}
-                        value={field.value || ''}
-                        onValueChange={field.onChange}
-                        onCreate={(value) => {
-                            field.onChange(value);
-                            toast({title: `Emplacement "${value}" sera sauvegardé tel quel.`})
-                            return Promise.resolve({ value, label: value });
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField control={form.control} name="acquisitionDate" render={({ field }) => <FormItem><FormLabel>Date d'acquisition</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>} />
-            </form>
-          </Form>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-            <Button type="submit" form="materiel-form" disabled={form.formState.isSubmitting}>Enregistrer</Button>
-          </DialogFooter>
+          <MaterielForm
+            schoolId={schoolId!}
+            materiel={editingMateriel}
+            locationOptions={locationOptions}
+            onSave={() => setIsFormOpen(false)}
+          />
         </DialogContent>
       </Dialog>
       
