@@ -535,6 +535,8 @@
             "title": { "type": "string", "description": "Le titre du livre." },
             "author": { "type": "string", "description": "L'auteur du livre." },
             "quantity": { "type": "number", "description": "Le nombre d'exemplaires disponibles." },
+            "frontCoverUrl": { "type": "string", "format": "uri", "description": "URL de l'image de la couverture avant." },
+            "backCoverUrl": { "type": "string", "format": "uri", "description": "URL de l'image de la couverture arrière." },
             "createdAt": { "type": "string", "format": "date-time", "description": "La date d'ajout du livre." }
         },
         "required": ["schoolId", "title", "author", "quantity"]
@@ -1361,5 +1363,6 @@
     
 
     
+
 
 

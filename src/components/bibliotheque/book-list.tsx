@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -41,6 +42,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
+import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -50,13 +52,20 @@ import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { cn } from "@/lib/utils";
 import { SafeImage } from "@/components/ui/safe-image";
+import Link from "next/link";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { LoanList } from '@/components/bibliotheque/loan-list';
+import { BookOpen } from 'lucide-react';
 import type { libraryBook as LibraryBook, student as Student } from "@/lib/data-types";
 import { LoanDialog } from "./loan-dialog";
+import { ImageUploader } from "../image-uploader";
 
 const bookSchema = z.object({
   title: z.string().min(1, { message: "Le titre est requis." }),
   author: z.string().min(1, { message: "L'auteur est requis." }),
   quantity: z.coerce.number().int().min(0, { message: "La quantité doit être un nombre positif." }),
+  frontCoverUrl: z.string().url().optional().or(z.literal('')),
+  backCoverUrl: z.string().url().optional().or(z.literal('')),
 });
 
 type BookFormValues = z.infer<typeof bookSchema>;
@@ -90,11 +99,11 @@ export function BookList({ schoolId }: BookListProps) {
 
   const form = useForm<BookFormValues>({
     resolver: zodResolver(bookSchema),
-    defaultValues: { title: "", author: "", quantity: 1 },
+    defaultValues: { title: "", author: "", quantity: 1, frontCoverUrl: "", backCoverUrl: "" },
   });
 
   useEffect(() => {
-    form.reset(editingBook || { title: "", author: "", quantity: 1 });
+    form.reset(editingBook || { title: "", author: "", quantity: 1, frontCoverUrl: "", backCoverUrl: "" });
   }, [isFormOpen, editingBook, form]);
 
   const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
@@ -163,7 +172,7 @@ export function BookList({ schoolId }: BookListProps) {
             <CardHeader className="p-0">
               <div className="relative h-40 w-full">
                 <SafeImage 
-                  src={`https://picsum.photos/seed/${book.id}/400/200`} 
+                  src={book.frontCoverUrl || `https://picsum.photos/seed/${book.id}/400/200`} 
                   alt={`Couverture du livre ${book.title}`} 
                   fill
                   style={{objectFit: 'cover'}}
@@ -212,16 +221,67 @@ export function BookList({ schoolId }: BookListProps) {
       {canManageLibrary && (
         <>
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-xl">
               <DialogHeader>
                 <DialogTitle>{editingBook ? "Modifier le" : "Ajouter un Nouveau"} Livre</DialogTitle>
                 <DialogDescription>{editingBook ? `Mettez à jour les informations du livre "${editingBook.title}".` : "Renseignez les informations du nouveau livre."}</DialogDescription>
               </DialogHeader>
               <Form {...form}>
-                <form id="book-form" onSubmit={form.handleSubmit(handleBookSubmit)} className="grid gap-4 py-4">
+                <form id="book-form" onSubmit={form.handleSubmit(handleBookSubmit)} className="grid gap-4 py-4 max-h-[70vh] overflow-y-auto px-1">
                   <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Titre</FormLabel><FormControl><Input placeholder="Ex: Les Misérables" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="author" render={({ field }) => (<FormItem><FormLabel>Auteur</FormLabel><FormControl><Input placeholder="Ex: Victor Hugo" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>Quantité</FormLabel><FormControl><Input type="number" placeholder="Ex: 5" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  
+                  <div className="grid grid-cols-2 gap-4 pt-2">
+                    <FormField
+                      control={form.control}
+                      name="frontCoverUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Couverture Avant</FormLabel>
+                          <FormControl>
+                            <ImageUploader
+                              onUploadComplete={(url) => field.onChange(url)}
+                              storagePath={`ecoles/${schoolId}/library_covers/`}
+                              currentImageUrl={field.value}
+                            >
+                              <div className="w-full h-40 border-dashed border-2 rounded-md flex items-center justify-center bg-muted hover:bg-muted/80 cursor-pointer">
+                                {field.value ? (
+                                  <SafeImage src={field.value} alt="Couverture avant" width={100} height={150} className="object-contain h-full" />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Téléverser</span>
+                                )}
+                              </div>
+                            </ImageUploader>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="backCoverUrl"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Couverture Arrière</FormLabel>
+                          <FormControl>
+                            <ImageUploader
+                              onUploadComplete={(url) => field.onChange(url)}
+                              storagePath={`ecoles/${schoolId}/library_covers/`}
+                              currentImageUrl={field.value}
+                            >
+                              <div className="w-full h-40 border-dashed border-2 rounded-md flex items-center justify-center bg-muted hover:bg-muted/80 cursor-pointer">
+                                {field.value ? (
+                                  <SafeImage src={field.value} alt="Couverture arrière" width={100} height={150} className="object-contain h-full" />
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">Téléverser</span>
+                                )}
+                              </div>
+                            </ImageUploader>
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </form>
               </Form>
               <DialogFooter>
