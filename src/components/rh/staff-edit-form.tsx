@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -102,8 +100,6 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
     });
 
     useEffect(() => {
-        if (!todayDateString) return; 
-
         async function loadPrivateData() {
             if (editingStaff && schoolId) {
                 const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
@@ -130,7 +126,9 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                 setPhotoUrl(null);
             }
         }
-        loadPrivateData();
+        if (todayDateString) {
+           loadPrivateData();
+        }
     }, [editingStaff, schoolId, firestore, form, todayDateString]);
     
     const watchedRole = useWatch({ control: form.control, name: 'role' });
@@ -149,6 +147,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
         
         const dataToSave: Staff = {
             ...values,
+            adminRole: values.adminRole === 'none' ? undefined : values.adminRole,
             uid: editingStaff?.uid || '', // UID is set by the user upon joining, not here.
             schoolId,
             photoURL: photoUrl || '',
@@ -256,7 +255,17 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                             </div>
 
                             <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Rôle/Poste</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un rôle..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="directeur">Directeur</SelectItem><SelectItem value="directeur_pedagogique">Directeur Pédagogique</SelectItem><SelectItem value="secretaire">Secrétaire</SelectItem><SelectItem value="enseignant">Enseignant</SelectItem><SelectItem value="enseignant_principal">Enseignant Principal</SelectItem><SelectItem value="comptable">Comptable</SelectItem><SelectItem value="bibliothecaire">Bibliothécaire</SelectItem><SelectItem value="surveillant">Surveillant</SelectItem><SelectItem value="infirmier">Infirmier(e)</SelectItem><SelectItem value="personnel">Autre Personnel</SelectItem><SelectItem value="chauffeur">Chauffeur</SelectItem><SelectItem value="accompagnateur">Accompagnateur</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="adminRole" render={({ field }) => (<FormItem><FormLabel>Rôle Administratif (Permissions)</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Aucun rôle admin" /></SelectTrigger></FormControl><SelectContent><SelectItem value="">Aucun</SelectItem>{adminRoles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent></Select></FormItem>)} />
+                            <FormField control={form.control} name="adminRole" render={({ field }) => (
+                                <FormItem><FormLabel>Rôle Administratif (Permissions)</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                                    <FormControl><SelectTrigger><SelectValue placeholder="Aucun rôle admin" /></SelectTrigger></FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none">Aucun</SelectItem>
+                                        {adminRoles.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                </FormItem>
+                            )} />
                             {watchedRole === 'enseignant' && (
                                 <div className="grid grid-cols-2 gap-4 p-4 border rounded-md bg-muted/50">
                                     <FormField control={form.control} name="subject" render={({ field }) => (<FormItem><FormLabel>Matière principale</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl><SelectContent>{subjects.map(s => <SelectItem key={s.id} value={s.name}>{s.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
