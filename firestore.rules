@@ -85,6 +85,17 @@ service cloud.firestore {
         allow read, write: if hasPermission(resource.data.schoolId, 'manageDiscipline');
     }
     
+     match /{path=**}/dossier_medical/{dossierId} {
+      allow list: if isSchoolMember(path[1]);
+      allow read: if isSchoolMember(path[1]) && hasPermission(path[1], 'viewUsers');
+    }
+    match /{path=**}/consultations/{consultationId} {
+      allow list: if isSchoolMember(path[1]);
+    }
+    match /{path=**}/vaccins/{vaccinId} {
+      allow list: if isSchoolMember(path[1]);
+    }
+    
     // =================================
     //         PUBLIC COLLECTIONS
     // =================================
@@ -249,8 +260,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-      allow get: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewAnalytics');
-      allow list: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewAnalytics');
+      allow read, list: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewAnalytics');
       allow update, delete, create: if hasPermission(schoolId, 'manageBilling');
     }
     
