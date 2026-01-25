@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -29,7 +28,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -49,36 +47,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, query, orderBy, where } from "firebase/firestore";
+import { collection, doc, deleteDoc, query, orderBy } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { accountingTransaction as AccountingTransaction } from '@/lib/data-types';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AccountingCharts } from './charts';
 import { cn } from "@/lib/utils";
+import { TransactionForm } from "@/components/comptabilite/transaction-form";
 
-
-const transactionSchema = z.object({
-    description: z.string().min(1, { message: "La description est requise." }),
-    amount: z.coerce.number().positive({ message: "Le montant doit être un nombre positif." }),
-    type: z.enum(['Revenu', 'Dépense'], { required_error: "Le type est requis." }),
-    category: z.string().min(1, { message: "La catégorie est requise." }),
-    date: z.string().min(1, { message: "La date est requise." }),
-});
-
-type TransactionFormValues = z.infer<typeof transactionSchema>;
 
 const StatCard = ({ title, value, icon: Icon, description, loading, colorClass }: { title: string, value: string | number, icon: React.ElementType, description?: string, loading: boolean, colorClass?: string }) => (
     <Card>
@@ -109,97 +91,9 @@ export default function AccountingPage() {
   const [editingTransaction, setEditingTransaction] = useState<(AccountingTransaction & {id: string}) | null>(null);
   const [transactionToDelete, setTransactionToDelete] = useState<(AccountingTransaction & {id: string}) | null>(null);
 
-  const [allCategories, setAllCategories] = useState({
-    Revenu: ['Scolarité', 'Dons', 'Événements'],
-    Dépense: ['Salaires', 'Fournitures', 'Maintenance', 'Services Publics', 'Marketing']
-  });
-
   const { toast } = useToast();
-  const [todayDateString, setTodayDateString] = useState('');
-
-  useEffect(() => {
-    setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
-  }, []);
-
-  const form = useForm<TransactionFormValues>({
-    resolver: zodResolver(transactionSchema),
-    defaultValues: {
-        description: "",
-        amount: 0,
-        type: "Dépense",
-        category: "",
-        date: '', // Initialize as empty
-    },
-  });
   
-  useEffect(() => {
-    if (todayDateString && !form.getValues('date')) {
-        form.reset({ ...form.getValues(), date: todayDateString });
-    }
-  }, [todayDateString, form]);
-
-  const watchedType = form.watch('type');
-
-  useEffect(() => {
-    if (isFormOpen) {
-        if (editingTransaction) {
-            form.reset({
-                description: editingTransaction.description,
-                amount: editingTransaction.amount,
-                type: editingTransaction.type,
-                category: editingTransaction.category,
-                date: format(new Date(editingTransaction.date), 'yyyy-MM-dd'),
-            });
-        } else {
-            form.reset({
-                description: "",
-                amount: 0,
-                type: "Dépense",
-                category: "",
-                date: todayDateString,
-            });
-        }
-    }
-  }, [isFormOpen, editingTransaction, form, todayDateString]);
-  
-  useEffect(() => {
-    form.setValue('category', '');
-  }, [watchedType, form]);
-
-
   const getTransactionDocRef = (transactionId: string) => doc(firestore, `ecoles/${schoolId}/comptabilite/${transactionId}`);
-  
-  const handleTransactionSubmit = (values: TransactionFormValues) => {
-    if (!schoolId) return;
-
-    const transactionData = {
-        ...values,
-        schoolId,
-        date: format(new Date(values.date), "yyyy-MM-dd"),
-    };
-
-    if (editingTransaction) {
-        const transactionDocRef = getTransactionDocRef(editingTransaction.id!);
-        setDoc(transactionDocRef, transactionData, { merge: true })
-        .then(() => {
-            toast({ title: "Transaction modifiée", description: "La transaction a été mise à jour." });
-            setIsFormOpen(false);
-        }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: transactionDocRef.path, operation: 'update', requestResourceData: transactionData });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    } else {
-        const transactionCollectionRef = collection(firestore, `ecoles/${schoolId}/comptabilite`);
-        addDoc(transactionCollectionRef, transactionData)
-        .then(() => {
-            toast({ title: "Transaction ajoutée", description: `La transaction a été enregistrée.` });
-            setIsFormOpen(false);
-        }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: transactionCollectionRef.path, operation: 'create', requestResourceData: transactionData });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    }
-  };
 
   const handleOpenFormDialog = (transaction: (AccountingTransaction & {id: string}) | null) => {
     setEditingTransaction(transaction);
@@ -227,17 +121,6 @@ export default function AccountingPage() {
 
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
-  const handleCreateCategory = (newCategory: string) => {
-      setAllCategories(prev => {
-          const newCategoriesForType = [...prev[watchedType], newCategory];
-          return { ...prev, [watchedType]: newCategoriesForType };
-      });
-      toast({ title: 'Catégorie créée', description: `La catégorie "${newCategory}" a été ajoutée.` });
-      form.setValue('category', newCategory);
-      return Promise.resolve({ value: newCategory, label: newCategory });
-  }
-
-  const categoryOptions = allCategories[watchedType].map(cat => ({ value: cat, label: cat }));
   const isLoading = schoolLoading || transactionsLoading;
 
   const stats = useMemo(() => {
@@ -251,101 +134,6 @@ export default function AccountingPage() {
     return { totalRevenu, totalDepense, solde };
   }, [transactions]);
   
-  const renderFormContent = () => (
-    <Form {...form}>
-        <form id="transaction-form" onSubmit={form.handleSubmit(handleTransactionSubmit)} className="grid gap-4 py-4">
-             <FormField
-              control={form.control}
-              name="type"
-              render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                  <FormLabel className="text-right">Type</FormLabel>
-                  <FormControl>
-                    <RadioGroup
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      className="col-span-3 flex items-center space-x-4"
-                    >
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="Revenu" id="r1" />
-                        </FormControl>
-                        <FormLabel htmlFor="r1" className="font-normal">Revenu</FormLabel>
-                      </FormItem>
-                      <FormItem className="flex items-center space-x-2">
-                        <FormControl>
-                          <RadioGroupItem value="Dépense" id="r2" />
-                        </FormControl>
-                        <FormLabel htmlFor="r2" className="font-normal">Dépense</FormLabel>
-                      </FormItem>
-                    </RadioGroup>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-                control={form.control}
-                name="category"
-                render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Catégorie</FormLabel>
-                    <FormControl className="col-span-3">
-                        <Combobox
-                            placeholder="Sélectionner une catégorie"
-                            searchPlaceholder="Chercher ou créer..."
-                            options={categoryOptions}
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            onCreate={handleCreateCategory}
-                        />
-                    </FormControl>
-                     <FormMessage className="col-start-2 col-span-3" />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Description</FormLabel>
-                    <FormControl className="col-span-3">
-                        <Input {...field} />
-                    </FormControl>
-                     <FormMessage className="col-start-2 col-span-3" />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="amount"
-                render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Montant (CFA)</FormLabel>
-                     <FormControl className="col-span-3">
-                        <Input type="number" {...field} />
-                    </FormControl>
-                     <FormMessage className="col-start-2 col-span-3" />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="date"
-                render={({ field }) => (
-                <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Date</FormLabel>
-                     <FormControl className="col-span-3">
-                        <Input type="date" {...field} />
-                    </FormControl>
-                     <FormMessage className="col-start-2 col-span-3" />
-                </FormItem>
-                )}
-            />
-        </form>
-    </Form>
-  );
-
   return (
     <>
       <div className="space-y-6">
@@ -456,13 +244,11 @@ export default function AccountingPage() {
                 <DialogTitle>{editingTransaction ? 'Modifier' : 'Nouvelle'} Transaction</DialogTitle>
                 <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
             </DialogHeader>
-            {renderFormContent()}
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                <Button type="submit" form="transaction-form" disabled={form.formState.isSubmitting}>
-                    {form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-                </Button>
-            </DialogFooter>
+            <TransactionForm 
+                schoolId={schoolId!} 
+                transaction={editingTransaction} 
+                onSave={() => setIsFormOpen(false)}
+            />
         </DialogContent>
     </Dialog>
     </>
