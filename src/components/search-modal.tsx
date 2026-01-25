@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -40,7 +39,7 @@ export function SearchModal({ isOpen, onClose }: {
 
   const { studentResults, staffResults, navigationResults } = useMemo(() => {
     if (!debouncedQuery) {
-        return { students: [], staff: [], navigationResults: [] };
+        return { studentResults: [], staffResults: [], navigationResults: [] };
     }
     
     const lowercasedQuery = debouncedQuery.toLowerCase();
