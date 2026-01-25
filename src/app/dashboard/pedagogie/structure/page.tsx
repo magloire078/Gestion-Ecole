@@ -1,12 +1,9 @@
-
-
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CyclesManager } from "@/components/pedagogy/cycles-manager";
-import { NiveauxManager } from "@/components/pedagogy/niveaux-manager";
 import { ClassesList } from "@/components/pedagogy/classes-list";
-import { School, GraduationCap, Users, Book } from "lucide-react";
+import { School, Users, Book } from "lucide-react";
 import { SubjectsManager } from "@/components/pedagogy/subjects-manager";
 
 export default function StructurePage() {
@@ -19,18 +16,14 @@ export default function StructurePage() {
         </p>
       </div>
        <Tabs defaultValue="classes" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="classes">
             <Users className="mr-2 h-4 w-4" />
             Classes
           </TabsTrigger>
-          <TabsTrigger value="niveaux">
-            <GraduationCap className="mr-2 h-4 w-4" />
-            Niveaux
-          </TabsTrigger>
           <TabsTrigger value="cycles">
             <School className="mr-2 h-4 w-4" />
-            Cycles
+            Cycles & Niveaux
           </TabsTrigger>
           <TabsTrigger value="matieres">
             <Book className="mr-2 h-4 w-4" />
@@ -39,9 +32,6 @@ export default function StructurePage() {
         </TabsList>
         <TabsContent value="classes" className="mt-6">
           <ClassesList />
-        </TabsContent>
-        <TabsContent value="niveaux" className="mt-6">
-          <NiveauxManager />
         </TabsContent>
         <TabsContent value="cycles" className="mt-6">
           <CyclesManager />
