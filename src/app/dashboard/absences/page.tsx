@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -29,7 +28,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -42,41 +40,25 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, addDoc, serverTimestamp, orderBy, where, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Switch } from '@/components/ui/switch';
 import type { class_type as Class, student as Student, absence as Absence } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
-
+import { AbsenceForm } from '@/components/discipline/absence-form';
 
 interface StudentWithAbsence extends Student {
     isAbsentToday?: boolean;
 }
-
-const absenceSchema = z.object({
-  studentId: z.string().min(1, { message: "Veuillez sélectionner un élève." }),
-  date: z.string().min(1, { message: "La date est requise." }),
-  type: z.enum(["Journée entière", "Matin", "Après-midi"], { required_error: "Le type d'absence est requis." }),
-  justified: z.boolean().default(false),
-  reason: z.string().optional(),
-});
-type AbsenceFormValues = z.infer<typeof absenceSchema>;
 
 export default function AbsencesPage() {
   const firestore = useFirestore();
@@ -113,7 +95,7 @@ export default function AbsencesPage() {
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   
   const allAbsencesQuery = useMemo(() =>
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc')) : null
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), where('date', '>=', format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'))) : null
   , [firestore, schoolId]);
   const { data: allAbsencesData, loading: allAbsencesLoading } = useCollection(allAbsencesQuery);
 
@@ -132,6 +114,7 @@ export default function AbsencesPage() {
             todayList.push(absence);
         }
     }
+    historyList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     return { todayAbsences: todayList, historicAbsences: historyList };
   }, [allAbsencesData, todayDateString]);
 
@@ -145,65 +128,12 @@ export default function AbsencesPage() {
       }));
   }, [studentsInClass, todayAbsences, todayDateString]);
 
-
-  const form = useForm<AbsenceFormValues>({
-    resolver: zodResolver(absenceSchema),
-    defaultValues: {
-      date: '', // Initialize as empty
-      type: "Journée entière",
-      justified: false,
-      reason: "",
-    }
-  });
-
-  useEffect(() => {
-      if (isFormOpen && todayDateString) {
-          form.reset({
-              studentId: selectedStudent?.id || '',
-              date: todayDateString,
-              type: "Journée entière",
-              justified: false,
-              reason: "",
-          });
-      }
-  }, [isFormOpen, selectedStudent, todayDateString, form]);
-
   const handleOpenForm = (student: Student) => {
     if (!canManageAbsences) return;
     setSelectedStudent(student);
     setIsFormOpen(true);
   };
-
-  const handleSubmitAbsence = async (values: AbsenceFormValues) => {
-    if (!schoolId || !user || !selectedStudent) return;
-
-    const absenceData = {
-      ...values,
-      schoolId,
-      studentName: `${selectedStudent.firstName} ${selectedStudent.lastName}`,
-      classId: selectedStudent.classId,
-      recordedBy: user.uid,
-      createdAt: serverTimestamp(),
-    };
-    
-    const absenceCollectionRef = collection(firestore, `ecoles/${schoolId}/absences`);
-    addDoc(absenceCollectionRef, absenceData)
-    .then(() => {
-        toast({
-            title: "Absence enregistrée",
-            description: `L'absence de ${selectedStudent.firstName} a été enregistrée.`,
-        });
-        setIsFormOpen(false);
-    }).catch(error => {
-        const permissionError = new FirestorePermissionError({
-            path: absenceCollectionRef.path,
-            operation: 'create',
-            requestResourceData: absenceData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    });
-  };
-
+  
   const handleOpenDeleteDialog = (absence: Absence & { id: string }) => {
     setAbsenceToDelete(absence);
     setIsDeleteDialogOpen(true);
@@ -249,7 +179,7 @@ export default function AbsencesPage() {
         <Tabs defaultValue="today" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="today">Saisie du jour</TabsTrigger>
-            <TabsTrigger value="history">Historique des absences</TabsTrigger>
+            <TabsTrigger value="history">Historique (30 derniers jours)</TabsTrigger>
           </TabsList>
           
           <TabsContent value="today" className="mt-6">
@@ -385,44 +315,11 @@ export default function AbsencesPage() {
           <DialogHeader>
             <DialogTitle>Enregistrer une absence pour {selectedStudent?.firstName} {selectedStudent?.lastName}</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form id="absence-form" onSubmit={form.handleSubmit(handleSubmitAbsence)} className="grid gap-4 py-4">
-              <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Type d'absence</FormLabel>
-                    <FormControl>
-                      <RadioGroup onValueChange={field.onChange} value={field.value} className="flex gap-4">
-                        <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="Journée entière" id="t1" /></FormControl><FormLabel htmlFor="t1" className="font-normal">Journée</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="Matin" id="t2" /></FormControl><FormLabel htmlFor="t2" className="font-normal">Matin</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-2"><FormControl><RadioGroupItem value="Après-midi" id="t3" /></FormControl><FormLabel htmlFor="t3" className="font-normal">Après-midi</FormLabel></FormItem>
-                      </RadioGroup>
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="justified"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                    <FormLabel>Absence justifiée</FormLabel>
-                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                  </FormItem>
-                )}
-              />
-              <FormField control={form.control} name="reason" render={({ field }) => (<FormItem><FormLabel>Motif (si justifiée)</FormLabel><FormControl><Input placeholder="Ex: Rendez-vous médical" {...field} /></FormControl></FormItem>)} />
-            </form>
-          </Form>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-            <Button type="submit" form="absence-form" disabled={form.formState.isSubmitting}>
-              <span className="flex items-center gap-2">{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</span>
-            </Button>
-          </DialogFooter>
+          <AbsenceForm 
+            schoolId={schoolId!}
+            student={selectedStudent}
+            onSave={() => setIsFormOpen(false)}
+          />
         </DialogContent>
       </Dialog>
       
