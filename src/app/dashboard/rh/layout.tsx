@@ -32,8 +32,8 @@ export default function RHLayout({
                 Gérez votre personnel, les salaires et les bulletins de paie.
             </p>
         </div>
-        <Tabs value={pathname.startsWith('/dashboard/rh/paie') ? '/dashboard/rh/paie' : '/dashboard/rh/personnel'} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+        <Tabs value={pathname} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
                 {rhSubLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>
