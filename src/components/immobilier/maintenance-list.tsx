@@ -1,43 +1,23 @@
-
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, addDoc, setDoc, deleteDoc, doc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { tache_maintenance as TacheMaintenance, staff, salle as Salle, bus as Bus } from '@/lib/data-types';
 import { format } from 'date-fns';
-import { Combobox } from '../ui/combobox';
-
-const tacheSchema = z.object({
-  title: z.string().min(1, "Le titre est requis."),
-  priority: z.enum(['basse', 'moyenne', 'haute']),
-  status: z.enum(['à_faire', 'en_cours', 'terminée']),
-  assignedTo: z.string().optional(),
-  dueDate: z.string().optional(),
-  description: z.string().optional(),
-  location: z.string().optional(),
-});
-
-type TacheFormValues = z.infer<typeof tacheSchema>;
+import { MaintenanceForm } from './maintenance-form';
 
 interface MaintenanceListProps {
   schoolId: string;
@@ -88,43 +68,6 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
     buses.forEach(b => map.set(`bus:${b.id}`, `Bus: ${b.registrationNumber}`));
     return map;
   }, [salles, buses]);
-
-  const form = useForm<TacheFormValues>({
-    resolver: zodResolver(tacheSchema),
-    defaultValues: { priority: "moyenne", status: "à_faire" },
-  });
-
-  useEffect(() => {
-    form.reset(
-      editingTache 
-        ? { ...editingTache, dueDate: editingTache.dueDate ? format(new Date(editingTache.dueDate), 'yyyy-MM-dd') : '' }
-        : { priority: 'moyenne', status: 'à_faire', title: '', description: '', location: '', assignedTo: '', dueDate: '' }
-    );
-  }, [isFormOpen, editingTache, form]);
-
-  const handleFormSubmit = async (values: TacheFormValues) => {
-    if (!schoolId) return;
-
-    const dataToSave: any = { ...values, schoolId };
-    if (!editingTache) {
-        dataToSave.createdAt = new Date().toISOString();
-    }
-    
-    const promise = editingTache
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/maintenance/${editingTache.id}`), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/maintenance`), dataToSave);
-
-    try {
-      await promise;
-      toast({ title: `Tâche ${editingTache ? 'modifiée' : 'créée'}`, description: `La tâche "${values.title}" a été enregistrée.` });
-      setIsFormOpen(false);
-    } catch (error) {
-      const path = `ecoles/${schoolId}/maintenance/${editingTache?.id || '(new)'}`;
-      const operation = editingTache ? 'update' : 'create';
-      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-      errorEmitter.emit('permission-error', permissionError);
-    }
-  };
 
   const handleOpenDeleteDialog = (tache: TacheMaintenance & { id: string }) => {
     setTacheToDelete(tache);
@@ -223,46 +166,13 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
           <DialogHeader>
             <DialogTitle>{editingTache ? 'Modifier la' : 'Nouvelle'} tâche de maintenance</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form id="tache-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Titre de la tâche</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-              <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>} />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="priority" render={({ field }) => <FormItem><FormLabel>Priorité</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="basse">Basse</SelectItem><SelectItem value="moyenne">Moyenne</SelectItem><SelectItem value="haute">Haute</SelectItem></SelectContent></Select></FormItem>} />
-                <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="à_faire">À faire</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="terminée">Terminée</SelectItem></SelectContent></Select></FormItem>} />
-              </div>
-              <FormField control={form.control} name="assignedTo" render={({ field }) => <FormItem><FormLabel>Assigner à</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un membre..."/></SelectTrigger></FormControl><SelectContent>{staffMembers.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select></FormItem>} />
-              <div className="grid grid-cols-2 gap-4">
-                 <FormField
-                    control={form.control}
-                    name="location"
-                    render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Emplacement</FormLabel>
-                            <FormControl>
-                                <Combobox
-                                    placeholder="Sélectionner ou créer un lieu"
-                                    searchPlaceholder="Chercher un lieu..."
-                                    options={locationOptions}
-                                    value={field.value || ''}
-                                    onValueChange={field.onChange}
-                                    onCreate={(value) => {
-                                        field.onChange(value);
-                                        return Promise.resolve({ value, label: value });
-                                    }}
-                                />
-                            </FormControl>
-                        </FormItem>
-                    )}
-                />
-                 <FormField control={form.control} name="dueDate" render={({ field }) => <FormItem><FormLabel>Échéance</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>} />
-              </div>
-            </form>
-          </Form>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-            <Button type="submit" form="tache-form" disabled={form.formState.isSubmitting}>Enregistrer</Button>
-          </DialogFooter>
+          <MaintenanceForm 
+            schoolId={schoolId}
+            tache={editingTache}
+            staffMembers={staffMembers}
+            locationOptions={locationOptions}
+            onSave={() => setIsFormOpen(false)}
+          />
         </DialogContent>
       </Dialog>
       
