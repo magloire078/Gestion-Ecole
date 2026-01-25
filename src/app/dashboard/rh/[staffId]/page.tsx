@@ -62,18 +62,13 @@ function AdminRoleInfo({ schoolId, adminRoleId }: { schoolId: string, adminRoleI
 }
 
 
-function TimetableTab({ schoolId, staffId }: { schoolId: string, staffId: string }) {
-    const firestore = useFirestore();
-    const timetableQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)), [firestore, schoolId, staffId]);
-    const classesQuery = useMemo(() => collection(firestore, `ecoles/${schoolId}/classes`), [firestore, schoolId]);
-
-    const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
-    const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-    
-    const classMap = useMemo(() => new Map(classesData?.map(d => [d.id, d.data().name])), [classesData]);
-
+function TimetableTab({ timetableEntries, classMap, loading }: { 
+    timetableEntries: timetableEntry[], 
+    classMap: Map<string, string>,
+    loading: boolean 
+}) {
     const groupedTimetable = useMemo(() => {
-        const entries = timetableData?.map(d => d.data() as timetableEntry) || [];
+        const entries = timetableEntries || [];
         // Group by day, then sort by start time
         const grouped = group(entries, d => d.day);
         grouped.forEach((dayEntries, day) => {
@@ -83,9 +78,9 @@ function TimetableTab({ schoolId, staffId }: { schoolId: string, staffId: string
             const order = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
             return order.indexOf(dayA) - order.indexOf(dayB);
         });
-    }, [timetableData]);
+    }, [timetableEntries]);
 
-    if (timetableLoading || classesLoading) {
+    if (loading) {
         return <Skeleton className="h-48 w-full" />;
     }
 
@@ -163,8 +158,15 @@ export default function StaffProfilePage() {
     const allSchoolClasses = useMemo(() => allSchoolClassesData?.docs.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);
     const allAdminRoles = useMemo(() => allAdminRolesData?.docs.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [allAdminRolesData]);
 
+    const timetableQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
+    const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
 
-    const isLoading = staffLoading || schoolLoading;
+    const timetableEntries = useMemo(() => timetableData?.map(d => d.data() as timetableEntry) || [], [timetableData]);
+    const classMap = useMemo(() => new Map(allSchoolClasses.map(c => [c.id, c.name])), [allSchoolClasses]);
+
+
+    const isLoading = staffLoading || schoolLoading || timetableLoading || allClassesLoading || allAdminRolesLoading;
+
 
     if (isLoading) {
         return <StaffDetailSkeleton />;
@@ -258,7 +260,11 @@ export default function StaffProfilePage() {
                             <TabsTrigger value="info">Informations</TabsTrigger>
                         </TabsList>
                         <TabsContent value="timetable" className="mt-4">
-                             <TimetableTab schoolId={schoolId!} staffId={staffId} />
+                             <TimetableTab 
+                                timetableEntries={timetableEntries} 
+                                classMap={classMap}
+                                loading={isLoading}
+                             />
                         </TabsContent>
                         <TabsContent value="payroll" className="mt-4">
                             <StaffPayrollTab staff={staffMember} />
