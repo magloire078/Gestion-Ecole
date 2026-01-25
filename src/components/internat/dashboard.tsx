@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -30,6 +29,7 @@ import { OccupantForm } from './occupant-form';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '../../firebase/error-emitter';
+import { LogForm } from './log-form';
 
 interface OccupantWithDetails extends occupant {
   id: string;
@@ -51,12 +51,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
   
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingOccupant, setEditingOccupant] = useState<(occupant & { id: string }) | null>(null);
-
-  // --- Log form state ---
-  const [logStudentId, setLogStudentId] = useState('');
-  const [logType, setLogType] = useState<'entree' | 'sortie'>('sortie');
-  const [logReason, setLogReason] = useState('');
-  const [isSavingLog, setIsSavingLog] = useState(false);
+  const [refreshLogs, setRefreshLogs] = useState(0);
 
   // State for date range
   const [todayStart, setTodayStart] = useState('');
@@ -84,7 +79,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
         orderBy('timestamp', 'desc'),
         limit(5)
     );
-  }, [firestore, schoolId, todayStart, todayEnd]);
+  }, [firestore, schoolId, todayStart, todayEnd, refreshLogs]);
 
 
   const { data: buildingsData } = useCollection(buildingsQuery);
@@ -140,40 +135,6 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
     setIsFormOpen(true);
   }
   
-  const handleSaveLog = async () => {
-    if (!logStudentId || !logReason || !user?.authUser) {
-      toast({ variant: 'destructive', title: 'Champs requis', description: "Veuillez sélectionner un élève et indiquer un motif." });
-      return;
-    }
-    setIsSavingLog(true);
-
-    const logData = {
-      studentId: logStudentId,
-      type: logType,
-      reason: logReason,
-      timestamp: new Date().toISOString(),
-      status: 'pending',
-      authorizedBy: user.authUser.displayName || user.authUser.email,
-    };
-    
-    try {
-        await addDoc(collection(firestore, `ecoles/${schoolId}/internat_entrees_sorties`), logData);
-        toast({ title: 'Mouvement enregistré', description: `La ${logType} de l'élève a bien été enregistrée.` });
-        // Reset form
-        setLogStudentId('');
-        setLogReason('');
-    } catch(e) {
-        const permissionError = new FirestorePermissionError({
-            path: `ecoles/${schoolId}/internat_entrees_sorties`,
-            operation: 'create',
-            requestResourceData: logData,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    } finally {
-        setIsSavingLog(false);
-    }
-  };
-
   return (
     <>
     <div className="space-y-6">
@@ -292,21 +253,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
                 {todayLogs.length === 0 && <p className="text-muted-foreground text-center py-4">Aucun mouvement enregistré aujourd'hui.</p>}
               </div>
               {canManageContent && (
-                <div className="mt-6 p-4 border rounded-lg bg-muted/50">
-                  <h3 className="font-semibold mb-3">Enregistrer un mouvement</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <Label>Élève</Label>
-                         <select className="w-full p-2 border rounded" value={logStudentId} onChange={(e) => setLogStudentId(e.target.value)}>
-                            <option value="">Sélectionner un élève</option>
-                            {occupants.map(o => <option key={o.id} value={o.studentId}>{o.studentName}</option>)}
-                        </select>
-                    </div>
-                    <div><Label>Type</Label><select className="w-full p-2 border rounded" value={logType} onChange={(e) => setLogType(e.target.value as any)}><option value="sortie">Sortie</option><option value="entree">Retour</option></select></div>
-                    <div className="md:col-span-2"><Label>Motif</Label><Input placeholder="Rendez-vous, course..." value={logReason} onChange={(e) => setLogReason(e.target.value)} /></div>
-                  </div>
-                  <Button className="mt-4" onClick={handleSaveLog} disabled={isSavingLog}>{isSavingLog ? 'Enregistrement...' : 'Enregistrer le mouvement'}</Button>
-                </div>
+                <LogForm schoolId={schoolId} occupants={occupants} onSave={() => setRefreshLogs(prev => prev + 1)} />
               )}
             </CardContent>
           </Card>
