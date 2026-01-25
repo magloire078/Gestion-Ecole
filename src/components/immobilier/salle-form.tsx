@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -30,9 +31,10 @@ interface SalleFormProps {
   buildings: (Building & { id: string })[];
   salle: (Salle & { id: string }) | null;
   onSave: () => void;
+  defaultBuildingId?: string; // New prop
 }
 
-export function SalleForm({ schoolId, buildings, salle, onSave }: SalleFormProps) {
+export function SalleForm({ schoolId, buildings, salle, onSave, defaultBuildingId }: SalleFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,12 +45,12 @@ export function SalleForm({ schoolId, buildings, salle, onSave }: SalleFormProps
 
   useEffect(() => {
     form.reset(salle || {
-      buildingId: buildings.length > 0 ? buildings[0].id : '',
+      buildingId: defaultBuildingId || (buildings.length > 0 ? buildings[0].id : ''),
       name: '',
       type: 'salle_de_classe',
       capacity: 30,
     });
-  }, [salle, buildings, form]);
+  }, [salle, buildings, defaultBuildingId, form]);
 
   const handleSubmit = async (values: SalleFormValues) => {
     setIsSubmitting(true);

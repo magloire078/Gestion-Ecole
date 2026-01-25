@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BuildingManager } from '@/components/building-manager';
 import { BuildingForm } from '@/components/immobilier/building-form';
+import { SalleForm } from '@/components/immobilier/salle-form';
 
 export default function BatimentsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -24,15 +26,15 @@ export default function BatimentsPage() {
       buildingCollectionName="batiments"
       roomCollectionName="salles"
       pageTitle="Plan de l'Établissement"
-      pageDescription="Visualisez les bâtiments et les salles qui les composent."
+      pageDescription="Gérez les bâtiments et les salles qui les composent."
       buildingNameField="name"
       roomNameField="name"
       addBuildingButtonText="Ajouter un bâtiment"
-      addRoomLink="/dashboard/immobilier/salles"
+      addRoomButtonText="Ajouter une salle"
       BuildingFormComponent={BuildingForm}
-      permission="manageRooms" // Pass the correct permission key
+      RoomFormComponent={SalleForm}
+      permission="manageRooms"
     />
   );
 }
-
     

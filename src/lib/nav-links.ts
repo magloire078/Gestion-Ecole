@@ -111,8 +111,7 @@ export const NAV_LINKS: NavGroup[] = [
       icon: LandPlot,
       links: [
         { href: '/dashboard/immobilier/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInventory', module: 'immobilier' },
-        { href: '/dashboard/immobilier/batiments', label: 'Bâtiments', icon: Building, permission: 'manageRooms', module: 'immobilier' },
-        { href: '/dashboard/immobilier/salles', label: 'Salles', icon: DoorOpen, permission: 'manageRooms', module: 'immobilier' },
+        { href: '/dashboard/immobilier/batiments', label: 'Bâtiments & Salles', icon: Building, permission: 'manageRooms', module: 'immobilier' },
         { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare, permission: 'manageInventory', module: 'immobilier' },
         { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench, permission: 'manageInventory', module: 'immobilier' },
         { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarClock, permission: 'manageRooms', module: 'immobilier' },
@@ -165,8 +164,7 @@ export const internatSubLinks = [
 
 export const immobilierSubLinks = [
     { href: '/dashboard/immobilier/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInventory' as PermissionKey, module: 'immobilier' as Module },
-    { href: '/dashboard/immobilier/batiments', label: 'Bâtiments', icon: Building, permission: 'manageRooms' as PermissionKey, module: 'immobilier' as Module },
-    { href: '/dashboard/immobilier/salles', label: 'Salles', icon: DoorOpen, permission: 'manageRooms' as PermissionKey, module: 'immobilier' as Module },
+    { href: '/dashboard/immobilier/batiments', label: 'Bâtiments & Salles', icon: Building, permission: 'manageRooms' as PermissionKey, module: 'immobilier' as Module },
     { href: '/dashboard/immobilier/inventaire', label: 'Inventaire', icon: GanttChartSquare, permission: 'manageInventory' as PermissionKey, module: 'immobilier' as Module },
     { href: '/dashboard/immobilier/maintenance', label: 'Maintenance', icon: Wrench, permission: 'manageInventory' as PermissionKey, module: 'immobilier' as Module },
     { href: '/dashboard/immobilier/reservations', label: 'Réservations', icon: CalendarClock, permission: 'manageRooms' as PermissionKey, module: 'immobilier' as Module },
