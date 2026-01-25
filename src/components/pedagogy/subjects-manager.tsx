@@ -14,10 +14,16 @@ import { collection, query, addDoc, doc, setDoc, deleteDoc } from 'firebase/fire
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import type { subject as Subject } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const subjectSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
@@ -94,23 +100,41 @@ export function SubjectsManager() {
         <CardContent>
             {isLoading ? (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+                    {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)}
                 </div>
             ) : subjects.length > 0 ? (
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {subjects.map(subject => (
-                        <div key={subject.id} className="group flex items-center justify-between p-3 rounded-lg border">
-                           <div className="flex items-center gap-2">
-                             <div className="w-3 h-3 rounded-full" style={{backgroundColor: subject.color}} />
-                             <span className="font-semibold">{subject.name}</span>
-                           </div>
-                           {isDirectorOrAdmin && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenForm(subject)}><Edit className="h-4 w-4"/></Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setItemToDelete(subject); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                            </div>
-                           )}
-                        </div>
+                      <Card key={subject.id} className="group">
+                          <CardContent className="p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: subject.color }} />
+                                  <div>
+                                      <p className="font-semibold">{subject.name}</p>
+                                      <p className="text-xs text-muted-foreground font-mono">{subject.code}</p>
+                                  </div>
+                              </div>
+                              {isDirectorOrAdmin && (
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <DropdownMenu>
+                                          <DropdownMenuTrigger asChild>
+                                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                  <MoreHorizontal className="h-4 w-4" />
+                                              </Button>
+                                          </DropdownMenuTrigger>
+                                          <DropdownMenuContent align="end">
+                                              <DropdownMenuItem onClick={() => handleOpenForm(subject)}>
+                                                  <Edit className="mr-2 h-4 w-4" /> Modifier
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem onClick={() => { setItemToDelete(subject); setIsDeleteDialogOpen(true); }} className="text-destructive">
+                                                  <Trash2 className="mr-2 h-4 w-4" /> Supprimer
+                                              </DropdownMenuItem>
+                                          </DropdownMenuContent>
+                                      </DropdownMenu>
+                                  </div>
+                              )}
+                          </CardContent>
+                      </Card>
                     ))}
                 </div>
             ) : (
