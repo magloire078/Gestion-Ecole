@@ -3,38 +3,20 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { useForm, useWatch } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, addDoc, doc, setDoc, deleteDoc, where } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Edit, Trash2, GraduationCap } from 'lucide-react';
-import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { cycle as Cycle, niveau as Niveau, classe as Classe } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NiveauForm } from './niveau-form';
-
-const cycleSchema = z.object({
-  name: z.string().min(2, "Le nom est requis."),
-  code: z.string().min(2, "Le code est requis.").max(5, "Le code ne peut excéder 5 caractères."),
-  order: z.coerce.number().min(1, "L'ordre est requis."),
-  isActive: z.boolean().default(true),
-  color: z.string().optional(),
-});
-type CycleFormValues = z.infer<typeof cycleSchema>;
-
-const ivorianCycles = SCHOOL_TEMPLATES.IVORIAN_SYSTEM.cycles;
+import { CycleForm } from './cycle-form'; // New import
 
 export function CyclesManager() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -76,42 +58,9 @@ export function CyclesManager() {
     }, {} as Record<string, (Niveau & { id: string })[]>);
   }, [niveaux]);
 
-  const cycleForm = useForm<CycleFormValues>({
-    resolver: zodResolver(cycleSchema),
-    defaultValues: { name: '', code: '', order: cycles.length + 1, isActive: true, color: '#3b82f6' }
-  });
 
-  const watchedCycleName = useWatch({ control: cycleForm.control, name: 'name' });
-  
-  useEffect(() => {
-    const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
-    if (selectedCycleTemplate) {
-        cycleForm.setValue('code', selectedCycleTemplate.code);
-        cycleForm.setValue('order', selectedCycleTemplate.order);
-    }
-  }, [watchedCycleName, cycleForm]);
-
-  const handleCycleFormSubmit = (values: CycleFormValues) => {
-    if (!schoolId) return;
-
-    const dataToSave = { ...values, schoolId };
-    const promise = editingCycle 
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/cycles/${editingCycle.id}`), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/cycles`), dataToSave);
-    
-    promise.then(() => {
-      toast({ title: `Cycle ${editingCycle ? 'modifié' : 'créé'}` });
-      setIsCycleFormOpen(false);
-    }).catch(error => {
-      const path = editingCycle ? `ecoles/${schoolId}/cycles/${editingCycle.id}` : `ecoles/${schoolId}/cycles`;
-      const operation = editingCycle ? 'update' : 'create';
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData: dataToSave }));
-    });
-  };
-  
   const handleOpenCycleForm = (cycle: (Cycle & { id: string }) | null) => {
     setEditingCycle(cycle);
-    cycleForm.reset(cycle || { name: '', code: '', order: cycles.length + 1, isActive: true, color: '#3b82f6' });
     setIsCycleFormOpen(true);
   };
   
@@ -226,20 +175,12 @@ export function CyclesManager() {
       <Dialog open={isCycleFormOpen} onOpenChange={setIsCycleFormOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingCycle ? 'Modifier' : 'Nouveau'} Cycle</DialogTitle></DialogHeader>
-          <Form {...cycleForm}>
-            <form id="cycle-form" onSubmit={cycleForm.handleSubmit(handleCycleFormSubmit)} className="space-y-4">
-              <FormField control={cycleForm.control} name="name" render={({ field }) => (
-                  <FormItem><FormLabel>Nom du cycle</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un type..." /></SelectTrigger></FormControl><SelectContent>{ivorianCycles.map((cycle) => (<SelectItem key={cycle.name} value={cycle.name}>{cycle.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
-              )} />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={cycleForm.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={cycleForm.control} name="order" render={({ field }) => (<FormItem><FormLabel>Ordre</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-              <FormField control={cycleForm.control} name="color" render={({ field }) => (<FormItem><FormLabel>Couleur</FormLabel><FormControl><Input type="color" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={cycleForm.control} name="isActive" render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><FormLabel>Actif</FormLabel><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
-            </form>
-          </Form>
-          <DialogFooter><Button variant="outline" onClick={() => setIsCycleFormOpen(false)}>Annuler</Button><Button type="submit" form="cycle-form" disabled={cycleForm.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
+          <CycleForm 
+            schoolId={schoolId!}
+            cycle={editingCycle}
+            cyclesCount={cycles.length}
+            onSave={() => setIsCycleFormOpen(false)}
+          />
         </DialogContent>
       </Dialog>
       
