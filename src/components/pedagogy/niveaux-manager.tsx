@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,11 +15,12 @@ import { collection, query, addDoc, doc, setDoc, deleteDoc } from 'firebase/fire
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, GraduationCap } from 'lucide-react';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import type { cycle as Cycle, niveau as Niveau, classe as Classe } from '@/lib/data-types';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
+import { Badge } from '../ui/badge';
 
 const niveauSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
@@ -148,30 +148,36 @@ export function NiveauxManager() {
         </CardHeader>
         <CardContent>
             {isLoading ? (
-                <div className="space-y-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}
+                </div>
             ) : filteredNiveaux.length > 0 ? (
-                <Table>
-                    <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Code</TableHead><TableHead>Cycle</TableHead><TableHead>Ordre</TableHead><TableHead>Capacité</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                        {filteredNiveaux.map(niveau => (
-                            <TableRow key={niveau.id}>
-                                <TableCell className="font-semibold">{niveau.name}</TableCell>
-                                <TableCell>{niveau.code}</TableCell>
-                                <TableCell>{cycleMap.get(niveau.cycleId) || 'N/A'}</TableCell>
-                                <TableCell>{niveau.order}</TableCell>
-                                <TableCell>{niveau.capacity}</TableCell>
-                                <TableCell className="text-right">
-                                    {isDirectorOrAdmin && (
-                                        <>
-                                            <Button variant="ghost" size="icon" onClick={() => handleOpenForm(niveau)}><Edit className="h-4 w-4"/></Button>
-                                            <Button variant="ghost" size="icon" onClick={() => { setItemToDelete(niveau); setIsDeleteDialogOpen(true); }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                                        </>
-                                    )}
-                                </TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredNiveaux.map(niveau => (
+                        <Card key={niveau.id} className="group">
+                            <CardHeader>
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-primary"/>{niveau.name}</CardTitle>
+                                        <CardDescription>{cycleMap.get(niveau.cycleId) || 'N/A'}</CardDescription>
+                                    </div>
+                                    <Badge variant="outline">{niveau.code}</Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground">Capacité maximale: {niveau.capacity} élèves</p>
+                            </CardContent>
+                            <CardContent>
+                                {isDirectorOrAdmin && (
+                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={() => handleOpenForm(niveau)}><Edit className="h-3 w-3 mr-1"/>Modifier</Button>
+                                        <Button variant="destructive" size="sm" onClick={() => { setItemToDelete(niveau); setIsDeleteDialogOpen(true); }}><Trash2 className="h-3 w-3 mr-1"/>Supprimer</Button>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
             ) : (
                 <div className="text-center h-24 flex items-center justify-center text-muted-foreground">Aucun niveau créé pour ce cycle.</div>
             )}
