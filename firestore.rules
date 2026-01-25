@@ -1,5 +1,4 @@
 
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -281,12 +280,13 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow read, update: if isSignedIn() && (resource.data.userId == request.auth.uid || hasPermission(schoolId, 'manageCommunication'));
+      allow get: if isSchoolMember(schoolId) && (resource.data.userId == request.auth.uid || hasPermission(schoolId, 'manageCommunication'));
+      allow update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if hasPermission(schoolId, 'manageCommunication');
     }
     match /ecoles/{schoolId}/notifications {
-      allow list: if isSchoolMember(schoolId);
+      allow list: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'manageCommunication') || request.query.where.userId == request.auth.uid);
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
@@ -397,3 +397,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
