@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -31,7 +30,7 @@ type OccupantFormValues = z.infer<typeof occupantFormSchema>;
 
 interface OccupantFormProps {
   schoolId: string;
-  students: Student[];
+  students: (Student & { id: string })[];
   rooms: (Room & { id: string })[];
   occupant: (Occupant & { id: string }) | null;
   onSave: () => void;
