@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,31 +23,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, addDoc, setDoc, deleteDoc, doc, where } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { errorEmitter } from '@/firebase/error-emitter';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { bus as Bus, staff as Staff } from '@/lib/data-types';
-
-const busSchema = z.object({
-  registrationNumber: z.string().min(1, "L'immatriculation est requise."),
-  capacity: z.coerce.number().min(1, "La capacité est requise."),
-  type: z.enum(['standard', 'minibus', 'adapted']),
-  driverId: z.string().optional(),
-  status: z.enum(['active', 'maintenance', 'inactive']),
-});
-
-type BusFormValues = z.infer<typeof busSchema>;
+import { BusForm } from '@/components/transport/bus-form';
 
 export default function BusManagementPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -71,36 +56,6 @@ export default function BusManagementPage() {
 
   const driverMap = useMemo(() => new Map(drivers.map(d => [d.id, `${d.firstName} ${d.lastName}`])), [drivers]);
   
-  const form = useForm<BusFormValues>({
-    resolver: zodResolver(busSchema),
-    defaultValues: { type: 'standard', status: 'active', capacity: 50 },
-  });
-
-  useEffect(() => {
-    form.reset(editingBus ? { ...editingBus, driverId: editingBus.driverId || '' } : { registrationNumber: '', type: 'standard', status: 'active', capacity: 50, driverId: '' });
-  }, [isFormOpen, editingBus, form]);
-
-  const handleFormSubmit = async (values: BusFormValues) => {
-    if (!schoolId) return;
-
-    const dataToSave = { ...values };
-
-    const promise = editingBus
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/transport_bus/${editingBus.id}`), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/transport_bus`), dataToSave);
-
-    try {
-      await promise;
-      toast({ title: `Bus ${editingBus ? 'modifié' : 'ajouté'}`, description: `Le bus ${values.registrationNumber} a été enregistré.` });
-      setIsFormOpen(false);
-    } catch (error) {
-      const path = `ecoles/${schoolId}/transport_bus/${editingBus?.id || '(new)'}`;
-      const operation = editingBus ? 'update' : 'create';
-      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-      errorEmitter.emit('permission-error', permissionError);
-    }
-  };
-
   const handleOpenDeleteDialog = (bus: Bus & { id: string }) => {
     setBusToDelete(bus);
     setIsDeleteDialogOpen(true);
@@ -187,21 +142,12 @@ export default function BusManagementPage() {
           <DialogHeader>
             <DialogTitle>{editingBus ? 'Modifier le bus' : 'Ajouter un nouveau bus'}</DialogTitle>
           </DialogHeader>
-          <Form {...form}>
-            <form id="bus-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              <FormField control={form.control} name="registrationNumber" render={({ field }) => <FormItem><FormLabel>Immatriculation</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="capacity" render={({ field }) => <FormItem><FormLabel>Capacité</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>} />
-                <FormField control={form.control} name="type" render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="standard">Standard</SelectItem><SelectItem value="minibus">Minibus</SelectItem><SelectItem value="adapted">Adapté</SelectItem></SelectContent></Select></FormItem>} />
-              </div>
-              <FormField control={form.control} name="driverId" render={({ field }) => <FormItem><FormLabel>Chauffeur</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Assigner un chauffeur"/></SelectTrigger></FormControl><SelectContent>{drivers.map(d => <SelectItem key={d.id} value={d.id}>{d.firstName} {d.lastName}</SelectItem>)}</SelectContent></Select></FormItem>} />
-              <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="maintenance">En maintenance</SelectItem><SelectItem value="inactive">Inactif</SelectItem></SelectContent></Select></FormItem>} />
-            </form>
-          </Form>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-            <Button type="submit" form="bus-form" disabled={form.formState.isSubmitting}>Enregistrer</Button>
-          </DialogFooter>
+          <BusForm 
+            schoolId={schoolId!}
+            drivers={drivers}
+            bus={editingBus}
+            onSave={() => setIsFormOpen(false)}
+          />
         </DialogContent>
       </Dialog>
       
