@@ -166,13 +166,15 @@ export default function TransportSubscriptionsPage() {
                     <TableCell><Badge variant={getStatusBadgeVariant(sub.status)}>{sub.status}</Badge></TableCell>
                     <TableCell><Badge variant={getPaymentBadgeVariant(sub.paymentStatus)}>{sub.paymentStatus || 'N/A'}</Badge></TableCell>
                     <TableCell className="text-right">
-                       <DropdownMenu>
+                       {canManageContent && (
+                        <DropdownMenu>
                           <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onClick={() => handleOpenForm(sub)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
                             <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(sub)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                       )}
                     </TableCell>
                   </TableRow>
                 ))
