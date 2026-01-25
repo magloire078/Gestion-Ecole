@@ -19,6 +19,12 @@ service cloud.firestore {
         return false;
       }
       let userData = userDoc.data;
+      
+      // Super Admins are implicitly members of all schools
+      if (userData.isSuperAdmin == true) {
+        return true;
+      }
+      
       return isSignedIn() &&
              'schools' in userData && userData.schools != null &&
              schoolId in userData.schools;
@@ -391,5 +397,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
