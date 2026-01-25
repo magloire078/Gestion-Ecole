@@ -277,7 +277,7 @@ service cloud.firestore {
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
     }
     match /ecoles/{schoolId}/notifications {
-      allow list: if isSchoolMember(schoolId);
+       allow list: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageCommunication');
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
