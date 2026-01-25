@@ -249,11 +249,9 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-      allow get: if isSchoolMember(schoolId);
+      allow get: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewAnalytics');
+      allow list: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewAnalytics');
       allow update, delete, create: if hasPermission(schoolId, 'manageBilling');
-    }
-     match /ecoles/{schoolId}/comptabilite {
-      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -280,10 +278,11 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow read: if isSchoolMember(schoolId) && (
+      allow get: if isSchoolMember(schoolId) && (
           resource.data.userId == request.auth.uid || 
           hasPermission(schoolId, 'manageCommunication')
       );
+      allow list: if isSchoolMember(schoolId);
       allow update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if hasPermission(schoolId, 'manageCommunication');
