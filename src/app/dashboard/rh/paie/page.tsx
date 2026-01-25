@@ -9,17 +9,20 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Banknote, Loader2, Files, Users, DollarSign, History } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, getDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDoc, doc, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import type { staff as Staff, school as OrganizationSettings } from '@/lib/data-types';
+import type { staff as Staff, school as OrganizationSettings, payrollRun } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview, BulkPayslipPreview } from '@/components/payroll/payslip-template';
 import { PayrollChart } from '@/components/rh/payroll-chart';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+interface PayrollRun extends payrollRun {
+    id: string;
+}
 
 const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: string | number, icon: React.ElementType, loading: boolean }) => (
     <Card>
@@ -32,12 +35,6 @@ const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value:
         </CardContent>
     </Card>
 );
-
-const MOCK_PAYROLL_HISTORY = [
-    { id: 'paie_juillet_2024', period: 'Juillet 2024', executionDate: '2024-07-31', totalMass: 8550000, status: 'Terminé' },
-    { id: 'paie_juin_2024', period: 'Juin 2024', executionDate: '2024-06-30', totalMass: 8495000, status: 'Terminé' },
-    { id: 'paie_mai_2024', period: 'Mai 2024', executionDate: '2024-05-31', totalMass: 8495000, status: 'Terminé' },
-];
 
 export default function PaiePage() {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -63,8 +60,18 @@ export default function PaiePage() {
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
 
   const staffWithSalary = useMemo(() => staffData?.map(doc => ({ id: doc.id, ...doc.data() } as Staff & { id: string })) || [], [staffData]);
+  
+  const payrollHistoryQuery = useMemo(() => 
+    schoolId ? query(collection(firestore, `ecoles/${schoolId}/payroll_runs`), orderBy('executionDate', 'desc')) : null,
+  [firestore, schoolId]);
+  const { data: payrollHistoryData, loading: payrollHistoryLoading } = useCollection(payrollHistoryQuery);
 
-  const isLoading = schoolLoading || userLoading || staffLoading;
+  const payrollHistory = useMemo(() => 
+    payrollHistoryData?.map(doc => ({ id: doc.id, ...doc.data() } as PayrollRun)) || [],
+  [payrollHistoryData]);
+
+
+  const isLoading = schoolLoading || userLoading || staffLoading || payrollHistoryLoading;
   
   const { totalSalaryMass, averageSalary } = useMemo(() => {
     if (staffWithSalary.length === 0) {
@@ -190,19 +197,27 @@ export default function PaiePage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {MOCK_PAYROLL_HISTORY.map((run) => (
-                    <TableRow key={run.id}>
-                        <TableCell className="font-medium">{run.period}</TableCell>
-                        <TableCell>{format(new Date(run.executionDate), 'dd/MM/yyyy', {locale: fr})}</TableCell>
-                        <TableCell>{formatCurrency(run.totalMass)}</TableCell>
-                        <TableCell><Badge variant="secondary">{run.status}</Badge></TableCell>
-                        <TableCell className="text-right">
-                           <Button variant="outline" size="sm" onClick={handleGenerateAllPayslips}>
-                             <Files className="mr-2 h-4 w-4" /> Voir les bulletins
-                           </Button>
-                        </TableCell>
-                    </TableRow>
-                  ))}
+                  {isLoading ? (
+                      <TableRow><TableCell colSpan={5}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
+                  ) : payrollHistory.length > 0 ? (
+                      payrollHistory.map((run) => (
+                        <TableRow key={run.id}>
+                            <TableCell className="font-medium">{run.period}</TableCell>
+                            <TableCell>{format(new Date(run.executionDate), 'dd/MM/yyyy', {locale: fr})}</TableCell>
+                            <TableCell>{formatCurrency(run.totalMass)}</TableCell>
+                            <TableCell><Badge variant="secondary">{run.status}</Badge></TableCell>
+                            <TableCell className="text-right">
+                               <Button variant="outline" size="sm" onClick={handleGenerateAllPayslips}>
+                                 <Files className="mr-2 h-4 w-4" /> Voir les bulletins
+                               </Button>
+                            </TableCell>
+                        </TableRow>
+                      ))
+                  ) : (
+                      <TableRow>
+                          <TableCell colSpan={5} className="text-center h-24">Aucun historique de paie trouvé.</TableCell>
+                      </TableRow>
+                  )}
                 </TableBody>
              </Table>
           </CardContent>

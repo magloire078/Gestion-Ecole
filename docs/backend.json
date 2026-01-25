@@ -1049,6 +1049,21 @@
             "notes": { "type": "string" }
         },
         "required": ["studentId", "competitionId"]
+    },
+    "payrollRun": {
+        "title": "Exécution de Paie",
+        "description": "Représente une exécution mensuelle de la paie pour l'ensemble du personnel.",
+        "type": "object",
+        "properties": {
+            "period": { "type": "string", "description": "La période de paie (ex: Juillet 2024)." },
+            "executionDate": { "type": "string", "format": "date-time" },
+            "totalMass": { "type": "number" },
+            "employeeCount": { "type": "number" },
+            "status": { "type": "string", "enum": ["Terminé", "En cours", "Annulé"] },
+            "processedBy": { "type": "string" },
+            "processedByName": { "type": "string" }
+        },
+        "required": ["period", "executionDate", "totalMass", "employeeCount", "status", "processedBy"]
     }
   },
   "auth": {
@@ -1315,6 +1330,11 @@
             "path": "participations_competitions/{participationId}",
             "schema": { "$ref": "#/entities/participationCompetition" },
             "description": "Participations des élèves aux compétitions."
+        },
+        "payroll_runs": {
+            "path": "payroll_runs/{runId}",
+            "schema": { "$ref": "#/entities/payrollRun" },
+            "description": "Stocke l'historique des exécutions de paie mensuelles."
         }
       }
     }
@@ -1324,3 +1344,4 @@
     
 
     
+
