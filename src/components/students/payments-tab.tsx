@@ -5,9 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
@@ -18,27 +15,13 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, doc, orderBy, query, writeBatch } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useState, useMemo, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Sparkles, Tag, Receipt, Loader2 } from 'lucide-react';
 import type { student as Student, payment as Payment } from '@/lib/data-types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-
-
-const paymentSchema = z.object({
-  paymentDate: z.string().min(1, "La date est requise."),
-  paymentDescription: z.string().min(1, "La description est requise."),
-  paymentAmount: z.coerce.number().positive("Le montant doit être un nombre positif."),
-  payerFirstName: z.string().min(1, "Le prénom du payeur est requis."),
-  payerLastName: z.string().min(1, "Le nom de la personne qui a effectué le paiement est requis."),
-  payerContact: z.string().optional(),
-  paymentMethod: z.string().min(1, "Le mode de paiement est requis."),
-});
-type PaymentFormValues = z.infer<typeof paymentSchema>;
+import { PaymentForm, type PaymentFormValues } from './payment-form';
 
 interface PaymentHistoryEntry extends Payment {
   id: string;
@@ -179,15 +162,9 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
     const [todayDateString, setTodayDateString] = useState('');
     useEffect(() => { setTodayDateString(format(new Date(), 'yyyy-MM-dd')); }, []);
 
-    const paymentForm = useForm<PaymentFormValues>({
-        resolver: zodResolver(paymentSchema),
-    });
-
-    useEffect(() => {
-        if (!isOpen) return;
-
+    const initialFormData = useMemo(() => {
         if (student && todayDateString) {
-            paymentForm.reset({
+            return {
                 paymentAmount: 0,
                 paymentDescription: `Scolarité - ${student.firstName} ${student.lastName}`,
                 paymentDate: todayDateString,
@@ -195,9 +172,10 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 payerLastName: student.parent1LastName || '',
                 payerContact: student.parent1Contact || '',
                 paymentMethod: 'Espèces',
-            });
+            };
         }
-    }, [student, isOpen, paymentForm, todayDateString]);
+        return {};
+    }, [student, todayDateString]);
     
     const handleSaveChanges = async (values: PaymentFormValues) => {
         if (!student || !schoolData?.id || !student.id) return;
@@ -268,24 +246,12 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                             <DialogTitle>Enregistrer un paiement pour {student.firstName}</DialogTitle>
                             <DialogDescription>Le solde actuel est de <strong>{formatCurrency(student?.amountDue || 0)}</strong>.</DialogDescription>
                         </DialogHeader>
-                        <Form {...paymentForm}>
-                            <form id="payment-form" onSubmit={paymentForm.handleSubmit(handleSaveChanges)} className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto px-1">
-                                <FormField control={paymentForm.control} name="paymentDate" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="paymentDescription" render={({ field }) => (<FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="paymentAmount" render={({ field }) => (<FormItem><FormLabel>Montant Payé</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="paymentMethod" render={({ field }) => (<FormItem><FormLabel>Mode de paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Espèces">Espèces</SelectItem><SelectItem value="Chèque">Chèque</SelectItem><SelectItem value="Virement Bancaire">Virement Bancaire</SelectItem><SelectItem value="Paiement Mobile">Paiement Mobile</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="payerFirstName" render={({ field }) => (<FormItem><FormLabel>Prénom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="payerLastName" render={({ field }) => (<FormItem><FormLabel>Nom du Payeur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={paymentForm.control} name="payerContact" render={({ field }) => (<FormItem><FormLabel>Contact Payeur</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                            </form>
-                        </Form>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={onClose}>Annuler</Button>
-                            <Button type="submit" form="payment-form" disabled={isSaving}>
-                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                                Enregistrer
-                            </Button>
-                        </DialogFooter>
+                        <PaymentForm 
+                            onSubmit={handleSaveChanges} 
+                            initialData={initialFormData}
+                            isSaving={isSaving}
+                            onCancel={onClose}
+                        />
                     </>
                 ) : (
                     <>
