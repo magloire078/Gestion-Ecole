@@ -253,7 +253,7 @@ service cloud.firestore {
       allow update, delete, create: if hasPermission(schoolId, 'manageBilling');
     }
      match /ecoles/{schoolId}/comptabilite {
-      allow list: if isSchoolMember(schoolId) && hasPermission(schoolId, 'manageBilling');
+      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -286,7 +286,7 @@ service cloud.firestore {
       allow delete: if hasPermission(schoolId, 'manageCommunication');
     }
     match /ecoles/{schoolId}/notifications {
-      allow list: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'manageCommunication') || request.query.where.userId == request.auth.uid);
+      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
@@ -397,5 +397,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
