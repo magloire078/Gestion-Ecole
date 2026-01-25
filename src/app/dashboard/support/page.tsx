@@ -47,7 +47,7 @@ export default function SupportPage() {
     const isLoading = userLoading || schoolLoading || ticketsLoading;
 
     return (
-        <>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <div>
@@ -55,7 +55,7 @@ export default function SupportPage() {
                         <p className="text-muted-foreground">Suivez vos demandes ou gérez celles de votre établissement.</p>
                     </div>
                     <DialogTrigger asChild>
-                        <Button onClick={() => setIsFormOpen(true)}>
+                        <Button>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Nouveau Ticket
                         </Button>
@@ -84,17 +84,15 @@ export default function SupportPage() {
                 </Tabs>
             </div>
             
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Ouvrir un nouveau ticket</DialogTitle>
-                        <DialogDescription>
-                            Décrivez votre demande aussi précisément que possible. Notre équipe vous répondra dans les plus brefs délais.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <SupportTicketForm onSave={() => setIsFormOpen(false)} />
-                </DialogContent>
-            </Dialog>
-        </>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Ouvrir un nouveau ticket</DialogTitle>
+                    <DialogDescription>
+                        Décrivez votre demande aussi précisément que possible. Notre équipe vous répondra dans les plus brefs délais.
+                    </DialogDescription>
+                </DialogHeader>
+                <SupportTicketForm onSave={() => setIsFormOpen(false)} />
+            </DialogContent>
+        </Dialog>
     );
 }
