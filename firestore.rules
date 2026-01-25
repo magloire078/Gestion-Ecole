@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -299,12 +300,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get: if isSchoolMember(schoolId) && (
-          resource.data.userId == request.auth.uid || 
-          hasPermission(schoolId, 'manageCommunication')
-      );
-      allow list: if isSchoolMember(schoolId);
-      allow update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
+      allow read, update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if hasPermission(schoolId, 'manageCommunication');
     }
