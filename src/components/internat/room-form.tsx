@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -20,7 +19,7 @@ import { DialogFooter } from '../ui/dialog';
 const roomFormSchema = z.object({
   buildingId: z.string().min(1, 'Le bâtiment est requis.'),
   number: z.string().min(1, 'Le numéro de chambre est requis.'),
-  capacity: z.coerce.number().min(1, 'La capacité doit être au moins de 1.'),
+  capacity: z.coerce.number().min(1, 'La capacité doit être d\'au moins 1.'),
   status: z.enum(['available', 'occupied', 'maintenance']),
   monthlyRate: z.coerce.number().min(0, 'Le tarif doit être un nombre positif.'),
 });
@@ -32,52 +31,37 @@ interface RoomFormProps {
   buildings: (Building & { id: string })[];
   room: (Room & { id: string }) | null;
   onSave: () => void;
+  defaultBuildingId?: string;
 }
 
-export function RoomForm({ schoolId, buildings, room, onSave }: RoomFormProps) {
+export function RoomForm({ schoolId, buildings, room, onSave, defaultBuildingId }: RoomFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<RoomFormValues>({
     resolver: zodResolver(roomFormSchema),
-    defaultValues: room ? {
-      ...room,
-      capacity: room.capacity || 1,
-      monthlyRate: room.monthlyRate || 0,
-    } : {
-      buildingId: '',
-      number: '',
-      capacity: 4,
-      status: 'available',
-      monthlyRate: 0,
-    },
   });
 
-   useEffect(() => {
-    form.reset(room ? {
-      ...room,
-      capacity: room.capacity || 1,
-      monthlyRate: room.monthlyRate || 0,
-    } : {
-      buildingId: buildings.length > 0 ? buildings[0].id : '',
+  useEffect(() => {
+    form.reset(room || {
+      buildingId: defaultBuildingId || (buildings.length > 0 ? buildings[0].id : ''),
       number: '',
       capacity: 4,
       status: 'available',
       monthlyRate: 0,
     });
-  }, [room, buildings, form]);
+  }, [room, buildings, defaultBuildingId, form]);
 
   const handleSubmit = async (values: RoomFormValues) => {
     setIsSubmitting(true);
     
-    const dataToSave = {
-        ...values,
-    };
-
+    const dataToSave = { ...values };
+    
+    const collectionRef = collection(firestore, `ecoles/${schoolId}/internat_chambres`);
     const promise = room && room.id
-        ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_chambres/${room.id}`), dataToSave, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/internat_chambres`), dataToSave);
+        ? setDoc(doc(collectionRef, room.id), dataToSave, { merge: true })
+        : addDoc(collectionRef, dataToSave);
     
     promise.then(() => {
         toast({ title: 'Chambre enregistrée', description: `La chambre ${values.number} a été enregistrée.` });

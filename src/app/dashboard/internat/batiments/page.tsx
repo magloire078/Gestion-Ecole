@@ -4,6 +4,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BuildingManager } from '@/components/building-manager';
 import { BuildingForm } from '@/components/internat/building-form';
+import { RoomForm } from '@/components/internat/room-form';
 
 export default function BatimentsPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -28,11 +29,10 @@ export default function BatimentsPage() {
       buildingNameField="name"
       roomNameField="number"
       addBuildingButtonText="Ajouter un bâtiment"
-      addRoomLink="/dashboard/internat/chambres"
+      addRoomButtonText="Ajouter une chambre"
       BuildingFormComponent={BuildingForm}
-      permission="manageInternat" // Pass the correct permission key
+      RoomFormComponent={RoomForm}
+      permission="manageInternat"
     />
   );
 }
-
-    

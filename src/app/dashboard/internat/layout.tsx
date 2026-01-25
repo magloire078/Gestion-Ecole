@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from '@/firebase';
 import { usePathname } from 'next/navigation';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { NAV_LINKS } from '@/lib/nav-links';
+import { internatSubLinks } from '@/lib/nav-links';
 
 export default function InternatLayout({
   children,
@@ -22,10 +22,6 @@ export default function InternatLayout({
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
     
-    const internatNavLinks = NAV_LINKS.find(g => g.group === 'Vie Scolaire')?.links.filter(
-      l => l.href.startsWith('/dashboard/internat')
-    ) || [];
-
     const isLoading = subscriptionLoading || userLoading;
 
     const layoutContent = (
@@ -37,8 +33,8 @@ export default function InternatLayout({
             </p>
         </div>
         <Tabs value={pathname} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-                {internatNavLinks.map(link => (
+            <TabsList className="grid w-full grid-cols-3">
+                {internatSubLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>
                             <link.icon className="mr-2 h-4 w-4" />

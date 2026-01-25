@@ -157,8 +157,7 @@ export const transportSubLinks = [
 
 export const internatSubLinks = [
     { href: '/dashboard/internat/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
-    { href: '/dashboard/internat/batiments', label: 'Bâtiments', icon: Building, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
-    { href: '/dashboard/internat/chambres', label: 'Chambres', icon: Bed, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
+    { href: '/dashboard/internat/batiments', label: 'Bâtiments & Chambres', icon: Building, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
     { href: '/dashboard/internat/occupants', label: 'Occupants', icon: Users, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
 ];
 
