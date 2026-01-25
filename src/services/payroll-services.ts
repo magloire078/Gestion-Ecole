@@ -3,9 +3,10 @@
 import { Firestore, collection, query, where, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import type { staff as Staff } from '@/lib/data-types';
+import type { staff as Staff, school as School } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getPayslipDetails } from '@/lib/bulletin-de-paie';
 
 interface RunPayrollResult {
     success: boolean;
@@ -17,7 +18,8 @@ export const runPayrollForMonth = async (
     firestore: Firestore,
     schoolId: string,
     adminId: string,
-    adminName: string
+    adminName: string,
+    schoolData: School,
 ): Promise<RunPayrollResult> => {
     
     if (!schoolId || !adminId) {
@@ -37,7 +39,7 @@ export const runPayrollForMonth = async (
             return { success: false, error: "Aucun employé avec un salaire défini à traiter." };
         }
 
-        const staffMembers = staffSnapshot.docs.map(doc => doc.data() as Staff);
+        const staffMembers = staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Staff }));
         const totalMass = staffMembers.reduce((sum, staff) => sum + (staff.baseSalary || 0), 0);
         const employeeCount = staffMembers.length;
         
@@ -53,6 +55,7 @@ export const runPayrollForMonth = async (
             return { success: false, error: `La paie pour ${period} a déjà été exécutée.` };
         }
 
+        const payslipDate = new Date().toISOString();
         const batch = writeBatch(firestore);
 
         const newRunRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs`));
@@ -68,6 +71,22 @@ export const runPayrollForMonth = async (
         };
 
         batch.set(newRunRef, payrollRunData);
+        
+        // Generate and store individual payslips
+        for (const staffMember of staffMembers) {
+            const payslipDetails = await getPayslipDetails(staffMember, payslipDate, schoolData);
+            
+            const payslipRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs/${newRunRef.id}/payslips`));
+            
+            const payslipData = {
+                staffId: staffMember.id,
+                staffName: `${staffMember.firstName} ${staffMember.lastName}`,
+                // Convert to plain object to avoid any issues with Firestore
+                payslipDetails: JSON.parse(JSON.stringify(payslipDetails)) 
+            };
+            
+            batch.set(payslipRef, payslipData);
+        }
 
         await batch.commit();
 

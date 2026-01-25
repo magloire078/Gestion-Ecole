@@ -1,4 +1,5 @@
 
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -274,7 +275,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow read, update: if isSchoolMember(schoolId) && (resource.data.userId == request.auth.uid || hasPermission(schoolId, 'manageCommunication'));
+      allow read, update: if isSignedIn() && (resource.data.userId == request.auth.uid || hasPermission(schoolId, 'manageCommunication'));
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if hasPermission(schoolId, 'manageCommunication');
     }
@@ -378,8 +379,12 @@ service cloud.firestore {
     match /ecoles/{schoolId}/matieres {
       allow list: if isSchoolMember(schoolId);
     }
-     match /ecoles/{schoolId}/payroll_runs/{runId} {
+    match /ecoles/{schoolId}/payroll_runs/{runId} {
       allow read, write: if hasPermission(schoolId, 'manageBilling');
+      
+      match /payslips/{payslipId} {
+        allow read, write: if hasPermission(schoolId, 'manageBilling');
+      }
     }
     match /ecoles/{schoolId}/payroll_runs {
       allow list: if hasPermission(schoolId, 'manageBilling');

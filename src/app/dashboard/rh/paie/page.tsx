@@ -8,11 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Banknote, Loader2, Files, Users, DollarSign, History } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, getDoc, doc, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDoc, doc, orderBy, getDocs } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import type { staff as Staff, school as OrganizationSettings, payrollRun } from '@/lib/data-types';
+import type { staff as Staff, school as School, payrollRun as PayrollRun } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview, BulkPayslipPreview } from '@/components/payroll/payslip-template';
 import { PayrollChart } from '@/components/rh/payroll-chart';
@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { runPayrollForMonth } from '@/services/payroll-services';
 
-interface PayrollRun extends payrollRun {
+interface PayrollRunWithId extends PayrollRun {
     id: string;
 }
 
@@ -69,7 +69,7 @@ export default function PaiePage() {
   const { data: payrollHistoryData, loading: payrollHistoryLoading } = useCollection(payrollHistoryQuery);
 
   const payrollHistory = useMemo(() => 
-    payrollHistoryData?.map(doc => ({ id: doc.id, ...doc.data() } as PayrollRun)) || [],
+    payrollHistoryData?.map(doc => ({ id: doc.id, ...doc.data() } as PayrollRunWithId)) || [],
   [payrollHistoryData]);
 
 
@@ -101,7 +101,7 @@ export default function PaiePage() {
         if(!fullStaffDoc.exists()) throw new Error("Staff member not found");
 
         const payslipDate = new Date().toISOString();
-        const details = await getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as OrganizationSettings);
+        const details = await getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as School);
         setPayslipDetails(details);
     } catch (e) {
         console.error(e);
@@ -129,7 +129,7 @@ export default function PaiePage() {
         const allDetailsPromises = staffWithSalary.map(async (staffMember) => {
             const fullStaffDoc = await getDoc(doc(firestore, `ecoles/${schoolId}/personnel/${staffMember.id}`));
             if (fullStaffDoc.exists()) {
-                return getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as OrganizationSettings);
+                return getPayslipDetails(fullStaffDoc.data() as Staff, payslipDate, schoolData as School);
             }
             return null;
         });
@@ -154,9 +154,40 @@ export default function PaiePage() {
         setIsBulkGenerating(false);
     }
   };
+  
+  const handleViewPayslips = async (run: PayrollRunWithId) => {
+    if (!schoolId) return;
+
+    setIsBulkGenerating(true);
+    setBulkPayslipDetails(null);
+    setIsBulkPayslipOpen(true);
+
+    try {
+        const payslipsQuery = query(collection(firestore, `ecoles/${schoolId}/payroll_runs/${run.id}/payslips`));
+        const snapshot = await getDocs(payslipsQuery);
+        
+        if (snapshot.empty) {
+            toast({ variant: 'destructive', title: "Aucun bulletin trouvé", description: "Aucun bulletin de paie n'a été trouvé pour cette exécution." });
+            setIsBulkPayslipOpen(false);
+            return;
+        }
+
+        const allDetails = snapshot.docs.map(doc => doc.data().payslipDetails as PayslipDetails);
+
+        setBulkPayslipDetails(allDetails);
+        
+    } catch(e) {
+        console.error(e);
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de charger les bulletins de paie." });
+        setIsBulkPayslipOpen(false);
+    } finally {
+        setIsBulkGenerating(false);
+    }
+  };
+
 
   const handleRunPayroll = async () => {
-    if (!schoolId || !user?.uid || !user.displayName) {
+    if (!schoolId || !user?.uid || !user.displayName || !schoolData) {
         toast({
             variant: "destructive",
             title: "Erreur",
@@ -167,7 +198,7 @@ export default function PaiePage() {
     
     setIsProcessingPayroll(true);
     
-    const result = await runPayrollForMonth(firestore, schoolId, user.uid, user.displayName);
+    const result = await runPayrollForMonth(firestore, schoolId, user.uid, user.displayName, schoolData as School);
     
     if (result.success) {
         toast({
@@ -239,7 +270,7 @@ export default function PaiePage() {
                             <TableCell>{formatCurrency(run.totalMass)}</TableCell>
                             <TableCell><Badge variant="secondary">{run.status}</Badge></TableCell>
                             <TableCell className="text-right">
-                               <Button variant="outline" size="sm" onClick={handleGenerateAllPayslips}>
+                               <Button variant="outline" size="sm" onClick={() => handleViewPayslips(run)}>
                                  <Files className="mr-2 h-4 w-4" /> Voir les bulletins
                                </Button>
                             </TableCell>

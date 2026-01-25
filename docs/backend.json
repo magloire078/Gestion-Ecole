@@ -1064,6 +1064,16 @@
             "processedByName": { "type": "string" }
         },
         "required": ["period", "executionDate", "totalMass", "employeeCount", "status", "processedBy"]
+    },
+    "payroll_payslip": {
+      "title": "Bulletin de Paie Archivé",
+      "description": "Détails d'un bulletin de paie généré lors d'une exécution de paie.",
+      "type": "object",
+      "properties": {
+        "staffId": { "type": "string", "description": "ID de l'employé." },
+        "staffName": { "type": "string", "description": "Nom complet de l'employé." },
+        "payslipDetails": { "type": "object", "description": "Données complètes du bulletin de paie au moment de la génération." }
+      }
     }
   },
   "auth": {
@@ -1332,9 +1342,16 @@
             "description": "Participations des élèves aux compétitions."
         },
         "payroll_runs": {
-            "path": "payroll_runs/{runId}",
-            "schema": { "$ref": "#/entities/payrollRun" },
-            "description": "Stocke l'historique des exécutions de paie mensuelles."
+          "path": "payroll_runs/{runId}",
+          "schema": { "$ref": "#/entities/payrollRun" },
+          "description": "Stocke l'historique des exécutions de paie mensuelles.",
+          "subcollections": {
+            "payslips": {
+              "path": "payslips/{payslipId}",
+              "schema": { "$ref": "#/entities/payroll_payslip" },
+              "description": "Contient les bulletins individuels pour une exécution de paie."
+            }
+          }
         }
       }
     }
@@ -1344,4 +1361,5 @@
     
 
     
+
 
