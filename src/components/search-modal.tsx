@@ -11,6 +11,7 @@ import { collection, query } from "firebase/firestore";
 import type { student as Student, staff as Staff } from '@/lib/data-types';
 import Link from 'next/link';
 import { Avatar, AvatarImage, AvatarFallback } from "./ui/avatar";
+import { NAV_LINKS } from "@/lib/nav-links";
 
 export function SearchModal({ isOpen, onClose }: {
   isOpen: boolean;
@@ -37,14 +38,14 @@ export function SearchModal({ isOpen, onClose }: {
     return () => clearTimeout(handler);
   }, [queryValue]);
 
-  const searchResults = useMemo(() => {
-    if (!debouncedQuery || (!studentsDocs && !staffDocs)) {
-      return { students: [], staff: [] };
+  const { studentResults, staffResults, navigationResults } = useMemo(() => {
+    if (!debouncedQuery) {
+        return { students: [], staff: [], navigationResults: [] };
     }
     
     const lowercasedQuery = debouncedQuery.toLowerCase();
     
-    const students = (studentsDocs || [])
+    const studentRes = (studentsDocs || [])
       .map(doc => ({ id: doc.id, ...doc.data() } as Student & {id: string}))
       .filter(s => 
         s.firstName?.toLowerCase().includes(lowercasedQuery) ||
@@ -52,7 +53,7 @@ export function SearchModal({ isOpen, onClose }: {
         s.matricule?.toLowerCase().includes(lowercasedQuery)
       ).slice(0, 5);
       
-    const staff = (staffDocs || [])
+    const staffRes = (staffDocs || [])
       .map(doc => ({ id: doc.id, ...doc.data() } as Staff & {id: string}))
       .filter(s => 
         s.displayName?.toLowerCase().includes(lowercasedQuery) ||
@@ -60,7 +61,12 @@ export function SearchModal({ isOpen, onClose }: {
         s.role?.toLowerCase().includes(lowercasedQuery)
       ).slice(0, 5);
 
-    return { students, staff };
+    const allLinks = NAV_LINKS.flatMap(group => group.links);
+    const navRes = allLinks.filter(link => 
+        link.label.toLowerCase().includes(lowercasedQuery)
+    ).slice(0, 5);
+
+    return { studentResults: studentRes, staffResults: staffRes, navigationResults: navRes };
 
   }, [debouncedQuery, studentsDocs, staffDocs]);
 
@@ -77,6 +83,7 @@ export function SearchModal({ isOpen, onClose }: {
   }
 
   const isLoading = studentsLoading || staffLoading;
+  const noResults = !isLoading && debouncedQuery && studentResults.length === 0 && staffResults.length === 0 && navigationResults.length === 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -87,7 +94,7 @@ export function SearchModal({ isOpen, onClose }: {
             ref={inputRef}
             value={queryValue}
             onChange={(e) => setQueryValue(e.target.value)}
-            placeholder="Rechercher élèves, personnel..."
+            placeholder="Rechercher élèves, personnel, pages..."
             className="border-0 shadow-none focus-visible:ring-0 h-auto p-0 text-base bg-transparent"
           />
         </div>
@@ -98,17 +105,32 @@ export function SearchModal({ isOpen, onClose }: {
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
             )}
-            {!isLoading && debouncedQuery && searchResults.students.length === 0 && searchResults.staff.length === 0 && (
+            
+            {noResults && (
                 <div className="p-6 text-center text-muted-foreground">
                     Aucun résultat trouvé pour "{debouncedQuery}"
                 </div>
             )}
+            
+            {navigationResults.length > 0 && (
+                <div className="p-4">
+                    <h3 className="text-sm font-semibold text-muted-foreground px-2 mb-2">Navigation</h3>
+                    <div className="space-y-1">
+                        {navigationResults.map(link => (
+                            <Link key={link.href} href={link.href} onClick={handleItemClick} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors">
+                                <link.icon className="h-4 w-4 text-muted-foreground" />
+                                <p className="text-sm font-medium">{link.label}</p>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
 
-            {!isLoading && searchResults.students.length > 0 && (
+            {studentResults.length > 0 && (
                 <div className="p-4">
                     <h3 className="text-sm font-semibold text-muted-foreground px-2 mb-2">Élèves</h3>
                     <div className="space-y-1">
-                        {searchResults.students.map(student => (
+                        {studentResults.map(student => (
                             <Link key={student.id} href={`/dashboard/dossiers-eleves/${student.id}`} onClick={handleItemClick} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors">
                                 <Avatar className="h-8 w-8"><AvatarImage src={student.photoUrl || ''} /><AvatarFallback>{student.firstName?.[0]}{student.lastName?.[0]}</AvatarFallback></Avatar>
                                 <div>
@@ -121,11 +143,11 @@ export function SearchModal({ isOpen, onClose }: {
                 </div>
             )}
 
-             {!isLoading && searchResults.staff.length > 0 && (
+             {staffResults.length > 0 && (
                 <div className="p-4">
                     <h3 className="text-sm font-semibold text-muted-foreground px-2 mb-2">Personnel</h3>
                      <div className="space-y-1">
-                        {searchResults.staff.map(member => (
+                        {staffResults.map(member => (
                             <Link key={member.id} href={`/dashboard/rh/${member.id}`} onClick={handleItemClick} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors">
                                 <Avatar className="h-8 w-8"><AvatarImage src={member.photoURL || ''} /><AvatarFallback>{member.firstName?.[0]}{member.lastName?.[0]}</AvatarFallback></Avatar>
                                 <div>
