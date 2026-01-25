@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
-import type { route as Route, bus as Bus, staff as Staff } from '@/lib/data-types';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import type { route as Route, bus as Bus, staff as Staff, transportSubscription } from '@/lib/data-types';
+import { Users, Bus as BusIcon, Clock, Percent } from 'lucide-react';
 
 // Mocks - à remplacer par de vraies données Leaflet si nécessaire.
 // Pour le rendu côté serveur et les tests, nous n'utiliserons pas de carte réelle.
@@ -24,10 +25,12 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   const routesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_lignes`)), [firestore, schoolId]);
   const busesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_bus`)), [firestore, schoolId]);
   const driversQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+  const subscriptionsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_abonnements`), where('status', '==', 'active')), [firestore, schoolId]);
 
   const { data: routesData, loading: routesLoading } = useCollection(routesQuery);
   const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
   const { data: driversData, loading: driversLoading } = useCollection(driversQuery);
+  const { data: subscriptionsData, loading: subscriptionsLoading } = useCollection(subscriptionsQuery);
   
   const routes: (Route & { id: string })[] = useMemo(() => routesData?.map(doc => ({ id: doc.id, ...doc.data() } as Route & { id: string })) || [], [routesData]);
   const buses: (Bus & { id: string })[] = useMemo(() => busesData?.map(doc => ({ id: doc.id, ...doc.data() } as Bus & { id: string })) || [], [busesData]);
@@ -36,13 +39,16 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   const busMap = useMemo(() => new Map(buses.map(b => [b.id, b])), [buses]);
   const driverMap = useMemo(() => new Map(drivers.map(d => [d.id, d])), [drivers]);
   
+  const transportedStudents = useMemo(() => subscriptionsData?.length || 0, [subscriptionsData]);
+  const activeBuses = useMemo(() => buses.filter(bus => bus.status === 'active').length, [buses]);
+
   useEffect(() => {
       if(routes.length > 0 && !selectedRouteId) {
           setSelectedRouteId(routes[0].id);
       }
   }, [routes, selectedRouteId]);
 
-  const loading = routesLoading || busesLoading || driversLoading;
+  const loading = routesLoading || busesLoading || driversLoading || subscriptionsLoading;
   
   const currentRoute = routes.find(r => r.id === selectedRouteId);
   const currentBus = currentRoute ? busMap.get(currentRoute.busId) : null;
@@ -67,10 +73,10 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Bus actifs</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">{routes.length}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">En retard</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold text-amber-600">{routes.filter(r => r.status === 'delayed').length}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Élèves transportés</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">...</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium">Ponctualité</CardTitle></CardHeader><CardContent><div className="text-2xl font-bold">...%</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Bus actifs</CardTitle><BusIcon className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold">{activeBuses}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">En retard</CardTitle><Clock className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold text-amber-600">{routes.filter(r => r.status === 'delayed').length}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Élèves Transportés</CardTitle><Users className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold">{transportedStudents}</div></CardContent></Card>
+        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Ponctualité</CardTitle><Percent className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold">...%</div></CardContent></Card>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
