@@ -60,6 +60,18 @@ service cloud.firestore {
         );
     }
 
+    function canListPayroll(schoolId) {
+        if (isDirector(schoolId)) { return true; }
+
+        let staffProfile = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+        if (!staffProfile.exists() || staffProfile.data.adminRole == null) { return false; }
+
+        let roleDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.data.adminRole));
+        if (!roleDoc.exists()) { return false; }
+        
+        let permissions = roleDoc.data.permissions;
+        return (permissions.manageBilling == true || permissions.manageUsers == true);
+    }
 
     function isParentOfStudent(studentDoc) {
       return isSignedIn() &&
@@ -401,7 +413,7 @@ service cloud.firestore {
       }
     }
     match /ecoles/{schoolId}/payroll_runs {
-      allow list: if hasPermission(schoolId, 'manageBilling') || hasPermission(schoolId, 'manageUsers');
+      allow list: if canListPayroll(schoolId);
     }
   }
 }
