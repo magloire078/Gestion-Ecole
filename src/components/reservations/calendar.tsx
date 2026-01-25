@@ -37,11 +37,11 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
   const { data: reservationsData, loading: reservationsLoading } = useCollection(reservationsQuery);
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
 
-  const salles = useMemo(() => sallesData?.map(doc => ({ id: doc.id, ...doc.data() } as Salle & { id: string })) || [], [sallesData]);
-  const reservations = useMemo(() => reservationsData?.map(doc => ({ id: doc.id, ...doc.data() } as Reservation & { id: string })) || [], [reservationsData]);
+  const salles = useMemo(() => sallesData.map(doc => ({ id: doc.id, ...doc.data() } as Salle & { id: string })), [sallesData]);
+  const reservations = useMemo(() => reservationsData.map(doc => ({ id: doc.id, ...doc.data() } as Reservation & { id: string })), [reservationsData]);
   const staffMap = useMemo(() => {
     const map = new Map<string, string>();
-    staffData?.forEach(doc => {
+    staffData.forEach(doc => {
       const staff = doc.data() as Staff;
       map.set(doc.id, `${staff.firstName} ${staff.lastName}`);
     });
@@ -169,7 +169,7 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
             <ReservationForm
                 schoolId={schoolId}
                 salles={salles}
-                staff={staffData?.docs.map(doc => ({id: doc.id, ...doc.data()} as Staff & {id: string})) || []}
+                staff={staffData.map(doc => ({id: doc.id, ...doc.data()} as Staff & {id: string}))}
                 reservation={editingReservation}
                 preselectedSlot={preselectedSlot}
                 onSave={() => { setIsFormOpen(false); setEditingReservation(null); setPreselectedSlot(null); }}
