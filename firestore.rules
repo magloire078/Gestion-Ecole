@@ -274,10 +274,12 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow list: if isSchoolMember(schoolId);
       allow read, update: if isSchoolMember(schoolId) && (resource.data.userId == request.auth.uid || hasPermission(schoolId, 'manageCommunication'));
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if hasPermission(schoolId, 'manageCommunication');
+    }
+    match /ecoles/{schoolId}/notifications {
+      allow list: if isSchoolMember(schoolId);
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
