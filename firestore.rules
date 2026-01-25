@@ -50,15 +50,17 @@ service cloud.firestore {
     }
 
     function hasPermission(schoolId, permission) {
-        return isDirector(schoolId) || (
-            isSchoolMember(schoolId) &&
-            exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
-            get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole != null &&
-            exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)) &&
-            // Safe check for the permission key
-            permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions &&
-            get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions[permission] == true
-        );
+        if (isSuperAdmin()) { return true; }
+        if (isDirector(schoolId)) { return true; }
+
+        let staffProfile = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+        if (!staffProfile.exists() || staffProfile.data.adminRole == null) { return false; }
+        
+        let roleDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.data.adminRole));
+        if (!roleDoc.exists()) { return false; }
+        
+        let permissions = roleDoc.data.permissions;
+        return permission in permissions && permissions[permission] == true;
     }
 
     function canListPayroll(schoolId) {
@@ -300,8 +302,7 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get, update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
-      allow list: if isSchoolMember(schoolId);
+      allow read, update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
     }
@@ -414,3 +415,4 @@ service cloud.firestore {
     }
   }
 }
+    
