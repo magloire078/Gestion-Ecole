@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -157,6 +155,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                             onUploadComplete={handlePhotoUploadComplete}
                             storagePath={`ecoles/${schoolId}/eleves/${eleveId}/avatars/`}
                              currentImageUrl={student.photoUrl}
+                             resizeWidth={400}
                         >
                             <Avatar className="h-16 w-16 cursor-pointer hover:opacity-80 transition-opacity">
                                 <AvatarImage src={student.photoUrl || undefined} alt={studentFullName} />

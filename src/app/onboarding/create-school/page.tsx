@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -246,6 +245,8 @@ export default function CreateSchoolPage() {
                             setLogoUrl(url); 
                           }}
                           storagePath={`temp-logos/${user.uid}/`}
+                          resizeWidth={300}
+                          maxSize={1 * 1024 * 1024} // 1MB
                         >
                           <div className="relative group cursor-pointer">
                             <Avatar className="h-32 w-32 border-4 border-background shadow-lg group-hover:opacity-90 transition-opacity">

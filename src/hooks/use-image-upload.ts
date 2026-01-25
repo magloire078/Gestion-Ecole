@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -22,21 +21,7 @@ export function useImageUpload({ onSuccess, onError, onDeleteSuccess }: UseImage
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
 
-    const upload = async (file: File, path: string, maxSizeMB: number = 5, resizeWidth: number = 1024) => {
-        if (file.size > maxSizeMB * 1024 * 1024) {
-            const errorMsg = `L'image ne doit pas dépasser ${maxSizeMB}MB.`;
-            setError(errorMsg);
-            onError?.(errorMsg);
-            return;
-        }
-
-        if (!file.type.startsWith('image/')) {
-            const errorMsg = 'Le fichier doit être une image.';
-            setError(errorMsg);
-            onError?.(errorMsg);
-            return;
-        }
-        
+    const upload = async (file: File, path: string, resizeWidth: number = 1024) => {
         setIsUploading(true);
         setError(null);
         setProgress(0);

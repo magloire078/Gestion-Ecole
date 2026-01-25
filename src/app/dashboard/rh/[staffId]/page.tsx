@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -215,6 +213,7 @@ export default function StaffProfilePage() {
                                 onUploadComplete={handlePhotoUploadComplete}
                                 storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
                                 currentImageUrl={staffMember.photoURL}
+                                resizeWidth={400}
                             >
                                 <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
                                     <AvatarImage src={staffMember.photoURL || undefined} alt={staffFullName} />

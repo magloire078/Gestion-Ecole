@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useRef } from 'react';
@@ -14,7 +13,9 @@ interface ImageUploaderProps {
   storagePath: string;
   maxSize?: number; // in bytes
   acceptedTypes?: string[];
+  resizeWidth?: number;
   children: React.ReactNode;
+  currentImageUrl?: string | null;
 }
 
 export function ImageUploader({ 
@@ -23,7 +24,9 @@ export function ImageUploader({
     storagePath,
     maxSize = 2 * 1024 * 1024, // 2MB default
     acceptedTypes = ['image/jpeg', 'image/png', 'image/webp'],
-    children, 
+    resizeWidth = 1024,
+    children,
+    ...props
 }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -61,7 +64,7 @@ export function ImageUploader({
          handleError(`Type de fichier non supporté. Types acceptés : ${acceptedTypes.join(', ')}.`);
         return;
       }
-      upload(file, storagePath);
+      upload(file, storagePath, resizeWidth);
     }
   };
 

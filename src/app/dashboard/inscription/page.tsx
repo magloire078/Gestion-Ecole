@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -260,6 +258,7 @@ export default function RegistrationPage() {
                                 onUploadComplete={(url) => { field.onChange(url); setPhotoUrl(url); }}
                                 storagePath={`ecoles/${schoolId}/student-photos/`}
                                 currentImageUrl={field.value}
+                                resizeWidth={400}
                             >
                                 <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">
                                     <AvatarImage src={photoUrl || undefined} alt="Photo de l'élève" />
@@ -348,5 +347,3 @@ export default function RegistrationPage() {
     </div>
   );
 }
-
-    

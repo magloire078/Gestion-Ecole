@@ -236,6 +236,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                                                 onUploadComplete={(url) => { field.onChange(url); setPhotoUrl(url); }}
                                                 storagePath={`ecoles/${schoolId}/staff-photos/`}
                                                 currentImageUrl={field.value}
+                                                resizeWidth={400}
                                             >
                                                 <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">
                                                     <AvatarImage src={photoUrl || undefined} alt="Photo" />

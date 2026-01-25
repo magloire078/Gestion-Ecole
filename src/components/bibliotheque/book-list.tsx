@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -244,6 +243,7 @@ export function BookList({ schoolId }: BookListProps) {
                               onUploadComplete={(url) => field.onChange(url)}
                               storagePath={`ecoles/${schoolId}/library_covers/`}
                               currentImageUrl={field.value}
+                              resizeWidth={600}
                             >
                               <div className="w-full h-40 border-dashed border-2 rounded-md flex items-center justify-center bg-muted hover:bg-muted/80 cursor-pointer">
                                 {field.value ? (
@@ -268,6 +268,7 @@ export function BookList({ schoolId }: BookListProps) {
                               onUploadComplete={(url) => field.onChange(url)}
                               storagePath={`ecoles/${schoolId}/library_covers/`}
                               currentImageUrl={field.value}
+                              resizeWidth={600}
                             >
                               <div className="w-full h-40 border-dashed border-2 rounded-md flex items-center justify-center bg-muted hover:bg-muted/80 cursor-pointer">
                                 {field.value ? (

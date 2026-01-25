@@ -13,7 +13,7 @@ import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2, Users, Check,
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ImageUploader } from '@/components/image-uploader';
 import { useRouter } from "next/navigation";
@@ -215,19 +215,29 @@ export default function SettingsPage() {
                         <CardDescription>Mettez à jour les informations principales de l'école.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                         <FormField control={form.control} name="mainLogoUrl" render={({ field }) => (
+                        <FormField control={form.control} name="mainLogoUrl" render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Logo de l'école</FormLabel>
-                                <div className="flex items-center gap-4">
-                                    <SafeImage src={field.value} alt="Logo" width={80} height={80} className="object-contain border rounded-md p-1 bg-muted" />
-                                    <ImageUploader onUploadComplete={handleLogoUploadComplete} storagePath={`ecoles/${schoolId}/logos/`}>
+                                <FormDescription>Le logo officiel de votre établissement. Recommandé : 200x200px, PNG transparent.</FormDescription>
+                                <div className="flex items-center gap-4 pt-2">
+                                    <div className="h-20 w-20 flex-shrink-0 rounded-md border bg-muted p-1 flex items-center justify-center">
+                                        <SafeImage src={field.value} alt="Logo" width={72} height={72} className="object-contain" />
+                                    </div>
+                                    <ImageUploader 
+                                        onUploadComplete={handleLogoUploadComplete} 
+                                        storagePath={`ecoles/${schoolId}/logos/`}
+                                        resizeWidth={300}
+                                        maxSize={1 * 1024 * 1024} // 1MB
+                                    >
                                         <Button type="button" variant="outline" disabled={!schoolId}>
-                                            <span className="flex items-center gap-2"> <Upload className="h-4 w-4"/> {field.value ? "Changer le logo" : "Télécharger un logo"} </span>
+                                            <Upload className="h-4 w-4 mr-2"/>
+                                            {field.value ? "Changer le logo" : "Télécharger un logo"}
                                         </Button>
                                     </ImageUploader>
                                 </div>
+                                <FormMessage />
                             </FormItem>
-                         )} />
+                        )} />
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
                     </CardContent>
