@@ -10,21 +10,25 @@ service firebase.storage {
     function isSignedIn() {
       return request.auth != null;
     }
+    
+    function isSuperAdmin() {
+      let userRootPath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return isSignedIn() && 
+             exists(userRootPath) && 
+             'isSuperAdmin' in get(userRootPath).data && 
+             get(userRootPath).data.isSuperAdmin == true;
+    }
 
     function isSchoolMember(schoolId) {
+      if (isSuperAdmin()) { return true; }
+      
       let userDoc = get(/databases/$(database)/documents/users/$(request.auth.uid));
       if (!userDoc.exists()) {
         return false;
       }
       let userData = userDoc.data;
       
-      // Super Admins are implicitly members of all schools
-      if (userData.isSuperAdmin == true) {
-        return true;
-      }
-      
-      return isSignedIn() &&
-             'schools' in userData && userData.schools != null &&
+      return 'schools' in userData && userData.schools != null &&
              schoolId in userData.schools;
     }
     
@@ -39,10 +43,19 @@ service firebase.storage {
              schoolId in userData.schools &&
              userData.schools[schoolId] == 'directeur';
     }
+    
+    function hasPermission(schoolId, permission) {
+        if (isSuperAdmin()) { return true; }
+        if (isDirector(schoolId)) { return true; }
 
-    // Gets the staff profile to check for role
-    function getStaffProfile(schoolId) {
-      return get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data;
+        let staffProfile = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+        if (!staffProfile.exists() || staffProfile.data.adminRole == null) { return false; }
+        
+        let roleDoc = get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.data.adminRole));
+        if (!roleDoc.exists()) { return false; }
+        
+        let permissions = roleDoc.data.permissions;
+        return permission in permissions && permissions[permission] == true;
     }
     
     // =================================
@@ -60,31 +73,31 @@ service firebase.storage {
     // Main school logo
     match /ecoles/{schoolId}/logos/{allPaths=**} {
       allow read: if true;
-      allow write: if isDirector(schoolId);
+      allow write: if hasPermission(schoolId, 'manageSettings');
     }
     
     // Student photos in their profile or during registration
     match /ecoles/{schoolId}/eleves/{studentId}/avatars/{allPaths=**} {
        allow read: if true;
-       allow write: if isDirector(schoolId) || (isSchoolMember(schoolId) && getStaffProfile(schoolId).role in ['directeur_pedagogique', 'secretaire']);
+       allow write: if hasPermission(schoolId, 'manageUsers');
     }
 
     // Temporary student photos during registration
     match /ecoles/{schoolId}/student-photos/{allPaths=**} {
         allow read: if true;
-        allow write: if isDirector(schoolId) || (isSchoolMember(schoolId) && getStaffProfile(schoolId).role in ['directeur_pedagogique', 'secretaire']);
+        allow write: if hasPermission(schoolId, 'manageUsers');
     }
     
     // Staff photos
     match /ecoles/{schoolId}/staff/{staffId}/avatars/{allPaths=**} {
        allow read: if true;
-       allow write: if isDirector(schoolId) || (isSignedIn() && request.auth.uid == staffId);
+       allow write: if hasPermission(schoolId, 'manageUsers') || (isSignedIn() && request.auth.uid == staffId);
     }
     
     // Library book covers
     match /ecoles/{schoolId}/library_covers/{allPaths=**} {
        allow read: if true;
-       allow write: if isSchoolMember(schoolId) && (getStaffProfile(schoolId).role == 'directeur' || getStaffProfile(schoolId).role == 'bibliothecaire');
+       allow write: if hasPermission(schoolId, 'manageLibrary');
     }
   }
 }
