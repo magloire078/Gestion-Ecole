@@ -4,12 +4,12 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { onIdTokenChanged, getAuth } from 'firebase/auth';
 import { useFirestore, useAuth } from '../firebase/client-provider';
-import type { UserProfile, user_root, parent as Parent } from '@/lib/data-types';
+import type { UserProfile } from '@/lib/data-types';
 import { useRouter } from 'next/navigation';
-import { allPermissions } from '@/lib/permissions';
+import { fetchUserAppData } from '@/services/user-service';
 
 export interface AppUser {
     uid: string;
@@ -46,7 +46,7 @@ export function useUser() {
   }, []);
 
   useEffect(() => {
-    if (!isClient || !auth) {
+    if (!isClient || !auth || !firestore) {
         return;
     }
 
@@ -54,99 +54,12 @@ export function useUser() {
       setLoading(true);
 
       if (firebaseUser) {
-        const userRootRef = doc(firestore, 'users', firebaseUser.uid);
-        try {
-          const userRootDoc = await getDoc(userRootRef);
-          
-          if (userRootDoc.exists()) {
-            const userData = userRootDoc.data() as user_root;
-            const isSuperAdmin = userData.isSuperAdmin === true;
-            const schoolAffiliations = userData.schools || {};
-            const schoolIds = Object.keys(schoolAffiliations).filter(id => id.length > 10); 
-            
-            const activeSchoolId = userData.activeSchoolId && schoolAffiliations[userData.activeSchoolId]
-                ? userData.activeSchoolId
-                : schoolIds[0] || null;
-            
-            const activeRole = activeSchoolId ? schoolAffiliations[activeSchoolId] : null;
-
-            if (activeSchoolId && activeRole === 'parent') {
-                // Parent logic
-                const parentProfileRef = doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`);
-                const parentProfileSnap = await getDoc(parentProfileRef);
-                const parentData = parentProfileSnap.data() as Parent;
-                
-                setUser({
-                    uid: firebaseUser.uid,
-                    authUser: firebaseUser,
-                    isParent: true,
-                    schoolId: activeSchoolId,
-                    schools: schoolAffiliations,
-                    parentStudentIds: parentData?.studentIds || [],
-                    displayName: parentData?.displayName || firebaseUser.displayName,
-                    email: firebaseUser.email,
-                    photoURL: parentData?.photoURL || firebaseUser.photoURL,
-                });
-            } else {
-                // Staff member or Super Admin (even without school)
-                let userProfile: UserProfile | undefined = undefined;
-
-                if (activeSchoolId) {
-                    const staffProfileRef = doc(firestore, `ecoles/${activeSchoolId}/personnel/${firebaseUser.uid}`);
-                    const profileSnap = await getDoc(staffProfileRef);
-                    if (profileSnap.exists()) {
-                        userProfile = profileSnap.data() as UserProfile;
-
-                        if (userProfile.role === 'directeur') {
-                            // Un directeur a toutes les permissions sur son école.
-                            userProfile.permissions = allPermissions;
-                        } else if (userProfile.adminRole) {
-                            const roleRef = doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`);
-                            const roleSnap = await getDoc(roleRef);
-                            if (roleSnap.exists()) {
-                                userProfile.permissions = roleSnap.data().permissions;
-                            }
-                        }
-                    }
-                }
-                
-                // Ensure profile exists for super admins, and isAdmin is set correctly
-                if (isSuperAdmin) {
-                    if (!userProfile) {
-                        userProfile = {} as UserProfile;
-                    }
-                    userProfile.isAdmin = true;
-                }
-                
-                setUser({
-                    uid: firebaseUser.uid,
-                    authUser: firebaseUser,
-                    isParent: false,
-                    schoolId: activeSchoolId,
-                    schools: schoolAffiliations,
-                    profile: userProfile,
-                    displayName: userProfile?.displayName || firebaseUser.displayName,
-                    email: firebaseUser.email,
-                    photoURL: userProfile?.photoURL || firebaseUser.photoURL,
-                });
-            }
-
-          } else {
-            // Authenticated user but no user_root doc -> needs onboarding
-             setUser({ uid: firebaseUser.uid, authUser: firebaseUser, isParent: false, schoolId: null, schools: {}, displayName: firebaseUser.displayName, email: firebaseUser.email, photoURL: firebaseUser.photoURL });
-          }
-
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          setUser(null);
-        } finally {
-            setLoading(false);
-        }
+        const appUser = await fetchUserAppData(firestore, firebaseUser);
+        setUser(appUser);
       } else {
-         // No firebaseUser, so no user is logged in.
          setUser(null);
-         setLoading(false);
       }
+      setLoading(false);
     });
 
     return () => unsubscribe();
