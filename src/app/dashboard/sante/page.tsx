@@ -59,23 +59,20 @@ export default function HealthPage() {
         setDataLoading(true);
 
         const statsPromise = (async () => {
-            const dossiersWithAllergiesQuery = query(collectionGroup(firestore, 'dossier_medical'), where('allergies', '!=', []));
+            const dossiersWithAllergiesQuery = query(collectionGroup(firestore, 'dossier_medical'), where('schoolId', '==', schoolId), where('allergies', '!=', []));
             const snapshot = await getDocs(dossiersWithAllergiesQuery);
-            let count = 0;
-            snapshot.forEach(doc => doc.ref.path.startsWith(`ecoles/${schoolId}`) && count++);
-            setStats({ withAllergies: count });
+            setStats({ withAllergies: snapshot.size });
         })();
 
         const consultationsPromise = (async () => {
-            const consultationsQuery = query(collectionGroup(firestore, 'consultations'), orderBy('date', 'desc'), limit(5));
+            const consultationsQuery = query(collectionGroup(firestore, 'consultations'), where('schoolId', '==', schoolId), orderBy('date', 'desc'), limit(5));
             const snapshot = await getDocs(consultationsQuery);
             const consultations: (Consultation & {studentName: string})[] = [];
             snapshot.forEach(doc => {
-                if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
-                    const studentId = doc.ref.parent.parent?.parent?.id;
-                    if (studentId) {
-                        consultations.push({ ...(doc.data() as Consultation), studentName: studentsMap.get(studentId) || 'Élève inconnu' });
-                    }
+                const data = doc.data();
+                const studentId = doc.ref.parent.parent?.parent?.id;
+                if (studentId) {
+                    consultations.push({ ...(data as Consultation), studentName: studentsMap.get(studentId) || 'Élève inconnu' });
                 }
             });
             setRecentConsultations(consultations);
@@ -86,19 +83,17 @@ export default function HealthPage() {
             const next30Days = new Date(today);
             next30Days.setDate(today.getDate() + 30);
 
-            const vaccinsQuery = query(collectionGroup(firestore, 'vaccins'), where('rappel', '>=', today.toISOString().split('T')[0]));
+            const vaccinsQuery = query(collectionGroup(firestore, 'vaccins'), where('schoolId', '==', schoolId), where('rappel', '>=', today.toISOString().split('T')[0]));
             const snapshot = await getDocs(vaccinsQuery);
             const reminders: (Vaccination & { studentName: string; studentId: string; id: string; rappelDate: Date })[] = [];
             snapshot.forEach(doc => {
-                if (doc.ref.path.startsWith(`ecoles/${schoolId}`)) {
-                    const data = doc.data() as Vaccination;
-                    if (data.rappel) {
-                        const rappelDate = new Date(data.rappel);
-                        if (rappelDate <= next30Days) {
-                            const studentId = doc.ref.parent.parent?.parent?.id;
-                            if (studentId) {
-                                reminders.push({ ...data, id: doc.id, studentId, studentName: studentsMap.get(studentId) || 'Élève inconnu', rappelDate });
-                            }
+                const data = doc.data() as Vaccination;
+                if (data.rappel) {
+                    const rappelDate = new Date(data.rappel);
+                    if (rappelDate <= next30Days) {
+                        const studentId = doc.ref.parent.parent?.parent?.id;
+                        if (studentId) {
+                            reminders.push({ ...data, id: doc.id, studentId, studentName: studentsMap.get(studentId) || 'Élève inconnu', rappelDate });
                         }
                     }
                 }
@@ -116,7 +111,9 @@ export default function HealthPage() {
         }
     };
     
-    fetchHealthData();
+    if (studentsMap.size > 0) {
+      fetchHealthData();
+    }
   }, [schoolId, firestore, studentsMap, studentsLoading]);
 
   const isLoading = schoolLoading || studentsLoading || userLoading || dataLoading;

@@ -47,15 +47,16 @@ export function VaccinationForm({ schoolId, studentId, onSave }: VaccinationForm
   const handleSubmit = async (values: VaccinationFormValues) => {
     setIsSubmitting(true);
     const vaccinsRef = collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/dossier_medical/${studentId}/vaccins`);
+    const dataToSave = { ...values, schoolId };
 
-    addDoc(vaccinsRef, values).then(() => {
+    addDoc(vaccinsRef, dataToSave).then(() => {
         toast({ title: 'Vaccin ajouté', description: `Le vaccin ${values.nom} a été enregistré.` });
         onSave();
     }).catch(e => {
         const permissionError = new FirestorePermissionError({
             path: vaccinsRef.path,
             operation: 'create',
-            requestResourceData: values,
+            requestResourceData: dataToSave,
         });
         errorEmitter.emit('permission-error', permissionError);
     }).finally(() => {

@@ -64,6 +64,7 @@ export function DossierMedicalForm({ schoolId, studentId, dossier, onSave }: Dos
 
     const dataToSave = {
         studentId,
+        schoolId,
         ...values,
         allergies: values.allergies ? values.allergies.split(',').map(s => s.trim()).filter(Boolean) : [],
         maladiesChroniques: values.maladiesChroniques ? values.maladiesChroniques.split(',').map(s => s.trim()).filter(Boolean) : [],

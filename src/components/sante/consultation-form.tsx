@@ -53,15 +53,20 @@ export function ConsultationForm({ schoolId, studentId, onSave }: ConsultationFo
     setIsSubmitting(true);
     const consultationRef = collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/dossier_medical/${studentId}/consultations`);
 
+    const dataToSave = {
+        ...values,
+        schoolId,
+    };
+
     try {
-      await addDoc(consultationRef, values);
+      await addDoc(consultationRef, dataToSave);
       toast({ title: 'Consultation ajoutée', description: 'La consultation a été enregistrée avec succès.' });
       onSave();
     } catch (e) {
         const permissionError = new FirestorePermissionError({
             path: consultationRef.path,
             operation: 'create',
-            requestResourceData: values,
+            requestResourceData: dataToSave,
         });
         errorEmitter.emit('permission-error', permissionError);
     } finally {

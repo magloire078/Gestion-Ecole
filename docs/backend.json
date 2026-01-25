@@ -966,6 +966,7 @@
         "type": "object",
         "properties": {
             "studentId": { "type": "string" },
+            "schoolId": { "type": "string" },
             "groupeSanguin": { "type": "string" },
             "allergies": { "type": "array", "items": { "type": "string" } },
             "maladiesChroniques": { "type": "array", "items": { "type": "string" } },
@@ -978,31 +979,33 @@
                 }
             }
         },
-        "required": ["studentId"]
+        "required": ["studentId", "schoolId"]
     },
     "vaccination": {
         "title": "Vaccination",
         "description": "Un enregistrement de vaccination.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string" },
             "nom": { "type": "string" },
             "date": { "type": "string", "format": "date" },
             "rappel": { "type": "string", "format": "date" }
         },
-        "required": ["nom", "date"]
+        "required": ["nom", "date", "schoolId"]
     },
     "consultation": {
         "title": "Consultation",
         "description": "Une consultation médicale enregistrée.",
         "type": "object",
         "properties": {
+            "schoolId": { "type": "string" },
             "date": { "type": "string", "format": "date-time" },
             "motif": { "type": "string" },
             "diagnostic": { "type": "string" },
             "traitement": { "type": "string" },
             "medecin": { "type": "string" }
         },
-        "required": ["date", "motif", "diagnostic"]
+        "required": ["date", "motif", "diagnostic", "schoolId"]
     },
     "activite": {
         "title": "Activité Parascolaire",
@@ -1363,6 +1366,7 @@
     
 
     
+
 
 
 
