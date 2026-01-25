@@ -49,6 +49,11 @@ interface PaymentsTabProps {
     onPaymentSuccess: () => void;
 }
 
+const formatCurrency = (value: number | undefined) => {
+    if (value === undefined) return 'N/A';
+    return `${value.toLocaleString('fr-FR')} CFA`;
+};
+
 export function PaymentsTab({ student, onPaymentSuccess }: PaymentsTabProps) {
     const firestore = useFirestore();
     const { schoolId, schoolData } = useSchoolData();
@@ -61,11 +66,6 @@ export function PaymentsTab({ student, onPaymentSuccess }: PaymentsTabProps) {
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
     const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
-    
-    const formatCurrency = (value: number | undefined) => {
-        if (value === undefined) return 'N/A';
-        return `${value.toLocaleString('fr-FR')} CFA`;
-    };
 
     const handleViewReceipt = (payment: PaymentHistoryEntry) => {
         if (!student) return;
@@ -301,5 +301,3 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
         </Dialog>
     );
 }
-
-    
