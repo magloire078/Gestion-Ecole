@@ -84,6 +84,16 @@ export function RouteForm({ schoolId, buses, route, onSave }: RouteFormProps) {
     name: "schedule.evening.stops"
   });
 
+  useEffect(() => {
+    form.reset(route ? {
+      ...route,
+      schedule: {
+        morning: route.schedule?.morning || { stops: [] },
+        evening: route.schedule?.evening || { stops: [] }
+      }
+    } as RouteFormValues : defaultValues)
+  }, [route, form, defaultValues]);
+
   const handleSubmit = async (values: RouteFormValues) => {
     setIsSubmitting(true);
     
