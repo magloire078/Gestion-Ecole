@@ -18,6 +18,7 @@ import { PayslipPreview, BulkPayslipPreview } from '@/components/payroll/payslip
 import { PayrollChart } from '@/components/rh/payroll-chart';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { runPayrollForMonth } from '@/services/payroll-services';
 
 interface PayrollRun extends payrollRun {
     id: string;
@@ -49,6 +50,8 @@ export default function PaiePage() {
   const [isBulkPayslipOpen, setIsBulkPayslipOpen] = useState(false);
   const [bulkPayslipDetails, setBulkPayslipDetails] = useState<PayslipDetails[] | null>(null);
   const [isBulkGenerating, setIsBulkGenerating] = useState(false);
+  
+  const [isProcessingPayroll, setIsProcessingPayroll] = useState(false);
 
 
   const staffQuery = useMemo(() => {
@@ -152,6 +155,36 @@ export default function PaiePage() {
     }
   };
 
+  const handleRunPayroll = async () => {
+    if (!schoolId || !user?.uid || !user.displayName) {
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible d'identifier l'école ou l'utilisateur.",
+        });
+        return;
+    }
+    
+    setIsProcessingPayroll(true);
+    
+    const result = await runPayrollForMonth(firestore, schoolId, user.uid, user.displayName);
+    
+    if (result.success) {
+        toast({
+            title: "Paie lancée avec succès!",
+            description: `Le lot de paie pour ce mois a été enregistré.`,
+        });
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Échec du lancement de la paie",
+            description: result.error || "Une erreur inconnue est survenue.",
+        });
+    }
+    
+    setIsProcessingPayroll(false);
+  };
+
 
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
@@ -164,9 +197,9 @@ export default function PaiePage() {
               <p className="text-muted-foreground">Lancez et suivez la paie mensuelle de votre personnel.</p>
             </div>
             {canManageBilling && (
-              <Button size="lg" disabled>
-                <Banknote className="mr-2 h-5 w-5" />
-                Lancer la Paie du Mois
+              <Button size="lg" onClick={handleRunPayroll} disabled={isProcessingPayroll}>
+                 {isProcessingPayroll ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Banknote className="mr-2 h-5 w-5" />}
+                 {isProcessingPayroll ? 'Lancement en cours...' : 'Lancer la Paie du Mois'}
               </Button>
             )}
         </div>
