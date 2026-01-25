@@ -6,29 +6,47 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/componen
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "@/firebase";
+import { useUser } from '@/firebase';
+import { usePathname } from 'next/navigation';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { activitesSubLinks } from '@/lib/nav-links';
 
 export default function ActivitesLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+    const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
     const isLoading = subscriptionLoading || userLoading;
     
+    const layoutContent = (
+        <div className="space-y-6">
+            <div>
+                <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
+                <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
+            </div>
+            <Tabs value={pathname} className="w-full">
+                <TabsList className="grid w-full grid-cols-4">
+                    {activitesSubLinks.map(link => (
+                        <Link href={link.href} key={link.href} passHref legacyBehavior>
+                            <TabsTrigger value={link.href}>
+                                <link.icon className="mr-2 h-4 w-4" />
+                                {link.label}
+                            </TabsTrigger>
+                        </Link>
+                    ))}
+                </TabsList>
+            </Tabs>
+            <div className="mt-6">{children}</div>
+        </div>
+    );
+    
     // Admins always have access
     if (user?.profile?.isAdmin) {
-        return (
-             <div className="space-y-6">
-                <div>
-                    <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
-                    <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
-                </div>
-                {children}
-            </div>
-        );
+        return layoutContent;
     }
 
     if (isLoading) {
@@ -70,13 +88,5 @@ export default function ActivitesLayout({
         );
     }
     
-    return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
-                <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
-            </div>
-            {children}
-        </div>
-    );
+    return layoutContent;
 }

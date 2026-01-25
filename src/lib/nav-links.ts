@@ -35,6 +35,7 @@ import {
     LifeBuoy,
     ShieldAlert,
     BarChart3,
+    List,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -74,7 +75,7 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/cantine', label: 'Cantine', icon: Utensils, permission: 'manageCantine', module: 'cantine' },
         { href: '/dashboard/transport', label: 'Transport', icon: Bus, permission: 'manageTransport', module: 'transport' },
         { href: '/dashboard/internat', label: 'Internat', icon: Bed, permission: 'manageInternat', module: 'internat' },
-        { href: '/dashboard/activites', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
+        { href: '/dashboard/activites/dashboard', label: 'Activités', icon: Trophy, permission: 'manageActivities', module: 'activites' },
       ]
     },
     {
@@ -181,4 +182,11 @@ export const rhSubLinks = [
     { href: '/dashboard/rh/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'viewUsers' as PermissionKey, module: 'rh' as Module },
     { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers' as PermissionKey, module: 'rh' as Module },
     { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling' as PermissionKey, module: 'rh' as Module },
+];
+
+export const activitesSubLinks = [
+    { href: '/dashboard/activites/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
+    { href: '/dashboard/activites', label: 'Activités', icon: Trophy },
+    { href: '/dashboard/activites/inscriptions', label: 'Inscriptions', icon: UserPlus },
+    { href: '/dashboard/activites/competitions', label: 'Compétitions', icon: List },
 ];
