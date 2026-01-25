@@ -6,14 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, PlusCircle, LayoutGrid, List } from 'lucide-react';
-import { ClassesGridView } from '@/components/classes/classes-grid-view';
-import { ClassesListView } from '@/components/classes/classes-list-view';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query } from 'firebase/firestore';
 import type { cycle as Cycle, niveau as Niveau, staff as Staff, class_type as ClassType } from '@/lib/data-types';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { ClassForm } from './class-form';
+import { ClassesGridView } from '@/components/classes/classes-grid-view';
+import { ClassesListView } from '@/components/classes/classes-list-view';
+import { ClassForm } from './class-form'; // Import the new component
 import { cn } from '@/lib/utils';
 
 export function ClassesList() {
