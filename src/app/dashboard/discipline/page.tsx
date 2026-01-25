@@ -1,4 +1,3 @@
-
 'use client';
 
 import { DisciplineIncidentsList } from '@/components/discipline/discipline-incidents-list';
@@ -12,7 +11,8 @@ export default function DisciplinePage() {
         return (
              <div className="space-y-4">
                 <Skeleton className="h-10 w-48 mb-4" />
-                <Skeleton className="h-96 w-full" />
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-64 w-full" />
             </div>
         );
     }

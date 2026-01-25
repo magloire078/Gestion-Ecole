@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -8,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, orderBy, where } from 'firebase/firestore';
-import { format } from 'date-fns';
+import { format, subMonths, isWithinInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import type { discipline_incident as DisciplineIncident, student as Student, class_type as Class } from '@/lib/data-types';
@@ -17,6 +15,7 @@ import { PlusCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '../ui/dialog';
 import { IncidentForm } from './incident-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { group, sort } from 'd3-array';
 
 interface IncidentWithDetails extends DisciplineIncident {
     id: string;
@@ -73,6 +72,33 @@ export function DisciplineIncidentsList({ schoolId }: { schoolId: string }) {
 
     }, [incidentsData, classMap, selectedClassId]);
 
+    const stats = useMemo(() => {
+        if (!incidentsData) {
+            return { total: 0, thisMonth: 0, mostCommon: 'N/A' };
+        }
+        const allIncidentsList = incidentsData.map(d => d.data() as DisciplineIncident);
+        const total = allIncidentsList.length;
+
+        const oneMonthAgo = subMonths(new Date(), 1);
+        const thisMonth = allIncidentsList.filter(inc => {
+            const incDate = new Date(inc.date);
+            return isWithinInterval(incDate, { start: oneMonthAgo, end: new Date() });
+        }).length;
+
+        if (total === 0) {
+            return { total, thisMonth, mostCommon: 'N/A' };
+        }
+
+        const groupedByType = group(allIncidentsList, d => d.type);
+        const sortedByType = sort(Array.from(groupedByType.entries()), ([, a], [, b]) => b.length - a.length);
+        
+        const mostCommon = sortedByType.length > 0 ? sortedByType[0][0] : 'N/A';
+        
+        return { total, thisMonth, mostCommon };
+
+    }, [incidentsData]);
+
+
     const getTypeBadgeVariant = (type: string) => {
         if (type.includes('Exclusion') || type.includes('Mise à pied')) return 'destructive';
         if (type.includes('Retenue') || type.includes('Écrit')) return 'outline';
@@ -83,6 +109,32 @@ export function DisciplineIncidentsList({ schoolId }: { schoolId: string }) {
 
     return (
         <>
+            <div className="grid gap-4 md:grid-cols-3 mb-6">
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Total des Incidents</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="h-8 w-16"/> : <div className="text-2xl font-bold">{stats.total}</div>}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Incidents (30 derniers jours)</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="h-8 w-16"/> : <div className="text-2xl font-bold">{stats.thisMonth}</div>}
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium">Type le plus fréquent</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {isLoading ? <Skeleton className="h-8 w-32"/> : <div className="text-2xl font-bold">{stats.mostCommon}</div>}
+                    </CardContent>
+                </Card>
+            </div>
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-center">
