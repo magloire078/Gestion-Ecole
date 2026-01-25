@@ -3,13 +3,14 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature } from 'lucide-react';
+import { MoreHorizontal, Edit, UserX, UserCheck, Printer, Eye, CreditCard, FileText, CalendarDays, FileSignature, Cake, VenetianMask } from 'lucide-react';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuSubContent, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { student as Student } from '@/lib/data-types';
 import { useRouter } from 'next/navigation';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
+import { differenceInYears, addYears, differenceInMonths } from 'date-fns';
 
 interface StudentCardProps {
     student: Student;
@@ -17,6 +18,25 @@ interface StudentCardProps {
     onArchive: (student: Student) => void;
     onRestore: (student: Student) => void;
     actionType: 'active' | 'archived';
+}
+
+const getAge = (dateOfBirth: string | undefined) => {
+    if (!dateOfBirth) return 'N/A';
+    try {
+      const birthDate = new Date(dateOfBirth);
+      const today = new Date();
+      const years = differenceInYears(today, birthDate);
+      const monthDate = addYears(birthDate, years);
+      const months = differenceInMonths(today, monthDate);
+      
+      let ageString = `${years} an${years > 1 ? 's' : ''}`;
+      if (months > 0) {
+        ageString += ` et ${months} mois`;
+      }
+      return ageString;
+    } catch {
+      return 'N/A';
+    }
 }
 
 const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: StudentCardProps) => {
@@ -46,8 +66,16 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
             </CardHeader>
             <CardContent className="flex-1 space-y-2 text-sm">
                 <p>Classe: <strong>{student.class}</strong></p>
-                <div className="flex items-center">
-                    Statut scolarité: <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
+                <div className="flex items-center text-muted-foreground">
+                  <Cake className="h-4 w-4 mr-2" />
+                  <span>{getAge(student.dateOfBirth)}</span>
+                </div>
+                 <div className="flex items-center text-muted-foreground">
+                  <VenetianMask className="h-4 w-4 mr-2" />
+                  <span>{student.gender}</span>
+                </div>
+                <div className="flex items-center pt-2">
+                    <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
                 </div>
             </CardContent>
             <CardFooter>
