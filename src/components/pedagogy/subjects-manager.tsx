@@ -1,36 +1,23 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import type { subject as Subject } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-const subjectSchema = z.object({
-  name: z.string().min(2, "Le nom est requis."),
-  code: z.string().min(2, "Le code est requis.").max(10),
-  color: z.string().optional(),
-});
-type SubjectFormValues = z.infer<typeof subjectSchema>;
+import { SubjectForm } from './subject-form'; // Import the new form component
 
 export function SubjectsManager() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -48,31 +35,14 @@ export function SubjectsManager() {
   const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
   const subjects: (Subject & { id: string })[] = useMemo(() => subjectsData?.map(d => ({ id: d.id, ...d.data() } as Subject & { id: string })) || [], [subjectsData]);
   
-  const form = useForm<SubjectFormValues>({
-    resolver: zodResolver(subjectSchema),
-    defaultValues: { name: '', code: '', color: '#8B5CF6' }
-  });
-
-  const handleFormSubmit = (values: SubjectFormValues) => {
-    if (!schoolId) return;
-
-    const dataToSave = { ...values, schoolId };
-    const promise = editingSubject 
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/matieres/${editingSubject.id}`), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/matieres`), dataToSave);
-    
-    promise.then(() => {
-      toast({ title: `Matière ${editingSubject ? 'modifiée' : 'créée'}` });
-      setIsFormOpen(false);
-    }).catch(error => {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/matieres`, operation: 'write', requestResourceData: dataToSave }));
-    });
-  };
-  
   const handleOpenForm = (subject: (Subject & { id: string }) | null) => {
     setEditingSubject(subject);
-    form.reset(subject || { name: '', code: '', color: '#8B5CF6' });
     setIsFormOpen(true);
+  };
+
+  const handleSave = () => {
+      setIsFormOpen(false);
+      setEditingSubject(null);
   };
 
   const handleDelete = async () => {
@@ -146,16 +116,11 @@ export function SubjectsManager() {
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingSubject ? 'Modifier' : 'Nouvelle'} Matière</DialogTitle></DialogHeader>
-          <Form {...form}>
-            <form id="subject-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de la matière</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="color" render={({ field }) => (<FormItem><FormLabel>Couleur</FormLabel><FormControl><Input type="color" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>)} />
-              </div>
-            </form>
-          </Form>
-          <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="subject-form" disabled={form.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
+          <SubjectForm 
+            schoolId={schoolId!}
+            subject={editingSubject}
+            onSave={handleSave}
+          />
         </DialogContent>
       </Dialog>
       
