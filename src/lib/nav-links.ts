@@ -155,6 +155,12 @@ export const transportSubLinks = [
     { href: '/dashboard/transport/abonnements', label: 'Abonnements', icon: Ticket, permission: 'manageTransport' as PermissionKey, module: 'transport' as Module },
 ];
 
+export const cantineSubLinks = [
+    { href: '/dashboard/cantine', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'manageCantine' as PermissionKey, module: 'cantine' as Module },
+    { href: '/dashboard/cantine/reservations', label: 'Réservations', icon: CalendarClock, permission: 'manageCantine' as PermissionKey, module: 'cantine' as Module },
+    { href: '/dashboard/cantine/abonnements', label: 'Abonnements', icon: Ticket, permission: 'manageCantine' as PermissionKey, module: 'cantine' as Module },
+];
+
 export const internatSubLinks = [
     { href: '/dashboard/internat/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
     { href: '/dashboard/internat/batiments', label: 'Bâtiments & Chambres', icon: Building, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
