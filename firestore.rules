@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -87,7 +88,7 @@ service cloud.firestore {
     match /{path=**}/notes/{gradeId} {
         allow get: if isSchoolMember(resource.data.schoolId) 
                    && hasPermission(resource.data.schoolId, 'viewUsers');
-        allow list: if hasPermission(path[1], 'viewUsers') || hasPermission(path[1], 'manageGrades');
+        allow list: if hasPermission(path[1], 'viewAnalytics');
         allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) 
                               && hasPermission(request.resource.data.schoolId, 'manageGrades');
     }
@@ -281,7 +282,7 @@ service cloud.firestore {
     }
     match /ecoles/{schoolId}/comptabilite {
       allow list: if isSchoolMember(schoolId) && 
-                   (request.query.limit <= 5 || hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
+                   (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -308,14 +309,10 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-        // A user can get a single notification IF they are the recipient.
-        allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
-        
-        // A user can LIST notifications IF the query explicitly filters for their own user ID.
-        allow list: if isSchoolMember(schoolId) && request.query.where[0][0] == 'userId' && request.query.where[0][1] == '==' && request.query.where[0][2] == request.auth.uid;
-        
-        allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
-        allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
+      allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
+      allow list: if isSchoolMember(schoolId) && request.query.where[0] == 'userId' && request.query.where[1] == '==' && request.query.where[2] == request.auth.uid;
+      allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
+      allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
