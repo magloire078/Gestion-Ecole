@@ -45,9 +45,7 @@ import {
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, doc, writeBatch, increment, query } from "firebase/firestore";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
+import { collection, doc, query } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRouter } from 'next/navigation';
 import { useSchoolData } from "@/hooks/use-school-data";
@@ -61,6 +59,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { StudentsTable } from '@/components/dossiers/students-table';
 import { StudentsGrid } from '@/components/dossiers/students-grid';
 import { StudentsStatsCards } from "@/components/dossiers/stats-cards";
+import { archiveStudent, restoreStudent } from "@/services/student-services";
 
 
 export default function StudentsPage() {
@@ -160,30 +159,14 @@ export default function StudentsPage() {
   }
 
   const handleArchiveStudent = () => {
-    if (!schoolId || !studentToArchive || !studentToArchive.id) return;
-
-    const wasActive = ['Actif', 'En attente'].includes(studentToArchive.status);
-
-    const batch = writeBatch(firestore);
-    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToArchive.id}`);
+    if (!schoolId || !studentToArchive) return;
     
-    batch.update(studentDocRef, { status: 'Radié' });
-
-    if (wasActive && studentToArchive.classId) {
-        const classDocRef = doc(firestore, `ecoles/${schoolId}/classes/${studentToArchive.classId}`);
-        batch.update(classDocRef, { studentCount: increment(-1) });
-    }
-
-    batch.commit()
+    archiveStudent(firestore, schoolId, studentToArchive)
     .then(() => {
         toast({ title: "Élève radié", description: `L'élève ${studentToArchive.firstName} ${studentToArchive.lastName} a été marqué(e) comme radié(e).` });
     })
-    .catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}/eleves/${studentToArchive.id} and class update`,
-            operation: 'update'
-        });
-        errorEmitter.emit('permission-error', permissionError);
+    .catch((error) => {
+        console.error("Failed to archive student from component:", error);
     })
     .finally(() => {
         setIsArchiveDialogOpen(false);
@@ -192,28 +175,14 @@ export default function StudentsPage() {
   }
 
   const handleRestoreStudent = () => {
-      if (!schoolId || !studentToRestore || !studentToRestore.id) return;
-      const wasArchived = !['Actif', 'En attente'].includes(studentToRestore.status);
-
-      const batch = writeBatch(firestore);
-      const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentToRestore.id}`);
-      batch.update(studentDocRef, { status: 'Actif' });
-
-      if (wasArchived && studentToRestore.classId) {
-          const classDocRef = doc(firestore, `ecoles/${schoolId}/classes/${studentToRestore.classId}`);
-          batch.update(classDocRef, { studentCount: increment(1) });
-      }
-
-      batch.commit()
+      if (!schoolId || !studentToRestore) return;
+      
+      restoreStudent(firestore, schoolId, studentToRestore)
           .then(() => {
               toast({ title: "Élève restauré", description: `L'élève ${studentToRestore.firstName} ${studentToRestore.lastName} est de nouveau actif.` });
           })
-          .catch((serverError) => {
-              const permissionError = new FirestorePermissionError({
-                  path: `[BATCH WRITE] /ecoles/${schoolId}/eleves/${studentToRestore.id}`,
-                  operation: 'update'
-              });
-              errorEmitter.emit('permission-error', permissionError);
+          .catch((error) => {
+              console.error("Failed to restore student from component:", error);
           })
           .finally(() => {
               setIsRestoreDialogOpen(false);
