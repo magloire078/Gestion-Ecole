@@ -303,7 +303,8 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
       allow get, update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
-      allow list: if isSchoolMember(schoolId);
+      // This rule ensures that a user can only query for their own notifications.
+      allow list: if isSchoolMember(schoolId) && request.query.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
     }
