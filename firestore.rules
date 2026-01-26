@@ -86,8 +86,22 @@ service cloud.firestore {
     //      COLLECTION GROUP RULES
     // =================================
     match /{path=**}/notes/{gradeId} {
-      allow read: if isSchoolMember(resource.data.schoolId) && hasPermission(resource.data.schoolId, 'viewUsers');
-      allow write: if isSchoolMember(resource.data.schoolId) && hasPermission(resource.data.schoolId, 'manageGrades');
+      // For single document reads, we can inspect the document's content.
+      allow get: if isSchoolMember(resource.data.schoolId) 
+                   && hasPermission(resource.data.schoolId, 'viewUsers');
+      
+      // For list queries (including collection group queries), we must rely on the path.
+      // This assumes all 'notes' collections are under an 'ecoles' collection.
+      allow list: if isSchoolMember(path[1]) 
+                    && hasPermission(path[1], 'viewUsers');
+
+      // For create, check the incoming data.
+      allow create: if isSchoolMember(request.resource.data.schoolId) 
+                      && hasPermission(request.resource.data.schoolId, 'manageGrades');
+      
+      // For update/delete, check the existing document.
+      allow update, delete: if isSchoolMember(resource.data.schoolId) 
+                              && hasPermission(resource.data.schoolId, 'manageGrades');
     }
 
     match /{path=**}/paiements/{paymentId} {
@@ -305,6 +319,7 @@ service cloud.firestore {
       allow read, update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
+      allow list: if request.auth != null && request.query.filters[0][2] == request.auth.uid;
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
