@@ -86,18 +86,14 @@ service cloud.firestore {
     //      COLLECTION GROUP RULES
     // =================================
     match /{path=**}/notes/{gradeId} {
-      // For single document reads, we can inspect the document's content.
       allow get: if isSchoolMember(resource.data.schoolId) 
                    && hasPermission(resource.data.schoolId, 'viewUsers');
       
-      // For list queries (including collection group queries), we must rely on the path.
       allow list: if hasPermission(path[1], 'viewUsers') || hasPermission(path[1], 'manageGrades');
 
-      // For create, check the incoming data.
       allow create: if isSchoolMember(request.resource.data.schoolId) 
                       && hasPermission(request.resource.data.schoolId, 'manageGrades');
       
-      // For update/delete, check the existing document.
       allow update, delete: if isSchoolMember(resource.data.schoolId) 
                               && hasPermission(resource.data.schoolId, 'manageGrades');
     }
@@ -289,6 +285,9 @@ service cloud.firestore {
       allow read: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
       allow write: if hasPermission(schoolId, 'manageBilling');
     }
+     match /ecoles/{schoolId}/comptabilite {
+      allow list: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
+    }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
         allow read: if isSchoolMember(schoolId);
@@ -428,5 +427,4 @@ service cloud.firestore {
     }
   }
 }
-
     
