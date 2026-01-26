@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -86,12 +85,10 @@ service cloud.firestore {
     //      COLLECTION GROUP RULES
     // =================================
     match /{path=**}/notes/{gradeId} {
-      allow get: if isSchoolMember(resource.data.schoolId) 
+        allow get: if isSchoolMember(resource.data.schoolId) 
                    && hasPermission(resource.data.schoolId, 'viewUsers');
-      
-      allow list: if hasPermission(path[1], 'viewUsers') || hasPermission(path[1], 'manageGrades');
-
-      allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) 
+        allow list: if hasPermission(path[1], 'viewUsers') || hasPermission(path[1], 'manageGrades');
+        allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) 
                               && hasPermission(request.resource.data.schoolId, 'manageGrades');
     }
 
@@ -311,10 +308,14 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
-      allow list: if isSchoolMember(schoolId) && request.query.where.size() > 0 && request.query.where[0][2] == request.auth.uid;
-      allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
-      allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
+        // A user can get a single notification IF they are the recipient.
+        allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
+        
+        // A user can LIST notifications IF the query explicitly filters for their own user ID.
+        allow list: if isSchoolMember(schoolId) && request.query.where[0][0] == 'userId' && request.query.where[0][1] == '==' && request.query.where[0][2] == request.auth.uid;
+        
+        allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
+        allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
@@ -425,5 +426,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
