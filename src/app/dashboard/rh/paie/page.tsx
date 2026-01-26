@@ -3,38 +3,24 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileText, Banknote, Loader2, Files, Users, DollarSign, History } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, getDoc, doc, orderBy, getDocs } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, school as School, payrollRun as PayrollRun } from '@/lib/data-types';
 import { getPayslipDetails, type PayslipDetails } from '@/lib/bulletin-de-paie';
 import { PayslipPreview, BulkPayslipPreview } from '@/components/payroll/payslip-template';
 import { PayrollChart } from '@/components/rh/payroll-chart';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { StatCard } from '@/components/ui/stat-card';
+import { PayrollHistoryTable } from '@/components/rh/payroll-history-table';
+import { StaffPayrollList } from '@/components/rh/staff-payroll-list';
 import { runPayrollForMonth } from '@/services/payroll-services';
 
 interface PayrollRunWithId extends PayrollRun {
     id: string;
 }
-
-const StatCard = ({ title, value, icon: Icon, loading }: { title: string, value: string | number, icon: React.ElementType, loading: boolean }) => (
-    <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            {loading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{value}</div>}
-        </CardContent>
-    </Card>
-);
 
 export default function PaiePage() {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
@@ -61,7 +47,7 @@ export default function PaiePage() {
 
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
 
-  const staffWithSalary = useMemo(() => staffData?.map(doc => ({ id: doc.id, ...doc.data() } as Staff & { id: string })) || [], [staffData]);
+  const staffWithSalary = useMemo(() => staffData?.map(doc => ({ id: doc.id, ...doc.data() as Staff & { id: string } })) || [], [staffData]);
   
   const payrollHistoryQuery = useMemo(() => 
     schoolId ? query(collection(firestore, `ecoles/${schoolId}/payroll_runs`), orderBy('executionDate', 'desc')) : null,
@@ -249,108 +235,30 @@ export default function PaiePage() {
             <CardDescription>Consultez les lots de paie des mois précédents.</CardDescription>
           </CardHeader>
           <CardContent>
-             <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Période</TableHead>
-                        <TableHead>Date d'exécution</TableHead>
-                        <TableHead>Masse Salariale</TableHead>
-                        <TableHead>Statut</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                      <TableRow><TableCell colSpan={5}><Skeleton className="h-20 w-full" /></TableCell></TableRow>
-                  ) : payrollHistory.length > 0 ? (
-                      payrollHistory.map((run) => (
-                        <TableRow key={run.id}>
-                            <TableCell className="font-medium">{run.period}</TableCell>
-                            <TableCell>{format(new Date(run.executionDate), 'dd/MM/yyyy', {locale: fr})}</TableCell>
-                            <TableCell>{formatCurrency(run.totalMass)}</TableCell>
-                            <TableCell><Badge variant="secondary">{run.status}</Badge></TableCell>
-                            <TableCell className="text-right">
-                               <Button variant="outline" size="sm" onClick={() => handleViewPayslips(run)}>
-                                 <Files className="mr-2 h-4 w-4" /> Voir les bulletins
-                               </Button>
-                            </TableCell>
-                        </TableRow>
-                      ))
-                  ) : (
-                      <TableRow>
-                          <TableCell colSpan={5} className="text-center h-24">Aucun historique de paie trouvé.</TableCell>
-                      </TableRow>
-                  )}
-                </TableBody>
-             </Table>
+             <PayrollHistoryTable 
+                payrollHistory={payrollHistory} 
+                isLoading={isLoading} 
+                onViewPayslips={handleViewPayslips} 
+            />
           </CardContent>
         </Card>
             
         <Card>
             <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
                 <CardTitle className="flex items-center gap-2"><Users />Personnel sur la Paie</CardTitle>
                 <CardDescription>
                     Liste des employés avec un salaire de base défini.
                 </CardDescription>
-                </div>
-                {canManageBilling && staffWithSalary.length > 0 && (
-                    <Button onClick={handleGenerateAllPayslips} disabled={isBulkGenerating} variant="secondary">
-                        {isBulkGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Files className="mr-2 h-4 w-4" />}
-                        {isBulkGenerating ? 'Génération...' : 'Générer Tous les Bulletins'}
-                    </Button>
-                )}
-            </div>
             </CardHeader>
             <CardContent>
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Rôle</TableHead>
-                    <TableHead>Salaire de Base</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {isLoading ? (
-                    [...Array(3)].map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-8 w-32 ml-auto" /></TableCell>
-                    </TableRow>
-                    ))
-                ) : staffWithSalary.length > 0 ? (
-                    staffWithSalary.map(staff => (
-                    <TableRow key={staff.id}>
-                        <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
-                        <TableCell className="capitalize">{staff.role}</TableCell>
-                        <TableCell className="font-mono">{formatCurrency(staff.baseSalary)}</TableCell>
-                        <TableCell>
-                        <Badge variant={staff.status === 'Actif' ? 'secondary' : 'outline'}>{staff.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                        {canManageBilling && (
-                            <Button variant="outline" size="sm" onClick={() => handleGeneratePayslip(staff)}>
-                                <FileText className="mr-2 h-4 w-4" />
-                                Générer Bulletin
-                            </Button>
-                        )}
-                        </TableCell>
-                    </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">Aucun membre du personnel avec un salaire défini.</TableCell>
-                    </TableRow>
-                )}
-                </TableBody>
-            </Table>
+                <StaffPayrollList 
+                    staffWithSalary={staffWithSalary}
+                    isLoading={isLoading}
+                    canManageBilling={!!canManageBilling}
+                    onGeneratePayslip={handleGeneratePayslip}
+                    onGenerateAllPayslips={handleGenerateAllPayslips}
+                    isBulkGenerating={isBulkGenerating}
+                />
             </CardContent>
         </Card>
       </div>
