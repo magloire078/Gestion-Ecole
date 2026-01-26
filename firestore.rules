@@ -91,9 +91,7 @@ service cloud.firestore {
                    && hasPermission(resource.data.schoolId, 'viewUsers');
       
       // For list queries (including collection group queries), we must rely on the path.
-      // This assumes all 'notes' collections are under an 'ecoles' collection.
-      allow list: if isSchoolMember(path[1]) 
-                    && hasPermission(path[1], 'viewUsers');
+      allow list: if hasPermission(path[1], 'viewUsers') || hasPermission(path[1], 'manageGrades');
 
       // For create, check the incoming data.
       allow create: if isSchoolMember(request.resource.data.schoolId) 
@@ -288,8 +286,8 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-      allow read, list: if isSchoolMember(schoolId) && hasPermission(schoolId, 'viewAnalytics');
-      allow update, delete, create: if hasPermission(schoolId, 'manageBilling');
+      allow read: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
+      allow write: if hasPermission(schoolId, 'manageBilling');
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -316,8 +314,8 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get, update: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
-      allow list: if isSchoolMember(schoolId);
+      allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
+      allow list: if isSchoolMember(schoolId) && request.query.where.size() > 0 && request.query.where[0][2] == request.auth.uid;
       allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
       allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
     }
@@ -430,3 +428,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
