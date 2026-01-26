@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Suspense } from 'react';
@@ -12,7 +11,7 @@ import { useUser } from '@/hooks/use-user';
 import { useGradesData } from '@/hooks/use-grades-data';
 import { BillingAlerts } from '@/components/billing-alerts';
 import { AnnouncementBanner } from '@/components/announcement-banner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ParentDashboard } from '@/components/parent/parent-dashboard';
@@ -21,6 +20,7 @@ import Link from 'next/link';
 import { StudentDemographics } from '@/components/analytics/student-demographics';
 import { TuitionAnalytics } from '@/components/analytics/tuition-analytics';
 import { AttendanceAnalytics } from '@/components/analytics/attendance-analytics';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
 
 const DashboardSkeleton = () => (
@@ -43,7 +43,12 @@ const DashboardSkeleton = () => (
 
 const RegularDashboard = () => {
   const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
-  const { grades, loading: gradesLoading, error: gradesError } = useGradesData(schoolId);
+  const { user } = useUser();
+  const canViewAnalytics = !!user?.profile?.permissions?.viewAnalytics;
+
+  // Conditionally fetch grades data based on permission
+  const { grades, loading: gradesLoading, error: gradesError } = useGradesData(canViewAnalytics ? schoolId : null);
+  
   const studentCount = schoolData?.studentCount || 0;
   const cycleCount = schoolData?.cycles?.length || 0;
 
@@ -72,7 +77,9 @@ const RegularDashboard = () => {
       
       <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />
       <StatCards schoolId={schoolId} />
-      {gradesError && <Alert variant="destructive"><AlertDescription>{gradesError}</AlertDescription></Alert>}
+      {gradesError && !canViewAnalytics && (
+        <Alert variant="destructive"><AlertDescription>{gradesError}</AlertDescription></Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <StudentDemographics schoolId={schoolId} />
@@ -84,7 +91,19 @@ const RegularDashboard = () => {
 
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <PerformanceChart grades={grades} loading={gradesLoading} error={gradesError}/>
+            {canViewAnalytics ? (
+                <PerformanceChart grades={grades} loading={gradesLoading} error={gradesError}/>
+            ) : (
+                <Card className="shadow-sm border-border/50">
+                    <CardHeader>
+                        <CardTitle>Performance des Classes</CardTitle>
+                        <CardDescription>Moyenne générale par matière pour l'ensemble de l'école.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex h-[300px] items-center justify-center">
+                        <p className="text-muted-foreground">Accès restreint. Permission "Voir les statistiques" requise.</p>
+                    </CardContent>
+                </Card>
+            )}
           <RecentActivity schoolId={schoolId} />
         </div>
         <div className="lg:col-span-1 space-y-6">
