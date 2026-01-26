@@ -91,11 +91,8 @@ service cloud.firestore {
       
       allow list: if hasPermission(path[1], 'viewUsers') || hasPermission(path[1], 'manageGrades');
 
-      allow create: if isSchoolMember(request.resource.data.schoolId) 
-                      && hasPermission(request.resource.data.schoolId, 'manageGrades');
-      
-      allow update, delete: if isSchoolMember(resource.data.schoolId) 
-                              && hasPermission(resource.data.schoolId, 'manageGrades');
+      allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) 
+                              && hasPermission(request.resource.data.schoolId, 'manageGrades');
     }
 
     match /{path=**}/paiements/{paymentId} {
@@ -282,11 +279,12 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
-      allow read: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
+      allow get: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
       allow write: if hasPermission(schoolId, 'manageBilling');
     }
-     match /ecoles/{schoolId}/comptabilite {
-      allow list: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
+    match /ecoles/{schoolId}/comptabilite {
+      allow list: if isSchoolMember(schoolId) && 
+                   (request.query.limit <= 5 || hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -427,4 +425,5 @@ service cloud.firestore {
     }
   }
 }
+
     
