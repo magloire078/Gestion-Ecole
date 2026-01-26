@@ -24,7 +24,8 @@
     "data": "@/components/data",
     "navigation": "@/components/navigation",
     "rh": "@/components/rh",
-    "dossiers": "@/components/dossiers"
+    "dossiers": "@/components/dossiers",
+    "absences": "@/components/absences"
   },
   "iconLibrary": "lucide"
 }

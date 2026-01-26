@@ -54,7 +54,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
-import { AbsenceForm } from '@/components/discipline/absence-form';
+import { AbsenceForm } from '@/components/absences/absence-form';
 
 interface StudentWithAbsence extends Student {
     isAbsentToday?: boolean;
