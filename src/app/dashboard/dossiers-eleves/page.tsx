@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -58,7 +59,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StudentsTable } from '@/components/dossiers/students-table';
 import { StudentsGrid } from '@/components/dossiers/students-grid';
-import { StudentsStatsCards } from "@/components/dossiers/stats-cards";
+import { StudentsStatsCards } from '@/components/dossiers/stats-cards';
 import { archiveStudent, restoreStudent } from "@/services/student-services";
 
 
