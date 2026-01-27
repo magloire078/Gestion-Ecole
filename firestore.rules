@@ -281,8 +281,7 @@ service cloud.firestore {
       allow write: if hasPermission(schoolId, 'manageBilling');
     }
     match /ecoles/{schoolId}/comptabilite {
-      allow list: if isSchoolMember(schoolId) && 
-                   (hasPermission(schoolId, 'viewAnalytics') || hasPermission(schoolId, 'manageBilling'));
+      allow list: if isSignedIn();
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -309,10 +308,14 @@ service cloud.firestore {
     }
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
-      allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
-      allow list: if isSchoolMember(schoolId) && request.query.where[0] == 'userId' && request.query.where[1] == '==' && request.query.where[2] == request.auth.uid;
-      allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
-      allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
+        allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
+        allow list: if isSignedIn() 
+                     && request.query.where.size() == 1 
+                     && request.query.where[0][0] == 'userId' 
+                     && request.query.where[0][1] == '==' 
+                     && request.query.where[0][2] == request.auth.uid;
+        allow create: if hasPermission(schoolId, 'manageCommunication') || hasPermission(schoolId, 'manageSystem');
+        allow delete: if (isSchoolMember(schoolId) && resource.data.userId == request.auth.uid) || hasPermission(schoolId, 'manageCommunication');
     }
     
     match /ecoles/{schoolId}/cantine_menus/{menuId} {
