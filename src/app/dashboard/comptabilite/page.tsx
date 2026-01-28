@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -69,9 +70,12 @@ export default function AccountingPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const canManageBilling = !!user?.profile?.permissions?.manageBilling;
 
-  const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), orderBy("date", "desc")) : null, [firestore, schoolId]);
+  const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`)) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
-  const transactions = useMemo(() => transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & {id: string})) || [], [transactionsData]);
+
+  const transactions = useMemo(() => 
+    (transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & {id: string})) || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+  [transactionsData]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
