@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { useNotifications } from "@/hooks/use-notifications";
+// import { useNotifications } from "@/hooks/use-notifications";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 
@@ -44,7 +44,7 @@ export function UserNav({ collapsed = false }: UserNavProps) {
   const auth = useAuth();
   const { user, loading: userLoading, isDirector, setActiveSchool } = useUser();
   const { schoolData, subscription, loading: schoolLoading, error: schoolError } = useSchoolData();
-  const { unreadCount, loading: notificationsLoading } = useNotifications();
+  // const { unreadCount, loading: notificationsLoading } = useNotifications();
   const router = useRouter();
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
