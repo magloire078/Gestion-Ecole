@@ -1,4 +1,5 @@
 
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -86,8 +87,8 @@ service cloud.firestore {
     //      COLLECTION GROUP RULES
     // =================================
     match /{path=**}/notes/{gradeId} {
-        allow read: if isSchoolMember(path[1]) 
-                   && hasPermission(path[1], 'viewUsers');
+        allow get: if isSchoolMember(resource.data.schoolId) 
+                   && hasPermission(resource.data.schoolId, 'viewUsers');
         allow list: if hasPermission(path[1], 'viewAnalytics');
         allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) 
                               && hasPermission(request.resource.data.schoolId, 'manageGrades');
@@ -278,10 +279,8 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/comptabilite/{transactionId} {
       allow get: if isSchoolMember(schoolId);
-      allow write: if hasPermission(schoolId, 'manageBilling');
-    }
-    match /ecoles/{schoolId}/comptabilite {
       allow list: if isSignedIn();
+      allow write: if hasPermission(schoolId, 'manageBilling');
     }
     
     match /ecoles/{schoolId}/bibliotheque/{bookId} {
@@ -309,8 +308,7 @@ service cloud.firestore {
     
     match /ecoles/{schoolId}/notifications/{notificationId} {
         allow get: if isSchoolMember(schoolId) && resource.data.userId == request.auth.uid;
-        allow list: if isSignedIn() && request.auth.uid != null &&
-                 request.query.where.size() == 1 &&
+        allow list: if request.query.where.size() == 1 &&
                  request.query.where[0][0] == 'userId' &&
                  request.query.where[0][1] == '==' &&
                  request.query.where[0][2] == request.auth.uid;
