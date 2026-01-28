@@ -12,22 +12,30 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function getUserDoc() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid));
-    }
-    
     function isSuperAdmin() {
-      let userDoc = getUserDoc();
-      return isSignedIn() && userDoc.exists() && userDoc.data.isSuperAdmin == true;
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isSuperAdmin == true;
     }
-    
+
     function isSchoolMember(schoolId) {
-      let userDoc = getUserDoc();
-      return userDoc.exists() && (isSuperAdmin() || (userDoc.data.schools[schoolId] != null));
+      let userDocData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return isSignedIn() && (
+        userDocData.isSuperAdmin == true ||
+        (
+          'schools' in userDocData &&
+          userDocData.schools != null &&
+          schoolId in userDocData.schools
+        )
+      );
     }
     
     function isDirector(schoolId) {
-        return isSchoolMember(schoolId) && getUserDoc().data.schools[schoolId] == 'directeur';
+        let userDocData = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        return isSchoolMember(schoolId) && 
+            'schools' in userDocData && userDocData.schools != null &&
+             schoolId in userDocData.schools &&
+             userDocData.schools[schoolId] == 'directeur';
     }
 
     function hasPermission(schoolId, permission) {
@@ -40,8 +48,8 @@ service cloud.firestore {
     }
 
     function canListPayroll(schoolId) {
-      let staffProfile = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
-      let hasRolePerm = staffProfile.exists() &&
+        let staffProfile = get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid));
+        let hasRolePerm = staffProfile.exists() &&
                         staffProfile.data.adminRole != null &&
                         (get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.data.adminRole)).data.permissions.manageBilling == true ||
                          get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(staffProfile.data.adminRole)).data.permissions.manageUsers == true);
@@ -51,7 +59,7 @@ service cloud.firestore {
 
     function isParentOfStudent(studentDoc) {
       return isSignedIn() &&
-             studentDoc.data.parentIds != null &&
+             'parentIds' in studentDoc.data && studentDoc.data.parentIds != null &&
              request.auth.uid in studentDoc.data.parentIds;
     }
     
@@ -59,31 +67,29 @@ service cloud.firestore {
     //      COLLECTION GROUP RULES
     // =================================
     match /{path=**}/notes/{gradeId} {
-        allow get: if isSchoolMember(resource.data.schoolId) 
-                   && hasPermission(resource.data.schoolId, 'viewUsers');
+        allow get: if isSchoolMember(resource.data.schoolId) && hasPermission(resource.data.schoolId, 'viewUsers');
         allow list: if hasPermission(path[1], 'viewAnalytics');
-        allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) 
-                              && hasPermission(request.resource.data.schoolId, 'manageGrades');
+        allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) && hasPermission(request.resource.data.schoolId, 'manageGrades');
     }
 
     match /{path=**}/paiements/{paymentId} {
       allow get: if (isSchoolMember(resource.data.schoolId) && hasPermission(resource.data.schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)));
-      allow write: if hasPermission(request.resource.data.schoolId, 'manageBilling');
+      allow write: if hasPermission(resource.data.schoolId, 'manageBilling');
     }
     
     match /{path=**}/incidents_disciplinaires/{incidentId} {
-        allow read, write: if hasPermission(path[1], 'manageDiscipline');
+        allow read, write: if hasPermission(resource.data.schoolId, 'manageDiscipline');
     }
     
      match /{path=**}/dossier_medical/{dossierId} {
-      allow read: if isSchoolMember(path[1]) && hasPermission(path[1], 'viewUsers');
       allow list: if isSchoolMember(path[1]);
+      allow read: if isSchoolMember(path[1]) && hasPermission(path[1], 'viewUsers');
     }
     match /{path=**}/consultations/{consultationId} {
-      allow read, list: if isSchoolMember(path[1]);
+      allow list: if isSchoolMember(path[1]);
     }
     match /{path=**}/vaccins/{vaccinId} {
-      allow read, list: if isSchoolMember(path[1]);
+      allow list: if isSchoolMember(path[1]);
     }
     
     // =================================
@@ -113,7 +119,7 @@ service cloud.firestore {
     match /system_logs/{logId} {
       allow read, write: if isSuperAdmin();
     }
-    match /system_logs {
+     match /system_logs {
       allow list: if isSuperAdmin();
     }
     
@@ -151,18 +157,18 @@ service cloud.firestore {
     }
 
     match /ecoles/{schoolId} {
-      allow read: if isSchoolMember(schoolId) || isSuperAdmin();
+      allow read: if isSchoolMember(schoolId);
       allow create: if isSignedIn() && request.resource.data.directorId == request.auth.uid;
-      allow update: if hasPermission(schoolId, 'manageSettings') || isSuperAdmin();
+      allow update: if hasPermission(schoolId, 'manageSettings');
       allow delete: if isSuperAdmin();
       
       // --- Sub-collections of /ecoles/{schoolId} ---
 
       match /personnel/{staffId} {
-        allow create: if (isSignedIn() && request.auth.uid == staffId && !exists(/databases/$(database)/documents/ecoles/$(schoolId))) || isDirector(schoolId);
+        allow create: if isDirector(schoolId);
         allow read: if isSchoolMember(schoolId);
         allow update: if (isDirector(schoolId)) || (request.auth.uid == staffId && request.resource.data.role == resource.data.role);
-        allow delete: if isDirector(schoolId) || isSuperAdmin();
+        allow delete: if isDirector(schoolId);
       }
       match /personnel {
           allow list: if isSchoolMember(schoolId);
@@ -181,21 +187,21 @@ service cloud.firestore {
       match /eleves/{studentId} {
           allow read: if isSchoolMember(schoolId) || isParentOfStudent(resource);
           allow write: if hasPermission(schoolId, 'manageUsers');
-          
-          match /dossier_medical/{dossierId} {
-              allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-              allow write: if hasPermission(schoolId, 'manageMedical');
-              
-              match /{subcollection}/{docId} {
-                  allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-                  allow write: if hasPermission(schoolId, 'manageMedical');
-              }
-           }
       }
       match /eleves {
           allow list: if isSchoolMember(schoolId);
       }
       
+      match /eleves/{studentId}/dossier_medical/{dossierId} {
+         allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+         allow write: if hasPermission(schoolId, 'manageMedical');
+      }
+    
+     match /ecoles/{schoolId}/eleves/{studentId}/dossier_medical/{dossierId}/{subcollection}/{docId} {
+         allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+         allow write: if hasPermission(schoolId, 'manageMedical');
+     }
+    
       match /cycles/{cycleId} {
           allow read: if isSchoolMember(schoolId);
           allow write: if hasPermission(schoolId, 'manageClasses');
@@ -239,6 +245,13 @@ service cloud.firestore {
       }
        match /absences {
           allow list: if isSchoolMember(schoolId);
+      }
+      
+      match /incidents_disciplinaires/{incidentId} {
+        allow read, write: if hasPermission(schoolId, 'manageDiscipline');
+      }
+       match /incidents_disciplinaires {
+        allow list: if isSchoolMember(schoolId);
       }
       
       match /comptabilite/{transactionId} {
