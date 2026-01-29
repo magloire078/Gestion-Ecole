@@ -1,4 +1,3 @@
-
 "use client";
 import { Logo } from './logo';
 import { useUser } from '@/hooks/use-user';
@@ -12,7 +11,7 @@ interface MobileNavProps {
     logoUrl?: string | null;
 }
 
-export function MobileNav({ loading, schoolName }: MobileNavProps) {
+export function MobileNav({ loading, schoolName, logoUrl }: MobileNavProps) {
   const { user, isDirector } = useUser();
   const { subscription } = useSchoolData();
 
@@ -35,6 +34,7 @@ export function MobileNav({ loading, schoolName }: MobileNavProps) {
             ) : (
                 <Logo 
                   schoolName={schoolName}
+                  logoUrl={logoUrl}
                 />
             )}
         </div>

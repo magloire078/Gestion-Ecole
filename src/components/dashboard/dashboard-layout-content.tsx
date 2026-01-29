@@ -96,6 +96,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                   <Logo 
                     compact={isNavCollapsed} 
                     schoolName={schoolData?.name}
+                    logoUrl={schoolData?.mainLogoUrl}
                   />
               )}
             </div>
