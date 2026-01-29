@@ -63,7 +63,6 @@ export default function RegistrationPage() {
   const { user } = useUser();
 
   const [step, setStep] = useState(1);
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -162,7 +161,7 @@ export default function RegistrationPage() {
       gender: values.gender,
       address: values.address,
       previousSchool: values.previousSchool,
-      photoUrl: photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
+      photoUrl: values.photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
       status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
@@ -255,13 +254,13 @@ export default function RegistrationPage() {
                           <FormLabel>Photo</FormLabel>
                           <FormControl>
                             <ImageUploader 
-                                onUploadComplete={(url) => { field.onChange(url); setPhotoUrl(url); }}
+                                onUploadComplete={(url) => { field.onChange(url); }}
                                 storagePath={`ecoles/${schoolId}/student-photos/`}
                                 currentImageUrl={field.value}
                                 resizeWidth={400}
                             >
                                 <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">
-                                    <AvatarImage src={photoUrl || undefined} alt="Photo de l'élève" />
+                                    <AvatarImage src={field.value || undefined} alt="Photo de l'élève" />
                                     <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
                                         <Upload className="h-6 w-6 text-muted-foreground" />
                                         <span className="text-xs text-muted-foreground">Photo</span>
