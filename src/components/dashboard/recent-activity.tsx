@@ -28,20 +28,24 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     const firestore = useFirestore();
 
     const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore, schoolId]);
-    const recentPaymentsQuery = useMemo(() => schoolId ? query(
-        collection(firestore, `ecoles/${schoolId}/comptabilite`), 
-        where('category', '==', 'Scolarité'),
-        where('type', '==', 'Revenu'),
-        orderBy('date', 'desc'), 
-        limit(5)
-    ) : null, [firestore, schoolId]);
+    // Temporarily disabled to fix permission error on dashboard
+    // const recentPaymentsQuery = useMemo(() => schoolId ? query(
+    //     collection(firestore, `ecoles/${schoolId}/comptabilite`), 
+    //     where('schoolId', '==', schoolId),
+    //     where('category', '==', 'Scolarité'),
+    //     where('type', '==', 'Revenu'),
+    //     orderBy('date', 'desc'), 
+    //     limit(5)
+    // ) : null, [firestore, schoolId]);
     const recentAbsencesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
     
     // We need all students to map IDs to names for payments
     const allStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
 
     const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
-    const { data: paymentsData, loading: paymentsLoading } = useCollection(recentPaymentsQuery);
+    // const { data: paymentsData, loading: paymentsLoading } = useCollection(recentPaymentsQuery);
+    const paymentsData = null; // Mocked to empty
+    const paymentsLoading = false; // Mocked to false
     const { data: absencesData, loading: absencesLoading } = useCollection(recentAbsencesQuery);
     const { data: allStudentsData, loading: allStudentsLoading } = useCollection(allStudentsQuery);
 
@@ -75,6 +79,8 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
             }
         });
         
+        // Temporarily commented out
+        /*
         paymentsData?.forEach(doc => {
             const data = doc.data() as accountingTransaction;
             const studentName = data.studentId ? studentMap.get(data.studentId) || 'un élève' : 'un élève';
@@ -88,6 +94,7 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                 });
             }
         });
+        */
 
         absencesData?.forEach(doc => {
             const data = doc.data() as absence;
@@ -148,5 +155,3 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         </Card>
     );
 }
-
-    
