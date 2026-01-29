@@ -136,10 +136,6 @@ service cloud.firestore {
     //         SCHOOL DATA
     // =================================
     
-    match /ecoles {
-      allow list: if isSuperAdmin();
-    }
-
     match /ecoles/{schoolId} {
       allow read: if isSchoolMember(schoolId);
       allow create: if isSignedIn() && request.resource.data.directorId == request.auth.uid;
@@ -170,30 +166,54 @@ service cloud.firestore {
         allow list: if isSchoolMember(schoolId);
       }
 
+      // --- Élèves et leurs sous-collections ---
       match /eleves/{studentId} {
-          allow read: if isSchoolMember(schoolId) || isParentOfStudent(resource);
-          allow write: if hasPermission(schoolId, 'manageUsers');
-          allow list: if isSchoolMember(schoolId);
+        allow read: if isSchoolMember(schoolId) || isParentOfStudent(resource);
+        allow write: if hasPermission(schoolId, 'manageUsers');
+        allow list: if isSchoolMember(schoolId);
 
-          match /paiements/{paymentId} {
-              allow get: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-              allow create, update, delete: if hasPermission(schoolId, 'manageBilling');
-          }
-      }
-      
-      match /ecoles/{schoolId}/eleves/{studentId}/paiements {
-        allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || 
-                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-      }
-      
-      match /eleves/{studentId}/dossier_medical/{dossierId} {
+        // Sous-collection Notes
+        match /notes/{gradeId} {
+          allow get: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow create, update, delete: if hasPermission(schoolId, 'manageGrades');
+        }
+        match /notes {
+          allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+        }
+        
+        // Sous-collection Paiements
+        match /paiements/{paymentId} {
+          allow get: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow create, update, delete: if hasPermission(schoolId, 'manageBilling');
+        }
+        match /paiements {
+           allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+        }
+        
+        // Sous-collection Affectations
+        match /affectations/{assignmentId} {
+            allow read: if hasPermission(schoolId, 'manageUsers');
+            allow create, update, delete: if hasPermission(schoolId, 'manageUsers');
+        }
+        match /affectations {
+            allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+        }
+
+        // Sous-collection Dossier Médical
+        match /dossier_medical/{dossierId} {
            allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
            allow write: if hasPermission(schoolId, 'manageMedical');
-       }
-       match /eleves/{studentId}/dossier_medical/{dossierId}/{subcollection}/{docId} {
-           allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-           allow write: if hasPermission(schoolId, 'manageMedical');
-       }
+
+            match /vaccins/{vaccinId} {
+                allow read, write: if hasPermission(schoolId, 'manageMedical');
+                allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+            }
+            match /consultations/{consultationId} {
+                allow read, write: if hasPermission(schoolId, 'manageMedical');
+                allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+            }
+        }
+      }
       
       match /cycles/{cycleId} {
           allow read: if isSchoolMember(schoolId);
@@ -412,36 +432,6 @@ service cloud.firestore {
       match /payroll_runs {
         allow list: if isSchoolMember(schoolId) && canListPayroll(schoolId);
       }
-    }
-
-    // =================================
-    //      COLLECTION GROUP RULES
-    // =================================
-    
-    match /{path=**}/notes/{gradeId} {
-      allow get: if isSchoolMember(resource.data.schoolId) 
-                 && hasPermission(resource.data.schoolId, 'viewUsers');
-      allow list: if hasPermission(path[1], 'viewAnalytics');
-      allow create, update, delete: if isSchoolMember(request.resource.data.schoolId) 
-                            && hasPermission(request.resource.data.schoolId, 'manageGrades');
-    }
-    
-    match /{path=**}/incidents_disciplinaires/{incidentId} {
-      allow read, write: if hasPermission(resource.data.schoolId, 'manageDiscipline');
-      allow list: if isSchoolMember(path[1]);
-    }
-    
-    match /{path=**}/dossier_medical/{dossierId} {
-      allow list: if isSchoolMember(path[1]);
-      allow read: if isSchoolMember(path[1]) && hasPermission(path[1], 'viewUsers');
-    }
-    
-    match /{path=**}/consultations/{consultationId} {
-      allow list: if isSchoolMember(path[1]);
-    }
-    
-    match /{path=**}/vaccins/{vaccinId} {
-      allow list: if isSchoolMember(path[1]);
     }
   }
 }
