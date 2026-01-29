@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -28,13 +26,14 @@ export function DisciplineTab({ schoolId, student }: DisciplineTabProps) {
     const canManageDiscipline = !!user?.profile?.permissions?.manageDiscipline;
     const [isFormOpen, setIsFormOpen] = useState(false);
 
-    const incidentsQuery = useMemo(() => 
-        query(
+    const incidentsQuery = useMemo(() => {
+        if (!schoolId || !student?.id) return null;
+        return query(
             collection(firestore, `ecoles/${schoolId}/incidents_disciplinaires`), 
             where('studentId', '==', student.id),
             orderBy('date', 'desc')
-        ), 
-    [firestore, schoolId, student.id]);
+        );
+    }, [firestore, schoolId, student?.id]);
     
     const { data: incidentsData, loading: incidentsLoading } = useCollection(incidentsQuery);
     

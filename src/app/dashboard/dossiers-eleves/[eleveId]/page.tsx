@@ -69,9 +69,9 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
   
   // --- Data Fetching ---
   const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`), [firestore, schoolId, eleveId, refreshTrigger]);
-  const { data: studentData, loading: studentLoading, error } = useDoc<Student & {id: string}>(studentRef);
+  const { data: studentData, loading: studentLoading, error } = useDoc<Student>(studentRef);
+  const student = useMemo(() => studentData ? { ...studentData, id: eleveId } as Student & { id: string } : null, [studentData, eleveId]);
   
-  const student = studentData;
   const classRef = useMemo(() => student?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) : null, [student, schoolId, firestore]);
   const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
 
@@ -218,7 +218,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                         <TabsTrigger value="info">Informations</TabsTrigger>
                     </TabsList>
                     <TabsContent value="payments" className="mt-6">
-                       <PaymentsTab student={student} onPaymentSuccess={() => setRefreshTrigger(prev => prev + 1)} />
+                       <PaymentsTab student={student} schoolId={schoolId} onPaymentSuccess={() => setRefreshTrigger(prev => prev + 1)} />
                     </TabsContent>
                     <TabsContent value="grades" className="mt-6">
                         <GradesTab schoolId={schoolId} studentId={eleveId} />

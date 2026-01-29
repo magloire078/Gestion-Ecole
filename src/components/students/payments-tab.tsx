@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -28,7 +27,8 @@ interface PaymentHistoryEntry extends Payment {
 }
 
 interface PaymentsTabProps {
-    student: Student;
+    student: Student & { id: string };
+    schoolId: string;
     onPaymentSuccess: () => void;
 }
 
@@ -37,15 +37,19 @@ const formatCurrency = (value: number | undefined) => {
     return `${value.toLocaleString('fr-FR')} CFA`;
 };
 
-export function PaymentsTab({ student, onPaymentSuccess }: PaymentsTabProps) {
+export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTabProps) {
     const firestore = useFirestore();
-    const { schoolId, schoolData } = useSchoolData();
+    const { schoolData } = useSchoolData();
 
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
     const [isReceiptOpen, setIsReceiptOpen] = useState(false);
 
-    const paymentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/paiements`), orderBy('date', 'desc')), [firestore, schoolId, student.id]);
+    const paymentsQuery = useMemo(() => {
+        if (!schoolId || !student?.id) return null;
+        return query(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/paiements`), orderBy('date', 'desc'));
+    }, [firestore, schoolId, student?.id]);
+
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
     const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
@@ -152,7 +156,7 @@ export function PaymentsTab({ student, onPaymentSuccess }: PaymentsTabProps) {
 }
 
 
-function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpen: boolean, onClose: () => void, onSave: () => void, student: Student, schoolData: any }) {
+function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpen: boolean, onClose: () => void, onSave: () => void, student: Student & { id: string }, schoolData: any }) {
     const { toast } = useToast();
     const firestore = useFirestore();
     const [isSaving, setIsSaving] = useState(false);

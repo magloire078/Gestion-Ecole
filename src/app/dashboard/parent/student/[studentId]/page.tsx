@@ -1,11 +1,11 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
 import { notFound, useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, User, BookUser, Wallet, Shield, CalendarDays } from 'lucide-react';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { doc, collection, query, orderBy } from 'firebase/firestore';
@@ -44,8 +44,8 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
     const firestore = useFirestore();
 
     const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`), [firestore, schoolId, studentId]);
-    const { data: studentData, loading: studentLoading } = useDoc<Student & {id:string}>(studentRef);
-    const student = studentData;
+    const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+    const student = useMemo(() => studentData ? { ...studentData, id: studentId } as Student & { id: string } : null, [studentData, studentId]);
 
     if (studentLoading) {
         return <ParentStudentProfileSkeleton />;
