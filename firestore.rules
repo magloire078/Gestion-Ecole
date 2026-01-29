@@ -149,7 +149,7 @@ service cloud.firestore {
       // --- Sub-collections of /ecoles/{schoolId} ---
 
       match /personnel/{staffId} {
-        allow create: if (isSignedIn() && request.auth.uid == staffId && !exists(/databases/$(database)/documents/ecoles/$(schoolId))) || isDirector(schoolId);
+        allow create: if (isSignedIn() && request.auth.uid == staffId) || isDirector(schoolId);
         allow read: if isSchoolMember(schoolId);
         allow update: if (isDirector(schoolId)) || (request.auth.uid == staffId && request.resource.data.role == resource.data.role);
         allow delete: if isDirector(schoolId);
@@ -184,32 +184,13 @@ service cloud.firestore {
         match /notes {
           allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
         }
-
-        // Sous-collection Paiements
+        
         match /paiements/{paymentId} {
           allow get: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
           allow create, update, delete: if hasPermission(schoolId, 'manageBilling');
         }
         match /paiements {
            allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-        }
-        
-        // Sous-collection Absences
-        match /absences/{absenceId} {
-            allow get: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-            allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');
-        }
-        match /absences {
-            allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-        }
-
-        // Sous-collection Incidents disciplinaires
-        match /incidents_disciplinaires/{incidentId} {
-            allow get: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-            allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline');
-        }
-        match /incidents_disciplinaires {
-            allow list: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
         }
         
         // Sous-collection Affectations
