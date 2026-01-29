@@ -52,7 +52,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, doc, deleteDoc, query, orderBy } from "firebase/firestore";
+import { collection, doc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
@@ -70,7 +70,7 @@ export default function AccountingPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
   const canManageBilling = !!user?.profile?.permissions?.manageBilling;
 
-  const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`)) : null, [firestore, schoolId]);
+  const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
 
   const transactions = useMemo(() => 
