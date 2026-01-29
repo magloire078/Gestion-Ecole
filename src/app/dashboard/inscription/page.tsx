@@ -1,27 +1,28 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useCollection, useFirestore, useUser } from "@/firebase";
+import { useCollection, useFirestore, useUser, useStorage } from "@/firebase";
 import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { errorEmitter } from "@/firebase/error-emitter";
-import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2 } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
-import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
+import { v4 as uuidv4 } from 'uuid';
 
 const registrationSchema = z.object({
   // Step 1
@@ -54,15 +55,18 @@ const step1Fields: (keyof RegistrationFormValues)[] = ['lastName', 'firstName', 
 const step2Fields: (keyof RegistrationFormValues)[] = ['previousSchool', 'classId', 'status'];
 const step3Fields: (keyof RegistrationFormValues)[] = ['parent1LastName', 'parent1FirstName', 'parent1Contact', 'parent2LastName', 'parent2FirstName', 'parent2Contact'];
 
-
 export default function RegistrationPage() {
   const firestore = useFirestore();
+  const storage = useStorage();
   const router = useRouter();
   const { toast } = useToast();
   const { schoolId, loading: schoolDataLoading } = useSchoolData();
   const { user } = useUser();
 
   const [step, setStep] = useState(1);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -75,7 +79,6 @@ export default function RegistrationPage() {
   const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
   const niveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
-
 
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -102,6 +105,77 @@ export default function RegistrationPage() {
 
   const watchedClassId = useWatch({ control: form.control, name: 'classId' });
 
+  // Fonction pour gérer le téléchargement de la photo
+  const handlePhotoUpload = async (file: File) => {
+    if (!file || !storage || !schoolId) return;
+
+    try {
+      setUploadingPhoto(true);
+      
+      // Créer un nom de fichier unique
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExtension}`;
+      const storagePath = `ecoles/${schoolId}/student-photos/${fileName}`;
+      const storageRef = ref(storage, storagePath);
+      
+      // Uploader le fichier
+      await uploadBytes(storageRef, file);
+      
+      // Récupérer l'URL de téléchargement
+      const downloadUrl = await getDownloadURL(storageRef);
+      
+      // Mettre à jour l'état et le formulaire
+      setPhotoUrl(downloadUrl);
+      form.setValue('photoUrl', downloadUrl);
+      
+      toast({
+        title: "Photo téléchargée",
+        description: "La photo a été téléchargée avec succès",
+      });
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de téléchargement",
+        description: "Impossible de télécharger la photo. Veuillez réessayer.",
+      });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Vérifier le type de fichier
+    if (!file.type.match('image.*')) {
+      toast({
+        variant: "destructive",
+        title: "Format invalide",
+        description: "Veuillez sélectionner une image (JPG, PNG, etc.)",
+      });
+      return;
+    }
+
+    // Vérifier la taille (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "Fichier trop volumineux",
+        description: "L'image ne doit pas dépasser 5MB",
+      });
+      return;
+    }
+
+    handlePhotoUpload(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoUrl(null);
+    form.setValue('photoUrl', '');
+  };
+
   const getTuitionFeeForClass = (classId: string) => {
     if (!classId || !classes.length || !niveaux.length || !fees.length) return 0;
     
@@ -114,7 +188,7 @@ export default function RegistrationPage() {
     const feeInfo = fees.find(f => f.grade === gradeName);
 
     return feeInfo ? parseFloat(feeInfo.amount) : 0;
-  }
+  };
   
   const handleNextStep = async () => {
       let fieldsToValidate: (keyof RegistrationFormValues)[] = [];
@@ -125,7 +199,8 @@ export default function RegistrationPage() {
       if (isValid) {
           setStep(s => Math.min(s + 1, 3));
       }
-  }
+  };
+  
   const handlePrevStep = () => setStep(s => Math.max(s - 1, 1));
   
   const onSubmit = async (values: RegistrationFormValues) => {
@@ -150,7 +225,6 @@ export default function RegistrationPage() {
     const tuitionFee = getTuitionFeeForClass(values.classId);
     const currentYear = new Date().getFullYear();
 
-
     const studentData = {
       schoolId,
       matricule: values.matricule,
@@ -161,7 +235,7 @@ export default function RegistrationPage() {
       gender: values.gender,
       address: values.address,
       previousSchool: values.previousSchool,
-      photoUrl: values.photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
+      photoUrl: photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
       status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
@@ -246,46 +320,175 @@ export default function RegistrationPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {step === 1 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5"/>Informations de l'Élève</div>
+                  <div className="flex items-center gap-2 text-lg font-semibold text-primary">
+                    <User className="h-5 w-5"/>Informations de l'Élève
+                  </div>
                   
                   <div className="flex flex-col sm:flex-row items-center gap-6">
-                      <FormField control={form.control} name="photoUrl" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Photo</FormLabel>
-                          <FormControl>
-                            <ImageUploader 
-                                onUploadComplete={(url) => { field.onChange(url); }}
-                                storagePath={`ecoles/${schoolId}/student-photos/`}
-                                currentImageUrl={field.value}
-                                resizeWidth={400}
-                            >
-                                <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">
-                                    <AvatarImage src={field.value || undefined} alt="Photo de l'élève" />
-                                    <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
-                                        <Upload className="h-6 w-6 text-muted-foreground" />
-                                        <span className="text-xs text-muted-foreground">Photo</span>
-                                    </AvatarFallback>
-                                </Avatar>
-                            </ImageUploader>
-                          </FormControl>
-                        </FormItem>
-                      )} />
-                      <div className="flex-1 w-full space-y-4">
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        </div>
-                        <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <div className="relative">
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                        disabled={uploadingPhoto}
+                      />
+                      
+                      <Avatar 
+                        className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        {uploadingPhoto ? (
+                          <AvatarFallback className="flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                          </AvatarFallback>
+                        ) : (
+                          <>
+                            <AvatarImage 
+                              src={photoUrl || undefined} 
+                              alt="Photo de l'élève" 
+                              onError={(e) => {
+                                // Si l'image ne charge pas, afficher un fallback
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                            <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
+                              {photoUrl ? (
+                                <div className="text-xs text-center">Erreur de chargement</div>
+                              ) : (
+                                <>
+                                  <Upload className="h-6 w-6 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">Ajouter photo</span>
+                                </>
+                              )}
+                            </AvatarFallback>
+                          </>
+                        )}
+                      </Avatar>
+                      
+                      {photoUrl && (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                          onClick={handleRemovePhoto}
+                          disabled={uploadingPhoto}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="flex-1 w-full space-y-4">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <FormField 
+                          control={form.control} 
+                          name="lastName" 
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Nom</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: GUEYE" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} 
+                        />
+                        <FormField 
+                          control={form.control} 
+                          name="firstName" 
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Prénom(s)</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Ex: Adama" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} 
+                        />
                       </div>
+                      <FormField 
+                        control={form.control} 
+                        name="matricule" 
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Numéro Matricule</FormLabel>
+                            <FormControl>
+                              <Input {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} 
+                      />
+                    </div>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="placeOfBirth" render={({ field }) => (<FormItem><FormLabel>Lieu de naissance</FormLabel><FormControl><Input placeholder="Ex: Dakar" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField 
+                      control={form.control} 
+                      name="dateOfBirth" 
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Date de naissance</FormLabel>
+                          <FormControl>
+                            <Input type="date" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} 
+                    />
+                    <FormField 
+                      control={form.control} 
+                      name="placeOfBirth" 
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Lieu de naissance</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Dakar" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} 
+                    />
                   </div>
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="gender" render={({ field }) => (<FormItem><FormLabel>Sexe</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner le sexe" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Masculin">Masculin</SelectItem><SelectItem value="Féminin">Féminin</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse (optionnel)</FormLabel><FormControl><Input placeholder="Ex: Cité Keur Gorgui, Villa 123" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField 
+                      control={form.control} 
+                      name="gender" 
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Sexe</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Sélectionner le sexe" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Masculin">Masculin</SelectItem>
+                              <SelectItem value="Féminin">Féminin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )} 
+                    />
+                    <FormField 
+                      control={form.control} 
+                      name="address" 
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Adresse (optionnel)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Cité Keur Gorgui, Villa 123" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} 
+                    />
                   </div>
                 </div>
               )}
@@ -346,3 +549,4 @@ export default function RegistrationPage() {
     </div>
   );
 }
+    
