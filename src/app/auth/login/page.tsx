@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -137,25 +138,35 @@ export default function ModernLoginPage() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row">
       {/* Côté gauche - Illustration */}
-      <div className="hidden lg:block lg:w-1/2 relative">
-        <Image
-          src="https://firebasestorage.googleapis.com/v0/b/greecole.firebasestorage.app/o/Images%2FImage%20Login.png?alt=media&token=60eefec8-fdb9-40dc-a05f-cdf821d0992f"
-          alt="Illustration de la page de connexion GèreEcole"
-          fill
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-primary/50 via-primary/20 to-transparent" />
-        <div className="absolute top-8 left-8 z-10">
-            <Logo disableLink />
-        </div>
-        <div className="absolute bottom-8 left-8 text-white z-10 max-w-md">
-            <h1 className="text-4xl font-bold [text-shadow:_0_2px_4px_rgb(0_0_0_/_40%)]">
-              Gérez avec sérénité.
+      <div className="lg:w-1/2 bg-primary p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary/10 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
+        
+        <div className="relative z-10">
+          <Logo disableLink />
+          
+          <div className="mt-12 lg:mt-20 max-w-lg">
+             <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-white/80" />
+              <span className="text-sm font-medium text-white/80">SOLUTION DE GESTION SCOLAIRE</span>
+            </div>
+
+            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6">
+              Heureux de vous revoir.
             </h1>
-            <p className="mt-4 text-lg opacity-90 [text-shadow:_0_1px_2px_rgb(0_0_0_/_20%)]">
-              La solution complète pour la gestion scolaire en Afrique.
+            
+            <p className="text-lg text-white/80 mb-8">
+              Connectez-vous pour retrouver votre tableau de bord et continuer à gérer votre établissement avec GèreEcole.
             </p>
+          </div>
         </div>
+        
+        <div className="relative z-10 mt-8 lg:mt-0">
+          <p className="text-sm text-white/70">© {new Date().getFullYear()} GèreEcole</p>
+        </div>
+        
+        {/* Effets décoratifs */}
+        <div className="absolute top-1/4 -left-32 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute bottom-1/4 -right-32 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
       </div>
 
       {/* Côté droit - Formulaire */}
@@ -163,9 +174,8 @@ export default function ModernLoginPage() {
         <div className="w-full max-w-md space-y-6">
           {/* En-tête */}
           <div className="text-center space-y-2">
-             <div className="flex justify-center mb-4"><Logo disableLink /></div>
             <h2 className="text-3xl font-bold tracking-tight">
-              Bienvenue à bord
+              Bienvenue
             </h2>
             <p className="text-muted-foreground">
               Connectez-vous pour accéder à votre espace de gestion
@@ -322,7 +332,7 @@ export default function ModernLoginPage() {
               </Button>
             </p>
             
-            <div className="text-xs text-muted-foreground space-y-1">
+             <div className="text-xs text-muted-foreground space-y-1">
               <p>
                 En vous connectant, vous acceptez nos{' '}
                 <Button variant="link" className="p-0 h-auto text-xs underline underline-offset-2" asChild>
@@ -339,15 +349,10 @@ export default function ModernLoginPage() {
               </p>
             </div>
           </div>
-
-          {/* Version */}
-          <div className="text-center pt-8">
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} GèreEcole • v1.0.0
-            </p>
-          </div>
         </div>
       </div>
     </div>
   );
 }
+
+    

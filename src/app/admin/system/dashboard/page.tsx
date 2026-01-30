@@ -45,8 +45,12 @@ export default function SystemAdminDashboard() {
     try {
       await resetDemoTrial(firestore, user.uid);
       toast({ title: 'Succès', description: "La période d'essai de l'école de démo a été réinitialisée." });
-    } catch (e) {
-      // Handled by service
+    } catch (e: any) {
+      toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: e.message || "Impossible de réinitialiser la démo.",
+      });
     } finally {
       setIsResetting(false);
     }
@@ -138,3 +142,5 @@ export default function SystemAdminDashboard() {
     </div>
   );
 }
+
+    
