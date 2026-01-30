@@ -4,15 +4,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ShieldCheck, BarChart3, Building, Users, Wallet, Shield, Settings } from 'lucide-react';
+import { ShieldCheck, BarChart3, Building, Users, Home, Settings } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
 const adminNavLinks = [
     { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: BarChart3 },
     { href: '/admin/system/schools', label: 'Écoles', icon: Building },
     { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
-    // { href: '/admin/system/billing', label: 'Facturation', icon: Wallet },
-    // { href: '/admin/system/logs', label: 'Logs', icon: Shield },
     { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
 ];
 
@@ -53,6 +51,17 @@ export default function SystemAdminLayout({
                     )
                 })}
             </nav>
+            <div className="mt-auto border-t p-4">
+                <Link
+                    href="/dashboard"
+                    className="group flex items-center gap-x-3 rounded-lg p-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                >
+                    <div className="flex h-6 w-6 items-center justify-center">
+                        <Home className="h-5 w-5" />
+                    </div>
+                    <span>Retour au Dashboard</span>
+                </Link>
+            </div>
         </aside>
         <main className="sm:pl-60">
             <div className="p-4 sm:p-6 lg:p-8">
