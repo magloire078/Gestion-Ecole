@@ -9,8 +9,6 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import {useFirestore} from '../client-provider';
-import { FirestorePermissionError } from '../errors';
-import { errorEmitter } from '../error-emitter';
 
 type UseDocOptions = {
     onError?: (error: FirestoreError) => void;
@@ -37,16 +35,11 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
     const unsubscribe = onSnapshot(ref, (snapshot) => {
       setData(snapshot.exists() ? snapshot.data() : null);
       setLoading(false);
-    }, async (err) => {
+    }, (err) => {
+        console.error("useDoc Firestore Error:", err);
         setError(err);
         if(options?.onError) {
             options.onError(err);
-        } else {
-            const permissionError = new FirestorePermissionError({
-                path: ref.path,
-                operation: 'get',
-            });
-            errorEmitter.emit('permission-error', permissionError);
         }
         setData(null);
         setLoading(false);

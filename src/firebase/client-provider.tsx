@@ -8,7 +8,6 @@ import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
 import { FirebaseStorage } from 'firebase/storage';
 import { firebaseApp, firebaseAuth, firebaseFirestore, firebaseStorage } from './config';
-import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export interface FirebaseContextValue {
@@ -37,7 +36,6 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     <FirebaseContext.Provider value={contextValue}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         {children}
-        <FirebaseErrorListener />
       </ThemeProvider>
     </FirebaseContext.Provider>
   );
