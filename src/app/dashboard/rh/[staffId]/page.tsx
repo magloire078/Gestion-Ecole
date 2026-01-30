@@ -1,3 +1,4 @@
+
 'use client';
 
 import { notFound, useParams, useRouter } from 'next/navigation';
@@ -153,8 +154,8 @@ export default function StaffProfilePage() {
     const allAdminRolesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/admin_roles`) : null, [firestore, schoolId]);
     const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
     
-    const allSchoolClasses = useMemo(() => allSchoolClassesData?.docs.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})) || [], [allSchoolClassesData]);
-    const allAdminRoles = useMemo(() => allAdminRolesData?.docs.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})) || [], [allAdminRolesData]);
+    const allSchoolClasses = useMemo(() => allSchoolClassesData.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})), [allSchoolClassesData]);
+    const allAdminRoles = useMemo(() => allAdminRolesData.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})), [allAdminRolesData]);
 
     const timetableQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
     const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
@@ -283,6 +284,7 @@ export default function StaffProfilePage() {
                 <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>
               </DialogHeader>
               <StaffEditForm
+                  key={editingStaff?.id || 'new'}
                   schoolId={schoolId!}
                   editingStaff={staffMember}
                   classes={allSchoolClasses}
