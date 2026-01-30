@@ -2,8 +2,7 @@
 'use client';
 import {useState, useEffect} from 'react';
 import {
-  onSnapshot,
-  doc,
+  getDoc,
   DocumentReference,
   DocumentData,
   FirestoreError,
@@ -24,7 +23,6 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
 
 
   useEffect(() => {
-    // ref?.path est une dépendance plus stable que l'objet ref lui-même
     const stablePath = ref?.path;
 
     if (!stablePath || !firestore) {
@@ -34,29 +32,42 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
         return;
     }
     
-    setData(null);
-    setError(null);
-    setLoading(true);
+    let isMounted = true;
 
-    const unsubscribe = onSnapshot(ref!, (snapshot) => {
-      setData(snapshot.exists() ? snapshot.data() : null);
-      setLoading(false);
-    }, (err) => {
-        console.error("useDoc Firestore Error:", err);
-        setError(err);
-        toast({
-            variant: "destructive",
-            title: "Erreur de chargement",
-            description: `Impossible de charger le document: ${err.message}`,
-        });
-        if(options?.onError) {
-            options.onError(err);
+    const fetchData = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const snapshot = await getDoc(ref!);
+            if (isMounted) {
+                setData(snapshot.exists() ? snapshot.data() : null);
+            }
+        } catch (err: any) {
+            if (isMounted) {
+                console.error("useDoc Firestore Error:", err);
+                setError(err);
+                toast({
+                    variant: "destructive",
+                    title: "Erreur de chargement",
+                    description: `Impossible de charger le document: ${err.message}`,
+                });
+                if(options?.onError) {
+                    options.onError(err);
+                }
+                setData(null);
+            }
+        } finally {
+            if (isMounted) {
+                setLoading(false);
+            }
         }
-        setData(null);
-        setLoading(false);
-    });
+    };
 
-    return () => unsubscribe();
+    fetchData();
+
+    return () => {
+        isMounted = false;
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref?.path]);
 
