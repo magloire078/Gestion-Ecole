@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +11,25 @@ import type { student as Student } from '@/lib/data-types';
 import { useRouter } from 'next/navigation';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { differenceInYears, addYears, differenceInMonths } from 'date-fns';
+import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
+
+
+const getStatusBadgeVariant = (status: Student['status']) => {
+    switch (status) {
+        case 'Actif':
+            return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+        case 'En attente':
+            return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
+        case 'Transféré':
+        case 'Diplômé':
+            return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        case 'Radié':
+            return 'bg-destructive/80 text-destructive-foreground';
+        default:
+            return 'bg-secondary text-secondary-foreground';
+    }
+};
 
 interface StudentCardProps {
     student: Student;
@@ -63,6 +81,7 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                             <CardDescription>{student.matricule}</CardDescription>
                         </div>
                     </div>
+                     <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                 </div>
             </CardHeader>
             <CardContent className="flex-1 space-y-2 text-sm">
