@@ -210,6 +210,7 @@
             "viewSchools": { "type": "boolean" },
             "manageClasses": { "type": "boolean" },
             "manageGrades": { "type": "boolean" },
+            "viewGrades": { "type": "boolean" },
             "manageDiscipline": { "type": "boolean" },
             "manageSystem": { "type": "boolean" },
             "viewAnalytics": { "type": "boolean" },
