@@ -70,6 +70,7 @@ export default function CreateSchoolPage() {
     },
     mode: 'onChange',
   });
+  const { setValue } = form;
   
   // Vérifier que Firestore est prêt
   useEffect(() => {
@@ -81,9 +82,9 @@ export default function CreateSchoolPage() {
   // Mettre à jour l'email si l'utilisateur est connecté
   useEffect(() => {
     if (user?.email) {
-      form.setValue('email', user.email);
+      setValue('email', user.email);
     }
-  }, [user, form]);
+  }, [user, setValue]);
   
   useEffect(() => {
       // Si `hasSchool` devient vrai après une mise à jour, redirigez.

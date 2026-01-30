@@ -20,7 +20,7 @@ import { DialogFooter } from '../ui/dialog';
 const occupantFormSchema = z.object({
   studentId: z.string().min(1, 'Veuillez sélectionner un élève.'),
   roomId: z.string().min(1, 'Veuillez sélectionner une chambre.'),
-  startDate: z.string().min(1, 'La date de début est requise.'),
+  startDate: z.string().min(1, 'La date d\'entrée est requise.'),
   endDate: z.string().optional(),
   status: z.enum(['active', 'pending', 'terminated', 'suspended']),
   nextPaymentDue: z.string().optional(),
@@ -60,11 +60,12 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
       nextPaymentDue: nextMonth,
     },
   });
+  const { reset } = form;
   
   const availableRooms = useMemo(() => rooms.filter(room => room.status === 'available' || room.id === occupant?.roomId), [rooms, occupant]);
 
   useEffect(() => {
-    form.reset(occupant ? {
+    reset(occupant ? {
       ...occupant,
       startDate: format(new Date(occupant.startDate), 'yyyy-MM-dd'),
       endDate: occupant.endDate ? format(new Date(occupant.endDate), 'yyyy-MM-dd') : '',
@@ -77,7 +78,7 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
       status: 'active',
       nextPaymentDue: nextMonth,
     });
-  }, [occupant, today, nextMonth, form]);
+  }, [occupant, today, nextMonth, reset]);
 
   const handleSubmit = async (values: OccupantFormValues) => {
     setIsSubmitting(true);

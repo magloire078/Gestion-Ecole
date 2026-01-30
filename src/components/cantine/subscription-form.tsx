@@ -1,6 +1,6 @@
 'use client';
 
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { canteenSubscription as CanteenSubscription, student as Student } from '@/lib/data-types';
-import { format, addMonths, addYears, startOfYear, endOfYear } from 'date-fns';
+import { format, addMonths, addYears, startOfYear, endOfYear, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -57,11 +57,16 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
       autoRenew: false,
     },
   });
+  const { setValue } = form;
 
-  const watchedType = form.watch('type');
+  const watchedType = useWatch({ control: form.control, name: 'type' });
+  const watchedStartDate = useWatch({ control: form.control, name: 'startDate' });
 
   useEffect(() => {
-    const startDate = new Date(form.getValues('startDate'));
+    if (!watchedStartDate) return;
+    const startDate = new Date(watchedStartDate);
+    if (!isValid(startDate)) return;
+
     let endDate = new Date(startDate);
     
     switch(watchedType) {
@@ -69,9 +74,9 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
         case 'trimestriel': endDate = addMonths(startDate, 3); break;
         case 'annuel': endDate = endOfYear(startDate); break;
     }
-    form.setValue('endDate', format(endDate, 'yyyy-MM-dd'));
+    setValue('endDate', format(endDate, 'yyyy-MM-dd'));
 
-  }, [watchedType, form.watch('startDate'), form]);
+  }, [watchedType, watchedStartDate, setValue]);
 
   const handleSubmit = async (values: SubscriptionFormValues) => {
     setIsSubmitting(true);

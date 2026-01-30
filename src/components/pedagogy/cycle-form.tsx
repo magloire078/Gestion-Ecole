@@ -44,24 +44,25 @@ export function CycleForm({ schoolId, cycle, cyclesCount, onSave }: CycleFormPro
     const form = useForm<CycleFormValues>({
         resolver: zodResolver(cycleSchema)
     });
+    const { reset, setValue } = form;
 
     useEffect(() => {
         if(cycle) {
-            form.reset(cycle);
+            reset(cycle);
         } else {
-             form.reset({ name: '', code: '', order: cyclesCount + 1, isActive: true, color: '#3b82f6' });
+             reset({ name: '', code: '', order: cyclesCount + 1, isActive: true, color: '#3b82f6' });
         }
-    }, [cycle, cyclesCount, form]);
+    }, [cycle, cyclesCount, reset]);
 
     const watchedCycleName = useWatch({ control: form.control, name: 'name' });
   
     useEffect(() => {
         const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
         if (selectedCycleTemplate && !cycle) { // Don't auto-fill when editing
-            form.setValue('code', selectedCycleTemplate.code);
-            form.setValue('order', selectedCycleTemplate.order);
+            setValue('code', selectedCycleTemplate.code);
+            setValue('order', selectedCycleTemplate.order);
         }
-    }, [watchedCycleName, cycle, form]);
+    }, [watchedCycleName, cycle, setValue]);
 
     const handleFormSubmit = (values: CycleFormValues) => {
         if (!schoolId) return;

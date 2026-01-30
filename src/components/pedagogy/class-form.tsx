@@ -54,9 +54,10 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave 
       maxStudents: 30,
     },
   });
+  const { reset, setValue } = form;
 
   useEffect(() => {
-    form.reset(classe || {
+    reset(classe || {
       academicYear: academicYear,
       maxStudents: 30,
       cycleId: '',
@@ -65,16 +66,16 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave 
       mainTeacherId: '',
       classroom: '',
     });
-  }, [classe, academicYear, form]);
+  }, [classe, academicYear, reset]);
 
   const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
   const filteredNiveaux = useMemo(() => niveaux.filter(n => n.cycleId === watchedCycleId), [niveaux, watchedCycleId]);
 
   useEffect(() => {
     if (classe?.cycleId !== watchedCycleId) {
-      form.setValue('niveauId', '');
+      setValue('niveauId', '');
     }
-  }, [watchedCycleId, form, classe]);
+  }, [watchedCycleId, setValue, classe]);
 
   const onSubmit = async (values: ClassFormValues) => {
     if (!schoolId || !user?.uid) return;

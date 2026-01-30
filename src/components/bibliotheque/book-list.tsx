@@ -101,10 +101,11 @@ export function BookList({ schoolId }: BookListProps) {
     resolver: zodResolver(bookSchema),
     defaultValues: { title: "", author: "", quantity: 1, frontCoverUrl: "", backCoverUrl: "" },
   });
+  const { reset } = form;
 
   useEffect(() => {
-    form.reset(editingBook || { title: "", author: "", quantity: 1, frontCoverUrl: "", backCoverUrl: "" });
-  }, [isFormOpen, editingBook, form]);
+    reset(editingBook || { title: "", author: "", quantity: 1, frontCoverUrl: "", backCoverUrl: "" });
+  }, [isFormOpen, editingBook, reset]);
 
   const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
 

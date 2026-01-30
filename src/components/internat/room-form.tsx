@@ -42,16 +42,17 @@ export function RoomForm({ schoolId, buildings, room, onSave, defaultBuildingId 
   const form = useForm<RoomFormValues>({
     resolver: zodResolver(roomFormSchema),
   });
+  const { reset } = form;
 
   useEffect(() => {
-    form.reset(room || {
+    reset(room || {
       buildingId: defaultBuildingId || (buildings.length > 0 ? buildings[0].id : ''),
       number: '',
       capacity: 4,
       status: 'available',
       monthlyRate: 0,
     });
-  }, [room, buildings, defaultBuildingId, form]);
+  }, [room, buildings, defaultBuildingId, reset]);
 
   const handleSubmit = async (values: RoomFormValues) => {
     setIsSubmitting(true);

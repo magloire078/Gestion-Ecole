@@ -50,12 +50,13 @@ export function IncidentForm({ schoolId, students, onSave, student }: IncidentFo
             parentNotified: false,
         }
     });
+    const { setValue } = form;
 
     useEffect(() => {
         if (student) {
-            form.setValue('studentId', student.id!);
+            setValue('studentId', student.id!);
         }
-    }, [student, form]);
+    }, [student, setValue]);
 
     const handleAddIncident = async (values: IncidentFormValues) => {
         if (!user || !user.authUser) {

@@ -47,10 +47,11 @@ export function BuildingForm({ building, onSave, collectionName }: BuildingFormP
   const form = useForm<BuildingFormValues>({
     resolver: zodResolver(buildingSchema),
   });
+  const { reset } = form;
 
   useEffect(() => {
-    form.reset(building || { type: "pedagogique", status: 'active', name: '', capacity: 0, responsableId: '' });
-  }, [building, form]);
+    reset(building || { type: "pedagogique", status: 'active', name: '', capacity: 0, responsableId: '' });
+  }, [building, reset]);
 
   const handleFormSubmit = async (values: BuildingFormValues) => {
     if (!schoolId) return;

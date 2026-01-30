@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -42,15 +41,16 @@ export function SalleForm({ schoolId, buildings, salle, onSave, defaultBuildingI
   const form = useForm<SalleFormValues>({
     resolver: zodResolver(salleFormSchema),
   });
+  const { reset } = form;
 
   useEffect(() => {
-    form.reset(salle || {
+    reset(salle || {
       buildingId: defaultBuildingId || (buildings.length > 0 ? buildings[0].id : ''),
       name: '',
       type: 'salle_de_classe',
       capacity: 30,
     });
-  }, [salle, buildings, defaultBuildingId, form]);
+  }, [salle, buildings, defaultBuildingId, reset]);
 
   const handleSubmit = async (values: SalleFormValues) => {
     setIsSubmitting(true);

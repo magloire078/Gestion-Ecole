@@ -48,14 +48,15 @@ export function MaintenanceForm({ schoolId, tache, staffMembers, locationOptions
   const form = useForm<TacheFormValues>({
     resolver: zodResolver(tacheSchema),
   });
+  const { reset } = form;
 
   useEffect(() => {
-    form.reset(
+    reset(
       tache 
         ? { ...tache, dueDate: tache.dueDate ? format(new Date(tache.dueDate), 'yyyy-MM-dd') : '' }
         : { priority: 'moyenne', status: 'à_faire', title: '', description: '', location: '', assignedTo: '', dueDate: '' }
     );
-  }, [tache, form]);
+  }, [tache, reset]);
 
   const handleFormSubmit = async (values: TacheFormValues) => {
     if (!schoolId) return;

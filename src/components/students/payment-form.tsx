@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -36,10 +35,11 @@ export function PaymentForm({ onSubmit, initialData, isSaving, onCancel }: Payme
         resolver: zodResolver(paymentSchema),
         defaultValues: initialData,
     });
+    const { reset } = form;
 
     useEffect(() => {
-        form.reset(initialData);
-    }, [initialData, form]);
+        reset(initialData);
+    }, [initialData, reset]);
 
     return (
         <Form {...form}>

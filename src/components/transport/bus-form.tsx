@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -42,10 +41,11 @@ export function BusForm({ schoolId, drivers, bus, onSave }: BusFormProps) {
     const form = useForm<BusFormValues>({
         resolver: zodResolver(busSchema),
     });
+    const { reset } = form;
 
     useEffect(() => {
-        form.reset(bus ? { ...bus, driverId: bus.driverId || '' } : { registrationNumber: '', type: 'standard', status: 'active', capacity: 50, driverId: '' });
-    }, [bus, form]);
+        reset(bus ? { ...bus, driverId: bus.driverId || '' } : { registrationNumber: '', type: 'standard', status: 'active', capacity: 50, driverId: '' });
+    }, [bus, reset]);
 
 
     const handleFormSubmit = async (values: BusFormValues) => {

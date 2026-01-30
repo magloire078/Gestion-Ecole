@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -47,14 +46,15 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
   const form = useForm<MaterielFormValues>({
     resolver: zodResolver(materielSchema),
   });
+  const { reset } = form;
 
   useEffect(() => {
-    form.reset(
+    reset(
       materiel 
         ? { ...materiel, acquisitionDate: materiel.acquisitionDate ? format(new Date(materiel.acquisitionDate), 'yyyy-MM-dd') : '' }
         : { category: "Mobilier", status: "bon", quantity: 1, locationId: '', name: '', acquisitionDate: format(new Date(), 'yyyy-MM-dd') }
     );
-  }, [materiel, form]);
+  }, [materiel, reset]);
 
   const handleFormSubmit = async (values: MaterielFormValues) => {
     if (!schoolId) return;

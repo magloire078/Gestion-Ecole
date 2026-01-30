@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -54,10 +53,11 @@ export function ReservationForm({ schoolId, salles, staff, reservation, preselec
   const form = useForm<ReservationFormValues>({
     resolver: zodResolver(reservationFormSchema),
   });
+  const { reset } = form;
 
   useEffect(() => {
     if (reservation) {
-      form.reset({
+      reset({
         ...reservation,
         date: format(new Date(reservation.startTime), 'yyyy-MM-dd'),
         startTime: format(new Date(reservation.startTime), 'HH:mm'),
@@ -66,7 +66,7 @@ export function ReservationForm({ schoolId, salles, staff, reservation, preselec
     } else if (preselectedSlot) {
         const start = set(preselectedSlot.date, { hours: parseInt(preselectedSlot.time.split(':')[0]), minutes: 0 });
         const end = set(start, { hours: start.getHours() + 1 });
-        form.reset({
+        reset({
             salleId: preselectedSlot.salleId,
             date: format(preselectedSlot.date, 'yyyy-MM-dd'),
             startTime: format(start, 'HH:mm'),
@@ -76,14 +76,14 @@ export function ReservationForm({ schoolId, salles, staff, reservation, preselec
             notes: '',
         });
     } else {
-        form.reset({
+        reset({
             date: format(new Date(), 'yyyy-MM-dd'),
             startTime: '08:00',
             endTime: '09:00',
             status: 'confirmée',
         });
     }
-  }, [reservation, preselectedSlot, form]);
+  }, [reservation, preselectedSlot, reset]);
   
 
   const handleSubmit = async (values: ReservationFormValues) => {

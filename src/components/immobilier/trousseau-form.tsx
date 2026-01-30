@@ -41,12 +41,13 @@ export function TrousseauForm({ schoolId, trousseau: editingTrousseau, onSave }:
     resolver: zodResolver(keyTrousseauSchema),
     defaultValues: { name: '', description: '', keys: [{ value: 'cle-1' }] },
   });
+  const { reset } = form;
 
   const { fields, append, remove } = useFieldArray({ control: form.control, name: 'keys' });
   
   useEffect(() => {
-    form.reset(editingTrousseau ? { ...editingTrousseau, keys: editingTrousseau.keys?.map(k => ({value: k})) } : { name: '', description: '', keys: [{ value: 'cle-1' }] });
-  }, [editingTrousseau, form]);
+    reset(editingTrousseau ? { ...editingTrousseau, keys: editingTrousseau.keys?.map(k => ({value: k})) } : { name: '', description: '', keys: [{ value: 'cle-1' }] });
+  }, [editingTrousseau, reset]);
 
 
   const handleFormSubmit = async (values: KeyTrousseauFormValues) => {

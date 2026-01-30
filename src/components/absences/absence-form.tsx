@@ -45,11 +45,12 @@ export function AbsenceForm({ schoolId, student, onSave }: AbsenceFormProps) {
             reason: "",
         }
     });
+    const { setValue } = form;
 
     useEffect(() => {
         // Set date only on client to avoid hydration mismatch
-        form.setValue('date', new Date().toISOString().split('T')[0]);
-    }, [form]);
+        setValue('date', new Date().toISOString().split('T')[0]);
+    }, [setValue]);
 
     const handleFormSubmit = async (values: AbsenceFormValues) => {
         if (!schoolId || !user || !student) return;

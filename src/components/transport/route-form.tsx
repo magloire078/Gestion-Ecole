@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -73,6 +72,7 @@ export function RouteForm({ schoolId, buses, route, onSave }: RouteFormProps) {
       }
     } as RouteFormValues : defaultValues
   });
+  const { reset } = form;
   
   const { fields: morningStops, append: appendMorning, remove: removeMorning } = useFieldArray({
     control: form.control,
@@ -85,14 +85,14 @@ export function RouteForm({ schoolId, buses, route, onSave }: RouteFormProps) {
   });
 
   useEffect(() => {
-    form.reset(route ? {
+    reset(route ? {
       ...route,
       schedule: {
         morning: route.schedule?.morning || { stops: [] },
         evening: route.schedule?.evening || { stops: [] }
       }
     } as RouteFormValues : defaultValues)
-  }, [route, form, defaultValues]);
+  }, [route, reset, defaultValues]);
 
   const handleSubmit = async (values: RouteFormValues) => {
     setIsSubmitting(true);
