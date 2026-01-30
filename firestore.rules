@@ -142,21 +142,21 @@ service cloud.firestore {
         allow write: if hasPermission(schoolId, 'manageUsers');
 
         match /notes/{gradeId} {
-          allow read: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'manageGrades') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
           allow create, update, delete: if hasPermission(schoolId, 'manageGrades');
         }
         
         match /paiements/{paymentId} {
-           allow read: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+           allow read: if hasPermission(schoolId, 'manageBilling') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
            allow write: if hasPermission(schoolId, 'manageBilling');
         }
         
         match /dossier_medical/{dossierId} {
-          allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
           allow write: if hasPermission(schoolId, 'manageMedical');
           
           match /{subcollection}/{docId} {
-            allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+            allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
             allow write: if hasPermission(schoolId, 'manageMedical');
           }
         }

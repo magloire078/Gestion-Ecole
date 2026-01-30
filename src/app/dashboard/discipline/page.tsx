@@ -9,29 +9,20 @@ import { subMonths, isWithinInterval } from 'date-fns';
 import { group, sort } from 'd3-array';
 import type { discipline_incident as DisciplineIncident, student as Student, class_type as Class } from '@/lib/data-types';
 import { Button } from '@/components/ui/button';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, ShieldAlert, Clock, List } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { IncidentForm } from '@/components/discipline/incident-form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { DisciplineIncidentsList } from '@/components/discipline/discipline-incidents-list';
+import { StatCard } from '@/components/ui/stat-card';
+
 
 interface IncidentWithDetails extends DisciplineIncident {
     id: string;
     studentName?: string;
     className?: string;
 }
-
-const StatCard = ({ title, value, loading }: { title: string, value: string | number, loading: boolean }) => (
-    <Card>
-        <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        </CardHeader>
-        <CardContent>
-            {loading ? <Skeleton className="h-8 w-16"/> : <div className="text-2xl font-bold">{value}</div>}
-        </CardContent>
-    </Card>
-);
 
 export default function DisciplinePage() {
     const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -119,9 +110,9 @@ export default function DisciplinePage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                <StatCard title="Total des Incidents" value={stats.total} loading={isLoading} />
-                <StatCard title="Incidents (30 derniers jours)" value={stats.thisMonth} loading={isLoading} />
-                <StatCard title="Type le plus fréquent" value={stats.mostCommon} loading={isLoading} />
+                <StatCard title="Total des Incidents" value={stats.total} loading={isLoading} icon={ShieldAlert} colorClass="text-destructive" />
+                <StatCard title="Incidents (30 derniers jours)" value={stats.thisMonth} loading={isLoading} icon={Clock} colorClass="text-amber-500" />
+                <StatCard title="Type le plus fréquent" value={stats.mostCommon} loading={isLoading} icon={List} colorClass="text-blue-500" />
             </div>
 
             <Card>
