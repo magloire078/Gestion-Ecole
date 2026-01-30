@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, AlertCircle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { DialogFooter } from '../ui/dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const menuItemSchema = z.object({
   name: z.string().min(1, 'Le nom est requis'),
@@ -48,6 +49,7 @@ export function MenuForm({ schoolId, menu, date, onSave }: MenuFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const defaultValues: MenuFormValues = {
     categories: menu?.categories.map(c => ({
@@ -78,6 +80,7 @@ export function MenuForm({ schoolId, menu, date, onSave }: MenuFormProps) {
 
   const handleSubmit = async (values: MenuFormValues) => {
     setIsSubmitting(true);
+    setSubmitError(null);
     const dateStr = format(date, 'yyyy-MM-dd');
     const menuId = `${dateStr}_dejeuner`;
     const menuRef = doc(firestore, `ecoles/${schoolId}/cantine_menus/${menuId}`);
@@ -104,11 +107,7 @@ export function MenuForm({ schoolId, menu, date, onSave }: MenuFormProps) {
         onSave();
     } catch (e) {
         console.error("Error saving menu:", e);
-        toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible d'enregistrer le menu. Vérifiez vos permissions et réessayez."
-        });
+        setSubmitError("Impossible d'enregistrer le menu. Vérifiez vos permissions et réessayez.");
     } finally {
         setIsSubmitting(false);
     }
@@ -158,6 +157,13 @@ export function MenuForm({ schoolId, menu, date, onSave }: MenuFormProps) {
                 Ajouter une catégorie
             </Button>
         </div>
+        {submitError && (
+            <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Erreur</AlertTitle>
+                <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+        )}
         <DialogFooter>
              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? 'Enregistrement...' : 'Enregistrer le Menu'}
