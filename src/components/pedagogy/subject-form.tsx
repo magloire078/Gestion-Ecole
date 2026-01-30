@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -12,8 +13,6 @@ import { doc, addDoc, setDoc, collection } from 'firebase/firestore';
 import type { subject as Subject } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 const subjectSchema = z.object({
   name: z.string().min(2, "Le nom est requis."),
@@ -56,7 +55,8 @@ export function SubjectForm({ schoolId, subject, onSave }: SubjectFormProps) {
             toast({ title: `Matière ${subject ? 'modifiée' : 'créée'}` });
             onSave();
         } catch (error) {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/matieres`, operation: 'write', requestResourceData: dataToSave }));
+            console.error("Error saving subject:", error);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la matière.' });
         } finally {
             setIsSubmitting(false);
         }

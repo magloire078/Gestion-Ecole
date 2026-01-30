@@ -16,8 +16,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { RoomForm } from './room-form';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 export function RoomManagement({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
@@ -73,7 +71,8 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
         await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_chambres`, roomToDelete.id));
         toast({ title: 'Chambre supprimée' });
     } catch(e) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/internat_chambres/${roomToDelete.id}`, operation: 'delete'}));
+        console.error("Error deleting room:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la chambre.' });
     } finally {
         setIsDeleteDialogOpen(false);
     }

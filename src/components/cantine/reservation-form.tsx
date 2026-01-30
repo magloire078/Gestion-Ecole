@@ -14,8 +14,6 @@ import type { canteenReservation as CanteenReservation, student as Student } fro
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '../../firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const reservationFormSchema = z.object({
@@ -81,10 +79,8 @@ export function ReservationForm({ schoolId, students, reservation, onSave }: Res
         toast({ title: 'Réservation enregistrée', description: 'La réservation a été enregistrée avec succès.' });
         onSave();
     } catch (e) {
-        const path = `ecoles/${schoolId}/cantine_reservations/${reservation?.id || '(new)'}`;
-        const operation = reservation ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error saving reservation:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la réservation.' });
     } finally {
         setIsSubmitting(false);
     }

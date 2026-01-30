@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -18,8 +19,6 @@ import { useState, useMemo, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Wallet, Sparkles, Tag, Receipt, Loader2 } from 'lucide-react';
 import type { student as Student, payment as Payment } from '@/lib/data-types';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { PaymentForm, type PaymentFormValues } from './payment-form';
 
 interface PaymentHistoryEntry extends Payment {
@@ -225,7 +224,12 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
             });
             setShowReceipt(true); // Show receipt view
         }).catch((serverError) => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `[BATCH]`, operation: 'write'}));
+            console.error("Error saving payment:", serverError);
+            toast({
+                variant: "destructive",
+                title: "Erreur d'enregistrement",
+                description: "Impossible d'enregistrer le paiement. Vérifiez vos permissions et réessayez.",
+            });
         }).finally(() => {
             setIsSaving(false);
         });

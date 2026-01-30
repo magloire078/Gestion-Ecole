@@ -32,8 +32,6 @@ import { useToast } from "@/hooks/use-toast";
 import { FileText, PlusCircle, MoreHorizontal, CalendarDays } from "lucide-react";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query } from "firebase/firestore";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Combobox } from "@/components/ui/combobox";
@@ -152,29 +150,17 @@ export default function FeesPage() {
         details: values.details || "",
     };
 
-    if (editingFee) {
-        // Update existing fee
-        const feeDocRef = getFeeDocRef(editingFee.id!);
-        setDoc(feeDocRef, feeData, { merge: true })
-          .then(() => {
-            toast({ title: "Grille tarifaire modifiée", description: `La grille pour ${values.grade} a été mise à jour.` });
-            setIsFeeGridDialogOpen(false);
-          }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: feeDocRef.path, operation: 'update', requestResourceData: feeData });
-            errorEmitter.emit('permission-error', permissionError);
-          });
-    } else {
-        // Add new fee
-        const feesCollectionRef = collection(firestore, `ecoles/${schoolId}/frais_scolarite`);
-        addDoc(feesCollectionRef, feeData)
-          .then(() => {
-            toast({ title: "Grille tarifaire ajoutée", description: `La grille pour ${values.grade} a été créée.` });
-            setIsFeeGridDialogOpen(false);
-          }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: feesCollectionRef.path, operation: 'create', requestResourceData: feeData });
-            errorEmitter.emit('permission-error', permissionError);
-          });
-    }
+    const promise = editingFee
+        ? setDoc(getFeeDocRef(editingFee.id!), feeData, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/frais_scolarite`), feeData);
+
+    promise.then(() => {
+        toast({ title: `Grille tarifaire ${editingFee ? 'modifiée' : 'ajoutée'}`, description: `La grille pour ${values.grade} a été enregistrée.` });
+        setIsFeeGridDialogOpen(false);
+    }).catch(error => {
+        console.error("Error saving fee grid:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer la grille tarifaire." });
+    });
   };
 
   const handleOpenFeeGridDialog = (fee: Fee | null) => {
@@ -195,9 +181,9 @@ export default function FeesPage() {
         toast({ title: "Grille tarifaire supprimée", description: `La grille pour ${feeToDelete.grade} a été supprimée.` });
         setIsDeleteFeeGridDialogOpen(false);
         setFeeToDelete(null);
-      }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: feeDocRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+      }).catch((error) => {
+        console.error("Error deleting fee grid:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la grille tarifaire." });
       });
   };
 

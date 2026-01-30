@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,8 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, addDoc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
 import type { staff as Staff, cycle as Cycle, niveau as Niveau, class_type as ClassType } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { Loader2 } from 'lucide-react';
 
 const classSchema = z.object({
@@ -110,9 +109,12 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave 
       toast({ title: `Classe ${classe ? 'modifiée' : 'créée'}`, description: `La classe ${className} a été enregistrée.` });
       onSave();
     } catch (e) {
-      const path = `ecoles/${schoolId}/classes/${classe?.id || ''}`;
-      const operation = classe ? 'update' : 'create';
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData: newClassData }));
+      console.error("Error saving class:", e);
+      toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Impossible d'enregistrer la classe. Vérifiez vos permissions et réessayez."
+      });
     } finally {
       setIsSubmitting(false);
     }

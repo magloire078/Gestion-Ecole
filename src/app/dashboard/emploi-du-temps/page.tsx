@@ -50,8 +50,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, query, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -187,27 +185,17 @@ export default function TimetablePage() {
     }
     const dataWithSchoolId = { ...values, schoolId };
 
-    if (editingEntry) {
-        const entryDocRef = getEntryDocRef(editingEntry.id!);
-        setDoc(entryDocRef, dataWithSchoolId, { merge: true })
-        .then(() => {
-            toast({ title: "Entrée modifiée", description: "L'entrée de l'emploi du temps a été mise à jour." });
-            setIsFormOpen(false);
-        }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: entryDocRef.path, operation: 'update', requestResourceData: dataWithSchoolId });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    } else {
-        const timetableCollectionRef = collection(firestore, `ecoles/${schoolId}/emploi_du_temps`);
-        addDoc(timetableCollectionRef, dataWithSchoolId)
-        .then(() => {
-            toast({ title: "Entrée ajoutée", description: "La nouvelle entrée a été ajoutée à l'emploi du temps." });
-            setIsFormOpen(false);
-        }).catch(async (serverError) => {
-            const permissionError = new FirestorePermissionError({ path: timetableCollectionRef.path, operation: 'create', requestResourceData: dataWithSchoolId });
-            errorEmitter.emit('permission-error', permissionError);
-        });
-    }
+    const promise = editingEntry
+        ? setDoc(getEntryDocRef(editingEntry.id!), dataWithSchoolId, { merge: true })
+        : addDoc(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), dataWithSchoolId);
+
+    promise.then(() => {
+        toast({ title: `Entrée ${editingEntry ? 'modifiée' : 'ajoutée'}`, description: "L'emploi du temps a été mis à jour." });
+        setIsFormOpen(false);
+    }).catch(error => {
+        console.error("Error saving timetable entry:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer l'entrée." });
+    });
   };
   
   const handleOpenFormDialog = (entry: timetableEntry | null, day?: string, time?: string) => {
@@ -246,9 +234,9 @@ export default function TimetablePage() {
         toast({ title: "Entrée supprimée", description: "L'entrée a été supprimée de l'emploi du temps." });
         setIsDeleteDialogOpen(false);
         setEntryToDelete(null);
-    }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: entryDocRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+    }).catch((error) => {
+        console.error("Error deleting entry:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer l'entrée." });
     });
   };
 

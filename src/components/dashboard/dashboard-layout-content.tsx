@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from "react";
 import { MainNav } from '@/components/main-nav';
@@ -15,7 +16,6 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { SearchModal } from '@/components/search-modal';
-// import { NotificationsPanel } from '@/components/notifications-panel';
 import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -187,14 +187,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                   </TooltipTrigger>
                   <TooltipContent>Rechercher (⌘K)</TooltipContent>
                 </Tooltip>
-                 {/* <Tooltip>
-                  <TooltipTrigger asChild>
-                     <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
-                       <Bell className="h-5 w-5" />
-                     </Button>
-                   </TooltipTrigger>
-                  <TooltipContent>Notifications</TooltipContent>
-                </Tooltip> */}
+                
                 <UserNav collapsed={isNavCollapsed} />
               </div>
             </header>
@@ -210,10 +203,6 @@ export default function DashboardLayoutContent({ children }: { children: React.R
             onClose={() => setIsSearchOpen(false)}
           />
 
-          {/* <NotificationsPanel
-            isOpen={isNotificationsOpen}
-            onClose={() => setIsNotificationsOpen(false)}
-          /> */}
         </div>
       </TooltipProvider>
   )

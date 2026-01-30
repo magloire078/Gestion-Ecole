@@ -29,8 +29,6 @@ import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { bus as Bus, staff as Staff } from '@/lib/data-types';
 import { BusForm } from '@/components/transport/bus-form';
 
@@ -67,8 +65,8 @@ export default function BusManagementPage() {
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_bus`, busToDelete.id));
       toast({ title: "Bus supprimé", description: `Le bus ${busToDelete.registrationNumber} a été supprimé.` });
     } catch (error) {
-       const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/transport_bus/${busToDelete.id}`, operation: 'delete' });
-       errorEmitter.emit('permission-error', permissionError);
+       console.error("Error deleting bus:", error);
+       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le bus.' });
     } finally {
         setIsDeleteDialogOpen(false);
         setBusToDelete(null);

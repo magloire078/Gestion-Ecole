@@ -16,8 +16,6 @@ import type { canteenMenu as CanteenMenu } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '../../firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const menuItemSchema = z.object({
@@ -105,12 +103,12 @@ export function MenuForm({ schoolId, menu, date, onSave }: MenuFormProps) {
         });
         onSave();
     } catch (e) {
-        const permissionError = new FirestorePermissionError({
-            path: menuRef.path,
-            operation: 'write',
-            requestResourceData: dataToSave,
+        console.error("Error saving menu:", e);
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible d'enregistrer le menu. Vérifiez vos permissions et réessayez."
         });
-        errorEmitter.emit('permission-error', permissionError);
     } finally {
         setIsSubmitting(false);
     }

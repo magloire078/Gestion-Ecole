@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -43,8 +42,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

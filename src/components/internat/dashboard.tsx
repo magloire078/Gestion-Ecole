@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -23,8 +24,6 @@ import { fr } from 'date-fns/locale';
 
 import type { building, occupant, log, student as Student, room as Room } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '../../firebase/error-emitter';
 import { LogForm } from './log-form';
 
 interface LogWithDetails extends log {

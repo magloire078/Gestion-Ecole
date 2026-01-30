@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -15,8 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import { doc, writeBatch, increment, serverTimestamp } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogFooter } from './ui/dialog';
@@ -150,20 +146,16 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
         batch.update(newClassRef, { studentCount: increment(1) });
     }
 
-    batch.commit()
-    .then(() => {
-        toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}` });
-        onFormSubmit();
-    }).catch((serverError) => {
-        const permissionError = new FirestorePermissionError({ 
-            path: `[BATCH] /ecoles/${schoolId}/eleves/${student.id}`, 
-            operation: 'update', 
-            requestResourceData: updatedData 
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
+    try {
+      await batch.commit();
+      toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}` });
+      onFormSubmit();
+    } catch(serverError) {
+       console.error("Error updating student:", serverError);
+       toast({ variant: "destructive", title: "Erreur de mise à jour", description: "Impossible de modifier les informations de l'élève." });
+    } finally {
       setIsSaving(false);
-    });
+    }
   };
 
   const handleAnalyzeFeedback = async () => {
@@ -265,5 +257,3 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
     </Form>
   );
 }
-
-    

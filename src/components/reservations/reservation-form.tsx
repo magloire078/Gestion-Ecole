@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -14,8 +15,6 @@ import type { reservation_salle as Reservation, salle as Salle, staff as Staff }
 import { format, set } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const timeSchema = z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Format d'heure invalide (HH:mm)");
@@ -114,10 +113,8 @@ export function ReservationForm({ schoolId, salles, staff, reservation, preselec
         toast({ title: 'Réservation enregistrée', description: 'La réservation a été enregistrée avec succès.' });
         onSave();
     }).catch(e => {
-        const path = `ecoles/${schoolId}/reservations_salles/${reservation?.id || '(new)'}`;
-        const operation = reservation ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error saving reservation:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la réservation.' });
     }).finally(() => {
         setIsSubmitting(false);
     });

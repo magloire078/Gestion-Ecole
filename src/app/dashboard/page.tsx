@@ -77,6 +77,7 @@ const RegularDashboard = () => {
       </h1>
       
       <BillingAlerts schoolId={schoolId} studentCount={studentCount} cycleCount={cycleCount} />
+      <AnnouncementBanner />
       <StatCards schoolId={schoolId} />
       {gradesError && !canViewAnalytics && (
         <Alert variant="destructive"><AlertDescription>{gradesError}</AlertDescription></Alert>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -5,10 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useFirestore, useUser } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { occupant as Occupant, log as Log } from '@/lib/data-types';
 import { Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -52,12 +51,8 @@ export function LogForm({ schoolId, occupants, onSave }: LogFormProps) {
             setLogReason('');
             onSave();
         } catch(e) {
-            const permissionError = new FirestorePermissionError({
-                path: `ecoles/${schoolId}/internat_entrees_sorties`,
-                operation: 'create',
-                requestResourceData: logData,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error saving log:", e);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le mouvement.' });
         } finally {
             setIsSavingLog(false);
         }

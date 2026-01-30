@@ -1,4 +1,3 @@
-
 'use client';
 import {useState, useEffect} from 'react';
 import {
@@ -9,6 +8,7 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import {useFirestore} from '../client-provider';
+import { useToast } from '@/hooks/use-toast';
 
 type UseDocOptions = {
     onError?: (error: FirestoreError) => void;
@@ -19,9 +19,14 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const firestore = useFirestore();
+  const { toast } = useToast();
+
 
   useEffect(() => {
-    if (!ref || !firestore) {
+    // ref?.path est une dépendance plus stable que l'objet ref lui-même
+    const stablePath = ref?.path;
+
+    if (!stablePath || !firestore) {
         setData(null);
         setLoading(false);
         setError(null);
@@ -32,7 +37,7 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
     setError(null);
     setLoading(true);
 
-    const unsubscribe = onSnapshot(ref, (snapshot) => {
+    const unsubscribe = onSnapshot(ref!, (snapshot) => {
       setData(snapshot.exists() ? snapshot.data() : null);
       setLoading(false);
     }, (err) => {
@@ -46,7 +51,8 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
     });
 
     return () => unsubscribe();
-  }, [ref?.path, firestore]); // Changed dependency to a stable string
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref?.path]);
 
   return {data, loading, error};
 }

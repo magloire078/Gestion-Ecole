@@ -20,8 +20,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import type { message as Message, class_type as Class } from "@/lib/data-types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -83,12 +81,12 @@ export default function MessagingPage() {
             toast({ title: 'Message envoyé', description: 'Votre message a été envoyé avec succès.' });
             form.reset();
         } catch (error) {
-             const permissionError = new FirestorePermissionError({
-                path: `ecoles/${schoolId}/messagerie`,
-                operation: 'create',
-                requestResourceData: messageData
+            console.error("Error sending message:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: 'Impossible d\'envoyer le message. Vérifiez vos permissions et réessayez.',
             });
-            errorEmitter.emit('permission-error', permissionError);
         }
     };
 

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -16,8 +17,6 @@ import { useFirestore, useAuth, useUser } from '@/firebase';
 import { doc, setDoc, getDoc, writeBatch, collection, addDoc } from 'firebase/firestore';
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings, subject as Subject } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { format, parseISO, isValid } from 'date-fns';
 import { ImageUploader } from '../image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
@@ -130,33 +129,26 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
             displayName: `${values.firstName} ${values.lastName}`
         };
 
-        if (editingStaff) {
-            // Mise à jour d'un membre existant
-            const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
-            setDoc(staffDocRef, dataToSave, { merge: true })
-            .then(() => {
+        try {
+            if (editingStaff) {
+                // Mise à jour d'un membre existant
+                const staffDocRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
+                await setDoc(staffDocRef, dataToSave, { merge: true });
                 toast({ title: "Membre du personnel modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour.` });
-                onFormSubmit();
-            }).catch((serverError) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: staffDocRef.path, operation: 'update', requestResourceData: dataToSave,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            })
-        } else {
-            // Ajout d'un nouveau membre (profil seulement, sans compte auth)
-            const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
-            addDoc(staffCollectionRef, dataToSave)
-            .then(() => {
-                 toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e). L'utilisateur pourra rejoindre l'école en utilisant cette adresse email.` });
-                 onFormSubmit();
-            })
-            .catch((error) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: staffCollectionRef.path, operation: 'create', requestResourceData: dataToSave,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            })
+            } else {
+                // Ajout d'un nouveau membre (profil seulement, sans compte auth)
+                const staffCollectionRef = collection(firestore, `ecoles/${schoolId}/personnel`);
+                await addDoc(staffCollectionRef, dataToSave);
+                toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e). L'utilisateur pourra rejoindre l'école en utilisant cette adresse email.` });
+            }
+            onFormSubmit();
+        } catch (error) {
+            console.error("Error saving staff:", error);
+            toast({
+                variant: "destructive",
+                title: "Erreur",
+                description: "Impossible d'enregistrer le membre du personnel. Vérifiez vos permissions et réessayez.",
+            });
         }
     };
     

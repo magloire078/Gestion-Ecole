@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -34,8 +33,6 @@ import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { materiel as Materiel, salle as Salle, bus as Bus, building } from '@/lib/data-types';
 import { MaterielForm } from '@/components/immobilier/materiel-form';
 
@@ -105,8 +102,8 @@ export default function InventairePage() {
       await deleteDoc(docRef);
       toast({ title: "Équipement supprimé", description: `L'équipement ${materielToDelete.name} a été retiré de l'inventaire.` });
     } catch (e) {
-      const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/inventaire/${materielToDelete.id}`, operation: 'delete' });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error("Error deleting equipment:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'équipement.' });
     } finally {
         setIsDeleteDialogOpen(false);
         setMaterielToDelete(null);
@@ -183,6 +180,7 @@ export default function InventairePage() {
             <DialogTitle>{editingMateriel ? 'Modifier' : 'Ajouter'} un équipement</DialogTitle>
           </DialogHeader>
           <MaterielForm
+            key={editingMateriel?.id || 'new'}
             schoolId={schoolId!}
             materiel={editingMateriel}
             locationOptions={locationOptions}

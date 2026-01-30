@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -12,8 +13,6 @@ import { useFirestore } from '@/firebase';
 import type { salle as Salle, building as Building } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const salleFormSchema = z.object({
@@ -66,10 +65,8 @@ export function SalleForm({ schoolId, buildings, salle, onSave, defaultBuildingI
         toast({ title: 'Salle enregistrée', description: `La salle ${values.name} a été enregistrée.` });
         onSave();
     }).catch(e => {
-        const path = `ecoles/${schoolId}/salles/${salle?.id || '(new)'}`;
-        const operation = salle ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error saving room:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la salle/chambre.' });
     }).finally(() => {
         setIsSubmitting(false);
     });

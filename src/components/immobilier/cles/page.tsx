@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -33,8 +34,6 @@ import { collection, query, deleteDoc, doc, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { key_trousseau as KeyTrousseau, key_log as KeyLog, staff } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -115,7 +114,8 @@ export default function ClesPage() {
         await deleteDoc(doc(firestore, `ecoles/${schoolId}/cles_trousseaux`, trousseauToDelete.id));
         toast({ title: 'Trousseau supprimé', description: `Le trousseau "${trousseauToDelete.name}" a été supprimé.`});
     } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/cles_trousseaux/${trousseauToDelete.id}`, operation: 'delete'}));
+        console.error("Error deleting trousseau:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le trousseau.' });
     } finally {
         setIsDeleteDialogOpen(false);
         setTrousseauToDelete(null);

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -14,8 +15,6 @@ import type { canteenSubscription as CanteenSubscription, student as Student } f
 import { format, addMonths, addYears, startOfYear, endOfYear, isValid } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const subscriptionFormSchema = z.object({
@@ -103,10 +102,8 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
         toast({ title: 'Abonnement enregistré', description: 'L\'abonnement a été mis à jour.' });
         onSave();
     } catch (e) {
-        const path = `ecoles/${schoolId}/cantine_abonnements/${subscription?.id || '(new)'}`;
-        const operation = subscription ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error saving subscription:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'abonnement.' });
     } finally {
         setIsSubmitting(false);
     }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -10,8 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useStorage } from "@/firebase";
 import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2 } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useForm, useWatch } from 'react-hook-form';
@@ -206,12 +205,12 @@ export default function RegistrationPage() {
         });
         router.push(`/dashboard/dossiers-eleves`);
     } catch (serverError) {
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}/eleves and /ecoles/${schoolId}/classes`,
-            operation: 'create',
-            requestResourceData: studentData,
+        console.error("Error creating student:", serverError);
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible d'enregistrer l'inscription. Vérifiez vos permissions et réessayez.",
         });
-        errorEmitter.emit('permission-error', permissionError);
     }
   };
 

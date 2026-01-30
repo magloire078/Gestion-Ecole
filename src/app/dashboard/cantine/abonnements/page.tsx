@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -31,8 +32,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { useSchoolData } from '@/hooks/use-school-data';
 
 interface SubscriptionWithStudentName extends CanteenSubscription {
@@ -95,11 +94,8 @@ export default function AbonnementsCantinePage() {
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/cantine_abonnements`, subscriptionToDelete.id));
       toast({ title: "Abonnement supprimé", description: "L'abonnement a bien été supprimé." });
     } catch (e) {
-      const permissionError = new FirestorePermissionError({
-        path: `ecoles/${schoolId}/cantine_abonnements/${subscriptionToDelete.id}`,
-        operation: 'delete'
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error("Error deleting subscription:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'abonnement.' });
     } finally {
       setIsDeleteDialogOpen(false);
       setSubscriptionToDelete(null);

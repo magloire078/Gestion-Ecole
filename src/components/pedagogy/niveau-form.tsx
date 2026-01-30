@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,8 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { doc, addDoc, setDoc, collection } from 'firebase/firestore';
 import type { cycle as Cycle, niveau as Niveau } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { useState, useEffect, useMemo } from 'react';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import { Loader2 } from 'lucide-react';
@@ -89,11 +88,8 @@ export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, 
       toast({ title: `Niveau ${niveau ? 'modifié' : 'créé'}` });
       onSave();
     } catch (error) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ 
-          path: `ecoles/${schoolId}/niveaux`, 
-          operation: 'write', 
-          requestResourceData: dataToSave 
-      }));
+        console.error("Error saving niveau:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le niveau.' });
     } finally {
       setIsSubmitting(false);
     }

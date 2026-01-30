@@ -283,15 +283,15 @@ export function BuildingManager({
        <Dialog open={isRoomFormOpen} onOpenChange={setIsRoomFormOpen}>
         <DialogContent>
              <DialogHeader>
-                <DialogTitle>{editingRoom ? 'Modifier la' : 'Nouvelle'} Salle</DialogTitle>
+                <DialogTitle>{editingRoom ? 'Modifier la' : 'Nouvelle'} Salle/Chambre</DialogTitle>
                 <DialogDescription>
-                    {editingRoom ? 'Mettez à jour les informations de cette salle.' : `Ajoutez une nouvelle salle au bâtiment "${selectedBuildingForNewRoom?.name}".`}
+                    {editingRoom ? `Mise à jour des informations.` : `Ajout dans le bâtiment "${selectedBuildingForNewRoom?.name}".`}
                 </DialogDescription>
             </DialogHeader>
             <RoomFormComponent
                 schoolId={schoolId}
                 buildings={buildings}
-                salle={editingRoom}
+                room={editingRoom} // `salle` renamed to `room` for consistency
                 onSave={handleRoomFormSave}
                 defaultBuildingId={selectedBuildingForNewRoom?.id}
             />

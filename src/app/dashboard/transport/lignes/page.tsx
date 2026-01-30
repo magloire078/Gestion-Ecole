@@ -31,8 +31,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import type { route as Route, bus as Bus } from '@/lib/data-types';
 import { RouteForm } from '@/components/transport/route-form';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 export default function RoutesManagementPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -77,11 +75,8 @@ export default function RoutesManagementPage() {
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_lignes`, routeToDelete.id));
       toast({ title: 'Ligne supprimée', description: 'La ligne de transport a été supprimée.' });
     } catch(e) {
-      const permissionError = new FirestorePermissionError({
-        path: `ecoles/${schoolId}/transport_lignes/${routeToDelete.id}`,
-        operation: 'delete',
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error("Error deleting route:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la ligne.' });
     } finally {
         setIsDeleteDialogOpen(false);
     }
