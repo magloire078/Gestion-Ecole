@@ -45,17 +45,16 @@ export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, 
 
   const form = useForm<NiveauFormValues>({
     resolver: zodResolver(niveauSchema),
-  });
-
-  useEffect(() => {
-    form.reset(niveau || { 
+    defaultValues: niveau || { 
         name: '', 
         code: '', 
         order: (niveaux.length || 0) + 1, 
         cycleId: defaultCycleId || (cycles.length > 0 ? cycles[0].id : ''), 
         capacity: 30 
-    });
-  }, [niveau, defaultCycleId, cycles, niveaux, form]);
+    }
+  });
+  
+  const { setValue } = form;
 
   const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
   const watchedNiveauName = useWatch({ control: form.control, name: 'name' });
@@ -69,9 +68,9 @@ export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, 
   useEffect(() => {
     const selectedNiveauTemplate = niveauxOptions.find(n => n === watchedNiveauName);
     if(selectedNiveauTemplate) {
-      form.setValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
+      setValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
     }
-  }, [watchedNiveauName, niveauxOptions, form]);
+  }, [watchedNiveauName, niveauxOptions, setValue]);
 
 
   const handleFormSubmit = async (values: NiveauFormValues) => {

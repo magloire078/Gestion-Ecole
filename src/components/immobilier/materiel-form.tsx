@@ -45,16 +45,10 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
 
   const form = useForm<MaterielFormValues>({
     resolver: zodResolver(materielSchema),
-  });
-  const { reset } = form;
-
-  useEffect(() => {
-    reset(
-      materiel 
+    defaultValues: materiel 
         ? { ...materiel, acquisitionDate: materiel.acquisitionDate ? format(new Date(materiel.acquisitionDate), 'yyyy-MM-dd') : '' }
         : { category: "Mobilier", status: "bon", quantity: 1, locationId: '', name: '', acquisitionDate: format(new Date(), 'yyyy-MM-dd') }
-    );
-  }, [materiel, reset]);
+  });
 
   const handleFormSubmit = async (values: MaterielFormValues) => {
     if (!schoolId) return;

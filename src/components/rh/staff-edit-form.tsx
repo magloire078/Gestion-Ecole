@@ -86,50 +86,23 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
     const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
     const [isGeneratingPayslip, setIsGeneratingPayslip] = useState(false);
     const { schoolData } = useSchoolData();
-    const [todayDateString, setTodayDateString] = useState('');
-
-    useEffect(() => {
-        setTodayDateString(format(new Date(), 'yyyy-MM-dd'));
-    }, []);
+    
+    const todayDateString = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
 
     const form = useForm<StaffFormValues>({
         resolver: zodResolver(staffSchema),
-        defaultValues: {
-          firstName: '', lastName: '', role: '', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: '', subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
-        },
+        defaultValues: editingStaff 
+            ? { 
+                ...editingStaff,
+                hireDate: editingStaff.hireDate && isValid(parseISO(editingStaff.hireDate)) 
+                    ? format(parseISO(editingStaff.hireDate), 'yyyy-MM-dd') 
+                    : todayDateString,
+                baseSalary: editingStaff.baseSalary || 0
+              }
+            : {
+                firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+            },
     });
-
-    useEffect(() => {
-        async function loadPrivateData() {
-            if (editingStaff && schoolId) {
-                const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${editingStaff.id}`);
-                const docSnap = await getDoc(staffRef);
-                const fullData = docSnap.exists() ? docSnap.data() as Staff : {};
-                
-                const hireDate = fullData.hireDate || editingStaff.hireDate;
-                const formattedHireDate = hireDate && isValid(parseISO(hireDate)) 
-                    ? format(parseISO(hireDate), 'yyyy-MM-dd') 
-                    : todayDateString;
-
-                form.reset({
-                    ...editingStaff,
-                    ...fullData,
-                    baseSalary: fullData.baseSalary || 0,
-                    hireDate: formattedHireDate,
-                    adminRole: fullData.adminRole || '',
-                });
-                setPhotoUrl(editingStaff.photoURL || null);
-            } else {
-                form.reset({
-                    firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
-                });
-                setPhotoUrl(null);
-            }
-        }
-        if (todayDateString) {
-           loadPrivateData();
-        }
-    }, [editingStaff, schoolId, firestore, form, todayDateString]);
     
     const watchedRole = useWatch({ control: form.control, name: 'role' });
 

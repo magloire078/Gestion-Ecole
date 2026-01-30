@@ -117,6 +117,7 @@ export function SubjectsManager() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingSubject ? 'Modifier' : 'Nouvelle'} Matière</DialogTitle></DialogHeader>
           <SubjectForm 
+            key={editingSubject?.id || 'new'}
             schoolId={schoolId!}
             subject={editingSubject}
             onSave={handleSave}

@@ -176,6 +176,7 @@ export function CyclesManager() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingCycle ? 'Modifier' : 'Nouveau'} Cycle</DialogTitle></DialogHeader>
           <CycleForm 
+            key={editingCycle?.id || 'new'}
             schoolId={schoolId!}
             cycle={editingCycle}
             cyclesCount={cycles.length}
@@ -188,6 +189,7 @@ export function CyclesManager() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingNiveau ? 'Modifier' : 'Nouveau'} Niveau</DialogTitle></DialogHeader>
            <NiveauForm 
+                key={editingNiveau?.id || 'new'}
                 schoolId={schoolId!}
                 cycles={cycles}
                 niveaux={niveaux}

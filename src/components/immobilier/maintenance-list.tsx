@@ -167,6 +167,7 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
             <DialogTitle>{editingTache ? 'Modifier la' : 'Nouvelle'} tâche de maintenance</DialogTitle>
           </DialogHeader>
           <MaintenanceForm 
+            key={editingTache?.id || 'new'}
             schoolId={schoolId}
             tache={editingTache}
             staffMembers={staffMembers}
