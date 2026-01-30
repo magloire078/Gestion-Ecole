@@ -43,9 +43,12 @@ export function CycleForm({ schoolId, cycle, cyclesCount, onSave }: CycleFormPro
     
     const form = useForm<CycleFormValues>({
         resolver: zodResolver(cycleSchema),
-        defaultValues: cycle || { name: '', code: '', order: cyclesCount + 1, isActive: true, color: '#3b82f6' }
     });
-    const { setValue } = form;
+    const { setValue, reset } = form;
+
+    useEffect(() => {
+        reset(cycle || { name: '', code: '', order: cyclesCount + 1, isActive: true, color: '#3b82f6' });
+    }, [cycle, cyclesCount, reset]);
 
     const watchedCycleName = useWatch({ control: form.control, name: 'name' });
   

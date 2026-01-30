@@ -36,8 +36,11 @@ export function SubjectForm({ schoolId, subject, onSave }: SubjectFormProps) {
 
     const form = useForm<SubjectFormValues>({
         resolver: zodResolver(subjectSchema),
-        defaultValues: subject || { name: '', code: '', color: '#8B5CF6' }
     });
+
+    useEffect(() => {
+        form.reset(subject || { name: '', code: '', color: '#8B5CF6' });
+    }, [subject, form]);
     
     const handleFormSubmit = async (values: SubjectFormValues) => {
         if (!schoolId) return;

@@ -45,16 +45,19 @@ export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, 
 
   const form = useForm<NiveauFormValues>({
     resolver: zodResolver(niveauSchema),
-    defaultValues: niveau || { 
+  });
+  
+  const { setValue, reset } = form;
+
+  useEffect(() => {
+    reset(niveau || { 
         name: '', 
         code: '', 
         order: (niveaux.length || 0) + 1, 
         cycleId: defaultCycleId || (cycles.length > 0 ? cycles[0].id : ''), 
         capacity: 30 
-    }
-  });
-  
-  const { setValue } = form;
+    });
+  }, [niveau, niveaux, defaultCycleId, cycles, reset]);
 
   const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
   const watchedNiveauName = useWatch({ control: form.control, name: 'name' });

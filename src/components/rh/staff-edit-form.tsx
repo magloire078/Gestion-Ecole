@@ -80,7 +80,6 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
     const auth = useAuth();
     const { user: currentUser } = useUser();
     const { toast } = useToast();
-    const [photoUrl, setPhotoUrl] = useState<string | null>(editingStaff?.photoURL || null);
     
     const [isPayslipOpen, setIsPayslipOpen] = useState(false);
     const [payslipDetails, setPayslipDetails] = useState<PayslipDetails | null>(null);
@@ -103,6 +102,8 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                 firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
             },
     });
+    
+    const [photoUrl, setPhotoUrl] = useState<string | null>(editingStaff?.photoURL || null);
     
     const watchedRole = useWatch({ control: form.control, name: 'role' });
 
@@ -208,7 +209,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                                             <ImageUploader 
                                                 onUploadComplete={(url) => { field.onChange(url); setPhotoUrl(url); }}
                                                 storagePath={`ecoles/${schoolId}/staff-photos/`}
-                                                currentImageUrl={field.value}
+                                                currentImageUrl={photoUrl}
                                                 resizeWidth={400}
                                             >
                                                 <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">

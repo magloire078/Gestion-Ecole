@@ -189,7 +189,7 @@ export function CyclesManager() {
         <DialogContent>
           <DialogHeader><DialogTitle>{editingNiveau ? 'Modifier' : 'Nouveau'} Niveau</DialogTitle></DialogHeader>
            <NiveauForm 
-                key={editingNiveau?.id || 'new'}
+                key={editingNiveau?.id || 'new-niveau'}
                 schoolId={schoolId!}
                 cycles={cycles}
                 niveaux={niveaux}
