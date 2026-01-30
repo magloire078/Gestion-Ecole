@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useStorage } from "@/firebase";
 import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2 } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2, AlertCircle } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { v4 as uuidv4 } from 'uuid';
 import { ImageUploader } from '@/components/image-uploader';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import Link from 'next/link';
 
 
 const registrationSchema = z.object({
@@ -116,6 +118,8 @@ export default function RegistrationPage() {
 
     return feeInfo ? parseFloat(feeInfo.amount) : 0;
   };
+
+  const tuitionFeeForSelectedClass = getTuitionFeeForClass(watchedClassId);
   
   const handleNextStep = async () => {
       let fieldsToValidate: (keyof RegistrationFormValues)[] = [];
@@ -239,8 +243,17 @@ export default function RegistrationPage() {
           <CardTitle>Formulaire d'Inscription</CardTitle>
           <CardDescription>
               Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée : 
-              <span className="font-bold text-primary"> {getTuitionFeeForClass(watchedClassId).toLocaleString('fr-FR')} CFA</span>
+              <span className="font-bold text-primary"> {tuitionFeeForSelectedClass.toLocaleString('fr-FR')} CFA</span>
           </CardDescription>
+            {tuitionFeeForSelectedClass === 0 && watchedClassId && (
+                <Alert variant="destructive" className="mt-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>
+                        Aucun frais de scolarité n'a été défini pour ce niveau. L'élève sera inscrit avec un solde de 0 CFA.
+                        <Button variant="link" asChild className="p-0 h-auto ml-1"><Link href="/dashboard/frais-scolarite">Définir les frais maintenant.</Link></Button>
+                    </AlertDescription>
+                </Alert>
+            )}
         </CardHeader>
         <CardContent>
           <Form {...form}>

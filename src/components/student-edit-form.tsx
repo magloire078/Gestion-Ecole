@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm, useWatch } from 'react-hook-form';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Bot, Loader2 } from 'lucide-react';
+import { Bot, Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
@@ -16,6 +17,8 @@ import { doc, writeBatch, increment, serverTimestamp } from 'firebase/firestore'
 import type { student as Student, class_type as Class, fee as Fee, niveau as Niveau } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogFooter } from './ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
 
 const studentSchema = z.object({
   firstName: z.string().min(1, { message: "Le prénom est requis." }),
@@ -49,6 +52,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
   const { user } = useUser();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showFeeWarning, setShowFeeWarning] = useState(false);
 
   const form = useForm<StudentFormValues>({
     resolver: zodResolver(studentSchema),
@@ -89,6 +93,13 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     const { fee: newTuitionFee, gradeName } = getTuitionInfoForClass(watchedClassId);
     
+    // Show warning if no fee is defined for the selected class
+    if (watchedClassId && newTuitionFee === 0) {
+        setShowFeeWarning(true);
+    } else {
+        setShowFeeWarning(false);
+    }
+
     // Mettre à jour les frais de scolarité
     form.setValue('tuitionFee', newTuitionFee, { shouldValidate: true });
     form.setValue('grade', gradeName, { shouldValidate: true });
@@ -219,6 +230,14 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
                     )} />
                 </TabsContent>
                 <TabsContent value="tuition" className="mt-0 space-y-4">
+                    {showFeeWarning && (
+                        <Alert variant="destructive">
+                             <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                                Attention : Aucun frais de scolarité n'est défini pour la classe sélectionnée. Le solde de cet élève sera recalculé à 0.
+                            </AlertDescription>
+                        </Alert>
+                    )}
                     <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
