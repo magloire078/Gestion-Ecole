@@ -118,10 +118,10 @@ service cloud.firestore {
       // --- Sub-collections of /ecoles/{schoolId} ---
 
       match /personnel/{staffId} {
-        allow create: if (isSignedIn() && request.auth.uid == staffId && !exists(/databases/$(database)/documents/ecoles/$(schoolId))) || isDirector(schoolId);
+        allow create: if hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId);
         allow read: if isSchoolMember(schoolId);
-        allow update: if (isDirector(schoolId)) || (request.auth.uid == staffId && request.resource.data.role == resource.data.role);
-        allow delete: if isDirector(schoolId);
+        allow update: if hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId;
+        allow delete: if hasPermission(schoolId, 'manageUsers');
       }
       
       match /parents/{parentId} {
@@ -149,16 +149,6 @@ service cloud.firestore {
           allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
           allow create, update, delete: if hasPermission(schoolId, 'manageBilling');
         }
-
-        match /absences/{absenceId} {
-          allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-          allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');
-        }
-
-        match /incidents_disciplinaires/{incidentId} {
-          allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-          allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline');
-        }
         
         match /dossier_medical/{dossierId} {
           allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
@@ -181,11 +171,15 @@ service cloud.firestore {
       match /frais_scolarite/{feeId} { allow read, write: if hasPermission(schoolId, 'manageBilling'); }
       
       match /absences/{absenceId} {
-        allow read: if isSchoolMember(schoolId);
+        allow read: if hasPermission(schoolId, 'viewUsers');
         allow write: if hasPermission(schoolId, 'manageAttendance');
       }
       
-      match /incidents_disciplinaires/{incidentId} { allow read, write: if hasPermission(schoolId, 'manageDiscipline'); }
+      match /incidents_disciplinaires/{incidentId} { 
+        allow read: if hasPermission(schoolId, 'viewUsers');
+        allow write: if hasPermission(schoolId, 'manageDiscipline'); 
+      }
+      
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
       match /bibliotheque_prets/{loanId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
       match /messagerie/{messageId} { allow read, write: if hasPermission(schoolId, 'manageCommunication'); }
