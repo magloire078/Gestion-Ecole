@@ -13,8 +13,6 @@ import type { key_trousseau as KeyTrousseau } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Label } from '../ui/label';
 
@@ -72,7 +70,8 @@ export function TrousseauForm({ schoolId, trousseau: editingTrousseau, onSave }:
       toast({ title: `Trousseau ${editingTrousseau ? 'modifié' : 'ajouté'}` });
       onSave();
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/cles_trousseaux`, operation: 'write', requestResourceData: dataToSave }));
+        console.error("Error saving trousseau:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le trousseau.' });
     } finally {
       setIsSubmitting(false);
     }

@@ -19,8 +19,6 @@ import { collection, query, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { activite as Activite, student as Student, inscriptionActivite as Inscription } from '@/lib/data-types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -71,7 +69,8 @@ export default function InscriptionsPage() {
       toast({ title: 'Inscription réussie' });
       setIsFormOpen(false);
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'create', requestResourceData: values }));
+      console.error("Error saving inscription:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'inscription.' });
     }
   };
 
@@ -82,7 +81,8 @@ export default function InscriptionsPage() {
       await deleteDoc(docRef);
       toast({ title: "Inscription annulée" });
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+      console.error("Error deleting inscription:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'annuler l\'inscription.' });
     }
   }
 

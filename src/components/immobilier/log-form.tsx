@@ -8,8 +8,6 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { useFirestore } from '@/firebase';
 import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import type { key_log as KeyLog, key_trousseau as KeyTrousseau, staff } from '@/lib/data-types';
 import { Loader2 } from 'lucide-react';
 
@@ -53,7 +51,8 @@ export function LogForm({ schoolId, trousseaux, staffMembers, onSave }: LogFormP
       toast({ title: "Mouvement enregistré" });
       onSave();
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/cles_log`, operation: 'create', requestResourceData: logData }));
+      console.error("Error saving log:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le mouvement.' });
     } finally {
       setIsSavingLog(false);
       // Reset form state

@@ -13,8 +13,6 @@ import { useFirestore } from '@/firebase';
 import { collection, doc, setDoc, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
 import type { accountingTransaction as AccountingTransaction } from '@/lib/data-types';
 
@@ -105,12 +103,12 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
             });
             onSave();
         } catch (serverError) {
-            const permissionError = new FirestorePermissionError({
-                path: editingTransaction ? doc(collectionRef, editingTransaction.id!).path : collectionRef.path,
-                operation: 'write',
-                requestResourceData: transactionData,
+            console.error("Error saving transaction:", serverError);
+            toast({
+                variant: "destructive",
+                title: "Erreur",
+                description: "Impossible d'enregistrer la transaction. Veuillez vérifier vos permissions et réessayer.",
             });
-            errorEmitter.emit('permission-error', permissionError);
         } finally {
             setIsSubmitting(false);
         }

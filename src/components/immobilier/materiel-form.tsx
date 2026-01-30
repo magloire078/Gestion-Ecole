@@ -13,8 +13,6 @@ import { collection, doc, setDoc, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import type { materiel as Materiel } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
 import { Combobox } from '../ui/combobox';
 import { Loader2 } from 'lucide-react';
@@ -69,10 +67,8 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
         toast({ title: `Matériel ${materiel ? 'modifié' : 'ajouté'}`, description: `L'équipement ${values.name} a été enregistré.` });
         onSave();
     } catch (e) {
-        const path = `ecoles/${schoolId}/inventaire/${materiel?.id || '(new)'}`;
-        const operation = materiel ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
+      console.error("Error saving material:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le matériel.' });
     } finally {
         setIsSubmitting(false);
     }

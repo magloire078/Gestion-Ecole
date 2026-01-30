@@ -12,8 +12,6 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { useFirestore, useUser } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -61,22 +59,16 @@ export function SupportTicketForm({ onSave }: SupportTicketFormProps) {
       submittedAt: serverTimestamp(),
     };
 
-    addDoc(collectionRef, dataToSave)
-      .then(() => {
+    try {
+        await addDoc(collectionRef, dataToSave);
         toast({ title: 'Ticket envoyé !', description: 'Notre équipe vous répondra bientôt.' });
         onSave();
-      })
-      .catch((error) => {
-        const permissionError = new FirestorePermissionError({
-          path: collectionRef.path,
-          operation: 'create',
-          requestResourceData: dataToSave,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
+    } catch (error) {
+        console.error("Error submitting ticket:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'envoyer le ticket.' });
+    } finally {
         setIsSubmitting(false);
-      });
+    }
   };
 
   return (

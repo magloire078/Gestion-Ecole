@@ -13,8 +13,6 @@ import { doc, setDoc } from 'firebase/firestore';
 import type { dossierMedical as DossierMedical } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 const dossierMedicalSchema = z.object({
   groupeSanguin: z.string().optional(),
@@ -75,12 +73,8 @@ export function DossierMedicalForm({ schoolId, studentId, dossier, onSave }: Dos
       toast({ title: 'Dossier médical mis à jour', description: 'Les informations ont été enregistrées avec succès.' });
       onSave();
     } catch (e) {
-      const permissionError = new FirestorePermissionError({
-        path: dossierRef.path,
-        operation: 'write',
-        requestResourceData: dataToSave,
-      });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error("Error saving medical record:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le dossier médical.' });
     } finally {
         setIsSubmitting(false);
     }

@@ -3,9 +3,6 @@
 'use client';
 import { Firestore } from 'firebase/firestore';
 import type { school as SchoolData, user_root, staff } from '@/lib/data-types';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-
 
 export interface CreateSchoolData {
   name: string;
@@ -113,10 +110,7 @@ export class SchoolCreationService {
       };
       
     } catch (error: any) {
-       errorEmitter.emit('permission-error', new FirestorePermissionError({
-          path: '[BATCH] /ecoles & /users & /personnel',
-          operation: 'write'
-      }));
+       console.error("Error creating school: ", error);
       return {
         success: false,
         error: error.message || 'Erreur inconnue lors de la création'

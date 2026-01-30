@@ -12,8 +12,6 @@ import { useFirestore } from '@/firebase';
 import type { bus as Bus, staff as Staff } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const busSchema = z.object({
@@ -61,10 +59,8 @@ export function BusForm({ schoolId, drivers, bus, onSave }: BusFormProps) {
             toast({ title: `Bus ${bus ? 'modifié' : 'ajouté'}`, description: `Le bus ${values.registrationNumber} a été enregistré.` });
             onSave();
         } catch (error) {
-            const path = `ecoles/${schoolId}/transport_bus/${bus?.id || '(new)'}`;
-            const operation = bus ? 'update' : 'create';
-            const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error saving bus:", error);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le bus.' });
         } finally {
             setIsSubmitting(false);
         }

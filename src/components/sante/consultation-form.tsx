@@ -13,8 +13,6 @@ import { useFirestore } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
 
 const consultationSchema = z.object({
@@ -63,12 +61,8 @@ export function ConsultationForm({ schoolId, studentId, onSave }: ConsultationFo
       toast({ title: 'Consultation ajoutée', description: 'La consultation a été enregistrée avec succès.' });
       onSave();
     } catch (e) {
-        const permissionError = new FirestorePermissionError({
-            path: consultationRef.path,
-            operation: 'create',
-            requestResourceData: dataToSave,
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error saving consultation:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la consultation.' });
     } finally {
         setIsSubmitting(false);
     }

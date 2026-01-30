@@ -1,9 +1,7 @@
 'use client';
 
 import { Firestore, collection, query, where, getDocs, writeBatch, doc, serverTimestamp } from 'firebase/firestore';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import type { staff as Staff, school as School } from '@/lib/data-types';
+import type { staff as Staff, school as School, payrollRun as PayrollRun } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getPayslipDetails } from '@/lib/bulletin-de-paie';
@@ -94,10 +92,6 @@ export const runPayrollForMonth = async (
 
     } catch (error) {
         console.error("Erreur lors de l'exécution de la paie:", error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `ecoles/${schoolId}/payroll_runs`,
-            operation: 'write'
-        }));
-        return { success: false, error: "Une erreur de permission est survenue." };
+        return { success: false, error: "Une erreur de permission ou une autre erreur est survenue." };
     }
 };

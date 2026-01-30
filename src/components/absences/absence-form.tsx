@@ -12,8 +12,6 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student } from '@/lib/data-types';
 import { useEffect } from 'react';
 
@@ -66,21 +64,21 @@ export function AbsenceForm({ schoolId, student, onSave }: AbsenceFormProps) {
         };
         
         const absenceCollectionRef = collection(firestore, `ecoles/${schoolId}/absences`);
-        addDoc(absenceCollectionRef, absenceData)
-        .then(() => {
+        try {
+            await addDoc(absenceCollectionRef, absenceData);
             toast({
                 title: "Absence enregistrée",
                 description: `L'absence de ${student.firstName} a été enregistrée.`,
             });
             onSave();
-        }).catch(error => {
-            const permissionError = new FirestorePermissionError({
-                path: absenceCollectionRef.path,
-                operation: 'create',
-                requestResourceData: absenceData,
+        } catch (error) {
+            console.error("Error saving absence: ", error);
+            toast({
+                variant: 'destructive',
+                title: "Erreur d'enregistrement",
+                description: "Impossible d'enregistrer l'absence. Veuillez vérifier vos permissions et réessayer.",
             });
-            errorEmitter.emit('permission-error', permissionError);
-        });
+        }
     };
 
     return (

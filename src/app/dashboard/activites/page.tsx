@@ -36,8 +36,6 @@ import { collection, query, addDoc, setDoc, deleteDoc, doc } from 'firebase/fire
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { activite as Activite, staff as Staff } from '@/lib/data-types';
 
@@ -88,7 +86,8 @@ export default function GestionActivitesPage() {
       toast({ title: `Activité ${editingActivite ? 'modifiée' : 'ajoutée'}`});
       setIsFormOpen(false);
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/activites`, operation: 'write', requestResourceData: values }));
+      console.error("Error saving activity:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'activité.' });
     }
   };
   
@@ -104,7 +103,8 @@ export default function GestionActivitesPage() {
         await deleteDoc(docRef);
         toast({ title: 'Activité supprimée' });
     } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+        console.error("Error deleting activity:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'activité.' });
     } finally {
         setIsDeleteDialogOpen(false);
         setActiviteToDelete(null);

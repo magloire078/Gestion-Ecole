@@ -13,8 +13,6 @@ import type { building as Building, staff as Staff } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 import { query } from 'firebase/firestore';
 
@@ -63,19 +61,16 @@ export function BuildingForm({ building, onSave, collectionName }: BuildingFormP
       ? setDoc(doc(collectionRef, building.id), dataToSave, { merge: true })
       : addDoc(collectionRef, dataToSave);
       
-    promise
-        .then(() => {
-            toast({ title: `Bâtiment ${building ? 'modifié' : 'ajouté'}`, description: `Le bâtiment ${values.name} a été enregistré.` });
-            onSave();
-        })
-        .catch(e => {
-          const path = `ecoles/${schoolId}/${collectionName}/${building?.id || '(new)'}`;
-          const operation = building ? 'update' : 'create';
-          errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData: dataToSave }));
-        })
-        .finally(() => {
-            setIsSubmitting(false);
-        });
+    try {
+        await promise;
+        toast({ title: `Bâtiment ${building ? 'modifié' : 'ajouté'}`, description: `Le bâtiment ${values.name} a été enregistré.` });
+        onSave();
+    } catch(e) {
+      console.error("Error saving building:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le bâtiment.' });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
 
   const buildingTypes = [

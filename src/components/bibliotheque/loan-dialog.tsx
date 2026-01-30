@@ -14,8 +14,6 @@ import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { format, addDays } from 'date-fns';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import type { libraryBook as LibraryBook, student as Student } from '@/lib/data-types';
 
 const loanSchema = z.object({
@@ -65,11 +63,8 @@ export function LoanDialog({ isOpen, onClose, book, students, schoolId }: LoanDi
       toast({ title: 'Prêt enregistré', description: `Le livre "${book.title}" a été emprunté.` });
       onClose();
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: loanCollectionRef.path,
-        operation: 'create',
-        requestResourceData: loanData,
-      }));
+      console.error("Error saving loan:", e);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer le prêt." });
     } finally {
       setIsSubmitting(false);
     }

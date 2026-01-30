@@ -2,8 +2,6 @@
 'use client';
 
 import { doc, updateDoc, Firestore, writeBatch, increment, serverTimestamp, collection, getDocs, query, where, deleteField } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import type { student as Student } from '@/lib/data-types';
 
 /**
@@ -27,16 +25,7 @@ export const updateStudentPhoto = async (
     const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
     const dataToUpdate = { photoUrl: photoUrl };
 
-    return updateDoc(studentRef, dataToUpdate).catch(error => {
-        const permissionError = new FirestorePermissionError({
-            path: studentRef.path,
-            operation: 'update',
-            requestResourceData: dataToUpdate
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        // Rethrow the original error or the custom one if you want the caller to handle it too
-        throw permissionError;
-    });
+    return updateDoc(studentRef, dataToUpdate);
 };
 
 
@@ -64,14 +53,7 @@ export const archiveStudent = async (
         batch.update(classDocRef, { studentCount: increment(-1) });
     }
 
-    return batch.commit().catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}/eleves/${student.id} and class update`,
-            operation: 'update'
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        throw permissionError;
-    });
+    return batch.commit();
 };
 
 /**
@@ -97,12 +79,5 @@ export const restoreStudent = async (
         batch.update(classDocRef, { studentCount: increment(1) });
     }
 
-    return batch.commit().catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH WRITE] /ecoles/${schoolId}/eleves/${student.id}`,
-            operation: 'update'
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        throw permissionError;
-    });
+    return batch.commit();
 };

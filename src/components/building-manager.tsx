@@ -13,8 +13,6 @@ import { Skeleton } from './ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import type { PermissionId } from '@/lib/permissions';
 
 interface Building {
@@ -143,7 +141,8 @@ export function BuildingManager({
     .then(() => {
         toast({ title: "Bâtiment supprimé" });
     }).catch(e => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+        console.error("Error deleting building:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le bâtiment.' });
     }).finally(() => {
         setBuildingToDelete(null);
     });
@@ -157,7 +156,8 @@ export function BuildingManager({
               toast({ title: "Salle/Chambre supprimée" });
           })
           .catch(e => {
-              errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+              console.error("Error deleting room:", e);
+              toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la salle/chambre.' });
           })
           .finally(() => {
               setRoomToDelete(null);

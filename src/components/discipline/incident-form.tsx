@@ -13,8 +13,6 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { useFirestore, useUser } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { student as Student } from '@/lib/data-types';
 import { useEffect } from 'react';
 
@@ -87,19 +85,14 @@ export function IncidentForm({ schoolId, students, onSave, student }: IncidentFo
         };
 
         const collectionRef = collection(firestore, `ecoles/${schoolId}/incidents_disciplinaires`);
-        addDoc(collectionRef, incidentData)
-            .then(() => {
-                toast({ title: 'Incident enregistré', description: "Le nouvel incident disciplinaire a été ajouté." });
-                onSave();
-            })
-            .catch(error => {
-                const permissionError = new FirestorePermissionError({
-                    path: collectionRef.path,
-                    operation: 'create',
-                    requestResourceData: incidentData,
-                });
-                errorEmitter.emit('permission-error', permissionError);
-            });
+        try {
+            await addDoc(collectionRef, incidentData);
+            toast({ title: 'Incident enregistré', description: "Le nouvel incident disciplinaire a été ajouté." });
+            onSave();
+        } catch (error) {
+            console.error("Error saving incident:", error);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'incident.' });
+        }
     };
 
     return (

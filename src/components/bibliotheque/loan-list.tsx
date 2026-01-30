@@ -13,8 +13,6 @@ import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { libraryLoan as Loan, libraryBook as Book, student as Student } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 interface LoanWithDetails extends Loan {
   id: string;
@@ -61,7 +59,8 @@ export function LoanList({ schoolId }: { schoolId: string }) {
       await updateDoc(loanRef, { status: 'returned', returnedDate: new Date().toISOString() });
       toast({ title: "Livre retourné", description: "Le prêt a été marqué comme retourné." });
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: loanRef.path, operation: 'update' }));
+      console.error("Error returning book:", e);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de marquer le livre comme retourné." });
     }
   };
 

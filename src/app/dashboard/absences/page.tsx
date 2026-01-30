@@ -45,8 +45,6 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { class_type as Class, student as Student, absence as Absence } from '@/lib/data-types';
@@ -145,7 +143,12 @@ export default function AbsencesPage() {
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/absences`, absenceToDelete.id));
       toast({ title: 'Absence supprimée', description: "L'enregistrement de l'absence a été supprimé." });
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `ecoles/${schoolId}/absences/${absenceToDelete.id}`, operation: 'delete' }));
+      console.error("Failed to delete absence: ", e);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de supprimer l'absence. Vérifiez vos permissions et réessayer.",
+      });
     } finally {
       setIsDeleteDialogOpen(false);
       setAbsenceToDelete(null);

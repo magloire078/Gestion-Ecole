@@ -14,8 +14,6 @@ import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import type { tache_maintenance as TacheMaintenance, staff as Staff } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '../../firebase/error-emitter';
 import { format } from 'date-fns';
 import { Combobox } from '../ui/combobox';
 import { Loader2 } from 'lucide-react';
@@ -76,10 +74,8 @@ export function MaintenanceForm({ schoolId, tache, staffMembers, locationOptions
       toast({ title: `Tâche ${tache ? 'modifiée' : 'créée'}`, description: `La tâche "${values.title}" a été enregistrée.` });
       onSave();
     } catch (error) {
-      const path = `ecoles/${schoolId}/maintenance/${tache?.id || '(new)'}`;
-      const operation = tache ? 'update' : 'create';
-      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error("Error saving maintenance task:", error);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer la tâche de maintenance." });
     } finally {
         setIsSubmitting(false);
     }

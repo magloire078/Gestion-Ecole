@@ -12,8 +12,6 @@ import { useFirestore } from '@/firebase';
 import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
 
 const vaccinationSchema = z.object({
@@ -49,19 +47,16 @@ export function VaccinationForm({ schoolId, studentId, onSave }: VaccinationForm
     const vaccinsRef = collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/dossier_medical/${studentId}/vaccins`);
     const dataToSave = { ...values, schoolId };
 
-    addDoc(vaccinsRef, dataToSave).then(() => {
+    try {
+        await addDoc(vaccinsRef, dataToSave);
         toast({ title: 'Vaccin ajouté', description: `Le vaccin ${values.nom} a été enregistré.` });
         onSave();
-    }).catch(e => {
-        const permissionError = new FirestorePermissionError({
-            path: vaccinsRef.path,
-            operation: 'create',
-            requestResourceData: dataToSave,
-        });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
+    } catch(e) {
+        console.error("Error saving vaccination:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le vaccin.' });
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   };
 
   return (

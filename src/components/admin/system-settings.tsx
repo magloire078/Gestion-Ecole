@@ -9,8 +9,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 import { Loader2, Wrench, Banknote } from 'lucide-react';
 
 export const SystemSettings = () => {
@@ -40,20 +38,15 @@ export const SystemSettings = () => {
     const handleSave = async () => {
         setIsSaving(true);
         const dataToSave = { maintenanceMode, paymentProviders };
-        setDoc(settingsRef, dataToSave, { merge: true })
-        .then(() => {
+        try {
+            await setDoc(settingsRef, dataToSave, { merge: true });
             toast({ title: "Paramètres sauvegardés", description: "Les paramètres système ont été mis à jour."});
-        })
-        .catch(e => {
-             const permissionError = new FirestorePermissionError({
-                path: settingsRef.path,
-                operation: 'write',
-                requestResourceData: dataToSave,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        }).finally(() => {
+        } catch (e) {
+             console.error("Error saving system settings:", e);
+             toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer les paramètres.' });
+        } finally {
             setIsSaving(false);
-        });
+        }
     };
     
     const handleProviderToggle = (provider: keyof typeof paymentProviders) => {

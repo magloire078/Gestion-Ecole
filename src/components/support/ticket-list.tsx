@@ -12,8 +12,6 @@ import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 interface SupportTicketListProps {
   tickets: (SupportTicket & { id: string })[];
@@ -41,10 +39,8 @@ export function SupportTicketList({ tickets, isLoading }: SupportTicketListProps
             await updateDoc(ticketRef, { status });
             toast({ title: 'Statut mis à jour' });
         } catch (e) {
-             const permissionError = new FirestorePermissionError({
-                path: ticketRef.path, operation: 'update', requestResourceData: { status }
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error updating ticket status:", e);
+            toast({ variant: "destructive", title: "Erreur", description: "Impossible de mettre à jour le statut du ticket." });
         }
     };
     

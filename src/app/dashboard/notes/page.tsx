@@ -51,8 +51,6 @@ import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs, getD
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
@@ -254,14 +252,8 @@ export default function GradeEntryPage() {
         }
       setIsFormOpen(false);
     } catch(error) {
-      const operation = editingGrade ? 'update' : 'create';
-      const studentIdForPath = editingGrade ? editingGrade.studentId : values.studentId;
-      const path = editingGrade 
-        ? `ecoles/${schoolId}/eleves/${studentIdForPath}/notes/${editingGrade.id}`
-        : `ecoles/${schoolId}/eleves/${studentIdForPath}/notes`;
-
-      const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: gradeData });
-      errorEmitter.emit('permission-error', permissionError);
+      console.error("Error saving grade:", error);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer la note." });
     }
   }
 
@@ -280,11 +272,8 @@ export default function GradeEntryPage() {
         setIsDeleting(false);
         setGradeToDelete(null);
     } catch(error) {
-         const permissionError = new FirestorePermissionError({ 
-             path: `ecoles/${schoolId}/eleves/${gradeToDelete.studentId}/notes/${gradeToDelete.id}`, 
-             operation: 'delete' 
-        });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error deleting grade:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la note." });
     }
   };
 

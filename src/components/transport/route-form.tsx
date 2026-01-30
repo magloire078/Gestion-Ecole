@@ -12,8 +12,6 @@ import { useFirestore } from '@/firebase';
 import type { route as Route, bus as Bus } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Separator } from '../ui/separator';
@@ -110,10 +108,8 @@ export function RouteForm({ schoolId, buses, route, onSave }: RouteFormProps) {
         toast({ title: 'Ligne enregistrée', description: `La ligne ${values.name} a été enregistrée.` });
         onSave();
     } catch (e) {
-        const path = `ecoles/${schoolId}/transport_lignes/${route?.id || '(new)'}`;
-        const operation = route ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error saving route:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la ligne.' });
     } finally {
         setIsSubmitting(false);
     }

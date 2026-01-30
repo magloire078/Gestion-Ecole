@@ -12,8 +12,6 @@ import { useFirestore } from '@/firebase';
 import type { room as Room, building as Building } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const roomFormSchema = z.object({
@@ -64,17 +62,16 @@ export function RoomForm({ schoolId, buildings, room, onSave, defaultBuildingId 
         ? setDoc(doc(collectionRef, room.id), dataToSave, { merge: true })
         : addDoc(collectionRef, dataToSave);
     
-    promise.then(() => {
+    try {
+        await promise;
         toast({ title: 'Chambre enregistrée', description: `La chambre ${values.number} a été enregistrée.` });
         onSave();
-    }).catch(e => {
-        const path = `ecoles/${schoolId}/internat_chambres/${room?.id || '(new)'}`;
-        const operation = room ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
+    } catch(e) {
+        console.error("Error saving room:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la chambre.' });
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   };
 
   return (

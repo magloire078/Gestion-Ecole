@@ -19,8 +19,6 @@ import { Slider } from '@/components/ui/slider';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 const surveySchema = z.object({
   schoolName: z.string().min(1, "Le nom de l'établissement est requis."),
@@ -70,6 +68,10 @@ export default function SurveyPage() {
   });
 
   const handleSubmit = async (values: SurveyFormValues) => {
+    if (!firestore) {
+        toast({ variant: "destructive", title: "Erreur", description: "La base de données n'est pas accessible." });
+        return;
+    }
     setIsSubmitting(true);
     const surveyCollectionRef = collection(firestore, 'survey_responses');
     const dataToSave = {
@@ -77,21 +79,15 @@ export default function SurveyPage() {
         submittedAt: serverTimestamp(),
     };
     
-    addDoc(surveyCollectionRef, dataToSave)
-        .then(() => {
-            setIsSubmitted(true);
-        })
-        .catch((error) => {
-            const permissionError = new FirestorePermissionError({
-              path: surveyCollectionRef.path,
-              operation: 'create',
-              requestResourceData: dataToSave,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-        })
-        .finally(() => {
-            setIsSubmitting(false);
-        });
+    try {
+        await addDoc(surveyCollectionRef, dataToSave);
+        setIsSubmitted(true);
+    } catch(error) {
+        console.error("Error submitting survey:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer votre réponse." });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
   const painPointOptions = [

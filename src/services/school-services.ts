@@ -2,8 +2,6 @@
 'use client';
 
 import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField, collection, query, where, getDocs, limit } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import { DEMO_SCHOOL_NAME } from "@/lib/demo-data";
 
 
@@ -47,14 +45,7 @@ export const deleteSchool = (
     };
     batch.update(schoolRef, schoolUpdate);
 
-    return batch.commit().catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH] ${schoolRef.path}`,
-            operation: 'write',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        throw permissionError;
-    });
+    return batch.commit();
 };
 
 
@@ -95,14 +86,7 @@ export const restoreSchool = (
       deletedAt: deleteField() 
     });
 
-    return batch.commit().catch((serverError) => {
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH] ${schoolRef.path}`,
-            operation: 'write',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        throw permissionError;
-    });
+    return batch.commit();
 };
 
 /**
@@ -148,10 +132,6 @@ export const resetDemoTrial = async (
 
     } catch (error: any) {
         console.error("Error resetting demo trial:", error);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `ecoles/ (recherche de ${DEMO_SCHOOL_NAME})`,
-            operation: 'write',
-        }));
         throw error;
     }
 };

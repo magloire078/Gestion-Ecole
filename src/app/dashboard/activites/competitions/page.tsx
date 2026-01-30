@@ -37,8 +37,6 @@ import { collection, query, addDoc, setDoc, deleteDoc, doc } from 'firebase/fire
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { competition as Competition } from '@/lib/data-types';
 import Link from 'next/link';
@@ -89,7 +87,8 @@ export default function CompetitionsPage() {
       toast({ title: `Compétition ${editingCompetition ? 'modifiée' : 'ajoutée'}` });
       setIsFormOpen(false);
     } catch (e) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: collectionRef.path, operation: 'write', requestResourceData: values }));
+      console.error("Error saving competition:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la compétition.' });
     }
   };
   
@@ -105,7 +104,8 @@ export default function CompetitionsPage() {
       await deleteDoc(docRef);
       toast({ title: 'Événement supprimé' });
     } catch (e) {
-       errorEmitter.emit('permission-error', new FirestorePermissionError({ path: docRef.path, operation: 'delete' }));
+       console.error("Error deleting competition:", e);
+       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la compétition.' });
     } finally {
       setIsDeleteDialogOpen(false);
     }

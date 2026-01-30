@@ -13,8 +13,6 @@ import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, deleteDoc, doc, orderBy, limit as firestoreLimit } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import type { tache_maintenance as TacheMaintenance, staff, salle as Salle, bus as Bus } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { MaintenanceForm } from './maintenance-form';
@@ -80,8 +78,8 @@ export function MaintenanceList({ schoolId, limit }: MaintenanceListProps) {
       await deleteDoc(doc(firestore, `ecoles/${schoolId}/maintenance`, tacheToDelete.id));
       toast({ title: "Tâche supprimée", description: `La tâche "${tacheToDelete.title}" a été supprimée.` });
     } catch (error) {
-       const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/maintenance/${tacheToDelete.id}`, operation: 'delete' });
-       errorEmitter.emit('permission-error', permissionError);
+       console.error("Error deleting maintenance task:", error);
+       toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la tâche." });
     } finally {
         setIsDeleteDialogOpen(false);
         setTacheToDelete(null);

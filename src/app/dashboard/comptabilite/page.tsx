@@ -54,8 +54,6 @@ import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, doc, deleteDoc, query, orderBy, where } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { accountingTransaction as AccountingTransaction } from '@/lib/data-types';
 import { AccountingCharts } from './charts';
@@ -105,8 +103,8 @@ export default function AccountingPage() {
         setIsDeleteDialogOpen(false);
         setTransactionToDelete(null);
     }).catch(async (serverError) => {
-        const permissionError = new FirestorePermissionError({ path: transactionDocRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error deleting transaction:", serverError);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la transaction." });
     });
   };
 

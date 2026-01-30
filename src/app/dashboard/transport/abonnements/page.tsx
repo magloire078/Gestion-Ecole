@@ -31,8 +31,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { SubscriptionForm } from '@/components/transport/subscription-form';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 interface SubscriptionWithDetails extends TransportSubscription {
     studentName?: string;
@@ -104,11 +102,8 @@ export default function TransportSubscriptionsPage() {
             await deleteDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements`, subscriptionToDelete.id));
             toast({ title: 'Abonnement supprimé', description: "L'abonnement a bien été supprimé." });
         } catch (e) {
-             const permissionError = new FirestorePermissionError({
-                path: `ecoles/${schoolId}/transport_abonnements/${subscriptionToDelete.id}`,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error deleting subscription:", e);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'abonnement.' });
         } finally {
             setIsDeleteDialogOpen(false);
             setSubscriptionToDelete(null);

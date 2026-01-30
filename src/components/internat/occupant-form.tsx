@@ -13,8 +13,6 @@ import type { occupant as Occupant, student as Student, room as Room } from '@/l
 import { format, addMonths } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const occupantFormSchema = z.object({
@@ -89,17 +87,16 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
         ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants/${occupant.id}`), dataToSave, { merge: true })
         : addDoc(collection(firestore, `ecoles/${schoolId}/internat_occupants`), dataToSave);
     
-    promise.then(() => {
+    try {
+        await promise;
         toast({ title: 'Occupation enregistrée', description: "L'assignation de la chambre a été enregistrée." });
         onSave();
-    }).catch(e => {
-        const path = `ecoles/${schoolId}/internat_occupants/${occupant?.id || '(new)'}`;
-        const operation = occupant ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
+    } catch(e) {
+        console.error("Error saving occupant:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'occupation.' });
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   };
 
   return (

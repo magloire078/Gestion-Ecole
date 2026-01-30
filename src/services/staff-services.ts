@@ -2,8 +2,6 @@
 'use client';
 
 import { doc, updateDoc, Firestore, writeBatch, getDoc, deleteField, collection } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 import type { user_root } from "@/lib/data-types";
 
 /**
@@ -27,17 +25,7 @@ export const updateStaffPhoto = async (
     const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
     const dataToUpdate = { photoURL: photoUrl };
 
-    return updateDoc(staffRef, dataToUpdate)
-    .catch(error => {
-        const permissionError = new FirestorePermissionError({
-            path: staffRef.path,
-            operation: 'update',
-            requestResourceData: dataToUpdate
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        // Rethrow the original error or the custom one if you want the caller to handle it too
-        throw permissionError;
-    });
+    return updateDoc(staffRef, dataToUpdate);
 };
 
 
@@ -79,12 +67,5 @@ export const deleteStaffMember = async (
         batch.update(userRootRef, updateData);
     }
     
-    return batch.commit().catch(error => {
-        const permissionError = new FirestorePermissionError({
-            path: `[BATCH] ${staffRef.path} & ${userRootRef.path}`,
-            operation: 'write',
-        });
-        errorEmitter.emit('permission-error', permissionError);
-        throw permissionError;
-    });
+    return batch.commit();
 };

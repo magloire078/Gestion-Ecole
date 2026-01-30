@@ -5,8 +5,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser, useFirestore } from '@/firebase';
 import { doc, onSnapshot, updateDoc, DocumentData, getDoc, serverTimestamp, updateDoc as firestoreUpdateDoc, FirestoreError } from 'firebase/firestore';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { getAuth } from 'firebase/auth';
 
 const DEFAULT_TITLE = 'GèreEcole - Solution de gestion scolaire tout-en-un';
@@ -71,8 +69,6 @@ export function useSchoolData() {
             setLoading(false);
         }, (err: FirestoreError) => {
              console.error("Error fetching school data:", err);
-             const permissionError = new FirestorePermissionError({ path: schoolDocRef.path, operation: 'get' });
-             errorEmitter.emit('permission-error', permissionError);
              setSchoolData(null);
              setError(err.message);
              setLoading(false);
@@ -98,12 +94,7 @@ export function useSchoolData() {
         try {
             await firestoreUpdateDoc(schoolDocRef, dataToUpdate);
         } catch (error) {
-            const permissionError = new FirestorePermissionError({
-                path: schoolDocRef.path,
-                operation: 'update',
-                requestResourceData: dataToUpdate,
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error updating school data:", error);
             throw error;
         }
     }, [authSchoolId, firestore]);

@@ -43,8 +43,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -122,8 +120,8 @@ export function BookList({ schoolId }: BookListProps) {
         toast({ title: `Livre ${editingBook ? "modifié" : "ajouté"}`, description: `"${values.title}" a été ${editingBook ? "modifié" : "ajouté"} à la bibliothèque.` });
         setIsFormOpen(false);
     }).catch(error => {
-        const permissionError = new FirestorePermissionError({ path: `ecoles/${schoolId}/bibliotheque`, operation: editingBook ? 'update' : 'create', requestResourceData: bookData });
-        errorEmitter.emit('permission-error', permissionError);
+        console.error("Error saving book:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer le livre." });
     });
   };
 
@@ -148,7 +146,8 @@ export function BookList({ schoolId }: BookListProps) {
         toast({ title: "Livre supprimé" });
         setIsDeleteDialogOpen(false);
     }).catch((error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: getBookDocRef(bookToDelete.id).path, operation: 'delete' }));
+        console.error("Error deleting book:", error);
+        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer le livre." });
     });
   };
   

@@ -15,8 +15,6 @@ import { useToast } from '@/hooks/use-toast';
 import type { competition as Competition, student as Student, participationCompetition as Participation } from '@/lib/data-types';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 interface ParticipationWithStudentName extends Participation {
   id: string;
@@ -75,25 +73,27 @@ export default function CompetitionParticipantsPage() {
         notes: ''
     };
     const participantsCollectionRef = collection(firestore, `ecoles/${schoolId}/participations_competitions`);
-    addDoc(participantsCollectionRef, dataToSave).then(() => {
+    try {
+        await addDoc(participantsCollectionRef, dataToSave);
         toast({ title: 'Participant ajouté', description: "L'élève a été ajouté à la compétition." });
         setSelectedStudent('');
         setRank('');
-    }).catch(error => {
-        const permissionError = new FirestorePermissionError({ path: participantsCollectionRef.path, operation: 'create', requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+    } catch(error) {
+        console.error("Error adding participant:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'ajouter le participant.' });
+    }
   };
 
   const handleDeleteParticipant = async (participantId: string) => {
     if (!schoolId) return;
     const participantDocRef = doc(firestore, `ecoles/${schoolId}/participations_competitions`, participantId);
-    deleteDoc(participantDocRef).then(() => {
-      toast({ title: 'Participant retiré', description: "L'élève a été retiré de la compétition." });
-    }).catch(error => {
-        const permissionError = new FirestorePermissionError({ path: participantDocRef.path, operation: 'delete' });
-        errorEmitter.emit('permission-error', permissionError);
-    });
+    try {
+        await deleteDoc(participantDocRef);
+        toast({ title: 'Participant retiré', description: "L'élève a été retiré de la compétition." });
+    } catch(error) {
+        console.error("Error deleting participant:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de retirer le participant.' });
+    }
   }
 
   const isLoading = schoolLoading || competitionLoading || studentsLoading || participantsLoading;

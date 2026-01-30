@@ -13,8 +13,6 @@ import type { transportSubscription as TransportSubscription, student as Student
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { DialogFooter } from '../ui/dialog';
 
 const subscriptionFormSchema = z.object({
@@ -71,17 +69,16 @@ export function SubscriptionForm({ schoolId, students, routes, subscription, onS
         ? setDoc(doc(firestore, `ecoles/${schoolId}/transport_abonnements/${subscription.id}`), dataToSave, { merge: true })
         : addDoc(collection(firestore, `ecoles/${schoolId}/transport_abonnements`), dataToSave);
 
-    promise.then(() => {
+    try {
+        await promise;
         toast({ title: 'Abonnement enregistré', description: 'L\'abonnement au transport a été mis à jour.' });
         onSave();
-    }).catch(e => {
-        const path = `ecoles/${schoolId}/transport_abonnements/${subscription?.id || '(new)'}`;
-        const operation = subscription ? 'update' : 'create';
-        const permissionError = new FirestorePermissionError({ path, operation, requestResourceData: dataToSave });
-        errorEmitter.emit('permission-error', permissionError);
-    }).finally(() => {
+    } catch (e) {
+        console.error("Error saving subscription:", e);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'abonnement.' });
+    } finally {
         setIsSubmitting(false);
-    });
+    }
   };
 
   return (

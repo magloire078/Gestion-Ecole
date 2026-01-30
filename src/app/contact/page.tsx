@@ -22,8 +22,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 
 const TIME_SLOTS = [
   '09:00', '10:00', '11:00', '14:00', '15:00', '16:00', '17:00'
@@ -69,6 +67,14 @@ export default function ContactPage() {
   });
 
   const handleSubmit = async (values: ContactFormValues) => {
+    if (!firestore) {
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "La connexion à la base de données a échoué. Veuillez réessayer.",
+        });
+        return;
+    }
     setIsSubmitting(true);
     const collectionRef = collection(firestore, 'contact_requests');
     const dataToSave = {
@@ -77,21 +83,19 @@ export default function ContactPage() {
       submittedAt: serverTimestamp(),
     };
 
-    addDoc(collectionRef, dataToSave)
-      .then(() => {
+    try {
+        await addDoc(collectionRef, dataToSave);
         setIsSubmitted(true);
-      })
-      .catch((error) => {
-        const permissionError = new FirestorePermissionError({
-          path: collectionRef.path,
-          operation: 'create',
-          requestResourceData: dataToSave,
+    } catch(error) {
+        console.error("Error submitting contact form:", error);
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible d'envoyer votre demande. Veuillez réessayer plus tard.",
         });
-        errorEmitter.emit('permission-error', permissionError);
-      })
-      .finally(() => {
+    } finally {
         setIsSubmitting(false);
-      });
+    }
   };
 
   if (isSubmitted) {

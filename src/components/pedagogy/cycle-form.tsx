@@ -11,8 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
 import { doc, addDoc, setDoc, collection } from 'firebase/firestore';
 import type { cycle as Cycle } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { useState, useEffect } from 'react';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -73,9 +71,8 @@ export function CycleForm({ schoolId, cycle, cyclesCount, onSave }: CycleFormPro
           toast({ title: `Cycle ${cycle ? 'modifié' : 'créé'}` });
           onSave();
         }).catch(error => {
-          const path = `ecoles/${schoolId}/cycles/${cycle?.id || ''}`;
-          const operation = cycle ? 'update' : 'create';
-          errorEmitter.emit('permission-error', new FirestorePermissionError({ path, operation, requestResourceData: dataToSave }));
+          console.error("Error saving cycle:", error);
+          toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le cycle.' });
         }).finally(() => {
             setIsSubmitting(false);
         });

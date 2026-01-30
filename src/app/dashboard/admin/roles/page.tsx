@@ -22,8 +22,6 @@ import {
 } from "@/components/ui/accordion"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function RolesPage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -65,12 +63,13 @@ export default function RolesPage() {
     deleteDoc(docRef)
     .then(() => {
         toast({ title: 'Rôle supprimé', description: `Le rôle "${roleToDelete.name}" a été supprimé.` });
-    }).catch(e => {
-        const permissionError = new FirestorePermissionError({
-            path: docRef.path,
-            operation: 'delete'
+    }).catch(error => {
+        console.error("Error deleting role: ", error);
+        toast({
+            variant: "destructive",
+            title: "Erreur de suppression",
+            description: "Impossible de supprimer le rôle. Vérifiez vos permissions.",
         });
-        errorEmitter.emit('permission-error', permissionError);
     }).finally(() => {
         setIsDeleteDialogOpen(false);
         setRoleToDelete(null);
@@ -164,6 +163,7 @@ export default function RolesPage() {
                     </DialogDescription>
                 </DialogHeader>
                 <RoleForm 
+                    key={editingRole?.id || 'new-role'}
                     schoolId={schoolId!}
                     role={editingRole}
                     onSave={handleFormSave}
