@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,8 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Edit, Trash2, GraduationCap } from 'lucide-react';
 import type { cycle as Cycle, niveau as Niveau, classe as Classe } from '@/lib/data-types';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { NiveauForm } from './niveau-form';
 import { CycleForm } from './cycle-form'; // New import
 
@@ -77,10 +76,16 @@ export function CyclesManager() {
         setIsCycleDeleteOpen(false);
         return;
     }
-    await deleteDoc(doc(firestore, `ecoles/${schoolId}/cycles`, cycleToDelete.id));
-    toast({ title: 'Cycle supprimé' });
-    setIsCycleDeleteOpen(false);
-    setCycleToDelete(null);
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/cycles`, cycleToDelete.id));
+        toast({ title: 'Cycle supprimé' });
+    } catch(e) {
+        console.error("Error deleting cycle:", e);
+        toast({ variant: "destructive", title: "Erreur de suppression", description: "Impossible de supprimer ce cycle."});
+    } finally {
+        setIsCycleDeleteOpen(false);
+        setCycleToDelete(null);
+    }
   };
   
    const handleDeleteNiveau = async () => {
@@ -90,10 +95,16 @@ export function CyclesManager() {
         setIsNiveauDeleteOpen(false);
         return;
     }
-    await deleteDoc(doc(firestore, `ecoles/${schoolId}/niveaux`, niveauToDelete.id));
-    toast({ title: 'Niveau supprimé' });
-    setIsNiveauDeleteOpen(false);
-    setNiveauToDelete(null);
+    try {
+        await deleteDoc(doc(firestore, `ecoles/${schoolId}/niveaux`, niveauToDelete.id));
+        toast({ title: 'Niveau supprimé' });
+    } catch(e) {
+        console.error("Error deleting niveau:", e);
+        toast({ variant: "destructive", title: "Erreur de suppression", description: "Impossible de supprimer ce niveau."});
+    } finally {
+        setIsNiveauDeleteOpen(false);
+        setNiveauToDelete(null);
+    }
   };
 
   const isLoading = schoolLoading || cyclesLoading || niveauxLoading || classesLoading;

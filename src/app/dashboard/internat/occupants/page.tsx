@@ -21,8 +21,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { OccupantForm } from '@/components/internat/occupant-form';
 import { useToast } from '@/hooks/use-toast';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { errorEmitter } from '@/firebase/error-emitter';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import {
@@ -107,11 +105,8 @@ export default function OccupantsPage() {
             await deleteDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants`, occupantToDelete.id));
             toast({ title: 'Occupation supprimée', description: "L'occupation a bien été supprimée." });
         } catch (e) {
-             const permissionError = new FirestorePermissionError({
-                path: `ecoles/${schoolId}/internat_occupants/${occupantToDelete.id}`,
-                operation: 'delete',
-            });
-            errorEmitter.emit('permission-error', permissionError);
+            console.error("Error deleting occupant:", e);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'occupation. Vérifiez vos permissions.' });
         } finally {
             setIsDeleteDialogOpen(false);
             setOccupantToDelete(null);

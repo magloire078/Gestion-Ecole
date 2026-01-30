@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Table,
@@ -39,8 +40,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, doc, query } from "firebase/firestore";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import type { staff as Staff, admin_role as AdminRole, subject as Subject } from '@/lib/data-types';
@@ -114,19 +113,23 @@ export default function PersonnelPage() {
   const [editingStaff, setEditingStaff] = useState<StaffMember | null>(null);
   const [staffToDelete, setStaffToDelete] = useState<StaffMember | null>(null);
   
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!schoolId || !staffToDelete) return;
     
-    deleteStaffMember(firestore, schoolId, staffToDelete.id, staffToDelete.role)
-      .then(() => {
+    try {
+        await deleteStaffMember(firestore, schoolId, staffToDelete.id, staffToDelete.role)
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
-      }).catch((serverError) => {
-        // L'erreur est gérée par le service, pas besoin de toast ici.
-        console.error("Erreur lors de la suppression du membre du personnel :", serverError);
-      }).finally(() => {
+    } catch(e: any) {
+        console.error("Erreur lors de la suppression du membre du personnel :", e);
+        toast({
+            variant: "destructive",
+            title: "Erreur de suppression",
+            description: e.message || "Impossible de supprimer ce membre. Vérifiez vos permissions."
+        });
+    } finally {
         setIsDeleteDialogOpen(false);
         setStaffToDelete(null);
-      });
+    }
   };
 
   const handleOpenFormDialog = (staffMember: StaffMember | null) => {
@@ -220,7 +223,7 @@ export default function PersonnelPage() {
             </AlertDialogContent>
           </AlertDialog>
           
-           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+           <Dialog open={isFormOpen} onOpenChange={() => { setIsFormOpen(false); setEditingStaff(null); }}>
               <DialogContent className="sm:max-w-3xl">
                   <DialogHeader>
                     <DialogTitle>{editingStaff ? "Modifier un Membre" : "Ajouter un Membre du Personnel"}</DialogTitle>

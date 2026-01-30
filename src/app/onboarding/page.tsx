@@ -12,8 +12,6 @@ import { useUser } from '@/hooks/use-user';
 import { useFirestore } from "@/firebase";
 import { doc, writeBatch, collection, query, where, getDocs, getDoc, updateDoc } from "firebase/firestore";
 import { Logo } from '@/components/logo';
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { staff as Staff, user_root, parent as Parent, parent_session } from '@/lib/data-types';
@@ -181,7 +179,6 @@ export default function OnboardingPage() {
 
     } catch(error: any) {
       console.error('Erreur lors de la jonction:', error);
-      errorEmitter.emit('permission-error', new FirestorePermissionError({ path: `[BATCH] /users/... & /ecoles/...`, operation: 'write', requestResourceData: { schoolCode }}));
       toast({ variant: 'destructive', title: 'Erreur', description: error.message || 'Une erreur est survenue.' });
     } finally {
       setIsProcessing(false);

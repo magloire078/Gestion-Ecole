@@ -74,8 +74,12 @@ export function SchoolsTable() {
         });
       })
       .catch((error) => {
-        // L'erreur est déjà gérée par le service. Pas besoin de toast ici.
         console.error("Component caught error during school deletion:", error);
+        toast({
+            variant: "destructive",
+            title: "Erreur de suppression",
+            description: "Impossible de mettre cette école à la corbeille."
+        });
       })
       .finally(() => {
         setIsDeleting(false);
@@ -95,7 +99,11 @@ export function SchoolsTable() {
             });
         })
         .catch((error) => {
-            // Erreur gérée par le service.
+            toast({
+                variant: "destructive",
+                title: "Erreur de restauration",
+                description: "Impossible de restaurer cette école."
+            });
         })
         .finally(() => {
             setIsRestoring(false);

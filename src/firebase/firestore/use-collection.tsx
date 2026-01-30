@@ -1,3 +1,4 @@
+
 'use client';
 import {useState, useEffect} from 'react';
 import {
@@ -14,14 +15,13 @@ export function useCollection<T>(query: Query<T> | null) {
   const [data, setData] = useState<QueryDocumentSnapshot<T>[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
-  const firestore = useFirestore();
   const { toast } = useToast();
 
   useEffect(() => {
     // query est un objet, il n'est pas stable entre les rendus.
     // On pourrait sérialiser la requête pour la rendre stable, mais c'est complexe.
     // Pour l'instant, on se fie au fait que le composant parent utilise useMemo.
-    if (!query || !firestore) {
+    if (!query) {
       setData([]);
       setLoading(false);
       return;
@@ -36,9 +36,12 @@ export function useCollection<T>(query: Query<T> | null) {
     }, (serverError: FirestoreError) => {
         console.error("useCollection Firestore Error:", serverError.message);
         setError(serverError);
-        // On ne notifie plus systématiquement, le composant qui appelle le hook
-        // peut décider de le faire en se basant sur l'état 'error'.
-        setData([]);
+        toast({
+          variant: "destructive",
+          title: "Erreur de chargement",
+          description: "Impossible de charger les données: permissions insuffisantes ou erreur réseau.",
+        });
+        setData([]); // Clear data on error
         setLoading(false);
     });
 

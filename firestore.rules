@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -141,13 +142,13 @@ service cloud.firestore {
         allow write: if hasPermission(schoolId, 'manageUsers');
 
         match /notes/{gradeId} {
-          allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
           allow create, update, delete: if hasPermission(schoolId, 'manageGrades');
         }
         
         match /paiements/{paymentId} {
-          allow read: if (isSchoolMember(schoolId) && hasPermission(schoolId, 'viewUsers')) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-          allow create, update, delete: if hasPermission(schoolId, 'manageBilling');
+           allow read: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+           allow write: if hasPermission(schoolId, 'manageBilling');
         }
         
         match /dossier_medical/{dossierId} {
@@ -172,10 +173,14 @@ service cloud.firestore {
       
       match /absences/{absenceId} {
         allow read: if isSchoolMember(schoolId);
-        allow write: if hasPermission(schoolId, 'manageAttendance');
+        allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');
       }
       
-      match /incidents_disciplinaires/{incidentId} { allow read, write: if hasPermission(schoolId, 'manageDiscipline'); }
+      match /incidents_disciplinaires/{incidentId} {
+        allow read: if isSchoolMember(schoolId);
+        allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline');
+      }
+      
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
       match /bibliotheque_prets/{loanId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
       match /messagerie/{messageId} { allow read, write: if hasPermission(schoolId, 'manageCommunication'); }

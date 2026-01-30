@@ -1,3 +1,4 @@
+
 'use client';
 import {useState, useEffect} from 'react';
 import {
@@ -43,6 +44,11 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
     }, (err) => {
         console.error("useDoc Firestore Error:", err);
         setError(err);
+        toast({
+            variant: "destructive",
+            title: "Erreur de chargement",
+            description: `Impossible de charger le document: ${err.message}`,
+        });
         if(options?.onError) {
             options.onError(err);
         }
