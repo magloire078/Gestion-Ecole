@@ -171,13 +171,13 @@ service cloud.firestore {
       match /frais_scolarite/{feeId} { allow read, write: if hasPermission(schoolId, 'manageBilling'); }
       
       match /absences/{absenceId} {
-        allow read: if hasPermission(schoolId, 'viewUsers');
+        allow read: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageAttendance');
       }
       
-      match /incidents_disciplinaires/{incidentId} { 
-        allow read: if hasPermission(schoolId, 'viewUsers');
-        allow write: if hasPermission(schoolId, 'manageDiscipline'); 
+      match /incidents_disciplinaires/{incidentId} {
+        allow read: if isSchoolMember(schoolId);
+        allow write: if hasPermission(schoolId, 'manageDiscipline');
       }
       
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
