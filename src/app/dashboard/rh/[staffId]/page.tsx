@@ -12,7 +12,7 @@ import { doc, collection, query, where, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import type { staff as Staff, class_type as Class, admin_role as AdminRole, timetableEntry } from '@/lib/data-types';
+import type { staff as Staff, class_type as Class, admin_role as AdminRole, timetableEntry, subject as Subject } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
 import { ImageUploader } from '@/components/image-uploader';
 import { updateStaffPhoto } from '@/services/staff-services';
@@ -153,9 +153,13 @@ export default function StaffProfilePage() {
 
     const allAdminRolesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/admin_roles`) : null, [firestore, schoolId]);
     const { data: allAdminRolesData, loading: allAdminRolesLoading } = useCollection(allAdminRolesQuery);
+
+    const subjectsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [schoolId, firestore]);
+    const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
     
-    const allSchoolClasses = useMemo(() => allSchoolClassesData.map(d => ({ id: d.id, ...d.data() } as Class & {id: string})), [allSchoolClassesData]);
-    const allAdminRoles = useMemo(() => allAdminRolesData.map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})), [allAdminRolesData]);
+    const allSchoolClasses = useMemo(() => (allSchoolClassesData || []).map(d => ({ id: d.id, ...d.data() } as Class & {id: string})), [allSchoolClassesData]);
+    const allAdminRoles = useMemo(() => (allAdminRolesData || []).map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})), [allAdminRolesData]);
+    const subjects = useMemo(() => (subjectsData || []).map(d => ({ id: d.id, ...d.data() } as Subject & {id: string})), [subjectsData]);
 
     const timetableQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
     const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
@@ -164,7 +168,7 @@ export default function StaffProfilePage() {
     const classMap = useMemo(() => new Map(allSchoolClasses.map(c => [c.id, c.name])), [allSchoolClasses]);
 
 
-    const isLoading = staffLoading || schoolLoading || timetableLoading || allClassesLoading || allAdminRolesLoading;
+    const isLoading = staffLoading || schoolLoading || timetableLoading || allClassesLoading || allAdminRolesLoading || subjectsLoading;
 
 
     if (isLoading) {
@@ -284,12 +288,12 @@ export default function StaffProfilePage() {
                 <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>
               </DialogHeader>
               <StaffEditForm
-                  key={editingStaff?.id || 'new'}
+                  key={staffMember.id}
                   schoolId={schoolId!}
                   editingStaff={staffMember}
                   classes={allSchoolClasses}
                   adminRoles={allAdminRoles}
-                  subjects={[]}
+                  subjects={subjects}
                   onFormSubmit={() => setIsEditDialogOpen(false)}
                />
             </DialogContent>
