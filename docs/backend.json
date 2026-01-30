@@ -186,7 +186,8 @@
                 "stripe": { "type": "boolean" },
                 "orangeMoney": { "type": "boolean" },
                 "mtn": { "type": "boolean" },
-                "wave": { "type": "boolean" }
+                "wave": { "type": "boolean" },
+                "paydunya": { "type": "boolean" }
             }
         }
       }
@@ -1362,11 +1363,3 @@
     }
   }
 }
-
-    
-
-    
-
-
-
-

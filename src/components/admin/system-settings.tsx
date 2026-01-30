@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -23,6 +24,7 @@ export const SystemSettings = () => {
         orangeMoney: true,
         mtn: true,
         wave: true,
+        paydunya: true,
     });
     const [isSaving, setIsSaving] = useState(false);
     
@@ -30,7 +32,7 @@ export const SystemSettings = () => {
         if (settingsData) {
             setMaintenanceMode(settingsData.maintenanceMode || false);
             if (settingsData.paymentProviders) {
-                setPaymentProviders(settingsData.paymentProviders);
+                setPaymentProviders(prev => ({...prev, ...settingsData.paymentProviders}));
             }
         }
     }, [settingsData]);
@@ -107,6 +109,10 @@ export const SystemSettings = () => {
                      <div className="flex items-center justify-between p-4 border rounded-lg">
                         <Label htmlFor="wave-switch" className="font-semibold">Wave</Label>
                         <Switch id="wave-switch" checked={paymentProviders.wave} onCheckedChange={() => handleProviderToggle('wave')} />
+                    </div>
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <Label htmlFor="paydunya-switch" className="font-semibold">PayDunya</Label>
+                        <Switch id="paydunya-switch" checked={paymentProviders.paydunya} onCheckedChange={() => handleProviderToggle('paydunya')} />
                     </div>
                 </CardContent>
             </Card>

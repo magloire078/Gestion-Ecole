@@ -5,6 +5,7 @@ import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
 import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createWaveCheckoutSession } from '@/lib/wave';
 import { requestMtnMomoPayment } from '@/lib/mtn-momo';
+import { createPayDunyaCheckout } from '@/lib/paydunya';
 import type { User } from 'firebase/auth';
 
 interface PaymentProviderData {
@@ -17,25 +18,23 @@ interface PaymentProviderData {
     duration: number; // Duration in months
 }
 
-type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn';
+type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya';
 
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
     const { plan, price, description, user, schoolId, phoneNumber, duration } = data;
     const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
     
-    // Using a generic pending page for mobile money, and specific success/cancel for all.
     const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success`;
     const cancelUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`;
     const pendingUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente`;
 
     if (provider === 'orangemoney') {
-        // Unique ID for this transaction, including duration
         const orderId = `${schoolId}_${duration}m_${new Date().getTime()}`;
         
         const paymentData = {
             merchant_key: process.env.ORANGE_MONEY_CLIENT_ID || '',
             currency: 'XOF' as const,
-            order_id: orderId, // Pass the unique ID
+            order_id: orderId,
             amount: parseInt(price, 10),
             return_url: successUrl,
             cancel_url: cancelUrl,
@@ -55,7 +54,6 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             currency: 'XOF' as const,
             success_url: successUrl,
             error_url: cancelUrl,
-            // Wave's `client_reference` can be used to pass our internal transaction ID
             client_reference: `${schoolId}_${duration}m_${new Date().getTime()}`
         };
         const paymentLink = await createWaveCheckoutSession(paymentData);
@@ -72,7 +70,6 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             priceInCents,
             planName: plan,
             description: description,
-            // Pass schoolId and duration in client_reference_id
             clientReferenceId: `${schoolId}__${duration}`,
             customerEmail: user.email,
         };
@@ -86,13 +83,12 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         if (!phoneNumber) {
             return { url: null, error: 'Le numéro de téléphone est requis pour le paiement MTN.' };
         }
-        // Unique ID for this transaction, including duration
         const transactionId = `${schoolId}_${duration}m_${new Date().getTime()}`;
         
         const paymentData = {
             amount: price,
             currency: 'EUR' as const,
-            externalId: transactionId, // Use the unique ID here
+            externalId: transactionId,
             payer: {
                 partyIdType: 'MSISDN' as const,
                 partyId: phoneNumber,
@@ -106,6 +102,26 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             return { url: pendingUrl, error: null };
         }
         return { url: null, error: message };
+    }
+
+    if (provider === 'paydunya') {
+        const referenceId = `${schoolId}_${duration}m_${new Date().getTime()}`;
+        const paymentData = {
+            total_amount: parseInt(price, 10),
+            description: description,
+            custom_data: {
+                reference: referenceId,
+                plan: plan,
+                user_id: user.uid,
+            },
+            return_url: successUrl,
+            cancel_url: cancelUrl,
+            callback_url: `${BASE_APP_URL}/api/webhooks/paydunya`,
+        };
+
+        const { url, error } = await createPayDunyaCheckout(paymentData);
+        if (url) return { url, error: null };
+        return { url: null, error: error || "Impossible de générer le lien de paiement PayDunya." };
     }
     
     return { url: null, error: 'Fournisseur de paiement non supporté.' };
