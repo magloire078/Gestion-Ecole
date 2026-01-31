@@ -8,7 +8,6 @@ import {
   FirestoreError,
 } from 'firebase/firestore';
 import {useFirestore} from '../client-provider';
-import { useToast } from '@/hooks/use-toast';
 
 type UseDocOptions = {
     onError?: (error: FirestoreError) => void;
@@ -19,7 +18,6 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
   const firestore = useFirestore();
-  const { toast } = useToast();
 
 
   useEffect(() => {
@@ -46,11 +44,6 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
             if (isMounted) {
                 console.error("useDoc Firestore Error:", err);
                 setError(err);
-                toast({
-                    variant: "destructive",
-                    title: "Erreur de chargement",
-                    description: `Impossible de charger le document: ${err.message}`,
-                });
                 if(options?.onError) {
                     options.onError(err);
                 }

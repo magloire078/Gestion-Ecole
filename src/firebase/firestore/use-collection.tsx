@@ -7,14 +7,11 @@ import {
   QueryDocumentSnapshot,
   FirestoreError,
 } from 'firebase/firestore';
-import {useFirestore} from '../client-provider';
-import { useToast } from '@/hooks/use-toast';
 
 export function useCollection<T>(query: Query<T> | null) {
   const [data, setData] = useState<QueryDocumentSnapshot<T>[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
-  const { toast } = useToast();
 
   useEffect(() => {
     if (!query) {
@@ -37,11 +34,6 @@ export function useCollection<T>(query: Query<T> | null) {
             if (isMounted) {
                 console.error("useCollection Firestore Error:", serverError.message);
                 setError(serverError);
-                toast({
-                    variant: "destructive",
-                    title: "Erreur de chargement",
-                    description: "Impossible de charger les données: permissions insuffisantes ou erreur réseau.",
-                });
                 setData([]);
             }
         } finally {
