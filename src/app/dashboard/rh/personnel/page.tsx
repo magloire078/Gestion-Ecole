@@ -117,12 +117,16 @@ export default function PersonnelPage() {
   const handleDelete = () => {
     if (!schoolId || !staffToDelete) return;
     
-    deleteStaffMember(firestore, schoolId, staffToDelete.id, staffToDelete.role)
+    deleteStaffMember(firestore, schoolId, staffToDelete.id)
       .then(() => {
         toast({ title: "Membre du personnel supprimé", description: `${staffToDelete.firstName} ${staffToDelete.lastName} a été retiré(e) de la liste.` });
       }).catch((serverError) => {
-        // L'erreur est gérée par le service, pas besoin de toast ici.
         console.error("Erreur lors de la suppression du membre du personnel :", serverError);
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "Impossible de supprimer le membre du personnel.",
+        });
       }).finally(() => {
         setIsDeleteDialogOpen(false);
         setStaffToDelete(null);

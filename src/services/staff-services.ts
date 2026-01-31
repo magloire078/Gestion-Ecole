@@ -1,4 +1,3 @@
-
 'use client';
 
 import { doc, updateDoc, Firestore, writeBatch, getDoc, deleteField, collection } from "firebase/firestore";
@@ -32,15 +31,13 @@ export const updateStaffPhoto = async (
     });
 };
 
-
 /**
  * Supprime un membre du personnel d'une école et met à jour son document utilisateur racine.
  */
 export const deleteStaffMember = async (
     firestore: Firestore,
     schoolId: string,
-    staffId: string,
-    role: string,
+    staffId: string
 ): Promise<void> => {
     if (!schoolId || !staffId) {
         throw new Error("L'ID de l'école et du membre du personnel sont requis.");
