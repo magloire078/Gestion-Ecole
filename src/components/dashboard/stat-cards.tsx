@@ -1,10 +1,8 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useFirestore, useMemoFirebase } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { collection, query, getCountFromServer, where } from 'firebase/firestore';
-import { StatCard } from '@/components/ui/stat-card';
 import { 
   Users, 
   BookUser, 
@@ -14,6 +12,8 @@ import {
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import type { libraryBook as LibraryBook } from '@/lib/data-types';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 
 export function StatCards({ schoolId }: { schoolId: string }) {
