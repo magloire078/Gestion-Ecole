@@ -64,13 +64,11 @@ service cloud.firestore {
     }
 
     function isParentOfStudent(studentId, schoolId) {
-      // This function relies on a 'parents' subcollection in the school document.
-      // Make sure this structure is correct.
       let parentPath = /databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid);
       return isSignedIn() && 
              exists(parentPath) && 
              'studentIds' in get(parentPath).data &&
-             studentId in get(parentPath).data.studentIds;
+             get(parentPath).data.studentIds.hasAny([studentId]);
     }
     
     // =================================
@@ -143,9 +141,13 @@ service cloud.firestore {
       }
 
       match /conges_personnel/{leaveId} {
+        // Un membre du personnel peut lire ses propres demandes, un manager peut lire toutes les demandes.
         allow read: if hasPermission(schoolId, 'manageUsers') || (isSignedIn() && resource.data.staffId == request.auth.uid);
+        // Un membre du personnel peut créer sa propre demande de congé.
         allow create: if isSignedIn() && request.resource.data.staffId == request.auth.uid;
+        // Seul un manager peut modifier/approuver/rejeter une demande.
         allow update: if hasPermission(schoolId, 'manageUsers');
+        // Seul un manager peut supprimer une demande.
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
       
@@ -248,12 +250,12 @@ service cloud.firestore {
         allow delete: if hasPermission(schoolId, 'manageCommunication');
       }
       
-      // Allow collection group queries
+      // Allow collection group queries on subcollections for admins
       match /{path=**}/absences/{absenceId} {
-        allow read: if hasPermission(get(path).data.schoolId, 'manageAttendance') || (isSignedIn() && isParentOfStudent(get(path).data.id, get(path).data.schoolId));
+        allow read: if hasPermission(get(path).data.schoolId, 'manageAttendance') || (isSignedIn() && isParentOfStudent(get(path).data.studentId, get(path).data.schoolId));
       }
       match /{path=**}/incidents_disciplinaires/{incidentId} {
-        allow read: if hasPermission(get(path).data.schoolId, 'manageDiscipline') || (isSignedIn() && isParentOfStudent(get(path).data.id, get(path).data.schoolId));
+        allow read: if hasPermission(get(path).data.schoolId, 'manageDiscipline') || (isSignedIn() && isParentOfStudent(get(path).data.studentId, get(path).data.schoolId));
       }
     }
   }
