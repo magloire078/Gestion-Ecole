@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,10 +11,11 @@ import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Edit, Trash2, GraduationCap } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, GraduationCap, MoreHorizontal } from 'lucide-react';
 import type { cycle as Cycle, niveau as Niveau, classe as Classe } from '@/lib/data-types';
 import { NiveauForm } from './niveau-form';
 import { CycleForm } from './cycle-form'; // New import
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 export function CyclesManager() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -146,12 +146,20 @@ export function CyclesManager() {
                         </AccordionTrigger>
                         <AccordionContent className="pt-2 px-4 pb-4">
                            {isDirectorOrAdmin && (
-                                <div className="border-b mb-3 pb-3 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => handleOpenCycleForm(cycle)}><Edit className="h-4 w-4 mr-2"/>Modifier le cycle</Button>
-                                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => { setCycleToDelete(cycle); setIsCycleDeleteOpen(true); }}><Trash2 className="h-4 w-4 mr-2"/>Supprimer le cycle</Button>
-                                    </div>
-                                    <Button variant="outline" size="sm" onClick={() => handleOpenNiveauForm(null, cycle.id)}><PlusCircle className="h-4 w-4 mr-2"/>Ajouter un niveau</Button>
+                                <div className="border-b mb-3 pb-3 flex items-center justify-end">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                            <DropdownMenuItem onClick={() => handleOpenCycleForm(cycle)}><Edit className="mr-2 h-4 w-4"/>Modifier le cycle</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleOpenNiveauForm(null, cycle.id)}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter un niveau</DropdownMenuItem>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem className="text-destructive" onClick={() => { setCycleToDelete(cycle); setIsCycleDeleteOpen(true); }}><Trash2 className="mr-2 h-4 w-4"/>Supprimer le cycle</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                             )}
                             <div className="space-y-2">
@@ -163,9 +171,14 @@ export function CyclesManager() {
                                             <Badge variant="outline" className="font-mono text-xs">{niveau.code}</Badge>
                                         </div>
                                          {isDirectorOrAdmin && (
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenNiveauForm(niveau, cycle.id)}><Edit className="h-4 w-4"/></Button>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setNiveauToDelete(niveau); setIsNiveauDeleteOpen(true); }}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4"/></Button></DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuItem onClick={() => handleOpenNiveauForm(niveau, cycle.id)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
+                                                        <DropdownMenuItem className="text-destructive" onClick={() => { setNiveauToDelete(niveau); setIsNiveauDeleteOpen(true); }}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
                                          )}
                                     </div>
