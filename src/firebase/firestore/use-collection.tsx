@@ -1,7 +1,7 @@
 'use client';
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import {
-  getDocs,
+  onSnapshot,
   Query,
   DocumentData,
   QueryDocumentSnapshot,
@@ -20,37 +20,27 @@ export function useCollection<T>(query: Query<T> | null) {
       return;
     }
     
-    let isMounted = true;
-    
-    const fetchData = async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const snapshot = await getDocs(query);
-            if (isMounted) {
-                setData(snapshot.docs);
-            }
-        } catch (serverError: any) {
-            if (isMounted) {
-                console.error("useCollection Firestore Error:", serverError.message);
-                setError(serverError);
-                setData([]);
-            }
-        } finally {
-            if (isMounted) {
-                setLoading(false);
-            }
-        }
-    };
-    
-    fetchData();
+    setLoading(true);
 
-    return () => {
-        isMounted = false;
-    };
+    const unsubscribe = onSnapshot(query, 
+      (snapshot) => {
+        setData(snapshot.docs);
+        setError(null);
+        setLoading(false);
+      }, 
+      (err) => {
+        console.error("useCollection Firestore Error:", err.message);
+        setError(err);
+        setData([]);
+        setLoading(false);
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
     
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
   
-  return {data: data || [], loading, error };
+  return { data: data || [], loading, error };
 }
