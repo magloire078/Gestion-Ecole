@@ -33,7 +33,7 @@ export default function InternatLayout({
             </p>
         </div>
         <Tabs value={pathname} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
                 {internatSubLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>

@@ -36,6 +36,7 @@ import {
     ShieldAlert,
     BarChart3,
     List,
+    History,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -167,6 +168,7 @@ export const internatSubLinks = [
     { href: '/dashboard/internat/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
     { href: '/dashboard/internat/batiments', label: 'Bâtiments & Chambres', icon: Building, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
     { href: '/dashboard/internat/occupants', label: 'Occupants', icon: Users, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
+    { href: '/dashboard/internat/journal', label: 'Journal', icon: History, permission: 'manageInternat' as PermissionKey, module: 'internat' as Module },
 ];
 
 export const immobilierSubLinks = [
