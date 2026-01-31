@@ -252,10 +252,10 @@ service cloud.firestore {
       
       // Allow collection group queries on subcollections for admins
       match /{path=**}/absences/{absenceId} {
-        allow read: if hasPermission(get(path).data.schoolId, 'manageAttendance') || (isSignedIn() && isParentOfStudent(get(path).data.studentId, get(path).data.schoolId));
+        allow read: if hasPermission(resource.data.schoolId, 'manageAttendance') || (isSignedIn() && isParentOfStudent(resource.data.studentId, resource.data.schoolId));
       }
       match /{path=**}/incidents_disciplinaires/{incidentId} {
-        allow read: if hasPermission(get(path).data.schoolId, 'manageDiscipline') || (isSignedIn() && isParentOfStudent(get(path).data.studentId, get(path).data.schoolId));
+        allow read: if hasPermission(resource.data.schoolId, 'manageDiscipline') || (isSignedIn() && isParentOfStudent(resource.data.studentId, resource.data.schoolId));
       }
     }
   }
