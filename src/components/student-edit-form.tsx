@@ -18,6 +18,7 @@ import type { student as Student, class_type as Class, fee as Fee, niveau as Niv
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogFooter } from './ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getTuitionInfoForClass } from '@/lib/school-utils';
 
 
 const studentSchema = z.object({
@@ -39,9 +40,9 @@ type StudentFormValues = z.infer<typeof studentSchema>;
 
 interface StudentEditFormProps {
   student: Student;
-  classes: Class[];
+  classes: (Class & {id?: string})[];
   fees: Fee[];
-  niveaux: Niveau[];
+  niveaux: (Niveau & {id?: string})[];
   schoolId: string;
   onFormSubmit: () => void;
 }
@@ -77,21 +78,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
   // Effet pour recalculer les montants lorsque la classe ou la remise change
   useEffect(() => {
-    const getTuitionInfoForClass = (classId: string) => {
-      if (!classId || !classes.length || !niveaux.length || !fees.length) return { fee: 0, gradeName: 'N/A' };
-      
-      const selectedClass = classes.find(c => c.id === classId);
-      if (!selectedClass) return { fee: 0, gradeName: 'N/A' };
-      
-      const gradeName = selectedClass.grade;
-      if(!gradeName) return { fee: 0, gradeName: 'N/A' };
-      
-      const feeInfo = fees.find(f => f.grade === gradeName);
-
-      return { fee: feeInfo ? parseFloat(feeInfo.amount) : 0, gradeName: gradeName };
-    }
-
-    const { fee: newTuitionFee, gradeName } = getTuitionInfoForClass(watchedClassId);
+    const { fee: newTuitionFee, gradeName } = getTuitionInfoForClass(watchedClassId, classes, niveaux, fees);
     
     // Show warning if no fee is defined for the selected class
     if (watchedClassId && newTuitionFee === 0) {

@@ -25,6 +25,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { ImageUploader } from '@/components/image-uploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
+import { getTuitionInfoForClass } from '@/lib/school-utils';
 
 
 const registrationSchema = z.object({
@@ -69,7 +70,7 @@ export default function RegistrationPage() {
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+  const classes: (Class & { id: string })[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & { id: string })) || [], [classesData]);
 
   const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
@@ -77,7 +78,7 @@ export default function RegistrationPage() {
   
   const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
-  const niveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
+  const niveaux: (Niveau & { id: string })[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
 
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
@@ -104,22 +105,7 @@ export default function RegistrationPage() {
 
   const watchedClassId = useWatch({ control: form.control, name: 'classId' });
 
-
-  const getTuitionFeeForClass = (classId: string) => {
-    if (!classId || !classes.length || !niveaux.length || !fees.length) return 0;
-    
-    const selectedClass = classes.find(c => c.id === classId);
-    if (!selectedClass) return 0;
-
-    const gradeName = selectedClass.grade;
-    if (!gradeName) return 0;
-    
-    const feeInfo = fees.find(f => f.grade === gradeName);
-
-    return feeInfo ? parseFloat(feeInfo.amount) : 0;
-  };
-
-  const tuitionFeeForSelectedClass = getTuitionFeeForClass(watchedClassId);
+  const { fee: tuitionFeeForSelectedClass } = getTuitionInfoForClass(watchedClassId, classes, niveaux, fees);
   
   const handleNextStep = async () => {
       let fieldsToValidate: (keyof RegistrationFormValues)[] = [];
@@ -153,7 +139,7 @@ export default function RegistrationPage() {
     const selectedClassInfo = classes.find(c => c.id === values.classId);
     const selectedNiveauInfo = niveaux.find(n => n.id === selectedClassInfo?.niveauId);
     
-    const tuitionFee = getTuitionFeeForClass(values.classId);
+    const { fee: tuitionFee } = getTuitionInfoForClass(values.classId, classes, niveaux, fees);
     const currentYear = new Date().getFullYear();
 
     const studentData = {
