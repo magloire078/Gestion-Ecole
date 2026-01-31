@@ -47,27 +47,72 @@ export default function DashboardLayoutContent({ children }: { children: React.R
   }, []);
 
   const generateBreadcrumbs = () => {
-    const paths = pathname.split('/').filter(path => path && path !== 'dashboard');
-    const breadcrumbs = [];
-    
-    let currentPath = '/dashboard';
-    for (let i = 0; i < paths.length; i++) {
-      const path = paths[i];
-      currentPath += `/${path}`;
-      
-      const formattedName = path
-        .replace(/-/g, ' ')
-        .replace(/\b\w/g, l => l.toUpperCase());
-      
-      breadcrumbs.push({
-        name: formattedName,
-        href: currentPath,
-        isCurrent: i === paths.length - 1
-      });
+    // A mapping for more user-friendly names
+    const nameMap: { [key: string]: string } = {
+        'dossiers-eleves': 'Élèves',
+        'pedagogie': 'Pédagogie',
+        'structure': 'Structure',
+        'rh': 'RH & Paie',
+        'personnel': 'Personnel',
+        'bulletin': 'Bulletin',
+        'fiche': 'Fiche',
+        'carte': 'Carte',
+        'emploi-du-temps': 'Emploi du Temps',
+        'immobilier': 'Immobilier',
+        'batiments': 'Bâtiments',
+        'cles': 'Clés',
+        'sante': 'Santé',
+        'paiements': 'Paiements',
+        'parametres': 'Paramètres',
+        'abonnement': 'Abonnement',
+        'facturation': 'Facturation',
+        'donnees': 'Vérification',
+        'admin': 'Administration',
+        'roles': 'Rôles',
+        'transport': 'Transport',
+        'lignes': 'Lignes',
+        'bus': 'Bus',
+        'cantine': 'Cantine',
+        'internat': 'Internat',
+        'activites': 'Activités',
+        'competitions': 'Compétitions',
+        'parent': 'Portail Parent',
+        'student': 'Détail Élève'
+    };
+
+    const pathSegments = pathname.split('/').filter(p => p);
+    const breadcrumbs: { name: string; href: string; isCurrent: boolean }[] = [];
+    let currentPath = '';
+
+    for (let i = 0; i < pathSegments.length; i++) {
+        const segment = pathSegments[i];
+        currentPath += `/${segment}`;
+
+        if (segment === 'dashboard' && i === 0) {
+            breadcrumbs.push({ name: 'Dashboard', href: '/dashboard', isCurrent: pathSegments.length === 1 });
+            continue;
+        }
+        if (segment === 'dashboard' && i > 0) {
+            continue;
+        }
+        
+        // Heuristic to identify Firebase-like IDs and avoid displaying them
+        const isDynamicId = segment.length > 15 && !nameMap[segment];
+
+        let formattedName = 'Détail';
+        if (!isDynamicId) {
+            formattedName = nameMap[segment] || segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+
+        breadcrumbs.push({
+            name: formattedName,
+            href: currentPath,
+            isCurrent: i === pathSegments.length - 1,
+        });
     }
-    
     return breadcrumbs;
   };
+
 
   const breadcrumbs = generateBreadcrumbs();
   
@@ -147,27 +192,23 @@ export default function DashboardLayoutContent({ children }: { children: React.R
 
                 <Breadcrumb className="hidden md:flex">
                   <BreadcrumbList>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink href="/dashboard" className="flex items-center gap-2">
-                        <Home className="h-4 w-4" />
-                        Dashboard
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    {breadcrumbs.length > 0 && <BreadcrumbSeparator />}
                     {breadcrumbs.map((crumb, index) => (
                       <React.Fragment key={crumb.href}>
                         <BreadcrumbItem>
-                          <BreadcrumbLink 
-                            href={crumb.href}
-                            className={cn(
-                              "transition-colors hover:text-primary",
-                              crumb.isCurrent && "text-foreground font-semibold"
-                            )}
-                          >
-                            {crumb.name}
-                          </BreadcrumbLink>
+                           <BreadcrumbLink 
+                                href={crumb.href}
+                                asChild={crumb.isCurrent}
+                                className={cn(
+                                "transition-colors hover:text-primary",
+                                crumb.isCurrent && "text-foreground font-semibold"
+                                )}
+                            >
+                                <Link href={crumb.href}>
+                                    {crumb.name === 'Dashboard' ? <Home className="h-4 w-4" /> : crumb.name}
+                                </Link>
+                            </BreadcrumbLink>
                         </BreadcrumbItem>
-                        {!crumb.isCurrent && <BreadcrumbSeparator />}
+                        {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
                       </React.Fragment>
                     ))}
                   </BreadcrumbList>
