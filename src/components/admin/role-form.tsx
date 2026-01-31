@@ -31,6 +31,9 @@ interface RoleFormProps {
   onSave: () => void;
 }
 
+// Filter out system-level permissions that shouldn't be assigned at the school level.
+const schoolPermissions = allPermissionsList.filter(p => !['manageSystem', 'manageSchools', 'viewSchools'].includes(p.id));
+
 export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -41,7 +44,7 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
   });
 
   useEffect(() => {
-    const defaultPermissions = allPermissionsList.reduce((acc, p) => {
+    const defaultPermissions = schoolPermissions.reduce((acc, p) => {
         acc[p.id as PermissionId] = role?.permissions?.[p.id as PermissionId] || false;
         return acc;
     }, {} as Record<PermissionId, boolean>);
@@ -98,7 +101,7 @@ export function RoleForm({ schoolId, role, onSave }: RoleFormProps) {
         <h3 className="font-semibold">Permissions</h3>
         <ScrollArea className="h-72">
             <div className="space-y-4 pr-4">
-                {allPermissionsList.map((permission) => (
+                {schoolPermissions.map((permission) => (
                   <FormField
                     key={permission.id}
                     control={form.control}
