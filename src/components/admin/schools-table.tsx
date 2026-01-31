@@ -23,6 +23,14 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { deleteSchool, restoreSchool } from '@/services/school-services';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { SchoolEditForm } from './school-edit-form';
 
 interface School {
     id: string;
@@ -47,6 +55,9 @@ export function SchoolsTable() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [schoolToRestore, setSchoolToRestore] = useState<School | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [schoolToEdit, setSchoolToEdit] = useState<School | null>(null);
 
   const schoolsQuery = useMemo(() => 
     user?.profile?.isAdmin
@@ -58,6 +69,11 @@ export function SchoolsTable() {
 
   const schools: School[] = useMemo(() => schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [], [schoolsData]);
 
+  const handleOpenEditDialog = (school: School) => {
+    setSchoolToEdit(school);
+    setIsEditDialogOpen(true);
+  };
+  
   const handleOpenDeleteDialog = (school: School) => {
     setSchoolToDelete(school);
   };
@@ -186,7 +202,7 @@ export function SchoolsTable() {
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(school)}>
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(school)}>
@@ -221,6 +237,23 @@ export function SchoolsTable() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+    
+    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Modifier l'école</DialogTitle>
+                <DialogDescription>
+                    Modification des informations pour {schoolToEdit?.name}.
+                </DialogDescription>
+            </DialogHeader>
+            {schoolToEdit && (
+                <SchoolEditForm 
+                    school={schoolToEdit} 
+                    onSave={() => setIsEditDialogOpen(false)} 
+                />
+            )}
+        </DialogContent>
+    </Dialog>
     </>
   );
 }
