@@ -3,7 +3,7 @@ import { useMemo, useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, Loader2 } from 'lucide-react';
+import { Trash2, Loader2, UserPlus } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
 import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,6 +13,7 @@ import type { UserProfile } from '@/lib/data-types';
 import { revokeSuperAdmin } from '@/services/admin-services';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { GrantAdminDialog } from './grant-admin-dialog';
 
 
 export function AdminsTable() {
@@ -25,6 +26,7 @@ export function AdminsTable() {
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
   const [adminToRevoke, setAdminToRevoke] = useState<UserProfile | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
+  const [isGrantDialogOpen, setIsGrantDialogOpen] = useState(false);
 
 
   const fetchAdmins = async () => {
@@ -34,13 +36,18 @@ export function AdminsTable() {
       };
       setLoading(true);
       try {
-        const personnelQuery = query(collectionGroup(firestore, 'personnel'), where('isAdmin', '==', true));
-        const querySnapshot = await getDocs(personnelQuery);
-        const adminList: UserProfile[] = [];
-        querySnapshot.forEach(doc => {
-            adminList.push({ id: doc.id, ...doc.data() } as UserProfile);
+        // Find all staff members that are admins
+        const staffQuery = query(collectionGroup(firestore, 'personnel'), where('isAdmin', '==', true));
+        const staffSnapshot = await getDocs(staffQuery);
+        
+        // Use a map to avoid duplicates if a user is admin in multiple schools (though unlikely for super admin)
+        const adminMap = new Map<string, UserProfile>();
+        staffSnapshot.forEach(doc => {
+            const adminProfile = { id: doc.id, ...doc.data() } as UserProfile;
+            adminMap.set(adminProfile.uid, adminProfile);
         });
-        setAdmins(adminList);
+
+        setAdmins(Array.from(adminMap.values()));
       } catch (error) {
         console.error("Error fetching admins:", error);
       } finally {
@@ -84,9 +91,15 @@ export function AdminsTable() {
   return (
     <>
     <Card>
-      <CardHeader>
-        <CardTitle>Administrateurs de la Plateforme</CardTitle>
-        <CardDescription>Liste des utilisateurs ayant des privilèges de super administrateur.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle>Administrateurs de la Plateforme</CardTitle>
+            <CardDescription>Liste des utilisateurs ayant des privilèges de super administrateur.</CardDescription>
+        </div>
+         <Button onClick={() => setIsGrantDialogOpen(true)}>
+            <UserPlus className="h-4 w-4 mr-2" />
+            Accorder des droits
+        </Button>
       </CardHeader>
       <CardContent>
         <Table>
@@ -154,6 +167,12 @@ export function AdminsTable() {
             </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
+    
+    <GrantAdminDialog 
+        isOpen={isGrantDialogOpen} 
+        onOpenChange={setIsGrantDialogOpen}
+        onAdminGranted={fetchAdmins}
+    />
     </>
   );
 }
