@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Check, X, Loader2, CalendarClock } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Check, X, Loader2, CalendarClock, Trash2 } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, addDoc, setDoc, deleteDoc, doc, where, orderBy, serverTimestamp } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -68,6 +68,8 @@ export default function StaffLeavesPage() {
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingLeave, setEditingLeave] = useState<(StaffLeave & { id: string }) | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [leaveToDelete, setLeaveToDelete] = useState<(StaffLeave & { id: string }) | null>(null);
 
   const leavesQuery = useMemo(() => {
     if (!schoolId) return null;
@@ -126,6 +128,24 @@ export default function StaffLeavesPage() {
     }
   };
   
+  const handleOpenDeleteDialog = (leave: StaffLeave & { id: string }) => {
+    setLeaveToDelete(leave);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteLeave = async () => {
+    if (!schoolId || !leaveToDelete) return;
+    try {
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/conges_personnel`, leaveToDelete.id));
+      toast({ title: 'Demande supprimée' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la demande.' });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setLeaveToDelete(null);
+    }
+  };
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
         case 'Approuvé': return 'secondary';
@@ -166,11 +186,21 @@ export default function StaffLeavesPage() {
                         <TableCell>{format(new Date(leave.startDate), 'dd/MM/yy')} - {format(new Date(leave.endDate), 'dd/MM/yy')}</TableCell>
                         <TableCell><Badge variant={getStatusBadgeVariant(leave.status)}>{leave.status}</Badge></TableCell>
                         <TableCell className="text-right">
-                          {canManage && leave.status === 'En attente' && (
-                            <div className="flex gap-2 justify-end">
-                              <Button size="sm" variant="outline" className="text-emerald-600 border-emerald-400 hover:bg-emerald-50" onClick={() => handleStatusUpdate(leave.id, 'Approuvé')}><Check className="h-4 w-4 mr-1"/> Approuver</Button>
-                              <Button size="sm" variant="outline" className="text-destructive border-destructive/80 hover:bg-red-50" onClick={() => handleStatusUpdate(leave.id, 'Rejeté')}><X className="h-4 w-4 mr-1"/> Rejeter</Button>
-                            </div>
+                          {canManage && (
+                             <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {leave.status === 'En attente' && (
+                                    <>
+                                      <DropdownMenuItem onClick={() => handleStatusUpdate(leave.id, 'Approuvé')}><Check className="mr-2 h-4 w-4"/>Approuver</DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => handleStatusUpdate(leave.id, 'Rejeté')}><X className="mr-2 h-4 w-4"/>Rejeter</DropdownMenuItem>
+                                    </>
+                                  )}
+                                  <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(leave)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                           )}
                         </TableCell>
                     </TableRow>
@@ -206,6 +236,21 @@ export default function StaffLeavesPage() {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+
+     <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible et supprimera la demande de congé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteLeave} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
