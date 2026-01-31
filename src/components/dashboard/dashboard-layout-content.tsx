@@ -19,17 +19,21 @@ import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbS
 import { SearchModal } from '@/components/search-modal';
 import { Home } from 'lucide-react';
 import { Skeleton } from "@/components/ui/skeleton";
+import { NotificationsPanel } from "@/components/notifications-panel";
+import { useNotifications } from "@/hooks/use-notifications";
+import { Badge } from "@/components/ui/badge";
 
 
 export default function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  // const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading: userLoading, isDirector } = useUser();
   const { schoolData, subscription, loading: schoolLoading, error: schoolError } = useSchoolData();
+  const { unreadCount } = useNotifications();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -39,7 +43,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
       }
       if (e.key === 'Escape') {
         setIsSearchOpen(false);
-        // setIsNotificationsOpen(false);
+        setIsNotificationsOpen(false);
       }
     };
 
@@ -230,6 +234,16 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                   <TooltipContent>Rechercher (⌘K)</TooltipContent>
                 </Tooltip>
                 
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="relative" onClick={() => setIsNotificationsOpen(true)}>
+                       <Bell className="h-5 w-5" />
+                       {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">{unreadCount}</Badge>}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Notifications</TooltipContent>
+                </Tooltip>
+                
                 <UserNav collapsed={isNavCollapsed} />
               </div>
             </header>
@@ -243,6 +257,11 @@ export default function DashboardLayoutContent({ children }: { children: React.R
           <SearchModal
             isOpen={isSearchOpen}
             onClose={() => setIsSearchOpen(false)}
+          />
+
+          <NotificationsPanel 
+            isOpen={isNotificationsOpen} 
+            onClose={() => setIsNotificationsOpen(false)}
           />
 
         </div>

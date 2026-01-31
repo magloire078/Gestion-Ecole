@@ -13,8 +13,9 @@ import { fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { ScrollArea } from "./ui/scroll-area";
 import { cn } from "@/lib/utils";
-// import { useNotifications } from "@/hooks/use-notifications";
+import { useNotifications } from "@/hooks/use-notifications";
 import type { notification as Notification } from '@/lib/data-types';
+import { Badge } from "./ui/badge";
 
 export function NotificationsPanel({ 
   isOpen, 
@@ -26,13 +27,7 @@ export function NotificationsPanel({
   
   const { user } = useUser();
   const firestore = useFirestore();
-  // const { notifications, unreadCount, loading } = useNotifications();
-
-  // MOCKED DATA
-  const notifications: (Notification & { id: string })[] = [];
-  const unreadCount = 0;
-  const loading = false;
-
+  const { notifications, unreadCount, loading } = useNotifications();
 
   const handleMarkAsRead = async (notificationId: string) => {
     if (!user?.schoolId) return;
