@@ -9,6 +9,8 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { useCollection, useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, query, orderBy } from 'firebase/firestore';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Wallet } from 'lucide-react';
@@ -48,6 +50,13 @@ export function ParentPaymentsTab({ student }: ParentPaymentsTabProps) {
                     <div className="flex justify-between items-center"><span className="text-muted-foreground">Statut:</span><TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'}/></div>
                     <div className="flex justify-between items-center text-lg"><span className="font-bold">Solde dû:</span><span className="font-bold text-primary">{formatCurrency(student.amountDue)}</span></div>
                 </CardContent>
+                 <CardFooter>
+                    <Button asChild className="w-full" disabled={!student.amountDue || student.amountDue <= 0}>
+                        <Link href={`/dashboard/parent/student/${student.id}/paiement`}>
+                            Payer le solde en ligne
+                        </Link>
+                    </Button>
+                </CardFooter>
             </Card>
              <Card>
                 <CardHeader><CardTitle>Historique des Paiements</CardTitle></CardHeader>
