@@ -172,26 +172,22 @@ service cloud.firestore {
       
       match /absences/{absenceId} {
         allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');
-        // Staff with permission can read all absences
-        allow get, list: if hasPermission(schoolId, 'manageAttendance');
-        
-        // A parent can only read an absence doc if they are listed in that student's `parentIds`
-        allow get: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId)).data.parentIds;
-        
-        // A parent can only list absences if the query is specifically for their child's ID.
-        allow list: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(request.query.where.studentId)).data.parentIds;
+        // A user can read if they have permission, OR if they are a parent of the concerned student.
+        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
+        allow read: if hasPermission(schoolId, 'manageAttendance') || 
+                     (isSignedIn() &&
+                      resource.data.studentId != null &&
+                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
       }
       
       match /incidents_disciplinaires/{incidentId} {
         allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline');
-        // Staff with permission can read all incidents
-        allow get, list: if hasPermission(schoolId, 'manageDiscipline');
-
-        // A parent can only read an incident doc if they are listed in that student's `parentIds`
-        allow get: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId)).data.parentIds;
-
-        // A parent can only list incidents if the query is specifically for their child's ID.
-        allow list: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(request.query.where.studentId)).data.parentIds;
+        // A user can read if they have permission, OR if they are a parent of the concerned student.
+        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
+         allow read: if hasPermission(schoolId, 'manageDiscipline') || 
+                     (isSignedIn() &&
+                      resource.data.studentId != null &&
+                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
       }
       
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }

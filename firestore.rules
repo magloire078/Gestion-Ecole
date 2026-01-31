@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -172,13 +171,23 @@ service cloud.firestore {
       match /frais_scolarite/{feeId} { allow read, write: if hasPermission(schoolId, 'manageBilling'); }
       
       match /absences/{absenceId} {
-        allow read: if isSchoolMember(schoolId);
         allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');
+        // A user can read if they have permission, OR if they are a parent of the concerned student.
+        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
+        allow read: if hasPermission(schoolId, 'manageAttendance') || 
+                     (isSignedIn() &&
+                      resource.data.studentId != null &&
+                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
       }
       
       match /incidents_disciplinaires/{incidentId} {
-        allow read: if isSchoolMember(schoolId);
         allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline');
+        // A user can read if they have permission, OR if they are a parent of the concerned student.
+        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
+         allow read: if hasPermission(schoolId, 'manageDiscipline') || 
+                     (isSignedIn() &&
+                      resource.data.studentId != null &&
+                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
       }
       
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
