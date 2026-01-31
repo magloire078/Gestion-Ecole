@@ -52,7 +52,6 @@ export const allPermissionsList = [
     { id: 'viewAnalytics', label: 'Voir Statistiques', desc: 'Accéder aux tableaux de bord analytiques.'},
     { id: 'viewSupportTickets', label: 'Voir Tickets Support', desc: 'Consulter les tickets de support.' },
     { id: 'manageSupportTickets', label: 'Gérer Tickets Support', desc: 'Répondre et fermer les tickets.' },
-    { id: 'exportData', label: 'Exporter Données', desc: 'Permet d\'exporter les données de l\'école.' },
 ] as const;
 
 export type PermissionId = typeof allPermissionsList[number]['id'];
