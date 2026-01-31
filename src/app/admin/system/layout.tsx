@@ -4,13 +4,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ShieldCheck, BarChart3, Building, Users, Home, Settings } from 'lucide-react';
+import { ShieldCheck, BarChart3, Building, Users, Home, Settings, Scroll } from 'lucide-react';
 import { Logo } from '@/components/logo';
 
 const adminNavLinks = [
     { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: BarChart3 },
     { href: '/admin/system/schools', label: 'Écoles', icon: Building },
     { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
+    { href: '/admin/system/audit-log', label: 'Journaux d\'Audit', icon: Scroll },
     { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
 ];
 

@@ -1,15 +1,16 @@
 
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Server, RefreshCw } from 'lucide-react';
+import { Server, RefreshCw, ArrowRight } from 'lucide-react';
 import { AuditLog } from '@/components/admin/audit-log';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { resetDemoTrial } from '@/services/school-services';
 import { useState } from 'react';
 import { useFirestore, useUser } from '@/firebase';
+import Link from 'next/link';
 
 import { SystemStats } from '@/components/admin/system-stats';
 import { PlanDistributionChart } from '@/components/admin/plan-distribution-chart';
@@ -65,6 +66,14 @@ export default function SystemAdminDashboard() {
                     <CardContent>
                         <AuditLog limit={10} />
                     </CardContent>
+                    <CardFooter>
+                        <Button asChild variant="secondary" className="w-full">
+                            <Link href="/admin/system/audit-log">
+                                Voir tous les journaux
+                                <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                        </Button>
+                    </CardFooter>
                 </Card>
             </div>
           
