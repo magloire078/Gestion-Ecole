@@ -23,9 +23,12 @@ export const updateStudentPhoto = async (
     }
     
     const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`);
-    const dataToUpdate = { photoUrl: photoUrl };
+    const dataToUpdate = { photoURL: photoUrl };
 
-    return updateDoc(studentRef, dataToUpdate);
+    return updateDoc(studentRef, dataToUpdate).catch((serverError) => {
+        console.error("Error updating student photo:", serverError);
+        throw serverError;
+    });
 };
 
 
@@ -53,7 +56,10 @@ export const archiveStudent = async (
         batch.update(classDocRef, { studentCount: increment(-1) });
     }
 
-    return batch.commit();
+    return batch.commit().catch(serverError => {
+        console.error("Error archiving student:", serverError);
+        throw serverError;
+    });
 };
 
 /**
@@ -79,5 +85,8 @@ export const restoreStudent = async (
         batch.update(classDocRef, { studentCount: increment(1) });
     }
 
-    return batch.commit();
+    return batch.commit().catch(serverError => {
+        console.error("Error restoring student:", serverError);
+        throw serverError;
+    });
 };

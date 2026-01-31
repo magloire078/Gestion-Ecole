@@ -4,8 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useFirestore, useMemoFirebase } from '@/firebase';
 import { collection, query, getCountFromServer, where } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { StatCard } from '@/components/ui/stat-card';
 import { 
   Users, 
   BookUser, 
@@ -102,26 +101,8 @@ export function StatCards({ schoolId }: { schoolId: string }) {
         }
       ];
 
-      if (loading) {
-          return (
-             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {[...Array(4)].map((_, i) => (
-                    <Card key={i}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <Skeleton className="h-4 w-20" />
-                        <Skeleton className="h-12 w-12 rounded-xl" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-8 w-1/2 mt-2" />
-                    </CardContent>
-                    </Card>
-                ))}
-            </div>
-          )
-      }
-
     return (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {statsCards.map((stat) => (
             <Link href={stat.href} key={stat.title}>
                 <Card className="shadow-sm border-border/50 hover:shadow-md hover:-translate-y-1 transition-transform duration-300 ease-in-out">
@@ -132,7 +113,7 @@ export function StatCards({ schoolId }: { schoolId: string }) {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-3xl font-bold mt-2">{stat.value}</div>
+                    <div className="text-3xl font-bold">{loading ? <Skeleton className="h-8 w-16" /> : stat.value}</div>
                 </CardContent>
                 </Card>
             </Link>

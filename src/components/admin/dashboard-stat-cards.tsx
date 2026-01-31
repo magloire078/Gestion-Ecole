@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { collection, getDocs, query, where, getCountFromServer } from 'firebase/firestore';
+import { StatCard } from '@/components/ui/stat-card';
 import { 
   Building, 
   Cpu,
@@ -12,7 +11,6 @@ import {
   CreditCard
 } from 'lucide-react';
 import type { school as School } from '@/lib/data-types';
-import { cn } from '@/lib/utils';
 
 export function DashboardStatCards() {
   const firestore = useFirestore();
@@ -39,19 +37,16 @@ export function DashboardStatCards() {
         setLoading(true);
         try {
             const schoolsQuery = query(collection(firestore, 'ecoles'), where('status', '!=', 'deleted'));
-            const schoolsSnap = await getDocs(schoolsQuery);
-            
-            let activeSubscriptionCount = 0;
-            schoolsSnap.forEach(doc => {
-                const school = doc.data() as School;
-                if (school.subscription && school.subscription.status === 'active') {
-                    activeSubscriptionCount++;
-                }
-            });
+            const subsQuery = query(collection(firestore, 'ecoles'), where('subscription.status', '==', 'active'));
+
+            const [schoolsSnap, subsSnap] = await Promise.all([
+              getCountFromServer(schoolsQuery),
+              getCountFromServer(subsQuery)
+            ]);
 
             setStats({
-                activeSchools: schoolsSnap.size,
-                activeSubscriptions: activeSubscriptionCount,
+                activeSchools: schoolsSnap.data().count,
+                activeSubscriptions: subsSnap.data().count,
             });
 
         } catch (error) {
@@ -64,19 +59,6 @@ export function DashboardStatCards() {
     fetchStats();
   }, [firestore, user?.profile?.isAdmin]);
 
-  const StatCard = ({ title, value, icon: Icon, loading, colorClass }: { title: string, value: string | number, icon: React.ElementType, loading: boolean, colorClass?: string }) => (
-    <Card className={cn("shadow-md", colorClass?.replace('text-', 'border-'))}>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">{title}</p>
-               {loading ? <Skeleton className="h-8 w-20 mt-1" /> : <p className="text-2xl font-bold">{value}</p>}
-            </div>
-            <Icon className={`h-8 w-8 ${colorClass}`} />
-          </div>
-        </CardContent>
-    </Card>
-  );
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

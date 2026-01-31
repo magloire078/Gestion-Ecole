@@ -82,26 +82,36 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
             const data = doc.data() as accountingTransaction;
             const studentName = data.studentId ? studentMap.get(data.studentId) || 'un élève' : 'un élève';
             if(data.date){
-                activities.push({
-                    id: doc.id,
-                    type: 'payment',
-                    timestamp: parseISO(data.date).getTime(),
-                    content: `Paiement de ${data.amount.toLocaleString('fr-FR')} CFA reçu de ${studentName}`,
-                    icon: CreditCard
-                });
+                try {
+                   const timestamp = parseISO(data.date).getTime();
+                   if (!isNaN(timestamp)) {
+                      activities.push({
+                          id: doc.id,
+                          type: 'payment',
+                          timestamp: timestamp,
+                          content: `Paiement de ${data.amount.toLocaleString('fr-FR')} CFA reçu de ${studentName}`,
+                          icon: CreditCard
+                      });
+                   }
+                } catch(e) { console.error("Invalid date format for payment", data.date)}
             }
         });
 
         absencesData?.forEach(doc => {
             const data = doc.data() as absence;
             if(data.date){
-                activities.push({
-                    id: doc.id,
-                    type: 'absence',
-                    timestamp: parseISO(data.date).getTime(),
-                    content: `Absence enregistrée pour ${data.studentName}`,
-                    icon: UserX
-                });
+                try {
+                    const timestamp = parseISO(data.date).getTime();
+                    if (!isNaN(timestamp)) {
+                        activities.push({
+                            id: doc.id,
+                            type: 'absence',
+                            timestamp: timestamp,
+                            content: `Absence enregistrée pour ${data.studentName}`,
+                            icon: UserX
+                        });
+                    }
+                } catch(e) { console.error("Invalid date format for absence", data.date)}
             }
         });
 

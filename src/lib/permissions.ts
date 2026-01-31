@@ -48,6 +48,7 @@ export const allPermissionsList = [
     { id: 'manageActivities', label: 'Gérer Activités', desc: 'Gérer les activités parascolaires.' },
     { id: 'manageMedical', label: 'Gérer Dossiers Médicaux', desc: 'Accès et modification des dossiers de santé.' },
     { id: 'manageSettings', label: 'Gérer Paramètres École', desc: 'Modifier les paramètres de l\'établissement.' },
+    { id: 'viewAnalytics', label: 'Voir Statistiques', desc: 'Accéder aux tableaux de bord analytiques.'},
     { id: 'manageSystem', label: 'Gérer le Système', desc: 'Accès aux paramètres globaux (super-admin).' },
     { id: 'viewSupportTickets', label: 'Voir Tickets Support', desc: 'Consulter les tickets de support.' },
     { id: 'manageSupportTickets', label: 'Gérer Tickets Support', desc: 'Répondre et fermer les tickets.' },

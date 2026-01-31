@@ -25,7 +25,11 @@ export const updateStaffPhoto = async (
     const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
     const dataToUpdate = { photoURL: photoUrl };
 
-    return updateDoc(staffRef, dataToUpdate);
+    return updateDoc(staffRef, dataToUpdate).catch((serverError) => {
+      console.error("Error updating staff photo:", serverError);
+      // Let the original error propagate to be caught by React's error boundary
+      throw serverError;
+    });
 };
 
 
@@ -67,5 +71,8 @@ export const deleteStaffMember = async (
         batch.update(userRootRef, updateData);
     }
     
-    return batch.commit();
+    return batch.commit().catch(serverError => {
+        console.error("Error deleting staff member:", serverError);
+        throw serverError;
+    });
 };

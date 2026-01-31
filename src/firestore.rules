@@ -34,25 +34,40 @@ service cloud.firestore {
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
       return isSignedIn() && 
              exists(userPath) && 
+             'isSuperAdmin' in get(userPath).data &&
              get(userPath).data.isSuperAdmin == true;
     }
 
     function hasPermission(schoolId, permission) {
       let staffPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
       
+      // Check for isSuperAdmin first to grant all permissions
+      if (isSuperAdmin()) {
+          return true;
+      }
+      
+      // Then check for isDirector which also grants many permissions implicitly
+      if (isDirector(schoolId)) {
+          return true;
+      }
+      
+      // Finally, check for explicit role-based permissions
       let hasExplicitPermission = exists(staffPath) &&
-        get(staffPath).data.adminRole != null &&
+        'adminRole' in get(staffPath).data && get(staffPath).data.adminRole != null &&
         exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)) &&
+        'permissions' in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data &&
         permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions &&
         get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions[permission] == true;
 
-      return isSuperAdmin() || isDirector(schoolId) || hasExplicitPermission;
+      return hasExplicitPermission;
     }
 
-    function isParentOfStudent(studentDoc) {
-      return isSignedIn() &&
-             studentDoc.data.parentIds != null &&
-             request.auth.uid in studentDoc.data.parentIds;
+    function isParentOfStudent(studentId, schoolId) {
+      let parentPath = /databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid);
+      return isSignedIn() && 
+             exists(parentPath) && 
+             get(parentPath).data.studentIds != null &&
+             studentId in get(parentPath).data.studentIds;
     }
     
     // =================================
@@ -137,25 +152,25 @@ service cloud.firestore {
       // --- Élèves et leurs sous-collections ---
       
       match /eleves/{studentId} {
-        allow read: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+        allow read: if isSchoolMember(schoolId) || isParentOfStudent(studentId, schoolId);
         allow write: if hasPermission(schoolId, 'manageUsers');
 
         match /notes/{gradeId} {
-          allow read: if hasPermission(schoolId, 'viewGrades') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'viewGrades') || isParentOfStudent(studentId, schoolId);
           allow create, update, delete: if hasPermission(schoolId, 'manageGrades');
         }
         
         match /paiements/{paymentId} {
-           allow read: if hasPermission(schoolId, 'manageBilling') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+           allow read: if hasPermission(schoolId, 'manageBilling') || isParentOfStudent(studentId, schoolId);
            allow write: if hasPermission(schoolId, 'manageBilling');
         }
         
         match /dossier_medical/{dossierId} {
-          allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+          allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(studentId, schoolId);
           allow write: if hasPermission(schoolId, 'manageMedical');
           
           match /{subcollection}/{docId} {
-            allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
+            allow read: if hasPermission(schoolId, 'manageMedical') || isParentOfStudent(studentId, schoolId);
             allow write: if hasPermission(schoolId, 'manageMedical');
           }
         }
@@ -172,22 +187,12 @@ service cloud.firestore {
       
       match /absences/{absenceId} {
         allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');
-        // A user can read if they have permission, OR if they are a parent of the concerned student.
-        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
-        allow read: if hasPermission(schoolId, 'manageAttendance') || 
-                     (isSignedIn() &&
-                      resource.data.studentId != null &&
-                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
+        allow read: if hasPermission(schoolId, 'manageAttendance') || (isSignedIn() && resource.data.studentId != null && isParentOfStudent(resource.data.studentId, schoolId));
       }
       
       match /incidents_disciplinaires/{incidentId} {
         allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline');
-        // A user can read if they have permission, OR if they are a parent of the concerned student.
-        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
-         allow read: if hasPermission(schoolId, 'manageDiscipline') || 
-                     (isSignedIn() &&
-                      resource.data.studentId != null &&
-                      isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(resource.data.studentId))));
+         allow read: if hasPermission(schoolId, 'manageDiscipline') || (isSignedIn() && resource.data.studentId != null && isParentOfStudent(resource.data.studentId, schoolId));
       }
       
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
