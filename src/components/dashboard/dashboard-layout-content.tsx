@@ -22,6 +22,80 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationsPanel } from "@/components/notifications-panel";
 import { useNotifications } from "@/hooks/use-notifications";
 import { Badge } from "@/components/ui/badge";
+import { useFirestore } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
+
+
+// Ce composant récupère dynamiquement le nom d'un document pour l'afficher dans le fil d'Ariane.
+function DynamicBreadcrumbItem({ prevSegment, docId }: { prevSegment: string; docId: string }) {
+    const { schoolId } = useSchoolData();
+    const firestore = useFirestore();
+    const [name, setName] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchDocName = async () => {
+            if (!schoolId || !firestore || !prevSegment) {
+                setLoading(false);
+                setName('Détail');
+                return;
+            }
+
+            setLoading(true);
+            let collectionPath = '';
+            let nameFields: string[] = [];
+
+            switch (prevSegment) {
+                case 'dossiers-eleves':
+                case 'sante':
+                case 'student': // Pour le portail parent
+                    collectionPath = `ecoles/${schoolId}/eleves`;
+                    nameFields = ['firstName', 'lastName'];
+                    break;
+                case 'rh':
+                    collectionPath = `ecoles/${schoolId}/personnel`;
+                    nameFields = ['displayName'];
+                    break;
+                case 'classes':
+                    collectionPath = `ecoles/${schoolId}/classes`;
+                    nameFields = ['name'];
+                    break;
+                case 'competitions':
+                    collectionPath = `ecoles/${schoolId}/competitions`;
+                    nameFields = ['name'];
+                    break;
+                default:
+                    setLoading(false);
+                    setName('Détail');
+                    return;
+            }
+
+            try {
+                const docRef = doc(firestore, collectionPath, docId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const docName = nameFields.map(field => data[field]).join(' ').trim();
+                    setName(docName || 'Sans nom');
+                } else {
+                    setName('Inconnu');
+                }
+            } catch (e) {
+                console.error("Error fetching breadcrumb name:", e);
+                setName('Erreur');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDocName();
+    }, [prevSegment, docId, schoolId, firestore]);
+
+    if (loading) {
+        return <Skeleton className="h-4 w-24" />;
+    }
+
+    return <span>{name || 'Détail'}</span>;
+}
 
 
 export default function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
@@ -51,76 +125,6 @@ export default function DashboardLayoutContent({ children }: { children: React.R
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const generateBreadcrumbs = () => {
-    // A mapping for more user-friendly names
-    const nameMap: { [key: string]: string } = {
-        'dossiers-eleves': 'Élèves',
-        'pedagogie': 'Pédagogie',
-        'structure': 'Structure',
-        'rh': 'RH & Paie',
-        'personnel': 'Personnel',
-        'bulletin': 'Bulletin',
-        'fiche': 'Fiche',
-        'carte': 'Carte',
-        'emploi-du-temps': 'Emploi du Temps',
-        'immobilier': 'Immobilier',
-        'batiments': 'Bâtiments',
-        'cles': 'Clés',
-        'sante': 'Santé',
-        'paiements': 'Paiements',
-        'parametres': 'Paramètres',
-        'abonnement': 'Abonnement',
-        'facturation': 'Facturation',
-        'donnees': 'Vérification',
-        'admin': 'Administration',
-        'roles': 'Rôles',
-        'transport': 'Transport',
-        'lignes': 'Lignes',
-        'bus': 'Bus',
-        'cantine': 'Cantine',
-        'internat': 'Internat',
-        'activites': 'Activités',
-        'competitions': 'Compétitions',
-        'parent': 'Portail Parent',
-        'student': 'Détail Élève'
-    };
-
-    const pathSegments = pathname.split('/').filter(p => p);
-    const breadcrumbs: { name: string; href: string; isCurrent: boolean }[] = [];
-    let currentPath = '';
-
-    for (let i = 0; i < pathSegments.length; i++) {
-        const segment = pathSegments[i];
-        currentPath += `/${segment}`;
-
-        if (segment === 'dashboard' && i === 0) {
-            breadcrumbs.push({ name: 'Dashboard', href: '/dashboard', isCurrent: pathSegments.length === 1 });
-            continue;
-        }
-        if (segment === 'dashboard' && i > 0) {
-            continue;
-        }
-        
-        // Heuristic to identify Firebase-like IDs and avoid displaying them
-        const isDynamicId = segment.length > 15 && !nameMap[segment];
-
-        let formattedName = 'Détail';
-        if (!isDynamicId) {
-            formattedName = nameMap[segment] || segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        }
-
-        breadcrumbs.push({
-            name: formattedName,
-            href: currentPath,
-            isCurrent: i === pathSegments.length - 1,
-        });
-    }
-    return breadcrumbs;
-  };
-
-
-  const breadcrumbs = generateBreadcrumbs();
-  
   const navProps = {
     isSuperAdmin: user?.profile?.isAdmin === true,
     isDirector: isDirector,
@@ -130,6 +134,40 @@ export default function DashboardLayoutContent({ children }: { children: React.R
   };
 
   const isLoading = userLoading || (user && !user.isParent && schoolLoading) || (user && !user.isParent && !schoolData);
+
+  const nameMap: { [key: string]: string } = {
+      'dossiers-eleves': 'Élèves',
+      'pedagogie': 'Pédagogie',
+      'structure': 'Structure',
+      'rh': 'RH & Paie',
+      'personnel': 'Personnel',
+      'bulletin': 'Bulletin',
+      'fiche': 'Fiche',
+      'carte': 'Carte',
+      'emploi-du-temps': 'Emploi du Temps',
+      'immobilier': 'Immobilier',
+      'batiments': 'Bâtiments',
+      'cles': 'Clés',
+      'sante': 'Santé',
+      'paiements': 'Paiements',
+      'parametres': 'Paramètres',
+      'abonnement': 'Abonnement',
+      'facturation': 'Facturation',
+      'donnees': 'Vérification',
+      'admin': 'Administration',
+      'roles': 'Rôles',
+      'transport': 'Transport',
+      'lignes': 'Lignes',
+      'bus': 'Bus',
+      'cantine': 'Cantine',
+      'internat': 'Internat',
+      'activites': 'Activités',
+      'competitions': 'Compétitions',
+      'parent': 'Portail Parent',
+      'student': 'Détail Élève'
+  };
+
+  const pathSegments = pathname.split('/').filter(p => p);
 
 
   return (
@@ -195,28 +233,41 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                   </SheetContent>
                 </Sheet>
 
-                <Breadcrumb className="hidden md:flex">
-                  <BreadcrumbList>
-                    {breadcrumbs.map((crumb, index) => (
-                      <React.Fragment key={crumb.href}>
+                 <Breadcrumb className="hidden md:flex">
+                    <BreadcrumbList>
                         <BreadcrumbItem>
-                           <BreadcrumbLink 
-                                href={crumb.href}
-                                asChild={crumb.isCurrent}
-                                className={cn(
-                                "transition-colors hover:text-primary",
-                                crumb.isCurrent && "text-foreground font-semibold"
-                                )}
-                            >
-                                <Link href={crumb.href}>
-                                    {crumb.name === 'Dashboard' ? <Home className="h-4 w-4" /> : crumb.name}
-                                </Link>
+                            <BreadcrumbLink asChild>
+                                <Link href="/dashboard"><Home className="h-4 w-4" /></Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
-                        {index < breadcrumbs.length - 1 && <BreadcrumbSeparator />}
-                      </React.Fragment>
-                    ))}
-                  </BreadcrumbList>
+                        {pathSegments.slice(1).map((segment, index) => {
+                            const isLast = index === pathSegments.length - 2;
+                            const href = `/${pathSegments.slice(0, index + 2).join('/')}`;
+                            const isDynamicId = segment.length > 15 && !nameMap[segment];
+                            const prevSegment = pathSegments[index];
+
+                            return (
+                                <React.Fragment key={href}>
+                                    <BreadcrumbSeparator />
+                                    <BreadcrumbItem>
+                                        <BreadcrumbLink 
+                                            href={href} 
+                                            asChild={isLast}
+                                            className={cn(isLast && 'text-foreground font-semibold')}
+                                        >
+                                            <Link href={href}>
+                                                {isDynamicId ? (
+                                                    <DynamicBreadcrumbItem prevSegment={prevSegment} docId={segment} />
+                                                ) : (
+                                                    nameMap[segment] || segment.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                                                )}
+                                            </Link>
+                                        </BreadcrumbLink>
+                                    </BreadcrumbItem>
+                                </React.Fragment>
+                            );
+                        })}
+                    </BreadcrumbList>
                 </Breadcrumb>
               </div>
 
