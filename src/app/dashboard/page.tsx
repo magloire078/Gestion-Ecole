@@ -16,6 +16,7 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 import { ParentDashboard } from '@/components/parent/parent-dashboard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ActionItems } from '@/components/dashboard/action-items';
 
 
 const DashboardSkeleton = () => (
@@ -73,6 +74,7 @@ const RegularDashboard = () => {
           <RecentActivity schoolId={schoolId} />
         </div>
         <div className="lg:col-span-1 space-y-6">
+          <ActionItems />
           <FinanceOverview schoolId={schoolId} />
           <QuickActions />
         </div>
