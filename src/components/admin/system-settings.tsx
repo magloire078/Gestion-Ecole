@@ -19,6 +19,7 @@ export const SystemSettings = () => {
     const { data: settingsData, loading: settingsLoading } = useDoc(settingsRef);
     
     const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [registrationEnabled, setRegistrationEnabled] = useState(true);
     const [paymentProviders, setPaymentProviders] = useState({
         stripe: true,
         orangeMoney: true,
@@ -31,6 +32,7 @@ export const SystemSettings = () => {
     useEffect(() => {
         if (settingsData) {
             setMaintenanceMode(settingsData.maintenanceMode || false);
+            setRegistrationEnabled(settingsData.registrationEnabled === false ? false : true);
             if (settingsData.paymentProviders) {
                 setPaymentProviders(prev => ({...prev, ...settingsData.paymentProviders}));
             }
@@ -39,7 +41,7 @@ export const SystemSettings = () => {
 
     const handleSave = async () => {
         setIsSaving(true);
-        const dataToSave = { maintenanceMode, paymentProviders };
+        const dataToSave = { maintenanceMode, registrationEnabled, paymentProviders };
         try {
             await setDoc(settingsRef, dataToSave, { merge: true });
             toast({ title: "Paramètres sauvegardés", description: "Les paramètres système ont été mis à jour."});
@@ -68,7 +70,7 @@ export const SystemSettings = () => {
                         Maintenance & Configuration Globale
                     </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-4">
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                             <Label htmlFor="maintenance-mode" className="font-semibold">Mode Maintenance</Label>
@@ -80,6 +82,19 @@ export const SystemSettings = () => {
                             id="maintenance-mode"
                             checked={maintenanceMode}
                             onCheckedChange={setMaintenanceMode}
+                        />
+                    </div>
+                     <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <Label htmlFor="registration-enabled" className="font-semibold">Inscriptions Ouvertes</Label>
+                            <p className="text-sm text-muted-foreground">
+                                Autorise ou bloque la création de nouveaux comptes et de nouvelles écoles.
+                            </p>
+                        </div>
+                        <Switch
+                            id="registration-enabled"
+                            checked={registrationEnabled}
+                            onCheckedChange={setRegistrationEnabled}
                         />
                     </div>
                 </CardContent>
