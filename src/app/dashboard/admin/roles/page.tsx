@@ -108,7 +108,7 @@ export default function RolesPage() {
                         <Skeleton className="h-16 w-full" />
                         <Skeleton className="h-16 w-full" />
                     </div>
-                ) : (
+                ) : roles.length > 0 ? (
                 <Accordion type="multiple" className="w-full">
                     {roles.map(role => (
                         <AccordionItem value={role.id} key={role.id}>
@@ -149,6 +149,10 @@ export default function RolesPage() {
                         </AccordionItem>
                     ))}
                 </Accordion>
+                ) : (
+                    <div className="text-center text-muted-foreground py-10">
+                        Aucun rôle n'a été créé pour cet établissement.
+                    </div>
                 )}
             </CardContent>
         </Card>
