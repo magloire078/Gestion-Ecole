@@ -201,6 +201,20 @@ export type staff = {
     CNPS?: boolean;
 };
 
+export type staff_leave = {
+    staffId: string;
+    staffName: string;
+    schoolId: string;
+    startDate: string;
+    endDate: string;
+    type: "Congé Annuel" | "Congé Maladie" | "Congé Maternité/Paternité" | "Permission Spéciale" | "Absence Non Justifiée";
+    reason: string;
+    status: "En attente" | "Approuvé" | "Rejeté";
+    requestedAt: any;
+    reviewedBy?: string;
+    reviewDate?: string;
+};
+
 export type parent = {
     uid: string;
     email: string;
@@ -249,6 +263,9 @@ export type student = {
 
 export type discipline_incident = {
     studentId: string;
+    schoolId: string;
+    studentName: string;
+    classId: string;
     date: string;
     type: "Avertissement Oral" | "Avertissement Écrit" | "Retenue" | "Mise à pied" | "Exclusion temporaire" | "Exclusion définitive";
     reason: string;
@@ -264,8 +281,8 @@ export type cycle = {
     name: string;
     code: string;
     order: number;
-    description?: string;
     isActive?: boolean;
+    description?: string;
     ageRange?: {
         min?: number;
         max?: number;
@@ -354,23 +371,23 @@ export type timetableEntry = {
 };
 
 export type gradeEntry = {
+    schoolId: string;
     subject: string;
     type: "Interrogation" | "Devoir";
     date: string;
     grade: number;
     coefficient: number;
     id?: string;
-    schoolId: string;
 };
 
 export type accountingTransaction = {
     schoolId: string;
-    studentId?: string;
     date: string;
     description: string;
     category: string;
     type: "Revenu" | "Dépense";
     amount: number;
+    studentId?: string;
 };
 
 export type payment = {
@@ -392,6 +409,8 @@ export type libraryBook = {
     title: string;
     author: string;
     quantity: number;
+    frontCoverUrl?: string;
+    backCoverUrl?: string;
     createdAt?: string;
     id?: string;
 };
@@ -419,6 +438,15 @@ export type message = {
         classes?: string[];
     };
     readBy?: string[];
+};
+
+export type notification = {
+    userId: string;
+    title: string;
+    content: string;
+    href: string;
+    isRead: boolean;
+    createdAt: string;
 };
 
 export type absence = {
@@ -665,6 +693,7 @@ export type key_log = {
 
 export type dossierMedical = {
     studentId: string;
+    schoolId: string;
     groupeSanguin?: string;
     allergies?: string[];
     maladiesChroniques?: string[];
@@ -676,12 +705,14 @@ export type dossierMedical = {
 };
 
 export type vaccination = {
+    schoolId: string;
     nom: string;
     date: string;
     rappel?: string;
 };
 
 export type consultation = {
+    schoolId: string;
     date: string;
     motif: string;
     diagnostic: string;
@@ -717,13 +748,20 @@ export type participationCompetition = {
     notes?: string;
 };
 
-export type notification = {
-    userId: string;
-    title: string;
-    content: string;
-    href: string;
-    isRead: boolean;
-    createdAt: string;
+export type payrollRun = {
+    period: string;
+    executionDate: string;
+    totalMass: number;
+    employeeCount: number;
+    status: "Terminé" | "En cours" | "Annulé";
+    processedBy: string;
+    processedByName?: string;
+};
+
+export type payroll_payslip = {
+    staffId: string;
+    staffName: string;
+    payslipDetails: any;
 };
 
 

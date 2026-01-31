@@ -5,6 +5,8 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContaine
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { group, sum } from 'd3-array';
 import type { staff as Staff } from '@/lib/data-types';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 
 interface PayrollChartProps {
   staff: (Staff & { id: string })[];
@@ -22,36 +24,37 @@ export function PayrollChart({ staff }: PayrollChartProps) {
     })).sort((a,b) => b.masseSalariale - a.masseSalariale);
     
   }, [staff]);
+  
+  const chartConfig: ChartConfig = {
+      masseSalariale: {
+          label: 'Masse Salariale',
+          color: "hsl(var(--primary))",
+      }
+  };
 
   const formatCurrency = (value: number) => {
-    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M CFA`;
-    if (value >= 1000) return `${(value / 1000).toFixed(0)}k CFA`;
-    return `${value} CFA`;
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
+    return `${value}`;
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Répartition de la Masse Salariale</CardTitle>
-        <CardDescription>Visualisation de la masse salariale par rôle.</CardDescription>
+        <CardDescription>Visualisation de la masse salariale par rôle (en CFA).</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
+          <ChartContainer config={chartConfig} className="h-full w-full">
             <BarChart data={dataByRole} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid vertical={false} />
               <XAxis dataKey="role" angle={-45} textAnchor="end" height={80} interval={0} tick={{ fontSize: 12 }} />
               <YAxis tickFormatter={formatCurrency}/>
-              <Tooltip
-                formatter={(value: number) => `${value.toLocaleString('fr-FR')} CFA`}
-                contentStyle={{
-                    background: "hsl(var(--background))",
-                    border: "1px solid hsl(var(--border))",
-                }}
-              />
-              <Bar dataKey="masseSalariale" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+              <ChartTooltipContent formatter={(value: number) => `${value.toLocaleString('fr-FR')} CFA`} />
+              <Bar dataKey="masseSalariale" fill="var(--color-masseSalariale)" radius={[4, 4, 0, 0]} />
             </BarChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </div>
       </CardContent>
     </Card>

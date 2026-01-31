@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React from 'react';
@@ -22,7 +23,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
     };
 
     return (
-        <div ref={ref} className="bg-white text-black p-6 text-xs font-sans">
+        <div className="bg-white text-black p-6 text-xs font-sans">
             <header className="flex justify-between items-start pb-4 border-b">
                 <div className="flex items-center gap-4">
                     {organizationSettings.mainLogoUrl && (
@@ -202,7 +203,7 @@ export function BulkPayslipPreview({ detailsArray }: { detailsArray: PayslipDeta
         <div>
             <div className="max-h-[70vh] overflow-y-auto bg-gray-200 p-4" ref={printRef}>
                 {detailsArray.map((details, index) => (
-                    <div key={index} className="page-break">
+                    <div key={index} className="page-break" style={{ pageBreakAfter: 'always' }}>
                         <PayslipTemplate details={details} />
                     </div>
                 ))}

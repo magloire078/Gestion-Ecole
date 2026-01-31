@@ -107,6 +107,7 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/rh/dashboard', label: 'Tableau de bord', icon: LayoutDashboard, permission: 'viewUsers', module: 'rh' },
         { href: '/dashboard/rh/personnel', label: 'Personnel', icon: Users, permission: 'viewUsers', module: 'rh' },
         { href: '/dashboard/rh/paie', label: 'Paie', icon: Banknote, permission: 'manageBilling', module: 'rh' },
+        { href: '/dashboard/rh/conges', label: 'Congés', icon: CalendarClock, permission: 'manageUsers', module: 'rh' },
       ]
     },
     {
