@@ -62,7 +62,7 @@ export default function ImmobilierLayout({
       );
   }
 
-  const hasAccess = subscription?.activeModules?.includes('immobilier') || subscription?.plan === 'Premium';
+  const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('immobilier');
 
   if (!hasAccess) {
       return (

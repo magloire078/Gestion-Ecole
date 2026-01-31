@@ -33,7 +33,7 @@ export default function SanteLayout({
         );
     }
     
-    const hasAccess = subscription?.activeModules?.includes('sante') || subscription?.plan === 'Premium';
+    const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('sante');
 
     if (!hasAccess) {
         return (

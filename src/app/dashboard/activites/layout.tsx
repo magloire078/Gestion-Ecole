@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -59,7 +60,7 @@ export default function ActivitesLayout({
         );
     }
     
-    const hasAccess = subscription?.activeModules?.includes('activites') || subscription?.plan === 'Premium';
+    const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('activites');
     
     if (!hasAccess) {
         return (

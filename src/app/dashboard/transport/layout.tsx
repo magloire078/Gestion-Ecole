@@ -65,7 +65,7 @@ export default function TransportLayout({
       );
   }
   
-  const hasAccess = subscription?.activeModules?.includes('transport') || subscription?.plan === 'Premium';
+  const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('transport');
 
   if (!hasAccess) {
       return (

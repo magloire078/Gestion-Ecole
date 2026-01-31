@@ -33,7 +33,7 @@ export default function RHLayout({
             </p>
         </div>
         <Tabs value={pathname} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
                 {rhSubLinks.map(link => (
                     <Link href={link.href} key={link.href} passHref legacyBehavior>
                         <TabsTrigger value={link.href}>
@@ -64,7 +64,7 @@ export default function RHLayout({
     );
   }
 
-  const hasAccess = subscription?.activeModules?.includes('rh') || subscription?.plan === 'Premium';
+  const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('rh');
 
   if (!hasAccess) {
     return (
