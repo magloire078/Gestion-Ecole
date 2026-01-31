@@ -229,7 +229,6 @@
             "manageMedical": { "type": "boolean" },
             "viewSupportTickets": { "type": "boolean" },
             "manageSupportTickets": { "type": "boolean" },
-            "apiAccess": { "type": "boolean" },
             "exportData": { "type": "boolean" }
           }
         }
