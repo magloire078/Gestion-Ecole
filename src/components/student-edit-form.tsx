@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectSeparator } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Bot, Loader2, AlertCircle } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { useFirestore, useUser } from '@/firebase';
@@ -51,7 +51,6 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
   const { toast } = useToast();
   const firestore = useFirestore();
   const { user } = useUser();
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showFeeWarning, setShowFeeWarning] = useState(false);
 
@@ -156,17 +155,6 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
     }
   };
 
-  const handleAnalyzeFeedback = async () => {
-    const feedbackText = form.getValues('feedback');
-    if (!feedbackText) {
-      toast({ variant: 'destructive', title: "Aucun texte", description: "Le champ d'appréciation est vide." });
-      return;
-    }
-    setIsAnalyzing(true);
-    toast({ title: "Analyse IA non disponible", description: "La fonctionnalité d'analyse par IA a été temporairement désactivée." });
-    setIsAnalyzing(false);
-  };
-
   return (
     <Form {...form}>
       <form id={`edit-student-form-${student.id}`} onSubmit={form.handleSubmit(handleEditStudent)} className="space-y-4">
@@ -238,14 +226,7 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
                         render={({ field }) => (
                             <FormItem>
                             <FormLabel>Appréciation Générale</FormLabel>
-                            <div className="space-y-2">
-                                <div className="flex items-start gap-2">
-                                <FormControl><Textarea {...field} rows={8} /></FormControl>
-                                <Button type="button" variant="outline" size="icon" onClick={handleAnalyzeFeedback} disabled={isAnalyzing}>
-                                    {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
-                                </Button>
-                                </div>
-                            </div>
+                            <FormControl><Textarea {...field} rows={8} /></FormControl>
                             </FormItem>
                         )}
                     />
