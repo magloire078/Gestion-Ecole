@@ -1,22 +1,38 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useFirestore, useCollection } from '@/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import type { route as Route, bus as Bus, staff as Staff, transportSubscription } from '@/lib/data-types';
-import { Users, Bus as BusIcon, Clock, Percent } from 'lucide-react';
+import { collection, query, where } from 'firebase/firestore';
+import type { route as Route, bus as Bus, staff as Staff, transportSubscription, routeSchedule } from '@/lib/data-types';
+import { Users, Bus as BusIcon, Clock, Percent, Sun, Moon } from 'lucide-react';
+import { StatCard } from '@/components/ui/stat-card';
 
-// Mocks - à remplacer par de vraies données Leaflet si nécessaire.
-// Pour le rendu côté serveur et les tests, nous n'utiliserons pas de carte réelle.
-const MapContainer = ({ children }: { children: React.ReactNode }) => <div className="h-full w-full bg-muted flex items-center justify-center"><p className="text-muted-foreground">La carte est désactivée en mode prévisualisation.</p>{children}</div>;
-const TileLayer = () => null;
-const Marker = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
-const Popup = ({ children }: { children: React.ReactNode }) => <div>{children}</div>;
 
+const ScheduleDetail = ({ schedule, title, icon: Icon }: { schedule?: routeSchedule, title: string, icon: React.ElementType }) => {
+    if (!schedule || !schedule.stops || schedule.stops.length === 0) {
+        return <p className="text-sm text-muted-foreground">Aucun horaire {title.toLowerCase()} défini.</p>;
+    }
+    return (
+        <div className="space-y-3">
+             <h4 className="font-semibold flex items-center gap-2"><Icon className="h-5 w-5 text-primary" />{title} (Départ: {schedule.startTime || 'N/A'})</h4>
+             <div className="space-y-2 pl-2 border-l-2">
+                {schedule.stops.map((stop, index) => (
+                    <div key={index} className="flex items-center gap-3 relative pl-5">
+                         <div className="absolute left-[-9px] top-1 h-4 w-4 rounded-full bg-primary/20 border-2 border-primary/50" />
+                        <div>
+                            <p className="font-medium text-sm">{stop.name}</p>
+                            <p className="text-xs text-muted-foreground">{stop.address}</p>
+                        </div>
+                        <div className="ml-auto text-sm font-mono bg-muted px-2 py-1 rounded-md">{stop.scheduledTime}</div>
+                    </div>
+                ))}
+             </div>
+        </div>
+    )
+}
 
 export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
@@ -24,7 +40,7 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
 
   const routesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_lignes`)), [firestore, schoolId]);
   const busesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_bus`)), [firestore, schoolId]);
-  const driversQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
+  const driversQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'chauffeur')), [firestore, schoolId]);
   const subscriptionsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/transport_abonnements`), where('status', '==', 'active')), [firestore, schoolId]);
 
   const { data: routesData, loading: routesLoading } = useCollection(routesQuery);
@@ -54,29 +70,13 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
   const currentBus = currentRoute ? busMap.get(currentRoute.busId) : null;
   const currentDriver = currentRoute ? driverMap.get(currentRoute.driverId || '') : null;
   
-  if(loading) {
-      return (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-24" />
-              ))}
-          </div>
-           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-               <Skeleton className="lg:col-span-1 h-96 w-full" />
-               <Skeleton className="lg:col-span-2 h-96 w-full" />
-           </div>
-        </div>
-      )
-  }
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Bus actifs</CardTitle><BusIcon className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold">{activeBuses}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">En retard</CardTitle><Clock className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold text-amber-600">{routes.filter(r => r.status === 'delayed').length}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Élèves Transportés</CardTitle><Users className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold">{transportedStudents}</div></CardContent></Card>
-        <Card><CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Ponctualité</CardTitle><Percent className="h-4 w-4 text-muted-foreground"/></div></CardHeader><CardContent><div className="text-2xl font-bold">...%</div></CardContent></Card>
+        <StatCard title="Bus actifs" value={activeBuses} icon={BusIcon} loading={loading} />
+        <StatCard title="En retard" value={routes.filter(r => r.status === 'delayed').length} icon={Clock} loading={loading} />
+        <StatCard title="Élèves Transportés" value={transportedStudents} icon={Users} loading={loading} />
+        <StatCard title="Ponctualité" value="...%" icon={Percent} loading={loading} />
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -97,34 +97,32 @@ export function LiveTransportTracking({ schoolId }: { schoolId: string }) {
                   </div>
                 </div>
               ))}
-              {routes.length === 0 && <p className="text-muted-foreground text-center py-4">Aucune ligne de transport définie.</p>}
+              {routes.length === 0 && !loading && <p className="text-muted-foreground text-center py-4">Aucune ligne de transport définie.</p>}
+              {loading && <Skeleton className="h-24 w-full" />}
             </div>
           </CardContent>
         </Card>
         
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>{currentRoute ? `Trajet: ${currentRoute.name}` : 'Sélectionnez une ligne'}</CardTitle></CardHeader>
-          <CardContent>
-            <div className="h-[400px] rounded-lg overflow-hidden bg-muted">
-              {currentRoute && (
-                <MapContainer>
-                  <TileLayer />
-                  <Marker>
-                    <Popup>
-                      <div className="font-semibold">Bus {currentBus?.registrationNumber}</div>
-                    </Popup>
-                  </Marker>
-                </MapContainer>
-              )}
-            </div>
-            
+          <CardHeader>
+            <CardTitle>{currentRoute ? `Itinéraire: ${currentRoute.name}` : 'Sélectionnez une ligne'}</CardTitle>
             {currentRoute && (
-              <div className="mt-4 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div><div className="text-sm text-muted-foreground">Conducteur</div><div className="font-medium">{currentDriver ? `${currentDriver.firstName} ${currentDriver.lastName}`: 'Non assigné'}</div></div>
-                  <div><div className="text-sm text-muted-foreground">Capacité Bus</div><div className="font-medium">{currentBus?.capacity || 'N/A'} places</div></div>
-                </div>
+                <CardDescription>
+                    Bus: <span className="font-semibold">{currentBus?.registrationNumber || 'N/A'}</span> •
+                    Conducteur: <span className="font-semibold">{currentDriver ? `${currentDriver.firstName} ${currentDriver.lastName}` : 'N/A'}</span>
+                </CardDescription>
+            )}
+          </CardHeader>
+          <CardContent>
+            {currentRoute ? (
+              <div className="space-y-6">
+                <ScheduleDetail schedule={currentRoute.schedule?.morning} title="Trajet Matin" icon={Sun}/>
+                <ScheduleDetail schedule={currentRoute.schedule?.evening} title="Trajet Soir" icon={Moon}/>
               </div>
+            ) : (
+                <div className="h-64 flex items-center justify-center text-muted-foreground">
+                    <p>Sélectionnez une ligne pour voir les détails de l'itinéraire.</p>
+                </div>
             )}
           </CardContent>
         </Card>
