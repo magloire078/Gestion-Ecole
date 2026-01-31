@@ -51,7 +51,7 @@ export function AbsenceForm({ schoolId, student, onSave }: AbsenceFormProps) {
     }, [setValue]);
 
     const handleFormSubmit = async (values: AbsenceFormValues) => {
-        if (!schoolId || !user || !student) return;
+        if (!schoolId || !user || !student || !student.id) return;
 
         const absenceData = {
           ...values,
@@ -63,7 +63,7 @@ export function AbsenceForm({ schoolId, student, onSave }: AbsenceFormProps) {
           createdAt: serverTimestamp(),
         };
         
-        const absenceCollectionRef = collection(firestore, `ecoles/${schoolId}/absences`);
+        const absenceCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/absences`);
         try {
             await addDoc(absenceCollectionRef, absenceData);
             toast({

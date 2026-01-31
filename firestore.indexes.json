@@ -8,6 +8,22 @@
         { "fieldPath": "classId", "order": "ASCENDING" },
         { "fieldPath": "lastName", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "absences",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "schoolId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "incidents_disciplinaires",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "schoolId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

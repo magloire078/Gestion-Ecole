@@ -64,10 +64,12 @@ service cloud.firestore {
     }
 
     function isParentOfStudent(studentId, schoolId) {
+      // This function relies on a 'parents' subcollection in the school document.
+      // Make sure this structure is correct.
       let parentPath = /databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid);
       return isSignedIn() && 
              exists(parentPath) && 
-             get(parentPath).data.studentIds != null &&
+             'studentIds' in get(parentPath).data &&
              studentId in get(parentPath).data.studentIds;
     }
     
@@ -141,13 +143,9 @@ service cloud.firestore {
       }
 
       match /conges_personnel/{leaveId} {
-        // Un membre du personnel peut lire ses propres demandes, un manager peut lire toutes les demandes.
         allow read: if hasPermission(schoolId, 'manageUsers') || (isSignedIn() && resource.data.staffId == request.auth.uid);
-        // Un membre du personnel peut créer sa propre demande de congé.
         allow create: if isSignedIn() && request.resource.data.staffId == request.auth.uid;
-        // Seul un manager peut modifier/approuver/rejeter une demande.
         allow update: if hasPermission(schoolId, 'manageUsers');
-        // Seul un manager peut supprimer une demande.
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
       
@@ -186,6 +184,16 @@ service cloud.firestore {
             allow write: if hasPermission(schoolId, 'manageMedical');
           }
         }
+        
+        match /absences/{absenceId} {
+            allow read: if isSchoolMember(schoolId) || isParentOfStudent(studentId, schoolId);
+            allow write: if hasPermission(schoolId, 'manageAttendance');
+        }
+        
+        match /incidents_disciplinaires/{incidentId} {
+            allow read: if isSchoolMember(schoolId) || isParentOfStudent(studentId, schoolId);
+            allow write: if hasPermission(schoolId, 'manageDiscipline');
+        }
       }
       
       // --- Collections globales de l'école ---
@@ -196,26 +204,6 @@ service cloud.firestore {
       match /matieres/{subjectId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }
       match /emploi_du_temps/{entryId} { allow read, write: if hasPermission(schoolId, 'manageSchedule'); }
       match /frais_scolarite/{feeId} { allow read, write: if hasPermission(schoolId, 'manageBilling'); }
-      
-      match /absences/{absenceId} {
-        allow create, update, delete: if hasPermission(schoolId, 'manageAttendance');
-        // A user can read if they have permission, OR if they are a parent of the concerned student.
-        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
-        allow read: if hasPermission(schoolId, 'manageAttendance') || 
-                     (isSignedIn() &&
-                      resource.data.studentId != null &&
-                      isParentOfStudent(resource.data.studentId, schoolId));
-      }
-      
-      match /incidents_disciplinaires/{incidentId} {
-        allow create, update, delete: if hasPermission(schoolId, 'manageDiscipline');
-        // A user can read if they have permission, OR if they are a parent of the concerned student.
-        // This rule works for 'get' (resource.data is available) but will deny 'list' for parents.
-         allow read: if hasPermission(schoolId, 'manageDiscipline') || 
-                     (isSignedIn() &&
-                      resource.data.studentId != null &&
-                      isParentOfStudent(resource.data.studentId, schoolId));
-      }
       
       match /bibliotheque/{bookId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
       match /bibliotheque_prets/{loanId} { allow read, write: if hasPermission(schoolId, 'manageLibrary'); }
@@ -258,6 +246,14 @@ service cloud.firestore {
         allow create: if hasPermission(schoolId, 'manageCommunication');
         allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
         allow delete: if hasPermission(schoolId, 'manageCommunication');
+      }
+      
+      // Allow collection group queries
+      match /{path=**}/absences/{absenceId} {
+        allow read: if hasPermission(get(path).data.schoolId, 'manageAttendance') || (isSignedIn() && isParentOfStudent(get(path).data.id, get(path).data.schoolId));
+      }
+      match /{path=**}/incidents_disciplinaires/{incidentId} {
+        allow read: if hasPermission(get(path).data.schoolId, 'manageDiscipline') || (isSignedIn() && isParentOfStudent(get(path).data.id, get(path).data.schoolId));
       }
     }
   }

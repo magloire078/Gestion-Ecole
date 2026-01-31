@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, where } from 'firebase/firestore';
+import { collection, query, orderBy, where, collectionGroup } from 'firebase/firestore';
 import { subMonths, isWithinInterval } from 'date-fns';
 import { group, sort } from 'd3-array';
 import type { discipline_incident as DisciplineIncident, student as Student, class_type as Class } from '@/lib/data-types';
@@ -35,7 +35,8 @@ export default function DisciplinePage() {
 
     const incidentsQuery = useMemo(() =>
         schoolId ? query(
-            collection(firestore, `ecoles/${schoolId}/incidents_disciplinaires`),
+            collectionGroup(firestore, `incidents_disciplinaires`),
+            where('schoolId', '==', schoolId),
             orderBy('date', 'desc')
         ) : null,
         [firestore, schoolId]

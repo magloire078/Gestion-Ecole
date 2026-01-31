@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -22,8 +21,7 @@ export function AbsencesTab({ schoolId, studentId }: AbsencesTabProps) {
 
     const absencesQuery = useMemo(() => 
         query(
-            collection(firestore, `ecoles/${schoolId}/absences`), 
-            where('studentId', '==', studentId),
+            collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/absences`), 
             orderBy('date', 'desc')
         ), 
     [firestore, schoolId, studentId]);

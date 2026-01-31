@@ -72,6 +72,7 @@ export function IncidentForm({ schoolId, students, onSave, student }: IncidentFo
 
         const incidentData = {
             studentId: studentInfo.id,
+            schoolId: schoolId,
             studentName: `${studentInfo.firstName} ${studentInfo.lastName}`,
             classId: studentInfo.classId,
             date: new Date().toISOString(),
@@ -84,7 +85,7 @@ export function IncidentForm({ schoolId, students, onSave, student }: IncidentFo
             followUpNotes: '',
         };
 
-        const collectionRef = collection(firestore, `ecoles/${schoolId}/incidents_disciplinaires`);
+        const collectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${studentInfo.id}/incidents_disciplinaires`);
         try {
             await addDoc(collectionRef, incidentData);
             toast({ title: 'Incident enregistré', description: "Le nouvel incident disciplinaire a été ajouté." });

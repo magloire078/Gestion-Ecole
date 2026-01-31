@@ -42,10 +42,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, deleteDoc, doc, where } from 'firebase/firestore';
+import { collection, query, deleteDoc, doc, where, collectionGroup } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { class_type as Class, student as Student, absence as Absence } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -92,9 +92,10 @@ export default function AbsencesPage() {
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
   
+  const thirtyDaysAgo = useMemo(() => format(subDays(new Date(), 30), 'yyyy-MM-dd'), []);
   const allAbsencesQuery = useMemo(() =>
-    schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), where('date', '>=', format(new Date(new Date().setDate(new Date().getDate() - 30)), 'yyyy-MM-dd'))) : null
-  , [firestore, schoolId]);
+    schoolId ? query(collectionGroup(firestore, `absences`), where('schoolId', '==', schoolId), where('date', '>=', thirtyDaysAgo)) : null
+  , [firestore, schoolId, thirtyDaysAgo]);
   const { data: allAbsencesData, loading: allAbsencesLoading } = useCollection(allAbsencesQuery);
 
   // --- Derived Data ---
@@ -138,9 +139,9 @@ export default function AbsencesPage() {
   };
 
   const handleDeleteAbsence = async () => {
-    if (!schoolId || !absenceToDelete) return;
+    if (!schoolId || !absenceToDelete || !absenceToDelete.studentId) return;
     try {
-      await deleteDoc(doc(firestore, `ecoles/${schoolId}/absences`, absenceToDelete.id));
+      await deleteDoc(doc(firestore, `ecoles/${schoolId}/eleves/${absenceToDelete.studentId}/absences`, absenceToDelete.id));
       toast({ title: 'Absence supprimée', description: "L'enregistrement de l'absence a été supprimé." });
     } catch (e) {
       console.error("Failed to delete absence: ", e);

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -29,8 +29,7 @@ export function DisciplineTab({ schoolId, student }: DisciplineTabProps) {
     const incidentsQuery = useMemo(() => {
         if (!schoolId || !student?.id) return null;
         return query(
-            collection(firestore, `ecoles/${schoolId}/incidents_disciplinaires`), 
-            where('studentId', '==', student.id),
+            collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/incidents_disciplinaires`), 
             orderBy('date', 'desc')
         );
     }, [firestore, schoolId, student?.id]);
