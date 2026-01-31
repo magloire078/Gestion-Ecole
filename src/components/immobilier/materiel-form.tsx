@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -16,7 +17,9 @@ import { useState, useEffect } from 'react';
 import type { materiel as Materiel } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { Combobox } from '../ui/combobox';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Package, Upload } from 'lucide-react';
+import { ImageUploader } from '../image-uploader';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 const materielSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
@@ -26,6 +29,7 @@ const materielSchema = z.object({
   locationId: z.string().min(1, "L'emplacement est requis."),
   acquisitionDate: z.string().optional(),
   value: z.coerce.number().min(0).optional(),
+  photoUrl: z.string().optional(),
 });
 
 type MaterielFormValues = z.infer<typeof materielSchema>;
@@ -50,7 +54,7 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
     form.reset(
         materiel 
         ? { ...materiel, acquisitionDate: materiel.acquisitionDate ? format(new Date(materiel.acquisitionDate), 'yyyy-MM-dd') : '' }
-        : { category: "Mobilier", status: "bon", quantity: 1, locationId: '', name: '', acquisitionDate: format(new Date(), 'yyyy-MM-dd') }
+        : { category: "Mobilier", status: "bon", quantity: 1, locationId: '', name: '', acquisitionDate: format(new Date(), 'yyyy-MM-dd'), photoUrl: '' }
     );
   }, [materiel, form]);
 
@@ -79,6 +83,31 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
     <Form {...form}>
         <form id="materiel-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
             <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
+                 <FormField
+                    control={form.control}
+                    name="photoUrl"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col items-center">
+                        <FormControl>
+                        <ImageUploader
+                            onUploadComplete={(url) => field.onChange(url)}
+                            storagePath={`ecoles/${schoolId}/inventory-photos/`}
+                            currentImageUrl={field.value}
+                            resizeWidth={400}
+                        >
+                            <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity rounded-md">
+                                <AvatarImage src={field.value || undefined} alt="Photo" className="rounded-md object-cover" />
+                                <AvatarFallback className="rounded-md flex flex-col items-center justify-center space-y-1">
+                                    <Package className="h-8 w-8 text-muted-foreground" />
+                                    <span className="text-xs text-muted-foreground">Ajouter</span>
+                                </AvatarFallback>
+                            </Avatar>
+                        </ImageUploader>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
                 <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Nom de l'équipement</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
                 <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel>Catégorie</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="Mobilier">Mobilier</SelectItem><SelectItem value="Informatique">Informatique</SelectItem><SelectItem value="Pédagogique">Pédagogique</SelectItem><SelectItem value="Sportif">Sportif</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent></Select></FormItem>} />
                 <div className="grid grid-cols-2 gap-4">

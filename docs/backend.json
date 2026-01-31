@@ -903,7 +903,8 @@
             "status": { "type": "string", "enum": ["neuf", "bon", "à réparer", "hors_service"] },
             "locationId": { "type": "string", "description": "ID de la salle ou du bâtiment où se trouve l'équipement." },
             "acquisitionDate": { "type": "string", "format": "date" },
-            "value": { "type": "number" }
+            "value": { "type": "number" },
+            "photoUrl": { "type": "string", "format": "uri", "description": "URL de la photo de l'équipement." }
         },
         "required": ["name", "category", "quantity", "status", "locationId"]
     },

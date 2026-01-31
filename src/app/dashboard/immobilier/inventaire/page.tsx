@@ -1,16 +1,11 @@
+
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,20 +16,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, PlusCircle, Trash2, Edit } from 'lucide-react';
+import { PlusCircle, Search, LayoutGrid, List } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, deleteDoc, doc } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import type { materiel as Materiel, salle as Salle, bus as Bus, building } from '@/lib/data-types';
 import { MaterielForm } from '@/components/immobilier/materiel-form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InventoryGrid } from '@/components/immobilier/inventory-grid';
+import { InventoryTable } from '@/components/immobilier/inventory-table';
+import { cn } from '@/lib/utils';
 
 export default function InventairePage() {
   const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -47,6 +40,11 @@ export default function InventairePage() {
   const [editingMateriel, setEditingMateriel] = useState<(Materiel & { id: string }) | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [materielToDelete, setMaterielToDelete] = useState<(Materiel & { id: string }) | null>(null);
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const inventaireQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/inventaire`)) : null, [firestore, schoolId]);
   const { data: inventaireData, loading: inventaireLoading } = useCollection(inventaireQuery);
@@ -90,6 +88,15 @@ export default function InventairePage() {
       return { locationOptions: options, locationMap: map };
   }, [sallesData, batimentsData, busesData]);
 
+  const filteredInventaire = useMemo(() => {
+      return inventaire.filter(item => {
+          const searchMatch = searchTerm === '' || item.name.toLowerCase().includes(searchTerm.toLowerCase());
+          const categoryMatch = selectedCategory === 'all' || item.category === selectedCategory;
+          const statusMatch = selectedStatus === 'all' || item.status === selectedStatus;
+          return searchMatch && categoryMatch && statusMatch;
+      });
+  }, [inventaire, searchTerm, selectedCategory, selectedStatus]);
+
   const handleOpenDeleteDialog = (materiel: Materiel & { id: string }) => {
     setMaterielToDelete(materiel);
     setIsDeleteDialogOpen(true);
@@ -109,16 +116,6 @@ export default function InventairePage() {
         setMaterielToDelete(null);
     }
   };
-
-  const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch(status) {
-        case 'neuf': return 'default';
-        case 'bon': return 'secondary';
-        case 'à réparer': return 'outline';
-        case 'hors_service': return 'destructive';
-        default: return 'default';
-    }
-  };
   
   const isLoading = schoolLoading || inventaireLoading || sallesLoading || batimentsLoading || busesLoading;
 
@@ -126,7 +123,7 @@ export default function InventairePage() {
     <>
       <Card>
         <CardHeader>
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <CardTitle>Inventaire du Matériel</CardTitle>
               <CardDescription>Gérez le matériel et les équipements de votre établissement.</CardDescription>
@@ -138,39 +135,25 @@ export default function InventairePage() {
               </Button>
             )}
           </div>
+           <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
+                <div className="relative w-full sm:max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Rechercher par nom..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                </div>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Catégorie..." /></SelectTrigger><SelectContent><SelectItem value="all">Toutes les catégories</SelectItem><SelectItem value="Mobilier">Mobilier</SelectItem><SelectItem value="Informatique">Informatique</SelectItem><SelectItem value="Pédagogique">Pédagogique</SelectItem><SelectItem value="Sportif">Sportif</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent></Select>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Statut..." /></SelectTrigger><SelectContent><SelectItem value="all">Tous les statuts</SelectItem><SelectItem value="neuf">Neuf</SelectItem><SelectItem value="bon">Bon</SelectItem><SelectItem value="à réparer">À réparer</SelectItem><SelectItem value="hors_service">Hors service</SelectItem></SelectContent></Select>
+                <div className="flex items-center gap-2 ml-auto">
+                    <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent')}><List className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={() => setViewMode('grid')} className={cn(viewMode === 'grid' && 'bg-accent')}><LayoutGrid className="h-4 w-4" /></Button>
+                </div>
+            </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Catégorie</TableHead><TableHead>Quantité</TableHead><TableHead>Emplacement</TableHead><TableHead>Statut</TableHead>{canManageContent && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(5)].map((_, i) => <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell></TableRow>)
-              ) : inventaire.length > 0 ? (
-                inventaire.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium">{item.name}</TableCell>
-                    <TableCell>{item.category}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell>{locationMap.get(item.locationId) || item.locationId}</TableCell>
-                    <TableCell><Badge variant={getStatusBadgeVariant(item.status)} className="capitalize">{item.status.replace(/_/g, ' ')}</Badge></TableCell>
-                    {canManageContent && (
-                        <TableCell className="text-right">
-                           <DropdownMenu>
-                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { setEditingMateriel(item); setIsFormOpen(true); }}><Edit className="mr-2 h-4 w-4" /> Modifier</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(item)}><Trash2 className="mr-2 h-4 w-4" /> Supprimer</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                       </TableCell>
-                    )}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow><TableCell colSpan={6} className="h-24 text-center">Aucun matériel enregistré.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+            {viewMode === 'grid' ? (
+                <InventoryGrid items={filteredInventaire} isLoading={isLoading} onEdit={(item) => { setEditingMateriel(item); setIsFormOpen(true); }} onDelete={handleOpenDeleteDialog} locationMap={locationMap} />
+            ) : (
+                <InventoryTable items={filteredInventaire} isLoading={isLoading} onEdit={(item) => { setEditingMateriel(item); setIsFormOpen(true); }} onDelete={handleOpenDeleteDialog} locationMap={locationMap} />
+            )}
         </CardContent>
       </Card>
       

@@ -99,5 +99,11 @@ service firebase.storage {
        allow read: if true;
        allow write: if hasPermission(schoolId, 'manageLibrary');
     }
+
+    // Inventory photos
+    match /ecoles/{schoolId}/inventory-photos/{allPaths=**} {
+       allow read: if true;
+       allow write: if hasPermission(schoolId, 'manageInventory');
+    }
   }
 }

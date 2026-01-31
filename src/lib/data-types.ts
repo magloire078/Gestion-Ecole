@@ -644,6 +644,7 @@ export type materiel = {
     locationId: string;
     acquisitionDate?: string;
     value?: number;
+    photoUrl?: string;
 };
 
 export type salle = {
