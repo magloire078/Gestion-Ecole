@@ -278,6 +278,25 @@
       },
       "required": ["uid", "email", "schoolId", "role", "firstName", "lastName", "hireDate", "baseSalary"]
     },
+    "staff_leave": {
+      "title": "Congé du Personnel",
+      "description": "Une demande de congé ou une absence enregistrée pour un membre du personnel.",
+      "type": "object",
+      "properties": {
+        "staffId": { "type": "string", "description": "ID de l'employé." },
+        "staffName": { "type": "string", "description": "Nom de l'employé." },
+        "schoolId": { "type": "string" },
+        "startDate": { "type": "string", "format": "date" },
+        "endDate": { "type": "string", "format": "date" },
+        "type": { "type": "string", "enum": ["Congé Annuel", "Congé Maladie", "Congé Maternité/Paternité", "Permission Spéciale", "Absence Non Justifiée"] },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["En attente", "Approuvé", "Rejeté"] },
+        "requestedAt": { "type": "string", "format": "date-time" },
+        "reviewedBy": { "type": "string", "description": "ID de l'admin qui a traité la demande." },
+        "reviewDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["staffId", "schoolId", "startDate", "endDate", "type", "status", "requestedAt"]
+    },
     "parent": {
       "title": "Parent/Tuteur",
       "description": "Représente un compte parent/tuteur avec des accès limités aux informations de ses enfants.",
@@ -1123,6 +1142,11 @@
           "path": "personnel/{staffId}",
           "schema": { "$ref": "#/entities/staff" },
           "description": "Stocke les profils du personnel pour cette école."
+        },
+        "conges_personnel": {
+          "path": "conges_personnel/{leaveId}",
+          "schema": { "$ref": "#/entities/staff_leave" },
+          "description": "Historique des congés et absences du personnel."
         },
         "parents": {
           "path": "parents/{parentId}",
