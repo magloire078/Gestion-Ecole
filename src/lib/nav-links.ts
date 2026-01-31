@@ -64,6 +64,7 @@ export const NAV_LINKS: NavGroup[] = [
       icon: LayoutDashboard,
       links: [
         { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
+        { href: '/dashboard/analytics', label: 'Statistiques', icon: BarChart3, permission: 'viewAnalytics' },
       ]
     },
     {
