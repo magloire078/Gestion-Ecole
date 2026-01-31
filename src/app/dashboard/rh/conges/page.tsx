@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -9,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -29,34 +29,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Check, X, Loader2, CalendarClock, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Check, X, Trash2 } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, addDoc, setDoc, deleteDoc, doc, where, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, query, setDoc, deleteDoc, doc, where, orderBy, serverTimestamp } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { staff_leave as StaffLeave, staff as Staff } from '@/lib/data-types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-// Schema for the form
-const leaveSchema = z.object({
-  type: z.enum(["Congé Annuel", "Congé Maladie", "Congé Maternité/Paternité", "Permission Spéciale", "Absence Non Justifiée"]),
-  startDate: z.string().min(1, "La date de début est requise."),
-  endDate: z.string().min(1, "La date de fin est requise."),
-  reason: z.string().min(5, "Un motif est requis."),
-}).refine(data => new Date(data.endDate) >= new Date(data.startDate), {
-    message: "La date de fin doit être après la date de début.",
-    path: ["endDate"],
-});
-type LeaveFormValues = z.infer<typeof leaveSchema>;
+import { LeaveRequestForm } from '@/components/rh/leave-request-form';
 
 // Main Page Component
 export default function StaffLeavesPage() {
@@ -67,9 +49,17 @@ export default function StaffLeavesPage() {
   const canManage = !!user?.profile?.permissions?.manageUsers;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingLeave, setEditingLeave] = useState<(StaffLeave & { id: string }) | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [leaveToDelete, setLeaveToDelete] = useState<(StaffLeave & { id: string }) | null>(null);
+
+  // Fetch all staff members if user is an admin
+  const staffQuery = useMemo(() => {
+    if (!schoolId || !canManage) return null;
+    return query(collection(firestore, `ecoles/${schoolId}/personnel`));
+  }, [firestore, schoolId, canManage]);
+  const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
+  const staffMembers = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as Staff & { id: string })) || [], [staffData]);
+
 
   const leavesQuery = useMemo(() => {
     if (!schoolId) return null;
@@ -86,11 +76,6 @@ export default function StaffLeavesPage() {
   const { data: leavesData, loading: leavesLoading } = useCollection(leavesQuery);
   const leaves = useMemo(() => leavesData?.map(d => ({ id: d.id, ...d.data() } as StaffLeave & { id: string })) || [], [leavesData]);
 
-  const form = useForm<LeaveFormValues>({
-      resolver: zodResolver(leaveSchema),
-      defaultValues: { type: 'Congé Annuel', startDate: format(new Date(), 'yyyy-MM-dd'), endDate: format(new Date(), 'yyyy-MM-dd'), reason: '' }
-  });
-
   const handleStatusUpdate = async (leaveId: string, newStatus: 'Approuvé' | 'Rejeté') => {
     if (!schoolId || !user) return;
     const leaveRef = doc(firestore, `ecoles/${schoolId}/conges_personnel`, leaveId);
@@ -103,28 +88,6 @@ export default function StaffLeavesPage() {
         toast({ title: "Statut mis à jour" });
     } catch(e) {
         toast({ variant: 'destructive', title: "Erreur", description: "Impossible de mettre à jour le statut." });
-    }
-  };
-
-  const handleFormSubmit = async (values: LeaveFormValues) => {
-    if (!schoolId || !user) return;
-
-    const dataToSave = {
-        ...values,
-        schoolId,
-        staffId: user.uid,
-        staffName: user.displayName || user.email,
-        status: 'En attente',
-        requestedAt: serverTimestamp(),
-    };
-    
-    try {
-        await addDoc(collection(firestore, `ecoles/${schoolId}/conges_personnel`), dataToSave);
-        toast({ title: 'Demande envoyée' });
-        setIsFormOpen(false);
-        form.reset();
-    } catch(e) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'envoyer la demande.' });
     }
   };
   
@@ -155,7 +118,7 @@ export default function StaffLeavesPage() {
     }
   }
 
-  const isLoading = schoolLoading || userLoading || leavesLoading;
+  const isLoading = schoolLoading || userLoading || leavesLoading || staffLoading;
 
   return (
     <>
@@ -218,22 +181,19 @@ export default function StaffLeavesPage() {
                 <DialogTitle>Demande de Congé</DialogTitle>
                 <DialogDescription>Remplissez les détails de votre demande.</DialogDescription>
             </DialogHeader>
-             <Form {...form}>
-                <form id="leave-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4 py-4">
-                    <FormField control={form.control} name="type" render={({ field }) => (
-                        <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Congé Annuel">Congé Annuel</SelectItem><SelectItem value="Congé Maladie">Congé Maladie</SelectItem><SelectItem value="Congé Maternité/Paternité">Congé Maternité/Paternité</SelectItem><SelectItem value="Permission Spéciale">Permission Spéciale</SelectItem><SelectItem value="Absence Non Justifiée">Absence Non Justifiée</SelectItem></SelectContent></Select><FormMessage /></FormItem>
-                    )}/>
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem><FormLabel>Date de début</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                        <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem><FormLabel>Date de fin</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                    </div>
-                     <FormField control={form.control} name="reason" render={({ field }) => (<FormItem><FormLabel>Motif</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                </form>
-            </Form>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                <Button type="submit" form="leave-form" disabled={form.formState.isSubmitting}>Soumettre la demande</Button>
-            </DialogFooter>
+            {user && (
+                <LeaveRequestForm
+                    schoolId={schoolId!}
+                    staffMembers={staffMembers}
+                    currentUser={{ 
+                        uid: user.uid!, 
+                        displayName: user.displayName, 
+                        email: user.email, 
+                        canManage 
+                    }}
+                    onSave={() => setIsFormOpen(false)}
+                />
+            )}
         </DialogContent>
     </Dialog>
 
