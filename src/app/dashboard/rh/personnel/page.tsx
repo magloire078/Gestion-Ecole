@@ -39,20 +39,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, doc, query } from "firebase/firestore";
-import { FirestorePermissionError } from "@/firebase/errors";
-import { errorEmitter } from "@/firebase/error-emitter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRouter } from "next/navigation";
 import { useSchoolData } from "@/hooks/use-school-data";
 import type { staff as Staff, admin_role as AdminRole, subject as Subject } from '@/lib/data-types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { class_type as Class } from '@/lib/data-types';
 import Link from 'next/link';
-import { useRouter } from "next/navigation";
 import { StaffEditForm } from "@/components/rh/staff-edit-form";
 import { Input } from "@/components/ui/input";
 import { deleteStaffMember } from "@/services/staff-services";
-import { StaffGrid } from '@/components/rh/staff-grid'; // New import
-import { StaffTable } from '@/components/rh/staff-table'; // New import
+import { StaffGrid } from '@/components/rh/staff-grid';
+import { StaffTable } from '@/components/rh/staff-table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 
 type StaffMember = Staff & { id: string };
 
@@ -81,21 +81,26 @@ export default function PersonnelPage() {
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
-  const { teachers, otherStaff } = useMemo(() => {
-    const allStaff: StaffMember[] = staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [];
-    
-    const filteredStaff = allStaff.filter(s => 
-        (s.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+  const [selectedRole, setSelectedRole] = useState('all');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
-    return {
-        teachers: filteredStaff.filter(s => s.role === 'enseignant' || s.role === 'enseignant_principal'),
-        otherStaff: filteredStaff.filter(s => s.role !== 'enseignant' && s.role !== 'enseignant_principal'),
-    }
-  }, [staffData, searchTerm]);
+  const allStaff: StaffMember[] = useMemo(() => staffData?.map(d => ({ id: d.id, ...d.data() } as StaffMember)) || [], [staffData]);
+
+  const uniqueRoles = useMemo(() => {
+    const roles = new Set(allStaff.map(s => s.role));
+    return Array.from(roles).sort((a,b) => a.localeCompare(b));
+  }, [allStaff]);
+  
+  const filteredStaff = useMemo(() => {
+    return allStaff.filter(s => {
+        const searchMatch = searchTerm === '' ||
+            (s.displayName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            s.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const roleMatch = selectedRole === 'all' || s.role === selectedRole;
+        return searchMatch && roleMatch;
+    });
+  }, [allStaff, searchTerm, selectedRole]);
+
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [schoolId, firestore]);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
@@ -149,14 +154,14 @@ export default function PersonnelPage() {
     <>
       <div className="space-y-6">
          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Total du Personnel" value={staffData?.length || 0} icon={Users} loading={isLoading} />
-            <StatCard title="Enseignants" value={teachers.length} icon={BookUser} loading={isLoading} />
-            <StatCard title="Autres Rôles" value={otherStaff.length} icon={Briefcase} loading={isLoading} />
+            <StatCard title="Total du Personnel" value={allStaff.length} icon={Users} loading={isLoading} />
+            <StatCard title="Enseignants" value={allStaff.filter(s => s.role === 'enseignant' || s.role === 'enseignant_principal').length} icon={BookUser} loading={isLoading} />
+            <StatCard title="Autres Rôles" value={allStaff.filter(s => s.role !== 'enseignant' && s.role !== 'enseignant_principal').length} icon={Briefcase} loading={isLoading} />
             <StatCard title="Rôles Admin" value={adminRoles.length} icon={Shield} loading={isLoading} />
         </div>
         <div className="flex justify-between items-center">
             <div className="flex items-center gap-2 flex-1">
-                <div className="relative w-full max-w-sm">
+                <div className="relative w-full max-w-xs">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input 
                         placeholder="Rechercher par nom ou email..." 
@@ -165,6 +170,17 @@ export default function PersonnelPage() {
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
+                 <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Filtrer par rôle..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Tous les rôles</SelectItem>
+                        {uniqueRoles.map(r => (
+                            <SelectItem key={r} value={r} className="capitalize">{r.replace(/_/g, ' ')}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
                  <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className={viewMode === 'list' ? 'bg-accent' : ''}>
                     <List className="h-4 w-4" />
                 </Button>
@@ -181,30 +197,11 @@ export default function PersonnelPage() {
           )}
         </div>
         
-        <Tabs defaultValue="teachers">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="teachers">Enseignants ({teachers.length})</TabsTrigger>
-                <TabsTrigger value="staff">Autre Personnel ({otherStaff.length})</TabsTrigger>
-            </TabsList>
-            <TabsContent value="teachers" className="mt-6">
-                 {isLoading ? <Skeleton className="h-64 w-full" /> : (
-                    viewMode === 'grid' ? (
-                        <StaffGrid staff={teachers} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
-                    ) : (
-                        <StaffTable staff={teachers} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
-                    )
-                 )}
-            </TabsContent>
-             <TabsContent value="staff" className="mt-6">
-                 {isLoading ? <Skeleton className="h-64 w-full" /> : (
-                    viewMode === 'grid' ? (
-                        <StaffGrid staff={otherStaff} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
-                    ) : (
-                        <StaffTable staff={otherStaff} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
-                    )
-                 )}
-            </TabsContent>
-        </Tabs>
+        {viewMode === 'grid' ? (
+          <StaffGrid staff={filteredStaff} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
+        ) : (
+          <StaffTable staff={filteredStaff} onEdit={handleOpenFormDialog} onDelete={handleOpenDeleteDialog} classes={classes} />
+        )}
       </div>
       
       {canManageUsers && (

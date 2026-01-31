@@ -23,7 +23,7 @@ export const StaffTable = ({ staff, classes, onEdit, onDelete }: StaffTableProps
     if (staff.length === 0) {
         return (
             <div className="text-center h-24 flex items-center justify-center text-muted-foreground">
-                Aucun membre du personnel trouvé.
+                Aucun membre du personnel ne correspond aux filtres actuels.
             </div>
         );
     }

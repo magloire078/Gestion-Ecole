@@ -99,7 +99,7 @@ export const StaffGrid = ({ staff, classes, onEdit, onDelete }: StaffGridProps) 
     if (staff.length === 0) {
         return (
              <Card className="flex items-center justify-center h-48">
-                <p className="text-muted-foreground">Aucun membre du personnel trouvé.</p>
+                <p className="text-muted-foreground">Aucun membre du personnel ne correspond aux filtres actuels.</p>
             </Card>
         );
     }
