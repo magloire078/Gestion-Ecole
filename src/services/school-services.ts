@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { doc, writeBatch, serverTimestamp, Firestore, updateDoc, deleteField, collection, query, where, getDocs, limit } from "firebase/firestore";
@@ -41,7 +42,7 @@ export const deleteSchool = (
     
     const schoolUpdate = {
       status: 'deleted',
-      deletedAt: new Date().toISOString()
+      deletedAt: serverTimestamp()
     };
     batch.update(schoolRef, schoolUpdate);
 
@@ -83,7 +84,8 @@ export const restoreSchool = (
 
     batch.update(schoolRef, {
       status: 'active',
-      deletedAt: deleteField() 
+      deletedAt: deleteField(),
+      updatedAt: serverTimestamp()
     });
 
     return batch.commit();

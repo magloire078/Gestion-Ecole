@@ -3,6 +3,7 @@
 'use client';
 import { Firestore } from 'firebase/firestore';
 import type { school as SchoolData, user_root, staff } from '@/lib/data-types';
+import { doc, writeBatch, collection, serverTimestamp } from 'firebase/firestore';
 
 export interface CreateSchoolData {
   name: string;
@@ -30,7 +31,6 @@ export class SchoolCreationService {
   async createSchool(data: CreateSchoolData): Promise<CreateSchoolResult> {
     try {
       // Import dynamique pour éviter les problèmes de SSR
-      const { doc, writeBatch, collection, serverTimestamp } = await import('firebase/firestore');
       const { getStorage, ref, uploadString } = await import('firebase/storage');
       
       const batch = writeBatch(this.firestore);
@@ -53,7 +53,8 @@ export class SchoolCreationService {
         directorLastName: data.directorLastName,
         directorEmail: data.directorEmail,
         schoolCode,
-        createdAt: new Date().toISOString(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         status: 'active',
         subscription: {
           plan: 'Essentiel',

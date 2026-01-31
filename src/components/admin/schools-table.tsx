@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -35,7 +36,7 @@ import { SchoolEditForm } from './school-edit-form';
 interface School {
     id: string;
     name: string;
-    createdAt: string;
+    createdAt: any;
     status?: 'active' | 'suspended' | 'deleted';
     subscription: {
         plan: 'Essentiel' | 'Pro' | 'Premium';
@@ -126,6 +127,18 @@ export function SchoolsTable() {
             setSchoolToRestore(null);
         });
   }
+  
+  const formatDate = (timestamp: any) => {
+    if (!timestamp) return 'N/A';
+    // Firestore Timestamps have a toDate() method
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+        return 'Date invalide';
+    }
+    return format(date, 'dd/MM/yyyy', { locale: fr });
+  };
+
 
   const getPlanBadgeVariant = (plan: string) => {
     switch (plan) {
@@ -188,7 +201,7 @@ export function SchoolsTable() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {school.createdAt ? format(new Date(school.createdAt), 'dd/MM/yyyy', {locale: fr}) : 'N/A'}
+                  {formatDate(school.createdAt)}
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">
