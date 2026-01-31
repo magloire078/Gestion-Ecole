@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { staff as Staff } from '@/lib/data-types';
+import { usePrint } from '@/hooks/use-print';
 
 interface Student {
   name: string;
@@ -35,6 +36,7 @@ interface PrintableTimetableProps {
 
 export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student, school, timetableEntries, teachers }) => {
   const printRef = React.useRef<HTMLDivElement>(null);
+  const handlePrint = usePrint("Emploi du Temps");
 
   const { timeSlots, days, timetableGrid } = useMemo(() => {
     if (timetableEntries.length === 0) {
@@ -63,33 +65,9 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
   }, [timetableEntries, teachers]);
 
 
-  const handlePrint = () => {
-    const printContent = printRef.current?.innerHTML;
-    if (printContent) {
-      const printWindow = window.open('', '', 'height=800,width=1200');
-      if (printWindow) {
-        printWindow.document.write('<html><head><title>Emploi du Temps</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/_next/static/css/app/layout.css" type="text/css" media="print">');
-        printWindow.document.write(`
-            <style>
-                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                .no-print { display: none !important; }
-                .printable-card { border: none !important; box-shadow: none !important; }
-                table { width: 100%; border-collapse: collapse; }
-                th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-                th { background-color: #f2f2f2; }
-            </style>
-        `);
-        printWindow.document.write('</head><body>');
-        printWindow.document.write(printContent);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 250);
-      }
+  const onPrintClick = () => {
+    if (printRef.current) {
+        handlePrint(printRef.current.innerHTML);
     }
   };
   
@@ -132,7 +110,7 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
                     return (
                       <TableCell key={day} className="border p-1 align-top h-24">
                         {entry ? (
-                          <div className="bg-primary/10 p-2 rounded-lg h-full flex flex-col justify-center">
+                          <div className="bg-primary/10 p-2 rounded-lg h-full flex flex-col justify-center text-center">
                             <p className="font-bold text-primary">{entry.subject}</p>
                             <p className="text-xs text-muted-foreground">{entry.teacher}</p>
                           </div>
@@ -146,7 +124,7 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
           </Table>
         </div>
         <div className="mt-6 flex justify-end no-print">
-          <Button onClick={handlePrint}>
+          <Button onClick={onPrintClick}>
             <Printer className="mr-2 h-4 w-4" />
             Imprimer l'Emploi du Temps
           </Button>

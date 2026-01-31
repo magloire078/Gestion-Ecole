@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Printer } from 'lucide-react';
 import { Logo } from './logo';
+import { usePrint } from '@/hooks/use-print';
 
 export interface ReceiptData {
   schoolName: string;
@@ -29,50 +30,19 @@ interface TuitionReceiptProps {
 
 export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
+  const handlePrint = usePrint(`Recu_${receiptData.studentMatricule}`);
 
-  const handlePrint = () => {
-    const printContent = receiptRef.current?.innerHTML;
-    if (printContent) {
-        const printWindow = window.open('', '', 'height=600,width=800');
-        if (printWindow) {
-            printWindow.document.write('<html><head><title>Imprimer le Reçu</title>');
-            // A basic inline style for printing
-            printWindow.document.write(`
-                <style>
-                    body { font-family: sans-serif; line-height: 1.5; color: #333; }
-                    .receipt-container { width: 100%; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; }
-                    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px; }
-                    .school-info h1 { font-size: 1.5rem; margin: 0; }
-                    /* --- Correction pour le logo --- */
-                    .logo-container svg { width: 40px !important; height: 40px !important; }
-                    .receipt-info { text-align: right; }
-                    .receipt-info h2 { font-size: 1.2rem; margin: 0; color: #555; }
-                    .receipt-info p { margin: 0; }
-                    .student-info { margin-bottom: 20px; }
-                    .student-info p { margin: 2px 0; }
-                    .payment-details table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    .payment-details th, .payment-details td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-                    .payment-details th { background-color: #f2f2f2; }
-                    .total { text-align: right; margin-top: 20px; font-size: 1.1rem; font-weight: bold; }
-                    .footer { margin-top: 40px; text-align: center; font-size: 0.8rem; color: #777; }
-                </style>
-            `);
-            printWindow.document.write('</head><body>');
-            printWindow.document.write(printContent);
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-            printWindow.close();
-        }
-    }
+  const onPrintClick = () => {
+      if (receiptRef.current) {
+          handlePrint(receiptRef.current.innerHTML);
+      }
   };
 
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   return (
     <div>
-        <div ref={receiptRef} className="p-6 rounded-lg border bg-background text-sm">
+        <div ref={receiptRef} className="p-6 rounded-lg border bg-background text-sm printable-card">
             <div className="flex justify-between items-start pb-4 border-b-2 border-primary mb-6">
                 <div className="flex items-center gap-2 logo-container">
                      <Logo />
@@ -135,8 +105,8 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
                 <p>{receiptData.schoolName}</p>
             </div>
         </div>
-        <div className="mt-6 flex justify-end">
-            <Button onClick={handlePrint}>
+        <div className="mt-6 flex justify-end no-print">
+            <Button onClick={onPrintClick}>
                 <Printer className="mr-2 h-4 w-4" />
                 Imprimer le Reçu
             </Button>

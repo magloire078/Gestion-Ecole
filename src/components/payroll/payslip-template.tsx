@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
+import { usePrint } from '@/hooks/use-print';
 
 interface PayslipTemplateProps {
   details: PayslipDetails;
@@ -164,24 +165,11 @@ PayslipTemplate.displayName = "PayslipTemplate";
 
 export function PayslipPreview({ details }: { details: PayslipDetails }) {
   const printRef = React.useRef<HTMLDivElement>(null);
+  const handlePrint = usePrint('Bulletin de Paie');
 
-  const handlePrint = () => {
-    const printContent = printRef.current?.innerHTML;
-    if (printContent) {
-      const printWindow = window.open('', '', 'height=800,width=1000');
-      if (printWindow) {
-        printWindow.document.write('<html><head><title>Bulletin de Paie</title>');
-        printWindow.document.write('<style>@media print { .no-print { display: none !important; } .printable-card { border: none !important; box-shadow: none !important; } @page { size: A4; margin: 20mm; } }</style>');
-        printWindow.document.write('</head><body>');
-        printWindow.document.write(printContent);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 500);
-      }
+  const onPrintClick = () => {
+    if (printRef.current) {
+        handlePrint(printRef.current.innerHTML);
     }
   };
 
@@ -191,7 +179,7 @@ export function PayslipPreview({ details }: { details: PayslipDetails }) {
         <PayslipTemplate ref={printRef} details={details} />
       </div>
       <div className="mt-4 flex justify-end no-print">
-        <Button onClick={handlePrint}>
+        <Button onClick={onPrintClick}>
           <Printer className="mr-2 h-4 w-4" />
           Imprimer le bulletin
         </Button>
@@ -202,24 +190,11 @@ export function PayslipPreview({ details }: { details: PayslipDetails }) {
 
 export function BulkPayslipPreview({ detailsArray }: { detailsArray: PayslipDetails[] }) {
     const printRef = React.useRef<HTMLDivElement>(null);
-
-    const handlePrint = () => {
-        const printContent = printRef.current?.innerHTML;
-        if (printContent) {
-            const printWindow = window.open('', '', 'height=800,width=1000');
-            if (printWindow) {
-                printWindow.document.write('<html><head><title>Bulletins de Paie</title>');
-                printWindow.document.write('<style>@media print { .no-print { display: none !important; } .page-break { page-break-after: always; } }</style>');
-                printWindow.document.write('</head><body>');
-                printWindow.document.write(printContent);
-                printWindow.document.write('</body></html>');
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(() => {
-                    printWindow.print();
-                    printWindow.close();
-                }, 500);
-            }
+    const handlePrint = usePrint('Bulletins de Paie');
+    
+    const onPrintClick = () => {
+        if (printRef.current) {
+            handlePrint(printRef.current.innerHTML);
         }
     };
 
@@ -233,7 +208,7 @@ export function BulkPayslipPreview({ detailsArray }: { detailsArray: PayslipDeta
                 ))}
             </div>
             <div className="mt-4 flex justify-end no-print">
-                <Button onClick={handlePrint}>
+                <Button onClick={onPrintClick}>
                     <Printer className="mr-2 h-4 w-4" />
                     Imprimer Tous les Bulletins
                 </Button>

@@ -12,6 +12,7 @@ import { fr } from 'date-fns/locale';
 import { useSchoolData } from '@/hooks/use-school-data';
 import type { student as Student } from '@/lib/data-types';
 import { SafeImage } from './ui/safe-image';
+import { usePrint } from '@/hooks/use-print';
 
 interface SchoolInfo {
   name: string;
@@ -28,9 +29,12 @@ interface StudentInfoSheetProps {
 
 export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, school }) => {
   const printRef = useRef<HTMLDivElement>(null);
+  const handlePrint = usePrint("Fiche de Renseignements");
 
-  const handlePrint = () => {
-    window.print();
+  const onPrintClick = () => {
+    if (printRef.current) {
+        handlePrint(printRef.current.innerHTML);
+    }
   };
   
   const getAge = (dateOfBirth: string | undefined) => {
@@ -138,7 +142,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                 </div>
 
                 <div className="mt-6 flex justify-end no-print">
-                    <Button onClick={handlePrint}>
+                    <Button onClick={onPrintClick}>
                         <Printer className="mr-2 h-4 w-4" />
                         Imprimer la Fiche
                     </Button>
