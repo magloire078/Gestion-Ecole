@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -84,42 +83,53 @@ export function ImageUploader({
     }
   };
 
-  const handleRemoveImage = () => {
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     onUploadComplete(''); 
   };
+  
+  const uniqueId = React.useId();
 
   return (
     <div className={cn("relative", className)}>
-      <input
-        type="file"
-        ref={fileInputRef}
-        id="image-upload-input"
-        accept="image/*"
-        onChange={handleFileSelect}
-        className="hidden"
-        disabled={uploading}
-      />
-      
-      <div className={cn("cursor-pointer", uploading && "opacity-50")} onClick={() => !uploading && fileInputRef.current?.click()}>
-          {children}
-      </div>
-      {uploading && (
-         <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
-            <Loader2 className="h-8 w-8 animate-spin text-white" />
-          </div>
-      )}
-
-      {currentImageUrl && !uploading && (
-        <Button
-          type="button"
-          variant="destructive"
-          size="sm"
-          className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
-          onClick={handleRemoveImage}
+        <input
+            type="file"
+            ref={fileInputRef}
+            id={`image-upload-input-${uniqueId}`}
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="hidden"
+            disabled={uploading}
+        />
+        <label
+            htmlFor={`image-upload-input-${uniqueId}`}
+            className={cn(
+                "cursor-pointer",
+                uploading && "opacity-50 cursor-not-allowed"
+            )}
         >
-          <X className="h-3 w-3" />
-        </Button>
-      )}
+            {children}
+        </label>
+        
+        {uploading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-md">
+                <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+        )}
+
+        {currentImageUrl && !uploading && (
+            <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 z-10"
+                onClick={handleRemoveImage}
+                aria-label="Supprimer l'image"
+            >
+                <X className="h-3 w-3" />
+            </Button>
+        )}
     </div>
   );
 }
