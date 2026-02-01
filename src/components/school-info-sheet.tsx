@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useRef } from 'react';
@@ -56,7 +57,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
   );
 
   const directorFullName = `${school.directorFirstName || ''} ${school.directorLastName || ''}`.trim();
-  const currentYear = new Date().getFullYear();
+  const currentYear = school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -73,7 +74,7 @@ export const SchoolInfoSheet: React.FC<SchoolInfoSheetProps> = ({ school }) => {
                         </div>
                         <div className="text-right">
                              <h2 className="text-2xl font-bold tracking-tight">FICHE D'INFORMATION</h2>
-                             <p className="text-muted-foreground">Année scolaire: {`${currentYear - 1}-${currentYear}`}</p>
+                             <p className="text-muted-foreground">Année scolaire: {currentYear}</p>
                         </div>
                     </header>
 

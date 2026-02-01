@@ -26,6 +26,7 @@ interface School {
   phone?: string;
   website?: string;
   mainLogoUrl?: string;
+  currentAcademicYear?: string;
 }
 
 interface Grade {
@@ -196,7 +197,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     </div>
                 </div>
                 <div className="text-right">
-                    <p>Année scolaire: {`${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}</p>
+                    <p>Année scolaire: {school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}</p>
                     <h1 className="text-lg font-bold">BULLETIN DE NOTES</h1>
                     <p>PREMIER TRIMESTRE</p>
                 </div>

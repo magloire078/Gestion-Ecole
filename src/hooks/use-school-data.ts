@@ -29,6 +29,7 @@ interface SchoolData extends DocumentData {
     schoolCode?: string;
     matricule?: string;
     mainLogoUrl?: string;
+    currentAcademicYear?: string;
     subscription?: Subscription;
     updatedAt?: any; 
     updatedBy?: string;
@@ -106,6 +107,7 @@ export function useSchoolData() {
         directorName: `${schoolData?.directorFirstName || ''} ${schoolData?.directorLastName || ''}`.trim(),
         subscription: schoolData?.subscription,
         mainLogoUrl: schoolData?.mainLogoUrl,
+        currentAcademicYear: schoolData?.currentAcademicYear,
         loading,
         error,
         updateSchoolData 

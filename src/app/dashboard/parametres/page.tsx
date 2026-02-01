@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
@@ -10,7 +11,7 @@ import { useState, useEffect } from "react";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { useUser, useAuth, useFirestore } from "@/firebase";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2, Users, Check, User, Phone, Globe, Loader2, CheckCircle, School, Building, Mail, Briefcase } from "lucide-react";
+import { Copy, AlertCircle, Upload, FileSignature, LogOut, Trash2, Users, Check, User, Phone, Globe, Loader2, CheckCircle, School, Building, Mail, Briefcase, Calendar } from "lucide-react";
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,6 +38,7 @@ import { InvitationCode } from '@/components/settings/invitation-code';
 
 const settingsSchema = z.object({
   name: z.string().min(1, "Le nom de l'école est requis."),
+  currentAcademicYear: z.string().regex(/^\d{4}-\d{4}$/, "Format invalide (ex: 2024-2025)").optional().or(z.literal('')),
   matricule: z.string().regex(/^[A-Z0-9\/-]*$/, { message: "Format de matricule invalide" }).optional().or(z.literal('')),
   cnpsEmployeur: z.string().regex(/^[0-9]*$/, { message: "Le numéro CNPS doit contenir uniquement des chiffres" }).optional().or(z.literal('')),
   directorFirstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
@@ -67,7 +69,7 @@ export default function SettingsPage() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-        name: "", directorFirstName: "", directorLastName: "", matricule: "", cnpsEmployeur: "", directorPhone: "", address: "", phone: "", website: "", mainLogoUrl: "", email: "",
+        name: "", directorFirstName: "", directorLastName: "", currentAcademicYear: "", matricule: "", cnpsEmployeur: "", directorPhone: "", address: "", phone: "", website: "", mainLogoUrl: "", email: "",
     }
   });
 
@@ -75,6 +77,7 @@ export default function SettingsPage() {
     if (schoolData) {
       form.reset({
         name: schoolData.name || "",
+        currentAcademicYear: schoolData.currentAcademicYear || "",
         directorFirstName: schoolData.directorFirstName || "",
         directorLastName: schoolData.directorLastName || "",
         matricule: schoolData.matricule || "",
@@ -194,6 +197,7 @@ export default function SettingsPage() {
                         )} />
                         <FormField control={form.control} name="name" render={({ field }) => (<FormItem><FormLabel>Nom de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="address" render={({ field }) => (<FormItem><FormLabel>Adresse de l'École</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                        <FormField control={form.control} name="currentAcademicYear" render={({ field }) => (<FormItem><FormLabel className="flex items-center gap-2"><Calendar className="h-4 w-4"/>Année Académique en Cours</FormLabel><FormControl><Input placeholder="Ex: 2024-2025" {...field} /></FormControl><FormMessage /></FormItem>)}/>
                     </CardContent>
                  </Card>
 

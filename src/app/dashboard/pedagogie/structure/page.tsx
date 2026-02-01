@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -5,8 +6,22 @@ import { CyclesManager } from "@/components/pedagogy/cycles-manager";
 import { ClassesList } from "@/components/pedagogy/classes-list";
 import { School, Users, Book } from "lucide-react";
 import { SubjectsManager } from "@/components/pedagogy/subjects-manager";
+import { useSchoolData } from "@/hooks/use-school-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function StructurePage() {
+  const { schoolData, loading } = useSchoolData();
+
+  if (loading) {
+    return (
+        <div className="space-y-6">
+            <Skeleton className="h-10 w-1/3" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-64 w-full" />
+        </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
        <div>
@@ -31,7 +46,7 @@ export default function StructurePage() {
           </TabsTrigger>
         </TabsList>
         <TabsContent value="classes" className="mt-6">
-          <ClassesList />
+          <ClassesList academicYear={schoolData?.currentAcademicYear} />
         </TabsContent>
         <TabsContent value="cycles" className="mt-6">
           <CyclesManager />

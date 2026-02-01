@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,7 +17,11 @@ import { ClassesListView } from '@/components/classes/classes-list-view';
 import { ClassForm } from './class-form'; // Import the new component
 import { cn } from '@/lib/utils';
 
-export function ClassesList() {
+interface ClassesListProps {
+  academicYear?: string;
+}
+
+export function ClassesList({ academicYear }: ClassesListProps) {
     const { schoolId } = useSchoolData();
     const firestore = useFirestore();
     const { user } = useUser();
@@ -113,6 +118,7 @@ export function ClassesList() {
                     teachers={teachers}
                     classe={editingClass}
                     onSave={handleFormSave}
+                    academicYear={academicYear}
                 />
             </DialogContent>
         </Dialog>

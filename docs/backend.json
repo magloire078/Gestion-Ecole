@@ -41,6 +41,7 @@
             "mainLogoUrl": { "type": "string", "format": "uri", "description": "URL du logo principal de l'école." },
             "email": { "type": "string", "format": "email", "description": "Email de contact de l'école." },
             "isSetupComplete": { "type": "boolean", "description": "Indique si la configuration initiale de l'école est terminée." },
+            "currentAcademicYear": { "type": "string", "description": "Année académique en cours (ex: 2024-2025)." },
             "subscription": {
                 "type": "object",
                 "description": "Détails de l'abonnement de l'école.",
@@ -351,7 +352,7 @@
             "updatedAt": { "type": "object", "description": "Date de la dernière modification." },
             "createdBy": { "type": "string", "description": "UID de l'utilisateur qui a créé le dossier." },
             "updatedBy": { "type": "string", "description": "UID de l'utilisateur qui a fait la dernière modification." },
-            "inscriptionYear": { "type": "number", "description": "L'année d'inscription de l'élève (ex: 2024)." }
+            "inscriptionYear": { "type": "string", "description": "L'année académique de l'inscription de l'élève (ex: 2024-2025)." }
         },
         "required": ["schoolId", "firstName", "lastName", "matricule", "status", "dateOfBirth", "placeOfBirth", "gender", "parent1FirstName", "parent1LastName", "parent1Contact", "tuitionFee", "amountDue", "tuitionStatus"]
     },
@@ -1385,3 +1386,4 @@
     }
   }
 }
+

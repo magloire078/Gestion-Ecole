@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -63,7 +64,7 @@ export default function RegistrationPage() {
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { schoolId, loading: schoolDataLoading } = useSchoolData();
+  const { schoolId, schoolData, loading: schoolDataLoading } = useSchoolData();
   const { user } = useUser();
 
   const [step, setStep] = useState(1);
@@ -140,7 +141,7 @@ export default function RegistrationPage() {
     const selectedNiveauInfo = niveaux.find(n => n.id === selectedClassInfo?.niveauId);
     
     const { fee: tuitionFee } = getTuitionInfoForClass(values.classId, classes, niveaux, fees);
-    const currentYear = new Date().getFullYear();
+    const currentAcademicYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 
     const studentData = {
       schoolId,
@@ -174,7 +175,7 @@ export default function RegistrationPage() {
       createdAt: serverTimestamp(),
       createdBy: user.uid,
       updatedAt: serverTimestamp(),
-      inscriptionYear: currentYear,
+      inscriptionYear: currentAcademicYear,
     };
     
     const batch = writeBatch(firestore);

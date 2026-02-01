@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -35,21 +36,21 @@ interface ClassFormProps {
     teachers: (Staff & {id: string})[];
     classe: (ClassType & { id: string }) | null;
     onSave: () => void;
+    academicYear?: string;
 }
 
-export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave }: ClassFormProps) {
+export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave, academicYear }: ClassFormProps) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const currentYear = new Date().getFullYear();
-  const academicYear = `${currentYear}-${currentYear + 1}`;
+  const defaultAcademicYear = academicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
-      academicYear: academicYear,
+      academicYear: defaultAcademicYear,
       maxStudents: 30,
     },
   });
@@ -57,7 +58,7 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave 
 
   useEffect(() => {
     reset(classe || {
-      academicYear: academicYear,
+      academicYear: defaultAcademicYear,
       maxStudents: 30,
       cycleId: '',
       niveauId: '',
@@ -65,7 +66,7 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave 
       mainTeacherId: '',
       classroom: '',
     });
-  }, [classe, academicYear, reset]);
+  }, [classe, defaultAcademicYear, reset]);
 
   const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
   const filteredNiveaux = useMemo(() => niveaux.filter(n => n.cycleId === watchedCycleId), [niveaux, watchedCycleId]);

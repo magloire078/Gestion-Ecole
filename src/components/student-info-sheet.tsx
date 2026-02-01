@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useRef } from 'react';
@@ -20,6 +21,7 @@ interface SchoolInfo {
   phone?: string;
   website?: string;
   mainLogoUrl?: string;
+  currentAcademicYear?: string;
 }
 
 interface StudentInfoSheetProps {
@@ -68,7 +70,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
 
   const studentFullName = `${student.firstName} ${student.lastName}`;
   const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const currentYear = new Date().getFullYear();
+  const currentYear = school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -89,7 +91,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
 
                     <div className="text-center mb-6">
                         <h1 className="text-2xl font-bold tracking-tight">FICHE DE RENSEIGNEMENTS</h1>
-                        <p className="text-muted-foreground">Année scolaire: {`${currentYear - 1}-${currentYear}`}</p>
+                        <p className="text-muted-foreground">Année scolaire: {currentYear}</p>
                     </div>
 
                     {/* Student Identity */}
