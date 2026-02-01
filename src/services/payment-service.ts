@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
@@ -32,16 +33,16 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
     const cancelUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`;
     const pendingUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente`;
 
-    const getReferenceId = () => {
+    const getReferenceId = (separator = '_') => {
         const timestamp = new Date().getTime();
         if (type === 'tuition' && studentId) {
-            return `tuition_${schoolId}_${studentId}_${price}_${timestamp}`;
+            return `tuition${separator}${schoolId}${separator}${studentId}${separator}${price}${separator}${timestamp}`;
         }
         if (type === 'subscription' && plan && duration) {
-             return `subscription_${schoolId}_${plan}_${duration}m_${timestamp}`;
+             return `subscription${separator}${schoolId}${separator}${plan}${separator}${duration}m${separator}${timestamp}`;
         }
         // Fallback
-        return `${schoolId}_${timestamp}`;
+        return `${schoolId}${separator}${timestamp}`;
     };
 
     if (provider === 'orangemoney') {
@@ -80,7 +81,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         const priceInEUR = parseInt(price, 10) / XOF_TO_EUR_RATE;
         const priceInCents = Math.round(priceInEUR * 100);
         
-        const clientReferenceId = getReferenceId().replace(/_/g, '__'); // Stripe doesn't like single underscores
+        const clientReferenceId = getReferenceId('__');
 
         const sessionData = {
             priceInCents,
