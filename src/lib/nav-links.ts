@@ -1,5 +1,4 @@
 
-
 import {
     LayoutDashboard,
     Users,
@@ -37,6 +36,7 @@ import {
     BarChart3,
     List,
     History,
+    Scroll,
 } from 'lucide-react';
 import type { UserProfile } from '@/lib/data-types';
 
@@ -144,10 +144,11 @@ export const NAV_LINKS: NavGroup[] = [
         icon: Shield,
         adminOnly: true,
         links: [
-            { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: LayoutDashboard },
+            { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: BarChart3 },
             { href: '/admin/system/schools', label: 'Écoles', icon: Building },
             { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
-             { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
+            { href: '/admin/system/audit-log', label: 'Journaux d\'Audit', icon: Scroll },
+            { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
         ]
     },
   ];
