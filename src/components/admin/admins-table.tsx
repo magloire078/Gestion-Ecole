@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo, useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -8,7 +9,6 @@ import { useFirestore, useUser } from '@/firebase';
 import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { SafeImage } from '../ui/safe-image';
 import type { UserProfile } from '@/lib/data-types';
 import { revokeSuperAdmin } from '@/services/admin-services';
 import { useToast } from '@/hooks/use-toast';
@@ -124,7 +124,7 @@ export function AdminsTable() {
                         <TableCell>
                             <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10">
-                                    <SafeImage src={admin.photoURL} alt={admin.displayName} />
+                                    <AvatarImage src={admin.photoURL || undefined} alt={admin.displayName} />
                                     <AvatarFallback>{admin.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <span className="font-medium">{admin.displayName}</span>

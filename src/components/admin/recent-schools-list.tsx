@@ -8,8 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { school as School } from '@/lib/data-types';
-import { Avatar, AvatarFallback } from '../ui/avatar';
-import { SafeImage } from '../ui/safe-image';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 export function RecentSchoolsList() {
     const firestore = useFirestore();
@@ -50,7 +49,7 @@ export function RecentSchoolsList() {
                     {recentSchools.map(school => (
                         <div key={school.id} className="flex items-center">
                             <Avatar className="h-9 w-9">
-                                <SafeImage src={school.mainLogoUrl} alt={school.name} />
+                                <AvatarImage src={school.mainLogoUrl || undefined} alt={school.name} />
                                 <AvatarFallback>{school.name.substring(0,2)}</AvatarFallback>
                             </Avatar>
                             <div className="ml-4 space-y-1">
