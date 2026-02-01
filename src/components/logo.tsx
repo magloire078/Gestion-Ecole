@@ -15,7 +15,7 @@ export function Logo({ compact = false, schoolName, logoUrl, disableLink = false
     const finalSchoolName = schoolName || 'GèreEcole';
 
     const LogoContent = () => (
-      <div className={cn("flex items-center gap-3 text-foreground font-semibold", !disableLink && "group")}>
+      <div className={cn("flex items-center gap-2 text-foreground font-semibold", !disableLink && "group")}>
           <div className={cn("relative transition-transform flex items-center justify-center bg-card p-1 rounded-lg", compact ? "h-12 w-12" : "h-10 w-10", !disableLink && "group-hover:scale-105")}>
              {logoUrl ? (
                 <SafeImage src={logoUrl} alt={`${finalSchoolName} Logo`} fill className="object-contain" />
