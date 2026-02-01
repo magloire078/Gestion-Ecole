@@ -153,9 +153,13 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);
 
     const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
-        setIsGeneratingCouncilComment(true);
+        // Temporarily disable AI generation due to package issues.
         toast({ title: "Fonctionnalité désactivée", description: "La génération de commentaires par IA a été temporairement désactivée." });
-        setIsGeneratingCouncilComment(false);
+        if (subject) {
+            setSubjectAppreciations(prev => ({ ...prev, [subject]: { text: '', isGenerating: false } }));
+        } else {
+            setIsGeneratingCouncilComment(false);
+        }
     };
     
    const handlePrint = () => {
