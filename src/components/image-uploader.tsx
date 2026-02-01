@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -27,7 +28,7 @@ export function ImageUploader({
   resizeWidth = 400,
   children,
   className,
-  maxSize = 5 * 1024 * 1024 // 5MB default
+  maxSize = 2 * 1024 * 1024 // 2MB default
 }: ImageUploaderProps) {
   const storage = useStorage();
   const { toast } = useToast();
@@ -99,16 +100,14 @@ export function ImageUploader({
         disabled={uploading}
       />
       
-      <div className="relative">
-        <div className={cn("cursor-pointer", uploading && "opacity-50")} onClick={() => !uploading && fileInputRef.current?.click()}>
+      <div className={cn("cursor-pointer", uploading && "opacity-50")} onClick={() => !uploading && fileInputRef.current?.click()}>
           {children}
-        </div>
-        {uploading && (
-           <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
-              <Loader2 className="h-8 w-8 animate-spin text-white" />
-            </div>
-        )}
       </div>
+      {uploading && (
+         <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+            <Loader2 className="h-8 w-8 animate-spin text-white" />
+          </div>
+      )}
 
       {currentImageUrl && !uploading && (
         <Button
