@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -160,6 +161,7 @@ export default function OnboardingPage() {
         uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL || '',
         schoolId: schoolId, role: role as any, firstName: firstName, lastName: lastName,
         hireDate: new Date().toISOString().split('T')[0], baseSalary: 0, status: 'Actif',
+        isAdmin: user.profile?.isAdmin || false,
       };
       batch.set(staffProfileRef, staffProfileData);
       
