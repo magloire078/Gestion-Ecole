@@ -138,19 +138,7 @@ export const NAV_LINKS: NavGroup[] = [
         { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings, permission: 'manageSettings' },
         { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield, permission: 'manageSettings' },
       ]
-    },
-    {
-        group: "Admin Système",
-        icon: Shield,
-        adminOnly: true,
-        links: [
-            { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: BarChart3 },
-            { href: '/admin/system/schools', label: 'Écoles', icon: Building },
-            { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
-            { href: '/admin/system/audit-log', label: 'Journaux d\'Audit', icon: Scroll },
-            { href: '/admin/system/settings', label: 'Paramètres', icon: Settings },
-        ]
-    },
+    }
   ];
 
 // Ajout conceptuel des sous-liens. La logique de rendu est dans le layout respectif.
