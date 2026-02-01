@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { staff as Staff, student as Student, class_type as Class } from '@/lib/data-types';
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
 
 
 // --- Interfaces ---
@@ -153,12 +154,23 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
     }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);
 
     const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
-        // Temporarily disable AI generation due to package issues.
-        toast({ title: "Fonctionnalité désactivée", description: "La génération de commentaires par IA a été temporairement désactivée." });
-        if (subject) {
-            setSubjectAppreciations(prev => ({ ...prev, [subject]: { text: '', isGenerating: false } }));
+       if (subject && teacherName && average !== undefined) {
+            setSubjectAppreciations(prev => ({ ...prev, [subject]: { text: '', isGenerating: true }}));
+            try {
+                const comment = await generateReportCardComment({
+                    subject,
+                    teacherName,
+                    average,
+                    studentName: student.name,
+                });
+                setSubjectAppreciations(prev => ({ ...prev, [subject]: { text: comment, isGenerating: false }}));
+            } catch(e) {
+                console.error("AI comment generation failed:", e);
+                toast({ variant: 'destructive', title: "Erreur de l'IA", description: "La génération de commentaire a échoué."});
+                setSubjectAppreciations(prev => ({ ...prev, [subject]: { text: '', isGenerating: false }}));
+            }
         } else {
-            setIsGeneratingCouncilComment(false);
+            toast({ title: "Fonctionnalité en développement", description: "La génération du commentaire général sera bientôt disponible." });
         }
     };
     
