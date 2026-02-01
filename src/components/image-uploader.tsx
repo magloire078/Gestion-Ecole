@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from "react";
 import { useState, useEffect, useRef } from 'react';
 import { useStorage } from '@/firebase/client-provider';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
