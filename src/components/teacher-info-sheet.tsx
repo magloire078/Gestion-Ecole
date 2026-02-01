@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import React, { useRef } from 'react';
@@ -10,6 +8,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { format, isValid, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { staff as Teacher } from '@/lib/data-types';
+import { SafeImage } from './ui/safe-image';
+import { usePrint } from '@/hooks/use-print';
 
 interface SchoolInfo {
   name: string;
@@ -27,35 +27,14 @@ interface TeacherInfoSheetProps {
 
 export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, school }) => {
   const printRef = useRef<HTMLDivElement>(null);
+  const handlePrint = usePrint("Fiche de Renseignements");
 
-  const handlePrint = () => {
-    const printContent = printRef.current?.innerHTML;
-    if (printContent) {
-      const printWindow = window.open('', '', 'height=800,width=800');
-      if (printWindow) {
-        printWindow.document.write('<html><head><title>Fiche Personnel</title>');
-        printWindow.document.write('<link rel="stylesheet" href="/globals.css" type="text/css" media="print">');
-        printWindow.document.write(`
-            <style>
-                body { font-family: sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                .no-print { display: none !important; }
-                .printable-card { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 auto; max-width: 210mm; }
-                @page { size: A4; margin: 20mm; }
-            </style>
-        `);
-        printWindow.document.write('<body style="color: black !important;">');
-        printWindow.document.write(printContent);
-        printWindow.document.write('</body></html>');
-        printWindow.document.close();
-        printWindow.focus();
-        setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
-        }, 250);
-      }
+  const onPrintClick = () => {
+    if (printRef.current) {
+        handlePrint(printRef.current.innerHTML);
     }
   };
-
+  
   const InfoRow = ({ icon: Icon, label, value, isLink, href }: { icon: React.ElementType, label: string, value?: string | number | null, isLink?: boolean, href?: string }) => (
     <div className="flex items-start text-sm">
         <Icon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground flex-shrink-0" />
@@ -85,7 +64,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                 <div ref={printRef}>
                     <header className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
                         <div className="flex items-center gap-4">
-                            {school.mainLogoUrl && <AvatarImage src={school.mainLogoUrl || undefined} alt={school.name} width={80} height={80} className="object-contain" />}
+                            {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={80} height={80} className="object-contain" />}
                             <div>
                                 <h1 className="text-2xl font-bold">{school.name}</h1>
                                 <p className="text-xs text-muted-foreground">{school.address}</p>
@@ -158,7 +137,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                 </div>
 
                 <div className="mt-6 flex justify-end no-print">
-                    <Button onClick={handlePrint}>
+                    <Button onClick={onPrintClick}>
                         <Printer className="mr-2 h-4 w-4" />
                         Imprimer la Fiche
                     </Button>
