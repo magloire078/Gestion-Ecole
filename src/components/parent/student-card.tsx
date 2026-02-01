@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useDoc, useFirestore } from '@/firebase';
@@ -36,7 +35,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
     const gradesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/notes`)), [firestore, schoolId, studentId]);
     const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
     
-    const absencesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/absences`), where('studentId', '==', studentId), orderBy('date', 'desc'), limit(30)), [firestore, schoolId, studentId]);
+    const absencesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/absences`), orderBy('date', 'desc'), limit(30)), [firestore, schoolId, studentId]);
     const { data: absencesData, loading: absencesLoading } = useCollection(absencesQuery);
     
     const studentAbsences = useMemo(() => absencesData?.length || 0, [absencesData]);
