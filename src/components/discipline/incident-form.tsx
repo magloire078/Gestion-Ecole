@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -11,7 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useFirestore, useUser } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import type { student as Student } from '@/lib/data-types';
 import { useEffect } from 'react';
@@ -88,6 +89,22 @@ export function IncidentForm({ schoolId, students, onSave, student }: IncidentFo
         const collectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${studentInfo.id}/incidents_disciplinaires`);
         try {
             await addDoc(collectionRef, incidentData);
+
+            // Notify parents
+            if (studentInfo.parentIds && studentInfo.parentIds.length > 0) {
+              for (const parentId of studentInfo.parentIds) {
+                const notificationData = {
+                  userId: parentId,
+                  title: `Incident disciplinaire: ${studentInfo.firstName}`,
+                  content: `Un incident de type "${values.type}" a été enregistré pour votre enfant.`,
+                  href: `/dashboard/parent/student/${studentInfo.id}?tab=discipline`,
+                  isRead: false,
+                  createdAt: serverTimestamp(),
+                };
+                await addDoc(collection(firestore, `ecoles/${schoolId}/notifications`), notificationData);
+              }
+            }
+
             toast({ title: 'Incident enregistré', description: "Le nouvel incident disciplinaire a été ajouté." });
             onSave();
         } catch (error) {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,7 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { support_ticket as SupportTicket } from '@/lib/data-types';
 import { useUser, useFirestore } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -33,10 +34,22 @@ export function SupportTicketList({ tickets, isLoading }: SupportTicketListProps
         }
     };
 
-    const handleStatusChange = async (ticketId: string, status: 'open' | 'in_progress' | 'closed') => {
-        const ticketRef = doc(firestore, 'support_tickets', ticketId);
+    const handleStatusChange = async (ticket: SupportTicket & { id: string }, status: 'open' | 'in_progress' | 'closed') => {
+        const ticketRef = doc(firestore, 'support_tickets', ticket.id);
         try {
             await updateDoc(ticketRef, { status });
+            
+            // Create a notification for the user who created the ticket
+            const notificationData = {
+                userId: ticket.userId,
+                title: `Ticket de support mis à jour`,
+                content: `Le statut de votre ticket "${ticket.subject}" est passé à "${status}".`,
+                href: `/dashboard/support`,
+                isRead: false,
+                createdAt: serverTimestamp(),
+            };
+            await addDoc(collection(firestore, `ecoles/${ticket.schoolId}/notifications`), notificationData);
+
             toast({ title: 'Statut mis à jour' });
         } catch (e) {
             console.error("Error updating ticket status:", e);
@@ -78,9 +91,9 @@ export function SupportTicketList({ tickets, isLoading }: SupportTicketListProps
                                         <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket.id, 'open')}>Marquer comme Ouvert</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket.id, 'in_progress')}>Marquer comme En cours</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket.id, 'closed')}>Marquer comme Fermé</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'open')}>Marquer comme Ouvert</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'in_progress')}>Marquer comme En cours</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'closed')}>Marquer comme Fermé</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
