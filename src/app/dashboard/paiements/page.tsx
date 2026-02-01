@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -21,7 +20,7 @@ import type { student as Student, class_type as Class } from "@/lib/data-types";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Search, Loader2 } from "lucide-react";
+import { MessageSquare, Search, Loader2, Copy } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, query } from "firebase/firestore";
@@ -29,6 +28,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { generatePaymentReminder, type PaymentReminderInput } from '@/ai/flows/generate-payment-reminder';
+import { Textarea } from '@/components/ui/textarea';
+
 
 export default function PaymentsPage() {
   const firestore = useFirestore();
@@ -48,6 +51,11 @@ export default function PaymentsPage() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   
+  const [isReminderOpen, setIsReminderOpen] = useState(false);
+  const [remindingStudent, setRemindingStudent] = useState<Student | null>(null);
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
+
   const filteredStudents = useMemo(() => {
     return students.filter(student => {
       const classMatch = selectedClass === 'all' || student.classId === selectedClass;
@@ -72,10 +80,31 @@ export default function PaymentsPage() {
   };
   
   const handleRemind = async (student: Student) => {
-    toast({
-      title: "Fonctionnalité bientôt disponible",
-      description: "La génération de rappels de paiement sera bientôt réactivée.",
-    });
+    if (!schoolName) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Nom de l\'école non disponible.' });
+        return;
+    }
+    setRemindingStudent(student);
+    setIsReminderOpen(true);
+    setIsGeneratingReminder(true);
+    setReminderMessage('');
+
+    try {
+        const input: PaymentReminderInput = {
+            studentName: `${student.firstName} ${student.lastName}`,
+            schoolName: schoolName,
+            amountDue: student.amountDue || 0,
+            dueDate: "prochainement", // Generic due date
+        };
+        const message = await generatePaymentReminder(input);
+        setReminderMessage(message);
+    } catch(e) {
+        console.error("Failed to generate reminder:", e);
+        toast({ variant: 'destructive', title: 'Erreur IA', description: 'Impossible de générer le rappel de paiement.' });
+        setReminderMessage("Erreur lors de la génération du message. Veuillez réessayer.");
+    } finally {
+        setIsGeneratingReminder(false);
+    }
   }
 
   return (
@@ -209,6 +238,34 @@ export default function PaymentsPage() {
         </Card>
       </div>
     </div>
+    <Dialog open={isReminderOpen} onOpenChange={setIsReminderOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Rappel de Paiement pour {remindingStudent?.firstName}</DialogTitle>
+                <DialogDescription>
+                    Voici une suggestion de message générée par IA. Vous pouvez la copier et l'envoyer au parent.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+                {isGeneratingReminder ? (
+                    <div className="flex items-center justify-center h-24">
+                        <Loader2 className="h-8 w-8 animate-spin" />
+                    </div>
+                ) : (
+                    <Textarea value={reminderMessage} readOnly rows={8} />
+                )}
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => {
+                    navigator.clipboard.writeText(reminderMessage);
+                    toast({title: "Copié!"});
+                }} disabled={isGeneratingReminder || !reminderMessage}>
+                    <Copy className="mr-2 h-4 w-4" /> Copier le texte
+                </Button>
+                <Button onClick={() => setIsReminderOpen(false)}>Fermer</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     </>
   );
 }

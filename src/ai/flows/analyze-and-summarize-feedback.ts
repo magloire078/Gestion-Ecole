@@ -1,1 +1,1 @@
-// This file is intentionally left blank as Genkit has been removed.
+// This file is intentionally left blank. AI feature to be implemented.
