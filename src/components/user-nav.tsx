@@ -18,7 +18,7 @@ import {
   DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
-import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check, Bell } from "lucide-react";
+import { Moon, Sun, ShieldCheck, Loader2, School, LogOut as LogOutIcon, ChevronsUpDown, Check, Bell, User as UserIcon } from "lucide-react";
 import { useAuth, useFirestore } from "@/firebase";
 import { useUser } from "@/hooks/use-user";
 import { signOut } from "firebase/auth";
@@ -180,9 +180,9 @@ export function UserNav({ collapsed = false }: UserNavProps) {
           )}
 
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => router.push('/dashboard/parametres')}>
-              <School className="mr-2 h-4 w-4" />
-              <span>Profil & Paramètres</span>
+            <DropdownMenuItem onClick={() => router.push('/dashboard/profil')}>
+              <UserIcon className="mr-2 h-4 w-4" />
+              <span>Mon Profil</span>
             </DropdownMenuItem>
             
             {isSuperAdmin && (
