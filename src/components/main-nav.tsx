@@ -53,7 +53,7 @@ const NavLink = ({ href, icon: Icon, label, collapsed, pathname }: { href: strin
             )}
         >
              <div className="flex h-6 w-6 items-center justify-center">
-                <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
+                <Icon className={cn("h-5 w-5")} />
              </div>
             <span>{label}</span>
         </Link>
