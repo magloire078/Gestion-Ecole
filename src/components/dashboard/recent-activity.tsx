@@ -8,8 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { User, BookOpen, CreditCard, UserX } from 'lucide-react';
-import type { student, libraryBook, payment, absence, accountingTransaction } from '@/lib/data-types';
+import { User, CreditCard, UserX, UserPlus, ShieldAlert } from 'lucide-react';
+import type { student, staff, absence, accountingTransaction, discipline_incident as DisciplineIncident } from '@/lib/data-types';
 
 interface RecentActivityProps {
     schoolId: string;
@@ -18,7 +18,7 @@ interface RecentActivityProps {
 // Define a unified activity item type
 type ActivityItem = {
     id: string;
-    type: 'student' | 'book' | 'payment' | 'absence';
+    type: 'student' | 'payment' | 'absence' | 'staff' | 'incident';
     timestamp: number;
     content: string;
     icon: React.ElementType;
@@ -38,7 +38,9 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         limit(5)
     ) : null, [firestore, schoolId]);
 
-    const recentAbsencesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/absences`), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    const recentAbsencesQuery = useMemo(() => schoolId ? query(collectionGroup(firestore, `absences`), where('schoolId', '==', schoolId), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    const recentStaffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), orderBy('hireDate', 'desc'), limit(5)) : null, [firestore, schoolId]);
+    const recentIncidentsQuery = useMemo(() => schoolId ? query(collectionGroup(firestore, `incidents_disciplinaires`), where('schoolId', '==', schoolId), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
     
     // We need all students to map IDs to names for payments
     const allStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
@@ -46,6 +48,8 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
     const { data: paymentsData, loading: paymentsLoading } = useCollection(recentPaymentsQuery);
     const { data: absencesData, loading: absencesLoading } = useCollection(recentAbsencesQuery);
+    const { data: staffData, loading: staffLoading } = useCollection(recentStaffQuery);
+    const { data: incidentsData, loading: incidentsLoading } = useCollection(recentIncidentsQuery);
     const { data: allStudentsData, loading: allStudentsLoading } = useCollection(allStudentsQuery);
 
     const studentMap = useMemo(() => {
@@ -57,10 +61,10 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         return map;
     }, [allStudentsData]);
 
-    const loading = studentsLoading || paymentsLoading || absencesLoading || allStudentsLoading;
+    const loading = studentsLoading || paymentsLoading || absencesLoading || allStudentsLoading || staffLoading || incidentsLoading;
 
     const recentItems: ActivityItem[] = useMemo(() => {
-        if (loading && !studentMap.size) return []; // Don't compute until all data is available
+        if (loading && !studentMap.size) return [];
 
         const activities: ActivityItem[] = [];
 
@@ -114,10 +118,49 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                 } catch(e) { console.error("Invalid date format for absence", data.date)}
             }
         });
+        
+        staffData?.forEach(doc => {
+            const data = doc.data() as staff;
+            if (data.hireDate) {
+                 try {
+                    const timestamp = parseISO(data.hireDate).getTime();
+                    if (!isNaN(timestamp)) {
+                        activities.push({
+                            id: doc.id,
+                            type: 'staff',
+                            timestamp: timestamp,
+                            content: `Nouveau membre : ${data.firstName} ${data.lastName} (${data.role})`,
+                            icon: UserPlus
+                        });
+                    }
+                } catch(e) { console.error("Invalid date format for staff hireDate", data.hireDate)}
+            }
+        });
+        
+        incidentsData?.forEach(doc => {
+            const data = doc.data() as DisciplineIncident;
+            if (data.date) {
+                try {
+                    // Firestore timestamps are objects, date strings need parsing
+                    const date = (data.date as any).seconds ? new Date((data.date as any).seconds * 1000) : parseISO(data.date);
+                    const timestamp = date.getTime();
+                    if (!isNaN(timestamp)) {
+                        activities.push({
+                            id: doc.id,
+                            type: 'incident',
+                            timestamp: timestamp,
+                            content: `Incident: ${data.type} pour ${data.studentName}`,
+                            icon: ShieldAlert
+                        });
+                    }
+                } catch(e) { console.error("Invalid date format for incident", data.date)}
+            }
+        });
+
 
         return activities.sort((a, b) => b.timestamp - a.timestamp).slice(0, 5);
 
-    }, [loading, studentsData, paymentsData, absencesData, studentMap]);
+    }, [loading, studentsData, paymentsData, absencesData, staffData, incidentsData, studentMap]);
     
     if (!schoolId) {
         return null;
@@ -142,7 +185,7 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                             </div>
                          ))
                     ) : recentItems.length > 0 ? recentItems.map((item) => (
-                        <div key={item.id} className="flex items-center gap-4">
+                        <div key={item.id + item.type} className="flex items-center gap-4">
                             <div className="p-2 bg-muted rounded-full">
                                 <item.icon className="h-5 w-5 text-muted-foreground" />
                             </div>
