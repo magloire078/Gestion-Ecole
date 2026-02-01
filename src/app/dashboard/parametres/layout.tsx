@@ -20,6 +20,10 @@ const sidebarNavItems = [
     href: "/dashboard/parametres/facturation",
   },
   {
+    title: "Année Scolaire",
+    href: "/dashboard/parametres/annee-scolaire",
+  },
+  {
     title: "Fiche Établissement",
     href: "/dashboard/parametres/fiche-etablissement",
   },

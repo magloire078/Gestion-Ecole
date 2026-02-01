@@ -42,6 +42,19 @@
             "email": { "type": "string", "format": "email", "description": "Email de contact de l'école." },
             "isSetupComplete": { "type": "boolean", "description": "Indique si la configuration initiale de l'école est terminée." },
             "currentAcademicYear": { "type": "string", "description": "Année académique en cours (ex: 2024-2025)." },
+            "academicPeriods": {
+                "type": "array",
+                "description": "Définit les périodes académiques (trimestres, semestres) de l'année.",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string", "description": "Nom de la période (ex: Trimestre 1)" },
+                        "startDate": { "type": "string", "format": "date", "description": "Date de début de la période." },
+                        "endDate": { "type": "string", "format": "date", "description": "Date de fin de la période." }
+                    },
+                    "required": ["name", "startDate", "endDate"]
+                }
+            },
             "subscription": {
                 "type": "object",
                 "description": "Détails de l'abonnement de l'école.",
