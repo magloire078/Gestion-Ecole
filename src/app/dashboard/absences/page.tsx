@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -99,24 +100,27 @@ export default function AbsencesPage() {
   const { data: allAbsencesData, loading: allAbsencesLoading } = useCollection(allAbsencesQuery);
 
   // --- Derived Data ---
-  const { todayAbsences, historicAbsences } = useMemo(() => {
-    if (!todayDateString) return { todayAbsences: [], historicAbsences: [] }; // Return empty if date not set
-    const today = todayDateString;
-    const absences = allAbsencesData?.map(d => ({ id: d.id, ...d.data() } as Absence & {id: string})) || [];
-    
-    const todayList: (Absence & { id: string })[] = [];
-    const historyList: (Absence & { id: string })[] = [];
-
-    for (const absence of absences) {
-        historyList.push(absence);
-        if (absence.date === today) {
-            todayList.push(absence);
-        }
-    }
-    historyList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    return { todayAbsences: todayList, historicAbsences: historyList };
+  
+  // All today's absences, used to calculate presence status for the roll call view
+  const todayAbsences = useMemo(() => {
+    if (!todayDateString || !allAbsencesData) return [];
+    return allAbsencesData
+      .map(d => ({ id: d.id, ...d.data() } as Absence & { id: string }))
+      .filter(absence => absence.date === todayDateString);
   }, [allAbsencesData, todayDateString]);
+  
+  // Historic absences, filtered by the selected class ID
+  const historicAbsences = useMemo(() => {
+    if (!allAbsencesData) return [];
+    
+    const absences = allAbsencesData.map(d => ({ id: d.id, ...d.data() } as Absence & { id: string }));
 
+    const filtered = selectedClassId
+      ? absences.filter(absence => absence.classId === selectedClassId)
+      : absences;
+
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [allAbsencesData, selectedClassId]);
 
   const studentsWithAbsenceStatus = useMemo<StudentWithAbsence[]>(() => {
       if (!todayDateString) return studentsInClass;
@@ -169,11 +173,12 @@ export default function AbsencesPage() {
             <p className="text-muted-foreground">Enregistrez et consultez les absences des élèves.</p>
           </div>
           <div className="w-full md:w-auto">
-            <Select onValueChange={setSelectedClassId} disabled={isLoading}>
+            <Select onValueChange={(value) => setSelectedClassId(value === 'all' ? null : value)} disabled={isLoading}>
               <SelectTrigger className="w-full md:w-[250px]">
-                <SelectValue placeholder={isLoading ? "Chargement..." : "Sélectionner une classe"} />
+                <SelectValue placeholder={isLoading ? "Chargement..." : "Filtrer par classe"} />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Toutes les classes</SelectItem>
                 {classes.map(cls => <SelectItem key={cls.id} value={cls.id!}>{cls.name}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -254,7 +259,9 @@ export default function AbsencesPage() {
             <Card>
               <CardHeader>
                   <CardTitle>Historique des Absences</CardTitle>
-                  <CardDescription>Liste de toutes les absences enregistrées.</CardDescription>
+                  <CardDescription>
+                     {selectedClassId ? `Liste des absences pour la classe ${classes.find(c => c.id === selectedClassId)?.name}.` : "Liste de toutes les absences enregistrées."}
+                  </CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -303,7 +310,7 @@ export default function AbsencesPage() {
                         ))
                       ) : (
                         <TableRow>
-                           <TableCell colSpan={canManageAbsences ? 6 : 5} className="text-center h-24">Aucune absence enregistrée pour le moment.</TableCell>
+                           <TableCell colSpan={canManageAbsences ? 6 : 5} className="text-center h-24">Aucune absence enregistrée pour cette sélection.</TableCell>
                         </TableRow>
                       )}
                     </TableBody>
