@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { resizeImage } from '@/lib/image-optimization';
 
 interface ImageUploaderProps {
   onUploadComplete: (url: string) => void;
@@ -16,6 +17,7 @@ interface ImageUploaderProps {
   resizeWidth?: number;
   children?: React.ReactNode;
   className?: string;
+  maxSize?: number;
 }
 
 export function ImageUploader({ 
@@ -24,7 +26,8 @@ export function ImageUploader({
   currentImageUrl, 
   resizeWidth = 400,
   children,
-  className 
+  className,
+  maxSize = 5 * 1024 * 1024 // 5MB default
 }: ImageUploaderProps) {
   const storage = useStorage();
   const { toast } = useToast();
@@ -44,21 +47,23 @@ export function ImageUploader({
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > maxSize) {
       toast({
         variant: "destructive",
         title: "Fichier trop volumineux",
-        description: "L'image ne doit pas dépasser 5MB",
+        description: `L'image ne doit pas dépasser ${maxSize / (1024*1024)} Mo`,
       });
       return;
     }
 
     try {
       setUploading(true);
+      const imageBlob = await resizeImage(file, resizeWidth);
+
       const fileExtension = file.name.split('.').pop();
       const fileName = `${uuidv4()}.${fileExtension}`;
       const storageRef = ref(storage, `${storagePath}${fileName}`);
-      await uploadBytes(storageRef, file);
+      await uploadBytes(storageRef, imageBlob);
       const downloadUrl = await getDownloadURL(storageRef);
       onUploadComplete(downloadUrl);
       
@@ -94,18 +99,24 @@ export function ImageUploader({
         disabled={uploading}
       />
       
-      <div className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-        {children}
+      <div className="relative">
+        <div className={cn("cursor-pointer", uploading && "opacity-50")} onClick={() => !uploading && fileInputRef.current?.click()}>
+          {children}
+        </div>
+        {uploading && (
+           <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+              <Loader2 className="h-8 w-8 animate-spin text-white" />
+            </div>
+        )}
       </div>
 
-      {currentImageUrl && (
+      {currentImageUrl && !uploading && (
         <Button
           type="button"
           variant="destructive"
           size="sm"
           className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
           onClick={handleRemoveImage}
-          disabled={uploading}
         >
           <X className="h-3 w-3" />
         </Button>
