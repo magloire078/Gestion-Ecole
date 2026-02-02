@@ -190,6 +190,20 @@ export default function RegistrationPage() {
 
     try {
         await batch.commit();
+
+        if (schoolData?.directorId) {
+            const notificationsCollectionRef = collection(firestore, `ecoles/${schoolId}/notifications`);
+            const notificationData = {
+                userId: schoolData.directorId,
+                title: `Nouvelle pré-inscription`,
+                content: `L'élève ${values.firstName} ${values.lastName} attend une validation.`,
+                href: `/dashboard/dossiers-eleves/${newStudentRef.id}`,
+                isRead: false,
+                createdAt: serverTimestamp(),
+            };
+            await addDoc(notificationsCollectionRef, notificationData);
+        }
+
         toast({
             title: "Inscription réussie",
             description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
