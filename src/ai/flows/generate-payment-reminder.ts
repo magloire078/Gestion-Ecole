@@ -4,7 +4,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit/zod';
+import { z } from 'zod';
 
 export const PaymentReminderInputSchema = z.object({
   studentName: z.string().describe("The full name of the student."),
