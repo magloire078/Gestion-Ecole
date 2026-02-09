@@ -12,67 +12,92 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
-async function handleSubscriptionPayment(db: Firestore, schoolId: string, durationStr: string, paymentProvider: string) {
-    const durationMonths = parseInt(durationStr.replace('m', ''), 10) || 1;
-    console.log(`Processing ${paymentProvider} subscription for schoolId: ${schoolId}, duration: ${durationMonths} months.`);
+import { getPlanPrice, PlanName } from '@/lib/subscription-plans';
 
-    const schoolRef = doc(db, 'ecoles', schoolId);
-    const schoolSnap = await getDoc(schoolRef);
+async function handleSubscriptionPayment(db: Firestore, schoolId: string, planName: string, durationStr: string, amountPaidCents: number, paymentProvider: string) {
+  const durationMonths = parseInt(durationStr.replace('m', ''), 10) || 1;
+  console.log(`Processing ${paymentProvider} subscription for schoolId: ${schoolId}, plan: ${planName}, duration: ${durationMonths} months.`);
 
-    if (!schoolSnap.exists()) {
-        console.error(`[${paymentProvider}] School with ID ${schoolId} not found.`);
-        throw new Error('School not found');
+  // PRICE VALIDATION
+  try {
+    const expectedPriceXOF = getPlanPrice(planName as PlanName, durationMonths);
+    const XOF_TO_EUR_RATE = 655.957;
+    // Logic must match payment-service.ts
+    const expectedPriceInEUR = expectedPriceXOF / XOF_TO_EUR_RATE;
+    const expectedPriceInCents = Math.round(expectedPriceInEUR * 100);
+
+    // Allow small margin of error (e.g., 50 cents) due to rounding differences or slight rate changes if not constant (though it is here)
+    // Actually, since we use the same constant, it should be exact or off by 1.
+    if (Math.abs(amountPaidCents - expectedPriceInCents) > 10) {
+      console.error(`[${paymentProvider}] Security Alert: Payment amount mismatch for school ${schoolId}. Expected ~${expectedPriceInCents} cents, got ${amountPaidCents} cents.`);
+      // STRICT: Throw error and do not update subscription
+      throw new Error(`Payment amount mismatch. Expected ${expectedPriceInCents}, got ${amountPaidCents}`);
     }
+    console.log(`[${paymentProvider}] Price verification passed: ${amountPaidCents} cents.`);
 
-    const schoolData = schoolSnap.data() as school;
-    const subEndDate = schoolData.subscription?.endDate ? new Date(schoolData.subscription.endDate) : new Date();
-    const startDate = subEndDate < new Date() ? new Date() : subEndDate;
-    const newEndDate = addMonths(startDate, durationMonths);
+  } catch (e: any) {
+    console.error(`[${paymentProvider}] Validation failed: ${e.message}`);
+    throw e;
+  }
 
-    await updateDoc(schoolRef, {
-        'subscription.status': 'active',
-        'subscription.endDate': newEndDate.toISOString(),
-        'updatedAt': serverTimestamp(),
-    });
-    console.log(`[${paymentProvider}] Successfully updated subscription for school ${schoolId}.`);
+  const schoolRef = doc(db, 'ecoles', schoolId);
+  const schoolSnap = await getDoc(schoolRef);
+
+  if (!schoolSnap.exists()) {
+    console.error(`[${paymentProvider}] School with ID ${schoolId} not found.`);
+    throw new Error('School not found');
+  }
+
+  const schoolData = schoolSnap.data() as school;
+  const subEndDate = schoolData.subscription?.endDate ? new Date(schoolData.subscription.endDate) : new Date();
+  const startDate = subEndDate < new Date() ? new Date() : subEndDate;
+  const newEndDate = addMonths(startDate, durationMonths);
+
+  await updateDoc(schoolRef, {
+    'subscription.plan': planName, // Update the plan as well!
+    'subscription.status': 'active',
+    'subscription.endDate': newEndDate.toISOString(),
+    'updatedAt': serverTimestamp(),
+  });
+  console.log(`[${paymentProvider}] Successfully updated subscription for school ${schoolId}.`);
 }
 
 
 async function handleTuitionPayment(db: Firestore, schoolId: string, studentId: string, amountPaid: number, paymentProvider: string) {
-    console.log(`Processing ${paymentProvider} tuition payment for schoolId: ${schoolId}, studentId: ${studentId}, amount: ${amountPaid}`);
+  console.log(`Processing ${paymentProvider} tuition payment for schoolId: ${schoolId}, studentId: ${studentId}, amount: ${amountPaid}`);
 
-    const studentRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}`);
-    const studentSnap = await getDoc(studentRef);
+  const studentRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}`);
+  const studentSnap = await getDoc(studentRef);
 
-    if (!studentSnap.exists()) {
-        console.error(`[${paymentProvider}] Student with ID ${studentId} in school ${schoolId} not found.`);
-        throw new Error('Student not found');
-    }
-    
-    const studentData = studentSnap.data() as student;
-    const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
-    const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
-    
-    const batch = writeBatch(db);
-    
-    batch.update(studentRef, { amountDue: newAmountDue, tuitionStatus: newStatus });
+  if (!studentSnap.exists()) {
+    console.error(`[${paymentProvider}] Student with ID ${studentId} in school ${schoolId} not found.`);
+    throw new Error('Student not found');
+  }
 
-    const accountingRef = doc(collection(db, `ecoles/${schoolId}/comptabilite`));
-    batch.set(accountingRef, {
-        schoolId, studentId, date: new Date().toISOString().split('T')[0],
-        description: `Paiement scolarité via ${paymentProvider}`, category: 'Scolarité', type: 'Revenu', amount: amountPaid
-    });
+  const studentData = studentSnap.data() as student;
+  const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
+  const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
 
-    const paymentRef = doc(collection(db, `ecoles/${schoolId}/eleves/${studentId}/paiements`));
-    batch.set(paymentRef, {
-        schoolId, studentId, date: new Date().toISOString().split('T')[0], amount: amountPaid,
-        description: `Paiement en ligne via ${paymentProvider}`, accountingTransactionId: accountingRef.id,
-        payerFirstName: studentData.parent1FirstName || 'Parent', payerLastName: studentData.parent1LastName || '',
-        method: paymentProvider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile'
-    });
-    
-    await batch.commit();
-    console.log(`[${paymentProvider}] Successfully updated tuition for student ${studentId}.`);
+  const batch = writeBatch(db);
+
+  batch.update(studentRef, { amountDue: newAmountDue, tuitionStatus: newStatus });
+
+  const accountingRef = doc(collection(db, `ecoles/${schoolId}/comptabilite`));
+  batch.set(accountingRef, {
+    schoolId, studentId, date: new Date().toISOString().split('T')[0],
+    description: `Paiement scolarité via ${paymentProvider}`, category: 'Scolarité', type: 'Revenu', amount: amountPaid
+  });
+
+  const paymentRef = doc(collection(db, `ecoles/${schoolId}/eleves/${studentId}/paiements`));
+  batch.set(paymentRef, {
+    schoolId, studentId, date: new Date().toISOString().split('T')[0], amount: amountPaid,
+    description: `Paiement en ligne via ${paymentProvider}`, accountingTransactionId: accountingRef.id,
+    payerFirstName: studentData.parent1FirstName || 'Parent', payerLastName: studentData.parent1LastName || '',
+    method: paymentProvider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile'
+  });
+
+  await batch.commit();
+  console.log(`[${paymentProvider}] Successfully updated tuition for student ${studentId}.`);
 }
 
 
@@ -88,7 +113,7 @@ export async function POST(request: Request) {
     console.error(`❌ Error message: ${err.message}`);
     return new Response(`Webhook Error: ${err.message}`, { status: 400 });
   }
-  
+
   let db;
   try {
     if (getApps().length === 0) {
@@ -96,8 +121,8 @@ export async function POST(request: Request) {
     }
     db = getFirestore();
   } catch (error: any) {
-     if (error.message.includes("The default Firebase app does not exist")) {
-        return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
+    if (error.message.includes("The default Firebase app does not exist")) {
+      return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
     }
     return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
   }
@@ -108,29 +133,31 @@ export async function POST(request: Request) {
     if (session.payment_status === 'paid') {
       const clientReferenceId = session.client_reference_id;
       if (!clientReferenceId) {
-          console.error("Stripe Webhook: Missing client_reference_id in session.");
-          return new Response('Missing client_reference_id', { status: 400 });
+        console.error("Stripe Webhook: Missing client_reference_id in session.");
+        return new Response('Missing client_reference_id', { status: 400 });
       }
-      
+
       const parts = clientReferenceId.split('__'); // Using __ as separator
       const paymentType = parts[0];
 
       try {
         if (paymentType === 'tuition' && parts.length >= 4) {
-            const schoolId = parts[1];
-            const studentId = parts[2];
-            const amountPaid = parseInt(parts[3], 10);
-            await handleTuitionPayment(db, schoolId, studentId, amountPaid, 'Stripe');
-        } else if (paymentType === 'subscription' && parts.length >= 4) {
-            const schoolId = parts[1];
-            const durationStr = parts[3];
-            await handleSubscriptionPayment(db, schoolId, durationStr, 'Stripe');
+          const schoolId = parts[1];
+          const studentId = parts[2];
+          const amountPaid = parseInt(parts[3], 10);
+          await handleTuitionPayment(db, schoolId, studentId, amountPaid, 'Stripe');
+        } else if (paymentType === 'subscription' && parts.length >= 5) {
+          const schoolId = parts[1];
+          const planName = parts[2];
+          const durationStr = parts[3];
+          const amountPaidCents = session.amount_total || 0;
+          await handleSubscriptionPayment(db, schoolId, planName, durationStr, amountPaidCents, 'Stripe');
         } else {
-             console.warn(`Stripe Webhook: Could not parse client_reference_id: ${clientReferenceId}`);
+          console.warn(`Stripe Webhook: Could not parse client_reference_id: ${clientReferenceId}`);
         }
       } catch (dbError: any) {
-          console.error("Firestore update failed:", dbError);
-          return NextResponse.json({ error: "Database update failed", details: dbError.message }, { status: 500 });
+        console.error("Firestore update failed:", dbError);
+        return NextResponse.json({ error: "Database update failed", details: dbError.message }, { status: 500 });
       }
     }
   } else {

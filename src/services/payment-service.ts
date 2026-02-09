@@ -20,15 +20,35 @@ interface PaymentProviderData {
     // For tuition
     studentId?: string;
     // For mobile money
-    phoneNumber?: string; 
+    phoneNumber?: string;
 }
 
 type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya';
 
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
-    const { type, price, description, user, schoolId, phoneNumber, plan, duration, studentId } = data;
+    const { type, price: clientPrice, description, user, schoolId, phoneNumber, plan, duration, studentId } = data;
     const BASE_APP_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:9002';
-    
+
+    // SERVER-SIDE PRICE VALIDATION (SECURITY FIX)
+    let finalPrice = clientPrice;
+    if (type === 'subscription') {
+        if (!plan) return { url: null, error: "Plan non spécifié." };
+        const durationMonths = duration || 1;
+        try {
+            // Import dynamically to avoid circular deps if any (though here it's fine)
+            const { getPlanPrice } = await import('@/lib/subscription-plans');
+            const officialPrice = getPlanPrice(plan as any, durationMonths);
+
+            // Overwrite the client price with the official price
+            finalPrice = officialPrice.toString();
+
+            console.log(`[PaymentService] Security Check: Enforcing server price ${finalPrice} for plan ${plan} (${durationMonths} months). Client sent: ${clientPrice}`);
+        } catch (e) {
+            console.error("Invalid plan or duration:", e);
+            return { url: null, error: "Plan ou durée invalide." };
+        }
+    }
+
     const successUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente?payment_status=success`;
     const cancelUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`;
     const pendingUrl = `${BASE_APP_URL}/dashboard/parametres/abonnement/paiement-en-attente`;
@@ -36,10 +56,11 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
     const getReferenceId = (separator = '_') => {
         const timestamp = new Date().getTime();
         if (type === 'tuition' && studentId) {
-            return `tuition${separator}${schoolId}${separator}${studentId}${separator}${price}${separator}${timestamp}`;
+            return `tuition${separator}${schoolId}${separator}${studentId}${separator}${finalPrice}${separator}${timestamp}`;
         }
         if (type === 'subscription' && plan && duration) {
-             return `subscription${separator}${schoolId}${separator}${plan}${separator}${duration}m${separator}${timestamp}`;
+            // Include price in ref if needed, but we rely on server validation now
+            return `subscription${separator}${schoolId}${separator}${plan}${separator}${duration}m${separator}${timestamp}`;
         }
         // Fallback
         return `${schoolId}${separator}${timestamp}`;
@@ -51,7 +72,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             merchant_key: process.env.ORANGE_MONEY_CLIENT_ID || '',
             currency: 'XOF' as const,
             order_id: orderId,
-            amount: parseInt(price, 10),
+            amount: parseInt(finalPrice, 10),
             return_url: successUrl,
             cancel_url: cancelUrl,
             notif_url: `${BASE_APP_URL}/api/webhooks/orangemoney`,
@@ -65,7 +86,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
 
     if (provider === 'wave') {
         const paymentData = {
-            amount: price,
+            amount: finalPrice,
             currency: 'XOF' as const,
             success_url: successUrl,
             error_url: cancelUrl,
@@ -75,12 +96,12 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         if (paymentLink) return { url: paymentLink, error: null };
         return { url: null, error: "Impossible de générer le lien de paiement Wave." };
     }
-    
+
     if (provider === 'stripe') {
         const XOF_TO_EUR_RATE = 655.957;
-        const priceInEUR = parseInt(price, 10) / XOF_TO_EUR_RATE;
+        const priceInEUR = parseInt(finalPrice, 10) / XOF_TO_EUR_RATE;
         const priceInCents = Math.round(priceInEUR * 100);
-        
+
         const clientReferenceId = getReferenceId('__');
 
         const sessionData = {
@@ -99,7 +120,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
     if (provider === 'mtn') {
         if (!phoneNumber) return { url: null, error: 'Le numéro de téléphone est requis pour le paiement MTN.' };
         const paymentData = {
-            amount: price,
+            amount: finalPrice,
             currency: 'EUR' as const, // Sandbox specific
             externalId: getReferenceId(),
             payer: {
@@ -113,10 +134,10 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         if (success) return { url: pendingUrl, error: null };
         return { url: null, error: message };
     }
-    
+
     if (provider === 'paydunya') {
         const paymentData = {
-            total_amount: parseInt(price, 10),
+            total_amount: parseInt(finalPrice, 10),
             description: description,
             custom_data: { reference: getReferenceId() },
             return_url: successUrl,

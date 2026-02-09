@@ -19,19 +19,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 
-type PlanName = 'Essentiel' | 'Pro' | 'Premium';
-type ModuleName = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
-
-const MODULES_CONFIG = [
-    { id: 'sante', name: 'Santé', icon: HeartPulse, price: 5000, desc: 'Suivi médical, carnet de vaccination...' },
-    { id: 'cantine', name: 'Cantine', icon: Utensils, price: 10000, desc: 'Gestion des menus et réservations.' },
-    { id: 'transport', name: 'Transport', icon: Bus, price: 10000, desc: 'Suivi de flotte et abonnements.' },
-    { id: 'internat', name: 'Internat', icon: Bed, price: 15000, desc: 'Gestion des dortoirs et occupants.' },
-    { id: 'rh', name: 'RH & Paie', icon: Briefcase, price: 15000, desc: 'Gestion du personnel et des salaires.' },
-    { id: 'immobilier', name: 'Immobilier', icon: LandPlot, price: 10000, desc: 'Inventaire, maintenance, salles.' },
-    { id: 'activites', name: 'Activités', icon: Trophy, price: 5000, desc: 'Clubs et compétitions.' },
-] as const;
-
+import { SUBSCRIPTION_PLANS, MODULES_CONFIG, PlanName, ModuleName } from "@/lib/subscription-plans";
 
 export default function SubscriptionPage() {
     const router = useRouter();
@@ -57,16 +45,16 @@ export default function SubscriptionPage() {
 
         router.push(`/dashboard/parametres/abonnement/paiement?${transactionDetails}`);
     };
-    
+
     const handleModuleToggle = async (moduleId: ModuleName, checked: boolean) => {
         if (!subscription || isUpdating) return;
 
         setIsUpdating(true);
-        const currentModules = subscription.activeModules || [];
-        const newModules = checked 
+        const currentModules = (subscription.activeModules || []) as ModuleName[];
+        const newModules = checked
             ? [...currentModules, moduleId]
             : currentModules.filter(m => m !== moduleId);
-            
+
         try {
             await updateSubscription({ ...subscription, activeModules: newModules });
             toast({
@@ -79,69 +67,17 @@ export default function SubscriptionPage() {
             setIsUpdating(false);
         }
     };
-    
-    const isCurrentPlan = (planName: PlanName) => {
+
+    const isCurrentPlan = (planName: string) => {
         return subscription?.plan === planName;
     };
-    
-    const plans = [
-        {
-            name: "Essentiel",
-            priceNumber: 0,
-            price: "Gratuit",
-            priceDescription: "pour découvrir",
-            description: "Idéal pour évaluer toutes les fonctionnalités avec des limites généreuses.",
-            features: [
-                "Gestion de base (élèves, classes, notes)",
-                "Accès à tous les modules complémentaires",
-                "Support communautaire",
-            ],
-            limits: [
-                { icon: Users, text: "Jusqu'à 50 élèves" },
-                { icon: Building, text: "Jusqu'à 5 cycles" },
-            ]
-        },
-        {
-            name: "Pro",
-            priceNumber: 49900,
-            price: "49 900 CFA",
-            priceDescription: "/ mois",
-            description: "Pour les écoles en croissance avec des besoins avancés.",
-            features: [
-                "Toutes les fonctionnalités Essentiel",
-                "Accès aux modules complémentaires (payants)",
-                "Support prioritaire par email",
-            ],
-             limits: [
-                { icon: Users, text: "Jusqu'à 250 élèves" },
-                { icon: Building, text: "Jusqu'à 5 cycles" },
-            ]
-        },
-        {
-            name: "Premium",
-            priceNumber: 99900,
-            price: "99 900 CFA",
-            priceDescription: "/ mois",
-            description: "La solution complète pour les grands établissements.",
-            features: [
-                "Toutes les fonctionnalités Pro",
-                "Tous les modules complémentaires inclus",
-                "Analyses et rapports avancés",
-                "Support dédié par téléphone",
-            ],
-             limits: [
-                { icon: Users, text: "Élèves illimités" },
-                { icon: Building, text: "Cycles illimités" },
-            ]
-        }
-    ];
 
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
             transition: {
-            staggerChildren: 0.1,
+                staggerChildren: 0.1,
             },
         },
     };
@@ -152,14 +88,14 @@ export default function SubscriptionPage() {
             y: 0,
             opacity: 1,
             transition: {
-            duration: 0.5,
+                duration: 0.5,
             },
         },
     };
 
     if (isLoading) {
         return (
-             <div className="space-y-6">
+            <div className="space-y-6">
                 <div>
                     <h1 className="text-lg font-semibold md:text-2xl">Abonnement</h1>
                     <p className="text-muted-foreground">
@@ -171,7 +107,7 @@ export default function SubscriptionPage() {
                     <Skeleton className="h-96 w-full" />
                     <Skeleton className="h-96 w-full" />
                 </div>
-                 <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-64 w-full" />
             </div>
         )
     }
@@ -186,31 +122,31 @@ export default function SubscriptionPage() {
                     Choisissez le plan qui correspond le mieux à la taille et aux besoins de <strong>{schoolName}</strong>.
                 </p>
             </div>
-            
+
             {subscription?.endDate && (
                 <Card className="bg-primary/5">
                     <CardHeader className="flex flex-row items-center justify-between">
-                       <div>
-                         <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary"/> Statut de l'abonnement</CardTitle>
-                         <CardDescription>Votre plan actuel est <strong>{subscription.plan}</strong>.</CardDescription>
-                       </div>
+                        <div>
+                            <CardTitle className="flex items-center gap-2"><Calendar className="h-5 w-5 text-primary" /> Statut de l'abonnement</CardTitle>
+                            <CardDescription>Votre plan actuel est <strong>{subscription.plan}</strong>.</CardDescription>
+                        </div>
                         <Badge variant={subscription.status === 'active' ? 'secondary' : 'destructive'} className="capitalize">{subscription.status}</Badge>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm">Votre abonnement est valide jusqu'au <strong className="font-semibold">{format(new Date(subscription.endDate), 'd MMMM yyyy', {locale: fr})}</strong>.</p>
-                        <p className="text-xs text-muted-foreground">Il vous reste {formatDistanceToNow(new Date(subscription.endDate), {locale: fr})}.</p>
+                        <p className="text-sm">Votre abonnement est valide jusqu'au <strong className="font-semibold">{format(new Date(subscription.endDate), 'd MMMM yyyy', { locale: fr })}</strong>.</p>
+                        <p className="text-xs text-muted-foreground">Il vous reste {formatDistanceToNow(new Date(subscription.endDate), { locale: fr })}.</p>
                     </CardContent>
                 </Card>
             )}
 
-            <motion.div 
+            <motion.div
                 className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
-                {plans.map(plan => {
-                    const current = isCurrentPlan(plan.name as PlanName);
+                {SUBSCRIPTION_PLANS.map(plan => {
+                    const current = isCurrentPlan(plan.name);
                     return (
                         <motion.div key={plan.name} variants={itemVariants}>
                             <Card className={cn("flex flex-col h-full transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl", current && "border-2 border-primary shadow-2xl scale-[1.02]")}>
@@ -224,8 +160,8 @@ export default function SubscriptionPage() {
                                 <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
                                     <div>
                                         <div className="text-center mb-6">
-                                            <span className="text-4xl font-bold">{plan.price}</span>
-                                            <span className="text-muted-foreground">{plan.priceDescription}</span>
+                                            <span className="text-4xl font-bold">{plan.priceString}</span>
+                                            <span className="text-muted-foreground">{plan.priceSuffix}</span>
                                         </div>
                                         <ul className="space-y-3 text-sm">
                                             {plan.features.map(feature => (
@@ -249,20 +185,20 @@ export default function SubscriptionPage() {
                                     </div>
                                 </CardContent>
                                 <CardFooter>
-                                {current ? (
-                                   <Button className="w-full" disabled>Votre Plan Actuel</Button>
-                                ) : (
-                                    <Button 
-                                        className="w-full" 
-                                        variant={plan.name === 'Essentiel' ? 'secondary' : 'default'}
-                                        onClick={() => handleChoosePlan(plan.name as PlanName, plan.priceNumber)}
-                                        disabled={isLoading}
-                                    >
-                                        {plan.name !== 'Essentiel' && <Zap className="mr-2 h-4 w-4" />}
-                                        Choisir le Plan {plan.name}
-                                    </Button>
-                                )}
-                            </CardFooter>
+                                    {current ? (
+                                        <Button className="w-full" disabled>Votre Plan Actuel</Button>
+                                    ) : (
+                                        <Button
+                                            className="w-full"
+                                            variant={plan.variant}
+                                            onClick={() => handleChoosePlan(plan.name, plan.price)}
+                                            disabled={isLoading}
+                                        >
+                                            {plan.name !== 'Essentiel' && <Zap className="mr-2 h-4 w-4" />}
+                                            Choisir le Plan {plan.name}
+                                        </Button>
+                                    )}
+                                </CardFooter>
                             </Card>
                         </motion.div>
                     )
@@ -279,49 +215,49 @@ export default function SubscriptionPage() {
             )}
 
             {subscription?.plan === 'Pro' && (
-              <Card>
-                <CardHeader>
-                    <CardTitle>Modules Complémentaires</CardTitle>
-                    <CardDescription>
-                        Activez des fonctionnalités additionnelles pour votre établissement. 
-                        La facturation sera ajustée en conséquence.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {MODULES_CONFIG.map(module => {
-                        const Icon = module.icon;
-                        const isChecked = subscription?.activeModules?.includes(module.id);
-                        const isDisabled = isUpdating;
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Modules Complémentaires</CardTitle>
+                        <CardDescription>
+                            Activez des fonctionnalités additionnelles pour votre établissement.
+                            La facturation sera ajustée en conséquence.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {MODULES_CONFIG.map(module => {
+                            const Icon = module.icon;
+                            const isChecked = subscription?.activeModules?.includes(module.id);
+                            const isDisabled = isUpdating;
 
-                        return (
-                             <div key={module.id} className={cn("flex items-center justify-between rounded-lg border p-4", isDisabled && "opacity-50")}>
-                                <div className="space-y-0.5">
-                                    <Label htmlFor={module.id} className="text-base flex items-center gap-2">
-                                        <Icon className="h-5 w-5 text-primary" />
-                                        {module.name}
-                                    </Label>
-                                    <div className="text-xs text-muted-foreground">{module.desc}</div>
-                                    <div className="text-sm font-semibold">{module.price.toLocaleString('fr-FR')} CFA/mois</div>
+                            return (
+                                <div key={module.id} className={cn("flex items-center justify-between rounded-lg border p-4", isDisabled && "opacity-50")}>
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor={module.id} className="text-base flex items-center gap-2">
+                                            <Icon className="h-5 w-5 text-primary" />
+                                            {module.name}
+                                        </Label>
+                                        <div className="text-xs text-muted-foreground">{module.desc}</div>
+                                        <div className="text-sm font-semibold">{module.price.toLocaleString('fr-FR')} CFA/mois</div>
+                                    </div>
+                                    <Switch
+                                        id={module.id}
+                                        checked={isChecked}
+                                        onCheckedChange={(checked) => handleModuleToggle(module.id, checked)}
+                                        disabled={isDisabled}
+                                    />
                                 </div>
-                                <Switch
-                                    id={module.id}
-                                    checked={isChecked}
-                                    onCheckedChange={(checked) => handleModuleToggle(module.id, checked)}
-                                    disabled={isDisabled}
-                                />
+                            )
+                        })}
+                    </CardContent>
+                    {isUpdating && (
+                        <CardFooter>
+                            <div className="flex items-center text-sm text-muted-foreground">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Mise à jour des modules...
                             </div>
-                        )
-                    })}
-                </CardContent>
-                 {isUpdating && (
-                    <CardFooter>
-                       <div className="flex items-center text-sm text-muted-foreground">
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                            Mise à jour des modules...
-                        </div>
-                    </CardFooter>
-                )}
-              </Card>
+                        </CardFooter>
+                    )}
+                </Card>
             )}
         </div>
     )
