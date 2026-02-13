@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Loader2, Mail, ArrowLeft, ShieldKeyhole, HelpCircle } from 'lucide-react';
+import { Loader2, Mail, ArrowLeft, Shield, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/logo';
@@ -88,7 +88,7 @@ export default function ForgotPasswordPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#0C365A]/60 to-transparent flex items-center p-8">
               <div className="max-w-xs">
-                <ShieldKeyhole className="h-12 w-12 text-white mb-4" />
+                <Shield className="h-12 w-12 text-white mb-4" />
                 <h2 className="text-2xl font-bold text-white">Protection des données</h2>
                 <p className="text-white/70 text-sm mt-2">Votre sécurité est notre priorité absolue. Nous utilisons les derniers standards de cryptage Firebase.</p>
               </div>
