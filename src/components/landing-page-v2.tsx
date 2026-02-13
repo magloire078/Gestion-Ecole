@@ -94,7 +94,7 @@ export function LandingPageV2() {
 
       <main className="relative z-10">
         {/* Hero Section */}
-        <section className="pt-20 pb-12 text-center overflow-hidden">
+        <section className="pt-10 pb-6 text-center overflow-hidden">
           <div className="container relative">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -115,21 +115,23 @@ export function LandingPageV2() {
               <p className="mx-auto mt-8 max-w-2xl text-xl text-muted-foreground px-4 leading-relaxed">
                 De l&apos;inscription des élèves à la gestion de la paie, GèreEcole centralise tous les aspects de votre administration pour un ou plusieurs établissements.
               </p>
-              <div className="mt-10 flex flex-wrap justify-center gap-4">
+              <div className="mt-5 flex flex-wrap justify-center gap-4">
                 <Button size="lg" asChild className="bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-xl shadow-blue-900/20 px-8 h-14">
                   <Link href="/contact" className="gap-2">
                     <PlayCircle className="h-5 w-5" />Demander une Démo
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => router.push('/onboarding')} className="border-[#2D9CDB] text-[#2D9CDB] hover:bg-[#2D9CDB]/10 px-8 h-14 backdrop-blur-sm">
-                  Commencer l&apos;aventure
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                <Button size="lg" variant="outline" asChild className="border-[#2D9CDB] text-[#2D9CDB] hover:bg-[#2D9CDB]/10 px-8 h-14 backdrop-blur-sm">
+                  <Link href="/onboarding" className="flex items-center">
+                    Commencer l&apos;aventure
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
               </div>
             </motion.div>
           </div>
 
-          <div className="mt-20 perspective-1000 w-full max-w-[1400px] mx-auto px-4 md:px-8">
+          <div className="mt-10 perspective-1000 w-full max-w-[1400px] mx-auto px-4 md:px-8">
             <motion.div
               initial={{ opacity: 0, rotateX: 10, y: 40 }}
               animate={{ opacity: 1, rotateX: 0, y: 0 }}
@@ -175,10 +177,10 @@ export function LandingPageV2() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-24 relative overflow-hidden">
+        <section id="features" className="py-12 relative overflow-hidden">
           <div className="absolute inset-0 bg-muted/40 -z-10 skew-y-3 origin-right scale-110" />
           <div className="container">
-            <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-20">
+            <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-10">
               <h2 className="text-4xl font-black tracking-tight sm:text-5xl text-[#0C365A] dark:text-white">
                 Une architecture modulaire <br /> pour tous vos besoins
               </h2>
@@ -225,7 +227,7 @@ export function LandingPageV2() {
         </section>
 
         {/* Pricing Section */}
-        <section id="pricing" className="py-24 relative overflow-hidden">
+        <section id="pricing" className="py-12 relative overflow-hidden">
           <div className="container relative z-10">
             <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-20">
               <h2 className="text-4xl font-black tracking-tight sm:text-5xl text-[#0C365A] dark:text-white">
@@ -287,10 +289,12 @@ export function LandingPageV2() {
                             : "bg-white dark:bg-slate-900 border-[#2D9CDB]/20 text-[#2D9CDB] hover:bg-[#2D9CDB]/10"
                         )}
                         variant={plan.recommended ? "default" : "outline"}
-                        onClick={() => router.push('/onboarding')}
+                        asChild
                       >
-                        {plan.cta}
-                        <ArrowRight className="ml-2 h-5 w-5" />
+                        <Link href="/onboarding">
+                          {plan.cta}
+                          <ArrowRight className="ml-2 h-5 w-5" />
+                        </Link>
                       </Button>
                     </CardFooter>
                   </Card>
@@ -301,21 +305,23 @@ export function LandingPageV2() {
         </section>
 
         {/* Final CTA Section */}
-        <section className="py-24 bg-[#0C365A] text-white relative overflow-hidden">
+        <section className="py-12 bg-[#0C365A] text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2" />
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
           <div className="container text-center relative z-10">
             <h2 className="text-4xl md:text-6xl font-black mb-8">Prêt à moderniser <br />votre établissement ?</h2>
             <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-12">Rejoignez les dizaines d&apos;écoles qui font confiance à GéreEcole pour leur transformation digitale.</p>
-            <Button size="lg" className="bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white px-12 h-16 text-lg font-bold rounded-2xl shadow-2xl shadow-blue-500/40">
-              Commencer maintenant
+            <Button size="lg" asChild className="bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white px-12 h-16 text-lg font-bold rounded-2xl shadow-2xl shadow-blue-500/40">
+              <Link href="/onboarding">
+                Commencer maintenant
+              </Link>
             </Button>
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t py-16 bg-background relative z-10">
+      <footer className="border-t py-8 bg-background relative z-10">
         <div className="container flex flex-col items-center justify-between gap-10 md:flex-row">
           <div className="flex flex-col items-center md:items-start gap-6">
             <Logo compact />

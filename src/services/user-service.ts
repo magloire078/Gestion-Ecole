@@ -12,15 +12,16 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
 
         if (!userRootDoc.exists()) {
             // Authenticated user but no user_root doc -> needs onboarding
-            return { 
-                uid: firebaseUser.uid, 
-                authUser: firebaseUser, 
-                isParent: false, 
-                schoolId: null, 
-                schools: {}, 
-                displayName: firebaseUser.displayName, 
-                email: firebaseUser.email, 
-                photoURL: firebaseUser.photoURL 
+            return {
+                uid: firebaseUser.uid,
+                authUser: firebaseUser,
+                isParent: false,
+                schoolId: null,
+                schools: {},
+                schoolNames: {},
+                displayName: firebaseUser.displayName,
+                email: firebaseUser.email,
+                photoURL: firebaseUser.photoURL
             };
         }
 
@@ -28,24 +29,36 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
         const isSuperAdmin = userData.isSuperAdmin === true;
         const schoolAffiliations = userData.schools || {};
         const schoolIds = Object.keys(schoolAffiliations).filter(id => id.length > 10);
-        
+
+        // Fetch school names to provide human-readable labels in the switcher
+        const schoolNames: { [key: string]: string } = {};
+        await Promise.all(schoolIds.map(async (id) => {
+            const schoolSnap = await getDoc(doc(firestore, 'ecoles', id));
+            if (schoolSnap.exists()) {
+                schoolNames[id] = schoolSnap.data().name || `École ${id.substring(0, 6)}`;
+            } else {
+                schoolNames[id] = `Inconnue (${id.substring(0, 6)})`;
+            }
+        }));
+
         const activeSchoolId = userData.activeSchoolId && schoolAffiliations[userData.activeSchoolId]
             ? userData.activeSchoolId
             : schoolIds[0] || null;
-        
+
         const activeRole = activeSchoolId ? schoolAffiliations[activeSchoolId] : null;
 
         if (activeSchoolId && activeRole === 'parent') {
             const parentProfileRef = doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`);
             const parentProfileSnap = await getDoc(parentProfileRef);
             const parentData = parentProfileSnap.data() as Parent;
-            
+
             return {
                 uid: firebaseUser.uid,
                 authUser: firebaseUser,
                 isParent: true,
                 schoolId: activeSchoolId,
                 schools: schoolAffiliations,
+                schoolNames: schoolNames,
                 parentStudentIds: parentData?.studentIds || [],
                 displayName: parentData?.displayName || firebaseUser.displayName,
                 email: firebaseUser.email,
@@ -71,18 +84,19 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
                     }
                 }
             }
-            
+
             if (isSuperAdmin) {
                 if (!userProfile) userProfile = {} as UserProfile;
                 userProfile.isAdmin = true;
             }
-            
+
             return {
                 uid: firebaseUser.uid,
                 authUser: firebaseUser,
                 isParent: false,
                 schoolId: activeSchoolId,
                 schools: schoolAffiliations,
+                schoolNames: schoolNames,
                 profile: userProfile,
                 displayName: userProfile?.displayName || firebaseUser.displayName,
                 email: firebaseUser.email,

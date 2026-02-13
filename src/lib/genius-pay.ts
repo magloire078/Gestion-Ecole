@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 // Configuration basée sur la documentation officielle Genius Pay
-const GENIUS_API_URL = process.env.GENIUS_PAY_API_URL || 'https://pay.genius.ci/api/v1/merchant';
-const GENIUS_API_KEY = process.env.GENIUS_PAY_API_KEY; // pk_sandbox_xxx ou pk_live_xxx
+const GENIUS_API_URL = process.env.NEXT_PUBLIC_GENIUS_PAY_API_URL || 'https://pay.genius.ci/api/v1/merchant';
+const GENIUS_API_KEY = process.env.NEXT_PUBLIC_GENIUS_PAY_API_KEY; // pk_sandbox_xxx ou pk_live_xxx
 const GENIUS_API_SECRET = process.env.GENIUS_PAY_API_SECRET; // sk_sandbox_xxx ou sk_live_xxx
 
 interface GeniusPaymentInit {

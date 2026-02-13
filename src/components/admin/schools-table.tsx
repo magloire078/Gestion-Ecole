@@ -5,7 +5,7 @@ import { useState, useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Eye, Edit, Database, Trash2, RotateCcw } from 'lucide-react';
+import { Plus, Eye, Edit, Database, Trash2, RotateCcw, Building } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useCollection, useFirestore, useUser } from '@/firebase';
@@ -154,13 +154,13 @@ export function SchoolsTable() {
 
   return (
     <>
-      <div className="bg-white rounded-[40px] border border-blue-50/50 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-blue-50/50 flex justify-between items-center bg-slate-50/30">
+      <div className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[40px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+        <div className="p-8 border-b border-blue-50/50 dark:border-white/10 flex justify-between items-center bg-slate-50/30 dark:bg-white/5">
           <div>
-            <h3 className="text-xl font-black text-[#0C365A] font-outfit tracking-tight">Liste des Établissements</h3>
+            <h3 className="text-xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit tracking-tight">Liste des Établissements</h3>
             <p className="text-sm text-slate-400 font-medium">Gestion et surveillance des accès scolaires.</p>
           </div>
-          <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#2D9CDB]">
+          <div className="h-10 w-10 rounded-xl bg-blue-50 dark:bg-white/10 flex items-center justify-center text-[hsl(var(--admin-primary))]">
             <Building className="h-5 w-5" />
           </div>
         </div>
@@ -184,9 +184,9 @@ export function SchoolsTable() {
                   </TableRow>
                 ))
               ) : schools.length > 0 ? schools.map(school => (
-                <TableRow key={school.id} className={cn("border-blue-50/30 transition-colors hover:bg-blue-50/20", school.status === 'deleted' && 'bg-slate-50/50 italic opacity-60')}>
+                <TableRow key={school.id} className={cn("border-blue-50/30 dark:border-white/5 transition-colors hover:bg-blue-50/20 dark:hover:bg-white/5", school.status === 'deleted' && 'bg-slate-50/50 dark:bg-white/5 italic opacity-60')}>
                   <TableCell className="px-8 py-4">
-                    <div className="font-black text-[#0C365A] font-outfit">{school.name}</div>
+                    <div className="font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit">{school.name}</div>
                   </TableCell>
                   <TableCell className="py-4">
                     <div className="font-bold text-slate-700 text-sm">{school.directorFirstName} {school.directorLastName}</div>
@@ -194,8 +194,8 @@ export function SchoolsTable() {
                   </TableCell>
                   <TableCell className="py-4">
                     <Badge className={cn("rounded-lg px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wider border-none shadow-sm",
-                      school.subscription?.plan === 'Premium' ? "bg-gradient-to-r from-[#0C365A] to-[#2D9CDB] text-white" :
-                        school.subscription?.plan === 'Pro' ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"
+                      school.subscription?.plan === 'Premium' ? "bg-gradient-to-r from-[hsl(var(--admin-primary-dark))] to-[hsl(var(--admin-primary))] text-white shadow-lg shadow-blue-900/10" :
+                        school.subscription?.plan === 'Pro' ? "bg-[hsl(var(--admin-primary))] text-white" : "bg-slate-100 dark:bg-white/10 text-slate-500"
                     )}>
                       {school.subscription?.plan || 'Essentiel'}
                     </Badge>
@@ -214,13 +214,13 @@ export function SchoolsTable() {
                   <TableCell className="px-8 py-4 text-right">
                     <div className="flex gap-1.5 justify-end">
                       {school.status === 'deleted' ? (
-                        <Button variant="outline" size="sm" className="h-8 rounded-xl border-blue-100 text-[#0C365A] font-bold text-xs" onClick={() => handleRestoreSchool(school)} disabled={isRestoring && schoolToRestore?.id === school.id}>
+                        <Button variant="outline" size="sm" className="h-8 rounded-xl border-blue-100 dark:border-white/10 text-[hsl(var(--admin-primary-dark))] dark:text-white font-bold text-xs" onClick={() => handleRestoreSchool(school)} disabled={isRestoring && schoolToRestore?.id === school.id}>
                           <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
                           {isRestoring && schoolToRestore?.id === school.id ? '...' : 'Restaurer'}
                         </Button>
                       ) : (
                         <>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 text-[#2D9CDB] transition-colors">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 dark:hover:bg-white/10 text-[hsl(var(--admin-primary))] transition-colors">
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 text-slate-600 transition-colors" onClick={() => handleOpenEditDialog(school)}>

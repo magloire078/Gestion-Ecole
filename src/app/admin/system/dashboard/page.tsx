@@ -1,7 +1,8 @@
-﻿
+﻿'use client';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Server, RefreshCw, ArrowRight, Settings, Users, Shield, Activity, Globe } from 'lucide-react';
+import { Server, RefreshCw, ArrowRight, Settings, Users, Shield, Activity, Globe, Scroll, Loader2 } from 'lucide-react';
 import { AuditLog } from '@/components/admin/audit-log';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +12,7 @@ import { useFirestore, useUser } from '@/firebase';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
+import { cn } from '@/lib/utils';
 
 import { SystemStats } from '@/components/admin/system-stats';
 import { PlanDistributionChart } from '@/components/admin/plan-distribution-chart';

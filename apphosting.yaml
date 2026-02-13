@@ -25,13 +25,13 @@ runConfig:
       value: 1:97019754371:web:4822d9c017bf4be808e8b6
     - variable: NEXT_PUBLIC_BASE_URL
       value: https://www.gerecole.com
-    - variable: GENIUS_PAY_API_URL
+    - variable: NEXT_PUBLIC_GENIUS_PAY_API_URL
       value: https://pay.genius.ci/api/v1/merchant
   
   # Secrets (sensitive data)
   # À configurer via: firebase apphosting:secrets:set [nom_secret]
   secrets:
-    - variable: GENIUS_PAY_API_KEY
+    - variable: NEXT_PUBLIC_GENIUS_PAY_API_KEY
       secret: genius_pay_api_key_live
     - variable: GENIUS_PAY_API_SECRET
       secret: genius_pay_api_secret_live

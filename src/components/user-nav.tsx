@@ -130,11 +130,18 @@ export function UserNav({ collapsed = false }: UserNavProps) {
                 <DropdownMenuPortal>
                   <DropdownMenuSubContent>
                     {Object.entries(user.schools).map(([schoolId, role]) => (
-                      <DropdownMenuItem key={schoolId} onClick={() => setActiveSchool(schoolId)} disabled={schoolId === schoolData?.id}>
-                        {schoolId === schoolData?.id && <Check className="mr-2 h-4 w-4" />}
-                        <span className={cn(schoolId !== schoolData?.id && "ml-6")}>
-                          École {schoolId.substring(0, 6)}...
-                        </span>
+                      <DropdownMenuItem key={schoolId} onClick={() => setActiveSchool(schoolId)} disabled={schoolId === schoolData?.id} className="py-2">
+                        <div className="flex flex-col gap-0.5 w-full">
+                          <div className="flex items-center gap-2">
+                            {schoolId === schoolData?.id && <Check className="h-3.5 w-3.5 text-primary shrink-0" />}
+                            <span className={cn("font-bold text-xs truncate", schoolId !== schoolData?.id && "ml-5.5")}>
+                              {user.schoolNames?.[schoolId] || `École ${schoolId.substring(0, 6)}...`}
+                            </span>
+                          </div>
+                          <span className={cn("text-[10px] text-muted-foreground capitalize font-medium", schoolId !== schoolData?.id ? "ml-5.5" : "ml-5.5")}>
+                            {role.replace(/_/g, ' ')}
+                          </span>
+                        </div>
                       </DropdownMenuItem>
                     ))}
                   </DropdownMenuSubContent>

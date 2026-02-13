@@ -74,17 +74,17 @@ export function SystemStats() {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {[
-        { title: "Écoles Actives", value: stats.activeSchools, icon: Building, color: "text-[#2D9CDB]", bg: "bg-blue-50" },
-        { title: "Abonnements", value: stats.activeSubscriptions, icon: CreditCard, color: "text-emerald-500", bg: "bg-emerald-50" },
-        { title: "Utilisateurs", value: stats.totalUsers, icon: Users, color: "text-orange-500", bg: "bg-orange-50" },
-        { title: "MRR Plateforme", value: formatCurrency(stats.mrr), icon: DollarSign, color: "text-purple-500", bg: "bg-purple-50" }
+        { title: "Écoles Actives", value: stats.activeSchools, icon: Building, color: "text-[hsl(var(--admin-primary))]", bg: "bg-blue-50 dark:bg-blue-900/10" },
+        { title: "Abonnements", value: stats.activeSubscriptions, icon: CreditCard, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/10" },
+        { title: "Utilisateurs", value: stats.totalUsers, icon: Users, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-900/10" },
+        { title: "MRR Plateforme", value: formatCurrency(stats.mrr), icon: DollarSign, color: "text-purple-500", bg: "bg-purple-50 dark:bg-purple-900/10" }
       ].map((stat, i) => (
         <motion.div
           key={i}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="bg-white rounded-[32px] p-6 border border-blue-50/50 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all group"
+          className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] p-6 border border-blue-50/50 dark:border-white/10 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all group"
         >
           <div className="flex justify-between items-start mb-4">
             <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm", stat.bg, stat.color)}>
@@ -94,7 +94,7 @@ export function SystemStats() {
           <div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{stat.title}</p>
             <div className="flex items-baseline gap-2 mt-1">
-              <h3 className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">
+              <h3 className="text-2xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit tracking-tight">
                 {loading ? "..." : stat.value}
               </h3>
             </div>

@@ -61,7 +61,7 @@ export const SystemSettings = () => {
     }
 
     // Vérifier si les clés API sont configurées
-    const isGeniusConfigured = !!(process.env.NEXT_PUBLIC_GENIUS_PAY_CLIENT_ID || process.env.GENIUS_PAY_CLIENT_ID);
+    const isGeniusConfigured = !!(process.env.NEXT_PUBLIC_GENIUS_PAY_API_KEY);
     const isStripeConfigured = !!(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY || process.env.STRIPE_SECRET_KEY);
 
     const getProviderStatus = (provider: string) => {
@@ -98,33 +98,32 @@ export const SystemSettings = () => {
     return (
         <div className="space-y-6">
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="general">
+                <TabsList className="grid w-full grid-cols-4 h-14 bg-slate-50 dark:bg-white/5 p-1.5 rounded-2xl border border-blue-50/50 dark:border-white/10 transition-colors duration-500">
+                    <TabsTrigger value="general" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
                         <Wrench className="h-4 w-4 mr-2" />
                         Général
                     </TabsTrigger>
-                    <TabsTrigger value="payments">
+                    <TabsTrigger value="payments" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
                         <Banknote className="h-4 w-4 mr-2" />
                         Paiements
                     </TabsTrigger>
-                    <TabsTrigger value="api-keys">
+                    <TabsTrigger value="api-keys" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
                         <Key className="h-4 w-4 mr-2" />
                         Clés API
                     </TabsTrigger>
-                    <TabsTrigger value="security">
+                    <TabsTrigger value="security" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
                         <Shield className="h-4 w-4 mr-2" />
                         Sécurité
                     </TabsTrigger>
                 </TabsList>
 
-                {/* Onglet Général */}
-                <TabsContent value="general" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Configuration Globale</CardTitle>
-                            <CardDescription>Paramètres généraux de la plateforme</CardDescription>
+                <TabsContent value="general" className="space-y-4 mt-6">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                        <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
+                            <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Configuration Globale</CardTitle>
+                            <CardDescription className="font-medium">Paramètres généraux de la plateforme</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-4 p-8">
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div>
                                     <Label htmlFor="maintenance-mode" className="font-semibold">Mode Maintenance</Label>
@@ -155,14 +154,13 @@ export const SystemSettings = () => {
                     </Card>
                 </TabsContent>
 
-                {/* Onglet Paiements */}
-                <TabsContent value="payments" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Moyens de Paiement</CardTitle>
-                            <CardDescription>Activez ou désactivez les fournisseurs de paiement pour les abonnements.</CardDescription>
+                <TabsContent value="payments" className="space-y-4 mt-6">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                        <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
+                            <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Moyens de Paiement</CardTitle>
+                            <CardDescription className="font-medium">Activez ou désactivez les fournisseurs de paiement pour les abonnements.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-4 p-8">
                             {/* Genius Pay */}
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div className="flex-1">
@@ -274,17 +272,15 @@ export const SystemSettings = () => {
                     </Card>
                 </TabsContent>
 
-                {/* Onglet Clés API */}
-                <TabsContent value="api-keys" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Clés API Configurées</CardTitle>
-                            <CardDescription>
-                                Les clés sensibles sont stockées dans les variables d'environnement pour des raisons de sécurité.
-                                Contactez un développeur pour les modifier.
+                <TabsContent value="api-keys" className="space-y-4 mt-6">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                        <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
+                            <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Clés API Configurées</CardTitle>
+                            <CardDescription className="font-medium">
+                                Les clés sensibles sont stockées dans les variables d&apos;environnement pour des raisons de sécurité.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-4 p-8">
                             {/* Genius Pay */}
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center justify-between mb-3">
@@ -293,15 +289,15 @@ export const SystemSettings = () => {
                                 </div>
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-muted-foreground">Client ID:</span>
+                                        <span className="text-muted-foreground">API Key:</span>
                                         <code className="bg-muted px-2 py-1 rounded text-xs">
-                                            {isGeniusConfigured ? "GPAY-****" : "Non défini"}
+                                            {isGeniusConfigured ? `${process.env.NEXT_PUBLIC_GENIUS_PAY_API_KEY?.substring(0, 7)}****` : "Non défini"}
                                         </code>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-muted-foreground">API URL:</span>
                                         <code className="bg-muted px-2 py-1 rounded text-xs">
-                                            {process.env.GENIUS_PAY_API_URL || "Non défini"}
+                                            {process.env.NEXT_PUBLIC_GENIUS_PAY_API_URL || "Non défini"}
                                         </code>
                                     </div>
                                 </div>
@@ -324,23 +320,22 @@ export const SystemSettings = () => {
                             </div>
 
                             {/* Info Box */}
-                            <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                                <p className="text-sm text-blue-800 dark:text-blue-200">
-                                    <strong>💡 Note :</strong> Pour configurer ou modifier les clés API, éditez le fichier <code className="bg-blue-100 dark:bg-blue-900 px-1 py-0.5 rounded">.env.local</code> à la racine du projet.
+                            <div className="p-4 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/30 rounded-lg">
+                                <p className="text-sm text-blue-800 dark:text-blue-300">
+                                    <strong>💡 Note :</strong> Pour configurer ou modifier les clés API, éditez le fichier <code className="bg-blue-100 dark:bg-white/10 px-1 py-0.5 rounded">.env.local</code> à la racine du projet.
                                 </p>
                             </div>
                         </CardContent>
                     </Card>
                 </TabsContent>
 
-                {/* Onglet Sécurité */}
-                <TabsContent value="security" className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Paramètres de Sécurité</CardTitle>
-                            <CardDescription>Configuration des options de sécurité de la plateforme</CardDescription>
+                <TabsContent value="security" className="space-y-4 mt-6">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                        <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
+                            <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Paramètres de Sécurité</CardTitle>
+                            <CardDescription className="font-medium">Configuration des options de sécurité de la plateforme</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-4 p-8">
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div>
                                     <Label className="font-semibold">Logs d'audit détaillés</Label>
@@ -371,9 +366,13 @@ export const SystemSettings = () => {
                 </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={isSaving}>
-                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            <div className="flex justify-end pt-4">
+                <Button
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="h-14 px-8 rounded-2xl text-lg font-bold bg-[hsl(var(--admin-primary-dark))] hover:opacity-90 text-white shadow-xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                    {isSaving ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : null}
                     Enregistrer les modifications
                 </Button>
             </div>

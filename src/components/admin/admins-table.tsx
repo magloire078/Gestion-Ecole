@@ -90,15 +90,15 @@ export function AdminsTable() {
 
   return (
     <>
-      <div className="bg-white rounded-[40px] border border-blue-50/50 shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-blue-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30">
+      <div className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[40px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+        <div className="p-8 border-b border-blue-50/50 dark:border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30 dark:bg-white/5">
           <div>
-            <h3 className="text-xl font-black text-[#0C365A] font-outfit tracking-tight">Administrateurs Plateforme</h3>
+            <h3 className="text-xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit tracking-tight">Administrateurs Plateforme</h3>
             <p className="text-sm text-slate-400 font-medium">Gestion des accès super-utilisateur du système.</p>
           </div>
           <Button
             onClick={() => setIsGrantDialogOpen(true)}
-            className="rounded-2xl bg-[#0C365A] hover:bg-[#0C365A]/90 text-white font-bold h-11 px-6 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+            className="rounded-2xl bg-[hsl(var(--admin-primary-dark))] hover:opacity-90 text-white font-bold h-11 px-6 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
           >
             <UserPlus className="h-5 w-5 mr-2" />
             Accorder des droits
@@ -123,17 +123,17 @@ export function AdminsTable() {
                 ))
               ) : admins.length > 0 ? (
                 admins.map(admin => (
-                  <TableRow key={admin.uid} className="border-blue-50/30 transition-all hover:bg-blue-50/20">
+                  <TableRow key={admin.uid} className="border-blue-50/30 dark:border-white/5 transition-all hover:bg-blue-50/20 dark:hover:bg-white/5">
                     <TableCell className="px-8 py-4">
                       <div className="flex items-center gap-4">
                         <div className="relative group">
-                          <Avatar className="h-12 w-12 border-2 border-white ring-4 ring-blue-50/50">
+                          <Avatar className="h-12 w-12 border-2 border-white dark:border-slate-800 ring-4 ring-blue-50/50 dark:ring-white/5">
                             <AvatarImage src={admin.photoURL || undefined} alt={admin.displayName} />
-                            <AvatarFallback className="bg-blue-50 text-[#2D9CDB] font-black">{admin.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                            <AvatarFallback className="bg-blue-50 dark:bg-white/10 text-[hsl(var(--admin-primary))] font-black">{admin.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
-                          <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
+                          <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-emerald-500 border-2 border-white dark:border-slate-800 rounded-full shadow-sm" />
                         </div>
-                        <span className="font-black text-[#0C365A] font-outfit">{admin.displayName}</span>
+                        <span className="font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit">{admin.displayName}</span>
                       </div>
                     </TableCell>
                     <TableCell className="py-4">
@@ -171,9 +171,9 @@ export function AdminsTable() {
       </div>
 
       <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
-        <AlertDialogContent className="rounded-[32px] border-none shadow-2xl p-8">
+        <AlertDialogContent className="rounded-[32px] border-none shadow-2xl p-8 dark:bg-slate-900">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-2xl font-black text-[#0C365A] font-outfit">Révoquer les privilèges ?</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit">Révoquer les privilèges ?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 font-medium">
               Êtes-vous sûr de vouloir révoquer les droits de super administrateur pour <strong>{adminToRevoke?.displayName}</strong> ?
               Cette action retirera l'accès complet au système central.

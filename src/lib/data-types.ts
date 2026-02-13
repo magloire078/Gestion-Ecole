@@ -780,6 +780,7 @@ export interface AppUser {
     parentStudentIds?: string[];
     schoolId?: string | null;
     schools?: { [key: string]: string };
+    schoolNames?: { [key: string]: string };
     displayName?: string | null;
     photoURL?: string | null;
     email?: string | null;

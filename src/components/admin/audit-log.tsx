@@ -13,6 +13,7 @@ import type { UserProfile } from '@/lib/data-types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Shield, Zap, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type SystemLog = {
   id: string;
@@ -90,11 +91,13 @@ export const AuditLog = ({ limit }: { limit: number }) => {
     if (!target) return 'N/A';
     if (target.startsWith('ecoles/')) {
       const id = target.split('/')[1];
-      return `ÉCOLE : ${schoolMap.get(id) || id}`;
+      const name = schoolMap.get(id);
+      return name ? `ÉCOLE : ${name}` : `ÉCOLE (ID: ${id.slice(0, 8)}...)`;
     }
     if (target.startsWith('users/')) {
       const id = target.split('/')[1];
-      return `UTILISATEUR : ${adminMap.get(id) || id}`;
+      const name = adminMap.get(id);
+      return name ? `UTILISATEUR : ${name}` : `UTILISATEUR (ID: ${id.slice(0, 8)}...)`;
     }
     return target;
   };
@@ -167,11 +170,11 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100/50 group-hover:bg-[#0C365A] group-hover:text-white transition-all">
+                      <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-white/5 flex items-center justify-center border border-blue-100/50 dark:border-white/10 group-hover:bg-[hsl(var(--admin-primary-dark))] group-hover:text-white transition-all">
                         <Shield className="h-3.5 w-3.5" />
                       </div>
-                      <span className="text-xs font-bold text-slate-700 group-hover:text-[#0C365A] transition-colors">
-                        {adminMap.get(log.adminId) || log.adminId}
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-[hsl(var(--admin-primary-dark))] transition-colors">
+                        {adminMap.get(log.adminId) || `Admin (ID: ${log.adminId.slice(0, 8)}...)`}
                       </span>
                     </div>
                   </TableCell>
@@ -180,9 +183,9 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                       variant="outline"
                       className={cn(
                         "text-[9px] font-black px-2 py-0.5 rounded-lg border-2 uppercase tracking-widest",
-                        log.action.includes('delete') ? "bg-rose-50 text-rose-600 border-rose-100" :
-                          log.action.includes('create') ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
-                            "bg-blue-50 text-[#2D9CDB] border-blue-100"
+                        log.action.includes('delete') ? "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:border-rose-900/30" :
+                          log.action.includes('create') ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-900/30" :
+                            "bg-blue-50 text-[hsl(var(--admin-primary))] border-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-900/30"
                       )}
                     >
                       {log.action}
@@ -190,11 +193,23 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                   </TableCell>
                   <TableCell className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="text-xs font-bold text-slate-600 group-hover:text-[#0C365A] transition-colors line-clamp-1">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-400 group-hover:text-[hsl(var(--admin-primary-dark))] transition-colors line-clamp-1">
                         {log.details?.name || formatTarget(log.target)}
                       </span>
-                      {log.details?.schoolId && (
-                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest opacity-60">REF: {log.details.schoolId.slice(0, 8)}</span>
+                      {(log.details?.schoolId || log.target.startsWith('ecoles/')) && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest opacity-60 cursor-help flex items-center gap-1 group-hover:opacity-100">
+                                <Info className="h-2 w-2" />
+                                Réf. {(log.details?.schoolId || log.target.split('/')[1]).slice(0, 8)}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="bg-[#0C365A] text-white border-blue-900/20">
+                              <p className="text-[10px] font-bold">ID Complet: {log.details?.schoolId || log.target.split('/')[1]}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       )}
                     </div>
                   </TableCell>

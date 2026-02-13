@@ -31,6 +31,49 @@
     --chart-3: 230 85% 55%;
     --chart-4: 250 80% 60%;
     --chart-5: 270 75% 65%;
+
+    /* Admin Shared Variables (Default Aura) */
+    --admin-primary: 201 66% 52%;
+    /* #2D9CDB */
+    --admin-primary-dark: 224 71% 20%;
+    /* #0C365A */
+    --admin-bg: 220 70% 98%;
+    /* #f8faff */
+    --admin-card: 0 0% 100%;
+    --admin-sidebar-border: 214.3 31.8% 91.4%;
+  }
+
+  .theme-midnight {
+    --admin-primary: 45 61% 53%;
+    /* #D4AF37 Gold */
+    --admin-primary-dark: 0 0% 10%;
+    /* #1A1A1A */
+    --admin-bg: 0 0% 7%;
+    /* Deep Charcoal */
+    --admin-card: 0 0% 12%;
+    --admin-sidebar-border: 0 0% 20%;
+  }
+
+  .theme-emerald {
+    --admin-primary: 161 72% 39%;
+    /* #10B981 */
+    --admin-primary-dark: 164 86% 16%;
+    /* #064E3B */
+    --admin-bg: 160 50% 98%;
+    /* Soft Mint Wash */
+    --admin-card: 0 0% 100%;
+    --admin-sidebar-border: 160 30% 90%;
+  }
+
+  .theme-cyber {
+    --admin-primary: 330 81% 67%;
+    /* #F472B6 Pink */
+    --admin-primary-dark: 261 73% 23%;
+    /* #2E1065 Purple */
+    --admin-bg: 260 50% 5%;
+    /* Very Dark Purple */
+    --admin-card: 261 73% 8%;
+    --admin-sidebar-border: 261 73% 15%;
   }
 
   .dark {

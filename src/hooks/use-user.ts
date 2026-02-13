@@ -7,22 +7,9 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { onIdTokenChanged, getAuth } from 'firebase/auth';
 import { useFirestore, useAuth } from '../firebase/client-provider';
-import type { UserProfile } from '@/lib/data-types';
+import type { UserProfile, AppUser } from '@/lib/data-types';
 import { useRouter } from 'next/navigation';
 import { fetchUserAppData } from '@/services/user-service';
-
-export interface AppUser {
-  uid: string;
-  isParent: boolean;
-  authUser: FirebaseUser | null;
-  profile: UserProfile | undefined;
-  parentStudentIds?: string[];
-  schoolId?: string | null; // L'école actuellement active
-  schools?: { [key: string]: string }; // Toutes les écoles de l'utilisateur
-  displayName?: string | null;
-  photoURL?: string | null;
-  email?: string | null;
-}
 
 export function useUser() {
   const [user, setUser] = useState<AppUser | null>(null);
