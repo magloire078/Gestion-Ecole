@@ -31,8 +31,9 @@ export const metadata: Metadata = {
   title: 'GèreEcole - Gestion scolaire simplifiée',
   description: 'La solution complète pour gérer les élèves, les notes, les paiements et la communication scolaire.',
   icons: {
-    icon: '/custom-assets/logo.png',
-    apple: '/custom-assets/logo.png',
+    icon: '/favicon.ico',
+    shortcut: '/favicon.png',
+    apple: '/favicon.png',
   },
 };
 
