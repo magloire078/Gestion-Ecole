@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useEffect, useState } from 'react';
 
 interface AnimatedHighlightProps {
     className?: string;
@@ -14,6 +15,23 @@ export function AnimatedHighlight({
     delay = 0,
     duration = 3
 }: AnimatedHighlightProps) {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return (
+            <div
+                className={cn(
+                    "absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#2D9CDB]/40 to-transparent z-20 pointer-events-none",
+                    className
+                )}
+            />
+        );
+    }
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
