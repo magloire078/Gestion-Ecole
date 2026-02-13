@@ -12,6 +12,7 @@ import Image from 'next/image';
 import { Logo } from './logo';
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 
 const featureCategories = [
   {
@@ -67,7 +68,8 @@ export function LandingPageV2() {
       </div>
 
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 overflow-hidden">
+        <AnimatedHighlight />
         <div className="container flex h-auto py-4 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2 transition-transform hover:scale-105">

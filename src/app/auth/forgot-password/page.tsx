@@ -13,6 +13,7 @@ import { Loader2, Mail, ArrowLeft, ShieldKeyhole, HelpCircle } from 'lucide-reac
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/logo';
+import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -108,17 +109,13 @@ export default function ForgotPasswordPage() {
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
             className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
           >
-            {/* Animated Light Line at the Top */}
-            <motion.div
-              initial={{ rotate: 0, opacity: 0.5 }}
-              animate={{ opacity: [0.3, 0.8, 0.3] }}
-              transition={{ duration: 5, repeat: Infinity }}
-              className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-[#2D9CDB] to-transparent z-20"
-            />
+            <AnimatedHighlight />
 
             <div className="flex flex-col items-center mb-10">
-              <Logo compact className="mb-6" />
-              <div className="text-center">
+              <div className="mb-6 transform scale-150 py-4 transition-transform hover:scale-[1.6]">
+                <Logo compact />
+              </div>
+              <div className="text-center mt-4">
                 <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-50 mb-4 text-[#2D9CDB]">
                   <HelpCircle className="h-8 w-8" />
                 </div>

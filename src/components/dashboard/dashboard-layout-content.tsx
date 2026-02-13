@@ -24,6 +24,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from "@/components/ui/badge";
 import { useFirestore } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
+import { AnimatedHighlight } from "@/components/ui/animated-highlight";
 
 
 // Ce composant récupère dynamiquement le nom d'un document pour l'afficher dans le fil d'Ariane.
@@ -178,7 +179,8 @@ export default function DashboardLayoutContent({ children }: { children: React.R
     <TooltipProvider>
       <div className={cn("min-h-screen w-full bg-background print:bg-white")}>
         <aside className={cn("fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-card sm:flex print:hidden transition-all duration-300", isNavCollapsed ? "w-20" : "w-64")}>
-          <div className={cn("flex items-center border-b", isNavCollapsed ? "h-16 justify-center px-2" : "h-auto py-5 px-6")}>
+          <div className={cn("flex items-center border-b relative overflow-hidden", isNavCollapsed ? "h-16 justify-center px-2" : "h-auto py-5 px-6")}>
+            <AnimatedHighlight />
             {isLoading ? (
               <div className="flex items-center gap-2">
                 <Skeleton className={cn("rounded-lg h-10 w-10")} />
@@ -218,8 +220,9 @@ export default function DashboardLayoutContent({ children }: { children: React.R
         <div className={cn("flex flex-col transition-all duration-300", isNavCollapsed ? "sm:pl-20" : "sm:pl-64")}>
 
           <header className={cn(
-            "sticky top-0 z-30 flex h-auto py-4 items-center justify-between gap-4 border-b bg-card/80 dark:bg-card/80 backdrop-blur-md px-4 sm:px-6 print:hidden"
+            "sticky top-0 z-30 flex h-auto py-4 items-center justify-between gap-4 border-b bg-card/80 dark:bg-card/80 backdrop-blur-md px-4 sm:px-6 print:hidden overflow-hidden"
           )}>
+            <AnimatedHighlight />
             <div className="flex items-center gap-3">
               <Sheet>
                 <SheetTrigger asChild>

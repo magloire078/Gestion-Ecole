@@ -20,6 +20,7 @@ import { Loader2, User, Mail, Lock, Eye, EyeOff, CheckCircle2, Rocket, Star } fr
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/logo';
+import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -203,17 +204,13 @@ export default function RegisterPage() {
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
             className="w-full max-w-lg mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
           >
-            {/* Animated Light Line at the Top */}
-            <motion.div
-              initial={{ rotate: 0, opacity: 0.5 }}
-              animate={{ opacity: [0.3, 0.8, 0.3] }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-[#2D9CDB] to-transparent z-20"
-            />
+            <AnimatedHighlight />
 
             <div className="flex flex-col items-center mb-10">
-              <Logo compact className="mb-6" />
-              <div className="text-center">
+              <div className="mb-6 transform scale-150 py-4 transition-transform hover:scale-[1.6]">
+                <Logo compact />
+              </div>
+              <div className="text-center mt-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2D9CDB] text-[10px] font-black uppercase tracking-widest mb-4">
                   <Rocket className="h-3 w-3" /> Essai Gratuit
                 </div>
