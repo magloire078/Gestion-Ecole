@@ -325,7 +325,7 @@ export function LandingPageV2() {
           <nav className="flex flex-col sm:flex-row gap-8 items-center">
             <Link href="/contact" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Support & Contact</Link>
             <Link href="/auth/login" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Espace Client</Link>
-            <Link href="/legal" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Mentions Légales</Link>
+            <Link href="/mentions-legales" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Mentions Légales</Link>
           </nav>
         </div>
       </footer>
