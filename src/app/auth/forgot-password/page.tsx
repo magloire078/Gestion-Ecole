@@ -1,5 +1,4 @@
-﻿
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { sendPasswordResetEmail } from 'firebase/auth';
@@ -9,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Loader2, Mail, ArrowLeft, ShieldKeyhole, HelpCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -61,8 +61,6 @@ export default function ForgotPasswordPage() {
           transition={{ duration: 0.8 }}
           className="hidden lg:flex flex-col space-y-10 p-12"
         >
-          <Logo className="scale-125 origin-left" />
-
           <div className="space-y-6">
             <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit">
               Un accès <br />
@@ -74,12 +72,27 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-6 p-6 bg-white rounded-3xl shadow-sm border border-blue-50/50">
-            <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[#2D9CDB]">
-              <ShieldKeyhole className="h-6 w-6" />
+          {/* Decorative image for premium feel */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 1 }}
+            className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-white/50"
+          >
+            <Image
+              src="/custom-assets/home-hero.jpg"
+              alt="Security Infrastructure"
+              fill
+              className="object-cover opacity-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0C365A]/60 to-transparent flex items-center p-8">
+              <div className="max-w-xs">
+                <ShieldKeyhole className="h-12 w-12 text-white mb-4" />
+                <h2 className="text-2xl font-bold text-white">Protection des données</h2>
+                <p className="text-white/70 text-sm mt-2">Votre sécurité est notre priorité absolue. Nous utilisons les derniers standards de cryptage Firebase.</p>
+              </div>
             </div>
-            <p className="text-sm font-bold text-[#0C365A]/70 uppercase tracking-widest">Technologie de protection Firebase</p>
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* Right: Reset Form */}
@@ -87,25 +100,31 @@ export default function ForgotPasswordPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="perspective-1000"
+          className="perspective-1000 w-full"
         >
           <motion.div
             initial={{ rotateX: 5 }}
             animate={{ rotateX: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden"
+            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
           >
-            {/* Header Content for mobile */}
-            <div className="lg:hidden flex justify-center mb-10">
-              <Logo compact />
-            </div>
+            {/* Animated Light Line at the Top */}
+            <motion.div
+              initial={{ rotate: 0, opacity: 0.5 }}
+              animate={{ opacity: [0.3, 0.8, 0.3] }}
+              transition={{ duration: 5, repeat: Infinity }}
+              className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-[#2D9CDB] to-transparent z-20"
+            />
 
-            <div className="mb-10 text-center lg:text-left">
-              <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-50 mb-6 text-[#2D9CDB]">
-                <HelpCircle className="h-8 w-8" />
+            <div className="flex flex-col items-center mb-10">
+              <Logo compact className="mb-6" />
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-50 mb-4 text-[#2D9CDB]">
+                  <HelpCircle className="h-8 w-8" />
+                </div>
+                <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Accès oublié ?</h2>
+                <p className="text-slate-400 mt-2 font-medium">Récupérez votre compte en un instant.</p>
               </div>
-              <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Accès oublié ?</h2>
-              <p className="text-slate-400 mt-2 font-medium">Saisissez votre email pour recevoir un lien de réinitialisation.</p>
             </div>
 
             <AnimatePresence>
@@ -122,17 +141,17 @@ export default function ForgotPasswordPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center p-8 bg-blue-50 rounded-[30px] border border-blue-100/50"
+                className="text-center p-8 bg-blue-50 rounded-[30px] border border-blue-100/50 relative z-10"
               >
                 <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center text-[#2D9CDB] mx-auto mb-4 shadow-sm">
                   <Mail className="h-8 w-8" />
                 </div>
                 <h3 className="text-xl font-bold text-[#0C365A] mb-2">Vérifiez vos emails</h3>
                 <p className="text-sm text-slate-500 font-medium">Un lien de réinitialisation a été envoyé à <strong>{email}</strong>.</p>
-                <Button variant="link" onClick={() => setIsSubmitted(false)} className="mt-4 text-[#2D9CDB] font-bold">Réessayer avec un autre email</Button>
+                <Button variant="link" onClick={() => setIsSubmitted(false)} className="mt-4 text-[#2D9CDB] font-bold hover:text-[#0C365A]">Réessayer avec un autre email</Button>
               </motion.div>
             ) : (
-              <form onSubmit={handlePasswordReset} className="space-y-6">
+              <form onSubmit={handlePasswordReset} className="space-y-6 relative z-10">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Email du compte</Label>
                   <div className="relative group">
@@ -159,7 +178,7 @@ export default function ForgotPasswordPage() {
               </form>
             )}
 
-            <div className="mt-10 text-center">
+            <div className="mt-10 text-center relative z-10">
               <Link href="/auth/login" className="inline-flex items-center gap-2 text-sm font-bold text-[#2D9CDB] hover:text-[#0C365A] transition-colors">
                 <ArrowLeft className="h-4 w-4" />
                 Retour à la connexion
@@ -171,4 +190,3 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
-

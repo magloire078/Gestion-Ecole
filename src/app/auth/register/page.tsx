@@ -1,5 +1,4 @@
-﻿
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -16,7 +15,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Loader2, User, Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2, Rocket } from 'lucide-react';
+import Image from 'next/image';
+import { Loader2, User, Mail, Lock, Eye, EyeOff, CheckCircle2, Rocket, Star } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/logo';
@@ -134,10 +134,8 @@ export default function RegisterPage() {
           transition={{ duration: 0.8 }}
           className="hidden lg:flex flex-col space-y-10 p-12"
         >
-          <Logo className="scale-125 origin-left" />
-
           <div className="space-y-6">
-            <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit">
+            <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit text-balance">
               Prêt pour la <br />
               <span className="text-[#2D9CDB]">Révolution</span> <br />
               numérique ?
@@ -151,8 +149,7 @@ export default function RegisterPage() {
             {[
               "Audit de gestion en temps réel",
               "Portail parent & élève inclus",
-              "Paiements en ligne sécurisés",
-              "Support technique 24/7"
+              "Paiements en ligne sécurisés"
             ].map((feature, i) => (
               <motion.div
                 key={i}
@@ -168,6 +165,29 @@ export default function RegisterPage() {
               </motion.div>
             ))}
           </div>
+
+          {/* Decorative image/illustration for premium feel */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.6, duration: 1 }}
+            className="relative w-full aspect-[4/3] rounded-[40px] overflow-hidden shadow-2xl shadow-blue-900/10 border-4 border-white"
+          >
+            <Image
+              src="/custom-assets/home-hero.jpg"
+              alt="GéreEcole Community"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-[#0C365A]/10 mix-blend-overlay" />
+            <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/80 backdrop-blur-md rounded-2xl border border-white/50">
+              <div className="flex gap-1 mb-2">
+                {[1, 2, 3, 4, 5].map(s => <Star key={s} className="h-4 w-4 fill-[#2D9CDB] text-[#2D9CDB]" />)}
+              </div>
+              <p className="text-sm font-bold text-[#0C365A]">"GéreEcole a réduit notre temps administratif de 40% en un seul trimestre."</p>
+              <p className="text-xs text-slate-500 mt-1">— Directrice d'établissement, Lyon</p>
+            </div>
+          </motion.div>
         </motion.div>
 
         {/* Right: Register Form */}
@@ -175,25 +195,31 @@ export default function RegisterPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="perspective-1000"
+          className="perspective-1000 w-full"
         >
           <motion.div
             initial={{ rotateY: -5 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-lg mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden"
+            className="w-full max-w-lg mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
           >
-            {/* Header for mobile */}
-            <div className="lg:hidden flex justify-center mb-10">
-              <Logo compact />
-            </div>
+            {/* Animated Light Line at the Top */}
+            <motion.div
+              initial={{ rotate: 0, opacity: 0.5 }}
+              animate={{ opacity: [0.3, 0.8, 0.3] }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-[#2D9CDB] to-transparent z-20"
+            />
 
-            <div className="mb-10 text-center lg:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2D9CDB] text-xs font-bold uppercase tracking-widest mb-4">
-                <Rocket className="h-3 w-3" /> Essai Gratuit
+            <div className="flex flex-col items-center mb-10">
+              <Logo compact className="mb-6" />
+              <div className="text-center">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2D9CDB] text-[10px] font-black uppercase tracking-widest mb-4">
+                  <Rocket className="h-3 w-3" /> Essai Gratuit
+                </div>
+                <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Rejoignez-nous</h2>
+                <p className="text-slate-400 mt-2 font-medium text-sm">Démarrez votre transformation numérique.</p>
               </div>
-              <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Créer un compte</h2>
-              <p className="text-slate-400 mt-2 font-medium">Démarrez votre transformation aujourd'hui.</p>
             </div>
 
             <AnimatePresence>
@@ -211,9 +237,9 @@ export default function RegisterPage() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleRegister} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="displayName" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Nom du responsable</Label>
+            <form onSubmit={handleRegister} className="space-y-5 relative z-10">
+              <div className="space-y-1.5">
+                <Label htmlFor="displayName" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom complet</Label>
                 <div className="relative group">
                   <Input
                     id="displayName"
@@ -222,14 +248,14 @@ export default function RegisterPage() {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     disabled={isProcessing || isGoogleProcessing}
-                    className="h-14 pl-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                    className="h-13 pl-11 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-xl font-medium"
                   />
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Email professionnel</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email professionnel</Label>
                 <div className="relative group">
                   <Input
                     id="email"
@@ -238,14 +264,14 @@ export default function RegisterPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isProcessing || isGoogleProcessing}
-                    className="h-14 pl-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                    className="h-13 pl-11 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-xl font-medium"
                   />
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Mot de passe</Label>
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mot de passe</Label>
                 <div className="relative group">
                   <Input
                     id="password"
@@ -254,15 +280,15 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isProcessing || isGoogleProcessing}
-                    className="h-14 pl-12 pr-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                    className="h-13 pl-11 pr-11 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-xl font-medium"
                   />
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-400 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
                   </button>
                 </div>
               </div>
@@ -275,8 +301,8 @@ export default function RegisterPage() {
                   onChange={(e) => setTermsAccepted(e.target.checked)}
                   className="mt-1 h-5 w-5 rounded-lg border-slate-200 text-[#2D9CDB] focus:ring-[#2D9CDB] transition-all cursor-pointer"
                 />
-                <label htmlFor="terms" className="text-xs text-slate-400 leading-snug cursor-pointer select-none">
-                  J'accepte les <Link href="/terms" className="text-[#2D9CDB] font-bold hover:underline">conditions d'utilisation</Link> et la <Link href="/privacy" className="text-[#2D9CDB] font-bold hover:underline">politique de confidentialité</Link>.
+                <label htmlFor="terms" className="text-[10px] font-bold text-slate-400 leading-snug cursor-pointer select-none">
+                  J'accepte les <Link href="/terms" className="text-[#2D9CDB] font-black hover:underline">conditions</Link> et la <Link href="/privacy" className="text-[#2D9CDB] font-black hover:underline">politique de confidentialité</Link>.
                 </label>
               </div>
 
@@ -293,8 +319,8 @@ export default function RegisterPage() {
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-slate-100" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest text-slate-300">
-                <span className="bg-white px-4">Ou avec</span>
+              <div className="relative flex justify-center text-[10px] uppercase font-black tracking-[0.2em] text-slate-300">
+                <span className="bg-white px-4">Ou via Google</span>
               </div>
             </div>
 
@@ -305,11 +331,11 @@ export default function RegisterPage() {
               disabled={isGoogleProcessing}
               className="w-full h-14 rounded-2xl border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all font-bold text-slate-600"
             >
-              <GoogleIcon className="mr-3" /> Google
+              <GoogleIcon className="mr-3" /> S'inscrire rapidement
             </Button>
 
             <p className="text-center text-sm font-medium text-slate-400 mt-10">
-              Déjà inscrit ?{' '}
+              Déjà un compte ?{' '}
               <Link href="/auth/login" className="text-[#0C365A] font-bold hover:underline">
                 Se connecter
               </Link>
@@ -320,4 +346,3 @@ export default function RegisterPage() {
     </div>
   );
 }
-

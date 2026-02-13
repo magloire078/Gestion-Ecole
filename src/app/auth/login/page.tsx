@@ -1,5 +1,4 @@
-﻿
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,11 +14,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, Loader2, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import Image from 'next/image';
+import { Mail, Lock, Eye, EyeOff, Loader2, ShieldCheck, Zap } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/logo';
-import { cn } from '@/lib/utils';
 
 function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -128,10 +127,8 @@ export default function LoginPage() {
           transition={{ duration: 0.8 }}
           className="hidden lg:flex flex-col space-y-10 p-12"
         >
-          <Logo className="scale-125 origin-left" />
-
           <div className="space-y-6">
-            <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit">
+            <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit text-balance">
               L'excellence <br />
               <span className="text-[#2D9CDB]">académique</span> <br />
               commence ici.
@@ -161,6 +158,22 @@ export default function LoginPage() {
               </div>
             </div>
           </div>
+
+          {/* Decorative image on the left for premium feel */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 1 }}
+            className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-white/50"
+          >
+            <Image
+              src="/custom-assets/home-hero.jpg"
+              alt="GéreEcole Dashboard Preview"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0C365A]/40 to-transparent" />
+          </motion.div>
         </motion.div>
 
         {/* Right: Login Form */}
@@ -168,22 +181,28 @@ export default function LoginPage() {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="perspective-1000"
+          className="perspective-1000 w-full"
         >
           <motion.div
             initial={{ rotateY: 5 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden"
+            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
           >
-            {/* Header Content for mobile */}
-            <div className="lg:hidden flex justify-center mb-10">
-              <Logo compact />
-            </div>
+            {/* Animated Light Line at the Top */}
+            <motion.div
+              initial={{ rotate: 0, opacity: 0.5 }}
+              animate={{ opacity: [0.3, 0.8, 0.3] }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-[#2D9CDB] to-transparent z-20"
+            />
 
-            <div className="mb-10 text-center lg:text-left">
-              <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Connexion</h2>
-              <p className="text-slate-400 mt-2 font-medium">Bon retour parmi nous !</p>
+            <div className="flex flex-col items-center mb-10">
+              <Logo compact className="mb-6" />
+              <div className="text-center">
+                <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Connexion</h2>
+                <p className="text-slate-400 mt-2 font-medium">Bon retour parmi nous !</p>
+              </div>
             </div>
 
             <AnimatePresence>
@@ -201,7 +220,7 @@ export default function LoginPage() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleSignIn} className="space-y-6">
+            <form onSubmit={handleSignIn} className="space-y-6 relative z-10">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Email professionnel</Label>
                 <div className="relative group">
@@ -291,5 +310,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-
