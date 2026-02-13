@@ -225,7 +225,7 @@ export default function LoginPage() {
             <AnimatedHighlight />
 
             <div className="flex flex-col items-center mb-10">
-              <div className="mb-6 transform scale-[2.2] py-8 transition-transform hover:scale-[2.4]">
+              <div className="mb-6 transform scale-[2.8] py-12 transition-transform hover:scale-[3.0]">
                 <Logo compact />
               </div>
               <div className="text-center mt-4">

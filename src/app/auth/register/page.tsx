@@ -238,7 +238,7 @@ export default function RegisterPage() {
             <AnimatedHighlight />
 
             <div className="flex flex-col items-center mb-10">
-              <div className="mb-6 transform scale-[2] py-6 transition-transform hover:scale-[2.2]">
+              <div className="mb-6 transform scale-[2.5] py-10 transition-transform hover:scale-[2.7]">
                 <Logo compact />
               </div>
               <div className="text-center mt-4">
