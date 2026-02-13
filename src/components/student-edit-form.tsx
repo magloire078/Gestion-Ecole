@@ -40,9 +40,9 @@ type StudentFormValues = z.infer<typeof studentSchema>;
 
 interface StudentEditFormProps {
   student: Student;
-  classes: (Class & {id?: string})[];
+  classes: (Class & { id?: string })[];
   fees: Fee[];
-  niveaux: (Niveau & {id?: string})[];
+  niveaux: (Niveau & { id?: string })[];
   schoolId: string;
   onFormSubmit: () => void;
 }
@@ -71,19 +71,19 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       grade: student.grade || '',
     },
   });
-  
+
   const watchedClassId = useWatch({ control: form.control, name: 'classId' });
   const watchedDiscountAmount = useWatch({ control: form.control, name: 'discountAmount' });
 
   // Effet pour recalculer les montants lorsque la classe ou la remise change
   useEffect(() => {
     const { fee: newTuitionFee, gradeName } = getTuitionInfoForClass(watchedClassId, classes, niveaux, fees);
-    
+
     // Show warning if no fee is defined for the selected class
     if (watchedClassId && newTuitionFee === 0) {
-        setShowFeeWarning(true);
+      setShowFeeWarning(true);
     } else {
-        setShowFeeWarning(false);
+      setShowFeeWarning(false);
     }
 
     // Mettre à jour les frais de scolarité
@@ -99,8 +99,8 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
   const handleEditStudent = async (values: StudentFormValues) => {
     if (!user?.uid) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
-        return;
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur non authentifié.' });
+      return;
     }
     setIsSaving(true);
     const oldClassId = student.classId;
@@ -109,47 +109,47 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
 
     const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id!}`);
     const selectedClassInfo = classes.find(c => c.id === newClassId);
-    
+
     const batch = writeBatch(firestore);
 
     const updatedData = {
-        ...student,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        classId: newClassId,
-        class: selectedClassInfo?.name || student.class,
-        cycle: selectedClassInfo?.cycleId || student.cycle,
-        grade: values.grade || 'N/A',
-        dateOfBirth: values.dateOfBirth,
-        tuitionFee: values.tuitionFee,
-        discountAmount: values.discountAmount,
-        discountReason: values.discountReason,
-        amountDue: values.amountDue,
-        tuitionStatus: values.tuitionStatus,
-        status: values.status,
-        feedback: values.feedback || '',
-        updatedAt: serverTimestamp(),
-        updatedBy: user.uid,
+      ...student,
+      firstName: values.firstName,
+      lastName: values.lastName,
+      classId: newClassId,
+      class: selectedClassInfo?.name || student.class,
+      cycle: selectedClassInfo?.cycleId || student.cycle,
+      grade: values.grade || 'N/A',
+      dateOfBirth: values.dateOfBirth,
+      tuitionFee: values.tuitionFee,
+      discountAmount: values.discountAmount,
+      discountReason: values.discountReason,
+      amountDue: values.amountDue,
+      tuitionStatus: values.tuitionStatus,
+      status: values.status,
+      feedback: values.feedback || '',
+      updatedAt: serverTimestamp(),
+      updatedBy: user.uid,
     };
-    
+
     batch.update(studentDocRef, updatedData);
 
     if (classHasChanged) {
-        if (oldClassId) {
-            const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${oldClassId}`);
-            batch.update(oldClassRef, { studentCount: increment(-1) });
-        }
-        const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${newClassId}`);
-        batch.update(newClassRef, { studentCount: increment(1) });
+      if (oldClassId) {
+        const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${oldClassId}`);
+        batch.update(oldClassRef, { studentCount: increment(-1) });
+      }
+      const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${newClassId}`);
+      batch.update(newClassRef, { studentCount: increment(1) });
     }
 
     try {
       await batch.commit();
       toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}` });
       onFormSubmit();
-    } catch(serverError) {
-       console.error("Error updating student:", serverError);
-       toast({ variant: "destructive", title: "Erreur de mise à jour", description: "Impossible de modifier les informations de l'élève." });
+    } catch (serverError) {
+      console.error("Error updating student:", serverError);
+      toast({ variant: "destructive", title: "Erreur de mise à jour", description: "Impossible de modifier les informations de l'élève." });
     } finally {
       setIsSaving(false);
     }
@@ -159,79 +159,79 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
     <Form {...form}>
       <form id={`edit-student-form-${student.id}`} onSubmit={form.handleSubmit(handleEditStudent)} className="space-y-4">
         <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="general">Général</TabsTrigger>
-                <TabsTrigger value="tuition">Scolarité</TabsTrigger>
-                <TabsTrigger value="feedback">Appréciation</TabsTrigger>
-            </TabsList>
-            <div className="py-4 max-h-[60vh] overflow-y-auto px-1">
-                <TabsContent value="general" className="mt-0 space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                    <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField
-                    control={form.control}
-                    name="classId"
-                    render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Classe</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                            <SelectContent>
-                            {classes.map((opt) => (<SelectItem key={opt.id} value={opt.id!}>{opt.name}</SelectItem>))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}
-                    />
-                    <FormField control={form.control} name="status" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Statut Élève</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                    <SelectItem value="Actif">Actif</SelectItem>
-                                    <SelectItem value="En attente">En attente</SelectItem>
-                                    <SelectSeparator />
-                                    <SelectItem value="Transféré">Transféré</SelectItem>
-                                    <SelectItem value="Diplômé">Diplômé</SelectItem>
-                                    <SelectItem value="Radié">Radié</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </FormItem>
-                    )} />
-                </TabsContent>
-                <TabsContent value="tuition" className="mt-0 space-y-4">
-                    {showFeeWarning && (
-                        <Alert variant="destructive">
-                             <AlertCircle className="h-4 w-4" />
-                            <AlertDescription>
-                                Attention : Aucun frais de scolarité n'est défini pour la classe sélectionnée. Le solde de cet élève sera recalculé à 0.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="amountDue" render={({ field }) => (<FormItem><FormLabel>Solde dû (calculé)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="tuitionStatus" render={({ field }) => (<FormItem><FormLabel>Statut Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Soldé">Soldé</SelectItem><SelectItem value="En retard">En retard</SelectItem><SelectItem value="Partiel">Partiel</SelectItem></SelectContent></Select></FormItem>)} />
-                </TabsContent>
-                <TabsContent value="feedback" className="mt-0">
-                    <FormField
-                        control={form.control}
-                        name="feedback"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Appréciation Générale</FormLabel>
-                            <FormControl><Textarea {...field} rows={8} /></FormControl>
-                            </FormItem>
-                        )}
-                    />
-                </TabsContent>
-            </div>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="general">Général</TabsTrigger>
+            <TabsTrigger value="tuition">Scolarité</TabsTrigger>
+            <TabsTrigger value="feedback">Appréciation</TabsTrigger>
+          </TabsList>
+          <div className="py-4 max-h-[60vh] overflow-y-auto px-1">
+            <TabsContent value="general" className="mt-0 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+              </div>
+              <FormField control={form.control} name="dateOfBirth" render={({ field }) => (<FormItem><FormLabel>Date de naissance</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField
+                control={form.control}
+                name="classId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Classe</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        {classes.map((opt) => (<SelectItem key={opt.id} value={opt.id!}>{opt.name}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField control={form.control} name="status" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Statut Élève</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="Actif">Actif</SelectItem>
+                      <SelectItem value="En attente">En attente</SelectItem>
+                      <SelectSeparator />
+                      <SelectItem value="Transféré">Transféré</SelectItem>
+                      <SelectItem value="Diplômé">Diplômé</SelectItem>
+                      <SelectItem value="Radié">Radié</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+            </TabsContent>
+            <TabsContent value="tuition" className="mt-0 space-y-4">
+              {showFeeWarning && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Attention : Aucun frais de scolarité n&apos;est défini pour la classe sélectionnée. Le solde de cet élève sera recalculé à 0.
+                  </AlertDescription>
+                </Alert>
+              )}
+              <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="amountDue" render={({ field }) => (<FormItem><FormLabel>Solde dû (calculé)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="tuitionStatus" render={({ field }) => (<FormItem><FormLabel>Statut Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Soldé">Soldé</SelectItem><SelectItem value="En retard">En retard</SelectItem><SelectItem value="Partiel">Partiel</SelectItem></SelectContent></Select></FormItem>)} />
+            </TabsContent>
+            <TabsContent value="feedback" className="mt-0">
+              <FormField
+                control={form.control}
+                name="feedback"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Appréciation Générale</FormLabel>
+                    <FormControl><Textarea {...field} rows={8} /></FormControl>
+                  </FormItem>
+                )}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
         <DialogFooter className="pt-4 border-t">
           <Button type="button" variant="outline" onClick={onFormSubmit}>Annuler</Button>

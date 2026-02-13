@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -59,7 +60,7 @@ export default function GestionActivitesPage() {
   const [editingActivite, setEditingActivite] = useState<(Activite & { id: string }) | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [activiteToDelete, setActiviteToDelete] = useState<(Activite & { id: string }) | null>(null);
-  
+
   const activitesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/activites`)) : null, [firestore, schoolId]);
   const { data: activitesData, loading: activitesLoading } = useCollection(activitesQuery);
   const activites: (Activite & { id: string })[] = useMemo(() => activitesData?.map(d => ({ id: d.id, ...d.data() } as Activite & { id: string })) || [], [activitesData]);
@@ -83,31 +84,31 @@ export default function GestionActivitesPage() {
       : addDoc(collectionRef, values);
     try {
       await promise;
-      toast({ title: `Activité ${editingActivite ? 'modifiée' : 'ajoutée'}`});
+      toast({ title: `Activité ${editingActivite ? 'modifiée' : 'ajoutée'}` });
       setIsFormOpen(false);
     } catch (e) {
       console.error("Error saving activity:", e);
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'activité.' });
     }
   };
-  
+
   const handleOpenDeleteDialog = (activite: Activite & { id: string }) => {
     setActiviteToDelete(activite);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const handleDeleteActivite = async () => {
     if (!schoolId || !activiteToDelete) return;
     const docRef = doc(firestore, `ecoles/${schoolId}/activites`, activiteToDelete.id);
     try {
-        await deleteDoc(docRef);
-        toast({ title: 'Activité supprimée' });
+      await deleteDoc(docRef);
+      toast({ title: 'Activité supprimée' });
     } catch (error) {
-        console.error("Error deleting activity:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'activité.' });
+      console.error("Error deleting activity:", error);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'activité.' });
     } finally {
-        setIsDeleteDialogOpen(false);
-        setActiviteToDelete(null);
+      setIsDeleteDialogOpen(false);
+      setActiviteToDelete(null);
     }
   };
 
@@ -115,16 +116,16 @@ export default function GestionActivitesPage() {
 
   return (
     <>
-       <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold">Liste des activités</h2>
-          {canManageActivities && (
-            <Button onClick={() => { setEditingActivite(null); form.reset({ type: 'sportive', name: '', description: '', schedule: '', teacherInChargeId: '' }); setIsFormOpen(true); }}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Ajouter une activité
-            </Button>
-          )}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold">Liste des activités</h2>
+        {canManageActivities && (
+          <Button onClick={() => { setEditingActivite(null); form.reset({ type: 'sportive', name: '', description: '', schedule: '', teacherInChargeId: '' }); setIsFormOpen(true); }}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Ajouter une activité
+          </Button>
+        )}
       </div>
-       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           [...Array(3)].map((_, i) => <Skeleton key={i} className="h-56 w-full" />)
         ) : activites.length > 0 ? (
@@ -148,8 +149,8 @@ export default function GestionActivitesPage() {
               </CardHeader>
               <CardContent className="flex-1"><p className="text-sm text-muted-foreground">{activite.description}</p></CardContent>
               <CardFooter className="flex flex-col items-start text-sm">
-                 <p><span className="font-semibold">Responsable:</span> {teacherMap.get(activite.teacherInChargeId) || 'N/A'}</p>
-                 <p><span className="font-semibold">Horaire:</span> {activite.schedule || 'Non défini'}</p>
+                <p><span className="font-semibold">Responsable:</span> {teacherMap.get(activite.teacherInChargeId) || 'N/A'}</p>
+                <p><span className="font-semibold">Horaire:</span> {activite.schedule || 'Non défini'}</p>
               </CardFooter>
             </Card>
           ))
@@ -157,16 +158,16 @@ export default function GestionActivitesPage() {
           <div className="col-span-full"><Card className="flex items-center justify-center h-48"><p className="text-muted-foreground">Aucune activité créée.</p></Card></div>
         )}
       </div>
-      
-       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingActivite ? 'Modifier' : 'Ajouter'} une activité</DialogTitle></DialogHeader>
           <Form {...form}><form id="activite-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-              <FormField control={form.control} name="type" render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="sportive">Sportive</SelectItem><SelectItem value="culturelle">Culturelle</SelectItem><SelectItem value="club">Club</SelectItem></SelectContent></Select></FormItem>} />
-              <FormField control={form.control} name="teacherInChargeId" render={({ field }) => <FormItem><FormLabel>Responsable</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir..."/></SelectTrigger></FormControl><SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
-              <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
-              <FormField control={form.control} name="schedule" render={({ field }) => <FormItem><FormLabel>Horaire</FormLabel><FormControl><Input placeholder="Ex: Mardi 16h-17h" {...field} /></FormControl></FormItem>} />
+            <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+            <FormField control={form.control} name="type" render={({ field }) => <FormItem><FormLabel>Type</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="sportive">Sportive</SelectItem><SelectItem value="culturelle">Culturelle</SelectItem><SelectItem value="club">Club</SelectItem></SelectContent></Select></FormItem>} />
+            <FormField control={form.control} name="teacherInChargeId" render={({ field }) => <FormItem><FormLabel>Responsable</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger></FormControl><SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>} />
+            <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>} />
+            <FormField control={form.control} name="schedule" render={({ field }) => <FormItem><FormLabel>Horaire</FormLabel><FormControl><Input placeholder="Ex: Mardi 16h-17h" {...field} /></FormControl></FormItem>} />
           </form></Form>
           <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="activite-form" disabled={form.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
         </DialogContent>
@@ -174,20 +175,21 @@ export default function GestionActivitesPage() {
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Cette action est irréversible. L'activité <strong>"{activiteToDelete?.name}"</strong> sera définitivement supprimée.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteActivite} className="bg-destructive hover:bg-destructive/90">
-                    Supprimer
-                </AlertDialogAction>
-            </AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L&apos;activité <strong>&quot;{activiteToDelete?.name}&quot;</strong> sera définitivement supprimée.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteActivite} className="bg-destructive hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
+

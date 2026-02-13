@@ -43,7 +43,7 @@ async function getAccessToken(): Promise<string | null> {
                 'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY,
             },
         });
-        
+
         if (!response.ok) {
             const errorBody = await response.text();
             console.error("Erreur d'authentification MTN MoMo:", response.status, errorBody);
@@ -66,7 +66,7 @@ export async function requestMtnMomoPayment(data: MtnMomoPaymentData): Promise<{
     if (!accessToken) {
         return { success: false, message: "Impossible d'obtenir le token d'accès.", transactionId: '' };
     }
-    
+
     const transactionId = uuidv4();
 
     try {
@@ -76,7 +76,7 @@ export async function requestMtnMomoPayment(data: MtnMomoPaymentData): Promise<{
                 'Authorization': `Bearer ${accessToken}`,
                 'X-Reference-Id': transactionId,
                 'X-Target-Environment': MTN_TARGET_ENVIRONMENT,
-                'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY,
+                'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY!,
                 'Content-Type': 'application/json',
                 // Important: Add the callback URL for the IPN
                 'X-Callback-Url': `${process.env.NEXT_PUBLIC_BASE_URL}/api/webhooks/mtn`,
@@ -109,10 +109,10 @@ export async function getMtnMomoTransactionStatus(transactionId: string) {
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
                 'X-Target-Environment': MTN_TARGET_ENVIRONMENT,
-                'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY,
+                'Ocp-Apim-Subscription-Key': MTN_PRIMARY_KEY!,
             },
         });
-        
+
         if (!response.ok) {
             return null;
         }

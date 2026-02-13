@@ -11,7 +11,7 @@ export function useSubscription() {
     const updateSubscription = async (newSubscriptionData: Partial<Subscription>) => {
         const currentSubscription = schoolData?.subscription || {};
         const mergedSubscription = { ...currentSubscription, ...newSubscriptionData };
-        return updateSchoolData({ subscription: mergedSubscription });
+        return updateSchoolData({ subscription: mergedSubscription as Subscription });
     };
 
     return {

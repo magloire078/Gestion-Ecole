@@ -8,6 +8,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { student as Student, class_type as Class } from '@/lib/data-types';
 
+import { StatCard } from '@/components/ui/stat-card';
+import { Wallet, Banknote, TrendingUp } from 'lucide-react';
+
 export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
   const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')), [firestore, schoolId]);
@@ -15,12 +18,12 @@ export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
 
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-  
-  const { chartData } = useMemo(() => {
-    if (!studentsData || !classesData) return { chartData: [] };
+
+  const { chartData, globalStats } = useMemo(() => {
+    if (!studentsData || !classesData) return { chartData: [], globalStats: { totalFees: 0, totalDue: 0, totalCollected: 0, recoveryRate: 0 } };
 
     const students = studentsData.map(doc => doc.data() as Student);
-    const classes = classesData.map(doc => ({id: doc.id, ...doc.data()} as Class & {id: string}));
+    const classes = classesData.map(doc => ({ id: doc.id, ...doc.data() } as Class & { id: string }));
     const classMap = new Map(classes.map(c => [c.id, c.name]));
 
     const dataByClass = students.reduce((acc, student) => {
@@ -32,7 +35,15 @@ export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
       acc[className].totalDue += student.amountDue || 0;
       return acc;
     }, {} as Record<string, { totalFees: number, totalDue: number }>);
-    
+
+    const global = students.reduce((acc, student) => {
+      acc.totalFees += student.tuitionFee || 0;
+      acc.totalDue += student.amountDue || 0;
+      return acc;
+    }, { totalFees: 0, totalDue: 0 });
+
+    const totalCollected = global.totalFees - global.totalDue;
+
     const chart = Object.entries(dataByClass).map(([name, data]) => ({
       name,
       "Total à Payer": data.totalFees,
@@ -40,40 +51,89 @@ export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
       "Total Encaissé": data.totalFees - data.totalDue,
     }));
 
-    return { chartData: chart };
+    return {
+      chartData: chart,
+      globalStats: {
+        ...global,
+        totalCollected,
+        recoveryRate: global.totalFees > 0 ? (totalCollected / global.totalFees) * 100 : 0
+      }
+    };
 
   }, [studentsData, classesData]);
-  
+
   const loading = studentsLoading || classesLoading;
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(value).replace('XOF', 'CFA');
+  };
+
   if (loading) {
-    return <Skeleton className="h-72 w-full" />;
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <Skeleton className="h-72 w-full" />
+      </div>
+    );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Analyse de la Scolarité</CardTitle>
-        <CardDescription>Répartition des frais de scolarité et des soldes dus par classe.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical" barSize={20}>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="Total Encaissé"
+          value={formatCurrency(globalStats.totalCollected)}
+          icon={Banknote}
+          loading={loading}
+          colorClass="text-emerald-500"
+          description="Total des paiements reçus"
+        />
+        <StatCard
+          title="Solde Dû"
+          value={formatCurrency(globalStats.totalDue)}
+          icon={Wallet}
+          loading={loading}
+          colorClass="text-destructive"
+          description="Total des impayés"
+        />
+        <StatCard
+          title="Taux de Recouvrement"
+          value={`${globalStats.recoveryRate.toFixed(1)}%`}
+          icon={TrendingUp}
+          loading={loading}
+          colorClass="text-blue-500"
+          description={`${formatCurrency(globalStats.totalFees)} au total`}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Analyse de la Scolarité</CardTitle>
+          <CardDescription>Répartition des frais de scolarité et des soldes dus par classe.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} layout="vertical" barSize={20}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis type="number" tickFormatter={(value) => new Intl.NumberFormat('fr-FR', { notation: 'compact', compactDisplay: 'short' }).format(value)} />
-                <YAxis type="category" dataKey="name" width={100} tick={{fontSize: 12}} />
-                <Tooltip 
-                    formatter={(value: number) => `${value.toLocaleString('fr-FR')} CFA`} 
-                    contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
+                <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
+                <Tooltip
+                  formatter={(value: number) => `${value.toLocaleString('fr-FR')} CFA`}
+                  contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
                 />
                 <Legend />
                 <Bar dataKey="Total Encaissé" stackId="a" fill="hsl(var(--chart-2))" radius={[0, 4, 4, 0]} />
                 <Bar dataKey="Solde Dû" stackId="a" fill="hsl(var(--destructive))" radius={[4, 0, 0, 4]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

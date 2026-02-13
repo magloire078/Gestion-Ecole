@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import Link from "next/link";
@@ -13,16 +13,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { activitesSubLinks } from '@/lib/nav-links';
 
 export default function ActivitesLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
     const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
     const isLoading = subscriptionLoading || userLoading;
-    
+
     const layoutContent = (
         <div className="space-y-6">
             <div>
@@ -44,7 +44,7 @@ export default function ActivitesLayout({
             <div className="mt-6">{children}</div>
         </div>
     );
-    
+
     // Admins always have access
     if (user?.profile?.isAdmin) {
         return layoutContent;
@@ -59,9 +59,9 @@ export default function ActivitesLayout({
             </div>
         );
     }
-    
+
     const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('activites');
-    
+
     if (!hasAccess) {
         return (
             <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
@@ -74,7 +74,7 @@ export default function ActivitesLayout({
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            La gestion des activités parascolaires est un module complémentaire. Pour y accéder, veuillez l'activer depuis la page d'abonnement.
+                            La gestion des activités parascolaires est un module complémentaire. Pour y accéder, veuillez l&apos;activer depuis la page d&apos;abonnement.
                         </p>
                     </CardContent>
                     <CardFooter>
@@ -88,6 +88,7 @@ export default function ActivitesLayout({
             </div>
         );
     }
-    
+
     return layoutContent;
 }
+

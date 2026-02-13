@@ -12,16 +12,16 @@ import { useRouter } from 'next/navigation';
 import { fetchUserAppData } from '@/services/user-service';
 
 export interface AppUser {
-    uid: string;
-    isParent: boolean;
-    authUser: FirebaseUser | null;
-    profile?: UserProfile; 
-    parentStudentIds?: string[];
-    schoolId?: string | null; // L'école actuellement active
-    schools?: { [key: string]: string }; // Toutes les écoles de l'utilisateur
-    displayName?: string | null;
-    photoURL?: string | null;
-    email?: string | null;
+  uid: string;
+  isParent: boolean;
+  authUser: FirebaseUser | null;
+  profile: UserProfile | undefined;
+  parentStudentIds?: string[];
+  schoolId?: string | null; // L'école actuellement active
+  schools?: { [key: string]: string }; // Toutes les écoles de l'utilisateur
+  displayName?: string | null;
+  photoURL?: string | null;
+  email?: string | null;
 }
 
 export function useUser() {
@@ -37,17 +37,17 @@ export function useUser() {
   }, []);
 
   const reloadUser = useCallback(async () => {
-      const authInstance = getAuth();
-      const currentUser = authInstance.currentUser;
-      if (currentUser) {
-        // Force a refresh of the ID token, which will trigger onIdTokenChanged
-        await currentUser.getIdToken(true);
-      }
+    const authInstance = getAuth();
+    const currentUser = authInstance.currentUser;
+    if (currentUser) {
+      // Force a refresh of the ID token, which will trigger onIdTokenChanged
+      await currentUser.getIdToken(true);
+    }
   }, []);
 
   useEffect(() => {
     if (!isClient || !auth || !firestore) {
-        return;
+      return;
     }
 
     const unsubscribe = onIdTokenChanged(auth, async (firebaseUser) => {
@@ -57,7 +57,7 @@ export function useUser() {
         const appUser = await fetchUserAppData(firestore, firebaseUser);
         setUser(appUser);
       } else {
-         setUser(null);
+        setUser(null);
       }
       setLoading(false);
     });
@@ -66,21 +66,21 @@ export function useUser() {
   }, [isClient, firestore, auth, reloadUser, router]); // router added to deps
 
   const isDirector = user?.profile?.role === 'directeur';
-  
+
   const setActiveSchool = async (schoolId: string) => {
     if (!user || user.isParent || !user.schools || !user.schools[schoolId]) {
-        console.error("Action non autorisée ou école invalide.");
-        return;
+      console.error("Action non autorisée ou école invalide.");
+      return;
     }
-    
+
     setLoading(true);
     const userRootRef = doc(firestore, 'users', user.uid);
     try {
-        await updateDoc(userRootRef, { activeSchoolId: schoolId });
-        await reloadUser();
-        router.refresh(); 
-    } catch(e) {
-        console.error("Failed to set active school:", e);
+      await updateDoc(userRootRef, { activeSchoolId: schoolId });
+      await reloadUser();
+      router.refresh();
+    } catch (e) {
+      console.error("Failed to set active school:", e);
     }
   };
 

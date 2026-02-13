@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useUser } from '@/firebase';
-import { doc, addDoc, setDoc, serverTimestamp, collection } from 'firebase/firestore';
+import { useUser } from '@/firebase';
+import { ClassesService } from '@/services/classes-service';
 import type { staff as Staff, cycle as Cycle, niveau as Niveau, class_type as ClassType } from '@/lib/data-types';
 import { Loader2 } from 'lucide-react';
 
@@ -30,17 +30,16 @@ const classSchema = z.object({
 type ClassFormValues = z.infer<typeof classSchema>;
 
 interface ClassFormProps {
-    schoolId: string;
-    cycles: (Cycle & {id: string})[];
-    niveaux: (Niveau & {id: string})[];
-    teachers: (Staff & {id: string})[];
-    classe: (ClassType & { id: string }) | null;
-    onSave: () => void;
-    academicYear?: string;
+  schoolId: string;
+  cycles: (Cycle & { id: string })[];
+  niveaux: (Niveau & { id: string })[];
+  teachers: (Staff & { id: string })[];
+  classe: (ClassType & { id: string }) | null;
+  onSave: () => void;
+  academicYear?: string;
 }
 
 export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave, academicYear }: ClassFormProps) {
-  const firestore = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -80,7 +79,7 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave,
   const onSubmit = async (values: ClassFormValues) => {
     if (!schoolId || !user?.uid) return;
     setIsSubmitting(true);
-    
+
     const selectedNiveau = niveaux.find(n => n.id === values.niveauId);
     const selectedTeacher = teachers.find(t => t.id === values.mainTeacherId);
     const className = `${selectedNiveau?.name}-${values.section.toUpperCase()}`;
@@ -88,7 +87,6 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave,
 
     const newClassData = {
       ...values,
-      schoolId,
       name: className,
       code: classCode,
       grade: selectedNiveau?.name || 'N/A',
@@ -97,24 +95,22 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave,
       status: classe?.status || 'active',
       isFull: classe?.isFull || false,
       createdBy: classe?.createdBy || user.uid,
-      createdAt: classe?.createdAt || serverTimestamp(),
-      updatedAt: serverTimestamp(),
     };
 
-    const promise = classe
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/classes/${classe.id}`), newClassData, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/classes`), newClassData);
-
     try {
-      await promise;
+      if (classe) {
+        await ClassesService.updateClasse(schoolId, classe.id, newClassData);
+      } else {
+        await ClassesService.createClasse(schoolId, newClassData as unknown as Omit<ClassType, 'id' | 'schoolId' | 'createdAt' | 'updatedAt' | 'studentCount' | 'isFull'>);
+      }
       toast({ title: `Classe ${classe ? 'modifiée' : 'créée'}`, description: `La classe ${className} a été enregistrée.` });
       onSave();
     } catch (e) {
       console.error("Error saving class:", e);
       toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Impossible d'enregistrer la classe. Vérifiez vos permissions et réessayez."
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'enregistrer la classe. Vérifiez vos permissions et réessayez."
       });
     } finally {
       setIsSubmitting(false);
@@ -126,37 +122,37 @@ export function ClassForm({ schoolId, cycles, niveaux, teachers, classe, onSave,
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <div className="max-h-[60vh] overflow-y-auto p-1 pr-4 space-y-4">
           <FormField control={form.control} name="cycleId" render={({ field }) => (
-              <FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un cycle..." /></SelectTrigger></FormControl><SelectContent>{cycles.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            <FormItem><FormLabel>Cycle *</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un cycle..." /></SelectTrigger></FormControl><SelectContent>{cycles.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
           )} />
           <FormField control={form.control} name="niveauId" render={({ field }) => (
-              <FormItem><FormLabel>Niveau *</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!watchedCycleId}><FormControl><SelectTrigger><SelectValue placeholder={watchedCycleId ? "Choisir un niveau..." : "Sélectionnez d'abord un cycle"} /></SelectTrigger></FormControl><SelectContent>{filteredNiveaux.map(n => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+            <FormItem><FormLabel>Niveau *</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!watchedCycleId}><FormControl><SelectTrigger><SelectValue placeholder={watchedCycleId ? "Choisir un niveau..." : "Sélectionnez d'abord un cycle"} /></SelectTrigger></FormControl><SelectContent>{filteredNiveaux.map(n => <SelectItem key={n.id} value={n.id}>{n.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
           )} />
           <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="section" render={({ field }) => (
-                  <FormItem>
-                      <FormLabel>Section *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Ex: A" /></SelectTrigger></FormControl>
-                          <SelectContent>{['A', 'B', 'C', 'D', 'E', 'F'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <FormMessage />
-                  </FormItem>
-              )} />
-              <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année Scolaire *</FormLabel><FormControl><Input {...field} readOnly className="bg-muted"/></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="section" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Section *</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Ex: A" /></SelectTrigger></FormControl>
+                  <SelectContent>{['A', 'B', 'C', 'D', 'E', 'F'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="academicYear" render={({ field }) => (<FormItem><FormLabel>Année Scolaire *</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
           </div>
           <FormField control={form.control} name="mainTeacherId" render={({ field }) => (
-              <FormItem><FormLabel>Enseignant Principal</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>)}</SelectContent></Select></FormItem>
+            <FormItem><FormLabel>Enseignant Principal</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="(Optionnel)" /></SelectTrigger></FormControl><SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.firstName} {t.lastName}</SelectItem>)}</SelectContent></Select></FormItem>
           )} />
           <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="maxStudents" render={({ field }) => (<FormItem><FormLabel>Capacité Max. *</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="classroom" render={({ field }) => (<FormItem><FormLabel>Salle de classe</FormLabel><FormControl><Input placeholder="Ex: Salle 101" {...field} /></FormControl></FormItem>)} />
+            <FormField control={form.control} name="maxStudents" render={({ field }) => (<FormItem><FormLabel>Capacité Max. *</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="classroom" render={({ field }) => (<FormItem><FormLabel>Salle de classe</FormLabel><FormControl><Input placeholder="Ex: Salle 101" {...field} /></FormControl></FormItem>)} />
           </div>
         </div>
         <DialogFooter className="pt-4 border-t">
           <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>
           <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSubmitting ? 'Enregistrement...' : 'Enregistrer la classe'}
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? 'Enregistrement...' : 'Enregistrer la classe'}
           </Button>
         </DialogFooter>
       </form>

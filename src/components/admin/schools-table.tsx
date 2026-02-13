@@ -33,132 +33,122 @@ import {
 } from "@/components/ui/dialog";
 import { SchoolEditForm } from './school-edit-form';
 
-interface School {
-    id: string;
-    name: string;
-    createdAt: any;
-    status?: 'active' | 'suspended' | 'deleted';
-    subscription: {
-        plan: 'Essentiel' | 'Pro' | 'Premium';
-        status: 'active' | 'trialing' | 'past_due' | 'canceled';
-    };
-    directorFirstName: string;
-    directorLastName: string;
-    directorEmail: string;
-}
+import type { school as School } from '@/lib/data-types';
+
+type SchoolWithId = School & { id: string };
 
 export function SchoolsTable() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const { user } = useUser();
 
-  const [schoolToDelete, setSchoolToDelete] = useState<School | null>(null);
+  const [schoolToDelete, setSchoolWithIdToDelete] = useState<SchoolWithId | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [schoolToRestore, setSchoolToRestore] = useState<School | null>(null);
+  const [schoolToRestore, setSchoolWithIdToRestore] = useState<SchoolWithId | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
-  
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [schoolToEdit, setSchoolToEdit] = useState<School | null>(null);
 
-  const schoolsQuery = useMemo(() => 
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [schoolToEdit, setSchoolWithIdToEdit] = useState<SchoolWithId | null>(null);
+
+  const schoolsQuery = useMemo(() =>
     user?.profile?.isAdmin
       ? query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc'))
-      : null, 
+      : null,
     [firestore, user?.profile?.isAdmin]
   );
   const { data: schoolsData, loading: schoolsLoading } = useCollection(schoolsQuery);
 
-  const schools: School[] = useMemo(() => schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as School)) || [], [schoolsData]);
+  const schools: SchoolWithId[] = useMemo(() => schoolsData?.map(doc => ({ id: doc.id, ...doc.data() } as SchoolWithId)) || [], [schoolsData]);
 
-  const handleOpenEditDialog = (school: School) => {
-    setSchoolToEdit(school);
+  const handleOpenEditDialog = (school: SchoolWithId) => {
+    setSchoolWithIdToEdit(school);
     setIsEditDialogOpen(true);
   };
-  
-  const handleOpenDeleteDialog = (school: School) => {
-    setSchoolToDelete(school);
+
+  const handleOpenDeleteDialog = (school: SchoolWithId) => {
+    setSchoolWithIdToDelete(school);
   };
-  
+
   const handleDeleteSchool = () => {
     if (!schoolToDelete || !user?.uid) return;
-    
+
     setIsDeleting(true);
     deleteSchool(firestore, schoolToDelete.id, user.uid)
       .then(() => {
         toast({
-            title: "École mise à la corbeille",
-            description: `L'école "${schoolToDelete.name}" a été marquée comme supprimée.`,
+          title: "École mise à la corbeille",
+          description: `L'école "${schoolToDelete.name}" a été marquée comme supprimée.`,
         });
       })
       .catch((error) => {
         console.error("Component caught error during school deletion:", error);
         toast({
-            variant: "destructive",
-            title: "Erreur de suppression",
-            description: "Impossible de mettre cette école à la corbeille."
+          variant: "destructive",
+          title: "Erreur de suppression",
+          description: "Impossible de mettre cette école à la corbeille."
         });
       })
       .finally(() => {
         setIsDeleting(false);
-        setSchoolToDelete(null);
+        setSchoolWithIdToDelete(null);
       });
   };
 
-  const handleRestoreSchool = (school: School) => {
+  const handleRestoreSchool = (school: SchoolWithId) => {
     if (!user?.uid) return;
-    setSchoolToRestore(school);
+    setSchoolWithIdToRestore(school);
     setIsRestoring(true);
     restoreSchool(firestore, school.id, user.uid)
-        .then(() => {
-             toast({
-                title: "École restaurée",
-                description: `L'école "${school.name}" est à nouveau active.`,
-            });
-        })
-        .catch((error) => {
-            toast({
-                variant: "destructive",
-                title: "Erreur de restauration",
-                description: "Impossible de restaurer cette école."
-            });
-        })
-        .finally(() => {
-            setIsRestoring(false);
-            setSchoolToRestore(null);
+      .then(() => {
+        toast({
+          title: "École restaurée",
+          description: `L'école "${school.name}" est à nouveau active.`,
         });
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Erreur de restauration",
+          description: "Impossible de restaurer cette école."
+        });
+      })
+      .finally(() => {
+        setIsRestoring(false);
+        setSchoolWithIdToRestore(null);
+      });
   }
-  
+
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'N/A';
     // Firestore Timestamps have a toDate() method
     const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
     // Check if the date is valid
     if (isNaN(date.getTime())) {
-        return 'Date invalide';
+      return 'Date invalide';
     }
     return format(date, 'dd/MM/yyyy', { locale: fr });
   };
 
 
-  const getPlanBadgeVariant = (plan: string) => {
+  const getPlanBadgeVariant = (plan?: string) => {
     switch (plan) {
-        case 'Pro': return 'default';
-        case 'Premium': return 'default';
-        case 'Essentiel': return 'secondary';
-        default: return 'outline';
+      case 'Pro': return 'default';
+      case 'Premium': return 'default';
+      case 'Essentiel': return 'secondary';
+      default: return 'outline';
     }
   };
 
   const getStatusBadgeVariant = (status?: string) => {
-      switch (status) {
-          case 'active':
-              return 'secondary';
-          case 'suspended':
-          case 'deleted':
-              return 'destructive';
-          default:
-              return 'outline';
-      }
+    switch (status) {
+      case 'active':
+        return 'secondary';
+      case 'suspended':
+      case 'deleted':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
   };
 
 
@@ -180,7 +170,7 @@ export function SchoolsTable() {
             {schoolsLoading ? (
               [...Array(5)].map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell colSpan={6}><Skeleton className="h-5 w-full"/></TableCell>
+                  <TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell>
                 </TableRow>
               ))
             ) : schools.length > 0 ? schools.map(school => (
@@ -206,10 +196,10 @@ export function SchoolsTable() {
                 <TableCell className="text-right">
                   <div className="flex gap-2 justify-end">
                     {school.status === 'deleted' ? (
-                       <Button variant="ghost" size="sm" onClick={() => handleRestoreSchool(school)} disabled={isRestoring && schoolToRestore?.id === school.id}>
-                          <RotateCcw className="h-4 w-4 mr-2" /> 
-                          {isRestoring && schoolToRestore?.id === school.id ? 'Restauration...' : 'Restaurer'}
-                        </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleRestoreSchool(school)} disabled={isRestoring && schoolToRestore?.id === school.id}>
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        {isRestoring && schoolToRestore?.id === school.id ? 'Restauration...' : 'Restaurer'}
+                      </Button>
                     ) : (
                       <>
                         <Button variant="ghost" size="sm">
@@ -228,45 +218,45 @@ export function SchoolsTable() {
               </TableRow>
             )) : (
               <TableRow>
-                  <TableCell colSpan={6} className="text-center h-24">Aucune école trouvée.</TableCell>
+                <TableCell colSpan={6} className="text-center h-24">Aucune école trouvée.</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
-       <AlertDialog open={!!schoolToDelete} onOpenChange={(open) => !open && setSchoolToDelete(null)}>
+      <AlertDialog open={!!schoolToDelete} onOpenChange={(open) => !open && setSchoolWithIdToDelete(null)}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Mettre à la corbeille ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    L'école <strong>"{schoolToDelete?.name}"</strong> sera marquée comme supprimée et deviendra inaccessible pour ses utilisateurs. Vous pourrez la restaurer pendant 30 jours.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteSchool} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
-                    {isDeleting ? "Mise à la corbeille..." : "Oui, mettre à la corbeille"}
-                </AlertDialogAction>
-            </AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mettre à la corbeille ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              L'école <strong>"{schoolToDelete?.name}"</strong> sera marquée comme supprimée et deviendra inaccessible pour ses utilisateurs. Vous pourrez la restaurer pendant 30 jours.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSchool} className="bg-destructive hover:bg-destructive/90" disabled={isDeleting}>
+              {isDeleting ? "Mise à la corbeille..." : "Oui, mettre à la corbeille"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
-    </AlertDialog>
-    
-    <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+      </AlertDialog>
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Modifier l'école</DialogTitle>
-                <DialogDescription>
-                    Modification des informations pour {schoolToEdit?.name}.
-                </DialogDescription>
-            </DialogHeader>
-            {schoolToEdit && (
-                <SchoolEditForm 
-                    school={schoolToEdit} 
-                    onSave={() => setIsEditDialogOpen(false)} 
-                />
-            )}
+          <DialogHeader>
+            <DialogTitle>Modifier l'école</DialogTitle>
+            <DialogDescription>
+              Modification des informations pour {schoolToEdit?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          {schoolToEdit && (
+            <SchoolEditForm
+              school={schoolToEdit}
+              onSave={() => setIsEditDialogOpen(false)}
+            />
+          )}
         </DialogContent>
-    </Dialog>
+      </Dialog>
     </>
   );
 }

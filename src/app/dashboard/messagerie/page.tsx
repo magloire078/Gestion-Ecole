@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,17 +25,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 const messageSchema = z.object({
-  title: z.string().min(3, "Le sujet est requis."),
-  content: z.string().min(10, "Le message est trop court."),
-  recipients: z.object({
-      all: z.boolean().default(false),
-      teachers: z.boolean().default(false),
-      staff: z.boolean().default(false),
-      classes: z.array(z.string()).default([]),
-  }).refine(data => data.all || data.teachers || data.staff || data.classes.length > 0, {
-      message: "Veuillez sélectionner au moins un destinataire.",
-      path: ["all"],
-  })
+    title: z.string().min(3, "Le sujet est requis."),
+    content: z.string().min(10, "Le message est trop court."),
+    recipients: z.object({
+        all: z.boolean().default(false),
+        teachers: z.boolean().default(false),
+        staff: z.boolean().default(false),
+        classes: z.array(z.string()).default([]),
+    }).refine(data => data.all || data.teachers || data.staff || data.classes.length > 0, {
+        message: "Veuillez sélectionner au moins un destinataire.",
+        path: ["all"],
+    })
 });
 
 type MessageFormValues = z.infer<typeof messageSchema>;
@@ -52,14 +52,14 @@ export default function MessagingPage() {
         defaultValues: { title: '', content: '', recipients: { all: true, teachers: false, staff: false, classes: [] } },
     });
 
-    const messagesQuery = useMemo(() => 
-      schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(10)) : null,
-    [firestore, schoolId]);
+    const messagesQuery = useMemo(() =>
+        schoolId ? query(collection(firestore, `ecoles/${schoolId}/messagerie`), orderBy('createdAt', 'desc'), limit(10)) : null,
+        [firestore, schoolId]);
     const { data: messagesData, loading: messagesLoading } = useCollection(messagesQuery);
-    
+
     const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
-    const classes = useMemo(() => classesData?.map(d => ({id: d.id, ...d.data()} as Class & {id: string})) || [], [classesData]);
+    const classes = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class & { id: string })) || [], [classesData]);
 
     const messages = useMemo(() => messagesData?.map(d => ({ id: d.id, ...d.data() } as Message & { id: string })) || [], [messagesData]);
     const isLoading = schoolLoading || messagesLoading || classesLoading;
@@ -75,7 +75,7 @@ export default function MessagingPage() {
             createdAt: serverTimestamp(),
             readBy: [],
         };
-        
+
         try {
             await addDoc(collection(firestore, `ecoles/${schoolId}/messagerie`), messageData);
             toast({ title: 'Message envoyé', description: 'Votre message a été envoyé avec succès.' });
@@ -113,39 +113,39 @@ export default function MessagingPage() {
                                     <FormField control={form.control} name="content" render={({ field }) => (<FormItem><FormLabel>Message</FormLabel><FormControl><Textarea {...field} rows={6} /></FormControl><FormMessage /></FormItem>)} />
                                     <FormField control={form.control} name="recipients" render={({ field }) => (
                                         <FormItem>
-                                          <FormLabel>Destinataires</FormLabel>
-                                          <div className="p-3 border rounded-md space-y-3">
-                                            <div className="flex items-center space-x-2"><Checkbox id="all" checked={field.value.all} onCheckedChange={checked => form.setValue('recipients.all', !!checked)}/><Label htmlFor="all">Toute l'école</Label></div>
-                                            <div className="flex items-center space-x-2"><Checkbox id="teachers" checked={field.value.teachers} onCheckedChange={checked => form.setValue('recipients.teachers', !!checked)} /><Label htmlFor="teachers">Enseignants</Label></div>
-                                            <div className="flex items-center space-x-2"><Checkbox id="staff" checked={field.value.staff} onCheckedChange={checked => form.setValue('recipients.staff', !!checked)} /><Label htmlFor="staff">Personnel non-enseignant</Label></div>
-                                            <div>
-                                                <Label>Classes spécifiques</Label>
-                                                <ScrollArea className="h-32 mt-2 border rounded-md p-2">
-                                                    {classes.map(c => (
-                                                         <FormField key={c.id} control={form.control} name="recipients.classes" render={({ field }) => (
-                                                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 my-2">
-                                                              <FormControl>
-                                                                <Checkbox
-                                                                  checked={field.value?.includes(c.id!)}
-                                                                  onCheckedChange={(checked) => {
-                                                                    return checked
-                                                                      ? field.onChange([...field.value, c.id!])
-                                                                      : field.onChange(field.value?.filter((value) => value !== c.id!))
-                                                                  }}
-                                                                />
-                                                              </FormControl>
-                                                              <FormLabel className="font-normal">{c.name}</FormLabel>
-                                                            </FormItem>
-                                                         )} />
-                                                    ))}
-                                                </ScrollArea>
+                                            <FormLabel>Destinataires</FormLabel>
+                                            <div className="p-3 border rounded-md space-y-3">
+                                                <div className="flex items-center space-x-2"><Checkbox id="all" checked={field.value.all} onCheckedChange={checked => form.setValue('recipients.all', !!checked)} /><Label htmlFor="all">Toute l&apos;école</Label></div>
+                                                <div className="flex items-center space-x-2"><Checkbox id="teachers" checked={field.value.teachers} onCheckedChange={checked => form.setValue('recipients.teachers', !!checked)} /><Label htmlFor="teachers">Enseignants</Label></div>
+                                                <div className="flex items-center space-x-2"><Checkbox id="staff" checked={field.value.staff} onCheckedChange={checked => form.setValue('recipients.staff', !!checked)} /><Label htmlFor="staff">Personnel non-enseignant</Label></div>
+                                                <div>
+                                                    <Label>Classes spécifiques</Label>
+                                                    <ScrollArea className="h-32 mt-2 border rounded-md p-2">
+                                                        {classes.map(c => (
+                                                            <FormField key={c.id} control={form.control} name="recipients.classes" render={({ field }) => (
+                                                                <FormItem className="flex flex-row items-start space-x-3 space-y-0 my-2">
+                                                                    <FormControl>
+                                                                        <Checkbox
+                                                                            checked={field.value?.includes(c.id!)}
+                                                                            onCheckedChange={(checked) => {
+                                                                                return checked
+                                                                                    ? field.onChange([...field.value, c.id!])
+                                                                                    : field.onChange(field.value?.filter((value) => value !== c.id!))
+                                                                            }}
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormLabel className="font-normal">{c.name}</FormLabel>
+                                                                </FormItem>
+                                                            )} />
+                                                        ))}
+                                                    </ScrollArea>
+                                                </div>
                                             </div>
-                                          </div>
-                                          <FormMessage />
+                                            <FormMessage />
                                         </FormItem>
                                     )} />
                                     <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                                        {form.formState.isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                                        {form.formState.isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
                                         Envoyer le message
                                     </Button>
                                 </form>
@@ -162,7 +162,7 @@ export default function MessagingPage() {
                     <CardContent>
                         <div className="space-y-4">
                             {isLoading ? (
-                                [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full"/>)
+                                [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
                             ) : messages.length > 0 ? (
                                 messages.map(message => (
                                     <div key={message.id} className="p-4 border rounded-lg">
@@ -175,7 +175,7 @@ export default function MessagingPage() {
                                     </div>
                                 ))
                             ) : (
-                                <div className="text-center text-muted-foreground py-8">Aucun message n'a encore été envoyé.</div>
+                                <div className="text-center text-muted-foreground py-8">Aucun message n&apos;a encore été envoyé.</div>
                             )}
                         </div>
                     </CardContent>
@@ -184,3 +184,4 @@ export default function MessagingPage() {
         </div>
     );
 }
+

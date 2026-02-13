@@ -7,16 +7,12 @@ import { fr } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import type { discipline_incident as DisciplineIncident } from '@/lib/data-types';
 
-interface IncidentWithDetails extends DisciplineIncident {
-    id: string;
-    studentName?: string;
-    className?: string;
+interface DisciplineIncidentsListProps {
+    incidents: (Omit<DisciplineIncident, 'classId'> & { id: string; classId?: string; className?: string })[];
+    isLoading: boolean;
 }
 
-interface DisciplineIncidentsListProps {
-  incidents: IncidentWithDetails[];
-  isLoading: boolean;
-}
+
 
 export function DisciplineIncidentsList({ incidents, isLoading }: DisciplineIncidentsListProps) {
     const getTypeBadgeVariant = (type: string) => {

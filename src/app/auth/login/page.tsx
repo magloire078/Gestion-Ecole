@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -62,29 +62,29 @@ export default function ModernLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
-  
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email || !password) {
       setError('Veuillez remplir tous les champs.');
       return;
     }
-    
+
     setIsProcessing(true);
-    
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      toast({ 
-        title: "🎉 Connexion réussie", 
-        description: "Redirection vers votre espace personnel..." 
+      toast({
+        title: "🎉 Connexion réussie",
+        description: "Redirection vers votre espace personnel..."
       });
       router.push('/dashboard');
     } catch (error) {
       const authError = error as AuthError;
       console.error('Erreur de connexion:', authError.code);
-      
+
       let errorMessage = 'Email ou mot de passe incorrect.';
       if (authError.code === 'auth/user-not-found') {
         errorMessage = 'Aucun compte trouvé avec cet email.';
@@ -104,29 +104,29 @@ export default function ModernLoginPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleProcessing(true);
     setError('');
-    
+
     try {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
         prompt: 'select_account'
       });
-      
+
       await signInWithPopup(auth, provider);
-      toast({ 
-        title: "✅ Connexion Google réussie", 
-        description: "Redirection vers votre espace..." 
+      toast({
+        title: "✅ Connexion Google réussie",
+        description: "Redirection vers votre espace..."
       });
       router.push('/dashboard');
     } catch (error) {
       const authError = error as AuthError;
       console.error('Erreur Google:', authError.code);
-      
+
       if (authError.code !== 'auth/popup-closed-by-user') {
         let errorMessage = 'Erreur de connexion avec Google.';
         if (authError.code === 'auth/popup-blocked') {
           errorMessage = 'La fenêtre popup a été bloquée. Autorisez les popups pour ce site.';
         } else if (authError.code === 'auth/unauthorized-domain') {
-          errorMessage = 'Ce domaine n\'est pas autorisé pour la connexion Google.';
+          errorMessage = 'Ce domaine n&apos;est pas autorisé pour la connexion Google.';
         }
         setError(errorMessage);
       }
@@ -136,223 +136,179 @@ export default function ModernLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row">
-      {/* Côté gauche - Illustration */}
-      <div className="lg:w-1/2 bg-primary p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary/10 [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]" />
-        
-        <div className="relative z-10">
-          <Logo disableLink />
-          
-          <div className="mt-12 lg:mt-20 max-w-lg">
-             <div className="flex items-center gap-2 mb-4">
-              <Sparkles className="h-5 w-5 text-white/80" />
-              <span className="text-sm font-medium text-white/80">SOLUTION DE GESTION SCOLAIRE</span>
-            </div>
+    <main className="min-h-screen w-full flex items-center justify-center bg-premium mesh-gradient p-4 md:p-8 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-primary/20 blur-[120px] mix-blend-screen animate-pulse" />
+        <div className="absolute -bottom-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-cyan-400/20 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
 
-            <h1 className="text-4xl lg:text-5xl font-bold text-white mb-6">
-              Heureux de vous revoir.
+      <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+
+        {/* Left Side - Hero/Brand (Hidden on mobile, visible on large screens) */}
+        <motion.div
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="hidden lg:flex flex-col justify-center p-12 text-foreground space-y-8"
+        >
+          <div>
+            <Logo disableLink />
+          </div>
+
+          <div className="space-y-4">
+            <h1 className="text-5xl font-extrabold tracking-tight leading-tight">
+              La gestion scolaire <br />
+              <span className="text-gradient">réinventée.</span>
             </h1>
-            
-            <p className="text-lg text-white/80 mb-8">
-              Connectez-vous pour retrouver votre tableau de bord et continuer à gérer votre établissement avec GèreEcole.
-            </p>
-          </div>
-        </div>
-        
-        <div className="relative z-10 mt-8 lg:mt-0">
-          <p className="text-sm text-white/70">© {new Date().getFullYear()} GèreEcole</p>
-        </div>
-        
-        {/* Effets décoratifs */}
-        <div className="absolute top-1/4 -left-32 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute bottom-1/4 -right-32 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-      </div>
-
-      {/* Côté droit - Formulaire */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 lg:p-12 bg-background">
-        <div className="w-full max-w-md space-y-6">
-          {/* En-tête */}
-          <div className="text-center space-y-2">
-            <h2 className="text-3xl font-bold tracking-tight">
-              Bienvenue
-            </h2>
-            <p className="text-muted-foreground">
-              Connectez-vous pour accéder à votre espace de gestion
+            <p className="text-lg text-muted-foreground max-w-md">
+              Une plateforme complète, intuitive et performante pour piloter votre établissement avec excellence.
             </p>
           </div>
 
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-              >
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Formulaire */}
-          <form onSubmit={handleSignIn} className="space-y-6">
-            <div className="space-y-5">
-              {/* Email */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Adresse email</Label>
-                <div className={`relative transition-all duration-200 ${activeField === 'email' ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="votre@ecole.fr"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setActiveField('email')}
-                    onBlur={() => setActiveField(null)}
-                    disabled={isProcessing || isGoogleProcessing}
-                    className="h-12 pl-10 text-base transition-all"
-                    autoComplete="email"
-                  />
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                </div>
+          <div className="grid grid-cols-2 gap-6 pt-8">
+            <div className="glass-card p-4 rounded-xl border-white/20 bg-white/5">
+              <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 mb-3">
+                <Sparkles className="h-5 w-5" />
               </div>
-
-              {/* Mot de passe */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <Button
-                    variant="link"
-                    className="p-0 h-auto text-xs font-normal"
-                    asChild
-                    type="button"
-                  >
-                    <Link href="/auth/forgot-password">
-                      Mot de passe oublié ?
-                    </Link>
-                  </Button>
-                </div>
-                <div className={`relative transition-all duration-200 ${activeField === 'password' ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : ''}`}>
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Votre mot de passe"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onFocus={() => setActiveField('password')}
-                    onBlur={() => setActiveField(null)}
-                    disabled={isProcessing || isGoogleProcessing}
-                    className="h-12 pl-10 pr-10 text-base"
-                    autoComplete="current-password"
-                  />
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={isProcessing || isGoogleProcessing}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4 text-muted-foreground" />
-                    ) : (
-                      <Eye className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </Button>
-                </div>
+              <h3 className="font-bold text-sm">Interface Premium</h3>
+              <p className="text-xs text-muted-foreground mt-1">Design moderne et fluide pour une expérience utilisateur inégalée.</p>
+            </div>
+            <div className="glass-card p-4 rounded-xl border-white/20 bg-white/5">
+              <div className="h-10 w-10 rounded-lg bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center text-cyan-600 mb-3">
+                <Lock className="h-5 w-5" />
               </div>
+              <h3 className="font-bold text-sm">Sécurité Avancée</h3>
+              <p className="text-xs text-muted-foreground mt-1">Vos données protégées par les meilleurs standards de l&apos;industrie.</p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Right Side - Login Form */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="flex items-center justify-center"
+        >
+          <div className="w-full max-w-md bg-card/80 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-8 md:p-10 relative overflow-hidden group">
+            <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+
+            <div className="text-center mb-8">
+              <div className="lg:hidden flex justify-center mb-6">
+                <Logo disableLink />
+              </div>
+              <h2 className="text-2xl font-bold tracking-tight">De retour ?</h2>
+              <p className="text-sm text-muted-foreground mt-2">Connectez-vous à votre espace administration.</p>
             </div>
 
-            {/* Bouton de connexion */}
-            <Button
-              type="submit"
-              className="w-full h-12 text-base font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
-              disabled={isProcessing || isGoogleProcessing || !email || !password}
-              size="lg"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Connexion en cours...
-                </>
-              ) : (
-                <>
-                  <span>Se connecter</span>
-                  <ChevronRight className="ml-2 h-5 w-5" />
-                </>
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                >
+                  <Alert variant="destructive" className="border-red-500/50 bg-red-500/10 text-red-600">
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                </motion.div>
               )}
-            </Button>
-          </form>
+            </AnimatePresence>
 
-          {/* Séparateur */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-3 text-muted-foreground">
-                Ou continuer avec
-              </span>
-            </div>
-          </div>
+            <form onSubmit={handleSignIn} className="space-y-5">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="font-medium">Adresse email</Label>
+                  <div className="relative group/input">
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="directeur@ecole.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isProcessing || isGoogleProcessing}
+                      className="pl-10 h-12 bg-background/50 border-input/50 focus:bg-background focus:ring-primary/20 transition-all rounded-xl"
+                    />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
+                  </div>
+                </div>
 
-          {/* Google Sign In */}
-          <Button
-            variant="outline"
-            className="w-full h-12 text-base font-medium rounded-xl border-2 hover:border-primary/50 transition-all duration-300"
-            onClick={handleGoogleSignIn}
-            disabled={isProcessing || isGoogleProcessing}
-            size="lg"
-          >
-            {isGoogleProcessing ? (
-              <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-            ) : (
-              <>
-                <GoogleIcon className="mr-3 h-5 w-5" />
-                <span>Google</span>
-              </>
-            )}
-          </Button>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Mot de passe</Label>
+                    <Link href="/auth/forgot-password" className="text-xs font-medium text-primary hover:text-primary/80 transition-colors">
+                      Oublié ?
+                    </Link>
+                  </div>
+                  <div className="relative group/input">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isProcessing || isGoogleProcessing}
+                      className="pl-10 pr-10 h-12 bg-background/50 border-input/50 focus:bg-background focus:ring-primary/20 transition-all rounded-xl"
+                    />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
 
-          {/* Inscription */}
-          <div className="text-center space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground">
-              Nouveau sur GèreEcole ?{' '}
               <Button
-                variant="link"
-                className="p-0 h-auto text-sm font-semibold text-primary hover:text-primary/80"
-                asChild
+                type="submit"
+                className="w-full h-12 rounded-xl text-base font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
+                disabled={isProcessing || isGoogleProcessing}
               >
-                <Link href="/auth/register">
-                  Créer un compte
-                </Link>
+                {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Se connecter"}
               </Button>
-            </p>
-            
-             <div className="text-xs text-muted-foreground space-y-1">
-              <p>
-                En vous connectant, vous acceptez nos{' '}
-                <Button variant="link" className="p-0 h-auto text-xs underline underline-offset-2" asChild>
-                  <Link href="/terms">
-                    Conditions
-                  </Link>
-                </Button>{' '}
-                et notre{' '}
-                <Button variant="link" className="p-0 h-auto text-xs underline underline-offset-2" asChild>
-                  <Link href="/privacy">
-                    Confidentialité
-                  </Link>
-                </Button>
-              </p>
+            </form>
+
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border/50" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background/0 backdrop-blur-sm px-2 text-muted-foreground font-medium">
+                  Ou continuer avec
+                </span>
+              </div>
             </div>
+
+            <Button
+              variant="outline"
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isGoogleProcessing}
+              className="w-full h-12 rounded-xl text-base font-medium border-border/50 bg-background/50 hover:bg-background hover:text-foreground hover:border-primary/30 transition-all"
+            >
+              {isGoogleProcessing ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <GoogleIcon className="mr-2 h-5 w-5" />
+              )}
+              Google
+            </Button>
+
+            <p className="text-center text-sm text-muted-foreground mt-8">
+              Pas encore de compte ?{' '}
+              <Link href="/auth/register" className="font-semibold text-primary hover:text-primary/80 transition-colors">
+                S&apos;inscrire gratuitement
+              </Link>
+            </p>
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </main>
   );
 }
 
-    
+

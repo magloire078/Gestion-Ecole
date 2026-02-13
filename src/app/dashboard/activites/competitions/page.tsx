@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -91,7 +91,7 @@ export default function CompetitionsPage() {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer la compétition.' });
     }
   };
-  
+
   const handleOpenDeleteDialog = (competition: Competition & { id: string }) => {
     setCompetitionToDelete(competition);
     setIsDeleteDialogOpen(true);
@@ -104,8 +104,8 @@ export default function CompetitionsPage() {
       await deleteDoc(docRef);
       toast({ title: 'Événement supprimé' });
     } catch (e) {
-       console.error("Error deleting competition:", e);
-       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la compétition.' });
+      console.error("Error deleting competition:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la compétition.' });
     } finally {
       setIsDeleteDialogOpen(false);
     }
@@ -116,52 +116,52 @@ export default function CompetitionsPage() {
   return (
     <>
       <Card>
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <div><CardTitle>Compétitions et Événements</CardTitle><CardDescription>Gérez les événements sportifs et culturels.</CardDescription></div>
-              {canManageActivities && (<Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Nouvel Événement</Button>)}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Date</TableHead><TableHead>Résultats</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {isLoading ? ([...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>))
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div><CardTitle>Compétitions et Événements</CardTitle><CardDescription>Gérez les événements sportifs et culturels.</CardDescription></div>
+            {canManageActivities && (<Button onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Nouvel Événement</Button>)}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader><TableRow><TableHead>Nom</TableHead><TableHead>Date</TableHead><TableHead>Résultats</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+            <TableBody>
+              {isLoading ? ([...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell></TableRow>))
                 : competitions.length > 0 ? (competitions.map(comp => (
-                    <TableRow key={comp.id}>
-                      <TableCell className="font-medium">{comp.name}</TableCell>
-                      <TableCell>{format(new Date(comp.date), 'd MMMM yyyy', { locale: fr })}</TableCell>
-                      <TableCell className="text-muted-foreground">{comp.results || 'N/A'}</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                              <Link href={`/dashboard/activites/competitions/${comp.id}`}>
-                                <Users className="mr-2 h-4 w-4"/>Gérer participants
-                              </Link>
-                            </DropdownMenuItem>
-                            {canManageActivities && <DropdownMenuItem onClick={() => handleOpenForm(comp)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>}
-                            {canManageActivities && <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(comp)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  )))
-                : (<TableRow><TableCell colSpan={4} className="h-24 text-center">Aucune compétition.</TableCell></TableRow>)}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      
+                  <TableRow key={comp.id}>
+                    <TableCell className="font-medium">{comp.name}</TableCell>
+                    <TableCell>{format(new Date(comp.date), 'd MMMM yyyy', { locale: fr })}</TableCell>
+                    <TableCell className="text-muted-foreground">{comp.results || 'N/A'}</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/activites/competitions/${comp.id}`}>
+                              <Users className="mr-2 h-4 w-4" />Gérer participants
+                            </Link>
+                          </DropdownMenuItem>
+                          {canManageActivities && <DropdownMenuItem onClick={() => handleOpenForm(comp)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>}
+                          {canManageActivities && <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(comp)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                )))
+                  : (<TableRow><TableCell colSpan={4} className="h-24 text-center">Aucune compétition.</TableCell></TableRow>)}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editingCompetition ? 'Modifier' : 'Ajouter'} un événement</DialogTitle></DialogHeader>
           <Form {...form}><form id="competition-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-              <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-              <FormField control={form.control} name="date" render={({ field }) => <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
-              <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>} />
-              <FormField control={form.control} name="results" render={({ field }) => <FormItem><FormLabel>Résultats</FormLabel><FormControl><Input placeholder="Ex: 1ère place..." {...field} /></FormControl></FormItem>} />
+            <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel>Nom</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+            <FormField control={form.control} name="date" render={({ field }) => <FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>} />
+            <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>} />
+            <FormField control={form.control} name="results" render={({ field }) => <FormItem><FormLabel>Résultats</FormLabel><FormControl><Input placeholder="Ex: 1ère place..." {...field} /></FormControl></FormItem>} />
           </form></Form>
           <DialogFooter><Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button><Button type="submit" form="competition-form" disabled={form.formState.isSubmitting}>Enregistrer</Button></DialogFooter>
         </DialogContent>
@@ -169,20 +169,21 @@ export default function CompetitionsPage() {
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Cette action est irréversible. L'événement <strong>"{competitionToDelete?.name}"</strong> sera définitivement supprimé.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteCompetition} className="bg-destructive hover:bg-destructive/90">
-                    Supprimer
-                </AlertDialogAction>
-            </AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L&apos;événement <strong>&quot;{competitionToDelete?.name}&quot;</strong> sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCompetition} className="bg-destructive hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
-    </AlertDialog>
+      </AlertDialog>
     </>
   );
 }
+

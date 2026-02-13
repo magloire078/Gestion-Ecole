@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -24,7 +23,7 @@ const nextConfig = {
         hostname: 'picsum.photos',
         pathname: '**',
       },
-       {
+      {
         protocol: 'https',
         hostname: 'upload.wikimedia.org',
         pathname: '**',

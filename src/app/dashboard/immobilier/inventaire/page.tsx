@@ -1,4 +1,4 @@
-
+﻿
 
 'use client';
 
@@ -40,7 +40,7 @@ export default function InventairePage() {
   const [editingMateriel, setEditingMateriel] = useState<(Materiel & { id: string }) | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [materielToDelete, setMaterielToDelete] = useState<(Materiel & { id: string }) | null>(null);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -54,54 +54,54 @@ export default function InventairePage() {
   const sallesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/salles`)) : null, [firestore, schoolId]);
   const batimentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/batiments`)) : null, [firestore, schoolId]);
   const busesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/transport_bus`)) : null, [firestore, schoolId]);
-  
+
   const { data: sallesData, loading: sallesLoading } = useCollection(sallesQuery);
   const { data: batimentsData, loading: batimentsLoading } = useCollection(batimentsQuery);
   const { data: busesData, loading: busesLoading } = useCollection(busesQuery);
 
   const { locationOptions, locationMap } = useMemo(() => {
-      const options: { value: string, label: string }[] = [];
-      const map = new Map<string, string>();
-      
-      (sallesData || []).forEach(doc => {
-          const salle = { id: doc.id, ...doc.data() } as Salle & {id: string};
-          const value = `salle:${salle.id}`;
-          const label = `Salle: ${salle.name}`;
-          options.push({ value, label });
-          map.set(value, label);
-      });
-      (batimentsData || []).forEach(doc => {
-          const batiment = { id: doc.id, ...doc.data() } as building & {id: string};
-          const value = `batiment:${batiment.id}`;
-          const label = `Bâtiment: ${batiment.name}`;
-          options.push({ value, label });
-          map.set(value, label);
-      });
-      (busesData || []).forEach(doc => {
-          const bus = { id: doc.id, ...doc.data() } as Bus & {id: string};
-          const value = `bus:${bus.id}`;
-          const label = `Bus: ${bus.registrationNumber}`;
-          options.push({ value, label });
-          map.set(value, label);
-      });
+    const options: { value: string, label: string }[] = [];
+    const map = new Map<string, string>();
 
-      return { locationOptions: options, locationMap: map };
+    (sallesData || []).forEach(doc => {
+      const salle = { id: doc.id, ...doc.data() } as Salle & { id: string };
+      const value = `salle:${salle.id}`;
+      const label = `Salle: ${salle.name}`;
+      options.push({ value, label });
+      map.set(value, label);
+    });
+    (batimentsData || []).forEach(doc => {
+      const batiment = { id: doc.id, ...doc.data() } as building & { id: string };
+      const value = `batiment:${batiment.id}`;
+      const label = `Bâtiment: ${batiment.name}`;
+      options.push({ value, label });
+      map.set(value, label);
+    });
+    (busesData || []).forEach(doc => {
+      const bus = { id: doc.id, ...doc.data() } as Bus & { id: string };
+      const value = `bus:${bus.id}`;
+      const label = `Bus: ${bus.registrationNumber}`;
+      options.push({ value, label });
+      map.set(value, label);
+    });
+
+    return { locationOptions: options, locationMap: map };
   }, [sallesData, batimentsData, busesData]);
 
   const filteredInventaire = useMemo(() => {
-      return inventaire.filter(item => {
-          const searchMatch = searchTerm === '' || item.name.toLowerCase().includes(searchTerm.toLowerCase());
-          const categoryMatch = selectedCategory === 'all' || item.category === selectedCategory;
-          const statusMatch = selectedStatus === 'all' || item.status === selectedStatus;
-          return searchMatch && categoryMatch && statusMatch;
-      });
+    return inventaire.filter(item => {
+      const searchMatch = searchTerm === '' || item.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const categoryMatch = selectedCategory === 'all' || item.category === selectedCategory;
+      const statusMatch = selectedStatus === 'all' || item.status === selectedStatus;
+      return searchMatch && categoryMatch && statusMatch;
+    });
   }, [inventaire, searchTerm, selectedCategory, selectedStatus]);
 
   const handleOpenDeleteDialog = (materiel: Materiel & { id: string }) => {
     setMaterielToDelete(materiel);
     setIsDeleteDialogOpen(true);
   };
-  
+
   const handleDeleteMateriel = async () => {
     if (!schoolId || !materielToDelete) return;
     try {
@@ -112,11 +112,11 @@ export default function InventairePage() {
       console.error("Error deleting equipment:", e);
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer l\'équipement.' });
     } finally {
-        setIsDeleteDialogOpen(false);
-        setMaterielToDelete(null);
+      setIsDeleteDialogOpen(false);
+      setMaterielToDelete(null);
     }
   };
-  
+
   const isLoading = schoolLoading || inventaireLoading || sallesLoading || batimentsLoading || busesLoading;
 
   return (
@@ -135,29 +135,29 @@ export default function InventairePage() {
               </Button>
             )}
           </div>
-           <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
-                <div className="relative w-full sm:max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Rechercher par nom..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                </div>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Catégorie..." /></SelectTrigger><SelectContent><SelectItem value="all">Toutes les catégories</SelectItem><SelectItem value="Mobilier">Mobilier</SelectItem><SelectItem value="Informatique">Informatique</SelectItem><SelectItem value="Pédagogique">Pédagogique</SelectItem><SelectItem value="Sportif">Sportif</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent></Select>
-                <Select value={selectedStatus} onValueChange={setSelectedStatus}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Statut..." /></SelectTrigger><SelectContent><SelectItem value="all">Tous les statuts</SelectItem><SelectItem value="neuf">Neuf</SelectItem><SelectItem value="bon">Bon</SelectItem><SelectItem value="à réparer">À réparer</SelectItem><SelectItem value="hors_service">Hors service</SelectItem></SelectContent></Select>
-                <div className="flex items-center gap-2 ml-auto">
-                    <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent')}><List className="h-4 w-4" /></Button>
-                    <Button variant="outline" size="icon" onClick={() => setViewMode('grid')} className={cn(viewMode === 'grid' && 'bg-accent')}><LayoutGrid className="h-4 w-4" /></Button>
-                </div>
+          <div className="flex flex-col sm:flex-row items-center gap-2 pt-4">
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Rechercher par nom..." className="pl-10" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
             </div>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Catégorie..." /></SelectTrigger><SelectContent><SelectItem value="all">Toutes les catégories</SelectItem><SelectItem value="Mobilier">Mobilier</SelectItem><SelectItem value="Informatique">Informatique</SelectItem><SelectItem value="Pédagogique">Pédagogique</SelectItem><SelectItem value="Sportif">Sportif</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent></Select>
+            <Select value={selectedStatus} onValueChange={setSelectedStatus}><SelectTrigger className="w-full sm:w-[180px]"><SelectValue placeholder="Statut..." /></SelectTrigger><SelectContent><SelectItem value="all">Tous les statuts</SelectItem><SelectItem value="neuf">Neuf</SelectItem><SelectItem value="bon">Bon</SelectItem><SelectItem value="à réparer">À réparer</SelectItem><SelectItem value="hors_service">Hors service</SelectItem></SelectContent></Select>
+            <div className="flex items-center gap-2 ml-auto">
+              <Button variant="outline" size="icon" onClick={() => setViewMode('list')} className={cn(viewMode === 'list' && 'bg-accent')}><List className="h-4 w-4" /></Button>
+              <Button variant="outline" size="icon" onClick={() => setViewMode('grid')} className={cn(viewMode === 'grid' && 'bg-accent')}><LayoutGrid className="h-4 w-4" /></Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
-            {viewMode === 'grid' ? (
-                <InventoryGrid items={filteredInventaire} isLoading={isLoading} onEdit={(item) => { setEditingMateriel(item); setIsFormOpen(true); }} onDelete={handleOpenDeleteDialog} locationMap={locationMap} />
-            ) : (
-                <InventoryTable items={filteredInventaire} isLoading={isLoading} onEdit={(item) => { setEditingMateriel(item); setIsFormOpen(true); }} onDelete={handleOpenDeleteDialog} locationMap={locationMap} />
-            )}
+          {viewMode === 'grid' ? (
+            <InventoryGrid items={filteredInventaire} isLoading={isLoading} onEdit={(item) => { setEditingMateriel(item); setIsFormOpen(true); }} onDelete={handleOpenDeleteDialog} locationMap={locationMap} />
+          ) : (
+            <InventoryTable items={filteredInventaire} isLoading={isLoading} onEdit={(item) => { setEditingMateriel(item); setIsFormOpen(true); }} onDelete={handleOpenDeleteDialog} locationMap={locationMap} />
+          )}
         </CardContent>
       </Card>
-      
-       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingMateriel ? 'Modifier' : 'Ajouter'} un équipement</DialogTitle>
@@ -171,13 +171,13 @@ export default function InventairePage() {
           />
         </DialogContent>
       </Dialog>
-      
-       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet équipement ?</AlertDialogTitle>
             <AlertDialogDescription>
-              Cette action est irréversible. L'équipement <strong>{materielToDelete?.name}</strong> sera définitivement supprimé.
+              Cette action est irréversible. L&apos;équipement <strong>{materielToDelete?.name}</strong> sera définitivement supprimé.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -191,3 +191,4 @@ export default function InventairePage() {
     </>
   );
 }
+

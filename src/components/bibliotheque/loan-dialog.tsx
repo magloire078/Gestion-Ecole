@@ -10,11 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useFirestore } from '@/firebase';
-import { addDoc, collection } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { format, addDays } from 'date-fns';
 import type { libraryBook as LibraryBook, student as Student } from '@/lib/data-types';
+import { LibraryService } from '@/services/library-service';
 
 const loanSchema = z.object({
   studentId: z.string().min(1, 'Veuillez sélectionner un élève.'),
@@ -54,12 +54,11 @@ export function LoanDialog({ isOpen, onClose, book, students, schoolId }: LoanDi
       studentId: values.studentId,
       borrowedDate: new Date().toISOString(),
       dueDate: new Date(values.dueDate).toISOString(),
-      status: 'borrowed',
+      status: 'borrowed' as const,
     };
-    const loanCollectionRef = collection(firestore, `ecoles/${schoolId}/bibliotheque_prets`);
 
     try {
-      await addDoc(loanCollectionRef, loanData);
+      await LibraryService.createLoan(schoolId, loanData);
       toast({ title: 'Prêt enregistré', description: `Le livre "${book.title}" a été emprunté.` });
       onClose();
     } catch (e) {

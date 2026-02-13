@@ -45,9 +45,9 @@ export function StaffPayrollTab({ staff }: StaffPayrollTabProps) {
                 </CardHeader>
                 <CardContent className="space-y-1">
                     {earnings.map(earning => (
-                        earning.value > 0 && <InfoRow key={earning.label} label={earning.label} value={earning.value} icon={earning.icon} />
+                        (earning.value || 0) > 0 && <InfoRow key={earning.label} label={earning.label} value={earning.value} icon={earning.icon} />
                     ))}
-                     <InfoRow key="base" label="Salaire de base" value={staff.baseSalary || 0} icon={Landmark} />
+                    <InfoRow key="base" label="Salaire de base" value={staff.baseSalary || 0} icon={Landmark} />
                     <Separator className="my-2" />
                     <div className="flex justify-between items-center font-bold text-base pt-2">
                         <span>Total Brut Mensuel (estimé)</span>

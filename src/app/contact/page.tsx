@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { useState } from 'react';
@@ -52,28 +52,28 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ContactFormValues>({
-      resolver: zodResolver(contactSchema),
-      defaultValues: {
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          schoolName: '',
-          needs: [],
-          meetingDate: new Date(),
-          meetingTime: '10:00',
-          newsletter: true,
-      }
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      schoolName: '',
+      needs: [],
+      meetingDate: new Date(),
+      meetingTime: '10:00',
+      newsletter: true,
+    }
   });
 
   const handleSubmit = async (values: ContactFormValues) => {
     if (!firestore) {
-        toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "La connexion à la base de données a échoué. Veuillez réessayer.",
-        });
-        return;
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "La connexion à la base de données a échoué. Veuillez réessayer.",
+      });
+      return;
     }
     setIsSubmitting(true);
     const collectionRef = collection(firestore, 'contact_requests');
@@ -84,17 +84,17 @@ export default function ContactPage() {
     };
 
     try {
-        await addDoc(collectionRef, dataToSave);
-        setIsSubmitted(true);
-    } catch(error) {
-        console.error("Error submitting contact form:", error);
-        toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible d'envoyer votre demande. Veuillez réessayer plus tard.",
-        });
+      await addDoc(collectionRef, dataToSave);
+      setIsSubmitted(true);
+    } catch (error) {
+      console.error("Error submitting contact form:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'envoyer votre demande. Veuillez réessayer plus tard.",
+      });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -109,7 +109,7 @@ export default function ContactPage() {
               Merci pour votre intérêt. Notre équipe commerciale vous contactera dans les 24h pour confirmer votre démonstration.
             </p>
             <Button onClick={() => router.push('/')}>
-              Retour à l'accueil
+              Retour à l&apos;accueil
             </Button>
           </CardContent>
         </Card>
@@ -118,7 +118,7 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-background py-12">
+    <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-background py-12">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
@@ -140,21 +140,21 @@ export default function ContactPage() {
               </CardHeader>
               <CardContent>
                 <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email professionnel *</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" {...field} /></FormControl></FormItem>)} />
-                  </div>
-                  <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de votre établissement *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     <FormField control={form.control} name="schoolType" render={({ field }) => (<FormItem><FormLabel>Type d'établissement</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger></FormControl><SelectContent><SelectItem value="primary">École primaire</SelectItem><SelectItem value="middle">Collège</SelectItem><SelectItem value="high">Lycée</SelectItem><SelectItem value="international">École internationale</SelectItem><SelectItem value="group">Groupe scolaire</SelectItem></SelectContent></Select></FormItem>)} />
-                     <FormField control={form.control} name="studentCount" render={({ field }) => (<FormItem><FormLabel>Nombre d'élèves</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0-100">0-100 élèves</SelectItem><SelectItem value="100-500">100-500 élèves</SelectItem><SelectItem value="500-1000">500-1000 élèves</SelectItem><SelectItem value="1000+">Plus de 1000 élèves</SelectItem></SelectContent></Select></FormItem>)} />
-                  </div>
-                  <FormField
+                  <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>Email professionnel *</FormLabel><FormControl><Input type="email" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="phone" render={({ field }) => (<FormItem><FormLabel>Téléphone</FormLabel><FormControl><Input type="tel" {...field} /></FormControl></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de votre établissement *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="schoolType" render={({ field }) => (<FormItem><FormLabel>Type d&apos;établissement</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger></FormControl><SelectContent><SelectItem value="primary">École primaire</SelectItem><SelectItem value="middle">Collège</SelectItem><SelectItem value="high">Lycée</SelectItem><SelectItem value="international">École internationale</SelectItem><SelectItem value="group">Groupe scolaire</SelectItem></SelectContent></Select></FormItem>)} />
+                      <FormField control={form.control} name="studentCount" render={({ field }) => (<FormItem><FormLabel>Nombre d&apos;élèves</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger></FormControl><SelectContent><SelectItem value="0-100">0-100 élèves</SelectItem><SelectItem value="100-500">100-500 élèves</SelectItem><SelectItem value="500-1000">500-1000 élèves</SelectItem><SelectItem value="1000+">Plus de 1000 élèves</SelectItem></SelectContent></Select></FormItem>)} />
+                    </div>
+                    <FormField
                       control={form.control}
                       name="needs"
                       render={() => (
@@ -163,57 +163,57 @@ export default function ContactPage() {
                             <FormLabel className="text-base">Vos besoins principaux</FormLabel>
                           </div>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          {['Gestion administrative','Pédagogie et notes','Communication parents','Finances et paiements','Transport scolaire','Cantine/internat'].map((item) => (
-                            <FormField
-                              key={item}
-                              control={form.control}
-                              name="needs"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(item)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...(field.value || []), item])
-                                            : field.onChange(
+                            {['Gestion administrative', 'Pédagogie et notes', 'Communication parents', 'Finances et paiements', 'Transport scolaire', 'Cantine/internat'].map((item) => (
+                              <FormField
+                                key={item}
+                                control={form.control}
+                                name="needs"
+                                render={({ field }) => {
+                                  return (
+                                    <FormItem key={item} className="flex flex-row items-start space-x-3 space-y-0">
+                                      <FormControl>
+                                        <Checkbox
+                                          checked={field.value?.includes(item)}
+                                          onCheckedChange={(checked) => {
+                                            return checked
+                                              ? field.onChange([...(field.value || []), item])
+                                              : field.onChange(
                                                 field.value?.filter(
                                                   (value) => value !== item
                                                 )
                                               )
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">{item}</FormLabel>
-                                  </FormItem>
-                                )
-                              }}
-                            />
-                          ))}
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormLabel className="font-normal">{item}</FormLabel>
+                                    </FormItem>
+                                  )
+                                }}
+                              />
+                            ))}
                           </div>
                         </FormItem>
                       )}
                     />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="meetingDate" render={({ field }) => (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="meetingDate" render={({ field }) => (
                         <FormItem className="flex flex-col"><FormLabel>Date de rendez-vous souhaitée</FormLabel>
-                            <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP', { locale: fr }) : <span>Choisir une date</span>}</Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus/></PopoverContent></Popover>
+                          <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="w-full justify-start font-normal"><CalendarIcon className="mr-2 h-4 w-4" />{field.value ? format(field.value, 'PPP', { locale: fr }) : <span>Choisir une date</span>}</Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover>
                         </FormItem>
-                    )} />
-                    <FormField control={form.control} name="meetingTime" render={({ field }) => (
+                      )} />
+                      <FormField control={form.control} name="meetingTime" render={({ field }) => (
                         <FormItem><FormLabel>Créneau horaire</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>{TIME_SLOTS.map((time) => (<SelectItem key={time} value={time}>{time}</SelectItem>))}</SelectContent>
-                        </Select>
+                          </Select>
                         </FormItem>
-                    )} />
-                  </div>
-                  <FormField control={form.control} name="message" render={({ field }) => (<FormItem><FormLabel>Message additionnel</FormLabel><FormControl><Textarea placeholder="Questions spécifiques, besoins particuliers..." {...field} rows={4}/></FormControl></FormItem>)} />
-                  <FormField control={form.control} name="newsletter" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange}/></FormControl><Label htmlFor="newsletter" className="text-sm font-normal">Je souhaite recevoir les actualités et conseils</Label></FormItem>)} />
-                  <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : null}{isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}</Button>
-                </form>
+                      )} />
+                    </div>
+                    <FormField control={form.control} name="message" render={({ field }) => (<FormItem><FormLabel>Message additionnel</FormLabel><FormControl><Textarea placeholder="Questions spécifiques, besoins particuliers..." {...field} rows={4} /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name="newsletter" render={({ field }) => (<FormItem className="flex items-center space-x-2"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><Label htmlFor="newsletter" className="text-sm font-normal">Je souhaite recevoir les actualités et conseils</Label></FormItem>)} />
+                    <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}{isSubmitting ? 'Envoi en cours...' : 'Demander ma démo personnalisée'}</Button>
+                  </form>
                 </Form>
               </CardContent>
             </Card>
@@ -224,6 +224,7 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
+

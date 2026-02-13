@@ -32,11 +32,11 @@ const tacheSchema = z.object({
 type TacheFormValues = z.infer<typeof tacheSchema>;
 
 interface MaintenanceFormProps {
-    schoolId: string;
-    tache: (TacheMaintenance & { id: string }) | null;
-    staffMembers: (Staff & { id: string })[];
-    locationOptions: { value: string, label: string }[];
-    onSave: () => void;
+  schoolId: string;
+  tache: (TacheMaintenance & { id: string }) | null;
+  staffMembers: (Staff & { id: string })[];
+  locationOptions: { value: string, label: string }[];
+  onSave: () => void;
 }
 
 export function MaintenanceForm({ schoolId, tache, staffMembers, locationOptions, onSave }: MaintenanceFormProps) {
@@ -51,7 +51,7 @@ export function MaintenanceForm({ schoolId, tache, staffMembers, locationOptions
 
   useEffect(() => {
     reset(
-      tache 
+      tache
         ? { ...tache, dueDate: tache.dueDate ? format(new Date(tache.dueDate), 'yyyy-MM-dd') : '' }
         : { priority: 'moyenne', status: 'à_faire', title: '', description: '', location: '', assignedTo: '', dueDate: '' }
     );
@@ -63,9 +63,9 @@ export function MaintenanceForm({ schoolId, tache, staffMembers, locationOptions
 
     const dataToSave: any = { ...values, schoolId };
     if (!tache) {
-        dataToSave.createdAt = new Date().toISOString();
+      dataToSave.createdAt = new Date().toISOString();
     }
-    
+
     const promise = tache
       ? setDoc(doc(firestore, `ecoles/${schoolId}/maintenance/${tache.id}`), dataToSave, { merge: true })
       : addDoc(collection(firestore, `ecoles/${schoolId}/maintenance`), dataToSave);
@@ -78,52 +78,53 @@ export function MaintenanceForm({ schoolId, tache, staffMembers, locationOptions
       console.error("Error saving maintenance task:", error);
       toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer la tâche de maintenance." });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
-  
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
-         <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
-            <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel>Titre de la tâche</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-            <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>} />
-            <div className="grid grid-cols-2 gap-4">
-            <FormField control={form.control} name="priority" render={({ field }) => <FormItem><FormLabel>Priorité</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="basse">Basse</SelectItem><SelectItem value="moyenne">Moyenne</SelectItem><SelectItem value="haute">Haute</SelectItem></SelectContent></Select></FormItem>} />
-            <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="à_faire">À faire</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="terminée">Terminée</SelectItem></SelectContent></Select></FormItem>} />
-            </div>
-            <FormField control={form.control} name="assignedTo" render={({ field }) => <FormItem><FormLabel>Assigner à</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Choisir un membre..."/></SelectTrigger></FormControl><SelectContent>{staffMembers.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select></FormItem>} />
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                control={form.control}
-                name="location"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Emplacement</FormLabel>
-                        <FormControl>
-                            <Combobox
-                                placeholder="Sélectionner ou créer un lieu"
-                                searchPlaceholder="Chercher un lieu..."
-                                options={locationOptions}
-                                value={field.value || ''}
-                                onValueChange={field.onChange}
-                                onCreate={(value) => {
-                                    field.onChange(value);
-                                    return Promise.resolve({ value, label: value });
-                                }}
-                            />
-                        </FormControl>
-                    </FormItem>
-                )}
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+        <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 scrollbar-hide">
+          <FormField control={form.control} name="title" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Titre de la tâche</FormLabel><FormControl><Input {...field} className="glass" /></FormControl><FormMessage /></FormItem>} />
+          <FormField control={form.control} name="description" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Description</FormLabel><FormControl><Textarea {...field} className="glass min-h-[100px]" /></FormControl></FormItem>} />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={form.control} name="priority" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Priorité</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="glass"><SelectValue /></SelectTrigger></FormControl><SelectContent className="glass"><SelectItem value="basse">Basse</SelectItem><SelectItem value="moyenne">Moyenne</SelectItem><SelectItem value="haute">Haute</SelectItem></SelectContent></Select></FormItem>} />
+            <FormField control={form.control} name="status" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="glass"><SelectValue /></SelectTrigger></FormControl><SelectContent className="glass"><SelectItem value="à_faire">À faire</SelectItem><SelectItem value="en_cours">En cours</SelectItem><SelectItem value="terminée">Terminée</SelectItem></SelectContent></Select></FormItem>} />
+          </div>
+          <FormField control={form.control} name="assignedTo" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Assigner à</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="glass"><SelectValue placeholder="Choisir un membre..." /></SelectTrigger></FormControl><SelectContent className="glass">{staffMembers.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select></FormItem>} />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="location"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Emplacement</FormLabel>
+                  <FormControl>
+                    <Combobox
+                      placeholder="Lieu..."
+                      searchPlaceholder="Chercher..."
+                      options={locationOptions}
+                      value={field.value || ''}
+                      onValueChange={field.onChange}
+                      onCreate={(value) => {
+                        field.onChange(value);
+                        return Promise.resolve({ value, label: value });
+                      }}
+                      className="glass"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
             />
-                <FormField control={form.control} name="dueDate" render={({ field }) => <FormItem><FormLabel>Échéance</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>} />
-            </div>
+            <FormField control={form.control} name="dueDate" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Échéance</FormLabel><FormControl><Input type="date" {...field} className="glass" /></FormControl></FormItem>} />
+          </div>
         </div>
-        <DialogFooter className="pt-4 border-t">
-          <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>
-          <Button type="submit" disabled={isSubmitting}>
-             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-             {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+        <DialogFooter className="pt-6 border-t border-white/5">
+          <Button type="button" variant="ghost" onClick={onSave} className="hover:bg-white/5 font-medium">Annuler</Button>
+          <Button type="submit" disabled={isSubmitting} className="bg-primary/90 hover:bg-primary shadow-lg shadow-primary/20 transition-all active:scale-95 font-semibold px-8">
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </DialogFooter>
       </form>

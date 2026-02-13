@@ -1,6 +1,6 @@
 
 'use client';
-import {useState, useEffect} from 'react';
+import { useState, useEffect } from 'react';
 import {
   onSnapshot,
   DocumentReference,
@@ -9,25 +9,26 @@ import {
 } from 'firebase/firestore';
 
 type UseDocOptions = {
-    onError?: (error: FirestoreError) => void;
+  onError?: (error: FirestoreError) => void;
 }
 
-export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOptions) {
-  const [data, setData] = useState<DocumentData | null>(null);
+
+export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null, options?: UseDocOptions) {
+  const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<FirestoreError | null>(null);
 
   useEffect(() => {
     if (!ref) {
-        setData(null);
-        setLoading(false);
-        setError(null);
-        return;
+      setData(null);
+      setLoading(false);
+      setError(null);
+      return;
     }
-    
+
     setLoading(true);
 
-    const unsubscribe = onSnapshot(ref, 
+    const unsubscribe = onSnapshot(ref,
       (snapshot) => {
         setData(snapshot.exists() ? snapshot.data() : null);
         setError(null);
@@ -36,8 +37,8 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
       (err: FirestoreError) => {
         console.error("useDoc Firestore Error:", err);
         setError(err);
-        if(options?.onError) {
-            options.onError(err);
+        if (options?.onError) {
+          options.onError(err);
         }
         setData(null);
         setLoading(false);
@@ -45,9 +46,10 @@ export function useDoc<T>(ref: DocumentReference<T> | null, options?: UseDocOpti
     );
 
     return () => unsubscribe();
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref?.path]);
 
-  return {data, loading, error};
+  return { data, loading, error };
 }
+

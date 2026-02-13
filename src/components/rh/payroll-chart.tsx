@@ -18,19 +18,19 @@ export function PayrollChart({ staff }: PayrollChartProps) {
     if (!staff || staff.length === 0) return [];
 
     const grouped = group(staff, d => d.role);
-    
+
     return Array.from(grouped, ([role, values]) => ({
       role: role.charAt(0).toUpperCase() + role.slice(1).replace(/_/g, ' '),
       masseSalariale: sum(values, d => d.baseSalary || 0),
-    })).sort((a,b) => b.masseSalariale - a.masseSalariale);
-    
+    })).sort((a, b) => b.masseSalariale - a.masseSalariale);
+
   }, [staff]);
-  
+
   const chartConfig: ChartConfig = {
-      masseSalariale: {
-          label: 'Masse Salariale',
-          color: "hsl(var(--primary))",
-      }
+    masseSalariale: {
+      label: 'Masse Salariale',
+      color: "hsl(var(--primary))",
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -51,8 +51,8 @@ export function PayrollChart({ staff }: PayrollChartProps) {
             <BarChart data={dataByRole} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="role" angle={-45} textAnchor="end" height={80} interval={0} tick={{ fontSize: 12 }} />
-              <YAxis tickFormatter={formatCurrency}/>
-              <ChartTooltipContent formatter={(value: number) => `${value.toLocaleString('fr-FR')} CFA`} />
+              <YAxis tickFormatter={formatCurrency} />
+              <ChartTooltipContent formatter={(value: any) => `${Number(value).toLocaleString('fr-FR')} CFA`} />
               <Bar dataKey="masseSalariale" fill="var(--color-masseSalariale)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ChartContainer>

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,13 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSchoolData } from '@/hooks/use-school-data';
 import { DisciplineIncidentsList } from '@/components/discipline/discipline-incidents-list';
 import { StatCard } from '@/components/ui/stat-card';
+import { useDisciplineIncidents } from '@/hooks/use-discipline-incidents';
 
-
-interface IncidentWithDetails extends DisciplineIncident {
-    id: string;
-    studentName?: string;
-    className?: string;
-}
 
 export default function DisciplinePage() {
     const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -33,15 +28,8 @@ export default function DisciplinePage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [selectedClassId, setSelectedClassId] = useState('all');
 
-    const incidentsQuery = useMemo(() =>
-        schoolId ? query(
-            collectionGroup(firestore, `incidents_disciplinaires`),
-            where('schoolId', '==', schoolId),
-            orderBy('date', 'desc')
-        ) : null,
-        [firestore, schoolId]
-    );
-    const { data: incidentsData, loading: incidentsLoading } = useCollection(incidentsQuery);
+    // Use new hook for incidents
+    const { incidents: allIncidents, loading: incidentsLoading } = useDisciplineIncidents(schoolId);
 
     const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
@@ -49,39 +37,32 @@ export default function DisciplinePage() {
     const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
     const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
 
-    const students = useMemo(() => studentsData?.map(doc => ({ id: doc.id, ...doc.data() } as Student & {id: string})) || [], [studentsData]);
-    const classes = useMemo(() => classesData?.map(doc => ({ id: doc.id, ...doc.data() } as Class & {id: string})) || [], [classesData]);
+    const students = useMemo(() => studentsData?.map(doc => ({ id: doc.id, ...doc.data() } as Student & { id: string })) || [], [studentsData]);
+    const classes = useMemo(() => classesData?.map(doc => ({ id: doc.id, ...doc.data() } as Class & { id: string })) || [], [classesData]);
 
     const studentMap = useMemo(() => new Map(students.map(s => [s.id, { name: `${s.firstName} ${s.lastName}`, classId: s.classId }])), [students]);
     const classMap = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes]);
 
     const incidents = useMemo(() => {
-        const allIncidents: IncidentWithDetails[] = incidentsData?.map(d => {
-            const data = d.data() as DisciplineIncident;
-            return {
-                id: d.id,
-                ...data,
-                studentName: data.studentName,
-                className: data.classId ? classMap.get(data.classId) : 'N/A'
-            };
-        }) || [];
-        
-        if (selectedClassId === 'all') {
-            return allIncidents;
-        }
-        return allIncidents.filter(inc => inc.classId === selectedClassId);
+        const incidentsWithDetails = allIncidents?.map(inc => ({
+            ...inc,
+            className: inc.classId ? classMap.get(inc.classId) : 'N/A'
+        })) || [];
 
-    }, [incidentsData, classMap, selectedClassId]);
+        if (selectedClassId === 'all') {
+            return incidentsWithDetails;
+        }
+        return incidentsWithDetails.filter(inc => inc.classId === selectedClassId);
+    }, [allIncidents, classMap, selectedClassId]);
 
     const stats = useMemo(() => {
-        if (!incidentsData) {
+        if (!allIncidents) {
             return { total: 0, thisMonth: 0, mostCommon: 'N/A' };
         }
-        const allIncidentsList = incidentsData.map(d => d.data() as DisciplineIncident);
-        const total = allIncidentsList.length;
+        const total = allIncidents.length;
 
         const oneMonthAgo = subMonths(new Date(), 1);
-        const thisMonth = allIncidentsList.filter(inc => {
+        const thisMonth = allIncidents.filter(inc => {
             const incDate = new Date(inc.date);
             return isWithinInterval(incDate, { start: oneMonthAgo, end: new Date() });
         }).length;
@@ -90,14 +71,13 @@ export default function DisciplinePage() {
             return { total, thisMonth, mostCommon: 'N/A' };
         }
 
-        const groupedByType = group(allIncidentsList, d => d.type);
+        const groupedByType = group(allIncidents, d => d.type);
         const sortedByType = sort(Array.from(groupedByType.entries()), ([, a], [, b]) => b.length - a.length);
-        
-        const mostCommon = sortedByType.length > 0 ? sortedByType[0][0] : 'N/A';
-        
-        return { total, thisMonth, mostCommon };
 
-    }, [incidentsData]);
+        const mostCommon = sortedByType.length > 0 ? sortedByType[0][0] : 'N/A';
+
+        return { total, thisMonth, mostCommon };
+    }, [allIncidents]);
 
     const isLoading = schoolLoading || userLoading || incidentsLoading || studentsLoading || classesLoading;
 
@@ -106,7 +86,7 @@ export default function DisciplinePage() {
             <div>
                 <h1 className="text-lg font-semibold md:text-2xl">Suivi de la Discipline</h1>
                 <p className="text-muted-foreground">
-                    Consultez et gérez l'historique disciplinaire de l'ensemble des élèves.
+                    Consultez et gérez l&apos;historique disciplinaire de l&apos;ensemble des élèves.
                 </p>
             </div>
 
@@ -123,8 +103,8 @@ export default function DisciplinePage() {
                             <CardTitle>Historique des Incidents</CardTitle>
                             <CardDescription>Liste de tous les incidents disciplinaires enregistrés.</CardDescription>
                         </div>
-                         <div className="flex items-center gap-2">
-                             <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                        <div className="flex items-center gap-2">
+                            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
                                 <SelectTrigger className="w-[200px]">
                                     <SelectValue placeholder="Filtrer par classe..." />
                                 </SelectTrigger>
@@ -149,15 +129,15 @@ export default function DisciplinePage() {
                 </CardContent>
             </Card>
 
-             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Signaler un nouvel incident</DialogTitle>
-                        <DialogDescription>Remplissez les détails de l'incident.</DialogDescription>
+                        <DialogDescription>Remplissez les détails de l&apos;incident.</DialogDescription>
                     </DialogHeader>
-                    <IncidentForm 
-                        schoolId={schoolId!} 
-                        students={students} 
+                    <IncidentForm
+                        schoolId={schoolId!}
+                        students={students}
                         onSave={() => setIsFormOpen(false)}
                     />
                 </DialogContent>
@@ -165,3 +145,4 @@ export default function DisciplinePage() {
         </div>
     );
 }
+

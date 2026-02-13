@@ -42,7 +42,7 @@ export function DossierMedicalForm({ schoolId, studentId, dossier, onSave }: Dos
   const form = useForm<DossierFormValues>({
     resolver: zodResolver(dossierMedicalSchema),
   });
-  
+
   useEffect(() => {
     form.reset({
       groupeSanguin: dossier?.groupeSanguin || '',
@@ -61,13 +61,13 @@ export function DossierMedicalForm({ schoolId, studentId, dossier, onSave }: Dos
     const dossierRef = doc(firestore, `ecoles/${schoolId}/eleves/${studentId}/dossier_medical/${studentId}`);
 
     const dataToSave = {
-        studentId,
-        schoolId,
-        ...values,
-        allergies: values.allergies ? values.allergies.split(',').map(s => s.trim()).filter(Boolean) : [],
-        maladiesChroniques: values.maladiesChroniques ? values.maladiesChroniques.split(',').map(s => s.trim()).filter(Boolean) : [],
+      studentId,
+      schoolId,
+      ...values,
+      allergies: values.allergies ? values.allergies.split(',').map(s => s.trim()).filter(Boolean) : [],
+      maladiesChroniques: values.maladiesChroniques ? values.maladiesChroniques.split(',').map(s => s.trim()).filter(Boolean) : [],
     };
-    
+
     try {
       await setDoc(dossierRef, dataToSave, { merge: true });
       toast({ title: 'Dossier médical mis à jour', description: 'Les informations ont été enregistrées avec succès.' });
@@ -76,7 +76,7 @@ export function DossierMedicalForm({ schoolId, studentId, dossier, onSave }: Dos
       console.error("Error saving medical record:", e);
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le dossier médical.' });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -86,12 +86,12 @@ export function DossierMedicalForm({ schoolId, studentId, dossier, onSave }: Dos
         <FormField control={form.control} name="groupeSanguin" render={({ field }) => <FormItem><FormLabel>Groupe Sanguin</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
         <FormField control={form.control} name="allergies" render={({ field }) => <FormItem><FormLabel>Allergies (séparées par une virgule)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
         <FormField control={form.control} name="maladiesChroniques" render={({ field }) => <FormItem><FormLabel>Maladies chroniques (séparées par une virgule)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-        
-        <h4 className="font-semibold text-md pt-2 border-t">Contacts d'Urgence</h4>
+
+        <h4 className="font-semibold text-md pt-2 border-t">Contacts d&apos;Urgence</h4>
         <FormField control={form.control} name="urgences.contact1" render={({ field }) => <FormItem><FormLabel>Contact principal</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
         <FormField control={form.control} name="urgences.assurance" render={({ field }) => <FormItem><FormLabel>Assurance</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-        <FormField control={form.control} name="urgences.numeroPolice" render={({ field }) => <FormItem><FormLabel>Numéro de Police d'Assurance</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
-        
+        <FormField control={form.control} name="urgences.numeroPolice" render={({ field }) => <FormItem><FormLabel>Numéro de Police d&apos;Assurance</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>} />
+
         <DialogFooter className="pt-4">
           <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>
           <Button type="submit" disabled={isSubmitting}>

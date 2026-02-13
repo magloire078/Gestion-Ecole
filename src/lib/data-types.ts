@@ -254,7 +254,7 @@ export type student = {
     discountReason?: string;
     feedback?: string;
     createdAt?: string;
-    updatedAt?: any; 
+    updatedAt?: any;
     createdBy?: string;
     updatedBy?: string;
     inscriptionYear?: number;
@@ -453,7 +453,7 @@ export type absence = {
     schoolId: string;
     studentId: string;
     studentName: string;
-    classId: string;
+    classId?: string;
     date: string;
     type: "Journée entière" | "Matin" | "Après-midi";
     justified: boolean;
@@ -771,4 +771,16 @@ export interface UserProfile extends staff {
     isAdmin?: boolean;
 }
 
-    
+export type classe = class_type;
+export interface AppUser {
+    uid: string;
+    isParent: boolean;
+    authUser: any; // Firebase User
+    profile?: UserProfile;
+    parentStudentIds?: string[];
+    schoolId?: string | null;
+    schools?: { [key: string]: string };
+    displayName?: string | null;
+    photoURL?: string | null;
+    email?: string | null;
+}

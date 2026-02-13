@@ -10,19 +10,21 @@ import { Badge } from '@/components/ui/badge';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useStorage } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, doc, orderBy, query, writeBatch } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState, useMemo, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Sparkles, Tag, Receipt, Loader2 } from 'lucide-react';
+import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink } from 'lucide-react';
 import type { student as Student, payment as Payment } from '@/lib/data-types';
 import { PaymentForm, type PaymentFormValues } from './payment-form';
 
 interface PaymentHistoryEntry extends Payment {
-  id: string;
+    id: string;
+    proofUrl?: string;
 }
 
 interface PaymentsTabProps {
@@ -55,13 +57,13 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
 
     const handleViewReceipt = (payment: PaymentHistoryEntry) => {
         if (!student) return;
-      
+
         const totalPaid = (student.tuitionFee ?? 0) - (student.amountDue ?? 0);
         const paymentsAfterCurrent = paymentHistory.filter(p => new Date(p.date) > new Date(payment.date));
         const sumOfPaymentsAfter = paymentsAfterCurrent.reduce((sum, p) => sum + p.amount, 0);
         const totalPaidBeforeThisPayment = totalPaid - sumOfPaymentsAfter - payment.amount;
         const amountDueBeforeThisPayment = (student.tuitionFee ?? 0) - (student.discountAmount || 0) - totalPaidBeforeThisPayment;
-      
+
         const receipt: ReceiptData = {
             schoolName: schoolData?.name || "Votre École",
             studentName: `${student.firstName} ${student.lastName}`,
@@ -91,7 +93,7 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                         <Separator />
                         <div className="flex justify-between items-center font-bold"><span>Total à payer:</span><span>{formatCurrency((student.tuitionFee || 0) - (student.discountAmount || 0))}</span></div>
                         <Separator />
-                        <div className="flex justify-between items-center"><span className="text-muted-foreground">Statut:</span><TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'}/></div>
+                        <div className="flex justify-between items-center"><span className="text-muted-foreground">Statut:</span><TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} /></div>
                         <div className="flex justify-between items-center text-lg"><span className="font-bold">Solde dû:</span><span className="font-bold text-primary">{formatCurrency(student.amountDue)}</span></div>
                         {(student.discountAmount || 0) > 0 && (
                             <Card className="bg-muted/50 p-3 text-xs"><CardDescription className="flex items-start gap-2"><Tag className="h-4 w-4 mt-0.5 shrink-0" /><div><strong>Motif de la remise:</strong><p>{student.discountReason || 'Non spécifié'}</p></div></CardDescription></Card>
@@ -103,7 +105,7 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                 </Card>
                 <Card>
                     <CardHeader><CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-amber-500" /><span>Appréciations</span></CardTitle></CardHeader>
-                    <CardContent><p className="text-sm text-muted-foreground italic">"{student.feedback || "Aucune appréciation pour le moment."}"</p></CardContent>
+                    <CardContent><p className="text-sm text-muted-foreground italic">&quot;{student.feedback || "Aucune appréciation pour le moment."}&quot;</p></CardContent>
                 </Card>
             </div>
             <Card>
@@ -120,14 +122,23 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                             ) : paymentHistory.length > 0 ? (
                                 paymentHistory.map(payment => (
                                     <TableRow key={payment.id}>
-                                        <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
+                                        <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', { locale: fr })}</TableCell>
                                         <TableCell>{payment.description}</TableCell>
                                         <TableCell>{payment.method}</TableCell>
                                         <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
-                                                <Receipt className="mr-2 h-3 w-3" /> Reçu
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                {payment.proofUrl && (
+                                                    <Button variant="ghost" size="sm" asChild title="Voir le justificatif">
+                                                        <a href={payment.proofUrl} target="_blank" rel="noopener noreferrer">
+                                                            <Paperclip className="h-4 w-4" />
+                                                        </a>
+                                                    </Button>
+                                                )}
+                                                <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
+                                                    <Receipt className="mr-2 h-3 w-3" /> Reçu
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -140,7 +151,7 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
             </Card>
 
             <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
-                <DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>Reçu de Paiement</DialogTitle><DialogDescription>Aperçu du reçu. Vous pouvez l'imprimer.</DialogDescription></DialogHeader>{receiptToView && <TuitionReceipt receiptData={receiptToView} />}</DialogContent>
+                <DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>Reçu de Paiement</DialogTitle><DialogDescription>Aperçu du reçu. Vous pouvez l&apos;imprimer.</DialogDescription></DialogHeader>{receiptToView && <TuitionReceipt receiptData={receiptToView} />}</DialogContent>
             </Dialog>
 
             <PaymentDialog
@@ -158,10 +169,11 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
 function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpen: boolean, onClose: () => void, onSave: () => void, student: Student & { id: string }, schoolData: any }) {
     const { toast } = useToast();
     const firestore = useFirestore();
+    const storage = useStorage();
     const [isSaving, setIsSaving] = useState(false);
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     const [showReceipt, setShowReceipt] = useState(false);
-    
+
     const [todayDateString, setTodayDateString] = useState('');
     useEffect(() => { setTodayDateString(format(new Date(), 'yyyy-MM-dd')); }, []);
 
@@ -179,40 +191,64 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
         }
         return {};
     }, [student, todayDateString]);
-    
-    const handleSaveChanges = async (values: PaymentFormValues) => {
+
+    const handleSaveChanges = async (values: PaymentFormValues, file: File | null) => {
         if (!student || !schoolData?.id || !student.id) return;
-        
+
         setIsSaving(true);
-        
-        const amountPaid = values.paymentAmount;
-        const newAmountDue = Math.max(0, (student.amountDue || 0) - amountPaid);
-        const newStatus: "Soldé" | "Partiel" = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
-        
-        const batch = writeBatch(firestore);
+        let proofUrl = '';
 
-        const studentRef = doc(firestore, `ecoles/${schoolData.id}/eleves/${student.id}`);
-        batch.update(studentRef, { amountDue: newAmountDue, tuitionStatus: newStatus });
+        try {
+            if (file) {
+                const storageRef = ref(storage, `ecoles/${schoolData.id}/eleves/${student.id}/paiements/${Date.now()}_${file.name}`);
+                const snapshot = await uploadBytes(storageRef, file);
+                proofUrl = await getDownloadURL(snapshot.ref);
+            }
 
-        const accountingColRef = collection(firestore, `ecoles/${schoolData.id}/comptabilite`);
-        const newTransactionRef = doc(accountingColRef);
-        batch.set(newTransactionRef, {
-            schoolId: schoolData.id, date: values.paymentDate,
-            description: values.paymentDescription || `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
-            category: 'Scolarité', type: 'Revenu', amount: amountPaid,
-            studentId: student.id,
-        });
-        
-        const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolData.id}/eleves/${student.id}/paiements`));
-        batch.set(paymentHistoryRef, {
-            schoolId: schoolData.id,
-            studentId: student.id,
-            date: values.paymentDate, amount: amountPaid, description: values.paymentDescription,
-            accountingTransactionId: newTransactionRef.id, payerFirstName: values.payerFirstName,
-            payerLastName: values.payerLastName, payerContact: values.payerContact, method: values.paymentMethod,
-        });
-        
-        batch.commit().then(() => {
+            const amountPaid = values.paymentAmount;
+            const newAmountDue = Math.max(0, (student.amountDue || 0) - amountPaid);
+            const newStatus: "Soldé" | "Partiel" = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
+
+            const batch = writeBatch(firestore);
+
+            const studentRef = doc(firestore, `ecoles/${schoolData.id}/eleves/${student.id}`);
+            batch.update(studentRef, {
+                amountDue: newAmountDue,
+                tuitionStatus: newStatus,
+                updatedAt: new Date().toISOString()
+            });
+
+            const accountingColRef = collection(firestore, `ecoles/${schoolData.id}/comptabilite`);
+            const newTransactionRef = doc(accountingColRef);
+            batch.set(newTransactionRef, {
+                schoolId: schoolData.id,
+                date: values.paymentDate,
+                description: values.paymentDescription || `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
+                category: 'Scolarité',
+                type: 'Revenu',
+                amount: amountPaid,
+                studentId: student.id,
+                createdAt: new Date().toISOString()
+            });
+
+            const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolData.id}/eleves/${student.id}/paiements`));
+            batch.set(paymentHistoryRef, {
+                schoolId: schoolData.id,
+                studentId: student.id,
+                date: values.paymentDate,
+                amount: amountPaid,
+                description: values.paymentDescription,
+                accountingTransactionId: newTransactionRef.id,
+                payerFirstName: values.payerFirstName,
+                payerLastName: values.payerLastName,
+                payerContact: values.payerContact,
+                method: values.paymentMethod,
+                proofUrl: proofUrl || null,
+                createdAt: new Date().toISOString()
+            });
+
+            await batch.commit();
+
             toast({ title: "Paiement enregistré" });
             const amountDueBeforePayment = (student.amountDue || 0);
             setReceiptData({
@@ -222,25 +258,24 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 amountPaid: amountPaid, amountDue: amountDueBeforePayment - amountPaid, payerName: `${values.payerFirstName} ${values.payerLastName}`,
                 payerContact: values.payerContact, paymentMethod: values.paymentMethod,
             });
-            setShowReceipt(true); // Show receipt view
-        }).catch((serverError) => {
+            setShowReceipt(true);
+        } catch (serverError) {
             console.error("Error saving payment:", serverError);
             toast({
                 variant: "destructive",
                 title: "Erreur d'enregistrement",
                 description: "Impossible d'enregistrer le paiement. Vérifiez vos permissions et réessayez.",
             });
-        }).finally(() => {
+        } finally {
             setIsSaving(false);
-        });
+        }
     };
 
     const handleClose = () => {
-        if (showReceipt) { // If we were showing a receipt, it means a save happened
+        if (showReceipt) {
             onSave();
         }
-        onClose(); // Always call onClose to ensure dialog state is managed by parent
-        // Reset state for next time
+        onClose();
         setShowReceipt(false);
         setReceiptData(null);
     }
@@ -254,8 +289,8 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                             <DialogTitle>Enregistrer un paiement pour {student.firstName}</DialogTitle>
                             <DialogDescription>Le solde actuel est de <strong>{formatCurrency(student?.amountDue || 0)}</strong>.</DialogDescription>
                         </DialogHeader>
-                        <PaymentForm 
-                            onSubmit={handleSaveChanges} 
+                        <PaymentForm
+                            onSubmit={handleSaveChanges}
                             initialData={initialFormData}
                             isSaving={isSaving}
                             onCancel={onClose}
@@ -265,7 +300,7 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                     <>
                         <DialogHeader>
                             <DialogTitle>Reçu de Paiement</DialogTitle>
-                            <DialogDescription>Aperçu du reçu. Vous pouvez l'imprimer.</DialogDescription>
+                            <DialogDescription>Aperçu du reçu. Vous pouvez l&apos;imprimer.</DialogDescription>
                         </DialogHeader>
                         {receiptData && <TuitionReceipt receiptData={receiptData} />}
                         <DialogFooter><Button onClick={handleClose}>Fermer</Button></DialogFooter>

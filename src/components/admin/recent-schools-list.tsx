@@ -16,13 +16,13 @@ export function RecentSchoolsList() {
 
     const schoolsQuery = useMemo(() =>
         user?.profile?.isAdmin ? query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc'), limit(5)) : null
-    , [firestore, user?.profile?.isAdmin]);
+        , [firestore, user?.profile?.isAdmin]);
 
     const { data: schoolsData, loading } = useCollection(schoolsQuery);
 
     const recentSchools = useMemo(() =>
         schoolsData?.map(doc => ({ id: doc.id, ...doc.data() as School })) || []
-    , [schoolsData]);
+        , [schoolsData]);
 
     if (loading) {
         return (
@@ -50,14 +50,23 @@ export function RecentSchoolsList() {
                         <div key={school.id} className="flex items-center">
                             <Avatar className="h-9 w-9">
                                 <AvatarImage src={school.mainLogoUrl || undefined} alt={school.name} />
-                                <AvatarFallback>{school.name.substring(0,2)}</AvatarFallback>
+                                <AvatarFallback>{school.name.substring(0, 2)}</AvatarFallback>
                             </Avatar>
                             <div className="ml-4 space-y-1">
                                 <p className="text-sm font-medium leading-none">{school.name}</p>
                                 <p className="text-sm text-muted-foreground">{school.directorEmail}</p>
                             </div>
                             <div className="ml-auto font-medium text-sm text-muted-foreground">
-                                {school.createdAt ? formatDistanceToNow(new Date(school.createdAt), { addSuffix: true, locale: fr }) : 'Date inconnue'}
+                                {school.createdAt ? (
+                                    (() => {
+                                        try {
+                                            const date = school.createdAt?.toDate ? school.createdAt.toDate() : new Date(school.createdAt);
+                                            return formatDistanceToNow(date, { addSuffix: true, locale: fr });
+                                        } catch (e) {
+                                            return 'Date invalide';
+                                        }
+                                    })()
+                                ) : 'Date inconnue'}
                             </div>
                         </div>
                     ))}

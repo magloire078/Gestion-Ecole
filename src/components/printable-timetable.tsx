@@ -43,14 +43,14 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
       return { timeSlots: [], days: [], timetableGrid: {} };
     }
 
-    const uniqueStartTimes = [...new Set(timetableEntries.map(e => e.startTime))].sort((a,b) => a.localeCompare(b));
+    const uniqueStartTimes = [...new Set(timetableEntries.map(e => e.startTime))].sort((a, b) => a.localeCompare(b));
 
-    const orderedDays: ('Lundi'|'Mardi'|'Mercredi'|'Jeudi'|'Vendredi'|'Samedi')[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
-    
+    const orderedDays: ('Lundi' | 'Mardi' | 'Mercredi' | 'Jeudi' | 'Vendredi' | 'Samedi')[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
     const grid: Record<string, Record<string, { subject: string; teacher: string; endTime: string }>> = {};
 
     uniqueStartTimes.forEach(time => {
-        grid[time] = {};
+      grid[time] = {};
     });
 
     timetableEntries.forEach(entry => {
@@ -67,21 +67,21 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
 
   const onPrintClick = () => {
     if (printRef.current) {
-        handlePrint(printRef.current.innerHTML);
+      handlePrint(printRef.current.innerHTML);
     }
   };
-  
+
   if (timetableEntries.length === 0) {
-      return (
-          <Card>
-              <CardHeader>
-                  <CardTitle>Emploi du Temps indisponible</CardTitle>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-muted-foreground">Aucun emploi du temps n'a été configuré pour la classe de cet élève.</p>
-              </CardContent>
-          </Card>
-      )
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Emploi du Temps indisponible</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">Aucun emploi du temps n&apos;a été configuré pour la classe de cet élève.</p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -126,7 +126,7 @@ export const PrintableTimetable: React.FC<PrintableTimetableProps> = ({ student,
         <div className="mt-6 flex justify-end no-print">
           <Button onClick={onPrintClick}>
             <Printer className="mr-2 h-4 w-4" />
-            Imprimer l'Emploi du Temps
+            Imprimer l&apos;Emploi du Temps
           </Button>
         </div>
       </CardContent>

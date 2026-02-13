@@ -9,7 +9,7 @@ import { ArrowLeft, User, BookUser, Wallet, Shield, CalendarDays } from 'lucide-
 import React from 'react';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, collection, query, orderBy, type DocumentReference, type DocumentData } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,7 +43,7 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
     const router = useRouter();
     const firestore = useFirestore();
 
-    const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`), [firestore, schoolId, studentId]);
+    const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${studentId}`) as DocumentReference<Student>, [firestore, schoolId, studentId]);
     const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
     const student = useMemo(() => studentData ? { ...studentData, id: studentId } as Student & { id: string } : null, [studentData, studentId]);
 
@@ -57,7 +57,7 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
 
     const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
     const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-    
+
     return (
         <div className="space-y-6">
             <Button variant="outline" size="sm" onClick={() => router.back()}>
@@ -116,19 +116,19 @@ function PageContent() {
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const searchParams = useSearchParams();
     const initialTab = searchParams.get('tab') || 'grades';
-  
+
     if (schoolLoading) {
-      return <ParentStudentProfileSkeleton />;
+        return <ParentStudentProfileSkeleton />;
     }
-  
+
     if (!schoolId) {
-      return <p>Erreur: Aucune école n'est associée à votre compte.</p>;
+        return <p>Erreur: Aucune école n&apos;est associée à votre compte.</p>;
     }
-    
+
     if (!studentId) {
-      return <p>Erreur: ID de l'élève manquant.</p>;
+        return <p>Erreur: ID de l&apos;élève manquant.</p>;
     }
-    
+
     return <ParentStudentProfileContent studentId={studentId} schoolId={schoolId} initialTab={initialTab} />;
 }
 

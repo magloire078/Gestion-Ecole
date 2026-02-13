@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { Suspense, useEffect } from 'react';
@@ -14,7 +14,7 @@ function PaymentStatusPageContent() {
     const searchParams = useSearchParams();
     const status = searchParams.get('payment_status');
 
-    // Cette page n'est plus responsable de la mise à jour de l'abonnement.
+    // Cette page n&apos;est plus responsable de la mise à jour de l'abonnement.
     // Elle se contente d'afficher un statut à l'utilisateur.
     // Le webhook s'occupe de la logique métier critique.
     
@@ -90,3 +90,4 @@ export default function PaymentPendingPage() {
         </Suspense>
     )
 }
+

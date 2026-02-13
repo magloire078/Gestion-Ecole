@@ -12,138 +12,138 @@ import { SafeImage } from './ui/safe-image';
 import { usePrint } from '@/hooks/use-print';
 
 interface SchoolInfo {
-  name: string;
-  address?: string;
-  mainLogoUrl?: string;
-  directorFirstName?: string;
-  directorLastName?: string;
-  currentAcademicYear?: string;
+    name: string;
+    address?: string;
+    mainLogoUrl?: string;
+    directorFirstName?: string;
+    directorLastName?: string;
+    currentAcademicYear?: string;
 }
 
 interface TeacherInfoSheetProps {
-  teacher: Teacher & { id: string };
-  school: SchoolInfo;
+    teacher: Teacher & { id: string };
+    school: SchoolInfo;
 }
 
 export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, school }) => {
-  const printRef = useRef<HTMLDivElement>(null);
-  const handlePrint = usePrint("Fiche de Renseignements");
+    const printRef = useRef<HTMLDivElement>(null);
+    const handlePrint = usePrint("Fiche de Renseignements");
 
-  const onPrintClick = () => {
-    if (printRef.current) {
-        handlePrint(printRef.current.innerHTML);
-    }
-  };
-  
-  const InfoRow = ({ icon: Icon, label, value, isLink, href }: { icon: React.ElementType, label: string, value?: string | number | null, isLink?: boolean, href?: string }) => (
-    <div className="flex items-start text-sm">
-        <Icon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground flex-shrink-0" />
-        <div className="flex-1">
-            <span className="text-muted-foreground">{label}:</span>
-            {isLink ? (
-                <a href={href} className="font-semibold ml-1 text-primary hover:underline">{value || 'N/A'}</a>
-            ) : (
-                <span className="font-semibold ml-1">{value || 'N/A'}</span>
-            )}
+    const onPrintClick = () => {
+        if (printRef.current) {
+            handlePrint(printRef.current.innerHTML);
+        }
+    };
+
+    const InfoRow = ({ icon: Icon, label, value, isLink, href }: { icon: React.ElementType, label: string, value?: string | number | null, isLink?: boolean, href?: string }) => (
+        <div className="flex items-start text-sm">
+            <Icon className="h-4 w-4 mr-3 mt-0.5 text-muted-foreground flex-shrink-0" />
+            <div className="flex-1">
+                <span className="text-muted-foreground">{label}:</span>
+                {isLink ? (
+                    <a href={href} className="font-semibold ml-1 text-primary hover:underline">{value || 'N/A'}</a>
+                ) : (
+                    <span className="font-semibold ml-1">{value || 'N/A'}</span>
+                )}
+            </div>
         </div>
-    </div>
-  );
+    );
 
-  const teacherFullName = `${teacher.firstName} ${teacher.lastName}`;
-  const fallback = teacherFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  const currentYear = school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`;
-  const directorFullName = `${school.directorFirstName || ''} ${school.directorLastName || ''}`.trim();
-  const hireDate = teacher.hireDate && isValid(parseISO(teacher.hireDate)) 
-    ? format(parseISO(teacher.hireDate), 'dd MMMM yyyy', { locale: fr })
-    : 'N/A';
+    const teacherFullName = `${teacher.firstName} ${teacher.lastName}`;
+    const fallback = teacherFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    const currentYear = school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`;
+    const directorFullName = `${school.directorFirstName || ''} ${school.directorLastName || ''}`.trim();
+    const hireDate = teacher.hireDate && isValid(parseISO(teacher.hireDate))
+        ? format(parseISO(teacher.hireDate), 'dd MMMM yyyy', { locale: fr })
+        : 'N/A';
 
-  return (
-    <div className="max-w-4xl mx-auto">
-        <Card className="printable-card" >
-            <CardContent className="p-4 sm:p-6">
-                <div ref={printRef}>
-                    <header className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
-                        <div className="flex items-center gap-4">
-                            {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={80} height={80} className="object-contain" />}
-                            <div>
-                                <h1 className="text-2xl font-bold">{school.name}</h1>
-                                <p className="text-xs text-muted-foreground">{school.address}</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                             <h2 className="text-2xl font-bold tracking-tight">FICHE PERSONNEL</h2>
-                             <p className="text-muted-foreground">Année scolaire: {currentYear}</p>
-                        </div>
-                    </header>
-
-                    <main className="space-y-8">
-                        <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/50">
-                            <Avatar className="h-24 w-24">
-                                <AvatarImage src={teacher.photoURL || undefined} alt={teacherFullName} data-ai-hint="person face" />
-                                <AvatarFallback>{fallback}</AvatarFallback>
-                            </Avatar>
-                            <div className="space-y-1 text-center sm:text-left">
-                                <h3 className="text-2xl font-bold text-primary">{teacherFullName}</h3>
-                                <InfoRow icon={Hash} label="Matricule" value={teacher.matricule} />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                            <div className="space-y-4">
-                                <h4 className="font-bold text-lg border-b pb-1">Informations Professionnelles</h4>
-                                <InfoRow icon={Book} label="Rôle" value={teacher.role?.replace(/_/g, ' ')} />
-                                {teacher.subject && <InfoRow icon={BookUser} label="Matière principale" value={teacher.subject} />}
-                                {teacher.classId && <InfoRow icon={BookUser} label="Classe principale" value={teacher.classId} />}
-                                <InfoRow icon={Cake} label="Date d'embauche" value={hireDate} />
-                            </div>
-                             <div className="space-y-4">
-                                <h4 className="font-bold text-lg border-b pb-1">Coordonnées</h4>
-                                <InfoRow icon={Mail} label="Email" value={teacher.email} isLink href={`mailto:${teacher.email}`} />
-                                <InfoRow icon={Phone} label="Téléphone" value={teacher.phone} isLink href={`tel:${teacher.phone}`} />
-                            </div>
-                             <div className="space-y-4">
-                                <h4 className="font-bold text-lg border-b pb-1">Informations Personnelles</h4>
-                                <InfoRow icon={Users} label="Situation matrimoniale" value={teacher.situationMatrimoniale} />
-                                <InfoRow icon={Users} label="Enfants à charge" value={teacher.enfants} />
-                            </div>
-                            <div className="space-y-4">
-                                <h4 className="font-bold text-lg border-b pb-1">Informations Administratives</h4>
-                                <InfoRow icon={Hand} label="Catégorie" value={teacher.categorie} />
-                                <InfoRow icon={Hash} label="N° CNPS" value={teacher.cnpsEmploye} />
-                                <InfoRow icon={Hash} label="Soumis CNPS" value={teacher.CNPS ? 'Oui' : 'Non'} />
-                            </div>
-                             <div className="space-y-4 md:col-span-2">
-                                <h4 className="font-bold text-lg border-b pb-1">Coordonnées Bancaires</h4>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-                                    <InfoRow icon={Landmark} label="Banque" value={teacher.banque} />
-                                    <InfoRow icon={Landmark} label="N° Compte" value={teacher.numeroCompte} />
-                                    <InfoRow icon={Landmark} label="RIB" value={`${teacher.CB || ''} ${teacher.CG || ''} ${teacher.Cle_RIB || ''}`.trim()} />
+    return (
+        <div className="max-w-4xl mx-auto">
+            <Card className="printable-card" >
+                <CardContent className="p-4 sm:p-6">
+                    <div ref={printRef}>
+                        <header className="flex justify-between items-center pb-4 border-b-2 border-primary mb-6">
+                            <div className="flex items-center gap-4">
+                                {school.mainLogoUrl && <SafeImage src={school.mainLogoUrl} alt={school.name} width={80} height={80} className="object-contain" />}
+                                <div>
+                                    <h1 className="text-2xl font-bold">{school.name}</h1>
+                                    <p className="text-xs text-muted-foreground">{school.address}</p>
                                 </div>
                             </div>
-                        </div>
-                    </main>
+                            <div className="text-right">
+                                <h2 className="text-2xl font-bold tracking-tight">FICHE PERSONNEL</h2>
+                                <p className="text-muted-foreground">Année scolaire: {currentYear}</p>
+                            </div>
+                        </header>
 
-                     <footer className="mt-16 grid grid-cols-2 gap-4 text-center text-sm print-break-inside-avoid">
-                        <div>
-                             <div className="font-bold">Signature de l'employé(e)</div>
-                             <div className="mt-16 border-t border-dashed w-48 mx-auto"></div>
-                        </div>
-                         <div>
-                            <div className="font-bold">Cachet et Signature de la Direction</div>
-                             <div className="mt-16 border-t border-dashed w-48 mx-auto"></div>
-                             <span>{directorFullName}</span>
-                        </div>
-                     </footer>
-                </div>
+                        <main className="space-y-8">
+                            <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/50">
+                                <Avatar className="h-24 w-24">
+                                    <AvatarImage src={teacher.photoURL || undefined} alt={teacherFullName} data-ai-hint="person face" />
+                                    <AvatarFallback>{fallback}</AvatarFallback>
+                                </Avatar>
+                                <div className="space-y-1 text-center sm:text-left">
+                                    <h3 className="text-2xl font-bold text-primary">{teacherFullName}</h3>
+                                    <InfoRow icon={Hash} label="Matricule" value={teacher.matricule} />
+                                </div>
+                            </div>
 
-                <div className="mt-6 flex justify-end no-print">
-                    <Button onClick={onPrintClick}>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Imprimer la Fiche
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-    </div>
-  );
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                <div className="space-y-4">
+                                    <h4 className="font-bold text-lg border-b pb-1">Informations Professionnelles</h4>
+                                    <InfoRow icon={Book} label="Rôle" value={teacher.role?.replace(/_/g, ' ')} />
+                                    {teacher.subject && <InfoRow icon={BookUser} label="Matière principale" value={teacher.subject} />}
+                                    {teacher.classId && <InfoRow icon={BookUser} label="Classe principale" value={teacher.classId} />}
+                                    <InfoRow icon={Cake} label="Date d'embauche" value={hireDate} />
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="font-bold text-lg border-b pb-1">Coordonnées</h4>
+                                    <InfoRow icon={Mail} label="Email" value={teacher.email} isLink href={`mailto:${teacher.email}`} />
+                                    <InfoRow icon={Phone} label="Téléphone" value={teacher.phone} isLink href={`tel:${teacher.phone}`} />
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="font-bold text-lg border-b pb-1">Informations Personnelles</h4>
+                                    <InfoRow icon={Users} label="Situation matrimoniale" value={teacher.situationMatrimoniale} />
+                                    <InfoRow icon={Users} label="Enfants à charge" value={teacher.enfants} />
+                                </div>
+                                <div className="space-y-4">
+                                    <h4 className="font-bold text-lg border-b pb-1">Informations Administratives</h4>
+                                    <InfoRow icon={Hand} label="Catégorie" value={teacher.categorie} />
+                                    <InfoRow icon={Hash} label="N° CNPS" value={teacher.cnpsEmploye} />
+                                    <InfoRow icon={Hash} label="Soumis CNPS" value={teacher.CNPS ? 'Oui' : 'Non'} />
+                                </div>
+                                <div className="space-y-4 md:col-span-2">
+                                    <h4 className="font-bold text-lg border-b pb-1">Coordonnées Bancaires</h4>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
+                                        <InfoRow icon={Landmark} label="Banque" value={teacher.banque} />
+                                        <InfoRow icon={Landmark} label="N° Compte" value={teacher.numeroCompte} />
+                                        <InfoRow icon={Landmark} label="RIB" value={`${teacher.CB || ''} ${teacher.CG || ''} ${teacher.Cle_RIB || ''}`.trim()} />
+                                    </div>
+                                </div>
+                            </div>
+                        </main>
+
+                        <footer className="mt-16 grid grid-cols-2 gap-4 text-center text-sm print-break-inside-avoid">
+                            <div>
+                                <div className="font-bold">Signature de l&apos;employé(e)</div>
+                                <div className="mt-16 border-t border-dashed w-48 mx-auto"></div>
+                            </div>
+                            <div>
+                                <div className="font-bold">Cachet et Signature de la Direction</div>
+                                <div className="mt-16 border-t border-dashed w-48 mx-auto"></div>
+                                <span>{directorFullName}</span>
+                            </div>
+                        </footer>
+                    </div>
+
+                    <div className="mt-6 flex justify-end no-print">
+                        <Button onClick={onPrintClick}>
+                            <Printer className="mr-2 h-4 w-4" />
+                            Imprimer la Fiche
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
 };

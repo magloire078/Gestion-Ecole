@@ -1,4 +1,4 @@
-
+﻿
 
 'use client';
 
@@ -39,7 +39,7 @@ const registrationSchema = z.object({
   placeOfBirth: z.string().min(1, { message: "Le lieu de naissance est requis." }),
   gender: z.enum(['Masculin', 'Féminin'], { required_error: "Le sexe est requis." }),
   address: z.string().optional(),
-  
+
   // Step 2
   previousSchool: z.string().optional(),
   classId: z.string().min(1, { message: "La classe souhaitée est requise." }),
@@ -76,7 +76,7 @@ export default function RegistrationPage() {
   const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
   const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
   const fees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
-  
+
   const niveauxQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId]);
   const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
   const niveaux: (Niveau & { id: string })[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau & { id: string })) || [], [niveauxData]);
@@ -84,43 +84,43 @@ export default function RegistrationPage() {
   const form = useForm<RegistrationFormValues>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
-        lastName: '',
-        firstName: '',
-        matricule: '',
-        photoUrl: '',
-        dateOfBirth: '',
-        placeOfBirth: '',
-        gender: undefined,
-        address: '',
-        previousSchool: '',
-        classId: '',
-        status: 'Actif',
-        parent1LastName: '',
-        parent1FirstName: '',
-        parent1Contact: '',
-        parent2LastName: '',
-        parent2FirstName: '',
-        parent2Contact: '',
+      lastName: '',
+      firstName: '',
+      matricule: '',
+      photoUrl: '',
+      dateOfBirth: '',
+      placeOfBirth: '',
+      gender: undefined,
+      address: '',
+      previousSchool: '',
+      classId: '',
+      status: 'Actif',
+      parent1LastName: '',
+      parent1FirstName: '',
+      parent1Contact: '',
+      parent2LastName: '',
+      parent2FirstName: '',
+      parent2Contact: '',
     }
   });
 
   const watchedClassId = useWatch({ control: form.control, name: 'classId' });
 
   const { fee: tuitionFeeForSelectedClass } = getTuitionInfoForClass(watchedClassId, classes, niveaux, fees);
-  
+
   const handleNextStep = async () => {
-      let fieldsToValidate: (keyof RegistrationFormValues)[] = [];
-      if (step === 1) fieldsToValidate = step1Fields;
-      if (step === 2) fieldsToValidate = step2Fields;
-      
-      const isValid = await form.trigger(fieldsToValidate);
-      if (isValid) {
-          setStep(s => Math.min(s + 1, 3));
-      }
+    let fieldsToValidate: (keyof RegistrationFormValues)[] = [];
+    if (step === 1) fieldsToValidate = step1Fields;
+    if (step === 2) fieldsToValidate = step2Fields;
+
+    const isValid = await form.trigger(fieldsToValidate);
+    if (isValid) {
+      setStep(s => Math.min(s + 1, 3));
+    }
   };
-  
+
   const handlePrevStep = () => setStep(s => Math.max(s - 1, 1));
-  
+
   const onSubmit = async (values: RegistrationFormValues) => {
     if (!schoolId) {
       toast({
@@ -131,15 +131,15 @@ export default function RegistrationPage() {
       return;
     }
     if (!user || !user.uid) {
-        toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
-        return;
+      toast({ variant: "destructive", title: "Erreur", description: "Utilisateur non authentifié." });
+      return;
     }
-    
+
     form.clearErrors();
 
     const selectedClassInfo = classes.find(c => c.id === values.classId);
     const selectedNiveauInfo = niveaux.find(n => n.id === selectedClassInfo?.niveauId);
-    
+
     const { fee: tuitionFee } = getTuitionInfoForClass(values.classId, classes, niveaux, fees);
     const currentAcademicYear = schoolData?.currentAcademicYear || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 
@@ -157,8 +157,8 @@ export default function RegistrationPage() {
       status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
-      cycle: selectedClassInfo?.cycleId || 'N/A', 
-      grade: selectedNiveauInfo?.name || 'N/A', 
+      cycle: selectedClassInfo?.cycleId || 'N/A',
+      grade: selectedNiveauInfo?.name || 'N/A',
       parent1LastName: values.parent1LastName,
       parent1FirstName: values.parent1FirstName,
       parent1Contact: values.parent1Contact,
@@ -169,7 +169,7 @@ export default function RegistrationPage() {
       tuitionFee: tuitionFee,
       discountAmount: 0,
       discountReason: '',
-      amountDue: tuitionFee, 
+      amountDue: tuitionFee,
       tuitionStatus: tuitionFee > 0 ? 'Partiel' : 'Soldé' as const,
       feedback: '',
       createdAt: serverTimestamp(),
@@ -177,45 +177,45 @@ export default function RegistrationPage() {
       updatedAt: serverTimestamp(),
       inscriptionYear: currentAcademicYear,
     };
-    
+
     const batch = writeBatch(firestore);
-    
+
     const newStudentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves`));
     batch.set(newStudentRef, studentData);
 
     if (selectedClassInfo) {
-        const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id!);
-        batch.update(classRef, { studentCount: increment(1) });
+      const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id!);
+      batch.update(classRef, { studentCount: increment(1) });
     }
 
     try {
-        await batch.commit();
+      await batch.commit();
 
-        if (schoolData?.directorId) {
-            const notificationsCollectionRef = collection(firestore, `ecoles/${schoolId}/notifications`);
-            const notificationData = {
-                userId: schoolData.directorId,
-                title: `Nouvelle pré-inscription`,
-                content: `L'élève ${values.firstName} ${values.lastName} attend une validation.`,
-                href: `/dashboard/dossiers-eleves/${newStudentRef.id}`,
-                isRead: false,
-                createdAt: serverTimestamp(),
-            };
-            await addDoc(notificationsCollectionRef, notificationData);
-        }
+      if (schoolData?.directorId) {
+        const notificationsCollectionRef = collection(firestore, `ecoles/${schoolId}/notifications`);
+        const notificationData = {
+          userId: schoolData.directorId,
+          title: `Nouvelle pré-inscription`,
+          content: `L'élève ${values.firstName} ${values.lastName} attend une validation.`,
+          href: `/dashboard/dossiers-eleves/${newStudentRef.id}`,
+          isRead: false,
+          createdAt: serverTimestamp(),
+        };
+        await addDoc(notificationsCollectionRef, notificationData);
+      }
 
-        toast({
-            title: "Inscription réussie",
-            description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
-        });
-        router.push(`/dashboard/dossiers-eleves`);
+      toast({
+        title: "Inscription réussie",
+        description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
+      });
+      router.push(`/dashboard/dossiers-eleves`);
     } catch (serverError) {
-        console.error("Error creating student:", serverError);
-        toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible d'enregistrer l'inscription. Vérifiez vos permissions et réessayez.",
-        });
+      console.error("Error creating student:", serverError);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'enregistrer l'inscription. Vérifiez vos permissions et réessayez.",
+      });
     }
   };
 
@@ -223,13 +223,13 @@ export default function RegistrationPage() {
 
   if (isLoading) {
     return (
-        <div className="max-w-3xl mx-auto space-y-6">
-            <Skeleton className="h-10 w-1/3" />
-            <Skeleton className="h-96 w-full" />
-        </div>
+      <div className="max-w-3xl mx-auto space-y-6">
+        <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-96 w-full" />
+      </div>
     );
   }
-  
+
   const { formState: { isSubmitting } } = form;
 
   return (
@@ -241,58 +241,58 @@ export default function RegistrationPage() {
 
       <Card className="max-w-3xl mx-auto">
         <CardHeader>
-          <CardTitle>Formulaire d'Inscription</CardTitle>
+          <CardTitle>Formulaire d&apos;Inscription</CardTitle>
           <CardDescription>
-              Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée : 
-              <span className="font-bold text-primary"> {tuitionFeeForSelectedClass.toLocaleString('fr-FR')} CFA</span>
+            Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée :
+            <span className="font-bold text-primary"> {tuitionFeeForSelectedClass.toLocaleString('fr-FR')} CFA</span>
           </CardDescription>
-            {tuitionFeeForSelectedClass === 0 && watchedClassId && (
-                <Alert variant="destructive" className="mt-2">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertDescription>
-                        Aucun frais de scolarité n'a été défini pour ce niveau. L'élève sera inscrit avec un solde de 0 CFA.
-                        <Button variant="link" asChild className="p-0 h-auto ml-1"><Link href="/dashboard/frais-scolarite">Définir les frais maintenant.</Link></Button>
-                    </AlertDescription>
-                </Alert>
-            )}
+          {tuitionFeeForSelectedClass === 0 && watchedClassId && (
+            <Alert variant="destructive" className="mt-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Aucun frais de scolarité n&apos;a été défini pour ce niveau. L&apos;élève sera inscrit avec un solde de 0 CFA.
+                <Button variant="link" asChild className="p-0 h-auto ml-1"><Link href="/dashboard/frais-scolarite">Définir les frais maintenant.</Link></Button>
+              </AlertDescription>
+            </Alert>
+          )}
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               {step === 1 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5"/>Informations de l'Élève</div>
-                  
+                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5" />Informations de l&apos;Élève</div>
+
                   <div className="flex flex-col sm:flex-row items-center gap-6">
-                      <FormField control={form.control} name="photoUrl" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Photo</FormLabel>
-                          <FormControl>
-                            <ImageUploader 
-                                onUploadComplete={(url) => field.onChange(url)}
-                                storagePath={`ecoles/${schoolId}/student-photos/`}
-                                currentImageUrl={field.value}
-                                resizeWidth={400}
-                            >
-                                <Avatar className="h-24 w-24">
-                                    <AvatarImage src={field.value || undefined} alt="Photo de l'élève" />
-                                    <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
-                                        <Upload className="h-6 w-6 text-muted-foreground" />
-                                        <span className="text-xs text-muted-foreground">Ajouter</span>
-                                    </AvatarFallback>
-                                </Avatar>
-                            </ImageUploader>
-                          </FormControl>
-                           <FormMessage />
-                        </FormItem>
-                      )} />
-                      <div className="flex-1 w-full space-y-4">
-                        <div className="grid sm:grid-cols-2 gap-4">
-                          <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        </div>
-                        <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="photoUrl" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Photo</FormLabel>
+                        <FormControl>
+                          <ImageUploader
+                            onUploadComplete={(url) => field.onChange(url)}
+                            storagePath={`ecoles/${schoolId}/student-photos/`}
+                            currentImageUrl={field.value}
+                            resizeWidth={400}
+                          >
+                            <Avatar className="h-24 w-24">
+                              <AvatarImage src={field.value || undefined} alt="Photo de l'élève" />
+                              <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
+                                <Upload className="h-6 w-6 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">Ajouter</span>
+                              </AvatarFallback>
+                            </Avatar>
+                          </ImageUploader>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <div className="flex-1 w-full space-y-4">
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Ex: GUEYE" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Ex: Adama" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       </div>
+                      <FormField control={form.control} name="matricule" render={({ field }) => (<FormItem><FormLabel>Numéro Matricule</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
@@ -305,36 +305,36 @@ export default function RegistrationPage() {
                   </div>
                 </div>
               )}
-              
+
               {step === 2 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5"/>Informations Scolaires</div>
+                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><GraduationCap className="h-5 w-5" />Informations Scolaires</div>
                   <FormField control={form.control} name="previousSchool" render={({ field }) => (<FormItem><FormLabel>Ancien établissement (si applicable)</FormLabel><FormControl><Input placeholder="Ex: Lycée Lamine Gueye" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <div className="grid sm:grid-cols-2 gap-4">
                     <FormField control={form.control} name="classId" render={({ field }) => (<FormItem><FormLabel>Classe souhaitée</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder={classesLoading ? "Chargement..." : "Sélectionner une classe"} /></SelectTrigger></FormControl><SelectContent>{classes.map(c => <SelectItem key={c.id} value={c.id!}>{c.name}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut de l'inscription</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un statut" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif / Inscrit</SelectItem><SelectItem value="En attente">En attente / Pré-inscrit</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut de l&apos;inscription</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un statut" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Actif">Actif / Inscrit</SelectItem><SelectItem value="En attente">En attente / Pré-inscrit</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                   </div>
                 </div>
               )}
-              
+
               {step === 3 && (
                 <div className="space-y-4 animate-in fade-in-50">
-                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><Users className="h-5 w-5"/>Informations des Parents/Tuteurs</div>
+                  <div className="flex items-center gap-2 text-lg font-semibold text-primary"><Users className="h-5 w-5" />Informations des Parents/Tuteurs</div>
                   <div className="p-4 border rounded-lg space-y-4">
-                      <h4 className="font-medium">Parent 1</h4>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="parent1LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="parent1FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      </div>
-                      <FormField control={form.control} name="parent1Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <h4 className="font-medium">Parent 1</h4>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="parent1LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="parent1FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 1" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="parent1Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                   <div className="p-4 border rounded-lg space-y-4">
-                      <h4 className="font-medium">Parent 2 (optionnel)</h4>
-                      <div className="grid sm:grid-cols-2 gap-4">
-                         <FormField control={form.control} name="parent2LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                         <FormField control={form.control} name="parent2FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      </div>
-                      <FormField control={form.control} name="parent2Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <h4 className="font-medium">Parent 2 (optionnel)</h4>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="parent2LastName" render={({ field }) => (<FormItem><FormLabel>Nom</FormLabel><FormControl><Input placeholder="Nom du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="parent2FirstName" render={({ field }) => (<FormItem><FormLabel>Prénom(s)</FormLabel><FormControl><Input placeholder="Prénom(s) du parent 2" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="parent2Contact" render={({ field }) => (<FormItem><FormLabel>Contact (Téléphone)</FormLabel><FormControl><Input placeholder="Numéro de téléphone" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </div>
               )}
@@ -351,7 +351,7 @@ export default function RegistrationPage() {
                   </Button>
                 ) : (
                   <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Inscription en cours...' : 'Soumettre l\'Inscription'}
+                    {isSubmitting ? 'Inscription en cours...' : 'Soumettre l&apos;Inscription'}
                   </Button>
                 )}
               </div>
@@ -362,3 +362,4 @@ export default function RegistrationPage() {
     </div>
   );
 }
+

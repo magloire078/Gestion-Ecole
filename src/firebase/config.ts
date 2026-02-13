@@ -29,7 +29,7 @@ function getFirebaseInstances() {
     auth = getAuth(app);
     // Utiliser initializeFirestore pour configurer le cache mémoire
     firestore = initializeFirestore(app, {
-        localCache: memoryLocalCache(),
+      localCache: memoryLocalCache(),
     });
     storage = getStorage(app);
   } else {
@@ -44,5 +44,5 @@ function getFirebaseInstances() {
 const instances = getFirebaseInstances();
 export const firebaseApp = instances.app;
 export const firebaseAuth = instances.auth;
-export const firebaseFirestore = instances.firestore;
+export const firebaseFirestore = instances.firestore as Firestore;
 export const firebaseStorage = instances.storage;

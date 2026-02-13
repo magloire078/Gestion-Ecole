@@ -7,7 +7,7 @@ import { Mail, Phone, BookUser, FileText, Briefcase, Building, Book, Shield, Pen
 import React, { useMemo, useState, useEffect } from 'react';
 import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, where, getDoc } from 'firebase/firestore';
+import { doc, collection, query, where, getDoc, type DocumentReference, type DocumentData } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -29,7 +29,7 @@ import { StaffPayrollTab } from '@/components/rh/staff-payroll-tab';
 
 function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: string }) {
     const firestore = useFirestore();
-    const classRef = useMemo(() => classId ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) : null, [schoolId, classId, firestore]);
+    const classRef = useMemo(() => classId ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) as DocumentReference<Class, DocumentData> : null, [schoolId, classId, firestore]);
     const { data: mainClass, loading } = useDoc<Class>(classRef);
 
     if (loading) return <Skeleton className="h-5 w-24" />;
@@ -45,7 +45,7 @@ function MainClassInfo({ schoolId, classId }: { schoolId: string, classId?: stri
 
 function AdminRoleInfo({ schoolId, adminRoleId }: { schoolId: string, adminRoleId?: string }) {
     const firestore = useFirestore();
-    const adminRoleRef = useMemo(() => adminRoleId ? doc(firestore, `ecoles/${schoolId}/admin_roles/${adminRoleId}`) : null, [schoolId, adminRoleId, firestore]);
+    const adminRoleRef = useMemo(() => adminRoleId ? doc(firestore, `ecoles/${schoolId}/admin_roles/${adminRoleId}`) as DocumentReference<AdminRole, DocumentData> : null, [schoolId, adminRoleId, firestore]);
     const { data: adminRole, loading } = useDoc<AdminRole>(adminRoleRef);
 
     if (loading) return <Skeleton className="h-5 w-32" />;
@@ -60,10 +60,10 @@ function AdminRoleInfo({ schoolId, adminRoleId }: { schoolId: string, adminRoleI
 }
 
 
-function TimetableTab({ timetableEntries, classMap, loading }: { 
-    timetableEntries: timetableEntry[], 
+function TimetableTab({ timetableEntries, classMap, loading }: {
+    timetableEntries: timetableEntry[],
     classMap: Map<string, string>,
-    loading: boolean 
+    loading: boolean
 }) {
     const groupedTimetable = useMemo(() => {
         const entries = timetableEntries || [];
@@ -90,7 +90,7 @@ function TimetableTab({ timetableEntries, classMap, loading }: {
             </CardHeader>
             <CardContent>
                 {groupedTimetable.length > 0 ? (
-                     <div className="space-y-4">
+                    <div className="space-y-4">
                         {groupedTimetable.map(([day, entries]) => (
                             <div key={day}>
                                 <h3 className="font-semibold text-md mb-2">{day}</h3>
@@ -112,7 +112,7 @@ function TimetableTab({ timetableEntries, classMap, loading }: {
                                         ))}
                                     </TableBody>
                                 </Table>
-                           </div>
+                            </div>
                         ))}
                     </div>
                 ) : (
@@ -139,12 +139,13 @@ export default function StaffProfilePage() {
 
     const { toast } = useToast();
     const router = useRouter();
-    
+
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
-  
-    const staffRef = useMemo(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) : null, [firestore, schoolId, staffId, refreshKey]);
-    const { data: staffMember, loading: staffLoading, error } = useDoc<Staff>(staffRef);
+
+    const staffRef = useMemo(() => (schoolId && staffId) ? doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`) as DocumentReference<Staff, DocumentData> : null, [firestore, schoolId, staffId, refreshKey]);
+    const { data: staffData, loading: staffLoading, error } = useDoc<Staff>(staffRef);
+    const staffMember = useMemo(() => staffData ? { ...staffData, id: staffId } as Staff & { id: string } : null, [staffData, staffId]);
 
     // Queries for the edit form, can load in background
     const allSchoolClassesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
@@ -155,10 +156,10 @@ export default function StaffProfilePage() {
 
     const subjectsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/matieres`)) : null, [schoolId, firestore]);
     const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
-    
-    const allSchoolClasses = useMemo(() => (allSchoolClassesData || []).map(d => ({ id: d.id, ...d.data() } as Class & {id: string})), [allSchoolClassesData]);
-    const allAdminRoles = useMemo(() => (allAdminRolesData || []).map(d => ({ id: d.id, ...d.data() } as AdminRole & {id: string})), [allAdminRolesData]);
-    const subjects = useMemo(() => (subjectsData || []).map(d => ({ id: d.id, ...d.data() } as Subject & {id: string})), [subjectsData]);
+
+    const allSchoolClasses = useMemo(() => (allSchoolClassesData || []).map(d => ({ id: d.id, ...d.data() } as Class & { id: string })), [allSchoolClassesData]);
+    const allAdminRoles = useMemo(() => (allAdminRolesData || []).map(d => ({ id: d.id, ...d.data() } as AdminRole & { id: string })), [allAdminRolesData]);
+    const subjects = useMemo(() => (subjectsData || []).map(d => ({ id: d.id, ...d.data() } as Subject & { id: string })), [subjectsData]);
 
     const timetableQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('teacherId', '==', staffId)) : null, [firestore, schoolId, staffId]);
     const { data: timetableData, loading: timetableLoading } = useCollection(timetableQuery);
@@ -190,120 +191,120 @@ export default function StaffProfilePage() {
 
     const staffFullName = `${staffMember.firstName} ${staffMember.lastName}`;
     const fallback = staffFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-  
+
     return (
         <>
-        <div className="space-y-6">
-            <div className="flex flex-wrap justify-end items-center gap-2">
-                <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
-                  <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Fiche de Renseignements</span>
-                </Button>
-                <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/bulletin`)}>
-                  <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Voir Bulletin de Paie</span>
-                </Button>
-                {canManageUsers && (
-                  <Button onClick={() => setIsEditDialogOpen(true)}>
-                      <Pencil className="mr-2 h-4 w-4" /> Modifier
-                  </Button>
-                )}
-            </div>
-            <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-    
-                {/* Colonne de gauche */}
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                     <Card>
-                        <CardHeader className="items-center text-center">
-                            <ImageUploader 
-                                onUploadComplete={handlePhotoUploadComplete}
-                                storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
-                                currentImageUrl={staffMember.photoURL}
-                                resizeWidth={400}
-                            >
-                                <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
-                                    <AvatarImage src={staffMember.photoURL || undefined} alt={staffFullName} />
-                                    <AvatarFallback>{fallback}</AvatarFallback>
-                                </Avatar>
-                            </ImageUploader>
-                            <CardTitle className="text-2xl">{staffFullName}</CardTitle>
-                            <CardDescription className='capitalize'>{staffMember.role?.replace(/_/g, ' ')}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
-                            <div className="flex items-center">
-                                <Mail className="mr-3 h-4 w-4 text-muted-foreground" />
-                                <span>{staffMember.email}</span>
-                            </div>
-                            {staffMember.phone && (
-                                <div className="flex items-center">
-                                    <Phone className="mr-3 h-4 w-4 text-muted-foreground" />
-                                    <span>{staffMember.phone}</span>
-                                </div>
-                            )}
-                             <div className="flex items-center">
-                                <Briefcase className="mr-3 h-4 w-4 text-muted-foreground" />
-                                <span className="capitalize">{staffMember.role?.replace(/_/g, ' ')}</span>
-                            </div>
-                            <AdminRoleInfo schoolId={schoolId!} adminRoleId={staffMember.adminRole} />
-                            {staffMember.role === 'enseignant' && (
-                                <div className="flex items-center">
-                                    <Building className="mr-3 h-4 w-4 text-muted-foreground" />
-                                    <span>Matière: <strong>{staffMember.subject || 'N/A'}</strong></span>
-                                </div>
-                             )}
-                            <MainClassInfo schoolId={schoolId!} classId={staffMember.classId} />
-                        </CardContent>
-                    </Card>
+            <div className="space-y-6">
+                <div className="flex flex-wrap justify-end items-center gap-2">
+                    <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/fiche`)}>
+                        <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Fiche de Renseignements</span>
+                    </Button>
+                    <Button variant="outline" onClick={() => router.push(`/dashboard/rh/${staffId}/bulletin`)}>
+                        <span className="flex items-center gap-2"><FileText className="mr-2 h-4 w-4" />Voir Bulletin de Paie</span>
+                    </Button>
+                    {canManageUsers && (
+                        <Button onClick={() => setIsEditDialogOpen(true)}>
+                            <Pencil className="mr-2 h-4 w-4" /> Modifier
+                        </Button>
+                    )}
                 </div>
-    
-                {/* Colonne de droite */}
-                <div className="lg:col-span-2 flex flex-col gap-6">
-                     <Tabs defaultValue="timetable">
-                        <TabsList className="grid w-full grid-cols-3">
-                            <TabsTrigger value="timetable">Emploi du Temps</TabsTrigger>
-                            <TabsTrigger value="payroll">Paie</TabsTrigger>
-                            <TabsTrigger value="info">Informations</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="timetable" className="mt-4">
-                             <TimetableTab 
-                                timetableEntries={timetableEntries} 
-                                classMap={classMap}
-                                loading={isLoading}
-                             />
-                        </TabsContent>
-                        <TabsContent value="payroll" className="mt-4">
-                            <StaffPayrollTab staff={staffMember} />
-                        </TabsContent>
-                        <TabsContent value="info" className="mt-4">
-                            <StaffInfoTab staff={staffMember} />
-                        </TabsContent>
-                    </Tabs>
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+
+                    {/* Colonne de gauche */}
+                    <div className="lg:col-span-1 flex flex-col gap-6">
+                        <Card>
+                            <CardHeader className="items-center text-center">
+                                <ImageUploader
+                                    onUploadComplete={handlePhotoUploadComplete}
+                                    storagePath={`ecoles/${schoolId}/staff/${staffId}/avatars/`}
+                                    currentImageUrl={staffMember.photoURL}
+                                    resizeWidth={400}
+                                >
+                                    <Avatar className="h-24 w-24 mb-2 cursor-pointer hover:opacity-80 transition-opacity">
+                                        <AvatarImage src={staffMember.photoURL || undefined} alt={staffFullName} />
+                                        <AvatarFallback>{fallback}</AvatarFallback>
+                                    </Avatar>
+                                </ImageUploader>
+                                <CardTitle className="text-2xl">{staffFullName}</CardTitle>
+                                <CardDescription className='capitalize'>{staffMember.role?.replace(/_/g, ' ')}</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm">
+                                <div className="flex items-center">
+                                    <Mail className="mr-3 h-4 w-4 text-muted-foreground" />
+                                    <span>{staffMember.email}</span>
+                                </div>
+                                {staffMember.phone && (
+                                    <div className="flex items-center">
+                                        <Phone className="mr-3 h-4 w-4 text-muted-foreground" />
+                                        <span>{staffMember.phone}</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center">
+                                    <Briefcase className="mr-3 h-4 w-4 text-muted-foreground" />
+                                    <span className="capitalize">{staffMember.role?.replace(/_/g, ' ')}</span>
+                                </div>
+                                <AdminRoleInfo schoolId={schoolId!} adminRoleId={staffMember.adminRole} />
+                                {staffMember.role === 'enseignant' && (
+                                    <div className="flex items-center">
+                                        <Building className="mr-3 h-4 w-4 text-muted-foreground" />
+                                        <span>Matière: <strong>{staffMember.subject || 'N/A'}</strong></span>
+                                    </div>
+                                )}
+                                <MainClassInfo schoolId={schoolId!} classId={staffMember.classId} />
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Colonne de droite */}
+                    <div className="lg:col-span-2 flex flex-col gap-6">
+                        <Tabs defaultValue="timetable">
+                            <TabsList className="grid w-full grid-cols-3">
+                                <TabsTrigger value="timetable">Emploi du Temps</TabsTrigger>
+                                <TabsTrigger value="payroll">Paie</TabsTrigger>
+                                <TabsTrigger value="info">Informations</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="timetable" className="mt-4">
+                                <TimetableTab
+                                    timetableEntries={timetableEntries}
+                                    classMap={classMap}
+                                    loading={isLoading}
+                                />
+                            </TabsContent>
+                            <TabsContent value="payroll" className="mt-4">
+                                <StaffPayrollTab staff={staffMember} />
+                            </TabsContent>
+                            <TabsContent value="info" className="mt-4">
+                                <StaffInfoTab staff={staffMember} />
+                            </TabsContent>
+                        </Tabs>
+                    </div>
                 </div>
             </div>
-        </div>
-        
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="max-w-3xl">
-              <DialogHeader>
-                <DialogTitle>Modifier un Membre du Personnel</DialogTitle>
-                <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>
-              </DialogHeader>
-              <StaffEditForm
-                  key={staffMember.id}
-                  schoolId={schoolId!}
-                  editingStaff={staffMember}
-                  classes={allSchoolClasses}
-                  adminRoles={allAdminRoles}
-                  subjects={subjects}
-                  onFormSubmit={() => setIsEditDialogOpen(false)}
-               />
-            </DialogContent>
-          </Dialog>
+
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Modifier un Membre du Personnel</DialogTitle>
+                        <DialogDescription>Mettez à jour les informations de {staffMember.firstName} {staffMember.lastName}.</DialogDescription>
+                    </DialogHeader>
+                    <StaffEditForm
+                        key={staffMember.id}
+                        schoolId={schoolId!}
+                        editingStaff={staffMember}
+                        classes={allSchoolClasses}
+                        adminRoles={allAdminRoles}
+                        subjects={subjects}
+                        onFormSubmit={() => setIsEditDialogOpen(false)}
+                    />
+                </DialogContent>
+            </Dialog>
         </>
-      );
+    );
 }
 
 function StaffDetailSkeleton() {
     return (
-         <div className="space-y-6">
+        <div className="space-y-6">
             <div className="flex justify-end"><Skeleton className="h-10 w-48" /></div>
             <div className="grid gap-6 lg:grid-cols-3">
                 <div className="lg:col-span-1 flex flex-col gap-6">

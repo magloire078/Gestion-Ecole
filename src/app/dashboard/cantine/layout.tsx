@@ -1,4 +1,4 @@
-
+﻿
 
 'use client';
 
@@ -14,9 +14,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cantineSubLinks } from '@/lib/nav-links';
 
 export default function CantineLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
     const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
@@ -61,7 +61,7 @@ export default function CantineLayout({
             </div>
         );
     }
-    
+
     const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('cantine');
 
     if (!hasAccess) {
@@ -76,7 +76,7 @@ export default function CantineLayout({
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            La gestion des menus, des réservations et des abonnements de cantine est un module complémentaire. Pour y accéder, veuillez l'activer depuis la page d'abonnement.
+                            La gestion des menus, des réservations et des abonnements de cantine est un module complémentaire. Pour y accéder, veuillez l&apos;activer depuis la page d&apos;abonnement.
                         </p>
                     </CardContent>
                     <CardFooter>
@@ -90,6 +90,7 @@ export default function CantineLayout({
             </div>
         );
     }
-    
+
     return layoutContent;
 }
+

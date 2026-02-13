@@ -1,6 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import { getFirestore, doc, updateDoc, serverTimestamp, getDoc, writeBatch, collection, type Firestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, type Firestore } from 'firebase-admin/firestore';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { addMonths } from 'date-fns';
 import type { school, student } from '@/lib/data-types';
@@ -40,10 +40,10 @@ async function handleSubscriptionPayment(db: Firestore, schoolId: string, planNa
     throw e;
   }
 
-  const schoolRef = doc(db, 'ecoles', schoolId);
-  const schoolSnap = await getDoc(schoolRef);
+  const schoolRef = db.collection('ecoles').doc(schoolId);
+  const schoolSnap = await schoolRef.get();
 
-  if (!schoolSnap.exists()) {
+  if (!schoolSnap.exists) {
     console.error(`[${paymentProvider}] School with ID ${schoolId} not found.`);
     throw new Error('School not found');
   }
@@ -53,11 +53,11 @@ async function handleSubscriptionPayment(db: Firestore, schoolId: string, planNa
   const startDate = subEndDate < new Date() ? new Date() : subEndDate;
   const newEndDate = addMonths(startDate, durationMonths);
 
-  await updateDoc(schoolRef, {
+  await schoolRef.update({
     'subscription.plan': planName, // Update the plan as well!
     'subscription.status': 'active',
     'subscription.endDate': newEndDate.toISOString(),
-    'updatedAt': serverTimestamp(),
+    'updatedAt': FieldValue.serverTimestamp(),
   });
   console.log(`[${paymentProvider}] Successfully updated subscription for school ${schoolId}.`);
 }
@@ -66,10 +66,10 @@ async function handleSubscriptionPayment(db: Firestore, schoolId: string, planNa
 async function handleTuitionPayment(db: Firestore, schoolId: string, studentId: string, amountPaid: number, paymentProvider: string) {
   console.log(`Processing ${paymentProvider} tuition payment for schoolId: ${schoolId}, studentId: ${studentId}, amount: ${amountPaid}`);
 
-  const studentRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}`);
-  const studentSnap = await getDoc(studentRef);
+  const studentRef = db.doc(`ecoles/${schoolId}/eleves/${studentId}`);
+  const studentSnap = await studentRef.get();
 
-  if (!studentSnap.exists()) {
+  if (!studentSnap.exists) {
     console.error(`[${paymentProvider}] Student with ID ${studentId} in school ${schoolId} not found.`);
     throw new Error('Student not found');
   }
@@ -78,17 +78,17 @@ async function handleTuitionPayment(db: Firestore, schoolId: string, studentId: 
   const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
   const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
 
-  const batch = writeBatch(db);
+  const batch = db.batch();
 
   batch.update(studentRef, { amountDue: newAmountDue, tuitionStatus: newStatus });
 
-  const accountingRef = doc(collection(db, `ecoles/${schoolId}/comptabilite`));
+  const accountingRef = db.collection(`ecoles/${schoolId}/comptabilite`).doc();
   batch.set(accountingRef, {
     schoolId, studentId, date: new Date().toISOString().split('T')[0],
     description: `Paiement scolarité via ${paymentProvider}`, category: 'Scolarité', type: 'Revenu', amount: amountPaid
   });
 
-  const paymentRef = doc(collection(db, `ecoles/${schoolId}/eleves/${studentId}/paiements`));
+  const paymentRef = db.collection(`ecoles/${schoolId}/eleves/${studentId}/paiements`).doc();
   batch.set(paymentRef, {
     schoolId, studentId, date: new Date().toISOString().split('T')[0], amount: amountPaid,
     description: `Paiement en ligne via ${paymentProvider}`, accountingTransactionId: accountingRef.id,

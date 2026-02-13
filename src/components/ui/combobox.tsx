@@ -26,13 +26,13 @@ type Option = {
 };
 
 type ComboboxProps = {
-    options: Option[];
-    value: string;
-    onValueChange: (value: string) => void;
-    onCreate?: (value: string) => Promise<{value: string, label: string} | null>;
-    placeholder?: string;
-    searchPlaceholder?: string;
-    className?: string;
+  options: Option[];
+  value: string;
+  onValueChange: (value: string) => void;
+  onCreate?: (value: string) => Promise<{ value: string, label: string } | null>;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  className?: string;
 };
 
 export function Combobox({ options, value, onValueChange, onCreate, placeholder, searchPlaceholder, className }: ComboboxProps) {
@@ -50,12 +50,12 @@ export function Combobox({ options, value, onValueChange, onCreate, placeholder,
     setInputValue("");
     setOpen(false);
   };
-  
+
   const handleCreate = async () => {
     if (!onCreate || !inputValue) return;
     const newItem = await onCreate(inputValue);
-    if(newItem) {
-        onValueChange(newItem.value);
+    if (newItem) {
+      onValueChange(newItem.value);
     }
     setInputValue("");
     setOpen(false);
@@ -78,7 +78,7 @@ export function Combobox({ options, value, onValueChange, onCreate, placeholder,
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command>
-          <CommandInput 
+          <CommandInput
             placeholder={searchPlaceholder || "Search..."}
             value={inputValue}
             onValueChange={setInputValue}
@@ -103,13 +103,13 @@ export function Combobox({ options, value, onValueChange, onCreate, placeholder,
                   {option.label}
                 </CommandItem>
               ))}
-               {showCreateOption && (
+              {showCreateOption && (
                 <CommandItem
                   onSelect={handleCreate}
                   className="text-primary"
                 >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Créer "{inputValue}"
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Créer &quot;{inputValue}&quot;
                 </CommandItem>
               )}
             </CommandGroup>

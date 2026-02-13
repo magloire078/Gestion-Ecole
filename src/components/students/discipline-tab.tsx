@@ -29,14 +29,14 @@ export function DisciplineTab({ schoolId, student }: DisciplineTabProps) {
     const incidentsQuery = useMemo(() => {
         if (!schoolId || !student?.id) return null;
         return query(
-            collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/incidents_disciplinaires`), 
+            collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/incidents_disciplinaires`),
             orderBy('date', 'desc')
         );
     }, [firestore, schoolId, student?.id]);
-    
+
     const { data: incidentsData, loading: incidentsLoading } = useCollection(incidentsQuery);
-    
-    const incidents = useMemo(() => incidentsData?.map(d => ({ id: d.id, ...d.data() } as DisciplineIncident & {id: string})) || [], [incidentsData]);
+
+    const incidents = useMemo(() => incidentsData?.map(d => ({ id: d.id, ...d.data() } as DisciplineIncident & { id: string })) || [], [incidentsData]);
 
     const getTypeBadgeVariant = (type: string) => {
         if (type.includes('Exclusion') || type.includes('Mise à pied')) return 'destructive';
@@ -51,7 +51,7 @@ export function DisciplineTab({ schoolId, student }: DisciplineTabProps) {
                     <div className="flex justify-between items-center">
                         <div>
                             <CardTitle>Historique Disciplinaire</CardTitle>
-                            <CardDescription>Suivi des comportements et des sanctions de l'élève.</CardDescription>
+                            <CardDescription>Suivi des comportements et des sanctions de l&apos;élève.</CardDescription>
                         </div>
                         {canManageDiscipline && (
                             <Button onClick={() => setIsFormOpen(true)}>
@@ -101,11 +101,11 @@ export function DisciplineTab({ schoolId, student }: DisciplineTabProps) {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Signaler un incident pour {student.firstName}</DialogTitle>
-                        <DialogDescription>Remplissez les détails de l'incident.</DialogDescription>
+                        <DialogDescription>Remplissez les détails de l&apos;incident.</DialogDescription>
                     </DialogHeader>
-                    <IncidentForm 
-                        schoolId={schoolId} 
-                        student={student} 
+                    <IncidentForm
+                        schoolId={schoolId}
+                        student={student}
                         students={[]}
                         onSave={() => setIsFormOpen(false)}
                     />

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ export default function SubscriptionPage() {
     const handleChoosePlan = (planName: PlanName, price: number) => {
         setError(null);
         if (!schoolName) {
-            setError("Le nom de l'école n'est pas encore chargé. Veuillez patienter un instant.");
+            setError("Le nom de l'école n&apos;est pas encore chargé. Veuillez patienter un instant.");
             return;
         }
 
@@ -262,3 +262,4 @@ export default function SubscriptionPage() {
         </div>
     )
 }
+

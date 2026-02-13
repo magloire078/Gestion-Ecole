@@ -1,0 +1,210 @@
+﻿src/app/dashboard/absences/page.tsx(302,105): error TS2345: Argument of type 'AbsenceEntry' is not assignable to parameter of type 'absence & { id: string; }'.
+  Type 'AbsenceEntry' is not assignable to type 'absence'.
+    Types of property 'classId' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/activites/competitions/[competitionId]/page.tsx(37,86): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<competition, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<competition, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<competition, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<competition, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'competition': name, date
+src/app/dashboard/activites/page.tsx(171,12): error TS2304: Cannot find name 'DialogFooter'.
+src/app/dashboard/activites/page.tsx(171,208): error TS2304: Cannot find name 'DialogFooter'.
+src/app/dashboard/classes/[classId]/page.tsx(50,92): error TS2304: Cannot find name 'DocumentReference'.
+src/app/dashboard/classes/[classId]/page.tsx(50,117): error TS2552: Cannot find name 'DocumentData'. Did you mean 'Document'?
+src/app/dashboard/classes/[classId]/page.tsx(56,127): error TS2304: Cannot find name 'Query'.
+src/app/dashboard/classes/[classId]/page.tsx(56,142): error TS2552: Cannot find name 'DocumentData'. Did you mean 'Document'?
+src/app/dashboard/classes/[classId]/page.tsx(60,72): error TS2698: Spread types may only be created from object types.
+src/app/dashboard/dossiers-eleves/[eleveId]/bulletin/page.tsx(46,83): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<StudentWithClass, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<StudentWithClass, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<StudentWithClass, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'StudentWithClass': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/dossiers-eleves/[eleveId]/carte/page.tsx(26,48): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/dossiers-eleves/[eleveId]/carte/page.tsx(41,74): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/dossiers-eleves/[eleveId]/emploi-du-temps/page.tsx(52,74): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/dossiers-eleves/[eleveId]/fiche/page.tsx(45,74): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/dossiers-eleves/[eleveId]/page.tsx(72,81): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/dossiers-eleves/[eleveId]/page.tsx(76,71): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<class_type, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<class_type, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<class_type, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<class_type, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'class_type': schoolId, cycleId, niveauId, name, and 7 more.
+src/app/dashboard/dossiers-eleves/[eleveId]/page.tsx(79,72): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<staff, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<staff, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<staff, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<staff, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'staff': uid, email, schoolId, role, and 4 more.
+src/app/dashboard/dossiers-eleves/[eleveId]/page.tsx(106,64): error TS2554: Expected 3 arguments, but got 4.
+src/app/dashboard/immobilier/maintenance/page.tsx(104,75): error TS2552: Cannot find name 'salle'. Did you mean 'Salle'?
+src/app/dashboard/immobilier/maintenance/page.tsx(105,73): error TS2552: Cannot find name 'bus'. Did you mean 'Bus'?
+src/app/dashboard/immobilier/maintenance/page.tsx(204,21): error TS2322: Type 'string | null | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/parametres/abonnement/paiement/page.tsx(93,13): error TS2322: Type 'User | null' is not assignable to type 'User'.
+  Type 'null' is not assignable to type 'User'.
+src/app/dashboard/parent/student/[studentId]/page.tsx(47,76): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/parent/student/[studentId]/paiement/page.tsx(45,72): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<student, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<student, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/rh/[staffId]/bulletin/page.tsx(36,68): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<staff, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<staff, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<staff, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<staff, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'staff': uid, email, schoolId, role, and 4 more.
+src/app/dashboard/rh/[staffId]/fiche/page.tsx(12,11): error TS2430: Interface 'SchoolInfo' incorrectly extends interface 'school'.
+  Types of property 'directorFirstName' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/rh/[staffId]/fiche/page.tsx(30,68): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<staff, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<staff, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<staff, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<staff, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'staff': uid, email, schoolId, role, and 4 more.
+src/app/dashboard/rh/[staffId]/page.tsx(33,56): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<class_type, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<class_type, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<class_type, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<class_type, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'class_type': schoolId, cycleId, niveauId, name, and 7 more.
+src/app/dashboard/rh/[staffId]/page.tsx(49,60): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<admin_role, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<admin_role, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<admin_role, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<admin_role, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'admin_role': schoolId, name, permissions
+src/app/dashboard/rh/[staffId]/page.tsx(147,79): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<staff, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<staff, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<staff, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<staff, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'staff': uid, email, schoolId, role, and 4 more.
+src/app/dashboard/rh/[staffId]/page.tsx(183,67): error TS2554: Expected 3 arguments, but got 4.
+src/app/dashboard/rh/[staffId]/page.tsx(290,36): error TS2339: Property 'id' does not exist on type 'staff'.
+src/app/dashboard/rh/[staffId]/page.tsx(292,19): error TS2322: Type 'staff' is not assignable to type 'staff & { id: string; }'.
+  Property 'id' is missing in type 'staff' but required in type '{ id: string; }'.
+src/app/dashboard/rh/conges/page.tsx(195,48): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/app/dashboard/rh/conges/page.tsx(195,80): error TS2322: Type 'string | null | undefined' is not assignable to type 'string | null'.
+  Type 'undefined' is not assignable to type 'string | null'.
+src/app/dashboard/rh/paie/page.tsx(50,66): error TS2783: 'id' is specified more than once, so this usage will be overwritten.
+src/app/dashboard/rh/paie/page.tsx(86,102): error TS2339: Property 'id' does not exist on type 'staff'.
+src/app/dashboard/sante/[eleveId]/page.tsx(78,74): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/app/dashboard/sante/[eleveId]/page.tsx(81,81): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<dossierMedical, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<dossierMedical, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<dossierMedical, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'dossierMedical': studentId, schoolId
+src/components/admin/admins-table.tsx(46,34): error TS2352: Conversion of type '{ id: string; }' to type 'UserProfile' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ id: string; }' is missing the following properties from type 'UserProfile': uid, email, schoolId, role, and 4 more.
+src/components/admin/full-audit-log.tsx(50,78): error TS2698: Spread types may only be created from object types.
+src/components/admin/full-audit-log.tsx(53,25): error TS2345: Argument of type 'QueryDocumentSnapshot<unknown, DocumentData>' is not assignable to parameter of type 'SetStateAction<QueryDocumentSnapshot<DocumentData, DocumentData> | null>'.
+  Type 'QueryDocumentSnapshot<unknown, DocumentData>' is not assignable to type 'QueryDocumentSnapshot<DocumentData, DocumentData>'.
+    The types returned by 'data(...)' are incompatible between these types.
+      Type 'unknown' is not assignable to type 'DocumentData'.
+src/components/admin/full-audit-log.tsx(54,24): error TS2345: Argument of type 'QueryDocumentSnapshot<unknown, DocumentData>' is not assignable to parameter of type 'SetStateAction<QueryDocumentSnapshot<DocumentData, DocumentData> | null>'.
+  Type 'QueryDocumentSnapshot<unknown, DocumentData>' is not assignable to type 'QueryDocumentSnapshot<DocumentData, DocumentData>'.
+    The types returned by 'data(...)' are incompatible between these types.
+      Type 'unknown' is not assignable to type 'DocumentData'.
+src/components/admin/schools-table.tsx(264,21): error TS2322: Type 'School' is not assignable to type 'school & { id: string; }'.
+  Type 'School' is missing the following properties from type 'school': directorId, schoolCode
+src/components/classes/classes-grid-view.tsx(17,15): error TS2305: Module '"@/lib/data-types"' has no exported member 'classe'.
+src/components/classes/classes-list-view.tsx(16,15): error TS2305: Module '"@/lib/data-types"' has no exported member 'classe'.
+src/components/dashboard/dashboard-layout-content.tsx(229,23): error TS2322: Type 'boolean | null' is not assignable to type 'boolean'.
+  Type 'null' is not assignable to type 'boolean'.
+src/components/immobilier/building-form.tsx(52,11): error TS2345: Argument of type '(building & { id: string; }) | { type: "pedagogique"; status: "active"; name: string; capacity: number; responsableId: string; }' is not assignable to parameter of type '{ status: "active" | "full" | "maintenance"; name: string; type: "administratif" | "pedagogique" | "sportif" | "autre"; capacity: number; responsableId?: string | undefined; } | { ...; } | ResetAction<...> | undefined'.
+  Type 'building & { id: string; }' is not assignable to type '{ status: "active" | "full" | "maintenance"; name: string; type: "administratif" | "pedagogique" | "sportif" | "autre"; capacity: number; responsableId?: string | undefined; } | { ...; } | ResetAction<...> | undefined'.
+    Type 'building & { id: string; }' is not assignable to type '{ status: "active" | "full" | "maintenance"; name: string; type: "administratif" | "pedagogique" | "sportif" | "autre"; capacity: number; responsableId?: string | undefined; } | { ...; } | ResetAction<...>'.
+      Type 'building & { id: string; }' is not assignable to type '{ status?: "active" | "full" | "maintenance" | undefined; name?: string | undefined; type?: "administratif" | "pedagogique" | "sportif" | "autre" | undefined; capacity?: number | undefined; responsableId?: string | undefined; }'.
+        Types of property 'type' are incompatible.
+          Type '"administratif" | "pedagogique" | "sportif" | "autre" | "garcons" | "filles" | "mixte"' is not assignable to type '"administratif" | "pedagogique" | "sportif" | "autre" | undefined'.
+            Type '"garcons"' is not assignable to type '"administratif" | "pedagogique" | "sportif" | "autre" | undefined'.
+src/components/internat/log-form.tsx(44,11): error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+  Type 'null' is not assignable to type 'string | undefined'.
+src/components/parent/parent-dashboard.tsx(8,15): error TS2305: Module '"@/firebase"' has no exported member 'AppUser'.
+src/components/parent/parent-dashboard.tsx(52,52): error TS7006: Parameter 'studentId' implicitly has an 'any' type.
+src/components/parent/student-card.tsx(33,72): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/components/parent/student/[studentId]/page.tsx(47,76): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData>' is not assignable to parameter of type 'DocumentReference<student, DocumentData>'.
+  Types of property 'converter' are incompatible.
+    Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<student, DocumentData> | null'.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<student, DocumentData>'.
+        The types returned by 'fromFirestore(...)' are incompatible between these types.
+          Type 'DocumentData' is missing the following properties from type 'student': schoolId, matricule, firstName, lastName, and 10 more.
+src/components/pedagogy/niveau-form.tsx(95,53): error TS2345: Argument of type '{ name: string; code: string; order: number; cycleId: string; capacity: number; ageMin: number | undefined; ageMax: number | undefined; }' is not assignable to parameter of type 'Omit<niveau, "updatedAt" | "schoolId" | "createdAt" | "id">'.
+  Types of property 'ageMin' are incompatible.
+    Type 'number | undefined' is not assignable to type 'number'.
+      Type 'undefined' is not assignable to type 'number'.
+src/components/report-card.tsx(85,47): error TS2345: Argument of type 'DocumentReference<DocumentData, DocumentData> | null' is not assignable to parameter of type 'DocumentReference<class_type, DocumentData> | null'.
+  Type 'DocumentReference<DocumentData, DocumentData>' is not assignable to type 'DocumentReference<class_type, DocumentData>'.
+    Types of property 'converter' are incompatible.
+      Type 'FirestoreDataConverter<DocumentData, DocumentData> | null' is not assignable to type 'FirestoreDataConverter<class_type, DocumentData> | null'.
+        Type 'FirestoreDataConverter<DocumentData, DocumentData>' is not assignable to type 'FirestoreDataConverter<class_type, DocumentData>'.
+          The types returned by 'fromFirestore(...)' are incompatible between these types.
+            Type 'DocumentData' is missing the following properties from type 'class_type': schoolId, cycleId, niveauId, name, and 7 more.
+src/components/report-card.tsx(161,21): error TS2353: Object literal may only specify known properties, and 'subject' does not exist in type '{ studentName: string; grades: { subject: string; grade: number; maxGrade: number; }[]; attendance?: number | undefined; behavior?: string | undefined; }'.
+src/components/school-info-sheet.tsx(60,30): error TS2339: Property 'currentAcademicYear' does not exist on type 'school'.
+src/components/theme-provider.tsx(5,41): error TS2307: Cannot find module 'next-themes/dist/types' or its corresponding type declarations.
+src/components/ui/calendar.tsx(57,9): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+src/components/ui/menubar.tsx(5,35): error TS2307: Cannot find module '@radix-ui/react-menubar' or its corresponding type declarations.
+src/hooks/use-subscription.ts(14,35): error TS2322: Type '{ plan?: "Essentiel" | "Pro" | "Premium" | undefined; status?: "active" | "trialing" | "past_due" | "canceled" | undefined; endDate?: string | undefined; maxStudents?: number | undefined; maxCycles?: number | undefined; activeModules?: ("sante" | "cantine" | "transport" | "internat" | "immobilier" | "activites" | "r...' is not assignable to type 'Subscription'.
+  Types of property 'plan' are incompatible.
+    Type '"Essentiel" | "Pro" | "Premium" | undefined' is not assignable to type '"Essentiel" | "Pro" | "Premium"'.
+      Type 'undefined' is not assignable to type '"Essentiel" | "Pro" | "Premium"'.
+src/services/user-service.ts(5,15): error TS2305: Module '"@/lib/data-types"' has no exported member 'AppUser'.
+src/verify_agents.ts(1,30): error TS2307: Cannot find module './ai/agents/director' or its corresponding type declarations.
+src/verify_agents.ts(2,10): error TS2305: Module '"genkit"' has no exported member 'runFlow'.
+src/verify_agents.ts(3,25): error TS2307: Cannot find module 'dotenv' or its corresponding type declarations.

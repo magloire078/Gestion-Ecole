@@ -6,6 +6,7 @@ import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createWaveCheckoutSession } from '@/lib/wave';
 import { requestMtnMomoPayment } from '@/lib/mtn-momo';
 import { createPayDunyaCheckout } from '@/lib/paydunya';
+import { createGeniusPayment } from '@/lib/genius-pay';
 import type { User } from 'firebase/auth';
 
 interface PaymentProviderData {
@@ -23,7 +24,7 @@ interface PaymentProviderData {
     phoneNumber?: string;
 }
 
-type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya';
+type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 'genius';
 
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
     const { type, price: clientPrice, description, user, schoolId, phoneNumber, plan, duration, studentId } = data;
@@ -109,7 +110,7 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             planName: type === 'tuition' ? 'Frais de scolarité' : plan || 'Abonnement',
             description,
             clientReferenceId,
-            customerEmail: user.email,
+            customerEmail: user.email || undefined,
         };
 
         const { url, error } = await createStripeCheckoutSession(sessionData);
@@ -147,6 +148,27 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         const { url, error } = await createPayDunyaCheckout(paymentData);
         if (url) return { url, error: null };
         return { url: null, error: error || "Impossible de générer le lien de paiement PayDunya." };
+    }
+
+    if (provider === 'genius') {
+        try {
+            const paymentData = {
+                amount: parseInt(finalPrice, 10),
+                currency: 'XOF',
+                orderId: getReferenceId(),
+                description: description,
+                payerName: user.displayName || undefined,
+                payerEmail: user.email || undefined,
+                returnUrl: successUrl,
+                cancelUrl: cancelUrl,
+                callbackUrl: `${BASE_APP_URL}/api/webhooks/genius`,
+            };
+            const { data: { payment_url } } = await createGeniusPayment(paymentData);
+            if (payment_url) return { url: payment_url, error: null };
+            return { url: null, error: "Réponse Genius Pay invalide." };
+        } catch (e: any) {
+            return { url: null, error: e.message || "Erreur Genius Pay." };
+        }
     }
 
     return { url: null, error: 'Fournisseur de paiement non supporté.' };

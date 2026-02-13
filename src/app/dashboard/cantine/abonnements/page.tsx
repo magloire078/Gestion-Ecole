@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -35,8 +35,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 
 interface SubscriptionWithStudentName extends CanteenSubscription {
-    studentName?: string;
-    id: string;
+  studentName?: string;
+  id: string;
 }
 
 export default function AbonnementsCantinePage() {
@@ -45,7 +45,7 @@ export default function AbonnementsCantinePage() {
   const { user } = useUser();
   const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageCantine;
-  
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingSubscription, setEditingSubscription] = useState<(CanteenSubscription & { id: string }) | null>(null);
 
@@ -60,9 +60,9 @@ export default function AbonnementsCantinePage() {
 
   const subscriptions: SubscriptionWithStudentName[] = useMemo(() => {
     if (!subscriptionsData || !studentsData) return [];
-    
+
     const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
-    
+
     return subscriptionsData.map(doc => {
       const sub = { id: doc.id, ...doc.data() } as CanteenSubscription & { id: string };
       const student = studentsMap.get(sub.studentId);
@@ -77,10 +77,10 @@ export default function AbonnementsCantinePage() {
     setEditingSubscription(subscription);
     setIsFormOpen(true);
   };
-  
+
   const handleFormSave = () => {
-      setIsFormOpen(false);
-      setEditingSubscription(null);
+    setIsFormOpen(false);
+    setEditingSubscription(null);
   }
 
   const handleOpenDeleteDialog = (subscription: SubscriptionWithStudentName) => {
@@ -103,13 +103,13 @@ export default function AbonnementsCantinePage() {
   };
 
   const isLoading = schoolLoading || subscriptionsLoading || studentsLoading;
-  
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-        case 'active': return 'secondary';
-        case 'inactive': return 'outline';
-        case 'expired': return 'destructive';
-        default: return 'default';
+      case 'active': return 'secondary';
+      case 'inactive': return 'outline';
+      case 'expired': return 'destructive';
+      default: return 'default';
     }
   }
 
@@ -164,20 +164,20 @@ export default function AbonnementsCantinePage() {
                     </TableCell>
                     <TableCell>{sub.remainingMeals ?? 'N/A'}</TableCell>
                     <TableCell>
-                        <Badge variant={getStatusBadgeVariant(sub.status)}>{sub.status}</Badge>
+                      <Badge variant={getStatusBadgeVariant(sub.status)}>{sub.status}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                        {canManageContent && (
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => handleOpenForm(sub)}><Edit className="mr-2 h-4 w-4"/>Modifier</DropdownMenuItem>
-                                    <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(sub)}><Trash2 className="mr-2 h-4 w-4"/>Supprimer</DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
+                      {canManageContent && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleOpenForm(sub)}><Edit className="mr-2 h-4 w-4" />Modifier</DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(sub)}><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
@@ -192,40 +192,41 @@ export default function AbonnementsCantinePage() {
           </Table>
         </CardContent>
       </Card>
-      
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-2xl">
-            <DialogHeader>
-                <DialogTitle>{editingSubscription ? 'Modifier' : 'Nouvel'} Abonnement</DialogTitle>
-                <DialogDescription>
-                    {editingSubscription ? 'Mettez à jour les détails de l\'abonnement.' : 'Inscrivez un élève au service de cantine.'}
-                </DialogDescription>
-            </DialogHeader>
-            <SubscriptionForm 
-                schoolId={schoolId!}
-                students={(studentsData?.docs || []).map(d => ({id: d.id, ...d.data()} as Student & {id: string}))}
-                subscription={editingSubscription}
-                onSave={handleFormSave}
-            />
+          <DialogHeader>
+            <DialogTitle>{editingSubscription ? 'Modifier' : 'Nouvel'} Abonnement</DialogTitle>
+            <DialogDescription>
+              {editingSubscription ? 'Mettez à jour les détails de l&apos;abonnement.' : 'Inscrivez un élève au service de cantine.'}
+            </DialogDescription>
+          </DialogHeader>
+          <SubscriptionForm
+            schoolId={schoolId!}
+            students={(studentsData || []).map(d => ({ id: d.id, ...d.data() } as Student & { id: string }))}
+            subscription={editingSubscription}
+            onSave={handleFormSave}
+          />
         </DialogContent>
       </Dialog>
-      
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    Cette action est irréversible. L'abonnement de <strong>{subscriptionToDelete?.studentName}</strong> sera définitivement supprimé.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteSubscription} className="bg-destructive hover:bg-destructive/90">
-                    Supprimer
-                </AlertDialogAction>
-            </AlertDialogFooter>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette action est irréversible. L&apos;abonnement de <strong>{subscriptionToDelete?.studentName}</strong> sera définitivement supprimé.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteSubscription} className="bg-destructive hover:bg-destructive/90">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
   );
 }
+

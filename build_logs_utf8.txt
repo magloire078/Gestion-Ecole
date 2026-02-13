@@ -1,0 +1,32 @@
+﻿
+> next-app@0.1.0 build
+> next build
+
+  Ôû▓ Next.js 14.2.35
+  - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+node.exe : SyntaxError: Expected 
+double-quoted property name in 
+JSON at position 1787 (line 49 
+column 1)
+Au caractère Ligne:1 : 1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : NotS 
+   pecified: (SyntaxError: Ex...n  
+  e 49 column 1):String) [], Rem   
+ oteException
+    + FullyQualifiedErrorId : Nati 
+   veCommandError
+ 
+    at JSON.parse (<anonymous>)
+    at patchIncorrectLockfile 
+(C:\Users\HP EliteBook\Documents\Gi
+tHub\Gestion-Ecole\node_modules\nex
+t\dist\lib\patch-incorrect-lockfile
+.js:94:33)

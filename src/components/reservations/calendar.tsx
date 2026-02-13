@@ -58,20 +58,20 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
   }, [staffData]);
 
   const reservationsBySalleAndTime = useMemo(() => {
-    const grid: Record<string, Record<string, Reservation & {id: string}>> = {};
+    const grid: Record<string, Record<string, Reservation & { id: string }>> = {};
     const startOfSelectedDay = startOfDay(currentDate);
 
     const dayReservations = reservations.filter(res => {
-        const resDate = new Date(res.startTime);
-        return isEqual(startOfDay(resDate), startOfSelectedDay);
+      const resDate = new Date(res.startTime);
+      return isEqual(startOfDay(resDate), startOfSelectedDay);
     });
 
     dayReservations.forEach(res => {
-        const startTime = format(new Date(res.startTime), 'HH:00');
-        if (!grid[res.salleId]) {
-            grid[res.salleId] = {};
-        }
-        grid[res.salleId][startTime] = res;
+      const startTime = format(new Date(res.startTime), 'HH:00');
+      if (!grid[res.salleId]) {
+        grid[res.salleId] = {};
+      }
+      grid[res.salleId][startTime] = res;
     });
 
     return grid;
@@ -83,7 +83,7 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
     setPreselectedSlot(slotInfo);
     setIsFormOpen(true);
   };
-  
+
   const isLoading = sallesLoading || reservationsLoading || staffLoading;
 
   return (
@@ -100,13 +100,13 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Popover>
                 <PopoverTrigger asChild>
-                    <Button variant={"outline"} className="w-full sm:w-auto justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(currentDate, 'PPP', { locale: fr })}
-                    </Button>
+                  <Button variant={"outline"} className="w-full sm:w-auto justify-start text-left font-normal">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {format(currentDate, 'PPP', { locale: fr })}
+                  </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                    <Calendar mode="single" selected={currentDate} onSelect={(d) => d && setCurrentDate(d)} initialFocus/>
+                  <Calendar mode="single" selected={currentDate} onSelect={(d) => d && setCurrentDate(d)} initialFocus />
                 </PopoverContent>
               </Popover>
               {canManageContent && (
@@ -136,63 +136,63 @@ export function ReservationsCalendar({ schoolId }: { schoolId: string }) {
                 </thead>
                 <tbody>
                   {timeSlots.map(time => (
-                      <tr key={time}>
-                        <td className="sticky left-0 bg-muted p-2 border text-center text-xs font-mono">{time}</td>
-                        {salles.map(salle => {
-                            const reservation = reservationsBySalleAndTime[salle.id]?.[time];
-                            return (
-                              <td key={salle.id} className="p-1 border align-top h-24 relative group" onClick={() => !reservation && canManageContent && handleOpenForm(null, { date: currentDate, time, salleId: salle.id })}>
-                                 {reservation ? (
-                                      <div className="p-2 bg-primary/10 rounded-md text-xs h-full flex flex-col justify-center cursor-pointer hover:bg-primary/20" onClick={() => canManageContent && handleOpenForm(reservation)}>
-                                          <div className="font-bold text-primary">{reservation.eventName}</div>
-                                          <div className="text-muted-foreground">{format(new Date(reservation.startTime), 'HH:mm')} - {format(new Date(reservation.endTime), 'HH:mm')}</div>
-                                          <div className="text-muted-foreground text-xs truncate">Par: {staffMap.get(reservation.reservedBy) || 'Inconnu'}</div>
-                                      </div>
-                                 ) : (
-                                      canManageContent && (
-                                          <div className="h-full w-full flex items-center justify-center">
-                                              <PlusCircle className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                                          </div>
-                                      )
-                                 )}
-                              </td>
-                            );
-                        })}
-                      </tr>
-                    ))
+                    <tr key={time}>
+                      <td className="sticky left-0 bg-muted p-2 border text-center text-xs font-mono">{time}</td>
+                      {salles.map(salle => {
+                        const reservation = reservationsBySalleAndTime[salle.id]?.[time];
+                        return (
+                          <td key={salle.id} className="p-1 border align-top h-24 relative group" onClick={() => !reservation && canManageContent && handleOpenForm(null, { date: currentDate, time, salleId: salle.id })}>
+                            {reservation ? (
+                              <div className="p-2 bg-primary/10 rounded-md text-xs h-full flex flex-col justify-center cursor-pointer hover:bg-primary/20" onClick={() => canManageContent && handleOpenForm(reservation)}>
+                                <div className="font-bold text-primary">{reservation.eventName}</div>
+                                <div className="text-muted-foreground">{format(new Date(reservation.startTime), 'HH:mm')} - {format(new Date(reservation.endTime), 'HH:mm')}</div>
+                                <div className="text-muted-foreground text-xs truncate">Par: {staffMap.get(reservation.reservedBy) || 'Inconnu'}</div>
+                              </div>
+                            ) : (
+                              canManageContent && (
+                                <div className="h-full w-full flex items-center justify-center">
+                                  <PlusCircle className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </div>
+                              )
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
                   }
                 </tbody>
               </table>
             </div>
           ) : (
             <div className="text-center py-20 text-muted-foreground border-2 border-dashed rounded-lg m-4">
-                <Building className="mx-auto h-12 w-12" />
-                <h3 className="mt-4 text-lg font-semibold">Aucune salle disponible</h3>
-                <p className="mt-2 text-sm">Veuillez d'abord ajouter des salles dans la section Immobilier pour pouvoir créer des réservations.</p>
-                {canManageContent && (
-                    <Button asChild className="mt-4">
-                    <Link href="/dashboard/immobilier/batiments">Ajouter des salles</Link>
-                    </Button>
-                )}
+              <Building className="mx-auto h-12 w-12" />
+              <h3 className="mt-4 text-lg font-semibold">Aucune salle disponible</h3>
+              <p className="mt-2 text-sm">Veuillez d&apos;abord ajouter des salles dans la section Immobilier pour pouvoir créer des réservations.</p>
+              {canManageContent && (
+                <Button asChild className="mt-4">
+                  <Link href="/dashboard/immobilier/batiments">Ajouter des salles</Link>
+                </Button>
+              )}
             </div>
           )}
         </CardContent>
       </Card>
-      
+
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
-            <DialogHeader>
-                <DialogTitle>{editingReservation ? 'Modifier la' : 'Nouvelle'} Réservation</DialogTitle>
-                <DialogDescription>Réservez une salle pour un événement ou un cours.</DialogDescription>
-            </DialogHeader>
-            <ReservationForm
-                schoolId={schoolId}
-                salles={salles}
-                staff={staffData.map(doc => ({id: doc.id, ...doc.data()} as Staff & {id: string}))}
-                reservation={editingReservation}
-                preselectedSlot={preselectedSlot}
-                onSave={() => { setIsFormOpen(false); setEditingReservation(null); setPreselectedSlot(null); }}
-            />
+          <DialogHeader>
+            <DialogTitle>{editingReservation ? 'Modifier la' : 'Nouvelle'} Réservation</DialogTitle>
+            <DialogDescription>Réservez une salle pour un événement ou un cours.</DialogDescription>
+          </DialogHeader>
+          <ReservationForm
+            schoolId={schoolId}
+            salles={salles}
+            staff={staffData.map(doc => ({ id: doc.id, ...doc.data() } as Staff & { id: string }))}
+            reservation={editingReservation}
+            preselectedSlot={preselectedSlot}
+            onSave={() => { setIsFormOpen(false); setEditingReservation(null); setPreselectedSlot(null); }}
+          />
         </DialogContent>
       </Dialog>
     </>

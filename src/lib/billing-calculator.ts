@@ -2,6 +2,7 @@
 
 import { collection, getCountFromServer, query, where, type Firestore } from 'firebase/firestore';
 import type { school as School, student as Student, cycle as Cycle } from '@/lib/data-types';
+import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 
 // ====================================================================================
 // CONFIGURATIONS DE FACTURATION CENTRALISÉES
@@ -34,7 +35,7 @@ export const MODULE_PRICES = {
 // LOGIQUE DE CALCUL
 // ====================================================================================
 
-interface MonthlyUsage {
+export interface MonthlyUsage {
     studentsCount: number;
     cyclesCount: number;
     storageUsed: number; // en Go
@@ -57,7 +58,7 @@ interface BillingProjection {
 export async function calculateMonthlyUsage(firestore: Firestore, schoolId: string): Promise<MonthlyUsage> {
     const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif'));
     const cyclesQuery = query(collection(firestore, `ecoles/${schoolId}/cycles`), where('isActive', '==', true));
-    
+
     // Pour le stockage, c'est généralement plus complexe et nécessite des intégrations backend.
     // Pour le moment, nous allons utiliser une valeur statique.
     const storageUsed = 0.5; // Exemple : 0.5 Go
@@ -91,39 +92,53 @@ export async function applyPricing(
         throw new Error("Plan d'abonnement non défini.");
     }
 
-    const planDetails = TARIFAIRE[subscription.plan];
+    // 1. Récupération des détails du plan
+    const planDetails = SUBSCRIPTION_PLANS.find(p => p.name === subscription.plan);
+
     if (!planDetails) {
         throw new Error(`Plan d'abonnement inconnu: ${subscription.plan}`);
     }
 
-    // 1. Calcul du coût des modules
+    // 2. Calcul du coût de base (Coût par élève)
+    // Le plan Essentiel est gratuit jusqu'à 50 élèves (limite hard codée ou gérée par le plan)
+    // Les plans Pro et Premium sont facturés par élève.
+
+    let baseCost = 0;
+
+    if (subscription.plan === 'Essentiel') {
+        baseCost = 0;
+        // Si plus de 50 élèves, on pourrait bloquer ou facturer, mais pour l'instant c'est une limite d'usage.
+    } else {
+        const studentPrice = planDetails.pricePerStudent || 0;
+        baseCost = usage.studentsCount * studentPrice;
+    }
+
+    // 3. Calcul du coût des modules
+    // Premium inclut tous les modules, les autres paient à la carte.
     let modulesCost = 0;
-    if (subscription.plan === 'Pro' && subscription.activeModules) {
-        modulesCost = subscription.activeModules.reduce((total, module) => {
-            return total + (MODULE_PRICES[module] || 0);
+    if (subscription.plan !== 'Premium' && subscription.activeModules) {
+        modulesCost = subscription.activeModules.reduce((total, moduleId) => {
+            const modulePrice = MODULE_PRICES[moduleId] || 0;
+            return total + modulePrice;
         }, 0);
     }
 
-    // 2. Calcul des coûts des suppléments
-    const extraCycles = Math.max(0, usage.cyclesCount - planDetails.cyclesInclus);
-    const extraStudents = Math.max(0, usage.studentsCount - planDetails.elevesInclus);
-    const extraStorage = Math.max(0, usage.storageUsed - planDetails.stockageInclus);
-    
-    const cyclesSupplement = extraCycles * SUPPLEMENTS.parCycle;
-    const studentsSupplement = extraStudents * SUPPLEMENTS.parEleve;
-    const storageSupplement = Math.ceil(extraStorage) * SUPPLEMENTS.parGoStockage; // Facturé par Go entier
+    // Pour le plan Premium, les modules sont inclus (coût 0).
 
-    // 3. Calcul du total
-    const baseCost = planDetails.prixMensuel;
-    const totalSupplements = modulesCost + cyclesSupplement + studentsSupplement + storageSupplement;
-    const total = baseCost + totalSupplements;
+    // 4. Calcul des coûts des suppléments (Stockage uniquement)
+    const storageLimit = planDetails.storageLimitGB;
+
+    const storageSupplement = Math.max(0, Math.ceil(usage.storageUsed - storageLimit)) * SUPPLEMENTS.parGoStockage;
+
+    // 5. Calcul du total
+    const total = baseCost + modulesCost + storageSupplement;
 
     return {
         base: baseCost,
         supplements: {
             modules: modulesCost,
-            cycles: cyclesSupplement,
-            students: studentsSupplement,
+            cycles: 0, // Plus de supplément cycle dans ce modèle
+            students: 0, // Inclus dans le baseCost (prix par élève)
             storage: storageSupplement,
         },
         total: total,

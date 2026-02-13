@@ -7,12 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { libraryLoan as Loan, libraryBook as Book, student as Student } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
+import { LibraryService } from '@/services/library-service';
 
 interface LoanWithDetails extends Loan {
   id: string;
@@ -36,15 +37,15 @@ export function LoanList({ schoolId }: { schoolId: string }) {
 
   const loans: LoanWithDetails[] = useMemo(() => {
     if (!loansData || !booksData || !studentsData) return [];
-    
+
     const booksMap = new Map(booksData.map(doc => [doc.id, doc.data() as Book]));
     const studentsMap = new Map(studentsData.map(doc => [doc.id, doc.data() as Student]));
-    
+
     return loansData.map(doc => {
       const loan = { id: doc.id, ...doc.data() } as LoanWithDetails;
       const book = booksMap.get(loan.bookId);
       const student = studentsMap.get(loan.studentId);
-      
+
       return {
         ...loan,
         bookTitle: book?.title || 'Livre inconnu',
@@ -54,13 +55,12 @@ export function LoanList({ schoolId }: { schoolId: string }) {
   }, [loansData, booksData, studentsData]);
 
   const handleReturnBook = async (loanId: string) => {
-    const loanRef = doc(firestore, `ecoles/${schoolId}/bibliotheque_prets`, loanId);
     try {
-      await updateDoc(loanRef, { status: 'returned', returnedDate: new Date().toISOString() });
+      await LibraryService.returnLoan(schoolId, loanId);
       toast({ title: "Livre retourné", description: "Le prêt a été marqué comme retourné." });
     } catch (e) {
       console.error("Error returning book:", e);
-      toast({ variant: "destructive", title: "Erreur", description: "Impossible de marquer le livre comme retourné." });
+      toast({ variant: 'destructive', title: "Erreur", description: "Impossible de marquer le livre comme retourné." });
     }
   };
 

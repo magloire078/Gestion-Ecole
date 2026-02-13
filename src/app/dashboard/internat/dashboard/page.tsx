@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { InternatDashboard } from '@/components/internat/dashboard';
@@ -18,20 +18,21 @@ export default function InternatDashboardPage() {
           <Skeleton className="h-32" />
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-           <Skeleton className="h-96" />
-           <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96" />
         </div>
       </div>
     );
   }
 
   if (!schoolId) {
-    return <div>Erreur : ID de l'école non trouvé.</div>;
+    return <div>Erreur : ID de l&apos;école non trouvé.</div>;
   }
 
   return (
     <div className="space-y-6">
-       <InternatDashboard schoolId={schoolId} />
+      <InternatDashboard schoolId={schoolId} />
     </div>
   );
 }
+

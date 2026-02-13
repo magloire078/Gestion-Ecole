@@ -9,63 +9,63 @@ interface LogoProps {
   schoolName?: string | null;
   logoUrl?: string | null;
   disableLink?: boolean;
+  className?: string;
 }
 
-export function Logo({ compact = false, schoolName, logoUrl, disableLink = false }: LogoProps) {
-    const finalSchoolName = schoolName || 'GèreEcole';
+export function Logo({ compact = false, schoolName, logoUrl, disableLink = false, className }: LogoProps) {
+  const isDefaultLogo = !logoUrl;
+  const finalSchoolName = schoolName || 'GèreEcole';
 
-    const LogoContent = () => (
-      <div className={cn("flex items-center gap-2 text-foreground font-semibold", !disableLink && "group")}>
-          <div className={cn("relative transition-transform flex items-center justify-center bg-card p-1 rounded-lg", compact ? "h-12 w-12" : "h-10 w-10", !disableLink && "group-hover:scale-105")}>
-             {logoUrl ? (
-                <SafeImage src={logoUrl} alt={`${finalSchoolName} Logo`} fill className="object-contain" />
-             ) : (
-                <svg
-                    role="img"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-full w-full object-contain"
-                >
-                    <defs>
-                    <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" />
-                        <stop offset="100%" stopColor="hsl(var(--accent))" />
-                    </linearGradient>
-                    </defs>
-                    <path
-                    d="M12 2L2 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-10-3z"
-                    fill="url(#logoGradient)"
-                    />
-                    <text
-                    x="50%"
-                    y="55%"
-                    dominantBaseline="middle"
-                    textAnchor="middle"
-                    fill="white"
-                    fontSize="12"
-                    fontWeight="bold"
-                    fontFamily="sans-serif"
-                    >
-                    G
-                    </text>
-                </svg>
-             )}
+  const LogoContent = () => (
+    <div className={cn(
+      "flex text-foreground",
+      compact ? "flex-row items-center gap-3" : "flex-col items-center gap-2",
+      !disableLink && "group",
+      className
+    )}>
+      <div className={cn(
+        "relative flex items-center justify-center transition-transform duration-300",
+        !disableLink && "group-hover:scale-105"
+      )}>
+        {logoUrl ? (
+          <div className={cn(
+            "relative bg-white rounded-full shadow-md border border-border/10 overflow-hidden",
+            compact ? "h-10 w-10" : "h-16 w-16"
+          )}>
+            <SafeImage src={logoUrl} alt={`${finalSchoolName} Logo`} fill className="object-contain" />
           </div>
-          {!compact && (
-          <div className="flex flex-col">
-              <h1 className="text-xl font-bold leading-tight">{finalSchoolName}</h1>
+        ) : (
+          <div className="relative" style={{ width: compact ? 50 : 100, height: compact ? 50 : 100 }}>
+            <SafeImage
+              src="/custom-assets/logo.png?v=2"
+              alt="GéreEcole Logo"
+              fill
+              className="object-contain"
+            />
           </div>
-          )}
+        )}
       </div>
-    );
 
-    if (disableLink) {
-      return <LogoContent />;
-    }
+      {!compact && !isDefaultLogo && (
+        <div className="mt-[-5px] flex flex-col select-none items-center text-center">
+          <span className="text-3xl font-black tracking-tighter leading-none dark:text-white text-[#0C365A]">
+            GÉRECOLE
+          </span>
+          <span className="text-[0.7rem] font-bold tracking-[0.3em] mt-1 leading-none uppercase dark:text-primary/80 text-[#2D9CDB]">
+            Gestion d'école
+          </span>
+        </div>
+      )}
+    </div>
+  );
 
-    return (
-        <Link href="/dashboard">
-          <LogoContent />
-        </Link>
-    );
+  if (disableLink) {
+    return <LogoContent />;
+  }
+
+  return (
+    <Link href="/dashboard" className="no-underline">
+      <LogoContent />
+    </Link>
+  );
 }

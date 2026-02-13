@@ -1,9 +1,10 @@
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { Toaster } from '@/components/ui/toaster';
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({
   subsets: ['latin'],
@@ -17,9 +18,21 @@ const outfit = Outfit({
   variable: '--font-outfit',
 });
 
+export const viewport: Viewport = {
+  themeColor: '#FFFFFF',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
   title: 'GèreEcole - Gestion scolaire simplifiée',
   description: 'La solution complète pour gérer les élèves, les notes, les paiements et la communication scolaire.',
+  icons: {
+    icon: '/custom-assets/logo.png',
+    apple: '/custom-assets/logo.png',
+  },
 };
 
 export default function RootLayout({
@@ -33,6 +46,7 @@ export default function RootLayout({
         <FirebaseClientProvider>
           {children}
           <Toaster />
+          <Analytics />
         </FirebaseClientProvider>
       </body>
     </html>

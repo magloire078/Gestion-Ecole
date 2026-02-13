@@ -24,11 +24,11 @@ export function ParentDisciplineTab({ schoolId, studentId }: ParentDisciplineTab
             collection(firestore, `ecoles/${schoolId}/eleves/${studentId}/incidents_disciplinaires`),
             orderBy('date', 'desc')
         ),
-    [firestore, schoolId, studentId]);
+        [firestore, schoolId, studentId]);
 
     const { data: incidentsData, loading: incidentsLoading } = useCollection(incidentsQuery);
 
-    const incidents = useMemo(() => incidentsData?.map(d => ({ id: d.id, ...d.data() } as DisciplineIncident & {id: string})) || [], [incidentsData]);
+    const incidents = useMemo(() => incidentsData?.map(d => ({ id: d.id, ...d.data() } as DisciplineIncident & { id: string })) || [], [incidentsData]);
 
     const getTypeBadgeVariant = (type: string) => {
         if (type.includes('Exclusion') || type.includes('Mise à pied')) return 'destructive';
@@ -40,7 +40,7 @@ export function ParentDisciplineTab({ schoolId, studentId }: ParentDisciplineTab
         <Card>
             <CardHeader>
                 <CardTitle>Historique Disciplinaire</CardTitle>
-                <CardDescription>Suivi des comportements et des sanctions de l'élève.</CardDescription>
+                <CardDescription>Suivi des comportements et des sanctions de l&apos;élève.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Table>

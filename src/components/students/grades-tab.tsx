@@ -27,8 +27,8 @@ const calculateAverages = (grades: GradeEntry[]) => {
         gradesBySubject[g.subject].totalPoints += g.grade * g.coefficient;
         gradesBySubject[g.subject].totalCoeffs += g.coefficient;
     });
-    
-    const averages: Record<string, {average: number, totalCoeffs: number}> = {};
+
+    const averages: Record<string, { average: number, totalCoeffs: number }> = {};
     let totalPoints = 0;
     let totalCoeffs = 0;
 
@@ -52,9 +52,9 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
     const { data: gradesData, loading: gradesLoading } = useCollection(gradesQuery);
 
     const grades: GradeEntry[] = useMemo(() => gradesData?.map(d => ({ id: d.id, ...d.data() } as GradeEntry)) || [], [gradesData]);
-    
+
     const { subjectAverages, generalAverage } = useMemo(() => calculateAverages(grades), [grades]);
-    const sortedSubjects = useMemo(() => Object.keys(subjectAverages).sort((a,b) => subjectAverages[b].average - subjectAverages[a].average), [subjectAverages]);
+    const sortedSubjects = useMemo(() => Object.keys(subjectAverages).sort((a, b) => subjectAverages[b].average - subjectAverages[a].average), [subjectAverages]);
 
     return (
         <Card>
@@ -62,9 +62,9 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
                 <div className="flex justify-between items-center">
                     <div>
                         <CardTitle>Résultats Scolaires</CardTitle>
-                        <CardDescription>Notes et moyenne générale de l'élève.</CardDescription>
+                        <CardDescription>Notes et moyenne générale de l&apos;élève.</CardDescription>
                     </div>
-                     <div className="text-right">
+                    <div className="text-right">
                         <p className="text-sm text-muted-foreground">Moyenne Générale</p>
                         <p className="text-3xl font-bold text-primary">{generalAverage !== null ? generalAverage.toFixed(2) : 'N/A'}</p>
                     </div>

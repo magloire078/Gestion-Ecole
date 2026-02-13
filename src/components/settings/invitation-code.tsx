@@ -14,19 +14,19 @@ interface InvitationCodeProps {
 
 export const InvitationCode = ({ code, onCopy }: InvitationCodeProps) => {
   const [copied, setCopied] = useState(false);
-  
+
   const handleCopy = () => {
     onCopy();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  
+
   return (
     <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
-          Code d'Invitation
+          Code d&apos;Invitation
         </CardTitle>
         <CardDescription>
           Partagez ce code avec vos collaborateurs pour leur permettre de rejoindre votre école.
@@ -37,8 +37,8 @@ export const InvitationCode = ({ code, onCopy }: InvitationCodeProps) => {
           <code className="flex-1 bg-white dark:bg-card px-4 py-3 rounded-md border font-mono text-lg tracking-wider text-center">
             {code}
           </code>
-          <Button 
-            variant={copied ? "default" : "outline"} 
+          <Button
+            variant={copied ? "default" : "outline"}
             onClick={handleCopy}
             className="shrink-0"
           >

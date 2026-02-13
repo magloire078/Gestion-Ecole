@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
-import { doc, addDoc, setDoc, collection } from 'firebase/firestore';
+import { NiveauxService } from '@/services/niveaux-service';
 import type { cycle as Cycle, niveau as Niveau } from '@/lib/data-types';
 import { useState, useEffect, useMemo } from 'react';
 import { SCHOOL_TEMPLATES } from '@/lib/templates';
@@ -19,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 
 const niveauSchema = z.object({
   name: z.string().min(1, "Le nom est requis."),
-  code: z.string().min(1, "Le code est requis.").max(10),
+  code: z.string().min(1, "Le code est requis.").max(20, "Le code ne peut pas dépasser 20 caractères"),
   order: z.coerce.number().min(1, "L'ordre est requis."),
   cycleId: z.string().min(1, 'Le cycle est requis.'),
   capacity: z.coerce.number().min(1, 'La capacité est requise.'),
@@ -29,38 +28,37 @@ const niveauSchema = z.object({
 type NiveauFormValues = z.infer<typeof niveauSchema>;
 
 interface NiveauFormProps {
-    schoolId: string;
-    cycles: (Cycle & {id: string})[];
-    niveaux: (Niveau & {id: string})[];
-    niveau: (Niveau & { id: string }) | null;
-    defaultCycleId?: string;
-    onSave: () => void;
+  schoolId: string;
+  cycles: (Cycle & { id: string })[];
+  niveaux: (Niveau & { id: string })[];
+  niveau: (Niveau & { id: string }) | null;
+  defaultCycleId?: string;
+  onSave: () => void;
 }
 
 export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, onSave }: NiveauFormProps) {
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<NiveauFormValues>({
     resolver: zodResolver(niveauSchema),
   });
-  
+
   const { setValue, reset } = form;
 
   useEffect(() => {
-    reset(niveau || { 
-        name: '', 
-        code: '', 
-        order: (niveaux.length || 0) + 1, 
-        cycleId: defaultCycleId || (cycles.length > 0 ? cycles[0].id : ''), 
-        capacity: 30 
+    reset(niveau || {
+      name: '',
+      code: '',
+      order: (niveaux.length || 0) + 1,
+      cycleId: defaultCycleId || (cycles.length > 0 ? cycles[0].id : ''),
+      capacity: 30
     });
   }, [niveau, niveaux, defaultCycleId, cycles, reset]);
 
   const watchedCycleId = useWatch({ control: form.control, name: 'cycleId' });
   const watchedNiveauName = useWatch({ control: form.control, name: 'name' });
-  
+
   const niveauxOptions = useMemo(() => {
     const cycle = cycles.find(c => c.id === watchedCycleId);
     if (!cycle) return [];
@@ -69,31 +67,43 @@ export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, 
 
   useEffect(() => {
     const selectedNiveauTemplate = niveauxOptions.find(n => n === watchedNiveauName);
-    if(selectedNiveauTemplate) {
+    if (selectedNiveauTemplate) {
       setValue('code', selectedNiveauTemplate.replace(/\s+/g, '').toUpperCase());
     }
   }, [watchedNiveauName, niveauxOptions, setValue]);
 
 
+
   const handleFormSubmit = async (values: NiveauFormValues) => {
     setIsSubmitting(true);
-    const dataToSave = { ...values, schoolId };
 
-    const promise = niveau
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/niveaux/${niveau.id}`), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/niveaux`), dataToSave);
-    
     try {
-      await promise;
+      // Ensure all required fields are present
+      const niveauData = {
+        name: values.name,
+        code: values.code,
+        order: values.order,
+        cycleId: values.cycleId,
+        capacity: values.capacity,
+        ageMin: values.ageMin || 0,
+        ageMax: values.ageMax || 0,
+      };
+
+      if (niveau) {
+        await NiveauxService.updateNiveau(schoolId, niveau.id, niveauData);
+      } else {
+        await NiveauxService.createNiveau(schoolId, niveauData);
+      }
       toast({ title: `Niveau ${niveau ? 'modifié' : 'créé'}` });
       onSave();
     } catch (error) {
-        console.error("Error saving niveau:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le niveau.' });
+      console.error("Error saving niveau:", error);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer le niveau.' });
     } finally {
       setIsSubmitting(false);
     }
   };
+
 
   return (
     <Form {...form}>
@@ -110,7 +120,7 @@ export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, 
         <DialogFooter className="pt-4 border-t">
           <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>
           <Button type="submit" disabled={isSubmitting}>
-             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
           </Button>
         </DialogFooter>

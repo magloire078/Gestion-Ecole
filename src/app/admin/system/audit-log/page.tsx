@@ -7,7 +7,7 @@ import { FullAuditLog } from '@/components/admin/full-audit-log';
 export default function AuditLogPage() {
     return (
         <div className="space-y-6">
-            <h1 className="text-2xl font-bold">Journaux d'Audit Système</h1>
+            <h1 className="text-2xl font-bold">Journaux d&apos;Audit Système</h1>
             <Card>
                 <CardHeader>
                     <CardTitle>Historique complet des actions</CardTitle>

@@ -20,6 +20,8 @@ export interface PlanData {
     cta: string;
     variant: "default" | "secondary" | "outline" | "ghost" | "link" | "destructive" | null | undefined;
     recommended?: boolean;
+    pricePerStudent?: number;
+    storageLimitGB: number;
 }
 
 export const SUBSCRIPTION_PLANS: PlanData[] = [
@@ -27,11 +29,11 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
         name: "Essentiel",
         price: 0,
         priceString: "Gratuit",
-        priceSuffix: "pour découvrir",
+        priceSuffix: "",
         description: "Idéal pour évaluer toutes les fonctionnalités avec des limites généreuses.",
         features: [
             "Gestion de base (élèves, classes, notes)",
-            "Accès à tous les modules complémentaires",
+            "Accès aux modules complémentaires (payants)",
             "Support communautaire",
         ],
         limits: [
@@ -39,36 +41,41 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
             { icon: Building, text: "Jusqu'à 5 cycles" },
         ],
         cta: "Démarrer gratuitement",
-        variant: "secondary"
+        variant: "secondary",
+        pricePerStudent: 0,
+        storageLimitGB: 1
     },
     {
-        name: "Pro",
-        price: 49900,
-        priceString: "49 900 CFA",
-        priceSuffix: "/ mois",
-        description: "Pour les écoles en croissance avec des besoins avancés.",
+        name: "Pro", // On garde le nom interne 'Pro' pour éviter de casser le typage existant, mais on l'affiche comme 'Standard' si besoin, ou on renomme. Gardons 'Pro' pour l'instant pour la compatibilité.
+        price: 0, // Base price is 0, cost is per student
+        priceString: "200 FCFA",
+        priceSuffix: "/ élève / mois",
+        description: "Pour les écoles en croissance. Payez uniquement pour ce que vous utilisez.",
         features: [
             "Toutes les fonctionnalités Essentiel",
             "Accès aux modules complémentaires (payants)",
             "Support prioritaire par email",
+            "Facturation ajustée au nombre d'élèves"
         ],
         limits: [
-            { icon: Users, text: "Jusqu'à 250 élèves" },
-            { icon: Building, text: "Jusqu'à 5 cycles" },
+            { icon: Users, text: "Élèves illimités" },
+            { icon: Building, text: "Cycles illimités" },
         ],
-        cta: "Passer au plan Pro",
+        cta: "Choisir le plan Standard",
         variant: "default",
-        recommended: true
+        recommended: true,
+        pricePerStudent: 200,
+        storageLimitGB: 10
     },
     {
         name: "Premium",
-        price: 99900,
-        priceString: "99 900 CFA",
-        priceSuffix: "/ mois",
-        description: "La solution complète pour les grands établissements.",
+        price: 0, // Base price 0
+        priceString: "500 FCFA",
+        priceSuffix: "/ élève / mois",
+        description: "La solution complète tout inclus pour une tranquillité d'esprit.",
         features: [
-            "Toutes les fonctionnalités Pro",
-            "Tous les modules complémentaires inclus",
+            "Toutes les fonctionnalités Standard",
+            "Tous les modules complémentaires INCLUS",
             "Analyses et rapports avancés",
             "Support dédié par téléphone",
         ],
@@ -77,7 +84,9 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
             { icon: Building, text: "Cycles illimités" },
         ],
         cta: "Choisir le Premium",
-        variant: "secondary"
+        variant: "secondary",
+        pricePerStudent: 500,
+        storageLimitGB: Infinity
     }
 ];
 
@@ -106,7 +115,7 @@ export function getPlanPrice(planName: PlanName, durationMonths: number = 1): nu
 }
 
 export function getModulePrice(moduleId: ModuleName): number {
-    const module = MODULES_CONFIG.find(m => m.id === moduleId);
-    if (!module) throw new Error(`Module inconnu: ${moduleId}`);
-    return module.price;
+    const modData = MODULES_CONFIG.find(m => m.id === moduleId);
+    if (!modData) throw new Error(`Module inconnu: ${moduleId}`);
+    return modData.price;
 }

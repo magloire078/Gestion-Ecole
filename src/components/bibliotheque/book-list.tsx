@@ -41,7 +41,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from "@/firebase";
-import { collection, addDoc, doc, setDoc, deleteDoc, serverTimestamp, query } from "firebase/firestore";
+import { collection, query } from "firebase/firestore";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useForm } from 'react-hook-form';
@@ -57,6 +57,8 @@ import { BookOpen } from 'lucide-react';
 import type { libraryBook as LibraryBook, student as Student } from "@/lib/data-types";
 import { LoanDialog } from "./loan-dialog";
 import { ImageUploader } from "../image-uploader";
+import { LibraryService } from "@/services/library-service";
+import { useLibraryBooks } from "@/hooks/use-library-books";
 
 const bookSchema = z.object({
   title: z.string().min(1, { message: "Le titre est requis." }),
@@ -77,20 +79,19 @@ export function BookList({ schoolId }: BookListProps) {
   const { toast } = useToast();
   const { user } = useUser();
   const canManageLibrary = !!user?.profile?.permissions?.manageLibrary;
-  
-  const booksQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/bibliotheque`)), [firestore, schoolId]);
-  const { data: booksData, loading: booksLoading } = useCollection(booksQuery);
-  const books: (LibraryBook & { id: string })[] = useMemo(() => booksData?.map(d => ({ id: d.id, ...d.data() } as LibraryBook & { id: string })) || [], [booksData]);
-  
+
+  // Use new hooks for data fetching
+  const { books, loading: booksLoading } = useLibraryBooks(schoolId);
+
   const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`)), [firestore, schoolId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-  const students: (Student & {id:string})[] = useMemo(() => studentsData?.map(d => ({id: d.id, ...d.data()} as Student & {id: string})) || [], [studentsData]);
+  const students: (Student & { id: string })[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student & { id: string })) || [], [studentsData]);
 
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isLoanDialogOpen, setIsLoanDialogOpen] = useState(false);
-  
+
   const [selectedBookForLoan, setSelectedBookForLoan] = useState<(LibraryBook & { id: string }) | null>(null);
   const [editingBook, setEditingBook] = useState<(LibraryBook & { id: string }) | null>(null);
   const [bookToDelete, setBookToDelete] = useState<(LibraryBook & { id: string }) | null>(null);
@@ -105,31 +106,36 @@ export function BookList({ schoolId }: BookListProps) {
     reset(editingBook || { title: "", author: "", quantity: 1, frontCoverUrl: "", backCoverUrl: "" });
   }, [isFormOpen, editingBook, reset]);
 
-  const getBookDocRef = (bookId: string) => doc(firestore, `ecoles/${schoolId}/bibliotheque/${bookId}`);
-
-  const handleBookSubmit = (values: BookFormValues) => {
+  const handleBookSubmit = async (values: BookFormValues) => {
     if (!schoolId) return;
-    
-    const bookData = { ...values, schoolId, createdAt: serverTimestamp() };
 
-    const promise = editingBook 
-        ? setDoc(getBookDocRef(editingBook.id), bookData, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/bibliotheque`), bookData);
+    const bookData = {
+      title: values.title,
+      author: values.author,
+      quantity: values.quantity,
+      frontCoverUrl: values.frontCoverUrl || '',
+      backCoverUrl: values.backCoverUrl || '',
+    };
 
-    promise.then(() => {
-        toast({ title: `Livre ${editingBook ? "modifié" : "ajouté"}`, description: `"${values.title}" a été ${editingBook ? "modifié" : "ajouté"} à la bibliothèque.` });
-        setIsFormOpen(false);
-    }).catch(error => {
-        console.error("Error saving book:", error);
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer le livre." });
-    });
+    try {
+      if (editingBook) {
+        await LibraryService.updateBook(schoolId, editingBook.id, bookData);
+      } else {
+        await LibraryService.createBook(schoolId, bookData);
+      }
+      toast({ title: `Livre ${editingBook ? "modifié" : "ajouté"}`, description: `"${values.title}" a été ${editingBook ? "modifié" : "ajouté"} à la bibliothèque.` });
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error saving book:", error);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer le livre." });
+    }
   };
 
   const handleOpenFormDialog = (book: (LibraryBook & { id: string }) | null) => {
     setEditingBook(book);
     setIsFormOpen(true);
   };
-  
+
   const handleOpenLoanDialog = (book: LibraryBook & { id: string }) => {
     setSelectedBookForLoan(book);
     setIsLoanDialogOpen(true);
@@ -140,17 +146,19 @@ export function BookList({ schoolId }: BookListProps) {
     setIsDeleteDialogOpen(true);
   };
 
-  const handleDeleteBook = () => {
+  const handleDeleteBook = async () => {
     if (!schoolId || !bookToDelete) return;
-    deleteDoc(getBookDocRef(bookToDelete.id)).then(() => {
-        toast({ title: "Livre supprimé" });
-        setIsDeleteDialogOpen(false);
-    }).catch((error) => {
-        console.error("Error deleting book:", error);
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer le livre." });
-    });
+
+    try {
+      await LibraryService.deleteBook(schoolId, bookToDelete.id);
+      toast({ title: "Livre supprimé" });
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error("Error deleting book:", error);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer le livre." });
+    }
   };
-  
+
   const isLoading = booksLoading || studentsLoading;
 
   return (
@@ -163,19 +171,19 @@ export function BookList({ schoolId }: BookListProps) {
           </Button>
         )}
       </div>
-      
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {isLoading ? (
-            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
+          [...Array(4)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)
         ) : books.map((book) => (
           <Card key={book.id} className="flex flex-col">
             <CardHeader className="p-0">
               <div className="relative h-40 w-full">
-                <SafeImage 
-                  src={book.frontCoverUrl || `https://picsum.photos/seed/${book.id}/400/200`} 
-                  alt={`Couverture du livre ${book.title}`} 
+                <SafeImage
+                  src={book.frontCoverUrl || `https://picsum.photos/seed/${book.id}/400/200`}
+                  alt={`Couverture du livre ${book.title}`}
                   fill
-                  style={{objectFit: 'cover'}}
+                  style={{ objectFit: 'cover' }}
                   className="rounded-t-lg"
                   data-ai-hint="book cover"
                 />
@@ -231,7 +239,7 @@ export function BookList({ schoolId }: BookListProps) {
                   <FormField control={form.control} name="title" render={({ field }) => (<FormItem><FormLabel>Titre</FormLabel><FormControl><Input placeholder="Ex: Les Misérables" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="author" render={({ field }) => (<FormItem><FormLabel>Auteur</FormLabel><FormControl><Input placeholder="Ex: Victor Hugo" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name="quantity" render={({ field }) => (<FormItem><FormLabel>Quantité</FormLabel><FormControl><Input type="number" placeholder="Ex: 5" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                  
+
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <FormField
                       control={form.control}
@@ -299,7 +307,7 @@ export function BookList({ schoolId }: BookListProps) {
               <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDeleteBook} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction></AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-          
+
           <LoanDialog
             isOpen={isLoanDialogOpen}
             onClose={() => setIsLoanDialogOpen(false)}

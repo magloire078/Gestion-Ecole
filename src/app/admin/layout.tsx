@@ -12,12 +12,12 @@ import { getAuth, EmailAuthProvider, reauthenticateWithCredential } from 'fireba
 import { useToast } from '@/hooks/use-toast';
 
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -49,7 +49,7 @@ function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
         } catch (authError: any) {
             console.error("Re-authentication failed", authError);
             setError("Mot de passe incorrect. Veuillez réessayer.");
-             toast({
+            toast({
                 variant: "destructive",
                 title: "Accès refusé",
                 description: "Le mot de passe fourni est incorrect.",
@@ -59,17 +59,17 @@ function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
             setPassword('');
         }
     };
-    
+
     return (
         <Dialog open={true} >
             <DialogContent className="sm:max-w-md" hideCloseButton onInteractOutside={(e) => e.preventDefault()}>
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        <ShieldAlert className="h-5 w-5 text-primary"/>
+                        <ShieldAlert className="h-5 w-5 text-primary" />
                         Vérification Requise
                     </DialogTitle>
                     <DialogDescription>
-                        Pour accéder à la section d'administration, veuillez confirmer votre mot de passe.
+                        Pour accéder à la section d&apos;administration, veuillez confirmer votre mot de passe.
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
@@ -91,7 +91,7 @@ function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
                         <Button type="button" variant="outline" asChild>
                             <Link href="/dashboard">Quitter</Link>
                         </Button>
-                         <Button type="submit" disabled={isLoading}>
+                        <Button type="submit" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirmer et Entrer
                         </Button>
@@ -104,14 +104,14 @@ function AdminPasswordGate({ onVerified }: { onVerified: () => void }) {
 
 
 function AdminLayoutContent({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
     const { user, loading: userLoading } = useUser();
     const [isVerified, setIsVerified] = useState(false);
     const [isCheckingSession, setIsCheckingSession] = useState(true);
-    
+
     // Check session storage on initial load, only on the client
     useEffect(() => {
         try {
@@ -138,20 +138,20 @@ function AdminLayoutContent({
             sessionStorage.setItem('adminVerificationTimestamp', new Date().getTime().toString());
             setIsVerified(true);
         } catch (e) {
-             console.error("Could not access session storage:", e);
-             // If session storage is not available, just allow for the current session in memory
-             setIsVerified(true);
+            console.error("Could not access session storage:", e);
+            // If session storage is not available, just allow for the current session in memory
+            setIsVerified(true);
         }
     };
-    
+
     if (userLoading || isCheckingSession) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-               <Loader2 className="h-8 w-8 animate-spin" />
+                <Loader2 className="h-8 w-8 animate-spin" />
             </div>
         );
     }
-    
+
     // This part will eventually check for a super admin role in the user profile.
     if (!user?.profile?.isAdmin) {
         return (
@@ -165,7 +165,7 @@ function AdminLayoutContent({
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            Vous n'avez pas les permissions nécessaires pour accéder à cette section. Elle est réservée aux super-administrateurs de la plateforme.
+                            Vous n&apos;avez pas les permissions nécessaires pour accéder à cette section. Elle est réservée aux super-administrateurs de la plateforme.
                         </p>
                     </CardContent>
                     <CardFooter>
@@ -180,18 +180,33 @@ function AdminLayoutContent({
         );
     }
 
-    if (!isVerified) {
+    // Détecter le provider d'authentification
+    const authProvider = user?.authUser?.providerData?.[0]?.providerId;
+    const requiresPasswordReauth = authProvider === 'password';
+
+    // Pour les utilisateurs Google, marquer comme vérifié automatiquement
+    if (!isVerified && authProvider === 'google.com') {
+        handleVerification();
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+
+    // Pour les utilisateurs email/password, demander la réauthentification
+    if (!isVerified && requiresPasswordReauth) {
         return <AdminPasswordGate onVerified={handleVerification} />;
     }
-    
+
     return <>{children}</>;
 }
 
 
 export default function RootAdminLayout({
-  children,
+    children,
 }: {
-  children: React.ReactNode;
+    children: React.ReactNode;
 }) {
     return (
         <AuthGuard>

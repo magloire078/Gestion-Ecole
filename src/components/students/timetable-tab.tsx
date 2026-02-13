@@ -30,7 +30,7 @@ export const StudentTimetableTab: React.FC<StudentTimetableTabProps> = ({ studen
 
   const timetableQuery = useMemo(() =>
     (classId) ? query(collection(firestore, `ecoles/${schoolId}/emploi_du_temps`), where('classId', '==', classId)) : null
-  , [firestore, schoolId, classId]);
+    , [firestore, schoolId, classId]);
 
   const teachersQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/personnel`)), [firestore, schoolId]);
 
@@ -45,12 +45,12 @@ export const StudentTimetableTab: React.FC<StudentTimetableTabProps> = ({ studen
       return { timeSlots: [], days: [], timetableGrid: {} };
     }
 
-    const uniqueStartTimes = [...new Set(timetableEntries.map(e => e.startTime))].sort((a,b) => a.localeCompare(b));
-    const orderedDays: ('Lundi'|'Mardi'|'Mercredi'|'Jeudi'|'Vendredi'|'Samedi')[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+    const uniqueStartTimes = [...new Set(timetableEntries.map(e => e.startTime))].sort((a, b) => a.localeCompare(b));
+    const orderedDays: ('Lundi' | 'Mardi' | 'Mercredi' | 'Jeudi' | 'Vendredi' | 'Samedi')[] = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const grid: Record<string, Record<string, { subject: string; teacher: string; endTime: string }>> = {};
 
     uniqueStartTimes.forEach(time => {
-        grid[time] = {};
+      grid[time] = {};
     });
 
     timetableEntries.forEach(entry => {
@@ -69,56 +69,56 @@ export const StudentTimetableTab: React.FC<StudentTimetableTabProps> = ({ studen
   if (isLoading) {
     return <Skeleton className="h-96 w-full" />;
   }
-  
+
   if (timetableEntries.length === 0) {
-      return (
-          <Card>
-              <CardHeader>
-                  <CardTitle>Emploi du Temps</CardTitle>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-muted-foreground text-center py-8">L'emploi du temps pour cette classe n'est pas encore disponible.</p>
-              </CardContent>
-          </Card>
-      )
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Emploi du Temps</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground text-center py-8">L&apos;emploi du temps pour cette classe n&apos;est pas encore disponible.</p>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
     <Card>
-        <CardHeader>
-            <CardTitle>Emploi du Temps</CardTitle>
-            <CardDescription>Classe: {student.class}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-bold border">Heures</TableHead>
-                {days.map(day => <TableHead key={day} className="font-bold border text-center">{day}</TableHead>)}
+      <CardHeader>
+        <CardTitle>Emploi du Temps</CardTitle>
+        <CardDescription>Classe: {student.class}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="font-bold border">Heures</TableHead>
+              {days.map(day => <TableHead key={day} className="font-bold border text-center">{day}</TableHead>)}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {timeSlots.map((slot) => (
+              <TableRow key={slot}>
+                <TableCell className="font-semibold border text-center align-middle">{slot}</TableCell>
+                {days.map(day => {
+                  const entry = timetableGrid[slot]?.[day];
+                  return (
+                    <TableCell key={day} className="border p-1 align-top h-24">
+                      {entry ? (
+                        <div className="bg-primary/10 p-2 rounded-lg h-full flex flex-col justify-center text-center">
+                          <p className="font-bold text-primary">{entry.subject}</p>
+                          <p className="text-xs text-muted-foreground">{entry.teacher}</p>
+                        </div>
+                      ) : ''}
+                    </TableCell>
+                  );
+                })}
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {timeSlots.map((slot) => (
-                <TableRow key={slot}>
-                  <TableCell className="font-semibold border text-center align-middle">{slot}</TableCell>
-                  {days.map(day => {
-                    const entry = timetableGrid[slot]?.[day];
-                    return (
-                      <TableCell key={day} className="border p-1 align-top h-24">
-                        {entry ? (
-                          <div className="bg-primary/10 p-2 rounded-lg h-full flex flex-col justify-center text-center">
-                            <p className="font-bold text-primary">{entry.subject}</p>
-                            <p className="text-xs text-muted-foreground">{entry.teacher}</p>
-                          </div>
-                        ) : ''}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
     </Card>
   );
 };

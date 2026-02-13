@@ -1,4 +1,4 @@
-
+﻿
 
 'use client';
 
@@ -47,7 +47,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import { collection, query, where, doc, addDoc, setDoc, deleteDoc, getDocs, getDoc } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Pencil, Trash2 } from 'lucide-react';
@@ -58,6 +58,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import type { subject as Subject } from '@/lib/data-types';
+import { GradesService, type GradeEntry } from '@/services/grades-service';
+import { useGrades } from '@/hooks/use-grades';
 
 // --- Interfaces ---
 interface Student {
@@ -69,24 +71,15 @@ interface Class {
   id: string;
   name: string;
 }
-interface GradeEntry {
-  id: string;
-  studentId: string;
-  studentName?: string;
-  subject: string;
-  type: 'Interrogation' | 'Devoir';
-  date: string;
-  grade: number;
-  coefficient: number;
-}
+
 
 // --- Zod Schema for Validation ---
 const gradeSchema = z.object({
-    studentId: z.string().min(1, { message: "Veuillez sélectionner un élève." }),
-    type: z.enum(['Interrogation', 'Devoir']),
-    date: z.string().min(1, { message: "La date est requise." }),
-    grade: z.coerce.number().min(0, "La note ne peut pas être négative.").max(20, "La note ne peut pas dépasser 20."),
-    coefficient: z.coerce.number().min(0.25, "Le coefficient doit être d'au moins 0.25."),
+  studentId: z.string().min(1, { message: "Veuillez sélectionner un élève." }),
+  type: z.enum(['Interrogation', 'Devoir']),
+  date: z.string().min(1, { message: "La date est requise." }),
+  grade: z.coerce.number().min(0, "La note ne peut pas être négative.").max(20, "La note ne peut pas dépasser 20."),
+  coefficient: z.coerce.number().min(0.25, "Le coefficient doit être d'au moins 0.25."),
 });
 type GradeFormValues = z.infer<typeof gradeSchema>;
 
@@ -109,7 +102,7 @@ export default function GradeEntryPage() {
 
   const studentsQuery = useMemo(() =>
     schoolId && selectedClassId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', selectedClassId)) : null
-  , [firestore, schoolId, selectedClassId]);
+    , [firestore, schoolId, selectedClassId]);
   const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
   const studentsInClass: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
 
@@ -117,11 +110,10 @@ export default function GradeEntryPage() {
   const { data: subjectsData, loading: subjectsLoading } = useCollection(subjectsQuery);
   const subjects = useMemo(() => subjectsData?.map(d => d.data() as Subject) || [], [subjectsData]);
 
+  // Use the new hook to fetch grades
+  const { grades: allGradesForSubject, loading: isGradesLoading } = useGrades(schoolId, studentsInClass, selectedSubject);
 
-  // --- UI State ---
-  const [allGradesForSubject, setAllGradesForSubject] = useState<GradeEntry[]>([]);
-  const [isGradesLoading, setIsGradesLoading] = useState(false);
-  
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingGrade, setEditingGrade] = useState<GradeEntry | null>(null);
@@ -145,113 +137,59 @@ export default function GradeEntryPage() {
 
   useEffect(() => {
     if (isFormOpen && todayDateString) {
-        if (editingGrade) {
-            form.reset({
-                studentId: editingGrade.studentId,
-                type: editingGrade.type,
-                grade: editingGrade.grade,
-                coefficient: editingGrade.coefficient,
-                date: editingGrade.date,
-            });
-        } else {
-            form.reset({
-                studentId: '',
-                type: 'Devoir',
-                date: todayDateString,
-                grade: 0,
-                coefficient: 1,
-            });
-        }
-    }
-  }, [isFormOpen, editingGrade, form, todayDateString]);
-
-  // --- Effects ---
-  useEffect(() => {
-    setSelectedSubject(null);
-    setAllGradesForSubject([]);
-  }, [selectedClassId]);
-
-  useEffect(() => {
-    const fetchGrades = async () => {
-      if (!selectedSubject || studentsInClass.length === 0 || !schoolId) {
-        setAllGradesForSubject([]);
-        return;
-      }
-      setIsGradesLoading(true);
-      
-      const allGrades: GradeEntry[] = [];
-      for (const student of studentsInClass) {
-        const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/notes`);
-        const q = query(gradesCollectionRef, where('subject', '==', selectedSubject));
-        const querySnapshot = await getDocs(q);
-        querySnapshot.forEach(doc => {
-          allGrades.push({ 
-            id: doc.id,
-            studentId: student.id,
-            studentName: `${student.firstName} ${student.lastName}`,
-            ...doc.data() 
-          } as GradeEntry);
+      if (editingGrade) {
+        form.reset({
+          studentId: editingGrade.studentId,
+          type: editingGrade.type,
+          grade: editingGrade.grade,
+          coefficient: editingGrade.coefficient,
+          date: editingGrade.date,
+        });
+      } else {
+        form.reset({
+          studentId: '',
+          type: 'Devoir',
+          date: todayDateString,
+          grade: 0,
+          coefficient: 1,
         });
       }
-      
-      allGrades.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setAllGradesForSubject(allGrades);
-      setIsGradesLoading(false);
-    };
-
-    fetchGrades();
-  }, [selectedSubject, studentsInClass, schoolId, firestore]);
+    }
+  }, [isFormOpen, editingGrade, form, todayDateString]);
 
 
   const handleOpenFormDialog = (grade: GradeEntry | null) => {
     setEditingGrade(grade);
     setIsFormOpen(true);
   };
-  
+
   const handleSubmitGrade = async (values: GradeFormValues) => {
     if (!schoolId || !selectedSubject) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner une classe et une matière.' });
       return;
     }
-    
+
     const gradeData = {
-      schoolId: schoolId,
       subject: selectedSubject,
       type: values.type,
       date: values.date,
       grade: values.grade,
       coefficient: values.coefficient,
     };
-    
+
     try {
-        if (editingGrade) {
-            // Update
-            const gradeRef = doc(firestore, `ecoles/${schoolId}/eleves/${editingGrade.studentId}/notes/${editingGrade.id}`);
-            await setDoc(gradeRef, gradeData);
-            toast({ title: 'Note modifiée', description: `La note a été mise à jour.` });
-            setAllGradesForSubject(prev => prev.map(g => g.id === editingGrade.id ? { ...g, ...gradeData, studentId: editingGrade.studentId } : g));
-        } else {
-            // Create
-            const studentRef = doc(firestore, `ecoles/${schoolId}/eleves/${values.studentId}`);
-            const studentSnap = await getDoc(studentRef);
-
-            if (!studentSnap.exists()) {
-                toast({ variant: 'destructive', title: 'Erreur', description: "L'élève sélectionné n'a pas été trouvé." });
-                return;
-            }
-
-            const student = studentSnap.data() as Student;
-            const gradesCollectionRef = collection(firestore, `ecoles/${schoolId}/eleves/${values.studentId}/notes`);
-            const newDocRef = await addDoc(gradesCollectionRef, gradeData);
-            
-            toast({ 
-                title: 'Note ajoutée avec succès !', 
-            });
-            
-            setAllGradesForSubject(prev => [{ ...gradeData, id: newDocRef.id, studentId: values.studentId, studentName: `${student.firstName} ${student.lastName}` }, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-        }
+      if (editingGrade) {
+        // Update
+        await GradesService.updateGrade(schoolId, editingGrade.studentId, editingGrade.id, gradeData);
+        toast({ title: 'Note modifiée', description: `La note a été mise à jour.` });
+      } else {
+        // Create
+        await GradesService.createGrade(schoolId, values.studentId, gradeData);
+        toast({ title: 'Note ajoutée avec succès !' });
+      }
       setIsFormOpen(false);
-    } catch(error) {
+      // The useGrades hook will automatically refresh the data
+    } catch (error) {
       console.error("Error saving grade:", error);
       toast({ variant: "destructive", title: "Erreur", description: "Impossible d'enregistrer la note." });
     }
@@ -261,19 +199,19 @@ export default function GradeEntryPage() {
     setGradeToDelete(grade);
     setIsDeleting(true);
   };
-  
+
   const handleDeleteGrade = async () => {
     if (!schoolId || !gradeToDelete) return;
+
     try {
-        const gradeRef = doc(firestore, `ecoles/${schoolId}/eleves/${gradeToDelete.studentId}/notes/${gradeToDelete.id}`);
-        await deleteDoc(gradeRef);
-        toast({ title: 'Note supprimée', description: 'La note a été supprimée.' });
-        setAllGradesForSubject(prev => prev.filter(g => g.id !== gradeToDelete.id));
-        setIsDeleting(false);
-        setGradeToDelete(null);
-    } catch(error) {
-        console.error("Error deleting grade:", error);
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la note." });
+      await GradesService.deleteGrade(schoolId, gradeToDelete.studentId, gradeToDelete.id);
+      toast({ title: 'Note supprimée', description: 'La note a été supprimée.' });
+      setIsDeleting(false);
+      setGradeToDelete(null);
+      // The useGrades hook will automatically refresh the data
+    } catch (error) {
+      console.error("Error deleting grade:", error);
+      toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la note." });
     }
   };
 
@@ -303,7 +241,7 @@ export default function GradeEntryPage() {
               </SelectContent>
             </Select>
             <Select onValueChange={setSelectedSubject} value={selectedSubject || ''} disabled={!selectedClassId}>
-               <SelectTrigger className="w-full md:w-[200px]">
+              <SelectTrigger className="w-full md:w-[200px]">
                 <SelectValue placeholder="Sélectionner une matière" />
               </SelectTrigger>
               <SelectContent>
@@ -369,21 +307,21 @@ export default function GradeEntryPage() {
                         <TableCell className="font-mono">{grade.grade}</TableCell>
                         <TableCell className="font-mono">{grade.coefficient}</TableCell>
                         {canManageGrades && (
-                            <TableCell className="text-right space-x-2">
-                               <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleOpenFormDialog(grade)}>
-                                 <Pencil className="h-4 w-4" />
-                              </Button>
-                               <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleOpenDeleteDialog(grade)}>
-                                 <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </TableCell>
+                          <TableCell className="text-right space-x-2">
+                            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleOpenFormDialog(grade)}>
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleOpenDeleteDialog(grade)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         )}
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
                       <TableCell colSpan={canManageGrades ? 6 : 5} className="text-center text-muted-foreground h-24">
-                        Aucune note n'a été saisie pour cette matière.
+                        Aucune note n&apos;a été saisie pour cette matière.
                       </TableCell>
                     </TableRow>
                   )}
@@ -392,106 +330,106 @@ export default function GradeEntryPage() {
             </CardContent>
           </Card>
         ) : (
-            <Card className="flex items-center justify-center h-64">
-                <p className="text-muted-foreground">Veuillez sélectionner une classe et une matière pour commencer.</p>
-            </Card>
+          <Card className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Veuillez sélectionner une classe et une matière pour commencer.</p>
+          </Card>
         )}
       </div>
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
-            <DialogHeader>
-                <DialogTitle>{editingGrade ? 'Modifier' : 'Ajouter'} une note</DialogTitle>
-                <DialogDescription>Matière: {selectedSubject}</DialogDescription>
-            </DialogHeader>
-            <Form {...form}>
-              <form id="grade-form" onSubmit={form.handleSubmit(handleSubmitGrade)} className="grid gap-4 py-4">
-                <FormField
-                  control={form.control}
-                  name="studentId"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                      <FormLabel className="text-right">Élève</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingGrade}>
-                          <FormControl className="col-span-3">
-                            <SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                              {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                      <FormLabel className="text-right">Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                           <FormControl className="col-span-3">
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                              <SelectItem value="Devoir">Devoir</SelectItem>
-                              <SelectItem value="Interrogation">Interrogation</SelectItem>
-                          </SelectContent>
-                        </Select>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="date"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                      <FormLabel className="text-right">Date</FormLabel>
+          <DialogHeader>
+            <DialogTitle>{editingGrade ? 'Modifier' : 'Ajouter'} une note</DialogTitle>
+            <DialogDescription>Matière: {selectedSubject}</DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form id="grade-form" onSubmit={form.handleSubmit(handleSubmitGrade)} className="grid gap-4 py-4">
+              <FormField
+                control={form.control}
+                name="studentId"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Élève</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} disabled={!!editingGrade}>
                       <FormControl className="col-span-3">
-                        <Input type="date" {...field} />
+                        <SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger>
                       </FormControl>
-                      <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="grade"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                      <FormLabel className="text-right">Note /20</FormLabel>
-                       <FormControl className="col-span-3">
-                        <Input type="number" placeholder="Ex: 15.5" {...field} />
-                      </FormControl>
-                      <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="coefficient"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                      <FormLabel className="text-right">Coefficient</FormLabel>
+                      <SelectContent>
+                        {studentsInClass.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl className="col-span-3">
-                        <Input type="number" placeholder="Ex: 2" {...field} />
+                        <SelectTrigger><SelectValue /></SelectTrigger>
                       </FormControl>
-                      <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
-                  )}
-                />
-              </form>
-            </Form>
-            <DialogFooter>
-                <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
-                <Button type="submit" form="grade-form" disabled={form.formState.isSubmitting}>
-                    <span className="flex items-center gap-2">{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</span>
-                </Button>
-            </DialogFooter>
+                      <SelectContent>
+                        <SelectItem value="Devoir">Devoir</SelectItem>
+                        <SelectItem value="Interrogation">Interrogation</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Date</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="grade"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Note /20</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Input type="number" placeholder="Ex: 15.5" {...field} />
+                    </FormControl>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="coefficient"
+                render={({ field }) => (
+                  <FormItem className="grid grid-cols-4 items-center gap-4">
+                    <FormLabel className="text-right">Coefficient</FormLabel>
+                    <FormControl className="col-span-3">
+                      <Input type="number" placeholder="Ex: 2" {...field} />
+                    </FormControl>
+                    <FormMessage className="col-start-2 col-span-3" />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsFormOpen(false)}>Annuler</Button>
+            <Button type="submit" form="grade-form" disabled={form.formState.isSubmitting}>
+              <span className="flex items-center gap-2">{form.formState.isSubmitting ? 'Enregistrement...' : 'Enregistrer'}</span>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -510,4 +448,5 @@ export default function GradeEntryPage() {
   );
 }
 
-    
+
+

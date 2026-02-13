@@ -1,0 +1,998 @@
+﻿
+> next-app@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+  - Environments: .env.local, .env.production
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+node.exe : 
+Au caractère Ligne:1 : 1
++ & "C:\Program 
+Files\nodejs/node.exe" "C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~
+    + CategoryInfo          : NotS 
+   pecified: (:String) [], Remote  
+  Exception
+    + FullyQualifiedErrorId : Nati 
+   veCommandError
+ 
+Failed to compile.
+
+./src/app/dashboard/dossiers-eleves
+/[eleveId]/page.tsx
+71:136  Warning: React Hook 
+useMemo has an unnecessary 
+dependency: 'refreshTrigger'. 
+Either exclude it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+
+./src/app/dashboard/page.tsx
+65:9  Warning: Using `<img>` could 
+result in slower LCP and higher 
+bandwidth. Consider using `<Image 
+/>` from `next/image` to 
+automatically optimize images. 
+This may incur additional usage or 
+cost from your provider. See: https
+://nextjs.org/docs/messages/no-img-
+element  @next/next/no-img-element
+
+./src/app/dashboard/paiements/page.
+tsx
+243:103  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parametres/abon
+nement/page.tsx
+102:59  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+130:133  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+136:81  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parametres/abon
+nement/paiement/page.tsx
+151:46  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+178:54  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parametres/abon
+nement/paiement-en-attente/page.tsx
+45:101  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+49:50  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+77:43  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parametres/anne
+e-scolaire/page.tsx
+76:74  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+141:44  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+141:67  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parametres/donn
+ees/page.tsx
+45:41  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+47:91  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+47:98  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+68:54  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parametres/fich
+e-etablissement/page.tsx
+23:36  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+29:87  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parametres/page
+.tsx
+172:89  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+177:53  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+198:124  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+199:131  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+219:135  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+262:61  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+265:58  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+277:77  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/parent/student/
+[studentId]/page.tsx
+125:41  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+129:34  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/rh/conges/page.
+tsx
+204:42  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/rh/layout.tsx
+81:130  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+81:155  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/rh/paie/page.ts
+x
+284:87  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+309:70  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/rh/personnel/pa
+ge.tsx
+216:226  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+216:246  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/rh/[staffId]/fi
+che/page.tsx
+27:7  Warning: React Hook useMemo 
+has a missing dependency: 
+'firestore'. Either include it or 
+remove the dependency array.  
+react-hooks/exhaustive-deps
+
+./src/app/dashboard/rh/[staffId]/pa
+ge.tsx
+120:51  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+146:168  Warning: React Hook 
+useMemo has an unnecessary 
+dependency: 'refreshKey'. Either 
+exclude it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+
+./src/app/dashboard/sante/layout.ts
+x
+50:122  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+50:147  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/sante/page.tsx
+125:66  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+136:81  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/sante/[eleveId]
+/page.tsx
+80:156  Warning: React Hook 
+useMemo has an unnecessary 
+dependency: 'refreshKey'. Either 
+exclude it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+83:143  Warning: React Hook 
+useMemo has an unnecessary 
+dependency: 'refreshKey'. Either 
+exclude it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+86:155  Warning: React Hook 
+useMemo has an unnecessary 
+dependency: 'refreshKey'. Either 
+exclude it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+137:111  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+139:35  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/transport/abonn
+ements/page.tsx
+189:68  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+206:53  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/transport/bus/p
+age.tsx
+157:59  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/transport/dashb
+oard/page.tsx
+28:22  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/transport/layou
+t.tsx
+82:116  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+82:141  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/dashboard/transport/ligne
+s/page.tsx
+137:106  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+166:69  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+166:91  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+
+./src/app/onboarding/create-school/
+page.tsx
+217:32  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+234:63  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+293:53  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+302:31  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+331:44  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+384:87  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+414:27  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/onboarding/page.tsx
+42:60  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+42:89  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+50:69  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+294:150  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+294:398  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+294:418  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+295:429  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+295:449  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/parent-access/page.tsx
+18:80  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+18:99  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/privacy/page.tsx
+19:14  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+38:28  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+38:39  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+43:40  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/seed/page.tsx
+154:54  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/survey/page.tsx
+138:74  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+148:126  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+150:128  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+151:132  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+158:178  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+162:201  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+162:208  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+188:75  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/app/terms/page.tsx
+12:44  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+18:14  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+36:35  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+36:40  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+36:45  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+36:101  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+41:40  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/absences/absence-f
+orm.tsx
+91:32  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/admin/audit-log.ts
+x
+111:48  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/admin/billing-over
+view.tsx
+8:25  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/admin/full-audit-l
+og.tsx
+79:6  Warning: React Hook 
+useEffect has a missing 
+dependency: 'fetchLogs'. Either 
+include it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+
+./src/components/admin/grant-admin-
+dialog.tsx
+92:54  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/admin/plan-distrib
+ution-chart.tsx
+60:68  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/admin/school-edit-
+form.tsx
+73:32  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+80:35  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+94:30  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+108:35  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/admin/schools-tabl
+e.tsx
+232:16  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+232:31  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+232:54  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+247:36  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/admin/system-setti
+ngs.tsx
+174:73  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+192:79  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+283:86  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+346:76  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/analytics/attendan
+ce-analytics.tsx
+86:31  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+118:83  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/bibliotheque/book-
+list.tsx
+306:161  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+306:183  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+
+./src/components/bibliotheque/loan-
+list.tsx
+87:32  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/building-manager.t
+sx
+307:40  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+307:65  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+
+./src/components/cantine/daily-menu
+.tsx
+51:6  Warning: React Hook 
+useEffect has a missing 
+dependency: 'loadMenuForDate'. 
+Either include it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+181:50  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/cantine/reservatio
+n-form.tsx
+42:9  Warning: The 'defaultValues' 
+object makes the dependencies of 
+useEffect Hook (at line 64) change 
+on every render. To fix this, wrap 
+the initialization of 
+'defaultValues' in its own 
+useMemo() Hook.  
+react-hooks/exhaustive-deps
+
+./src/components/cantine/subscripti
+on-form.tsx
+120:44  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/discipline/inciden
+t-form.tsx
+118:48  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/immobilier/invento
+ry-summary.tsx
+37:37  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/immobilier/mainten
+ance-list.tsx
+65:58  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/immobilier/materie
+l-form.tsx
+111:115  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+141:124  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/internat/dashboard
+.tsx
+68:6  Warning: React Hook useMemo 
+has an unnecessary dependency: 
+'refreshLogs'. Either exclude it 
+or remove the dependency array.  
+react-hooks/exhaustive-deps
+114:230  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+141:128  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/internat/occupant-
+form.tsx
+114:117  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/internat/room-mana
+gement.tsx
+150:128  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+158:83  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/notifications-pane
+l.tsx
+103:64  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/parent/parent-dash
+board.tsx
+33:28  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+33:78  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/parent/parent-disc
+ipline-tab.tsx
+43:79  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/parent/parent-time
+table-tab.tsx
+80:74  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+80:110  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/parent/student/[st
+udentId]/page.tsx
+125:41  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+129:34  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/parent/student-car
+d.tsx
+67:98  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/payroll/payslip-te
+mplate.tsx
+129:70  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/pedagogy/classes-l
+ist.tsx
+68:87  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/pedagogy/cycles-ma
+nager.tsx
+215:66  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+215:88  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+225:67  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+225:90  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+
+./src/components/pedagogy/subjects-
+manager.tsx
+69:67  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+134:110  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+134:127  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+134:148  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+
+./src/components/printable-timetabl
+e.tsx
+81:79  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+129:23  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/reservations/calen
+dar.tsx
+171:55  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/rh/payroll-history
+-table.tsx
+30:38  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/rh/staff-edit-form
+.tsx
+251:134  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+327:103  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/sante/dossier-medi
+cal-form.tsx
+90:71  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+93:134  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/school-info-sheet.
+tsx
+76:90  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/search-modal.tsx
+110:42  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+110:59  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+
+./src/components/student-edit-form.
+tsx
+212:71  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/students/disciplin
+e-tab.tsx
+54:91  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+104:71  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/students/grades-ta
+b.tsx
+65:72  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/students/payments-
+tab.tsx
+106:86  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+106:146  Error: `"` can be escaped 
+with `&quot;`, `&ldquo;`, `&#34;`, 
+`&rdquo;`.  
+react/no-unescaped-entities
+143:161  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+268:77  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/students/timetable
+-tab.tsx
+80:74  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+80:110  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/transport/live-tra
+cking.tsx
+124:73  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+./src/components/transport/route-fo
+rm.tsx
+54:9  Warning: The 'defaultValues' 
+object makes the dependencies of 
+useEffect Hook (at line 94) change 
+on every render. To fix this, wrap 
+the initialization of 
+'defaultValues' in its own 
+useMemo() Hook.  
+react-hooks/exhaustive-deps
+126:305  Error: `'` can be escaped 
+with `&apos;`, `&lsquo;`, `&#39;`, 
+`&rsquo;`.  
+react/no-unescaped-entities
+
+info  - Need to disable some 
+ESLint rules? Learn more here: http
+s://nextjs.org/docs/basic-features/
+eslint#disabling-rules

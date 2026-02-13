@@ -5,7 +5,7 @@ import { useParams, notFound, useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import { useDoc, useFirestore, useCollection } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, type DocumentReference, type DocumentData, type Query } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,23 +18,23 @@ import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import type { class_type as Class, student as Student } from '@/lib/data-types';
 
 function ClassDetailsSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Skeleton className="h-10 w-10" />
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-64" />
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10" />
+                <div className="space-y-2">
+                    <Skeleton className="h-7 w-48" />
+                    <Skeleton className="h-4 w-64" />
+                </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Skeleton className="h-24" />
+                <Skeleton className="h-24" />
+                <Skeleton className="h-24" />
+            </div>
+            <Skeleton className="h-96" />
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-        <Skeleton className="h-24" />
-      </div>
-      <Skeleton className="h-96" />
-    </div>
-  );
+    );
 }
 
 
@@ -46,17 +46,17 @@ export default function ClassDetailsPage() {
     const firestore = useFirestore();
 
     // Fetch Class Details
-    const classRef = useMemo(() => 
-        (schoolId && classId) ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) : null
-    , [firestore, schoolId, classId]);
+    const classRef = useMemo(() =>
+        (schoolId && classId) ? doc(firestore, `ecoles/${schoolId}/classes/${classId}`) as DocumentReference<Class, DocumentData> : null
+        , [firestore, schoolId, classId]);
     const { data: classData, loading: classLoading } = useDoc<Class>(classRef);
 
     // Fetch Students in this class
     const studentsQuery = useMemo(() =>
-        (schoolId && classId) ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', classId)) : null
-    , [firestore, schoolId, classId]);
+        (schoolId && classId) ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('classId', '==', classId)) as Query<Student, DocumentData> : null
+        , [firestore, schoolId, classId]);
     const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
-    
+
     const students = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
 
     const isLoading = schoolLoading || classLoading || studentsLoading;
@@ -68,7 +68,7 @@ export default function ClassDetailsPage() {
     if (!classData) {
         notFound();
     }
-    
+
     const formatCurrency = (value: number | undefined) => {
         if (value === undefined) return 'N/A';
         return `${value.toLocaleString('fr-FR')} CFA`;
@@ -86,27 +86,27 @@ export default function ClassDetailsPage() {
                     <p className="text-muted-foreground">Année scolaire {classData.academicYear}</p>
                 </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                 <Card>
+                <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Enseignant Principal</CardDescription>
                         <CardTitle className="text-xl flex items-center gap-2">
-                          <User className="h-5 w-5" />
-                          {classData.mainTeacherName || 'Non assigné'}
+                            <User className="h-5 w-5" />
+                            {classData.mainTeacherName || 'Non assigné'}
                         </CardTitle>
                     </CardHeader>
                 </Card>
-                 <Card>
+                <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Effectif</CardDescription>
                         <CardTitle className="text-xl flex items-center gap-2">
-                          <Users className="h-5 w-5" />
-                          {classData.studentCount} / {classData.maxStudents} élèves
+                            <Users className="h-5 w-5" />
+                            {classData.studentCount} / {classData.maxStudents} élèves
                         </CardTitle>
                     </CardHeader>
                 </Card>
-                 <Card>
+                <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Taux de remplissage</CardDescription>
                         <CardTitle className="text-xl">

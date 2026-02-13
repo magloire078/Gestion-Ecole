@@ -1,4 +1,4 @@
-
+﻿
 'use client';
 
 import { useSchoolData } from '@/hooks/use-school-data';
@@ -44,7 +44,7 @@ function AnalyticsPageContent() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Vous n'avez pas la permission de consulter les statistiques et analyses.
+            Vous n&apos;avez pas la permission de consulter les statistiques et analyses.
           </p>
         </CardContent>
       </Card>
@@ -81,3 +81,4 @@ export default function AnalyticsPage() {
         </div>
     )
 }
+

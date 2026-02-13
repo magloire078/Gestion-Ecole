@@ -105,7 +105,7 @@ export async function seedDemoData(firestore: Firestore, schoolId: string) {
             studentCountPerClass.set(classRef.id, 0);
         }
     }
-    
+
     // 4. Seed Subjects
     for (const subject of DEMO_SUBJECTS_DATA) {
         const subjectRef = doc(collection(firestore, `ecoles/${schoolId}/matieres`));
@@ -113,7 +113,7 @@ export async function seedDemoData(firestore: Firestore, schoolId: string) {
     }
 
     // 5. Seed Staff
-    const staffEmails = DEMO_STAFF_BASE.map(s => s.email);
+    const staffEmails = DEMO_STAFF_BASE.map(s => `${s.firstName.toLowerCase()}.${s.lastName.toLowerCase()}@ecole-demo.com`);
     for (const staff of DEMO_STAFF_BASE) {
         const staffRef = doc(collection(firestore, `ecoles/${schoolId}/personnel`));
         batch.set(staffRef, { ...staff, uid: staffRef.id, schoolId, displayName: `${staff.firstName} ${staff.lastName}`, hireDate: today, baseSalary: 150000, status: "Actif" });

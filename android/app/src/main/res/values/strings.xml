@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GestionEcole</string>
+    <string name="title_activity_main">GestionEcole</string>
+    <string name="package_name">com.gestionecole.app</string>
+    <string name="custom_url_scheme">com.gestionecole.app</string>
+</resources>

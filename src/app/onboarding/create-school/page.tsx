@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -380,7 +380,7 @@ export default function CreateSchoolPage() {
             </Form>
             <Alert className="bg-primary/5 border-primary/20">
               <AlertDescription className="text-sm">
-                <strong>Important :</strong> Après la création, vous recevrez un code d'invitation unique 
+                <strong>Important :</strong> Après la création, vous recevrez un code d&apos;invitation unique 
                 que vous pourrez partager avec vos collaborateurs pour les ajouter à l'école.
               </AlertDescription>
             </Alert>
@@ -463,3 +463,4 @@ export default function CreateSchoolPage() {
     </div>
   );
 }
+

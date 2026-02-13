@@ -1,75 +1,123 @@
-'use client';
+import {
+    collection,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    doc,
+    query,
+    getDocs,
+    orderBy,
+    serverTimestamp,
+    writeBatch,
+    getDoc,
+    deleteField
+} from 'firebase/firestore';
+import { firebaseFirestore as db } from '@/firebase/config';
+import type { staff as Staff, user_root } from '@/lib/data-types';
 
-import { doc, updateDoc, Firestore, writeBatch, getDoc, deleteField, collection } from "firebase/firestore";
-import type { user_root } from "@/lib/data-types";
+const COLLECTION_NAME = 'personnel';
 
-/**
- * Met à jour l'URL de la photo d'un membre du personnel dans Firestore.
- * @param firestore - L'instance de Firestore.
- * @param schoolId - L'ID de l'école.
- * @param staffId - L'ID du membre du personnel.
- * @param photoURL - La nouvelle URL de la photo.
- */
-export const updateStaffPhoto = async (
-    firestore: Firestore,
-    schoolId: string,
-    staffId: string,
-    photoUrl: string
-): Promise<void> => {
-    
-    if (!schoolId || !staffId) {
-        throw new Error("L'ID de l'école et de l'élève sont requis.");
-    }
-    
-    const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
-    const dataToUpdate = { photoURL: photoUrl };
-
-    return updateDoc(staffRef, dataToUpdate).catch((serverError) => {
-      console.error("Error updating staff photo:", serverError);
-      // Let the original error propagate to be caught by React's error boundary
-      throw serverError;
-    });
-};
-
-/**
- * Supprime un membre du personnel d'une école et met à jour son document utilisateur racine.
- */
-export const deleteStaffMember = async (
-    firestore: Firestore,
-    schoolId: string,
-    staffId: string
-): Promise<void> => {
-    if (!schoolId || !staffId) {
-        throw new Error("L'ID de l'école et du membre du personnel sont requis.");
-    }
-    
-    const staffRef = doc(firestore, `ecoles/${schoolId}/personnel/${staffId}`);
-    const userRootRef = doc(firestore, `users/${staffId}`);
-
-    const batch = writeBatch(firestore);
-
-    // 1. Delete staff profile from school subcollection
-    batch.delete(staffRef);
-
-    // 2. Update user's root document to remove school affiliation
-    const userRootSnap = await getDoc(userRootRef);
-    if (userRootSnap.exists()) {
-        const userData = userRootSnap.data() as user_root;
-        
-        const updateData: { [key: string]: any } = {
-            [`schools.${schoolId}`]: deleteField()
-        };
-
-        // If the active school is the one being removed, find a new one to set as active.
-        if (userData.activeSchoolId === schoolId) {
-             const remainingSchoolIds = Object.keys(userData.schools || {}).filter(id => id !== schoolId);
-             updateData.activeSchoolId = remainingSchoolIds.length > 0 ? remainingSchoolIds[0] : null;
+export const StaffService = {
+    createStaffMember: async (schoolId: string, data: Omit<Staff, 'id' | 'schoolId'>) => {
+        try {
+            const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
+            const docRef = await addDoc(collectionRef, {
+                ...data,
+                schoolId,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            return docRef.id;
+        } catch (error) {
+            console.error('Error creating staff member:', error);
+            throw error;
         }
-        batch.update(userRootRef, updateData);
+    },
+
+    updateStaffMember: async (schoolId: string, staffId: string, data: Partial<Staff>) => {
+        try {
+            const docRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}`, staffId);
+            await updateDoc(docRef, {
+                ...data,
+                updatedAt: serverTimestamp(),
+            });
+        } catch (error) {
+            console.error('Error updating staff member:', error);
+            throw error;
+        }
+    },
+
+    deleteStaffMember: async (schoolId: string, staffId: string) => {
+        try {
+            if (!schoolId || !staffId) {
+                throw new Error("L'ID de l'école et du membre du personnel sont requis.");
+            }
+
+            const staffRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${staffId}`);
+            const userRootRef = doc(db, `users/${staffId}`);
+
+            const batch = writeBatch(db);
+
+            // 1. Delete staff profile from school subcollection
+            batch.delete(staffRef);
+
+            // 2. Update user's root document to remove school affiliation
+            // Note: This assumes the user document exists. 
+            // If the staff member was just a profile without a user account, this might throw if not handled, 
+            // but writeBatch operations are generally safe. However, reading first is safer for logic.
+            const userRootSnap = await getDoc(userRootRef);
+            if (userRootSnap.exists()) {
+                const userData = userRootSnap.data() as user_root;
+
+                const updateData: { [key: string]: any } = {
+                    [`schools.${schoolId}`]: deleteField()
+                };
+
+                // If the active school is the one being removed, find a new one to set as active.
+                if (userData.activeSchoolId === schoolId) {
+                    const remainingSchoolIds = Object.keys(userData.schools || {}).filter(id => id !== schoolId);
+                    updateData.activeSchoolId = remainingSchoolIds.length > 0 ? remainingSchoolIds[0] : null;
+                }
+                batch.update(userRootRef, updateData);
+            }
+
+            await batch.commit();
+
+        } catch (error) {
+            console.error('Error deleting staff member:', error);
+            throw error;
+        }
+    },
+
+    updateStaffPhoto: async (schoolId: string, staffId: string, photoUrl: string) => {
+        try {
+            const docRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}`, staffId);
+            await updateDoc(docRef, { photoURL: photoUrl });
+        } catch (error) {
+            console.error('Error updating staff photo:', error);
+            throw error;
+        }
+    },
+
+    getStaffMembers: async (schoolId: string) => {
+        try {
+            const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
+            const q = query(collectionRef, orderBy('lastName', 'asc'));
+            const snapshot = await getDocs(q);
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Staff & { id: string }));
+        } catch (error) {
+            console.error('Error fetching staff members:', error);
+            throw error;
+        }
     }
-    
-    return batch.commit().catch(serverError => {
-        console.error("Error deleting staff member:", serverError);
-        throw serverError;
-    });
 };
+
+// Export individual methods for backward compatibility
+export const {
+    createStaffMember,
+    updateStaffMember,
+    deleteStaffMember,
+    updateStaffPhoto,
+    getStaffMembers
+} = StaffService;
+
