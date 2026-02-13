@@ -41,9 +41,9 @@ const featureCategories = [
 ];
 
 const heroImages = [
-  "/custom-assets/home-hero.jpg?v=2",
-  "/custom-assets/home-hero2.png?v=2",
-  "/custom-assets/home-hero3.png?v=2",
+  "/custom-assets/home-hero.jpg?v=3",
+  "/custom-assets/home-hero2.png?v=3",
+  "/custom-assets/home-hero3.png?v=3",
 ];
 
 export function LandingPageV2() {
