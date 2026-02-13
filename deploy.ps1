@@ -58,11 +58,12 @@ if ($LASTEXITCODE -eq 0) {
     Write-Host "🎉 DÉPLOIEMENT RÉUSSI !" -ForegroundColor Green
     Write-Host ""
     Write-Host "Prochaines étapes :" -ForegroundColor Cyan
-    Write-Host "1. Configurer le domaine www.gereecole.com dans Firebase Console" -ForegroundColor White
+    Write-Host "1. Configurer le domaine www.gerecole.com dans Firebase Console" -ForegroundColor White
     Write-Host "2. Configurer les webhooks Genius Pay" -ForegroundColor White
     Write-Host "3. Créer votre compte admin" -ForegroundColor White
     Write-Host ""
-} else {
+}
+else {
     Write-Host ""
     Write-Host "❌ Erreur lors du déploiement" -ForegroundColor Red
     Write-Host "Consultez les logs ci-dessus pour plus de détails" -ForegroundColor Gray

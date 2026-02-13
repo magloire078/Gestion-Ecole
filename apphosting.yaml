@@ -24,7 +24,7 @@ runConfig:
     - variable: NEXT_PUBLIC_FIREBASE_APP_ID
       value: 1:97019754371:web:4822d9c017bf4be808e8b6
     - variable: NEXT_PUBLIC_BASE_URL
-      value: https://www.gereecole.com
+      value: https://www.gerecole.com
     - variable: GENIUS_PAY_API_URL
       value: https://pay.genius.ci/api/v1/merchant
   

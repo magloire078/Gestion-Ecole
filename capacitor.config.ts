@@ -8,7 +8,7 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     // Pour le développement Android Emulator : http://10.0.2.2:3000
     // Pour iOS Simulator ou appareil physique : Utiliser l'IP locale (ex: http://192.168.1.x:3000)
-    // Pour la PROD : Remplacer par https://greecole.web.app
+    // Pour la PROD : Remplacer par https://www.gerecole.com
     url: 'http://10.0.2.2:3000',
     cleartext: true
   }

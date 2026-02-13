@@ -79,11 +79,11 @@ GENIUS_PAY_API_URL=https://pay.genius.ci/api/v1/merchant
 
 ## 🌐 Domaine Personnalisé
 
-### Ajouter www.gereecole.com
+### Ajouter www.gerecole.com
 
 1. Sur Vercel Dashboard → **Settings** → **Domains**
 2. Cliquez sur **Add**
-3. Entrez : `www.gereecole.com`
+3. Entrez : `www.gerecole.com`
 4. Suivez les instructions pour configurer les DNS
 
 **Configuration DNS** :
@@ -124,16 +124,16 @@ vercel logs
 
 Votre application sera accessible sur :
 - `https://gestion-ecole-xxx.vercel.app` (URL temporaire)
-- `https://www.gereecole.com` (après configuration DNS)
+- `https://www.gerecole.com` (après configuration DNS)
 
 ### Configuration Post-Déploiement
 
 1. **Webhooks Genius Pay** :
-   - URL : `https://www.gereecole.com/api/webhooks/genius`
+   - URL : `https://www.gerecole.com/api/webhooks/genius`
 
 2. **Mettre à jour NEXT_PUBLIC_BASE_URL** :
    - Dans Vercel → Environment Variables
-   - `NEXT_PUBLIC_BASE_URL=https://www.gereecole.com`
+   - `NEXT_PUBLIC_BASE_URL=https://www.gerecole.com`
    - Redéployer
 
 3. **Créer compte admin** :

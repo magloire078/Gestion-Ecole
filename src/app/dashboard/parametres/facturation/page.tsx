@@ -49,7 +49,7 @@ export default function BillingDashboard() {
       setLoading(false);
     }
   }, [schoolId, firestore, subscription, schoolLoading]);
-  
+
   const planDetails = subscription?.plan ? TARIFAIRE[subscription.plan] : null;
 
   return (
@@ -69,33 +69,33 @@ export default function BillingDashboard() {
           ) : projection ? (
             <div className="grid gap-6 md:grid-cols-2">
               <div className="space-y-4">
-                 <h3 className="font-semibold text-lg">Prochaine Facture (Estimation)</h3>
-                 <div className="p-4 border rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total estimé pour ce mois</p>
-                    <p className="text-4xl font-bold">{projection.total.toLocaleString('fr-FR')} CFA</p>
-                 </div>
-                 <div className="space-y-2 text-sm">
-                    <div className="flex justify-between"><span className="text-muted-foreground">Abonnement de base ({subscription?.plan})</span><span>{projection.base.toLocaleString('fr-FR')} CFA</span></div>
-                    {projection.supplements.modules > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Modules complémentaires</span><span>{projection.supplements.modules.toLocaleString('fr-FR')} CFA</span></div>}
-                    {projection.supplements.students > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément élèves</span><span>{projection.supplements.students.toLocaleString('fr-FR')} CFA</span></div>}
-                    {projection.supplements.cycles > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément cycles</span><span>{projection.supplements.cycles.toLocaleString('fr-FR')} CFA</span></div>}
-                    <Separator />
-                    <div className="flex justify-between font-semibold"><span>Total</span><span>{projection.total.toLocaleString('fr-FR')} CFA</span></div>
-                 </div>
+                <h3 className="font-semibold text-lg">Prochaine Facture (Estimation)</h3>
+                <div className="p-4 border rounded-lg">
+                  <p className="text-sm text-muted-foreground">Total estimé pour ce mois</p>
+                  <p className="text-4xl font-bold">{projection.total.toLocaleString('fr-FR')} CFA</p>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Abonnement de base ({subscription?.plan})</span><span>{projection.base.toLocaleString('fr-FR')} CFA</span></div>
+                  {projection.supplements.modules > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Modules complémentaires</span><span>{projection.supplements.modules.toLocaleString('fr-FR')} CFA</span></div>}
+                  {projection.supplements.students > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément élèves</span><span>{projection.supplements.students.toLocaleString('fr-FR')} CFA</span></div>}
+                  {projection.supplements.cycles > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément cycles</span><span>{projection.supplements.cycles.toLocaleString('fr-FR')} CFA</span></div>}
+                  <Separator />
+                  <div className="flex justify-between font-semibold"><span>Total</span><span>{projection.total.toLocaleString('fr-FR')} CFA</span></div>
+                </div>
               </div>
               <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Consommation actuelle</h3>
-                  <div className="space-y-3">
-                      <div className="p-3 border rounded-lg">
-                        <p className="text-xs text-muted-foreground">Élèves actifs</p>
-                        <p className="font-semibold">{usage?.studentsCount} / {planDetails?.elevesInclus === Infinity ? '∞' : planDetails?.elevesInclus}</p>
-                      </div>
-                      <div className="p-3 border rounded-lg">
-                        <p className="text-xs text-muted-foreground">Cycles actifs</p>
-                        <p className="font-semibold">{usage?.cyclesCount} / {planDetails?.cyclesInclus === Infinity ? '∞' : planDetails?.cyclesInclus}</p>
-                      </div>
+                <h3 className="font-semibold text-lg">Consommation actuelle</h3>
+                <div className="space-y-3">
+                  <div className="p-3 border rounded-lg">
+                    <p className="text-xs text-muted-foreground">Élèves actifs</p>
+                    <p className="font-semibold">{usage?.studentsCount} / {planDetails?.elevesInclus === Infinity ? '∞' : planDetails?.elevesInclus}</p>
                   </div>
-                   <Button variant="outline" className="w-full" asChild><a href="mailto:support@gereecole.com"><CreditCard className="mr-2 h-4 w-4"/>Gérer mes informations de paiement</a></Button>
+                  <div className="p-3 border rounded-lg">
+                    <p className="text-xs text-muted-foreground">Cycles actifs</p>
+                    <p className="font-semibold">{usage?.cyclesCount} / {planDetails?.cyclesInclus === Infinity ? '∞' : planDetails?.cyclesInclus}</p>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full" asChild><a href="mailto:support@gerecole.com"><CreditCard className="mr-2 h-4 w-4" />Gérer mes informations de paiement</a></Button>
               </div>
             </div>
           ) : (
@@ -103,37 +103,37 @@ export default function BillingDashboard() {
           )}
         </CardContent>
       </Card>
-      
+
       <Card>
-          <CardHeader>
-              <CardTitle className="flex items-center gap-2"><History className="h-5 w-5" /> Historique des factures</CardTitle>
-          </CardHeader>
-          <CardContent>
-              <Table>
-                  <TableHeader>
-                      <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Montant</TableHead>
-                          <TableHead>Statut</TableHead>
-                          <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                      <TableRow>
-                          <TableCell>1er Juillet 2024</TableCell>
-                          <TableCell>49 900 CFA</TableCell>
-                          <TableCell><Badge variant="secondary">Payée</Badge></TableCell>
-                          <TableCell className="text-right"><Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Télécharger</Button></TableCell>
-                      </TableRow>
-                       <TableRow>
-                          <TableCell>1er Juin 2024</TableCell>
-                          <TableCell>49 900 CFA</TableCell>
-                          <TableCell><Badge variant="secondary">Payée</Badge></TableCell>
-                           <TableCell className="text-right"><Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Télécharger</Button></TableCell>
-                      </TableRow>
-                  </TableBody>
-              </Table>
-          </CardContent>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2"><History className="h-5 w-5" /> Historique des factures</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Montant</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right">Action</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell>1er Juillet 2024</TableCell>
+                <TableCell>49 900 CFA</TableCell>
+                <TableCell><Badge variant="secondary">Payée</Badge></TableCell>
+                <TableCell className="text-right"><Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Télécharger</Button></TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell>1er Juin 2024</TableCell>
+                <TableCell>49 900 CFA</TableCell>
+                <TableCell><Badge variant="secondary">Payée</Badge></TableCell>
+                <TableCell className="text-right"><Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Télécharger</Button></TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
       </Card>
     </div>
   );

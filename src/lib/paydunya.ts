@@ -9,7 +9,7 @@ const PAYDUNYA_TOKEN = process.env.PAYDUNYA_TOKEN;
 interface PayDunyaInvoiceData {
     total_amount: number;
     description: string;
-    custom_data: { [key: string]: any }; 
+    custom_data: { [key: string]: any };
     return_url: string;
     cancel_url: string;
     callback_url: string;
@@ -37,7 +37,7 @@ export async function createPayDunyaCheckout(data: PayDunyaInvoiceData): Promise
         },
         store: {
             name: "GèreEcole",
-            website_url: process.env.NEXT_PUBLIC_BASE_URL || "https://gereecole.app",
+            website_url: process.env.NEXT_PUBLIC_BASE_URL || "https://www.gerecole.com",
         },
         custom_data: data.custom_data,
         actions: {
