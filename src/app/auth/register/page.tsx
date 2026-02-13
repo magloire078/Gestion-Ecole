@@ -1,7 +1,7 @@
 ﻿
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { Loader2, User, Mail, Lock, Eye, EyeOff, ChevronRight, Sparkles } from 'lucide-react';
+import { Loader2, User, Mail, Lock, Eye, EyeOff, Sparkles, CheckCircle2, Rocket } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Logo } from '@/components/logo';
@@ -50,7 +50,7 @@ function GoogleIcon(props: React.SVGProps<SVGSVGElement>) {
   );
 }
 
-export default function ModernRegisterPage() {
+export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -59,7 +59,6 @@ export default function ModernRegisterPage() {
   const [error, setError] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isGoogleProcessing, setIsGoogleProcessing] = useState(false);
-  const [activeField, setActiveField] = useState<string | null>(null);
 
   const router = useRouter();
   const auth = useAuth();
@@ -77,7 +76,7 @@ export default function ModernRegisterPage() {
       return;
     }
     if (!termsAccepted) {
-      setError('Veuillez accepter les conditions d&apos;utilisation.');
+      setError('Veuillez accepter les conditions d\'utilisation.');
       return;
     }
 
@@ -88,19 +87,15 @@ export default function ModernRegisterPage() {
       await updateProfile(userCredential.user, { displayName });
 
       toast({
-        title: "✅ Compte créé avec succès",
-        description: "Redirection vers la configuration de votre école..."
+        title: "Compte créé avec succès",
+        description: "Préparation de votre espace établissement..."
       });
       router.push('/onboarding');
     } catch (error) {
       const authError = error as AuthError;
-      console.error('Erreur d\'inscription:', authError.code);
-
-      let errorMessage = 'Une erreur est survenue lors de l&apos;inscription.';
+      let errorMessage = 'Une erreur est survenue lors de l\'inscription.';
       if (authError.code === 'auth/email-already-in-use') {
         errorMessage = 'Cette adresse email est déjà utilisée.';
-      } else if (authError.code === 'auth/weak-password') {
-        errorMessage = 'Le mot de passe est trop faible.';
       }
       setError(errorMessage);
     } finally {
@@ -113,199 +108,193 @@ export default function ModernRegisterPage() {
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: 'select_account' });
       await signInWithPopup(auth, provider);
-      toast({
-        title: "✅ Connexion Google réussie",
-        description: "Redirection vers la configuration de votre école..."
-      });
       router.push('/onboarding');
     } catch (error) {
-      const authError = error as AuthError;
-      console.error('Erreur Google:', authError.code);
-      if (authError.code !== 'auth/popup-closed-by-user') {
-        setError('Erreur de connexion avec Google.');
-      }
+      setError('Erreur de connexion avec Google.');
     } finally {
       setIsGoogleProcessing(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-premium mesh-gradient p-4 md:p-8 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute -top-[20%] -right-[10%] w-[70%] h-[70%] rounded-full bg-primary/20 blur-[120px] mix-blend-screen animate-pulse" />
-        <div className="absolute -bottom-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-cyan-400/20 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }} />
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#f8faff] p-4 relative overflow-hidden font-sans">
+      {/* Dynamic Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#2D9CDB]/5 blur-[120px]" />
+        <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#0C365A]/5 blur-[120px]" />
       </div>
 
-      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10">
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
 
-        {/* Left Side - Hero/Brand (Visible on desktop) */}
+        {/* Left: Branding & Features */}
         <motion.div
-          initial={{ opacity: 0, x: -50 }}
+          initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="hidden lg:flex flex-col justify-center p-12 text-foreground space-y-10"
+          transition={{ duration: 0.8 }}
+          className="hidden lg:flex flex-col space-y-10 p-12"
         >
-          <div>
-            <Logo disableLink />
-          </div>
+          <Logo className="scale-125 origin-left" />
 
           <div className="space-y-6">
-            <h1 className="text-5xl font-extrabold tracking-tight leading-tight">
-              Rejoignez la <br />
-              <span className="text-gradient">révolution.</span>
+            <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit">
+              Prêt pour la <br />
+              <span className="text-[#2D9CDB]">Révolution</span> <br />
+              numérique ?
             </h1>
-            <p className="text-lg text-muted-foreground max-w-lg">
-              Rejoignez les centaines d&apos;établissements qui ont choisi GèreEcole pour moderniser leur gestion et simplifier leur quotidien.
+            <p className="text-xl text-slate-500 max-w-md leading-relaxed">
+              Rejoignez les établissements qui transforment leur gestion quotidienne.
             </p>
           </div>
 
           <div className="space-y-4">
             {[
-              "Configuration instantanée",
-              "Tableaux de bord intuitifs",
-              "Application mobile incluse",
-              "Support prioritaire"
-            ].map((feature, index) => (
+              "Audit de gestion en temps réel",
+              "Portail parent & élève inclus",
+              "Paiements en ligne sécurisés",
+              "Support technique 24/7"
+            ].map((feature, i) => (
               <motion.div
-                key={index}
+                key={i}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.3 + (index * 0.1) }}
+                transition={{ delay: 0.5 + i * 0.1 }}
                 className="flex items-center gap-3"
               >
-                <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                  <span className="text-xs">✓</span>
+                <div className="h-6 w-6 rounded-full bg-[#2D9CDB]/10 flex items-center justify-center text-[#2D9CDB]">
+                  <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <span className="font-medium text-foreground/80">{feature}</span>
+                <span className="font-bold text-[#0C365A]/80">{feature}</span>
               </motion.div>
             ))}
           </div>
         </motion.div>
 
-        {/* Right Side - Register Form */}
+        {/* Right: Register Form */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="flex items-center justify-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="perspective-1000"
         >
-          <div className="w-full max-w-lg bg-card/80 backdrop-blur-xl border border-white/20 shadow-xl rounded-3xl p-8 md:p-10 relative overflow-hidden group">
-            <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+          <motion.div
+            initial={{ rotateY: -5 }}
+            animate={{ rotateY: 0 }}
+            transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+            className="w-full max-w-lg mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden"
+          >
+            {/* Header for mobile */}
+            <div className="lg:hidden flex justify-center mb-10">
+              <Logo compact />
+            </div>
 
-            <div className="text-center mb-8">
-              <div className="lg:hidden flex justify-center mb-6">
-                <Logo disableLink />
+            <div className="mb-10 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2D9CDB] text-xs font-bold uppercase tracking-widest mb-4">
+                <Rocket className="h-3 w-3" /> Essai Gratuit
               </div>
-              <h2 className="text-2xl font-bold tracking-tight">Créer un compte</h2>
-              <p className="text-sm text-muted-foreground mt-2">Commencez votre essai gratuit dès aujourd&apos;hui.</p>
+              <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Créer un compte</h2>
+              <p className="text-slate-400 mt-2 font-medium">Démarrez votre transformation aujourd'hui.</p>
             </div>
 
             <AnimatePresence>
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
-                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-6"
                 >
-                  <Alert variant="destructive" className="border-red-500/50 bg-red-500/10 text-red-600">
-                    <AlertDescription>{error}</AlertDescription>
+                  <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-2xl">
+                    <AlertDescription className="font-medium">{error}</AlertDescription>
                   </Alert>
                 </motion.div>
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleRegister} className="space-y-5">
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="displayName">Nom complet</Label>
-                  <div className="relative group/input">
-                    <Input
-                      id="displayName"
-                      type="text"
-                      placeholder="Jean Directeur"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      disabled={isProcessing || isGoogleProcessing}
-                      className="pl-10 h-12 bg-background/50 border-input/50 focus:bg-background focus:ring-primary/20 transition-all rounded-xl"
-                    />
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Adresse email professionnel</Label>
-                  <div className="relative group/input">
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="direction@ecole.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      disabled={isProcessing || isGoogleProcessing}
-                      className="pl-10 h-12 bg-background/50 border-input/50 focus:bg-background focus:ring-primary/20 transition-all rounded-xl"
-                    />
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Mot de passe</Label>
-                  <div className="relative group/input">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Au moins 6 caractères"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      disabled={isProcessing || isGoogleProcessing}
-                      className="pl-10 pr-10 h-12 bg-background/50 border-input/50 focus:bg-background focus:ring-primary/20 transition-all rounded-xl"
-                    />
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground group-focus-within/input:text-primary transition-colors" />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+            <form onSubmit={handleRegister} className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="displayName" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Nom du responsable</Label>
+                <div className="relative group">
+                  <Input
+                    id="displayName"
+                    type="text"
+                    placeholder="Jean Directeur"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                    disabled={isProcessing || isGoogleProcessing}
+                    className="h-14 pl-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                  />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                 </div>
               </div>
 
-              <div className="flex items-start space-x-2 pt-2">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Email professionnel</Label>
+                <div className="relative group">
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="direction@ecole.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isProcessing || isGoogleProcessing}
+                    className="h-14 pl-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                  />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Mot de passe</Label>
+                <div className="relative group">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Minimum 6 caractères"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isProcessing || isGoogleProcessing}
+                    className="h-14 pl-12 pr-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                  />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-400 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-start space-x-3 pt-2">
                 <input
                   type="checkbox"
                   id="terms"
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="mt-1 h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
+                  className="mt-1 h-5 w-5 rounded-lg border-slate-200 text-[#2D9CDB] focus:ring-[#2D9CDB] transition-all cursor-pointer"
                 />
-                <label htmlFor="terms" className="text-xs text-muted-foreground cursor-pointer select-none">
-                  J&apos;accepte les <Link href="/conditions-utilisation" className="text-primary hover:underline font-medium">conditions d&apos;utilisation</Link> et la <Link href="/politique-confidentialite" className="text-primary hover:underline font-medium">politique de confidentialité</Link>.
+                <label htmlFor="terms" className="text-xs text-slate-400 leading-snug cursor-pointer select-none">
+                  J'accepte les <Link href="/terms" className="text-[#2D9CDB] font-bold hover:underline">conditions d'utilisation</Link> et la <Link href="/privacy" className="text-[#2D9CDB] font-bold hover:underline">politique de confidentialité</Link>.
                 </label>
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-12 rounded-xl text-base font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none"
+                className="w-full h-14 rounded-2xl text-lg font-bold bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white shadow-xl shadow-blue-400/20 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isProcessing || isGoogleProcessing || !termsAccepted}
               >
-                {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : "Créer mon compte"}
+                {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : "Créer mon compte"}
               </Button>
             </form>
 
             <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border/50" />
+                <span className="w-full border-t border-slate-100" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background/0 backdrop-blur-sm px-2 text-muted-foreground font-medium">
-                  Ou s&apos;inscrire avec
-                </span>
+              <div className="relative flex justify-center text-xs uppercase font-bold tracking-widest text-slate-300">
+                <span className="bg-white px-4">Ou avec</span>
               </div>
             </div>
 
@@ -314,23 +303,18 @@ export default function ModernRegisterPage() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleProcessing}
-              className="w-full h-12 rounded-xl text-base font-medium border-border/50 bg-background/50 hover:bg-background hover:text-foreground hover:border-primary/30 transition-all"
+              className="w-full h-14 rounded-2xl border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all font-bold text-slate-600"
             >
-              {isGoogleProcessing ? (
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              ) : (
-                <GoogleIcon className="mr-2 h-5 w-5" />
-              )}
-              Google
+              <GoogleIcon className="mr-3" /> Google
             </Button>
 
-            <p className="text-center text-sm text-muted-foreground mt-8">
-              Vous avez déjà un compte ?{' '}
-              <Link href="/auth/login" className="font-semibold text-primary hover:text-primary/80 transition-colors">
+            <p className="text-center text-sm font-medium text-slate-400 mt-10">
+              Déjà inscrit ?{' '}
+              <Link href="/auth/login" className="text-[#0C365A] font-bold hover:underline">
                 Se connecter
               </Link>
             </p>
-          </div>
+          </motion.div>
         </motion.div>
       </div>
     </div>
