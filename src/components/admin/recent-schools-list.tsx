@@ -26,54 +26,59 @@ export function RecentSchoolsList() {
 
     if (loading) {
         return (
-            <Card>
-                <CardHeader>
-                    <CardTitle>Nouvelles Écoles</CardTitle>
-                    <CardDescription>Les 5 derniers établissements inscrits.</CardDescription>
+            <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+                <CardHeader className="p-8 pb-4">
+                    <CardTitle className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Nouvelles Écoles</CardTitle>
+                    <CardDescription className="text-slate-500 font-medium">Les 5 derniers établissements inscrits.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                <CardContent className="px-8 pb-8 space-y-4">
+                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-14 w-full rounded-2xl" />)}
                 </CardContent>
             </Card>
         )
     }
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Nouvelles Écoles</CardTitle>
-                <CardDescription>Les 5 derniers établissements inscrits.</CardDescription>
+        <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+            <CardHeader className="p-8 pb-4">
+                <CardTitle className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Nouvelles Écoles</CardTitle>
+                <CardDescription className="text-slate-500 font-medium">Les 5 derniers établissements inscrits.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-8 pb-8">
                 <div className="space-y-4">
-                    {recentSchools.map(school => (
-                        <div key={school.id} className="flex items-center">
-                            <Avatar className="h-9 w-9">
+                    {recentSchools.map((school, idx) => (
+                        <div key={school.id} className="group flex items-center p-3 rounded-2xl hover:bg-white hover:shadow-lg hover:shadow-blue-900/5 transition-all">
+                            <Avatar className="h-12 w-12 border-2 border-white ring-4 ring-blue-50/50">
                                 <AvatarImage src={school.mainLogoUrl || undefined} alt={school.name} />
-                                <AvatarFallback>{school.name.substring(0, 2)}</AvatarFallback>
+                                <AvatarFallback className="bg-blue-50 text-[#2D9CDB] font-bold">{school.name.substring(0, 2)}</AvatarFallback>
                             </Avatar>
-                            <div className="ml-4 space-y-1">
-                                <p className="text-sm font-medium leading-none">{school.name}</p>
-                                <p className="text-sm text-muted-foreground">{school.directorEmail}</p>
+                            <div className="ml-4 space-y-0.5">
+                                <p className="text-sm font-black text-[#0C365A] font-outfit leading-tight">{school.name}</p>
+                                <p className="text-xs text-slate-400 font-medium">{school.directorEmail}</p>
                             </div>
-                            <div className="ml-auto font-medium text-sm text-muted-foreground">
-                                {school.createdAt ? (
-                                    (() => {
-                                        try {
-                                            const date = school.createdAt?.toDate ? school.createdAt.toDate() : new Date(school.createdAt);
-                                            return formatDistanceToNow(date, { addSuffix: true, locale: fr });
-                                        } catch (e) {
-                                            return 'Date invalide';
-                                        }
-                                    })()
-                                ) : 'Date inconnue'}
+                            <div className="ml-auto flex flex-col items-end">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#2D9CDB] mb-1">Inscription</span>
+                                <div className="text-xs font-bold text-slate-400">
+                                    {school.createdAt ? (
+                                        (() => {
+                                            try {
+                                                const date = school.createdAt?.toDate ? school.createdAt.toDate() : new Date(school.createdAt);
+                                                return formatDistanceToNow(date, { addSuffix: false, locale: fr });
+                                            } catch (e) {
+                                                return '--';
+                                            }
+                                        })()
+                                    ) : '--'}
+                                </div>
                             </div>
                         </div>
                     ))}
                     {recentSchools.length === 0 && (
-                        <p className="text-sm text-muted-foreground text-center py-4">
-                            Aucune école inscrite pour le moment.
-                        </p>
+                        <div className="text-center py-10 bg-slate-50/50 rounded-3xl border border-dashed border-slate-200">
+                            <p className="text-sm font-bold text-slate-400 italic">
+                                Aucune inscription récente détectée.
+                            </p>
+                        </div>
                     )}
                 </div>
             </CardContent>

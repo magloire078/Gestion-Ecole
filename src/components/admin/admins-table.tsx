@@ -90,79 +90,104 @@ export function AdminsTable() {
 
   return (
     <>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      <div className="bg-white rounded-[40px] border border-blue-50/50 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-blue-50/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30">
           <div>
-            <CardTitle>Administrateurs de la Plateforme</CardTitle>
-            <CardDescription>Liste des utilisateurs ayant des privilèges de super administrateur.</CardDescription>
+            <h3 className="text-xl font-black text-[#0C365A] font-outfit tracking-tight">Administrateurs Plateforme</h3>
+            <p className="text-sm text-slate-400 font-medium">Gestion des accès super-utilisateur du système.</p>
           </div>
-          <Button onClick={() => setIsGrantDialogOpen(true)}>
-            <UserPlus className="h-4 w-4 mr-2" />
+          <Button
+            onClick={() => setIsGrantDialogOpen(true)}
+            className="rounded-2xl bg-[#0C365A] hover:bg-[#0C365A]/90 text-white font-bold h-11 px-6 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+          >
+            <UserPlus className="h-5 w-5 mr-2" />
             Accorder des droits
           </Button>
-        </CardHeader>
-        <CardContent>
+        </div>
+        <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Administrateur</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>ID Utilisateur</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow className="hover:bg-transparent border-none">
+                <TableHead className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Collaborateur</TableHead>
+                <TableHead className="py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Email</TableHead>
+                <TableHead className="py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Identifiant Unique</TableHead>
+                <TableHead className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Sécurité</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
-                [...Array(1)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell colSpan={4}><Skeleton className="h-5 w-full" /></TableCell>
+                [...Array(3)].map((_, i) => (
+                  <TableRow key={i} className="border-blue-50/30">
+                    <TableCell colSpan={4} className="px-8 py-4"><Skeleton className="h-10 w-full rounded-xl" /></TableCell>
                   </TableRow>
                 ))
               ) : admins.length > 0 ? (
                 admins.map(admin => (
-                  <TableRow key={admin.uid}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={admin.photoURL || undefined} alt={admin.displayName} />
-                          <AvatarFallback>{admin.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{admin.displayName}</span>
+                  <TableRow key={admin.uid} className="border-blue-50/30 transition-all hover:bg-blue-50/20">
+                    <TableCell className="px-8 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative group">
+                          <Avatar className="h-12 w-12 border-2 border-white ring-4 ring-blue-50/50">
+                            <AvatarImage src={admin.photoURL || undefined} alt={admin.displayName} />
+                            <AvatarFallback className="bg-blue-50 text-[#2D9CDB] font-black">{admin.displayName?.substring(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
+                        </div>
+                        <span className="font-black text-[#0C365A] font-outfit">{admin.displayName}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{admin.email}</TableCell>
-                    <TableCell className="font-mono text-xs">{admin.uid}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" onClick={() => handleOpenRevokeDialog(admin)} disabled={admin.uid === user?.uid}>
-                        <Trash2 className="h-4 w-4 mr-2 text-destructive" /> Révoquer
+                    <TableCell className="py-4">
+                      <span className="text-sm font-bold text-slate-700">{admin.email}</span>
+                    </TableCell>
+                    <TableCell className="py-4">
+                      <code className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-100">
+                        {admin.uid}
+                      </code>
+                    </TableCell>
+                    <TableCell className="px-8 py-4 text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 px-4 rounded-xl text-rose-500 font-bold hover:bg-rose-50 transition-colors"
+                        onClick={() => handleOpenRevokeDialog(admin)}
+                        disabled={admin.uid === user?.uid}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Révoquer
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center h-24">Aucun super administrateur trouvé.</TableCell>
+                  <TableCell colSpan={4} className="px-8 py-16 text-center text-slate-400 font-bold italic">
+                    Aucun super administrateur détecté.
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-[32px] border-none shadow-2xl p-8">
           <AlertDialogHeader>
-            <AlertDialogTitle>Révoquer les privilèges ?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-2xl font-black text-[#0C365A] font-outfit">Révoquer les privilèges ?</AlertDialogTitle>
+            <AlertDialogDescription className="text-slate-500 font-medium">
               Êtes-vous sûr de vouloir révoquer les droits de super administrateur pour <strong>{adminToRevoke?.displayName}</strong> ?
-              Cette action est réversible.
+              Cette action retirera l'accès complet au système central.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRevoke} className="bg-destructive hover:bg-destructive/90" disabled={isRevoking}>
+          <AlertDialogFooter className="mt-8 gap-3">
+            <AlertDialogCancel className="h-12 rounded-2xl border-blue-100 font-bold text-slate-600">Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevoke}
+              className="h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 border-none font-bold shadow-lg shadow-rose-900/20"
+              disabled={isRevoking}
+            >
               {isRevoking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Révoquer
+              Confirmer la Révocation
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

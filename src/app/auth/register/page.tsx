@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import {
   createUserWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   updateProfile,
   type AuthError,
 } from 'firebase/auth';
+import { useEffect } from 'react';
 import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,17 +107,45 @@ export default function RegisterPage() {
     }
   };
 
+  useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          toast({
+            title: "Connexion réussie",
+            description: "Préparation de votre espace établissement..."
+          });
+          router.push('/onboarding');
+        }
+      } catch (error) {
+        console.error("Redirect Error:", error);
+      }
+    };
+    handleRedirect();
+  }, [auth, router, toast]);
+
   const handleGoogleSignIn = async () => {
     setIsGoogleProcessing(true);
     setError('');
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/onboarding');
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+        router.push('/onboarding');
+      }
     } catch (error) {
       setError('Erreur de connexion avec Google.');
     } finally {
-      setIsGoogleProcessing(false);
+      if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        setIsGoogleProcessing(false);
+      }
     }
   };
 
@@ -207,7 +238,7 @@ export default function RegisterPage() {
             <AnimatedHighlight />
 
             <div className="flex flex-col items-center mb-10">
-              <div className="mb-6 transform scale-150 py-4 transition-transform hover:scale-[1.6]">
+              <div className="mb-6 transform scale-[2] py-6 transition-transform hover:scale-[2.2]">
                 <Logo compact />
               </div>
               <div className="text-center mt-4">

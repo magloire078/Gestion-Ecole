@@ -154,76 +154,98 @@ export function SchoolsTable() {
 
   return (
     <>
-      <div className="space-y-4">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>École</TableHead>
-              <TableHead>Directeur</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Créée le</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {schoolsLoading ? (
-              [...Array(5)].map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={6}><Skeleton className="h-5 w-full" /></TableCell>
+      <div className="bg-white rounded-[40px] border border-blue-50/50 shadow-sm overflow-hidden">
+        <div className="p-8 border-b border-blue-50/50 flex justify-between items-center bg-slate-50/30">
+          <div>
+            <h3 className="text-xl font-black text-[#0C365A] font-outfit tracking-tight">Liste des Établissements</h3>
+            <p className="text-sm text-slate-400 font-medium">Gestion et surveillance des accès scolaires.</p>
+          </div>
+          <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-[#2D9CDB]">
+            <Building className="h-5 w-5" />
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-slate-50/50">
+              <TableRow className="hover:bg-transparent border-none">
+                <TableHead className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">École</TableHead>
+                <TableHead className="py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Directeur</TableHead>
+                <TableHead className="py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Plan</TableHead>
+                <TableHead className="py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Statut</TableHead>
+                <TableHead className="py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Créée le</TableHead>
+                <TableHead className="px-8 py-5 text-right text-[10px] font-black uppercase tracking-widest text-slate-400">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {schoolsLoading ? (
+                [...Array(5)].map((_, i) => (
+                  <TableRow key={i} className="border-blue-50/30">
+                    <TableCell colSpan={6} className="px-8 py-4"><Skeleton className="h-8 w-full rounded-xl" /></TableCell>
+                  </TableRow>
+                ))
+              ) : schools.length > 0 ? schools.map(school => (
+                <TableRow key={school.id} className={cn("border-blue-50/30 transition-colors hover:bg-blue-50/20", school.status === 'deleted' && 'bg-slate-50/50 italic opacity-60')}>
+                  <TableCell className="px-8 py-4">
+                    <div className="font-black text-[#0C365A] font-outfit">{school.name}</div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <div className="font-bold text-slate-700 text-sm">{school.directorFirstName} {school.directorLastName}</div>
+                    <div className="text-xs text-slate-400 font-medium">{school.directorEmail}</div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <Badge className={cn("rounded-lg px-2.5 py-0.5 font-bold text-[10px] uppercase tracking-wider border-none shadow-sm",
+                      school.subscription?.plan === 'Premium' ? "bg-gradient-to-r from-[#0C365A] to-[#2D9CDB] text-white" :
+                        school.subscription?.plan === 'Pro' ? "bg-blue-500 text-white" : "bg-slate-100 text-slate-500"
+                    )}>
+                      {school.subscription?.plan || 'Essentiel'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <Badge variant="outline" className={cn("rounded-lg px-2.5 py-0.5 font-black text-[10px] uppercase tracking-widest border-2",
+                      school.status === 'active' ? "border-emerald-100 text-emerald-600 bg-emerald-50/30" :
+                        "border-rose-100 text-rose-600 bg-rose-50/30"
+                    )}>
+                      {school.status || 'active'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="py-4 text-sm font-bold text-slate-500">
+                    {formatDate(school.createdAt)}
+                  </TableCell>
+                  <TableCell className="px-8 py-4 text-right">
+                    <div className="flex gap-1.5 justify-end">
+                      {school.status === 'deleted' ? (
+                        <Button variant="outline" size="sm" className="h-8 rounded-xl border-blue-100 text-[#0C365A] font-bold text-xs" onClick={() => handleRestoreSchool(school)} disabled={isRestoring && schoolToRestore?.id === school.id}>
+                          <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                          {isRestoring && schoolToRestore?.id === school.id ? '...' : 'Restaurer'}
+                        </Button>
+                      ) : (
+                        <>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 text-[#2D9CDB] transition-colors">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 text-slate-600 transition-colors" onClick={() => handleOpenEditDialog(school)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-rose-50 text-rose-500 transition-colors" onClick={() => handleOpenDeleteDialog(school)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </TableCell>
                 </TableRow>
-              ))
-            ) : schools.length > 0 ? schools.map(school => (
-              <TableRow key={school.id} className={cn(school.status === 'deleted' && 'bg-muted/50 text-muted-foreground')}>
-                <TableCell>
-                  <div className="font-medium">{school.name}</div>
-                </TableCell>
-                <TableCell>
-                  <div>{school.directorFirstName} {school.directorLastName}</div>
-                  <div className="text-sm">{school.directorEmail}</div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={getPlanBadgeVariant(school.subscription?.plan)}>{school.subscription?.plan}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={getStatusBadgeVariant(school.status)}>
-                    {school.status || 'active'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {formatDate(school.createdAt)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex gap-2 justify-end">
-                    {school.status === 'deleted' ? (
-                      <Button variant="ghost" size="sm" onClick={() => handleRestoreSchool(school)} disabled={isRestoring && schoolToRestore?.id === school.id}>
-                        <RotateCcw className="h-4 w-4 mr-2" />
-                        {isRestoring && schoolToRestore?.id === school.id ? 'Restauration...' : 'Restaurer'}
-                      </Button>
-                    ) : (
-                      <>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenEditDialog(school)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleOpenDeleteDialog(school)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            )) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center h-24">Aucune école trouvée.</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              )) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="px-8 py-12 text-center text-slate-400 font-bold italic">
+                    Aucune école enregistrée pour le moment.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
+
       <AlertDialog open={!!schoolToDelete} onOpenChange={(open) => !open && setSchoolWithIdToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

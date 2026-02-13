@@ -107,25 +107,25 @@ export const AuditLog = ({ limit }: { limit: number }) => {
   const loading = logsLoading || dataLoading;
 
   return (
-    <div className="pt-0 overflow-hidden rounded-xl border border-white/5 bg-black/20 backdrop-blur-sm">
+    <div className="bg-white rounded-[32px] border border-blue-50/50 shadow-sm overflow-hidden">
       <Table>
-        <TableHeader className="bg-white/5">
-          <TableRow className="hover:bg-transparent border-white/10">
-            <TableHead className="text-blue-300 font-semibold uppercase text-[10px] tracking-wider">Date</TableHead>
-            <TableHead className="text-blue-300 font-semibold uppercase text-[10px] tracking-wider">Administrateur</TableHead>
-            <TableHead className="text-blue-300 font-semibold uppercase text-[10px] tracking-wider">Action</TableHead>
-            <TableHead className="text-blue-300 font-semibold uppercase text-[10px] tracking-wider">Cible / Détails</TableHead>
+        <TableHeader className="bg-slate-50/50">
+          <TableRow className="hover:bg-transparent border-none">
+            <TableHead className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Instants</TableHead>
+            <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Opérateur</TableHead>
+            <TableHead className="py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Nature Action</TableHead>
+            <TableHead className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Cible & Détails</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           <AnimatePresence mode="popLayout">
             {loading ? (
               [...Array(limit)].map((_, i) => (
-                <TableRow key={`skeleton-${i}`} className="border-white/5">
-                  <TableCell><Skeleton className="h-4 w-24 bg-white/5" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-32 bg-white/5" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-28 bg-white/5" /></TableCell>
-                  <TableCell><Skeleton className="h-4 w-48 bg-white/5" /></TableCell>
+                <TableRow key={`skeleton-${i}`} className="border-blue-50/30">
+                  <TableCell className="px-6 py-4"><Skeleton className="h-4 w-24" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                  <TableCell className="px-6 py-4"><Skeleton className="h-4 w-48" /></TableCell>
                 </TableRow>
               ))
             ) : logs.length > 0 ? (
@@ -135,11 +135,11 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="group hover:bg-white/5 border-white/5 transition-colors cursor-default"
+                  className="group hover:bg-blue-50/20 border-blue-50/30 transition-colors cursor-default"
                 >
-                  <TableCell className="py-4">
+                  <TableCell className="px-6 py-4">
                     <div className="flex flex-col">
-                      <span className="text-xs font-medium text-white/90">
+                      <span className="text-xs font-black text-[#0C365A] font-outfit uppercase tracking-tighter">
                         {log.timestamp ? (
                           (() => {
                             try {
@@ -151,7 +151,7 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                           })()
                         ) : 'Date inconnue'}
                       </span>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[10px] text-slate-400 font-bold">
                         {log.timestamp ? (
                           (() => {
                             try {
@@ -166,11 +166,11 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center border border-white/10 group-hover:border-blue-500/30 transition-colors">
-                        <Users className="h-3.5 w-3.5 text-blue-400" />
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-xl bg-blue-50 flex items-center justify-center border border-blue-100/50 group-hover:bg-[#0C365A] group-hover:text-white transition-all">
+                        <Shield className="h-3.5 w-3.5" />
                       </div>
-                      <span className="text-xs font-medium text-white/80 group-hover:text-white transition-colors">
+                      <span className="text-xs font-bold text-slate-700 group-hover:text-[#0C365A] transition-colors">
                         {adminMap.get(log.adminId) || log.adminId}
                       </span>
                     </div>
@@ -179,22 +179,22 @@ export const AuditLog = ({ limit }: { limit: number }) => {
                     <Badge
                       variant="outline"
                       className={cn(
-                        "text-[10px] font-mono px-2 py-0 border-white/10 uppercase tracking-tighter",
-                        log.action.includes('delete') ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                          log.action.includes('create') ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" :
-                            "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                        "text-[9px] font-black px-2 py-0.5 rounded-lg border-2 uppercase tracking-widest",
+                        log.action.includes('delete') ? "bg-rose-50 text-rose-600 border-rose-100" :
+                          log.action.includes('create') ? "bg-emerald-50 text-emerald-600 border-emerald-100" :
+                            "bg-blue-50 text-[#2D9CDB] border-blue-100"
                       )}
                     >
                       {log.action}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-xs text-white/70 line-clamp-1">
+                  <TableCell className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold text-slate-600 group-hover:text-[#0C365A] transition-colors line-clamp-1">
                         {log.details?.name || formatTarget(log.target)}
                       </span>
                       {log.details?.schoolId && (
-                        <span className="text-[9px] text-muted-foreground font-mono opacity-50">ID: {log.details.schoolId}</span>
+                        <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest opacity-60">REF: {log.details.schoolId.slice(0, 8)}</span>
                       )}
                     </div>
                   </TableCell>
@@ -202,10 +202,8 @@ export const AuditLog = ({ limit }: { limit: number }) => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4}>
-                  <p className="text-sm text-muted-foreground text-center py-8 italic opacity-50">
-                    Aucun journal d'audit disponible.
-                  </p>
+                <TableCell colSpan={4} className="px-6 py-12 text-center text-slate-400 font-bold italic">
+                  Aucun journal d'audit détecté.
                 </TableCell>
               </TableRow>
             )}

@@ -5,9 +5,12 @@ import { useRouter } from 'next/navigation';
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   type AuthError,
 } from 'firebase/auth';
+import { useEffect } from 'react';
 import { useAuth } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,21 +96,50 @@ export default function LoginPage() {
     }
   };
 
+  useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          toast({
+            title: "Connexion réussie",
+            description: "Bienvenue sur votre espace GéreEcole."
+          });
+          router.push('/dashboard');
+        }
+      } catch (error) {
+        console.error("Redirect Error:", error);
+      }
+    };
+    handleRedirect();
+  }, [auth, router, toast]);
+
   const handleGoogleSignIn = async () => {
     setIsGoogleProcessing(true);
     setError('');
 
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      router.push('/dashboard');
+      // Force account selection to avoid auto-picking wrong one
+      provider.setCustomParameters({ prompt: 'select_account' });
+
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+      } else {
+        await signInWithPopup(auth, provider);
+        router.push('/dashboard');
+      }
     } catch (error) {
       const authError = error as AuthError;
       if (authError.code !== 'auth/popup-closed-by-user') {
         setError('Erreur de connexion avec Google.');
       }
     } finally {
-      setIsGoogleProcessing(false);
+      if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        setIsGoogleProcessing(false);
+      }
     }
   };
 
@@ -193,7 +225,7 @@ export default function LoginPage() {
             <AnimatedHighlight />
 
             <div className="flex flex-col items-center mb-10">
-              <div className="mb-6 transform scale-150 py-4 transition-transform hover:scale-[1.6]">
+              <div className="mb-6 transform scale-[2.2] py-8 transition-transform hover:scale-[2.4]">
                 <Logo compact />
               </div>
               <div className="text-center mt-4">
