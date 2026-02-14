@@ -27,6 +27,7 @@ import { ImageUploader } from '@/components/image-uploader';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { getTuitionInfoForClass } from '@/lib/school-utils';
+import { StudentService } from '@/services/student-services';
 
 
 const registrationSchema = z.object({
@@ -176,7 +177,6 @@ export default function RegistrationPage() {
     };
 
     try {
-      import { StudentService } from '@/services/student-services';
       const newStudentId = await StudentService.createStudent(schoolId, studentData, user.uid);
 
       if (schoolData?.directorId) {
