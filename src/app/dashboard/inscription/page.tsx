@@ -153,7 +153,7 @@ export default function RegistrationPage() {
       gender: values.gender,
       address: values.address,
       previousSchool: values.previousSchool,
-      photoUrl: values.photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
+      photoURL: values.photoUrl || `https://picsum.photos/seed/${values.matricule}/200`,
       status: values.status,
       classId: values.classId,
       class: selectedClassInfo?.name || 'N/A',
@@ -172,24 +172,12 @@ export default function RegistrationPage() {
       amountDue: tuitionFee,
       tuitionStatus: tuitionFee > 0 ? 'Partiel' : 'Soldé' as const,
       feedback: '',
-      createdAt: serverTimestamp(),
-      createdBy: user.uid,
-      updatedAt: serverTimestamp(),
       inscriptionYear: currentAcademicYear,
     };
 
-    const batch = writeBatch(firestore);
-
-    const newStudentRef = doc(collection(firestore, `ecoles/${schoolId}/eleves`));
-    batch.set(newStudentRef, studentData);
-
-    if (selectedClassInfo) {
-      const classRef = doc(firestore, `ecoles/${schoolId}/classes`, selectedClassInfo.id!);
-      batch.update(classRef, { studentCount: increment(1) });
-    }
-
     try {
-      await batch.commit();
+      import { StudentService } from '@/services/student-services';
+      const newStudentId = await StudentService.createStudent(schoolId, studentData, user.uid);
 
       if (schoolData?.directorId) {
         const notificationsCollectionRef = collection(firestore, `ecoles/${schoolId}/notifications`);
@@ -197,7 +185,7 @@ export default function RegistrationPage() {
           userId: schoolData.directorId,
           title: `Nouvelle pré-inscription`,
           content: `L'élève ${values.firstName} ${values.lastName} attend une validation.`,
-          href: `/dashboard/dossiers-eleves/${newStudentRef.id}`,
+          href: `/dashboard/dossiers-eleves/${newStudentId}`,
           isRead: false,
           createdAt: serverTimestamp(),
         };

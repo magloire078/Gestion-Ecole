@@ -164,7 +164,7 @@ export default function RegisterPage() {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="hidden lg:flex flex-col space-y-10 p-12"
+          className="hidden lg:flex flex-col space-y-5 p-6"
         >
           <div className="space-y-6">
             <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit text-balance">
@@ -233,20 +233,20 @@ export default function RegisterPage() {
             initial={{ rotateY: -5 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-lg mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
+            className="w-full max-w-lg mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-6 md:p-8 relative overflow-hidden group"
           >
             <AnimatedHighlight />
 
-            <div className="flex flex-col items-center mb-10">
-              <div className="mb-6 transform scale-[2.5] py-10 transition-transform hover:scale-[2.7]">
+            <div className="flex flex-col items-center mb-5">
+              <div className="mb-3 transform scale-[2.2] py-6 transition-transform hover:scale-[2.4]">
                 <Logo compact />
               </div>
-              <div className="text-center mt-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2D9CDB] text-[10px] font-black uppercase tracking-widest mb-4">
+              <div className="text-center mt-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2D9CDB] text-[10px] font-black uppercase tracking-widest mb-2">
                   <Rocket className="h-3 w-3" /> Essai Gratuit
                 </div>
-                <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Rejoignez-nous</h2>
-                <p className="text-slate-400 mt-2 font-medium text-sm">Démarrez votre transformation numérique.</p>
+                <h2 className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Rejoignez-nous</h2>
+                <p className="text-slate-400 mt-1 font-medium text-sm">Démarrez votre transformation numérique.</p>
               </div>
             </div>
 
@@ -265,7 +265,7 @@ export default function RegisterPage() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleRegister} className="space-y-5 relative z-10">
+            <form onSubmit={handleRegister} className="space-y-3 relative z-10">
               <div className="space-y-1.5">
                 <Label htmlFor="displayName" className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nom complet</Label>
                 <div className="relative group">
@@ -343,7 +343,7 @@ export default function RegisterPage() {
               </Button>
             </form>
 
-            <div className="relative my-8">
+            <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-slate-100" />
               </div>
@@ -362,7 +362,7 @@ export default function RegisterPage() {
               <GoogleIcon className="mr-3" /> S'inscrire rapidement
             </Button>
 
-            <p className="text-center text-sm font-medium text-slate-400 mt-10">
+            <p className="text-center text-sm font-medium text-slate-400 mt-6">
               Déjà un compte ?{' '}
               <Link href="/auth/login" className="text-[#0C365A] font-bold hover:underline">
                 Se connecter

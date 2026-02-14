@@ -41,10 +41,22 @@ const featureCategories = [
   }
 ];
 
-const heroImages = [
-  "/custom-assets/home-hero.jpg?v=3",
-  "/custom-assets/home-hero2.png?v=3",
-  "/custom-assets/home-hero3.png?v=3",
+const heroSlides = [
+  {
+    image: "/custom-assets/home-hero.jpg?v=3",
+    title: "Gestion Pédagogique Intégrée",
+    description: "Suivez le parcours de chaque élève avec précision : notes, absences, bulletins et conduite."
+  },
+  {
+    image: "/custom-assets/home-hero2.png?v=3",
+    title: "Pilotage Financier & Administratif",
+    description: "Maîtrisez votre comptabilité : suivi des paiements, facturation automatisée et gestion multi-écoles."
+  },
+  {
+    image: "/custom-assets/home-hero3.png?v=3",
+    title: "Communication & Vie Scolaire",
+    description: "Unifiez votre communauté : portail parents, gestion de la cantine et transports en un seul clic."
+  },
 ];
 
 export function LandingPageV2() {
@@ -53,8 +65,8 @@ export function LandingPageV2() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentHero((prev) => (prev + 1) % heroImages.length);
-    }, 8000);
+      setCurrentHero((prev) => (prev + 1) % heroSlides.length);
+    }, 12000); // Ralenti à 12 secondes
     return () => clearInterval(timer);
   }, []);
 
@@ -138,35 +150,75 @@ export function LandingPageV2() {
               transition={{ delay: 0.4, duration: 1 }}
               className="relative rounded-3xl overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.2)] bg-card floating aspect-[16/9] md:aspect-[21/9]"
             >
-              <AnimatePresence mode="wait">
+              <AnimatePresence>
                 <motion.div
                   key={currentHero}
-                  initial={{ opacity: 0, scale: 1.1 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 1.5, ease: "easeInOut" }}
-                  className="absolute inset-0"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 2, ease: "easeInOut" }}
+                  className="absolute inset-0 z-10 rounded-3xl overflow-hidden"
                 >
                   <Image
-                    src={heroImages[currentHero]}
-                    alt={`GèreEcole - Interface de gestion scolaire ${currentHero + 1}`}
+                    src={heroSlides[currentHero].image}
+                    alt={heroSlides[currentHero].title}
                     fill
-                    className="object-cover transition-transform duration-[8s] hover:scale-110"
+                    className="object-cover transition-transform duration-[12s] scale-105 hover:scale-110 rounded-3xl"
                     priority
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0C365A]/50 via-transparent to-transparent pointer-events-none" />
+
+                  {/* Text Overlay for Features */}
+                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16 text-left bg-gradient-to-t from-[#0C365A]/90 via-[#0C365A]/20 to-transparent">
+                    <motion.div
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.6, duration: 1 }}
+                      className="max-w-3xl"
+                    >
+                      <h3 className="text-3xl md:text-5xl font-black text-white mb-4 drop-shadow-2xl">
+                        {heroSlides[currentHero].title}
+                      </h3>
+                      <p className="text-lg md:text-2xl text-white/90 font-medium leading-relaxed drop-shadow-lg max-w-2xl">
+                        {heroSlides[currentHero].description}
+                      </p>
+                    </motion.div>
+                  </div>
+
+                  {/* Logo Overlay on Image */}
+                  <div className="absolute top-6 left-6 z-30 pointer-events-none">
+                    <motion.div
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 1, duration: 0.8 }}
+                      className="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl shadow-2xl flex items-center gap-3"
+                    >
+                      <div className="relative w-10 h-10 bg-white rounded-xl p-1.5 shadow-inner">
+                        <Image
+                          src="/custom-assets/logo.png?v=2"
+                          alt="Logo GèreEcole"
+                          width={40}
+                          height={40}
+                          className="object-contain"
+                        />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-white font-black text-sm tracking-tighter leading-none">GÉRECOLE</span>
+                        <span className="text-white/70 text-[10px] uppercase tracking-widest leading-none mt-1">Établissement</span>
+                      </div>
+                    </motion.div>
+                  </div>
                 </motion.div>
               </AnimatePresence>
 
               {/* Slider Dots */}
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                {heroImages.map((_, i) => (
+              <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-3 z-20">
+                {heroSlides.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setCurrentHero(i)}
                     className={cn(
-                      "h-1.5 rounded-full transition-all duration-300",
-                      currentHero === i ? "w-8 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
+                      "h-2 rounded-full transition-all duration-500",
+                      currentHero === i ? "w-12 bg-white shadow-lg shadow-white/50" : "w-2 bg-white/30 hover:bg-white/60"
                     )}
                     aria-label={`Go to slide ${i + 1}`}
                   />

@@ -145,4 +145,12 @@ export async function seedDemoData(firestore: Firestore, schoolId: string) {
     }
 
     await batch.commit();
+
+    // Initialize finance stats after seeding
+    try {
+        const { initializeFinanceStats } = await import('./stats-initialization');
+        await initializeFinanceStats(schoolId);
+    } catch (error) {
+        console.error("Erreur lors de l'initialisation des stats de finance après seeding:", error);
+    }
 }

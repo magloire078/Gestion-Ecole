@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="hidden lg:flex flex-col space-y-10 p-12"
+          className="hidden lg:flex flex-col space-y-5 p-6"
         >
           <div className="space-y-6">
             <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit">
@@ -107,15 +107,15 @@ export default function ForgotPasswordPage() {
             initial={{ rotateX: 5 }}
             animate={{ rotateX: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
+            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-6 md:p-8 relative overflow-hidden group"
           >
             <AnimatedHighlight />
 
-            <div className="flex flex-col items-center mb-10">
-              <div className="mb-6 transform scale-150 py-4 transition-transform hover:scale-[1.6]">
+            <div className="flex flex-col items-center mb-5">
+              <div className="mb-3 transform scale-125 py-2 transition-transform hover:scale-[1.35]">
                 <Logo compact />
               </div>
-              <div className="text-center mt-4">
+              <div className="text-center mt-2">
                 <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-50 mb-4 text-[#2D9CDB]">
                   <HelpCircle className="h-8 w-8" />
                 </div>
@@ -148,7 +148,7 @@ export default function ForgotPasswordPage() {
                 <Button variant="link" onClick={() => setIsSubmitted(false)} className="mt-4 text-[#2D9CDB] font-bold hover:text-[#0C365A]">Réessayer avec un autre email</Button>
               </motion.div>
             ) : (
-              <form onSubmit={handlePasswordReset} className="space-y-6 relative z-10">
+              <form onSubmit={handlePasswordReset} className="space-y-4 relative z-10">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Email du compte</Label>
                   <div className="relative group">
@@ -175,7 +175,7 @@ export default function ForgotPasswordPage() {
               </form>
             )}
 
-            <div className="mt-10 text-center relative z-10">
+            <div className="mt-6 text-center relative z-10">
               <Link href="/auth/login" className="inline-flex items-center gap-2 text-sm font-bold text-[#2D9CDB] hover:text-[#0C365A] transition-colors">
                 <ArrowLeft className="h-4 w-4" />
                 Retour à la connexion

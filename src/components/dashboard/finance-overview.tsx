@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useDoc } from '@/firebase';
 import { useUserSession } from '@/hooks/use-user-session';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
@@ -21,16 +21,13 @@ export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps
     const { schoolId: sessionSchoolId, isLoading: sessionLoading } = useUserSession();
     const schoolId = propSchoolId || sessionSchoolId;
 
-    const studentsQuery = useMemo(() => {
+    const statsRef = useMemo(() => {
         if (!firestore || !schoolId) return null;
-        // WARNING: Fetching all students to calculate totals is not scalable.
-        // It will become very slow as the school grows.
-        // TODO: Move these calculations to a Cloud Function and store in a 'school_stats' document.
-        return query(collection(firestore, `ecoles/${schoolId}/eleves`));
+        return doc(firestore, `ecoles/${schoolId}/stats/finance`);
     }, [firestore, schoolId]);
 
-    const { data: studentsData, loading: collectionLoading } = useCollection(studentsQuery);
-    const loading = sessionLoading || collectionLoading;
+    const { data: statsData, loading: statsLoading } = useDoc<any>(statsRef);
+    const loading = sessionLoading || statsLoading;
 
     const [financeStats, setFinanceStats] = useState({
         totalFees: 0,
@@ -39,19 +36,18 @@ export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps
     });
 
     useEffect(() => {
-        if (studentsData) {
-            let totalFees = 0;
-            let totalDue = 0;
-            studentsData.forEach(doc => {
-                const student = doc.data();
-                totalFees += student.tuitionFee || 0;
-                totalDue += student.amountDue || 0;
-            });
+        if (statsData) {
+            const totalFees = statsData.totalTuitionFees || 0;
+            const totalDue = statsData.totalAmountDue || 0;
             const paidPercentage = totalFees > 0 ? ((totalFees - totalDue) / totalFees) * 100 : 100;
 
             setFinanceStats({ totalFees, totalDue, paidPercentage });
+        } else if (!statsLoading && schoolId) {
+            // Document might not exist yet, initialize it
+            const { initializeFinanceStats } = require('@/services/stats-initialization');
+            initializeFinanceStats(schoolId).catch(console.error);
         }
-    }, [studentsData]);
+    }, [statsData, statsLoading, schoolId]);
 
     if (loading) {
         return (
@@ -80,11 +76,6 @@ export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-xl font-bold">Aperçu Financier</CardTitle>
-                        {process.env.NODE_ENV === 'development' && (
-                            <div className="text-[10px] text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20" title="Performance: Fetiches tous les élèves. À optimiser via Stats Doc.">
-                                DEV: Scalability
-                            </div>
-                        )}
                     </div>
                     <CardDescription>État des paiements de scolarité.</CardDescription>
                 </CardHeader>

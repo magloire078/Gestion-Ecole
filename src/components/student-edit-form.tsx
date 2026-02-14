@@ -107,13 +107,9 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
     const newClassId = values.classId;
     const classHasChanged = oldClassId !== newClassId;
 
-    const studentDocRef = doc(firestore, `ecoles/${schoolId}/eleves/${student.id!}`);
     const selectedClassInfo = classes.find(c => c.id === newClassId);
 
-    const batch = writeBatch(firestore);
-
     const updatedData = {
-      ...student,
       firstName: values.firstName,
       lastName: values.lastName,
       classId: newClassId,
@@ -128,28 +124,25 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
       tuitionStatus: values.tuitionStatus,
       status: values.status,
       feedback: values.feedback || '',
-      updatedAt: serverTimestamp(),
       updatedBy: user.uid,
     };
 
-    batch.update(studentDocRef, updatedData);
-
-    if (classHasChanged) {
-      if (oldClassId) {
-        const oldClassRef = doc(firestore, `ecoles/${schoolId}/classes/${oldClassId}`);
-        batch.update(oldClassRef, { studentCount: increment(-1) });
-      }
-      const newClassRef = doc(firestore, `ecoles/${schoolId}/classes/${newClassId}`);
-      batch.update(newClassRef, { studentCount: increment(1) });
-    }
-
     try {
-      await batch.commit();
-      toast({ title: "Élève modifié", description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}` });
+      const { StudentService } = await import('@/services/student-services');
+      await StudentService.updateStudent(schoolId, student.id!, updatedData, student);
+
+      toast({
+        title: "Élève modifié",
+        description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}`
+      });
       onFormSubmit();
     } catch (serverError) {
       console.error("Error updating student:", serverError);
-      toast({ variant: "destructive", title: "Erreur de mise à jour", description: "Impossible de modifier les informations de l'élève." });
+      toast({
+        variant: "destructive",
+        title: "Erreur de mise à jour",
+        description: "Impossible de modifier les informations de l'élève."
+      });
     } finally {
       setIsSaving(false);
     }

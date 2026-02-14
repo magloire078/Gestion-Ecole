@@ -158,7 +158,7 @@ export default function LoginPage() {
           initial={{ opacity: 0, x: -30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8 }}
-          className="hidden lg:flex flex-col space-y-10 p-12"
+          className="hidden lg:flex flex-col space-y-5 p-6"
         >
           <div className="space-y-6">
             <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit text-balance">
@@ -220,15 +220,15 @@ export default function LoginPage() {
             initial={{ rotateY: 5 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-10 md:p-12 relative overflow-hidden group"
+            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-6 md:p-8 relative overflow-hidden group"
           >
             <AnimatedHighlight />
 
-            <div className="flex flex-col items-center mb-10">
-              <div className="mb-6 transform scale-[2.8] py-12 transition-transform hover:scale-[3.0]">
+            <div className="flex flex-col items-center mb-5">
+              <div className="mb-3 transform scale-[2.2] py-6 transition-transform hover:scale-[2.4]">
                 <Logo compact />
               </div>
-              <div className="text-center mt-4">
+              <div className="text-center mt-2">
                 <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Connexion</h2>
                 <p className="text-slate-400 mt-2 font-medium">Bon retour parmi nous !</p>
               </div>
@@ -249,7 +249,7 @@ export default function LoginPage() {
               )}
             </AnimatePresence>
 
-            <form onSubmit={handleSignIn} className="space-y-6 relative z-10">
+            <form onSubmit={handleSignIn} className="space-y-4 relative z-10">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wider text-slate-400 ml-1">Email professionnel</Label>
                 <div className="relative group">
@@ -303,7 +303,7 @@ export default function LoginPage() {
               </Button>
             </form>
 
-            <div className="relative my-10">
+            <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t border-slate-100" />
               </div>
@@ -327,7 +327,7 @@ export default function LoginPage() {
               Compte Google
             </Button>
 
-            <p className="text-center text-sm font-medium text-slate-400 mt-10">
+            <p className="text-center text-sm font-medium text-slate-400 mt-6">
               Nouveau ici ?{' '}
               <Link href="/auth/register" className="text-[#2D9CDB] font-bold hover:underline">
                 Créer un compte d'école
