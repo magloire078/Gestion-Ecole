@@ -541,6 +541,41 @@ export type canteenSubscription = {
     id?: string;
 };
 
+export type canteenInventoryItem = {
+    schoolId: string;
+    name: string;
+    category: "ingredient" | "boisson" | "fourniture" | "autre";
+    quantity: number;
+    unit: "kg" | "l" | "unité" | "paquet" | "sac";
+    minThreshold: number;
+    lastUpdated: string;
+    pricePerUnit?: number;
+    id?: string;
+};
+
+export type canteenInventoryLog = {
+    itemId: string;
+    type: "in" | "out";
+    quantity: number;
+    reason: "achat" | "consommation" | "perte" | "ajustement";
+    timestamp: string;
+    staffId: string;
+    notes?: string;
+};
+
+export type canteenDailyStats = {
+    date: string;
+    mealsServed: {
+        petit_dejeuner?: number;
+        dejeuner?: number;
+        gouter?: number;
+        diner?: number;
+    };
+    revenue: number;
+    totalReservations: number;
+    lastUpdated: string;
+};
+
 export type bus = {
     registrationNumber: string;
     capacity: number;

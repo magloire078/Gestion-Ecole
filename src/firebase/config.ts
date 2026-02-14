@@ -30,6 +30,7 @@ function getFirebaseInstances() {
     // Utiliser initializeFirestore pour configurer le cache mémoire
     firestore = initializeFirestore(app, {
       localCache: memoryLocalCache(),
+      ignoreUndefinedProperties: true,
     });
     storage = getStorage(app);
   } else {

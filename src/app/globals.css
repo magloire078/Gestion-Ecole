@@ -41,6 +41,12 @@
     /* #f8faff */
     --admin-card: 0 0% 100%;
     --admin-sidebar-border: 214.3 31.8% 91.4%;
+
+    /* Mobile Safe Areas */
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+    --safe-area-inset-left: env(safe-area-inset-left);
+    --safe-area-inset-right: env(safe-area-inset-right);
   }
 
   .theme-midnight {
@@ -179,6 +185,34 @@
       radial-gradient(at 100% 100%, hsla(220, 90%, 64%, 0.1) 0px, transparent 50%),
       radial-gradient(at 0% 100%, hsla(196, 85%, 55%, 0.1) 0px, transparent 50%);
   }
+
+  /* Capacitor / Mobile Native Feel */
+  .mobile-native-touch {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+
+  .allow-select {
+    user-select: text !important;
+  }
+
+  /* Support for Safe Areas in spacing */
+  .pt-safe {
+    padding-top: var(--safe-area-inset-top, 0px);
+  }
+
+  .pb-safe {
+    padding-bottom: var(--safe-area-inset-bottom, 0px);
+  }
+
+  .mt-safe {
+    margin-top: var(--safe-area-inset-top, 0px);
+  }
+
+  .mb-safe {
+    margin-bottom: var(--safe-area-inset-bottom, 0px);
+  }
 }
 
 @layer base {
@@ -187,8 +221,15 @@
   }
 
   body {
-    @apply bg-premium text-foreground;
+    @apply bg-premium text-foreground mobile-native-touch;
     font-family: var(--font-inter), sans-serif;
+    /* Prevent rubber banding on some mobile browsers if needed */
+    overflow-x: hidden;
+  }
+
+  img {
+    -webkit-touch-callout: none;
+    -webkit-user-drag: none;
   }
 
   h1,
