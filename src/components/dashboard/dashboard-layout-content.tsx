@@ -179,52 +179,56 @@ export default function DashboardLayoutContent({ children }: { children: React.R
   return (
     <TooltipProvider>
       <NotificationListener />
-      <div className={cn("min-h-screen w-full bg-background print:bg-white")}>
-        <aside className={cn("fixed inset-y-0 left-0 z-10 hidden flex-col border-r bg-card sm:flex print:hidden transition-all duration-300 pt-safe", isNavCollapsed ? "w-20" : "w-64")}>
-          <div className={cn("flex items-center border-b relative overflow-hidden", isNavCollapsed ? "h-16 justify-center px-2" : "h-auto py-5 px-6")}>
-            <AnimatedHighlight />
-            {isLoading ? (
-              <div className="flex items-center gap-2">
-                <Skeleton className={cn("rounded-lg h-10 w-10")} />
-                {!isNavCollapsed && <Skeleton className="h-5 w-32" />}
-              </div>
-            ) : (
-              <Logo
-                compact={isNavCollapsed}
-                schoolName={schoolData?.name}
-                logoUrl={schoolData?.mainLogoUrl}
-              />
-            )}
+      <div className={cn("min-h-screen w-full bg-background/95 print:bg-white")}>
+        <aside className={cn(
+          "fixed inset-y-0 left-0 z-50 hidden flex-col border-r border-white/5 bg-card/40 backdrop-blur-xl sm:flex print:hidden transition-all duration-500 pt-safe shadow-2xl shadow-black/20",
+          isNavCollapsed ? "w-20" : "w-64"
+        )}>
+          <div className={cn(
+            "flex items-center border-b border-white/5 relative overflow-hidden",
+            isNavCollapsed ? "h-16 justify-center px-2" : "h-auto py-6 px-6"
+          )}>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
+            <Logo
+              compact={isNavCollapsed}
+              schoolName={schoolData?.name}
+              logoUrl={schoolData?.mainLogoUrl}
+            />
           </div>
-          <nav className="flex-1 overflow-y-auto p-2">
+          <nav className="flex-1 overflow-y-auto p-3 space-y-2">
             {isLoading ? (
-              <div className="space-y-2 p-2">
-                {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+              <div className="space-y-4 p-2">
+                {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-9 w-full rounded-xl opacity-20" />)}
               </div>
             ) : (
               <MainNav {...navProps} />
             )}
           </nav>
-          <div className="mt-auto flex flex-col p-4">
+          <div className="mt-auto flex flex-col p-4 border-t border-white/5 bg-white/5">
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="self-center" onClick={() => setIsNavCollapsed(!isNavCollapsed)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="self-center hover:bg-white/10 transition-colors"
+                  onClick={() => setIsNavCollapsed(!isNavCollapsed)}
+                >
                   {isNavCollapsed ? <PanelRightClose className="h-5 w-5" /> : <PanelLeftClose className="h-5 w-5" />}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">
+              <TooltipContent side="right" className="bg-popover/80 backdrop-blur-md border-white/10">
                 {isNavCollapsed ? "Étendre" : "Réduire"}
               </TooltipContent>
             </Tooltip>
           </div>
         </aside>
 
-        <div className={cn("flex flex-col transition-all duration-300", isNavCollapsed ? "sm:pl-20" : "sm:pl-64")}>
+        <div className={cn("flex flex-col transition-all duration-500", isNavCollapsed ? "sm:pl-20" : "sm:pl-64")}>
 
           <header className={cn(
-            "sticky top-0 z-30 flex h-auto py-4 pt-safe items-center justify-between gap-4 border-b bg-card/80 dark:bg-card/80 backdrop-blur-md px-4 sm:px-6 print:hidden overflow-hidden"
+            "sticky top-0 z-40 flex h-auto py-4 pt-safe items-center justify-between gap-4 border-b border-white/5 bg-background/60 backdrop-blur-xl px-4 sm:px-6 print:hidden overflow-hidden"
           )}>
-            <AnimatedHighlight />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/5 to-transparent pointer-events-none" />
             <div className="flex items-center gap-3">
               <Sheet>
                 <SheetTrigger asChild>

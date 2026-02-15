@@ -113,36 +113,61 @@ export function StatCards({ schoolId }: { schoolId: string }) {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            whileHover={{ y: -5 }}
+            transition={{ duration: 0.5, delay: index * 0.1, ease: 'easeOut' }}
+            whileHover={{
+              y: -8,
+              transition: { duration: 0.2 }
+            }}
+            className="h-full"
           >
-            <Card className="glass-card relative overflow-hidden group border-white/10">
-              <div className={cn("absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-500", stat.gradient)} />
+            {/* Iridescent Border Wrapper */}
+            <div className="group relative p-[1px] rounded-[var(--radius)] overflow-hidden h-full transition-all duration-500">
+              <div className={cn(
+                "absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-sm",
+                stat.gradient
+              )} />
 
-              {/* Shine effect */}
-              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -skew-x-12 translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-1000 ease-in-out" />
-              </div>
+              <Card className="glass-card relative border-white/5 bg-card/40 backdrop-blur-xl h-full overflow-hidden flex flex-col justify-between">
+                {/* Secondary Background Glow */}
+                <div className={cn(
+                  "absolute -right-4 -top-4 w-24 h-24 blur-3xl rounded-full opacity-20 transition-opacity duration-500 group-hover:opacity-40",
+                  stat.bgColor
+                )} />
 
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground/80">{stat.title}</CardTitle>
-                <div className={cn("p-2.5 rounded-xl transition-all duration-500 shadow-sm", stat.bgColor, "group-hover:scale-110 group-hover:shadow-glow")}>
-                  <stat.icon className={cn("h-5 w-5", stat.color)} />
-                </div>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="text-3xl font-black tracking-tighter">
-                  {loading ? <Skeleton className="h-9 w-20" /> : (
-                    <span className="bg-clip-text text-transparent bg-gradient-to-br from-foreground to-foreground/70">
-                      {stat.value}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-1 font-medium group-hover:text-foreground/70 transition-colors">
-                  Voir les détails →
-                </p>
-              </CardContent>
-            </Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+                  <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{stat.title}</CardTitle>
+                  <div className={cn(
+                    "p-2.5 rounded-xl transition-all duration-500 shadow-sm",
+                    stat.bgColor,
+                    "group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(0,0,0,0.2)]",
+                    "border border-white/10"
+                  )}>
+                    <stat.icon className={cn("h-5 w-5 transition-transform duration-500 group-hover:rotate-12", stat.color)} />
+                  </div>
+                </CardHeader>
+
+                <CardContent className="relative z-10 pt-4">
+                  <div className="flex items-baseline gap-1">
+                    <div className="text-4xl font-black tracking-tighter">
+                      {loading ? <Skeleton className="h-10 w-20" /> : (
+                        <span className="bg-clip-text text-transparent bg-gradient-to-br from-foreground via-foreground/90 to-foreground/40 drop-shadow-sm">
+                          {stat.value}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest group-hover:text-foreground/80 transition-colors">
+                      Détails
+                    </p>
+                    <div className="h-[2px] w-0 bg-foreground/20 group-hover:w-12 transition-all duration-500 ease-out rounded-full" />
+                  </div>
+                </CardContent>
+
+                {/* Bottom Shine */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              </Card>
+            </div>
           </motion.div>
         </Link>
       ))}

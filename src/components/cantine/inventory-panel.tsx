@@ -115,7 +115,7 @@ export function InventoryPanel({ schoolId }: { schoolId: string }) {
     };
 
     return (
-        <Card className="shadow-lg border-primary/10">
+        <Card className="glass-card border-white/10 shadow-xl overflow-hidden">
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
@@ -201,13 +201,13 @@ export function InventoryPanel({ schoolId }: { schoolId: string }) {
             <CardContent>
                 <div className="rounded-md border overflow-hidden">
                     <Table>
-                        <TableHeader className="bg-slate-50">
-                            <TableRow>
-                                <TableHead>Article</TableHead>
-                                <TableHead>Catégorie</TableHead>
-                                <TableHead className="text-right">Stock Actuel</TableHead>
-                                <TableHead>Statut</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                        <TableHeader className="bg-white/5">
+                            <TableRow className="hover:bg-transparent border-white/5">
+                                <TableHead className="font-bold text-xs uppercase tracking-widest py-4">Article</TableHead>
+                                <TableHead className="font-bold text-xs uppercase tracking-widest py-4">Catégorie</TableHead>
+                                <TableHead className="font-bold text-xs uppercase tracking-widest py-4 text-right">Stock Actuel</TableHead>
+                                <TableHead className="font-bold text-xs uppercase tracking-widest py-4">Statut</TableHead>
+                                <TableHead className="font-bold text-xs uppercase tracking-widest py-4 text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -217,22 +217,19 @@ export function InventoryPanel({ schoolId }: { schoolId: string }) {
                                 ))
                             ) : filteredInventory.length > 0 ? (
                                 filteredInventory.map((item) => (
-                                    <TableRow key={item.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <TableCell className="font-medium text-slate-700">{item.name}</TableCell>
-                                        <TableCell><Badge variant="outline" className="capitalize">{item.category}</Badge></TableCell>
-                                        <TableCell className="text-right font-bold">
-                                            {item.quantity} {item.unit}
+                                    <TableRow key={item.id} className="group border-white/5 hover:bg-white/5 transition-colors">
+                                        <TableCell className="font-medium text-foreground font-bold">{item.name}</TableCell>
+                                        <TableCell><Badge variant="outline" className="bg-white/5 text-[10px] border-white/10 uppercase tracking-tighter">{item.category}</Badge></TableCell>
+                                        <TableCell className="text-right font-black text-lg">
+                                            <span className={item.quantity <= item.minThreshold ? 'text-amber-500' : ''}>
+                                                {item.quantity} {item.unit}
+                                            </span>
                                         </TableCell>
                                         <TableCell>
                                             {item.quantity <= item.minThreshold ? (
-                                                <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                                                    <AlertTriangle className="h-3 w-3" />
-                                                    Stock Bas
-                                                </Badge>
+                                                <Badge variant="outline" className="text-amber-500 border-amber-500/50 bg-amber-500/10">Stock Bas</Badge>
                                             ) : (
-                                                <Badge variant="secondary" className="bg-emerald-100 text-emerald-700 border-none">
-                                                    Correct
-                                                </Badge>
+                                                <Badge variant="outline" className="text-green-500 border-green-500/50 bg-green-500/10">Optimum</Badge>
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
@@ -243,7 +240,7 @@ export function InventoryPanel({ schoolId }: { schoolId: string }) {
                                                     setSelectedItem(item);
                                                     setIsAdjustDialogOpen(true);
                                                 }}
-                                                className="text-[#2D9CDB] hover:text-[#2D9CDB]/80 hover:bg-[#2D9CDB]/5"
+                                                className="hover:bg-white/10"
                                             >
                                                 <ArrowUpDown className="h-4 w-4 mr-2" />
                                                 Ajuster

@@ -18,3 +18,5 @@ export {
   useStorage,
   useFirebaseApp,
 } from './client-provider';
+
+export { firebaseFirestore as db } from './config';
