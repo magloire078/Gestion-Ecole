@@ -42,19 +42,19 @@ interface StudentCardProps {
 const getAge = (dateOfBirth: string | undefined) => {
     if (!dateOfBirth) return 'N/A';
     try {
-      const birthDate = new Date(dateOfBirth);
-      const today = new Date();
-      const years = differenceInYears(today, birthDate);
-      const monthDate = addYears(birthDate, years);
-      const months = differenceInMonths(today, monthDate);
-      
-      let ageString = `${years} an${years > 1 ? 's' : ''}`;
-      if (months > 0) {
-        ageString += ` et ${months} mois`;
-      }
-      return ageString;
+        const birthDate = new Date(dateOfBirth);
+        const today = new Date();
+        const years = differenceInYears(today, birthDate);
+        const monthDate = addYears(birthDate, years);
+        const months = differenceInMonths(today, monthDate);
+
+        let ageString = `${years} an${years > 1 ? 's' : ''}`;
+        if (months > 0) {
+            ageString += ` et ${months} mois`;
+        }
+        return ageString;
     } catch {
-      return 'N/A';
+        return 'N/A';
     }
 }
 
@@ -68,10 +68,17 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
             <CardHeader className="pb-4">
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
-                            <AvatarImage src={student.photoUrl || undefined} alt={studentFullName} />
-                            <AvatarFallback>{fallback}</AvatarFallback>
-                        </Avatar>
+                        <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
+                            {student.photoUrl ? (
+                                <img
+                                    src={student.photoUrl}
+                                    alt={studentFullName}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-sm font-bold">{fallback}</span>
+                            )}
+                        </div>
                         <div>
                             <CardTitle className="text-lg">
                                 <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
@@ -81,18 +88,18 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                             <CardDescription>{student.matricule}</CardDescription>
                         </div>
                     </div>
-                     <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
+                    <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
                 </div>
             </CardHeader>
             <CardContent className="flex-1 space-y-2 text-sm">
                 <p>Classe: <strong>{student.class}</strong></p>
                 <div className="flex items-center text-muted-foreground">
-                  <Cake className="h-4 w-4 mr-2" />
-                  <span>{getAge(student.dateOfBirth)}</span>
+                    <Cake className="h-4 w-4 mr-2" />
+                    <span>{getAge(student.dateOfBirth)}</span>
                 </div>
-                 <div className="flex items-center text-muted-foreground">
-                  <VenetianMask className="h-4 w-4 mr-2" />
-                  <span>{student.gender}</span>
+                <div className="flex items-center text-muted-foreground">
+                    <VenetianMask className="h-4 w-4 mr-2" />
+                    <span>{student.gender}</span>
                 </div>
                 <div className="flex items-center pt-2">
                     <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
@@ -125,7 +132,7 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                                 </DropdownMenuPortal>
                             </DropdownMenuSub>
                             <DropdownMenuSeparator />
-                             {actionType === 'active' && (
+                            {actionType === 'active' && (
                                 <DropdownMenuItem className="text-destructive" onClick={() => onArchive(student)}>
                                     <UserX className="mr-2 h-4 w-4" /> Radier
                                 </DropdownMenuItem>
@@ -168,15 +175,15 @@ export const StudentsGrid = ({ students, isLoading, onEdit, onArchive, onRestore
             </Card>
         );
     }
-    
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {students.map(student => (
-                <StudentCard 
-                    key={student.id} 
-                    student={student} 
-                    onEdit={onEdit} 
-                    onArchive={onArchive} 
+                <StudentCard
+                    key={student.id}
+                    student={student}
+                    onEdit={onEdit}
+                    onArchive={onArchive}
                     onRestore={onRestore}
                     actionType={actionType}
                 />

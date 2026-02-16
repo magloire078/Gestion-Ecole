@@ -137,7 +137,7 @@ export default function CompetitionsPage() {
                         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
-                            <Link href={`/dashboard/activites/competitions/${comp.id}`}>
+                            <Link href={`/dashboard/activites/competitions/details?id=${comp.id}`}>
                               <Users className="mr-2 h-4 w-4" />Gérer participants
                             </Link>
                           </DropdownMenuItem>

@@ -58,6 +58,9 @@ const staffSchema = z.object({
     CG: z.string().optional(),
     numeroCompte: z.string().optional(),
     Cle_RIB: z.string().optional(),
+    contractType: z.enum(['Titulaire', 'Vacataire']).default('Titulaire'),
+    hourlyRate: z.coerce.number().min(0).optional(),
+    baseHours: z.coerce.number().min(0).optional(),
 }).refine(data => data.role !== 'enseignant' || (data.role === 'enseignant' && data.subject), {
     message: "La matière principale est requise pour un enseignant.",
     path: ["subject"],
@@ -98,6 +101,7 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
             }
             : {
                 firstName: '', lastName: '', role: 'enseignant', email: '', phone: '', uid: '', photoURL: '', baseSalary: 0, hireDate: todayDateString, subject: '', classId: '', adminRole: '', situationMatrimoniale: 'Célibataire', enfants: 0, categorie: '', cnpsEmploye: '', CNPS: true, indemniteTransportImposable: 0, indemniteResponsabilite: 0, indemniteLogement: 0, indemniteSujetion: 0, indemniteCommunication: 0, indemniteRepresentation: 0, transportNonImposable: 0, banque: '', CB: '', CG: '', numeroCompte: '', Cle_RIB: '',
+                contractType: 'Titulaire', hourlyRate: 0, baseHours: 0
             },
     });
 
@@ -132,7 +136,10 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
             firstName: values.firstName || '',
             lastName: values.lastName || '',
             hireDate: values.hireDate || todayDateString,
-            baseSalary: values.baseSalary || 0
+            baseSalary: values.baseSalary || 0,
+            contractType: values.contractType as Staff['contractType'],
+            hourlyRate: values.hourlyRate || 0,
+            baseHours: values.baseHours || 0
         };
 
         try {
@@ -251,7 +258,34 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                                 <FormField control={form.control} name="hireDate" render={({ field }) => (<FormItem><FormLabel>Date d&apos;embauche</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </TabsContent>
                             <TabsContent value="payroll" className="mt-0 space-y-4">
-                                <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField control={form.control} name="contractType" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Type de contrat</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl><SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger></FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="Titulaire">Titulaire</SelectItem>
+                                                    <SelectItem value="Vacataire">Vacataire</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </FormItem>
+                                    )} />
+                                    {form.watch('contractType') === 'Titulaire' ? (
+                                        <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    ) : (
+                                        <FormField control={form.control} name="hourlyRate" render={({ field }) => (<FormItem><FormLabel>Taux horaire (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                    )}
+                                </div>
+                                {form.watch('contractType') === 'Vacataire' && (
+                                    <FormField control={form.control} name="baseHours" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Heures effectuées (Mois en cours)</FormLabel>
+                                            <FormControl><Input type="number" {...field} /></FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                )}
                                 <Accordion type="single" collapsible className="w-full">
                                     <AccordionItem value="indemnities">
                                         <AccordionTrigger>Indemnités et Primes</AccordionTrigger>

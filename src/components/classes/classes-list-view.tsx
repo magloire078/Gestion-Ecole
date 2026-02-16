@@ -42,8 +42,8 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
     const classes = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Classe & { id: string })) || [], [classesData]);
 
     const filteredClasses = useMemo(() => {
-      if (!searchQuery) return classes;
-      return classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        if (!searchQuery) return classes;
+        return classes.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [classes, searchQuery]);
 
     const isLoading = schoolLoading || classesLoading;
@@ -88,7 +88,7 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuItem asChild>
-                                                    <Link href={`/dashboard/classes/${classe.id}`}>
+                                                    <Link href={`/dashboard/classes/details?id=${classe.id}`}>
                                                         Voir les détails
                                                     </Link>
                                                 </DropdownMenuItem>
@@ -108,7 +108,7 @@ export function ClassesListView({ cycleId, searchQuery, onEdit }: ClassesListVie
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center h-24">
-                                     {cycleId === 'all' && !searchQuery ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour les filtres actuels.'}
+                                    {cycleId === 'all' && !searchQuery ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour les filtres actuels.'}
                                 </TableCell>
                             </TableRow>
                         )}

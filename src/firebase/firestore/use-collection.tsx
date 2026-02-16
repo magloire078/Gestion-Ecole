@@ -19,15 +19,15 @@ export function useCollection<T>(query: Query<T> | null) {
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
 
-    const unsubscribe = onSnapshot(query, 
+    const unsubscribe = onSnapshot(query,
       (snapshot) => {
         setData(snapshot.docs);
         setError(null);
         setLoading(false);
-      }, 
+      },
       (err) => {
         console.error("useCollection Firestore Error:", err.message);
         setError(err);
@@ -37,10 +37,16 @@ export function useCollection<T>(query: Query<T> | null) {
     );
 
     // Cleanup subscription on unmount
-    return () => unsubscribe();
-    
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      try {
+        unsubscribe();
+      } catch (e) {
+        console.warn("useCollection: Failed to unsubscribe safely:", e);
+      }
+    };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
-  
+
   return { data: data || [], loading, error };
 }

@@ -2,11 +2,12 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Server, RefreshCw, ArrowRight, Settings, Users, Shield, Activity, Globe, Scroll, Loader2 } from 'lucide-react';
+import { Server, RefreshCw, ArrowRight, Settings, Users, Shield, Activity, Globe, Scroll, Loader2, Rocket } from 'lucide-react';
 import { AuditLog } from '@/components/admin/audit-log';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { resetDemoTrial } from '@/services/school-services';
+import { seedAdminSystemData } from '@/services/admin-seeding-service';
 import { useState } from 'react';
 import { useFirestore, useUser } from '@/firebase';
 import Link from 'next/link';
@@ -23,6 +24,7 @@ export default function SystemAdminDashboard() {
     const { user } = useUser();
     const { toast } = useToast();
     const [isResetting, setIsResetting] = useState(false);
+    const [isSeeding, setIsSeeding] = useState(false);
 
     const handleResetDemo = async () => {
         if (!user || !user.uid) return;
@@ -38,6 +40,23 @@ export default function SystemAdminDashboard() {
             });
         } finally {
             setIsResetting(false);
+        }
+    };
+
+    const handleSeedSystem = async () => {
+        if (!user || !user.uid) return;
+        setIsSeeding(true);
+        try {
+            await seedAdminSystemData(firestore, user.uid);
+            toast({ title: 'Succès', description: "Les données de démonstration du système ont été peuplées." });
+        } catch (e: any) {
+            toast({
+                variant: "destructive",
+                title: "Erreur",
+                description: e.message || "Échec du peuplement des données.",
+            });
+        } finally {
+            setIsSeeding(false);
         }
     };
 
@@ -138,14 +157,24 @@ export default function SystemAdminDashboard() {
                             <CardTitle className="text-2xl font-black font-outfit tracking-tight">Maintenance Démo</CardTitle>
                             <CardDescription className="text-white/60 font-medium">Réinitialisation de l'environnement de test public.</CardDescription>
                         </CardHeader>
-                        <CardContent className="px-8 pb-8">
+                        <CardContent className="px-8 pb-8 space-y-4">
                             <Button
                                 onClick={handleResetDemo}
-                                disabled={isResetting}
+                                disabled={isResetting || isSeeding}
                                 className="w-full h-14 bg-white text-[#0C365A] hover:bg-blue-50 border-none rounded-2xl font-black transition-all active:scale-95"
                             >
                                 {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
                                 {isResetting ? "Restauration..." : "Réinitialiser la Démo"}
+                            </Button>
+
+                            <Button
+                                onClick={handleSeedSystem}
+                                disabled={isResetting || isSeeding}
+                                variant="outline"
+                                className="w-full h-12 bg-transparent text-white hover:bg-white/10 border-white/20 rounded-2xl font-bold transition-all"
+                            >
+                                {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Rocket className="mr-2 h-4 w-4" />}
+                                {isSeeding ? "Peuplement..." : "Peupler les données Système"}
                             </Button>
                         </CardContent>
                     </Card>

@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useTheme } from "next-themes";
 import { motion } from "framer-motion";
-import { Moon, Sun, ShieldCheck, School, LogOut as LogOutIcon, ChevronsUpDown, Check, User as UserIcon } from "lucide-react";
+import { Moon, Sun, ShieldCheck, School, LogOut as LogOutIcon, ChevronsUpDown, Check, User as UserIcon, PlusCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "./ui/skeleton";
@@ -148,6 +148,11 @@ export function UserNav({ collapsed = false }: UserNavProps) {
                 </DropdownMenuPortal>
               </DropdownMenuSub>
             )}
+
+            <DropdownMenuItem onClick={() => router.push('/onboarding?force=true')}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              <span>Ajouter un établissement</span>
+            </DropdownMenuItem>
 
             <DropdownMenuGroup>
               <DropdownMenuItem onClick={() => router.push('/dashboard/profil')}>

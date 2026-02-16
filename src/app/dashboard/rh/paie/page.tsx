@@ -42,7 +42,7 @@ export default function PaiePage() {
 
   const staffQuery = useMemo(() => {
     if (!schoolId) return null;
-    return query(collection(firestore, `ecoles/${schoolId}/personnel`), where('baseSalary', '>', 0));
+    return query(collection(firestore, `ecoles/${schoolId}/personnel`), where('status', '==', 'Actif'));
   }, [firestore, schoolId]);
 
   const { data: staffData, loading: staffLoading } = useCollection(staffQuery);
@@ -65,7 +65,12 @@ export default function PaiePage() {
     if (staffWithSalary.length === 0) {
       return { totalSalaryMass: 0, averageSalary: 0 };
     }
-    const total = staffWithSalary.reduce((acc, staff) => acc + (staff.baseSalary || 0), 0);
+    const total = staffWithSalary.reduce((acc, staff) => {
+      const salary = staff.contractType === 'Vacataire'
+        ? (staff.hourlyRate || 0) * (staff.baseHours || 0)
+        : (staff.baseSalary || 0);
+      return acc + salary;
+    }, 0);
     return {
       totalSalaryMass: total,
       averageSalary: total / staffWithSalary.length,

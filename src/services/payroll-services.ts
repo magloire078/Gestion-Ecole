@@ -19,28 +19,46 @@ export const runPayrollForMonth = async (
     adminName: string,
     schoolData: School,
 ): Promise<RunPayrollResult> => {
-    
+
     if (!schoolId || !adminId) {
         return { success: false, error: "Informations sur l'école ou l'administrateur manquantes." };
     }
 
-    const staffWithSalaryQuery = query(
+    const staffQuery = query(
         collection(firestore, `ecoles/${schoolId}/personnel`),
-        where('baseSalary', '>', 0),
         where('status', '==', 'Actif')
     );
 
     try {
-        const staffSnapshot = await getDocs(staffWithSalaryQuery);
-        
+        const staffSnapshot = await getDocs(staffQuery);
+
         if (staffSnapshot.empty) {
-            return { success: false, error: "Aucun employé avec un salaire défini à traiter." };
+            return { success: false, error: "Aucun personnel actif trouvé." };
         }
 
-        const staffMembers = staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Staff }));
-        const totalMass = staffMembers.reduce((sum, staff) => sum + (staff.baseSalary || 0), 0);
+        const allStaff = staffSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Staff }));
+
+        // Filtrer ceux qui doivent être payés : soit baseSalary > 0, soit Vacataire avec taux horaire > 0 et heures > 0
+        const staffMembers = allStaff.filter(s => {
+            if (s.contractType === 'Vacataire') {
+                return (s.hourlyRate || 0) > 0 && (s.baseHours || 0) > 0;
+            }
+            return (s.baseSalary || 0) > 0;
+        });
+
+        if (staffMembers.length === 0) {
+            return { success: false, error: "Aucun employé éligible à la paie ce mois-ci (salaires ou heures non saisis)." };
+        }
+
+        const totalMass = staffMembers.reduce((sum, staff) => {
+            const salary = staff.contractType === 'Vacataire'
+                ? (staff.hourlyRate || 0) * (staff.baseHours || 0)
+                : (staff.baseSalary || 0);
+            return sum + salary;
+        }, 0);
+
         const employeeCount = staffMembers.length;
-        
+
         const period = format(new Date(), 'MMMM yyyy', { locale: fr });
 
         // Check if payroll has already been run for this period
@@ -57,7 +75,7 @@ export const runPayrollForMonth = async (
         const batch = writeBatch(firestore);
 
         const newRunRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs`));
-        
+
         const payrollRunData = {
             period,
             executionDate: new Date().toISOString(),
@@ -69,20 +87,20 @@ export const runPayrollForMonth = async (
         };
 
         batch.set(newRunRef, payrollRunData);
-        
+
         // Generate and store individual payslips
         for (const staffMember of staffMembers) {
             const payslipDetails = await getPayslipDetails(staffMember, payslipDate, schoolData);
-            
+
             const payslipRef = doc(collection(firestore, `ecoles/${schoolId}/payroll_runs/${newRunRef.id}/payslips`));
-            
+
             const payslipData = {
                 staffId: staffMember.id,
                 staffName: `${staffMember.firstName} ${staffMember.lastName}`,
                 // Convert to plain object to avoid any issues with Firestore
-                payslipDetails: JSON.parse(JSON.stringify(payslipDetails)) 
+                payslipDetails: JSON.parse(JSON.stringify(payslipDetails))
             };
-            
+
             batch.set(payslipRef, payslipData);
         }
 

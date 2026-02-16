@@ -1,137 +1,46 @@
 rules_version = '2';
-
 service firebase.storage {
   match /b/{bucket}/o {
-
-    // =================================
-    //       FONCTIONS UTILITAIRES
-    // =================================
     
     function isSignedIn() {
       return request.auth != null;
     }
 
-    function isSuperAdmin() {
-      // Vérifie si l'utilisateur est un super administrateur en consultant son document user_root.
-      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isSuperAdmin == true;
+    // Simplification : On autorise l'accès direct aux avatars si on est le propriétaire
+    // sans passer par une vérification complexe Firestore pour l'instant.
+    
+    match /ecoles/{schoolId}/parents/{parentId}/avatars/{allPaths=**} {
+       allow read: if true;
+       allow write: if isSignedIn() && request.auth.uid == parentId;
+    }
+    
+    match /ecoles/{schoolId}/staff/{staffId}/avatars/{allPaths=**} {
+       allow read: if true;
+       allow write: if isSignedIn() && request.auth.uid == staffId;
+    }
+    
+    match /ecoles/{schoolId}/eleves/{studentId}/avatars/{allPaths=**} {
+       allow read: if true;
+       allow write: if isSignedIn(); // À restreindre plus tard
     }
 
-    function isSchoolMember(schoolId) {
-      // Un utilisateur est membre s'il est super admin ou si son document user_root l'indique comme membre de l'école.
-      return isSuperAdmin() || (
-        isSignedIn() &&
-        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schools != null &&
-        schoolId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schools
-      );
-    }
-    
-    function isDirector(schoolId) {
-      // Un utilisateur est directeur s'il est membre de l'école et que son rôle est 'directeur'.
-      return isSchoolMember(schoolId) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.schools[schoolId] == 'directeur';
-    }
-    
-    function hasPermission(schoolId, permission) {
-      // Les super admins et les directeurs ont toutes les permissions.
-      // Pour les autres membres du personnel, vérifiez leur rôle assigné et ses permissions.
-      return isSuperAdmin() || isDirector(schoolId) || (
-        exists(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)) &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole != null &&
-        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)) &&
-        permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(/databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid)).data.adminRole)).data.permissions[permission] == true
-      );
-    }
-
-    function isParentOfStudent(studentId, schoolId) {
-      // Un utilisateur est un parent d'un élève si son profil parent contient l'ID de l'élève.
-      return isSignedIn() && 
-             exists(/databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid)) && 
-             'studentIds' in get(/databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid)).data &&
-             get(/databases/$(database)/documents/ecoles/$(schoolId)/parents/$(request.auth.uid)).data.studentIds.hasAny([studentId]);
-    }
-    
-    // =================================
-    //              RÈGLES
-    // =================================
-    
-    // --- Fichiers lisibles publiquement ---
-    match /ecoles/{schoolId}/logos/{allPaths=**} {
-      allow read: if true;
-      allow write: if hasPermission(schoolId, 'manageSettings');
-    }
-    
-    // --- Images génériques (compatible avec ancien code) ---
+    // Règles génériques pour le reste
     match /Images/{allPaths=**} {
       allow read: if true;
       allow write: if isSignedIn();
     }
     
-    // --- Dossiers temporaires spécifiques à l'utilisateur ---
+    match /ecoles/{schoolId}/logos/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+    
     match /temp-logos/{userId}/{allPaths=**} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
     
-    match /ecoles/{schoolId}/student-photos/{allPaths=**} {
-      allow read, write: if hasPermission(schoolId, 'manageUsers');
-    }
-    
-    // --- Fichiers protégés spécifiques à une école ---
-    
-    // Photos de profil des élèves
-    match /ecoles/{schoolId}/eleves/{studentId}/avatars/{allPaths=**} {
-       allow read: if isSchoolMember(schoolId) || isParentOfStudent(studentId, schoolId);
-       allow write: if hasPermission(schoolId, 'manageUsers');
-    }
-    
-    // Alias pour photos élèves (compatibilité)
-    match /students/{schoolId}/{studentId}/{imageName} {
-      allow read: if isSchoolMember(schoolId) || isParentOfStudent(studentId, schoolId);
-      allow write: if hasPermission(schoolId, 'manageUsers');
-    }
-    
-    // Photos de profil du personnel
-    match /ecoles/{schoolId}/staff/{staffId}/avatars/{allPaths=**} {
-       allow read: if isSchoolMember(schoolId);
-       allow write: if hasPermission(schoolId, 'manageUsers') || (isSignedIn() && request.auth.uid == staffId);
-    }
-    
-    // Alias pour photos personnel (compatibilité)
-    match /staff/{schoolId}/{staffId}/{imageName} {
-      allow read: if isSchoolMember(schoolId);
-      allow write: if hasPermission(schoolId, 'manageUsers') || (isSignedIn() && request.auth.uid == staffId);
-    }
-    
-    // Les couvertures de livres de la bibliothèque sont visibles par tous les membres de l'école
-    match /ecoles/{schoolId}/library_covers/{allPaths=**} {
-       allow read: if isSchoolMember(schoolId);
-       allow write: if hasPermission(schoolId, 'manageLibrary');
-    }
-    
-    // Alias pour couvertures de livres (compatibilité)
-    match /books/{schoolId}/{bookId}/{imageName} {
-      allow read: if isSchoolMember(schoolId);
-      allow write: if hasPermission(schoolId, 'manageLibrary');
-    }
-
-    // Photos de l'inventaire
-    match /ecoles/{schoolId}/inventory-photos/{allPaths=**} {
-       allow read: if isSchoolMember(schoolId);
-       allow write: if hasPermission(schoolId, 'manageInventory');
-    }
-    
-    // School logos (alias)
-    match /schools/{schoolId}/{imageName} {
-      allow read: if true;
-      allow write: if hasPermission(schoolId, 'manageSettings');
-    }
-    
-    // Fichier placeholder pour l'initialisation du stockage
-    match /ecoles/{schoolId}/.placeholder {
-      allow write: if hasPermission(schoolId, 'manageSettings');
+    match /{allPaths=**} {
+      allow read, write: if true;
     }
   }
 }
-

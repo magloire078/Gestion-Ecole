@@ -1,6 +1,4 @@
 
-'use server';
-
 // Fichier de configuration pour l'intégration Orange Money Côte d'Ivoire
 
 const ORANGE_AUTH_HEADER = process.env.ORANGE_MONEY_AUTH_HEADER;

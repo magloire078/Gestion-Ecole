@@ -27,14 +27,14 @@ export function ClassCard({ classe, teacherName, onEdit }: ClassCardProps) {
   const fillPercentage = classe.maxStudents > 0 ? Math.round((classe.studentCount / classe.maxStudents) * 100) : 0;
   const { user } = useUser();
   const canManageClasses = user?.profile?.permissions?.manageClasses;
-  
+
   return (
     <Card className="hover:shadow-lg transition-shadow flex flex-col">
       <CardHeader className="pb-3">
         <div className="flex justify-between items-start">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Link href={`/dashboard/classes/${classe.id}`} className="hover:underline">{classe.name}</Link>
+              <Link href={`/dashboard/classes/details?id=${classe.id}`} className="hover:underline">{classe.name}</Link>
               <Badge variant="outline" className="ml-2">
                 {classe.code}
               </Badge>
@@ -60,7 +60,7 @@ export function ClassCard({ classe, teacherName, onEdit }: ClassCardProps) {
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4 flex-1">
         <div className="flex items-center gap-3">
           <Avatar className="h-8 w-8">
@@ -73,7 +73,7 @@ export function ClassCard({ classe, teacherName, onEdit }: ClassCardProps) {
             <p className="text-xs text-muted-foreground">Enseignant principal</p>
           </div>
         </div>
-        
+
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Effectif</span>
@@ -83,16 +83,16 @@ export function ClassCard({ classe, teacherName, onEdit }: ClassCardProps) {
           </div>
           <Progress value={fillPercentage} className="h-2" />
         </div>
-        
+
         <div className="flex items-center gap-2 text-sm">
           <MapPin className="h-4 w-4 text-muted-foreground" />
           <span className="truncate">{classe.classroom || 'Non défini'}</span>
         </div>
       </CardContent>
-      
+
       <CardFooter className="pt-4">
         <Button asChild variant="outline" className="w-full">
-          <Link href={`/dashboard/classes/${classe.id}`}>
+          <Link href={`/dashboard/classes/details?id=${classe.id}`}>
             <BookOpen className="mr-2 h-4 w-4" />
             Gérer la classe
           </Link>
@@ -152,25 +152,25 @@ export function ClassesGridView({ cycleId, searchQuery, onEdit }: ClassesGridVie
       </div>
     );
   }
-  
+
   if (filteredClasses.length === 0) {
-      return (
-          <Card className="flex items-center justify-center h-48">
-              <p className="text-muted-foreground">
-                  {cycleId === 'all' && !searchQuery ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour les filtres actuels.'}
-              </p>
-          </Card>
-      );
+    return (
+      <Card className="flex items-center justify-center h-48">
+        <p className="text-muted-foreground">
+          {cycleId === 'all' && !searchQuery ? 'Aucune classe n\'a encore été créée.' : 'Aucune classe trouvée pour les filtres actuels.'}
+        </p>
+      </Card>
+    );
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {filteredClasses.map((classe) => (
-        <ClassCard 
-            key={classe.id} 
-            classe={classe} 
-            teacherName={classe.mainTeacherId ? teacherMap.get(classe.mainTeacherId) : undefined}
-            onEdit={onEdit}
+        <ClassCard
+          key={classe.id}
+          classe={classe}
+          teacherName={classe.mainTeacherId ? teacherMap.get(classe.mainTeacherId) : undefined}
+          onEdit={onEdit}
         />
       ))}
     </div>

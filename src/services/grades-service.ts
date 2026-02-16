@@ -6,7 +6,7 @@ import { firebaseFirestore as db } from '@/firebase/config';
 interface GradeData {
     schoolId: string;
     subject: string;
-    type: 'Interrogation' | 'Devoir';
+    type: 'Interrogation' | 'Devoir' | 'Composition Mensuelle' | 'Composition Nationale' | 'Composition de Zone';
     date: string;
     grade: number;
     coefficient: number;
@@ -29,6 +29,7 @@ export const GradesService = {
      */
     createGrade: async (schoolId: string, studentId: string, data: Omit<GradeData, 'schoolId'>) => {
         try {
+            if (!db) throw new Error("Firestore not initialized");
             const gradesCollectionRef = collection(db, `ecoles/${schoolId}/eleves/${studentId}/notes`);
             const gradeData: GradeData = {
                 ...data,
@@ -47,6 +48,7 @@ export const GradesService = {
      */
     updateGrade: async (schoolId: string, studentId: string, gradeId: string, data: Partial<GradeData>) => {
         try {
+            if (!db) throw new Error("Firestore not initialized");
             const gradeRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}/notes/${gradeId}`);
             await updateDoc(gradeRef, data);
         } catch (error) {
@@ -60,6 +62,7 @@ export const GradesService = {
      */
     deleteGrade: async (schoolId: string, studentId: string, gradeId: string) => {
         try {
+            if (!db) throw new Error("Firestore not initialized");
             const gradeRef = doc(db, `ecoles/${schoolId}/eleves/${studentId}/notes/${gradeId}`);
             await deleteDoc(gradeRef);
         } catch (error) {
@@ -74,6 +77,7 @@ export const GradesService = {
      */
     getGradesBySubject: async (schoolId: string, studentIds: string[], subject: string): Promise<GradeEntry[]> => {
         try {
+            if (!db) throw new Error("Firestore not initialized");
             if (studentIds.length === 0) return [];
 
             const allGrades: GradeEntry[] = [];

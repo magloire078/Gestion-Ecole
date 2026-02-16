@@ -24,11 +24,12 @@ export type school = {
     directorEmail?: string;
     createdAt?: any;
     updatedAt?: any;
-    address?: string;
-    phone?: string;
-    website?: string;
-    mainLogoUrl?: string;
-    email?: string;
+    address: string;
+    phone: string;
+    website: string;
+    mainLogoUrl: string;
+    digitalSignatureUrl?: string;
+    email: string;
     isSetupComplete?: boolean;
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
@@ -126,6 +127,7 @@ export type system_setting = {
     storageQuota?: number;
     backupFrequency?: string;
     apiRateLimit?: number;
+    supportWhatsApp?: string;
 };
 
 export type admin_role = {
@@ -173,6 +175,9 @@ export type staff = {
     lastName: string;
     hireDate: string;
     baseSalary: number;
+    contractType?: 'Titulaire' | 'Vacataire';
+    hourlyRate?: number;
+    baseHours?: number; // Heures effectuées pour le mois en cours
     displayName?: string;
     photoURL?: string;
     isAdmin?: boolean;
@@ -373,7 +378,7 @@ export type timetableEntry = {
 export type gradeEntry = {
     schoolId: string;
     subject: string;
-    type: "Interrogation" | "Devoir";
+    type: "Interrogation" | "Devoir" | "Composition Mensuelle" | "Composition Nationale" | "Composition de Zone";
     date: string;
     grade: number;
     coefficient: number;

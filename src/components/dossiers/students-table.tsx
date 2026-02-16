@@ -2,26 +2,26 @@
 'use client';
 
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { MoreHorizontal, Eye, Printer, FileText, CalendarDays, FileSignature, CreditCard, Edit, UserX, UserCheck } from "lucide-react";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuSubContent,
+    DropdownMenuPortal,
 } from "@/components/ui/dropdown-menu";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import Link from "next/link";
@@ -52,19 +52,19 @@ const getStatusBadgeVariant = (status: Student['status']) => {
 const getAge = (dateOfBirth: string | undefined) => {
     if (!dateOfBirth) return 'N/A';
     try {
-      const birthDate = new Date(dateOfBirth);
-      const today = new Date();
-      const years = differenceInYears(today, birthDate);
-      const monthDate = addYears(birthDate, years);
-      const months = differenceInMonths(today, monthDate);
-      
-      let ageString = `${years} an${years > 1 ? 's' : ''}`;
-      if (months > 0) {
-        ageString += ` ${months} mois`;
-      }
-      return ageString;
+        const birthDate = new Date(dateOfBirth);
+        const today = new Date();
+        const years = differenceInYears(today, birthDate);
+        const monthDate = addYears(birthDate, years);
+        const months = differenceInMonths(today, monthDate);
+
+        let ageString = `${years} an${years > 1 ? 's' : ''}`;
+        if (months > 0) {
+            ageString += ` ${months} mois`;
+        }
+        return ageString;
     } catch {
-      return 'N/A';
+        return 'N/A';
     }
 }
 
@@ -86,98 +86,105 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
             <CardContent className="p-0">
                 <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[50px]">N°</TableHead>
-                        <TableHead>Élève</TableHead>
-                        <TableHead>Classe</TableHead>
-                        <TableHead>Âge</TableHead>
-                        <TableHead>Sexe</TableHead>
-                        <TableHead className="text-center">Statut</TableHead>
-                        {actionType === 'active' && <TableHead className="text-center">Paiement</TableHead>}
-                        <TableHead className="text-right print:hidden">Actions</TableHead>
-                      </TableRow>
+                        <TableRow>
+                            <TableHead className="w-[50px]">N°</TableHead>
+                            <TableHead>Élève</TableHead>
+                            <TableHead>Classe</TableHead>
+                            <TableHead>Âge</TableHead>
+                            <TableHead>Sexe</TableHead>
+                            <TableHead className="text-center">Statut</TableHead>
+                            {actionType === 'active' && <TableHead className="text-center">Paiement</TableHead>}
+                            <TableHead className="text-right print:hidden">Actions</TableHead>
+                        </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
                             [...Array(5)].map((_, i) => (
                                 <TableRow key={i}>
-                                    <TableCell colSpan={8}><Skeleton className="h-5 w-full"/></TableCell>
+                                    <TableCell colSpan={8}><Skeleton className="h-5 w-full" /></TableCell>
                                 </TableRow>
                             ))
                         ) : students.length > 0 ? (
                             students.map((student, index) => (
                                 <TableRow key={student.id}>
-                                <TableCell className="font-medium">{index + 1}</TableCell>
-                                <TableCell>
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10 print:hidden">
-                                            <AvatarImage src={student.photoUrl || undefined} alt={`${student.firstName} ${student.lastName}`} data-ai-hint="person face" />
-                                            <AvatarFallback>{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline">
-                                                <p className="font-medium">{student.firstName} ${student.lastName}</p>
-                                            </Link>
-                                            <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id?.substring(0,8)}</div>
+                                    <TableCell className="font-medium">{index + 1}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center print:hidden">
+                                                {student.photoUrl ? (
+                                                    <img
+                                                        src={student.photoUrl}
+                                                        alt={`${student.firstName} ${student.lastName}`}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <span className="text-xs font-bold">{`${student.firstName?.[0] || ''}${student.lastName?.[0] || ''}`.toUpperCase()}</span>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <Link href={`/dashboard/dossiers-eleves/details?id=${student.id}`} className="hover:underline">
+                                                    <p className="font-medium">{student.firstName} {student.lastName}</p>
+                                                </Link>
+                                                <div className="text-xs text-muted-foreground font-mono">{student.matricule || student.id?.substring(0, 8)}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </TableCell>
-                                <TableCell>{student.class}</TableCell>
-                                <TableCell>{getAge(student.dateOfBirth)}</TableCell>
-                                <TableCell>{student.gender?.charAt(0)}</TableCell>
-                                <TableCell className="text-center">
-                                    <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
-                                </TableCell>
-                                {actionType === 'active' &&
-                                  <TableCell className="text-center">
-                                      <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
-                                  </TableCell>
-                                }
-                                <TableCell className="text-right print:hidden">
-                                    <div className="flex justify-end gap-1">
-                                        {actionType === 'active' && canManageUsers && (
-                                            <Button variant="outline" size="sm" onClick={() => onEdit(student)}>
-                                                <Edit className="h-3.5 w-3.5 mr-1"/> Modifier
-                                            </Button>
-                                        )}
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-9 w-9">
-                                                    <MoreHorizontal className="h-4 w-4" />
+                                    </TableCell>
+                                    <TableCell>{student.class}</TableCell>
+                                    <TableCell>{getAge(student.dateOfBirth)}</TableCell>
+                                    <TableCell>{student.gender?.charAt(0)}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge className={cn("border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
+                                    </TableCell>
+                                    {actionType === 'active' &&
+                                        <TableCell className="text-center">
+                                            <TuitionStatusBadge status={student.tuitionStatus || 'Partiel'} />
+                                        </TableCell>
+                                    }
+                                    <TableCell className="text-right print:hidden">
+                                        <div className="flex justify-end gap-1">
+                                            {actionType === 'active' && canManageUsers && (
+                                                <Button variant="outline" size="sm" onClick={() => onEdit(student)}>
+                                                    <Edit className="h-3.5 w-3.5 mr-1" /> Modifier
                                                 </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}`)}>
-                                                    <Eye className="mr-2 h-4 w-4" /> Voir le Profil
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSub>
-                                                    <DropdownMenuSubTrigger>
-                                                        <Printer className="mr-2 h-4 w-4" /> Imprimer
-                                                    </DropdownMenuSubTrigger>
-                                                    <DropdownMenuPortal>
-                                                        <DropdownMenuSubContent>
-                                                            <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/carte`)}><CreditCard className="mr-2 h-4 w-4" />Carte Étudiant</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/bulletin`)}><FileText className="mr-2 h-4 w-4" />Bulletin</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/emploi-du-temps`)}><CalendarDays className="mr-2 h-4 w-4" />Emploi du temps</DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/${student.id}/fiche`)}><FileSignature className="mr-2 h-4 w-4" />Fiche</DropdownMenuItem>
-                                                        </DropdownMenuSubContent>
-                                                    </DropdownMenuPortal>
-                                                </DropdownMenuSub>
-                                                {canManageUsers && <DropdownMenuSeparator />}
-                                                {actionType === 'active' && canManageUsers && (
-                                                    <DropdownMenuItem className="text-destructive" onClick={() => onArchive(student)}>
-                                                        <UserX className="mr-2 h-4 w-4" /> Radier
+                                            )}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-9 w-9">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/details?id=${student.id}`)}>
+                                                        <Eye className="mr-2 h-4 w-4" /> Voir le Profil
                                                     </DropdownMenuItem>
-                                                )}
-                                                {actionType === 'archived' && canManageUsers && (
-                                                    <DropdownMenuItem onClick={() => onRestore(student)}>
-                                                        <UserCheck className="mr-2 h-4 w-4" /> Restaurer
-                                                    </DropdownMenuItem>
-                                                )}
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </div>
-                                </TableCell>
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger>
+                                                            <Printer className="mr-2 h-4 w-4" /> Imprimer
+                                                        </DropdownMenuSubTrigger>
+                                                        <DropdownMenuPortal>
+                                                            <DropdownMenuSubContent>
+                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/carte?id=${student.id}`)}><CreditCard className="mr-2 h-4 w-4" />Carte Étudiant</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/bulletin?id=${student.id}`)}><FileText className="mr-2 h-4 w-4" />Bulletin</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/emploi-du-temps?id=${student.id}`)}><CalendarDays className="mr-2 h-4 w-4" />Emploi du temps</DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => router.push(`/dashboard/dossiers-eleves/fiche?id=${student.id}`)}><FileSignature className="mr-2 h-4 w-4" />Fiche</DropdownMenuItem>
+                                                            </DropdownMenuSubContent>
+                                                        </DropdownMenuPortal>
+                                                    </DropdownMenuSub>
+                                                    {canManageUsers && <DropdownMenuSeparator />}
+                                                    {actionType === 'active' && canManageUsers && (
+                                                        <DropdownMenuItem className="text-destructive" onClick={() => onArchive(student)}>
+                                                            <UserX className="mr-2 h-4 w-4" /> Radier
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                    {actionType === 'archived' && canManageUsers && (
+                                                        <DropdownMenuItem onClick={() => onRestore(student)}>
+                                                            <UserCheck className="mr-2 h-4 w-4" /> Restaurer
+                                                        </DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    </TableCell>
                                 </TableRow>
                             ))
                         ) : (

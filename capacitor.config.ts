@@ -11,6 +11,21 @@ const config: CapacitorConfig = {
     // Pour la PROD : Remplacer par https://www.gerecole.com
     // url: 'http://10.0.2.2:3000',
     cleartext: true
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      backgroundColor: "#000000",
+      androidSplashResourceName: "splash",
+      androidScaleType: "CENTER_CROP",
+      showSpinner: true,
+      androidSpinnerStyle: "large",
+      iosSpinnerStyle: "small",
+      spinnerColor: "#00E5FF",
+      splashFullScreen: true,
+      splashImmersive: true,
+    }
   }
 };
 

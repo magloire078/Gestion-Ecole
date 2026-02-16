@@ -1,6 +1,4 @@
 
-'use server';
-
 import type { Firestore } from 'firebase/firestore';
 import { collection, writeBatch, doc, serverTimestamp, increment } from 'firebase/firestore';
 import type { staff as Staff, student as Student, cycle as Cycle, niveau as Niveau, class_type as ClassType, subject as Subject } from '@/lib/data-types';

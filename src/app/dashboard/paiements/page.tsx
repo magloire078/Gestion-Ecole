@@ -20,7 +20,7 @@ import type { student as Student, class_type as Class } from "@/lib/data-types";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Search, Loader2, Copy, Download, Users } from "lucide-react";
+import { MessageSquare, Search, Loader2, Download, Users } from "lucide-react";
 import { TuitionStatusBadge } from "@/components/tuition-status-badge";
 import { useCollection, useFirestore } from "@/firebase";
 import { collection, query } from "firebase/firestore";
@@ -28,9 +28,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-
 export default function PaymentsPage() {
     const firestore = useFirestore();
     const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
@@ -49,11 +46,7 @@ export default function PaymentsPage() {
     const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
-    const [isReminderOpen, setIsReminderOpen] = useState(false);
-    const [remindingStudent, setRemindingStudent] = useState<Student | null>(null);
-    const [reminderMessage, setReminderMessage] = useState('');
     const [isGeneratingReminder, setIsGeneratingReminder] = useState(false);
-    const [isMassReminder, setIsMassReminder] = useState(false);
 
     const filteredStudents = useMemo(() => {
         return students.filter(student => {
@@ -106,41 +99,101 @@ export default function PaymentsPage() {
     };
 
     async function handleSendReminder(student: Student) {
-        if (!schoolName) {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Nom de l\'école non défini.' });
+        if (!schoolId || !schoolName) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Données de l\'école non disponibles.' });
             return;
         }
-        setIsMassReminder(false);
-        setRemindingStudent(student);
-        setIsReminderOpen(true);
-        setIsGeneratingReminder(true);
-        setReminderMessage('');
 
+        const parentEmail = student.parent1Email || student.parent2Email;
+        if (!parentEmail) {
+            toast({
+                variant: 'destructive',
+                title: 'Email manquant',
+                description: 'Aucune adresse email n\'est enregistrée pour les parents de cet élève.'
+            });
+            return;
+        }
+
+        setIsGeneratingReminder(true);
         try {
-            const message = `Cher parent de ${student.firstName} ${student.lastName},\n\nNous vous informons qu'un solde de ${formatCurrency(student.amountDue || 0)} reste dû pour les frais de scolarité de ${schoolName}.\n\nMerci de régulariser cette situation dans les meilleurs délais.\n\nCordialement,\nL'administration`;
-            setReminderMessage(message);
+            const { MailService } = await import('@/services/mail-service');
+            const mailService = new MailService(firestore);
+
+            const parentName = student.parent1FirstName ? `${student.parent1FirstName} ${student.parent1LastName}` : "Cher Parent";
+
+            const result = await mailService.sendTuitionReminder(
+                parentEmail,
+                parentName,
+                `${student.firstName} ${student.lastName}`,
+                student.amountDue || 0,
+                schoolName
+            );
+
+            if (result.success) {
+                toast({
+                    title: "Rappel envoyé",
+                    description: `L'email de relance a été envoyé à ${parentEmail}.`
+                });
+            } else {
+                throw new Error("Échec de l'envoi");
+            }
         } catch (e) {
-            console.error("Failed to generate reminder:", e);
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de générer le rappel de paiement.' });
+            console.error("Failed to send reminder:", e);
+            toast({
+                variant: 'destructive',
+                title: 'Erreur',
+                description: 'Impossible d\'envoyer le rappel par email.'
+            });
         } finally {
             setIsGeneratingReminder(false);
         }
     }
 
     async function handleMassReminder() {
-        if (!schoolName) return;
+        if (!schoolId || !schoolName) return;
 
-        setIsMassReminder(true);
-        setRemindingStudent(null);
-        setIsReminderOpen(true);
+        const lateStudents = filteredStudents.filter(s => s.amountDue && s.amountDue > 0 && (s.parent1Email || s.parent2Email));
+
+        if (lateStudents.length === 0) {
+            toast({ title: "Info", description: "Aucun élève avec un solde dû et un email valide n'a été trouvé." });
+            return;
+        }
+
+        if (!confirm(`Voulez-vous envoyer un rappel par email aux parents de ${lateStudents.length} élèves ?`)) {
+            return;
+        }
+
         setIsGeneratingReminder(true);
-
-        const lateStudents = filteredStudents.filter(s => s.amountDue && s.amountDue > 0);
-        const className = classes.find(c => c.id === selectedClass)?.name || "la classe";
+        let sentCount = 0;
+        let errorCount = 0;
 
         try {
-            const message = `RAPPEL DE MASSE - ${className}\n\nDestinataires: ${lateStudents.length} élèves en retard.\n\nMessage type:\n"Cher parent, nous vous rappelons que le solde de scolarité pour votre enfant reste dû à ${schoolName}. Merci de passer à la caisse pour régularisation."`;
-            setReminderMessage(message);
+            const { MailService } = await import('@/services/mail-service');
+            const mailService = new MailService(firestore);
+
+            for (const student of lateStudents) {
+                const parentEmail = (student.parent1Email || student.parent2Email)!;
+                const parentName = student.parent1FirstName ? `${student.parent1FirstName} ${student.parent1LastName}` : "Cher Parent";
+
+                const result = await mailService.sendTuitionReminder(
+                    parentEmail,
+                    parentName,
+                    `${student.firstName} ${student.lastName}`,
+                    student.amountDue || 0,
+                    schoolName
+                );
+
+                if (result.success) sentCount++;
+                else errorCount++;
+            }
+
+            toast({
+                title: "Relance groupée terminée",
+                description: `${sentCount} emails envoyés avec succès. ${errorCount} échecs.`
+            });
+        } catch (e) {
+            console.error("Mass reminder failed:", e);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Une erreur est survenue lors de la relance groupée.' });
         } finally {
             setIsGeneratingReminder(false);
         }
@@ -160,8 +213,9 @@ export default function PaymentsPage() {
                             <Download className="mr-2 h-4 w-4" /> Exporter
                         </Button>
                         {selectedClass !== 'all' && filteredStudents.some(s => s.amountDue && s.amountDue > 0) && (
-                            <Button variant="secondary" onClick={handleMassReminder}>
-                                <Users className="mr-2 h-4 w-4" /> Relancer la classe
+                            <Button variant="secondary" onClick={handleMassReminder} disabled={isGeneratingReminder}>
+                                {isGeneratingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
+                                Relancer la classe
                             </Button>
                         )}
                     </div>
@@ -263,7 +317,7 @@ export default function PaymentsPage() {
                                                 <TableCell className="text-right">
                                                     <div className="flex justify-end gap-2">
                                                         {student.amountDue && student.amountDue > 0 && (
-                                                            <Button variant="outline" size="sm" onClick={() => handleSendReminder(student)} disabled={student.tuitionStatus === 'Soldé'}>
+                                                            <Button variant="outline" size="sm" onClick={() => handleSendReminder(student)} disabled={isGeneratingReminder}>
                                                                 <MessageSquare className="mr-1 h-3.5 w-3.5" />
                                                                 Relancer
                                                             </Button>
@@ -290,34 +344,6 @@ export default function PaymentsPage() {
                     </Card>
                 </div>
             </div>
-            <Dialog open={isReminderOpen} onOpenChange={setIsReminderOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{isMassReminder ? "Relance Groupée" : `Rappel de Paiement pour ${remindingStudent?.firstName}`}</DialogTitle>
-                        <DialogDescription>
-                            {isMassReminder ? "Ce message pourra être envoyé à tous les parents concernés." : "Voici une suggestion de message générée. Vous pouvez la copier et l'envoyer au parent."}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4 space-y-4">
-                        {isGeneratingReminder ? (
-                            <div className="flex items-center justify-center h-24">
-                                <Loader2 className="h-8 w-8 animate-spin" />
-                            </div>
-                        ) : (
-                            <Textarea value={reminderMessage} readOnly rows={8} />
-                        )}
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                            navigator.clipboard.writeText(reminderMessage);
-                            toast({ title: "Copié!" });
-                        }} disabled={isGeneratingReminder || !reminderMessage}>
-                            <Copy className="mr-2 h-4 w-4" /> Copier le texte
-                        </Button>
-                        <Button onClick={() => setIsReminderOpen(false)}>Fermer</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </>
     );
 }

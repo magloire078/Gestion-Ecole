@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -52,7 +52,7 @@ export default function CreateSchoolPage() {
   const { user, loading: userLoading, hasSchool, reloadUser } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +71,7 @@ export default function CreateSchoolPage() {
     mode: 'onChange',
   });
   const { setValue } = form;
-  
+
   // Vérifier que Firestore est prêt
   useEffect(() => {
     if (firestore) {
@@ -85,43 +85,46 @@ export default function CreateSchoolPage() {
       setValue('email', user.email);
     }
   }, [user, setValue]);
-  
+
+  const searchParams = useSearchParams();
+  const forceMode = searchParams.get('force') === 'true';
+
   useEffect(() => {
-      // Si `hasSchool` devient vrai après une mise à jour, redirigez.
-      if (hasSchool) {
-          router.replace('/dashboard');
-      }
-  }, [hasSchool, router]);
+    // Si `hasSchool` devient vrai après une mise à jour, redirigez, sauf en mode force.
+    if (hasSchool && !forceMode) {
+      router.replace('/dashboard');
+    }
+  }, [hasSchool, router, forceMode]);
 
 
   const handleSubmit = async (values: CreateSchoolFormValues) => {
     if (!user || !user.uid) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Erreur d\'authentification', 
-        description: 'Veuillez vous reconnecter pour créer une école.' 
+      toast({
+        variant: 'destructive',
+        title: 'Erreur d\'authentification',
+        description: 'Veuillez vous reconnecter pour créer une école.'
       });
       return;
     }
 
     if (!isFirestoreReady) {
-      toast({ 
-        variant: 'destructive', 
-        title: 'Erreur', 
-        description: 'Le système de base de données n\'est pas encore prêt.' 
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Le système de base de données n\'est pas encore prêt.'
       });
       return;
     }
 
     setIsProcessing(true);
     setError(null);
-    
+
     const nameParts = user.displayName?.split(' ') || ['Directeur', ''];
     const firstName = nameParts[0] || 'Directeur';
     const lastName = nameParts.slice(1).join(' ') || '';
 
     const schoolService = new SchoolCreationService(firestore);
-    
+
     try {
       const result = await schoolService.createSchool({
         ...values,
@@ -138,16 +141,18 @@ export default function CreateSchoolPage() {
           description: "Étape suivante : configuration de la structure.",
           duration: 5000,
         });
-        
+
         // On redirige vers la page de configuration de la structure
         router.push('/onboarding/setup-structure');
       }
     } catch (error: any) {
       console.error('Erreur création école:', error);
-      
+
       let errorMessage = "Une erreur inattendue est survenue.";
       if (error.message?.includes('permissions')) {
         errorMessage = "Permissions insuffisantes. Vérifiez les règles de sécurité Firestore.";
+      } else if (error.message?.includes('SUBSCRIPTION_REQUIRED')) {
+        errorMessage = "Abonnement requis : Vous devez avoir au moins un établissement avec un abonnement actif pour créer une nouvelle école.";
       } else if (error.message?.includes('already exists')) {
         errorMessage = "Cette école existe déjà ou vous avez déjà une école associée à votre compte.";
       } else if (error.code === 'auth/network-request-failed') {
@@ -155,7 +160,7 @@ export default function CreateSchoolPage() {
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       setError(errorMessage);
       toast({
         variant: 'destructive',
@@ -236,14 +241,14 @@ export default function CreateSchoolPage() {
                       Optionnel - Taille recommandée : 300×300px
                     </FormDescription>
                   </div>
-                  
+
                   <FormField control={form.control} name="mainLogoUrl" render={({ field }) => (
                     <FormItem className="flex flex-col items-center">
                       <FormControl>
-                        <ImageUploader 
-                          onUploadComplete={(url) => { 
-                            field.onChange(url); 
-                            setLogoUrl(url); 
+                        <ImageUploader
+                          onUploadComplete={(url) => {
+                            field.onChange(url);
+                            setLogoUrl(url);
                           }}
                           storagePath={`temp-logos/${user.uid}/`}
                           resizeWidth={300}
@@ -269,31 +274,31 @@ export default function CreateSchoolPage() {
                     </FormItem>
                   )} />
                 </div>
-                 <FormField control={form.control} name="drena" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="flex items-center gap-2">
-                            <Building className="h-4 w-4" />
-                            DRENA de tutelle *
-                        </FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="h-12">
-                                    <SelectValue placeholder="Sélectionnez votre DRENA" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {DRENA_LIST.map((drena) => (
-                                    <SelectItem key={drena.name} value={drena.name}>
-                                        {drena.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormDescription>
-                            Direction Régionale de l'Éducation Nationale de tutelle.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
+                <FormField control={form.control} name="drena" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      DRENA de tutelle *
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="h-12">
+                          <SelectValue placeholder="Sélectionnez votre DRENA" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {DRENA_LIST.map((drena) => (
+                          <SelectItem key={drena.name} value={drena.name}>
+                            {drena.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Direction Régionale de l'Éducation Nationale de tutelle.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
                 )} />
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
@@ -302,9 +307,9 @@ export default function CreateSchoolPage() {
                       Nom de l'école *
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Ex: Lycée d'Excellence de GèreEcole" 
-                        {...field} 
+                      <Input
+                        placeholder="Ex: Lycée d'Excellence de GèreEcole"
+                        {...field}
                         className="h-12"
                       />
                     </FormControl>
@@ -321,9 +326,9 @@ export default function CreateSchoolPage() {
                       Adresse
                     </FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder="Ex: Cocody Angré, Abidjan, Côte d'Ivoire" 
-                        {...field} 
+                      <Input
+                        placeholder="Ex: Cocody Angré, Abidjan, Côte d'Ivoire"
+                        {...field}
                         className="h-12"
                       />
                     </FormControl>
@@ -341,10 +346,10 @@ export default function CreateSchoolPage() {
                         Téléphone
                       </FormLabel>
                       <FormControl>
-                        <Input 
-                          type="tel" 
-                          placeholder="Ex: +2250707942880" 
-                          {...field} 
+                        <Input
+                          type="tel"
+                          placeholder="Ex: +2250707942880"
+                          {...field}
                           className="h-12"
                         />
                       </FormControl>
@@ -354,7 +359,7 @@ export default function CreateSchoolPage() {
                       <FormMessage />
                     </FormItem>
                   )} />
-                  
+
                   <FormField control={form.control} name="email" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
@@ -362,10 +367,10 @@ export default function CreateSchoolPage() {
                         Email de contact
                       </FormLabel>
                       <FormControl>
-                        <Input 
-                          type="email" 
-                          placeholder="contact@ecole.com" 
-                          {...field} 
+                        <Input
+                          type="email"
+                          placeholder="contact@ecole.com"
+                          {...field}
                           className="h-12"
                         />
                       </FormControl>
@@ -380,16 +385,16 @@ export default function CreateSchoolPage() {
             </Form>
             <Alert className="bg-primary/5 border-primary/20">
               <AlertDescription className="text-sm">
-                <strong>Important :</strong> Après la création, vous recevrez un code d&apos;invitation unique 
+                <strong>Important :</strong> Après la création, vous recevrez un code d&apos;invitation unique
                 que vous pourrez partager avec vos collaborateurs pour les ajouter à l'école.
               </AlertDescription>
             </Alert>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-4 border-t pt-6">
-            <Button 
-              type="submit" 
-              form="create-school-form" 
+            <Button
+              type="submit"
+              form="create-school-form"
               className="w-full h-12 text-base"
               disabled={isProcessing || !form.formState.isValid}
               size="lg"
@@ -403,10 +408,10 @@ export default function CreateSchoolPage() {
                 'Créer l\'établissement'
               )}
             </Button>
-            
-            <Button 
-              asChild 
-              variant="ghost" 
+
+            <Button
+              asChild
+              variant="ghost"
               className="text-muted-foreground hover:text-foreground"
             >
               <Link href="/onboarding">
@@ -430,7 +435,7 @@ export default function CreateSchoolPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-muted/30">
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
@@ -444,7 +449,7 @@ export default function CreateSchoolPage() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-muted/30">
             <CardContent className="pt-6">
               <div className="text-center space-y-2">

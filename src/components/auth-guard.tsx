@@ -12,44 +12,45 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, hasSchool, loading } = useUser();
 
   useEffect(() => {
-    if (loading) {
-      return; 
-    }
-
     const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/parent-access', '/', '/contact', '/survey'];
-    if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
-      router.replace('/auth/login');
-      return;
-    }
-    
-    if (user) {
+    const isPublicPath = publicPaths.some(p => pathname === p || pathname.startsWith(p + '/'));
+
+    if (!loading) {
+      if (!user && !isPublicPath) {
+        // Petit délai de grâce pour laisser Firebase stabiliser la session
+        const timer = setTimeout(() => {
+          router.replace('/auth/login');
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+
+      if (user) {
         if (pathname.startsWith('/auth')) {
-             router.replace('/dashboard');
-             return;
+          router.replace('/dashboard');
+          return;
         }
 
-        // Si l'utilisateur n'a pas d'école et n'est pas DÉJÀ dans le flux d'onboarding, on redirige.
-        // Cela empêche la redirection intempestive depuis la page de création.
-        if (!user.isParent && !hasSchool && !pathname.startsWith('/onboarding')) {
+        if (!user.isParent && !hasSchool && !pathname.startsWith('/onboarding') && !pathname.startsWith('/auth')) {
           router.replace('/onboarding');
           return;
         }
+      }
     }
-    
+
   }, [user, hasSchool, loading, router, pathname]);
-  
+
   if (loading) {
     return <LoadingScreen />;
   }
-  
+
   const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/parent-access', '/', '/contact', '/survey'];
   if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
     return <LoadingScreen />;
   }
-  
+
   if (user && !user.isParent && !hasSchool && !pathname.startsWith('/onboarding')) {
-     return <LoadingScreen />;
+    return <LoadingScreen />;
   }
-  
+
   return <>{children}</>;
 }

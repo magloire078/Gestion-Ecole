@@ -76,7 +76,7 @@ interface Class {
 // --- Zod Schema for Validation ---
 const gradeSchema = z.object({
   studentId: z.string().min(1, { message: "Veuillez sélectionner un élève." }),
-  type: z.enum(['Interrogation', 'Devoir']),
+  type: z.enum(['Interrogation', 'Devoir', 'Composition Mensuelle', 'Composition Nationale', 'Composition de Zone']),
   date: z.string().min(1, { message: "La date est requise." }),
   grade: z.coerce.number().min(0, "La note ne peut pas être négative.").max(20, "La note ne peut pas dépasser 20."),
   coefficient: z.coerce.number().min(0.25, "Le coefficient doit être d'au moins 0.25."),
@@ -375,6 +375,9 @@ export default function GradeEntryPage() {
                       <SelectContent>
                         <SelectItem value="Devoir">Devoir</SelectItem>
                         <SelectItem value="Interrogation">Interrogation</SelectItem>
+                        <SelectItem value="Composition Mensuelle">Composition Mensuelle</SelectItem>
+                        <SelectItem value="Composition Nationale">Composition Nationale</SelectItem>
+                        <SelectItem value="Composition de Zone">Composition de Zone</SelectItem>
                       </SelectContent>
                     </Select>
                   </FormItem>

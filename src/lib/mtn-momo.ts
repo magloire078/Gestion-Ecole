@@ -1,6 +1,4 @@
 
-'use server';
-
 import { v4 as uuidv4 } from 'uuid';
 
 const MTN_PRIMARY_KEY = process.env.MTN_PRIMARY_KEY;

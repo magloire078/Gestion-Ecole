@@ -21,12 +21,18 @@ export const StockService = {
     /**
      * Récupère la référence de la collection de stocks pour une école
      */
-    getCollectionRef: (schoolId: string) => collection(db, `ecoles/${schoolId}/stocks`),
+    getCollectionRef: (schoolId: string) => {
+        if (!db) throw new Error("Firestore not initialized");
+        return collection(db, `ecoles/${schoolId}/stocks`);
+    },
 
     /**
      * Récupère la référence de la collection de logs de stocks
      */
-    getLogsCollectionRef: (schoolId: string) => collection(db, `ecoles/${schoolId}/stock_logs`),
+    getLogsCollectionRef: (schoolId: string) => {
+        if (!db) throw new Error("Firestore not initialized");
+        return collection(db, `ecoles/${schoolId}/stock_logs`);
+    },
 
     /**
      * Ajoute un nouvel article au stock
@@ -43,6 +49,7 @@ export const StockService = {
      * Met à jour un article existant
      */
     updateItem: async (schoolId: string, itemId: string, updates: Partial<StockItem>) => {
+        if (!db) throw new Error("Firestore not initialized");
         const docRef = doc(db, `ecoles/${schoolId}/stocks`, itemId);
         await updateDoc(docRef, {
             ...updates,
@@ -64,6 +71,7 @@ export const StockService = {
             notes?: string
         }
     ) => {
+        if (!db) throw new Error("Firestore not initialized");
         const itemRef = doc(db, `ecoles/${schoolId}/stocks`, itemId);
         const itemSnap = await getDoc(itemRef);
 
@@ -106,6 +114,7 @@ export const StockService = {
      * Supprime un article
      */
     deleteItem: async (schoolId: string, itemId: string) => {
+        if (!db) throw new Error("Firestore not initialized");
         const docRef = doc(db, `ecoles/${schoolId}/stocks`, itemId);
         await deleteDoc(docRef);
     }

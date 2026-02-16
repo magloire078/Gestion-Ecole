@@ -1,6 +1,4 @@
 
-'use server';
-
 import type { Firestore } from 'firebase/firestore';
 import { collection, writeBatch, doc } from 'firebase/firestore';
 import type { cycle as Cycle, niveau as Niveau } from '@/lib/data-types';
@@ -42,4 +40,3 @@ export async function applySchoolTemplate(firestore: Firestore, schoolId: string
     await batch.commit();
 }
 
-    

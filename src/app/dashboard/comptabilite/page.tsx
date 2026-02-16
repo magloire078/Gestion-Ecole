@@ -70,25 +70,28 @@ export default function AccountingPage() {
   const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
 
-  const transactions = useMemo(() => 
-    (transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & {id: string})) || []).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-  [transactionsData]);
+  const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')) : null, [firestore, schoolId]);
+  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+
+  const transactions = useMemo(() =>
+    (transactionsData?.map(d => ({ id: d.id, ...d.data() } as AccountingTransaction & { id: string })) || []).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [transactionsData]);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState<(AccountingTransaction & {id: string}) | null>(null);
-  const [transactionToDelete, setTransactionToDelete] = useState<(AccountingTransaction & {id: string}) | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<(AccountingTransaction & { id: string }) | null>(null);
+  const [transactionToDelete, setTransactionToDelete] = useState<(AccountingTransaction & { id: string }) | null>(null);
 
   const { toast } = useToast();
-  
+
   const getTransactionDocRef = (transactionId: string) => doc(firestore, `ecoles/${schoolId}/comptabilite/${transactionId}`);
 
-  const handleOpenFormDialog = (transaction: (AccountingTransaction & {id: string}) | null) => {
+  const handleOpenFormDialog = (transaction: (AccountingTransaction & { id: string }) | null) => {
     setEditingTransaction(transaction);
     setIsFormOpen(true);
   };
 
-  const handleOpenDeleteDialog = (transaction: (AccountingTransaction & {id: string})) => {
+  const handleOpenDeleteDialog = (transaction: (AccountingTransaction & { id: string })) => {
     setTransactionToDelete(transaction);
     setIsDeleteDialogOpen(true);
   };
@@ -97,31 +100,38 @@ export default function AccountingPage() {
     if (!schoolId || !transactionToDelete || !transactionToDelete.id) return;
     const transactionDocRef = getTransactionDocRef(transactionToDelete.id);
     deleteDoc(transactionDocRef)
-    .then(() => {
+      .then(() => {
         toast({ title: "Transaction supprimée", description: "La transaction a été supprimée." });
         setIsDeleteDialogOpen(false);
         setTransactionToDelete(null);
-    }).catch(async (serverError) => {
+      }).catch(async (serverError) => {
         console.error("Error deleting transaction:", serverError);
         toast({ variant: "destructive", title: "Erreur", description: "Impossible de supprimer la transaction." });
-    });
+      });
   };
 
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
-  const isLoading = schoolLoading || transactionsLoading;
+  const isLoading = schoolLoading || transactionsLoading || studentsLoading;
 
   const stats = useMemo(() => {
     const totalRevenu = transactions
-        .filter(t => t.type === 'Revenu')
-        .reduce((sum, t) => sum + t.amount, 0);
+      .filter(t => t.type === 'Revenu')
+      .reduce((sum, t) => sum + t.amount, 0);
     const totalDepense = transactions
-        .filter(t => t.type === 'Dépense')
-        .reduce((sum, t) => sum + t.amount, 0);
+      .filter(t => t.type === 'Dépense')
+      .reduce((sum, t) => sum + t.amount, 0);
     const solde = totalRevenu - totalDepense;
-    return { totalRevenu, totalDepense, solde };
-  }, [transactions]);
-  
+
+    // Calcul du recouvrement global
+    const students = studentsData?.map(d => d.data() as any) || [];
+    const totalExpected = students.reduce((sum, s) => sum + (s.tuitionFee || 0), 0);
+    const totalDue = students.reduce((sum, s) => sum + (s.amountDue || 0), 0);
+    const recoveryRate = totalExpected > 0 ? ((totalExpected - totalDue) / totalExpected) * 100 : 0;
+
+    return { totalRevenu, totalDepense, solde, recoveryRate };
+  }, [transactions, studentsData]);
+
   return (
     <>
       <div className="space-y-6">
@@ -133,22 +143,22 @@ export default function AccountingPage() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-            <StatCard title="Total des Revenus" value={formatCurrency(stats.totalRevenu)} icon={TrendingUp} loading={isLoading} colorClass="text-emerald-500" />
-            <StatCard title="Total des Dépenses" value={formatCurrency(stats.totalDepense)} icon={TrendingDown} loading={isLoading} colorClass="text-destructive" />
-            <StatCard title="Solde Actuel" value={formatCurrency(stats.solde)} icon={Scale} loading={isLoading} colorClass={stats.solde >= 0 ? 'text-emerald-500' : 'text-destructive'} />
+          <StatCard title="Total des Revenus" value={formatCurrency(stats.totalRevenu)} icon={TrendingUp} loading={isLoading} colorClass="text-emerald-500" />
+          <StatCard title="Total des Dépenses" value={formatCurrency(stats.totalDepense)} icon={TrendingDown} loading={isLoading} colorClass="text-destructive" />
+          <StatCard title="Solde Actuel" value={formatCurrency(stats.solde)} icon={Scale} loading={isLoading} colorClass={stats.solde >= 0 ? 'text-emerald-500' : 'text-destructive'} />
         </div>
 
-        { !isLoading && transactions.length > 0 && <AccountingCharts transactions={transactions} /> }
+        {!isLoading && transactions.length > 0 && <AccountingCharts transactions={transactions} recoveryRate={stats.recoveryRate} />}
 
         <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Transactions Récentes</h2>
-            {canManageBilling && (
-              <Button onClick={() => handleOpenFormDialog(null)}>
-                <span className="flex items-center gap-2">
-                  <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
-                </span>
-              </Button>
-            )}
+          <h2 className="text-xl font-semibold">Transactions Récentes</h2>
+          {canManageBilling && (
+            <Button onClick={() => handleOpenFormDialog(null)}>
+              <span className="flex items-center gap-2">
+                <PlusCircle className="h-4 w-4" /> Ajouter une Transaction
+              </span>
+            </Button>
+          )}
         </div>
 
         <Card>
@@ -165,53 +175,53 @@ export default function AccountingPage() {
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                    [...Array(5)].map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                            {canManageBilling && <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>}
-                        </TableRow>
-                    ))
+                  [...Array(5)].map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
+                      {canManageBilling && <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>}
+                    </TableRow>
+                  ))
                 ) : transactions.length > 0 ? (
-                    transactions.map((transaction) => (
+                  transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
-                        <TableCell>{format(new Date(transaction.date), 'd MMM yyyy', { locale: fr })}</TableCell>
-                        <TableCell className="font-medium">{transaction.description}</TableCell>
-                        <TableCell>{transaction.category}</TableCell>
-                        <TableCell className={cn('text-right font-mono', transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive')}>
-                            {transaction.type === 'Revenu' ? '+' : '-'} {formatCurrency(transaction.amount)}
-                        </TableCell>
-                        {canManageBilling && (
-                          <TableCell className="text-right">
+                      <TableCell>{format(new Date(transaction.date), 'd MMM yyyy', { locale: fr })}</TableCell>
+                      <TableCell className="font-medium">{transaction.description}</TableCell>
+                      <TableCell>{transaction.category}</TableCell>
+                      <TableCell className={cn('text-right font-mono', transaction.type === 'Revenu' ? 'text-emerald-500' : 'text-destructive')}>
+                        {transaction.type === 'Revenu' ? '+' : '-'} {formatCurrency(transaction.amount)}
+                      </TableCell>
+                      {canManageBilling && (
+                        <TableCell className="text-right">
                           <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon">
-                                          <MoreHorizontal />
-                                      </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                      <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
-                                      <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
-                                  </DropdownMenuContent>
-                              </DropdownMenu>
-                          </TableCell>
-                        )}
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleOpenFormDialog(transaction)}>Modifier</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleOpenDeleteDialog(transaction)}>Supprimer</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      )}
                     </TableRow>
-                    ))
+                  ))
                 ) : (
-                    <TableRow>
-                        <TableCell colSpan={canManageBilling ? 5 : 4} className="h-24 text-center">Aucune transaction pour le moment.</TableCell>
-                    </TableRow>
+                  <TableRow>
+                    <TableCell colSpan={canManageBilling ? 5 : 4} className="h-24 text-center">Aucune transaction pour le moment.</TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
       </div>
-      
-       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
@@ -226,19 +236,19 @@ export default function AccountingPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent>
-            <DialogHeader>
-                <DialogTitle>{editingTransaction ? 'Modifier' : 'Nouvelle'} Transaction</DialogTitle>
-                <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
-            </DialogHeader>
-            <TransactionForm 
-                schoolId={schoolId!} 
-                transaction={editingTransaction} 
-                onSave={() => setIsFormOpen(false)}
-            />
+          <DialogHeader>
+            <DialogTitle>{editingTransaction ? 'Modifier' : 'Nouvelle'} Transaction</DialogTitle>
+            <DialogDescription>Entrez les détails de la transaction.</DialogDescription>
+          </DialogHeader>
+          <TransactionForm
+            schoolId={schoolId!}
+            transaction={editingTransaction}
+            onSave={() => setIsFormOpen(false)}
+          />
         </DialogContent>
-    </Dialog>
+      </Dialog>
     </>
   );
 }

@@ -13,6 +13,7 @@ import { Logo } from './logo';
 import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
+import { LiveChat } from './live-chat';
 
 const featureCategories = [
   {
@@ -85,7 +86,7 @@ export function LandingPageV2() {
         <div className="container flex h-auto py-4 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2 transition-transform hover:scale-105">
-              <Logo disableLink />
+              <Logo disableLink size="lg" />
             </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
@@ -190,20 +191,16 @@ export function LandingPageV2() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 1, duration: 0.8 }}
-                      className="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl shadow-2xl flex items-center gap-3"
+                      className="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl shadow-2xl flex items-center justify-center h-16 w-16"
                     >
-                      <div className="relative w-10 h-10 bg-white rounded-xl p-1.5 shadow-inner">
+                      <div className="relative w-12 h-12 bg-white rounded-xl p-1.5 shadow-inner">
                         <Image
                           src="/custom-assets/logo.png?v=2"
-                          alt="Logo GèreEcole"
-                          width={40}
-                          height={40}
+                          alt="Logo Gérecole"
+                          width={48}
+                          height={48}
                           className="object-contain"
                         />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-white font-black text-sm tracking-tighter leading-none">GÉRECOLE</span>
-                        <span className="text-white/70 text-[10px] uppercase tracking-widest leading-none mt-1">Établissement</span>
                       </div>
                     </motion.div>
                   </div>
@@ -389,6 +386,7 @@ export function LandingPageV2() {
           </nav>
         </div>
       </footer>
+      <LiveChat />
     </div>
   );
 }

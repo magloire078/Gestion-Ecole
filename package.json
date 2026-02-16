@@ -6,13 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "mobile:sync": "npm run build && npx cap sync",
+    "mobile:assets": "npx @capacitor/assets generate --android --ios"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",
     "@capacitor/cli": "^8.0.2",
     "@capacitor/core": "^8.0.2",
     "@capacitor/ios": "^8.0.2",
+    "@capacitor/splash-screen": "^8.0.1",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -47,12 +50,15 @@
     "firebase-admin": "^12.0.0",
     "framer-motion": "^11.2.12",
     "french-numbers-to-words": "^1.0.4",
+    "jspdf": "^4.1.0",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.417.0",
     "next": "^14.2.35",
     "next-themes": "^0.4.0",
     "react": "^18.3.1",
     "react-day-picker": "^9.0.4",
     "react-dom": "^18.3.1",
+    "react-easy-crop": "^5.5.6",
     "react-hook-form": "^7.52.1",
     "react-qr-code": "^2.0.15",
     "recharts": "^2.12.7",
@@ -63,6 +69,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@genkit-ai/core": "1.23.0",
     "@genkit-ai/firebase": "1.23.0",
     "@genkit-ai/google-cloud": "1.23.0",

@@ -46,6 +46,13 @@ interface SubjectReport {
     appreciation: string;
 }
 
+export interface ClassSubjectStats {
+    subject: string;
+    classAverage: number;
+    minGrade: number;
+    maxGrade: number;
+}
+
 // --- Helper Functions ---
 const getMention = (average: number): string => {
     if (average >= 18) return "Excellent";
@@ -63,9 +70,22 @@ interface ReportCardProps {
     school: School;
     grades: Grade[];
     teachers: (Staff & { id: string })[];
+    periodName?: string;
+    classStats?: Record<string, ClassSubjectStats>;
+    rank?: number;
+    totalStudents?: number;
 }
 
-export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades, teachers }) => {
+export const ReportCard: React.FC<ReportCardProps> = ({
+    student,
+    school,
+    grades,
+    teachers,
+    periodName = "PREMIER TRIMESTRE",
+    classStats,
+    rank,
+    totalStudents
+}) => {
     const { toast } = useToast();
     const printRef = useRef<HTMLDivElement>(null);
     const firestore = useFirestore();
@@ -123,14 +143,15 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                 }
             }
 
+            const stats = classStats?.[subject];
+
             reports.push({
                 subject,
                 teacherName: teacherName,
                 average: studentAverage,
-                // Mock data for class stats as we don't have them yet
-                classMin: studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8,
-                classMax: studentAverage < 19 ? studentAverage + 1.2 : 20,
-                classAverage: studentAverage < 19.5 ? studentAverage + 0.5 : 20,
+                classMin: stats?.minGrade ?? (studentAverage > 2 ? studentAverage - 1.5 : studentAverage * 0.8),
+                classMax: stats?.maxGrade ?? (studentAverage < 19 ? studentAverage + 1.2 : 20),
+                classAverage: stats?.classAverage ?? (studentAverage < 19.5 ? studentAverage + 0.5 : 20),
                 appreciation: subjectAppreciations[subject]?.text || ''
             });
         });
@@ -151,7 +172,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
         const finalAverage = totalAllCoeffs > 0 ? totalWeightedPoints / totalAllCoeffs : 0;
 
         return { subjectReports: reports, generalAverage: finalAverage, totalCoefficients: totalAllCoeffs };
-    }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations]);
+    }, [grades, teachers, mainTeacher, student.cycle, subjectAppreciations, classStats]);
 
     const handleGenerateComment = async (subject?: string, teacherName?: string, average?: number) => {
         if (subject && teacherName && average !== undefined) {
@@ -206,7 +227,13 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     {/* Header */}
                     <div className="flex justify-between items-start pb-4 border-b-2 border-black mb-6">
                         <div className="flex items-center gap-4">
-                            {school.mainLogoUrl && <AvatarImage src={school.mainLogoUrl || undefined} alt={school.name} width={80} height={80} className="object-contain" />}
+                            {school.mainLogoUrl && (
+                                <img
+                                    src={school.mainLogoUrl}
+                                    alt={school.name}
+                                    className="h-20 w-20 object-contain"
+                                />
+                            )}
                             <div>
                                 <h2 className="text-2xl font-bold uppercase">{school.name || "Nom de l'école"}</h2>
                                 <p className="text-xs text-muted-foreground">{school.address || "Adresse de l'école"}</p>
@@ -215,7 +242,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                         <div className="text-right">
                             <p>Année scolaire: {school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}</p>
                             <h1 className="text-lg font-bold">BULLETIN DE NOTES</h1>
-                            <p>PREMIER TRIMESTRE</p>
+                            <p>{periodName.toUpperCase()}</p>
                         </div>
                     </div>
 
@@ -225,11 +252,21 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                             <p><span className="font-semibold">Élève :</span> {student.name}</p>
                             <p><span className="font-semibold">Classe :</span> {student.class || 'N/A'}</p>
                             <p><span className="font-semibold">Matricule :</span> {student.matricule || 'N/A'}</p>
+                            {rank && (
+                                <p><span className="font-semibold text-primary">Rang :</span> <span className="font-bold text-lg">{rank}{rank === 1 ? 'er' : 'ème'}</span> {totalStudents ? `sur ${totalStudents}` : ''}</p>
+                            )}
                         </div>
-                        <Avatar className="h-20 w-20 border-2 border-black/10">
-                            <AvatarImage src={student.photoUrl || undefined} alt={student.name} data-ai-hint="student portrait" />
-                            <AvatarFallback>{student.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
+                        <div className="h-24 w-24 border-2 border-black rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
+                            {student.photoUrl ? (
+                                <img
+                                    src={student.photoUrl}
+                                    alt={student.name}
+                                    className="h-full w-full object-cover"
+                                />
+                            ) : (
+                                <div className="text-xs font-bold text-center p-1">PAS DE PHOTO</div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Grades Table */}
@@ -284,7 +321,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({ student, school, grades,
                     <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="p-3 bg-muted/50 rounded-md space-y-2">
                             <div className="flex justify-between items-center text-base">
-                                <span className="font-bold">MOYENNE GÉNÉRALE TRIMESTRIELLE :</span>
+                                <span className="font-bold">MOYENNE GÉNÉRALE {periodName.toUpperCase()} :</span>
                                 <span className="text-xl font-bold text-primary">{generalAverage.toFixed(2)} / 20</span>
                             </div>
                             <div className="flex justify-between items-center text-base">

@@ -18,10 +18,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Upload } from 'lucide-react';
 
 const profileSchema = z.object({
-  firstName: z.string().min(1, "Le prénom est requis."),
-  lastName: z.string().min(1, "Le nom est requis."),
-  phone: z.string().optional(),
-  photoURL: z.string().optional(),
+    firstName: z.string().min(1, "Le prénom est requis."),
+    lastName: z.string().min(1, "Le nom est requis."),
+    phone: z.string().optional(),
+    photoURL: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -43,29 +43,29 @@ export function UserProfileForm() {
     });
 
     useEffect(() => {
-        if (user && user.profile) {
+        if (user) {
             form.reset({
-                firstName: user.profile.firstName || '',
-                lastName: user.profile.lastName || '',
-                phone: user.profile.phone || '',
-                photoURL: user.profile.photoURL || '',
+                firstName: user.profile?.firstName || '',
+                lastName: user.profile?.lastName || '',
+                phone: user.profile?.phone || '',
+                photoURL: user.photoURL || '',
             });
         }
     }, [user, form]);
-    
-    const [photoUrl, setPhotoUrl] = useState<string | null>(user?.profile?.photoURL || null);
 
-     useEffect(() => {
-        setPhotoUrl(user?.profile?.photoURL || null);
-    }, [user?.profile?.photoURL]);
+    const [photoUrl, setPhotoUrl] = useState<string | null>(user?.photoURL || null);
+
+    useEffect(() => {
+        setPhotoUrl(user?.photoURL || null);
+    }, [user?.photoURL]);
 
 
     const handleSaveChanges = async (values: ProfileFormValues) => {
         if (!user || !user.schoolId || !user.uid) return;
-        
+
         setIsSaving(true);
         const staffRef = doc(firestore, `ecoles/${user.schoolId}/personnel/${user.uid}`);
-        
+
         const dataToUpdate = {
             ...values,
             displayName: `${values.firstName} ${values.lastName}`,
@@ -83,7 +83,7 @@ export function UserProfileForm() {
             setIsSaving(false);
         }
     };
-    
+
     const fullName = `${form.getValues('firstName')} ${form.getValues('lastName')}`;
     const fallback = fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
@@ -105,28 +105,27 @@ export function UserProfileForm() {
                             render={({ field }) => (
                                 <FormItem className="flex items-center gap-6">
                                     <FormControl>
-                                        <ImageUploader 
-                                            onUploadComplete={(url) => { 
-                                                field.onChange(url); 
-                                                setPhotoUrl(url); 
+                                        <ImageUploader
+                                            onUploadComplete={(url) => {
+                                                field.onChange(url);
+                                                setPhotoUrl(url);
                                             }}
-                                            storagePath={`ecoles/${user!.schoolId}/staff/${user!.uid}/avatars/`}
+                                            storagePath={`ecoles/${user?.schoolId || 'global'}/staff/${user?.uid}/avatars`}
                                             currentImageUrl={photoUrl}
                                             resizeWidth={400}
                                         >
-                                            <Avatar className="h-24 w-24 cursor-pointer hover:opacity-80 transition-opacity">
+                                            <Avatar className="h-24 w-24 cursor-pointer border-2 border-muted">
                                                 <AvatarImage src={photoUrl || undefined} alt="Photo de profil" />
-                                                <AvatarFallback className="flex flex-col items-center justify-center space-y-1">
-                                                    <Upload className="h-6 w-6 text-muted-foreground" />
-                                                    <span className="text-xs text-muted-foreground">Changer</span>
+                                                <AvatarFallback className="text-xl font-bold bg-primary/5 text-primary">
+                                                    {fallback}
                                                 </AvatarFallback>
                                             </Avatar>
                                         </ImageUploader>
                                     </FormControl>
-                                     <div className="flex-1 space-y-1">
+                                    <div className="flex-1 space-y-1">
                                         <p className="font-semibold">{fullName}</p>
                                         <p className="text-sm text-muted-foreground">{user?.email}</p>
-                                     </div>
+                                    </div>
                                 </FormItem>
                             )}
                         />

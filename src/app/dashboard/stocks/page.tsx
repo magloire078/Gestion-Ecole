@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useCollection, useUser } from '@/firebase';
 import { StockService } from '@/services/stock-service';
@@ -42,8 +42,16 @@ import {
     DialogHeader,
     DialogTitle,
     DialogTrigger,
-    DialogFooter
+    DialogFooter,
+    DialogDescription
 } from '@/components/ui/dialog';
+import {
+    collection,
+    query,
+    orderBy,
+    Query
+} from 'firebase/firestore';
+import { db } from '@/firebase';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -55,7 +63,7 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function StockPage() {
-    const { schoolId, loading: schoolLoading } = useSchoolData();
+    const { schoolId, loading: schoolLoading, error } = useSchoolData();
     const { user } = useUser();
     const { toast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
@@ -81,11 +89,17 @@ export default function StockPage() {
     });
 
     // Fetch stocks in real-time
-    const { data: stocks, loading: stocksLoading } = useCollection<StockItem>(
-        schoolId ? `ecoles/${schoolId}/stocks` : null
-    );
+    const stocksQuery = useMemo(() =>
+        (schoolId && db) ? query(collection(db, `ecoles/${schoolId}/stocks`), orderBy('name')) as Query<StockItem> : null
+        , [schoolId]);
 
-    const filteredStocks = stocks?.filter(item =>
+    const { data: stocksSnapshots, loading: stocksLoading, error: stocksError } = useCollection<StockItem>(stocksQuery);
+
+    const stocks = useMemo(() =>
+        stocksSnapshots?.map(doc => ({ id: doc.id, ...doc.data() } as StockItem)) || []
+        , [stocksSnapshots]);
+
+    const filteredStocks = stocks.filter((item: StockItem) =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -118,6 +132,28 @@ export default function StockPage() {
     };
 
     if (schoolLoading) return <div className="p-8"><Skeleton className="h-12 w-48 mb-6" /><Skeleton className="h-96 w-full" /></div>;
+
+    if (error || stocksError) {
+        return (
+            <div className="p-8">
+                <Card className="border-destructive/50 bg-destructive/10">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-destructive">
+                            <AlertTriangle className="h-5 w-5" />
+                            Erreur de chargement
+                        </CardTitle>
+                        <CardDescription>
+                            Une erreur est survenue lors de la récupération des données de stock.
+                            {(error || stocksError?.message) && <span className="block mt-2 font-mono text-xs">{error || stocksError?.message}</span>}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="outline" onClick={() => window.location.reload()}>Réessayer</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 pb-10">
@@ -198,7 +234,7 @@ export default function StockPage() {
                         <Package className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-3xl font-black">{stocks?.length || 0}</div>
+                        <div className="text-3xl font-black">{stocks.length}</div>
                     </CardContent>
                 </Card>
 
@@ -210,7 +246,7 @@ export default function StockPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-3xl font-black text-amber-500">
-                            {stocks?.filter(i => i.quantity <= i.minThreshold).length || 0}
+                            {stocks.filter(i => i.quantity <= i.minThreshold).length}
                         </div>
                     </CardContent>
                 </Card>
@@ -240,7 +276,7 @@ export default function StockPage() {
                     <TableBody>
                         <AnimatePresence>
                             {stocksLoading ? (
-                                [...Array(5)].map((_, i) => (
+                                [...Array(5)].map((_, i: number) => (
                                     <TableRow key={i} className="border-white/5">
                                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -278,7 +314,9 @@ export default function StockPage() {
                                     <TableCell className="font-medium py-4">
                                         <div className="flex flex-col">
                                             <span className="text-foreground font-bold">{item.name}</span>
-                                            <span className="text-[10px] text-muted-foreground/60 uppercase">Mis à jour le {new Date(item.lastUpdated).toLocaleDateString()}</span>
+                                            <span className="text-[10px] text-muted-foreground/60 uppercase">
+                                                Mis à jour le {item.lastUpdated ? new Date(item.lastUpdated).toLocaleDateString() : 'N/A'}
+                                            </span>
                                         </div>
                                     </TableCell>
                                     <TableCell>
@@ -338,7 +376,11 @@ export default function StockPage() {
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem
                                                         className="gap-2 text-destructive focus:text-destructive cursor-pointer"
-                                                        onClick={() => StockService.deleteItem(schoolId!, item.id!)}
+                                                        onClick={() => {
+                                                            if (confirm('Supprimer cet article ?')) {
+                                                                StockService.deleteItem(schoolId!, item.id!);
+                                                            }
+                                                        }}
                                                     >
                                                         <Trash className="h-4 w-4" /> Supprimer
                                                     </DropdownMenuItem>

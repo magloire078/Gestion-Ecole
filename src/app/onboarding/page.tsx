@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,9 +184,12 @@ export default function OnboardingPage() {
     }
   };
 
+  const searchParams = useSearchParams();
+  const forceMode = searchParams.get('force') === 'true';
+
   if (loading) return <LoadingScreen />;
   if (!user) { router.replace('/auth/login'); return <LoadingScreen />; }
-  if (hasSchool) { router.replace('/dashboard'); return <LoadingScreen />; }
+  if (hasSchool && !forceMode) { router.replace('/dashboard'); return <LoadingScreen />; }
   if (user && user.email === DEMO_DIRECTOR_EMAIL && !hasSchool) {
     return <DemoOnboarding onSetupDemo={handleSetupDemo} isProcessing={isProcessing} />;
   }

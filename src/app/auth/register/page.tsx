@@ -239,7 +239,7 @@ export default function RegisterPage() {
 
             <div className="flex flex-col items-center mb-5">
               <div className="mb-3 transform scale-[2.2] py-6 transition-transform hover:scale-[2.4]">
-                <Logo compact />
+                <Logo size="lg" />
               </div>
               <div className="text-center mt-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#2D9CDB] text-[10px] font-black uppercase tracking-widest mb-2">

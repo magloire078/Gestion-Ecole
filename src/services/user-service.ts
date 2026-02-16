@@ -30,27 +30,38 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
         const schoolAffiliations = userData.schools || {};
         const schoolIds = Object.keys(schoolAffiliations).filter(id => id.length > 10);
 
-        // Fetch school names to provide human-readable labels in the switcher
-        const schoolNames: { [key: string]: string } = {};
-        await Promise.all(schoolIds.map(async (id) => {
-            const schoolSnap = await getDoc(doc(firestore, 'ecoles', id));
-            if (schoolSnap.exists()) {
-                schoolNames[id] = schoolSnap.data().name || `École ${id.substring(0, 6)}`;
-            } else {
-                schoolNames[id] = `Inconnue (${id.substring(0, 6)})`;
-            }
-        }));
-
         const activeSchoolId = userData.activeSchoolId && schoolAffiliations[userData.activeSchoolId]
             ? userData.activeSchoolId
             : schoolIds[0] || null;
 
         const activeRole = activeSchoolId ? schoolAffiliations[activeSchoolId] : null;
 
+        // Parallelize fetching of school names and profile
+        const schoolNamesPromise = Promise.all(schoolIds.map(async (id) => {
+            try {
+                const schoolSnap = await getDoc(doc(firestore, 'ecoles', id));
+                return { id, name: schoolSnap.exists() ? (schoolSnap.data().name || `École ${id.substring(0, 6)}`) : `Inconnue (${id.substring(0, 6)})` };
+            } catch (e) {
+                return { id, name: `Erreur (${id.substring(0, 6)})` };
+            }
+        }));
+
+        let profilePromise: Promise<any> = Promise.resolve(undefined);
+        if (activeSchoolId) {
+            if (activeRole === 'parent') {
+                profilePromise = getDoc(doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`));
+            } else {
+                profilePromise = getDoc(doc(firestore, `ecoles/${activeSchoolId}/personnel/${firebaseUser.uid}`));
+            }
+        }
+
+        const [schoolNamesList, profileSnap] = await Promise.all([schoolNamesPromise, profilePromise]);
+
+        const schoolNames: { [key: string]: string } = {};
+        schoolNamesList.forEach(item => { schoolNames[item.id] = item.name; });
+
         if (activeSchoolId && activeRole === 'parent') {
-            const parentProfileRef = doc(firestore, `ecoles/${activeSchoolId}/parents/${firebaseUser.uid}`);
-            const parentProfileSnap = await getDoc(parentProfileRef);
-            const parentData = parentProfileSnap.data() as Parent;
+            const parentData = profileSnap?.exists() ? (profileSnap.data() as Parent) : null;
 
             return {
                 uid: firebaseUser.uid,
@@ -67,20 +78,15 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
         } else {
             let userProfile: UserProfile | undefined = undefined;
 
-            if (activeSchoolId) {
-                const staffProfileRef = doc(firestore, `ecoles/${activeSchoolId}/personnel/${firebaseUser.uid}`);
-                const profileSnap = await getDoc(staffProfileRef);
-                if (profileSnap.exists()) {
-                    userProfile = profileSnap.data() as UserProfile;
+            if (activeSchoolId && profileSnap?.exists()) {
+                userProfile = profileSnap.data() as UserProfile;
 
-                    if (userProfile.role === 'directeur') {
-                        userProfile.permissions = allPermissions;
-                    } else if (userProfile.adminRole) {
-                        const roleRef = doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`);
-                        const roleSnap = await getDoc(roleRef);
-                        if (roleSnap.exists()) {
-                            userProfile.permissions = roleSnap.data().permissions;
-                        }
+                if (userProfile.role === 'directeur') {
+                    userProfile.permissions = allPermissions;
+                } else if (userProfile.adminRole) {
+                    const roleSnap = await getDoc(doc(firestore, `ecoles/${activeSchoolId}/admin_roles/${userProfile.adminRole}`));
+                    if (roleSnap.exists()) {
+                        userProfile.permissions = roleSnap.data().permissions;
                     }
                 }
             }

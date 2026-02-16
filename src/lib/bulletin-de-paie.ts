@@ -64,7 +64,7 @@ function toWords(num: number): string {
 
 function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text: string, years: number } {
     if (!hireDateStr || !payslipDateStr) return { text: 'N/A', years: 0 };
-    
+
     const hireDate = parseISO(hireDateStr);
     const payslipDate = parseISO(payslipDateStr);
 
@@ -83,7 +83,7 @@ function calculateSeniority(hireDateStr: string, payslipDateStr: string): { text
 }
 
 function calculateParts(situation: Employe['situationMatrimoniale'], enfants: number = 0): number {
-    switch(situation) {
+    switch (situation) {
         case 'Marié(e)':
             return 2 + (enfants * 0.5);
         case 'Veuf(ve)':
@@ -132,12 +132,14 @@ const SENIORITY_BONUS_TIERS = [
 
 export async function getPayslipDetails(
     employee: Employe,
-    payslipDate: string, 
+    payslipDate: string,
     organizationSettings: OrganizationSettings
 ): Promise<PayslipDetails> {
-    
-    const { 
-        baseSalary = 0,
+
+    const {
+        contractType = 'Titulaire',
+        hourlyRate = 0,
+        baseHours = 0,
         indemniteTransportImposable = 0,
         indemniteSujetion = 0,
         indemniteCommunication = 0,
@@ -145,19 +147,27 @@ export async function getPayslipDetails(
         indemniteResponsabilite = 0,
         indemniteLogement = 0,
         transportNonImposable = 0,
-        ...otherFields 
+        ...otherFields
     } = employee;
-    
+
+    // Calcul du salaire de base effectif
+    const effectiveBaseSalary = contractType === 'Vacataire'
+        ? hourlyRate * baseHours
+        : (employee.baseSalary || 0);
+
     const seniorityInfo = calculateSeniority(employee.hireDate || '', payslipDate);
-    
+
     let primeAnciennete = 0;
     const applicableTier = SENIORITY_BONUS_TIERS.find(tier => seniorityInfo.years >= tier.years);
-    if (applicableTier) {
-        primeAnciennete = baseSalary * (applicableTier.rate / 100);
+    if (applicableTier && contractType === 'Titulaire') {
+        primeAnciennete = effectiveBaseSalary * (applicableTier.rate / 100);
     }
 
     const earningsMap: { [key: string]: { label: string; amount: number } } = {
-        baseSalary: { label: 'SALAIRE DE BASE', amount: baseSalary },
+        baseSalary: {
+            label: contractType === 'Vacataire' ? `HEURES VACATIONS (${baseHours}h x ${hourlyRate})` : 'SALAIRE DE BASE',
+            amount: effectiveBaseSalary
+        },
         primeAnciennete: { label: 'PRIME D\'ANCIENNETE', amount: primeAnciennete },
         indemniteTransportImposable: { label: 'INDEMNITE DE TRANSPORT IMPOSABLE', amount: indemniteTransportImposable },
         indemniteSujetion: { label: 'INDEMNITE DE SUJETION', amount: indemniteSujetion },
@@ -168,16 +178,16 @@ export async function getPayslipDetails(
 
     const earnings: PayslipEarning[] = Object.values(earningsMap)
         .filter(item => item.amount > 0)
-        .map(item => ({...item, amount: Math.round(item.amount)}));
-        
+        .map(item => ({ ...item, amount: Math.round(item.amount) }));
+
     const brutImposable = earnings.reduce((sum, item) => sum + item.amount, 0);
-    
+
     // --- Déductions fiscales ---
     const cnps = employee.CNPS ? (brutImposable * 0.063) : 0;
-    
+
     // Base de calcul pour ITS, CN, IGR
     const baseCalculITS = brutImposable * 0.8; // Abattement de 20%
-    
+
     // Calcul de l'ITS
     const its = baseCalculITS * 0.015;
 
@@ -189,22 +199,22 @@ export async function getPayslipDetails(
         const tranche3 = Math.max(0, baseCalculITS - 200000);
         cn = (tranche1 * 0.015) + (tranche2 * 0.05) + (tranche3 * 0.10);
     }
-    
+
     // Calcul de l'IGR
     const N = baseCalculITS - (its + cn);
     const parts = calculateParts(employee.situationMatrimoniale, employee.enfants);
     const Q = Math.floor(N / parts);
-    
+
     const igr = Math.max(0, Math.round(getIGRFromTranche(Q) * parts));
 
-    
+
     const deductions: PayslipDeduction[] = [
         { label: 'ITS', amount: Math.round(its) },
         { label: 'CN', amount: Math.round(cn) },
         { label: 'IGR', amount: Math.round(igr) },
         { label: 'CNPS', amount: Math.round(cnps) },
     ].filter(d => d.amount > 0);
-    
+
     const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
 
     const netAPayer = brutImposable + transportNonImposable - totalDeductions;
@@ -218,10 +228,10 @@ export async function getPayslipDetails(
         { label: 'ACCIDENT DE TRAVAIL', base: Math.min(brutImposable, 70000), rate: '2,5%', amount: employee.CNPS ? Math.round(Math.min(brutImposable, 70000) * 0.025) : 0 },
         { label: 'REGIME DE RETRAITE', base: Math.round(brutImposable), rate: '7,7%', amount: employee.CNPS ? Math.round(brutImposable * 0.077) : 0 },
     ];
-    
+
     const numeroCompteComplet = [employee.CB, employee.CG, employee.numeroCompte, employee.Cle_RIB].filter(Boolean).join(' ');
 
-    const formattedDateEmbauche = employee.hireDate && isValid(parseISO(employee.hireDate)) 
+    const formattedDateEmbauche = employee.hireDate && isValid(parseISO(employee.hireDate))
         ? format(parseISO(employee.hireDate), 'dd MMMM yyyy', { locale: fr })
         : 'N/A';
 

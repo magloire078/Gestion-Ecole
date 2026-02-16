@@ -220,6 +220,17 @@ service cloud.firestore {
       match /maintenance/{tacheId} { allow read, write: if hasPermission(schoolId, 'manageInventory'); }
       match /cles_trousseaux/{trousseauId} { allow read, write: if hasPermission(schoolId, 'manageInventory'); }
       match /cles_log/{logId} { allow read, write: if hasPermission(schoolId, 'manageInventory'); }
+
+      // --- Gestion des Stocks ---
+      match /stocks/{itemId} {
+        allow read: if isSchoolMember(schoolId);
+        allow write: if hasPermission(schoolId, 'manageInventory');
+      }
+      match /stock_logs/{logId} {
+        allow read: if isSchoolMember(schoolId);
+        allow write: if hasPermission(schoolId, 'manageInventory');
+      }
+
       match /activites/{activiteId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }
       match /inscriptions_activites/{inscriptionId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }
       match /competitions/{competitionId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }

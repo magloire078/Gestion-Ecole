@@ -31,7 +31,7 @@ export function AnnouncementBanner() {
   const announcement = useMemo(() =>
     messagesData && messagesData.length > 0
       ? messagesData[0].data()
-      : { title: "Bienvenue sur GèreEcole", content: "Utilisez les menus pour naviguer et gérer votre établissement." },
+      : { title: "Bienvenue sur Gérecole", content: "Utilisez les menus pour naviguer et gérer votre établissement." },
     [messagesData]
   );
 

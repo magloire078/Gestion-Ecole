@@ -1,6 +1,4 @@
 
-'use server';
-
 // Fichier de configuration pour l'intégration Wave Business
 const WAVE_API_KEY = process.env.WAVE_API_KEY;
 const WAVE_API_BASE_URL = "https://api.wave.com";

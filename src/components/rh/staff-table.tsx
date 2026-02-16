@@ -54,7 +54,7 @@ export const StaffTable = ({ staff, classes, onEdit, onDelete }: StaffTableProps
                                         <AvatarFallback>{fallback}</AvatarFallback>
                                     </Avatar>
                                     <div>
-                                        <Link href={`/dashboard/rh/${member.id}`} className="font-medium hover:underline">{fullName}</Link>
+                                        <Link href={`/dashboard/rh/details?id=${member.id}`} className="font-medium hover:underline">{fullName}</Link>
                                         <div className="text-xs text-muted-foreground">{member.email}</div>
                                     </div>
                                 </div>
@@ -68,7 +68,7 @@ export const StaffTable = ({ staff, classes, onEdit, onDelete }: StaffTableProps
                                         <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/${member.id}`)}>Voir Profil</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => router.push(`/dashboard/rh/details?id=${member.id}`)}>Voir Profil</DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => onEdit(member)}>Modifier</DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <DropdownMenuItem className="text-destructive" onClick={() => onDelete(member)}>Supprimer</DropdownMenuItem>

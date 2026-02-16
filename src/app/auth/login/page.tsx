@@ -222,13 +222,11 @@ export default function LoginPage() {
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
             className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-6 md:p-8 relative overflow-hidden group"
           >
-            <AnimatedHighlight />
-
-            <div className="flex flex-col items-center mb-5">
-              <div className="mb-3 transform scale-[2.2] py-6 transition-transform hover:scale-[2.4]">
-                <Logo compact />
+            <div className="flex flex-col items-center mb-8">
+              <div className="mb-4">
+                <Logo size="lg" />
               </div>
-              <div className="text-center mt-2">
+              <div className="text-center">
                 <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Connexion</h2>
                 <p className="text-slate-400 mt-2 font-medium">Bon retour parmi nous !</p>
               </div>

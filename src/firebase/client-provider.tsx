@@ -11,21 +11,22 @@ import { firebaseApp, firebaseAuth, firebaseFirestore, firebaseStorage } from '.
 import { ThemeProvider } from '@/components/theme-provider';
 
 export interface FirebaseContextValue {
-  firebaseApp: FirebaseApp | null;
-  auth: Auth | null;
-  firestore: Firestore | null;
-  storage: FirebaseStorage | null;
+  firebaseApp: FirebaseApp | null | undefined;
+  auth: Auth | null | undefined;
+  firestore: Firestore | null | undefined;
+  storage: FirebaseStorage | null | undefined;
 }
 
 const FirebaseContext = createContext<FirebaseContextValue>({
-  firebaseApp: null,
-  auth: null,
-  firestore: null,
-  storage: null,
+  firebaseApp: undefined,
+  auth: undefined,
+  firestore: undefined,
+  storage: undefined,
 });
 
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  const contextValue = {
+  // On récupère les instances qui sont maintenant garanties d'être initialisées côté client
+  const contextValue: FirebaseContextValue = {
     firebaseApp,
     auth: firebaseAuth,
     firestore: firebaseFirestore,
@@ -49,8 +50,8 @@ export const useFirebase = (): FirebaseContextValue => {
   // On s'assure que les services sont disponibles avant de les retourner
   if (!context.auth || !context.firestore || !context.storage) {
     if (typeof window !== 'undefined') {
-        // This case should ideally not happen if provider logic is correct
-        console.warn("Firebase services are not yet available.");
+      // This case should ideally not happen if provider logic is correct
+      console.warn("Firebase services are not yet available.");
     }
   }
   return context;

@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/providers/user-provider';
 import { MobileBridge } from '@/components/mobile-bridge';
 import { Toaster } from '@/components/ui/toaster';
 import { Analytics } from "@vercel/analytics/next"
@@ -48,11 +49,13 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <body className={`${inter.variable} ${outfit.variable} font-sans`}>
         <FirebaseClientProvider>
-          <MobileBridge />
-          {children}
-          <Toaster />
-          <Analytics />
-          <SpeedInsights />
+          <UserProvider>
+            <MobileBridge />
+            {children}
+            <Toaster />
+            <Analytics />
+            <SpeedInsights />
+          </UserProvider>
         </FirebaseClientProvider>
       </body>
     </html>

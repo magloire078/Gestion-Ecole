@@ -1,8 +1,10 @@
 
 'use client';
 
-import { doc, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc } from "firebase/firestore";
-import { firebaseFirestore as db } from '@/firebase/config';
+import { doc, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc, Firestore } from "firebase/firestore";
+import { firebaseFirestore } from '@/firebase/config';
+
+const db = firebaseFirestore as Firestore;
 import type { student as Student } from '@/lib/data-types';
 
 const COLLECTION_NAME = 'eleves';
@@ -143,7 +145,7 @@ export const StudentService = {
 
         try {
             await updateDoc(studentRef, {
-                photoURL: photoUrl,
+                photoUrl: photoUrl,
                 updatedAt: serverTimestamp(),
             });
         } catch (error) {

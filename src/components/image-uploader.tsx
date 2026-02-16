@@ -1,10 +1,7 @@
 'use client';
 
 import * as React from "react";
-import { useState, useEffect, useRef } from 'react';
-import { useStorage } from '@/firebase/client-provider';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { v4 as uuidv4 } from 'uuid';
+import { useState, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Loader2, Upload, X } from 'lucide-react';
@@ -13,31 +10,34 @@ import { resizeImage } from '@/lib/image-optimization';
 
 interface ImageUploaderProps {
   onUploadComplete: (url: string) => void;
-  storagePath: string;
+  storagePath?: string;
   currentImageUrl?: string | null;
   resizeWidth?: number;
   children?: React.ReactNode;
   className?: string;
   maxSize?: number;
+  useBase64?: boolean;
+  showOverlay?: boolean;
 }
 
-export function ImageUploader({ 
-  onUploadComplete, 
-  storagePath, 
-  currentImageUrl, 
+export function ImageUploader({
+  onUploadComplete,
+  storagePath,
+  currentImageUrl,
   resizeWidth = 400,
   children,
   className,
-  maxSize = 2 * 1024 * 1024 // 2MB default
+  maxSize = 1 * 1024 * 1024, // 1MB max pour Base64 dans Firestore
+  useBase64 = true,
+  showOverlay = true
 }: ImageUploaderProps) {
-  const storage = useStorage();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !storage) return;
+    if (!file) return;
 
     if (!file.type.match('image.*')) {
       toast({
@@ -52,85 +52,107 @@ export function ImageUploader({
       toast({
         variant: "destructive",
         title: "Fichier trop volumineux",
-        description: `L'image ne doit pas dépasser ${maxSize / (1024*1024)} Mo`,
+        description: `L'image ne doit pas dépasser ${maxSize / (1024 * 1024)} Mo`,
       });
       return;
     }
 
     try {
       setUploading(true);
-      const imageBlob = await resizeImage(file, resizeWidth);
 
-      const fileExtension = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExtension}`;
-      const storageRef = ref(storage, `${storagePath}${fileName}`);
-      await uploadBytes(storageRef, imageBlob);
-      const downloadUrl = await getDownloadURL(storageRef);
-      onUploadComplete(downloadUrl);
-      
-      toast({
-        title: "Image téléchargée",
-        description: "La photo a été téléchargée avec succès",
-      });
-    } catch (error) {
-      console.error('Erreur lors du téléchargement:', error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de téléchargement",
-        description: "Impossible de télécharger l'image. Veuillez réessayer.",
-      });
-    } finally {
+      const targetWidth = resizeWidth || 400;
+      const resizedBlob = await resizeImage(file, targetWidth);
+
+      if (useBase64) {
+        const reader = new FileReader();
+        reader.readAsDataURL(resizedBlob);
+        reader.onloadend = () => {
+          const base64data = reader.result as string;
+          onUploadComplete(base64data);
+          setUploading(false);
+          toast({
+            title: "Succès",
+            description: "Image prête.",
+          });
+        };
+        return;
+      }
+    } catch (error: any) {
+      console.error("[ImageUploader] Error:", error);
       setUploading(false);
+      toast({
+        title: "Erreur",
+        description: "Impossible de traiter l'image.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleRemoveImage = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const removeImage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onUploadComplete(''); 
+    onUploadComplete("");
   };
-  
-  const uniqueId = React.useId();
 
   return (
-    <div className={cn("relative", className)}>
-        <input
-            type="file"
-            ref={fileInputRef}
-            id={`image-upload-input-${uniqueId}`}
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={uploading}
-        />
-        <label
-            htmlFor={`image-upload-input-${uniqueId}`}
-            className={cn(
-                "cursor-pointer",
-                uploading && "opacity-50 cursor-not-allowed"
-            )}
-        >
-            {children}
-        </label>
-        
-        {uploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-md">
-                <Loader2 className="h-8 w-8 animate-spin text-white" />
-            </div>
-        )}
+    <div
+      className={cn(
+        "relative group cursor-pointer overflow-hidden transition-all duration-200",
+        !children && "h-32 w-32 rounded-lg border-2 border-dashed border-muted-foreground/25 hover:border-primary/50 flex items-center justify-center bg-muted/50",
+        className
+      )}
+      onClick={() => fileInputRef.current?.click()}
+    >
+      <input
+        type="file"
+        className="hidden"
+        ref={fileInputRef}
+        onChange={handleFileSelect}
+        accept="image/*"
+        disabled={uploading}
+      />
 
-        {currentImageUrl && !uploading && (
-            <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 z-10"
-                onClick={handleRemoveImage}
-                aria-label="Supprimer l'image"
-            >
+      {uploading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-20 rounded-inherit">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      )}
+
+      {children ? (
+        <>
+          {children}
+          {showOverlay && (
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-inherit z-10 pointer-events-none">
+              <Upload className="h-6 w-6 text-white" />
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          {currentImageUrl ? (
+            <>
+              <img
+                src={currentImageUrl}
+                alt="Profil"
+                className="h-full w-full object-cover transition-transform group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
+                <Upload className="h-6 w-6 text-white" />
+              </div>
+              <button
+                onClick={removeImage}
+                className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 z-20"
+              >
                 <X className="h-3 w-3" />
-            </Button>
-        )}
+              </button>
+            </>
+          ) : (
+            <div className="flex flex-col items-center justify-center p-4 text-muted-foreground group-hover:text-primary transition-colors">
+              <Upload className="h-8 w-8 mb-2" />
+              <span className="text-xs font-medium text-center leading-tight">Cliquer pour uploader</span>
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 }

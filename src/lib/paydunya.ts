@@ -1,5 +1,3 @@
-'use server';
-
 const PAYDUNYA_API_URL = "https://app.paydunya.com/api/v1/checkout-invoice/create";
 const PAYDUNYA_MASTER_KEY = process.env.PAYDUNYA_MASTER_KEY;
 const PAYDUNYA_PUBLIC_KEY = process.env.PAYDUNYA_PUBLIC_KEY;

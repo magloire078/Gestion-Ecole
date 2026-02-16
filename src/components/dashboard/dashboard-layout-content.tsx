@@ -7,7 +7,8 @@ import { Logo } from '@/components/logo';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Bell, Menu, Search, PanelLeftClose, PanelRightClose } from 'lucide-react';
-import { MobileNav } from '@/components/mobile-nav';
+import { MobileNav as MobileSidebar } from '@/components/mobile-nav';
+import { MobileNav as MobileNavTabs } from '@/components/layout/mobile-nav';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -190,7 +191,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
           )}>
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
             <Logo
-              compact={isNavCollapsed}
+              size={isNavCollapsed ? 'sm' : 'md'}
               schoolName={schoolData?.name}
               logoUrl={schoolData?.mainLogoUrl}
             />
@@ -238,7 +239,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="sm:max-w-xs p-0 border-none">
-                  <MobileNav
+                  <MobileSidebar
                     loading={!!isLoading}
                     schoolName={schoolData?.name}
                     logoUrl={schoolData?.mainLogoUrl}
@@ -281,6 +282,15 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                   })}
                 </BreadcrumbList>
               </Breadcrumb>
+
+              {schoolData?.name && (
+                <div className="hidden lg:flex items-center ml-4 px-4 py-1.5 rounded-2xl bg-primary/10 border border-primary/20 shadow-sm backdrop-blur-md transition-all hover:bg-primary/15 group">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#2D9CDB] leading-none mb-1 group-hover:text-[#0C365A] dark:group-hover:text-primary transition-colors">Établissement Actif</span>
+                    <span className="text-sm font-black text-[#0C365A] dark:text-white leading-none tracking-tight truncate max-w-[200px]">{schoolData.name}</span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -311,7 +321,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
             </div>
           </header>
 
-          <main className="flex-1 p-4 sm:p-6 print:p-0 overflow-auto mesh-gradient relative">
+          <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-24 lg:pb-6 print:p-0 overflow-auto mesh-gradient relative">
             <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
             <AnimatePresence mode="wait">
               <motion.div
@@ -325,6 +335,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
                 {children}
               </motion.div>
             </AnimatePresence>
+            <MobileNavTabs />
           </main>
 
         </div>
@@ -339,7 +350,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
           onClose={() => setIsNotificationsOpen(false)}
         />
 
-      </div>
-    </TooltipProvider>
+      </div >
+    </TooltipProvider >
   )
 }

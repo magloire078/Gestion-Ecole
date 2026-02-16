@@ -41,10 +41,10 @@ export function SafeImage({
   const handleError = () => {
     setError(true);
   };
-  
+
   if (error || !src) {
     return fallback || (
-      <div 
+      <div
         className={cn("bg-muted flex items-center justify-center overflow-hidden", className)}
         style={style}
       >
@@ -54,17 +54,18 @@ export function SafeImage({
   }
 
   return (
-     <Image
-        src={src}
-        alt={alt}
-        width={fill ? undefined : width}
-        height={fill ? undefined : height}
-        fill={fill}
-        className={className}
-        style={style}
-        onError={handleError}
-        priority={priority}
-        {...props}
-      />
+    <Image
+      src={src}
+      alt={alt}
+      width={fill ? undefined : width}
+      height={fill ? undefined : height}
+      fill={fill}
+      className={className}
+      style={style}
+      onError={handleError}
+      priority={priority}
+      unoptimized={typeof src === 'string' && src.startsWith('data:')}
+      {...props}
+    />
   );
 }

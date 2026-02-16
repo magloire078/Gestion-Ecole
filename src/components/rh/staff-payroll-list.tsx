@@ -34,7 +34,7 @@ export function StaffPayrollList({ staffWithSalary, isLoading, canManageBilling,
                     <TableRow>
                         <TableHead>Nom</TableHead>
                         <TableHead>Rôle</TableHead>
-                        <TableHead>Salaire de Base</TableHead>
+                        <TableHead>Rémunération</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -55,7 +55,16 @@ export function StaffPayrollList({ staffWithSalary, isLoading, canManageBilling,
                             <TableRow key={staff.id}>
                                 <TableCell className="font-medium">{staff.firstName} {staff.lastName}</TableCell>
                                 <TableCell className="capitalize">{staff.role}</TableCell>
-                                <TableCell className="font-mono">{formatCurrency(staff.baseSalary)}</TableCell>
+                                <TableCell className="font-mono">
+                                    {staff.contractType === 'Vacataire' ? (
+                                        <div className="flex flex-col">
+                                            <span>{formatCurrency((staff.hourlyRate || 0) * (staff.baseHours || 0))}</span>
+                                            <span className="text-xs text-muted-foreground">{staff.baseHours}h x {formatCurrency(staff.hourlyRate || 0)}/h</span>
+                                        </div>
+                                    ) : (
+                                        formatCurrency(staff.baseSalary || 0)
+                                    )}
+                                </TableCell>
                                 <TableCell>
                                     <Badge variant={staff.status === 'Actif' ? 'secondary' : 'outline'}>{staff.status}</Badge>
                                 </TableCell>
@@ -71,7 +80,7 @@ export function StaffPayrollList({ staffWithSalary, isLoading, canManageBilling,
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={5} className="text-center h-24">Aucun membre du personnel avec un salaire défini.</TableCell>
+                            <TableCell colSpan={5} className="text-center h-24">Aucun membre du personnel actif éligible à la paie.</TableCell>
                         </TableRow>
                     )}
                 </TableBody>

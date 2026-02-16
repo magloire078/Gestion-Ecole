@@ -29,9 +29,10 @@ interface SchoolData extends DocumentData {
     schoolCode?: string;
     matricule?: string;
     mainLogoUrl?: string;
+    digitalSignatureUrl?: string;
     currentAcademicYear?: string;
     subscription?: Subscription;
-    updatedAt?: any; 
+    updatedAt?: any;
     updatedBy?: string;
     updatedByName?: string;
 }
@@ -60,7 +61,7 @@ export function useSchoolData() {
         const schoolDocRef = doc(firestore, 'ecoles', authSchoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                const data = { id: docSnap.id, ...docSnap.data()} as SchoolData;
+                const data = { id: docSnap.id, ...docSnap.data() } as SchoolData;
                 setSchoolData(data);
                 document.title = data.name ? `${data.name} - Gestion Scolaire` : DEFAULT_TITLE;
             } else {
@@ -69,10 +70,10 @@ export function useSchoolData() {
             }
             setLoading(false);
         }, (err: FirestoreError) => {
-             console.error("Error fetching school data:", err);
-             setSchoolData(null);
-             setError(err.message);
-             setLoading(false);
+            console.error("Error fetching school data:", err);
+            setSchoolData(null);
+            setError(err.message);
+            setLoading(false);
         });
 
         return () => unsubscribe();
@@ -83,7 +84,7 @@ export function useSchoolData() {
         const currentUser = auth.currentUser;
         if (!authSchoolId) throw new Error("ID de l'école non disponible.");
         if (!currentUser) throw new Error("Utilisateur non authentifié.");
-        
+
         const schoolDocRef = doc(firestore, 'ecoles', authSchoolId);
         const dataToUpdate = {
             ...data,
@@ -100,16 +101,17 @@ export function useSchoolData() {
         }
     }, [authSchoolId, firestore]);
 
-    return { 
-        schoolId: authSchoolId, 
+    return {
+        schoolId: authSchoolId,
         schoolData,
         schoolName: schoolData?.name,
         directorName: `${schoolData?.directorFirstName || ''} ${schoolData?.directorLastName || ''}`.trim(),
         subscription: schoolData?.subscription,
         mainLogoUrl: schoolData?.mainLogoUrl,
+        digitalSignatureUrl: schoolData?.digitalSignatureUrl,
         currentAcademicYear: schoolData?.currentAcademicYear,
         loading,
         error,
-        updateSchoolData 
+        updateSchoolData
     };
 }

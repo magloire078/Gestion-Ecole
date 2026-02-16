@@ -1,0 +1,275 @@
+'use client';
+
+import { notFound, useRouter, useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { User, BookUser, Building, Hash, Pencil, CreditCard, FileText, CalendarDays, FileSignature } from 'lucide-react';
+import React, { useMemo, useState, Suspense } from 'react';
+import { useDoc, useFirestore, useCollection, useUser } from '@/firebase';
+import { useSchoolData } from '@/hooks/use-school-data';
+import { doc, collection, query, type DocumentReference, type DocumentData } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { cn } from "@/lib/utils";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { staff as Staff, class_type as Class, student as Student, fee as Fee, niveau as Niveau } from '@/lib/data-types';
+import { useToast } from '@/hooks/use-toast';
+import { StudentEditForm } from '@/components/student-edit-form';
+import { PaymentsTab } from '@/components/students/payments-tab';
+import { GradesTab } from '@/components/students/grades-tab';
+import { InfoTab } from '@/components/students/info-tab';
+import { AbsencesTab } from '@/components/students/absences-tab';
+import { DisciplineTab } from '@/components/students/discipline-tab';
+import { Separator } from '@/components/ui/separator';
+import { ParentAccessGenerator } from '@/components/parent-access-generator';
+import { StudentTimetableTab } from '@/components/students/timetable-tab';
+import { StudentPhotoUpload } from '@/components/students/student-photo-upload';
+
+function StudentProfilePageSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-end"><Skeleton className="h-10 w-32" /></div>
+            <div className="grid gap-6 lg:grid-cols-4">
+                <div className="lg:col-span-1 flex flex-col gap-6">
+                    <Skeleton className="h-56 w-full" />
+                    <Skeleton className="h-40 w-full" />
+                </div>
+                <div className="lg:col-span-3 flex flex-col gap-6">
+                    <Skeleton className="h-96 w-full" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+interface StudentProfileContentProps {
+    eleveId: string;
+    schoolId: string;
+    initialTab: string;
+}
+
+function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfileContentProps) {
+    const router = useRouter();
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+    const firestore = useFirestore();
+    const { user } = useUser();
+    const canManageUsers = user?.isParent ? false : (user?.profile?.permissions?.manageUsers ?? false);
+
+    const { toast } = useToast();
+
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+    // --- Data Fetching ---
+    const studentRef = useMemo(() => doc(firestore, `ecoles/${schoolId}/eleves/${eleveId}`) as DocumentReference<Student, DocumentData>, [firestore, schoolId, eleveId, refreshTrigger]);
+    const { data: studentData, loading: studentLoading } = useDoc<Student>(studentRef);
+    const student = useMemo(() => studentData ? { ...studentData, id: eleveId } as Student & { id: string } : null, [studentData, eleveId]);
+
+    const classRef = useMemo(() => student?.classId ? doc(firestore, `ecoles/${schoolId}/classes/${student.classId}`) as DocumentReference<Class, DocumentData> : null, [student, schoolId, firestore]);
+    const { data: studentClass, loading: classLoading } = useDoc<Class>(classRef);
+
+    const teacherRef = useMemo(() => studentClass?.mainTeacherId ? doc(firestore, `ecoles/${schoolId}/personnel/${studentClass.mainTeacherId}`) as DocumentReference<Staff, DocumentData> : null, [studentClass, schoolId, firestore]);
+    const { data: mainTeacher, loading: teacherLoading } = useDoc<Staff>(teacherRef);
+
+    const allSchoolClassesQuery = useMemo(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId, canManageUsers]);
+    const { data: allSchoolClassesData, loading: allClassesLoading } = useCollection(allSchoolClassesQuery);
+    const feesQuery = useMemo(() => canManageUsers ? collection(firestore, `ecoles/${schoolId}/frais_scolarite`) : null, [firestore, schoolId, canManageUsers]);
+    const { data: feesData, loading: feesLoading } = useCollection(feesQuery);
+    const niveauxQuery = useMemo(() => canManageUsers ? query(collection(firestore, `ecoles/${schoolId}/niveaux`)) : null, [firestore, schoolId, canManageUsers]);
+    const { data: niveauxData, loading: niveauxLoading } = useCollection(niveauxQuery);
+
+    const allSchoolClasses: Class[] = useMemo(() => allSchoolClassesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [allSchoolClassesData]);
+    const allSchoolFees: Fee[] = useMemo(() => feesData?.map(d => ({ id: d.id, ...d.data() } as Fee)) || [], [feesData]);
+    const allNiveaux: Niveau[] = useMemo(() => niveauxData?.map(d => ({ id: d.id, ...d.data() } as Niveau)) || [], [niveauxData]);
+
+    const studentFullName = student ? `${student.firstName} ${student.lastName}` : '';
+
+    const isLoading = studentLoading || classLoading || teacherLoading || (canManageUsers && (allClassesLoading || feesLoading || niveauxLoading));
+
+    if (isLoading) {
+        return <StudentProfilePageSkeleton />;
+    }
+
+    if (!student) {
+        notFound();
+    }
+
+    const getStatusBadgeVariant = (status: Student['status']) => {
+        switch (status) {
+            case 'Actif': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300';
+            case 'Radié': return 'bg-destructive/80 text-destructive-foreground';
+            case 'En attente': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300';
+            default: return 'bg-secondary text-secondary-foreground';
+        }
+    };
+
+    return (
+        <>
+            <div className="space-y-6">
+                <div className="flex flex-wrap justify-end items-center gap-2">
+                    <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/carte?id=${eleveId}`)}>
+                        <CreditCard className="mr-2 h-4 w-4" />Carte Étudiant
+                    </Button>
+                    <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/bulletin?id=${eleveId}`)}>
+                        <FileText className="mr-2 h-4 w-4" />Bulletin
+                    </Button>
+                    <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/emploi-du-temps?id=${eleveId}`)}>
+                        <CalendarDays className="mr-2 h-4 w-4" />Emploi du Temps
+                    </Button>
+                    {canManageUsers && (
+                        <>
+                            <Button variant="outline" onClick={() => router.push(`/dashboard/dossiers-eleves/fiche?id=${eleveId}`)}>
+                                <FileSignature className="mr-2 h-4 w-4" />Fiche de Renseignements
+                            </Button>
+                            <Button onClick={() => setIsEditDialogOpen(true)}>
+                                <Pencil className="mr-2 h-4 w-4" /> Modifier
+                            </Button>
+                        </>
+                    )}
+                </div>
+                <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
+                    <div className="lg:col-span-1 flex flex-col gap-6">
+                        <Card>
+                            <CardHeader className="flex-row items-center gap-4 pb-4">
+                                <StudentPhotoUpload
+                                    schoolId={schoolId}
+                                    studentId={eleveId}
+                                    currentPhotoUrl={student.photoUrl}
+                                    onUploadSuccess={() => setRefreshTrigger(prev => prev + 1)}
+                                />
+                                <div>
+                                    <CardTitle className="text-2xl">{studentFullName}</CardTitle>
+                                    <CardDescription className='flex items-center gap-2'><Hash className='h-3 w-3' />{student.matricule || 'N/A'}</CardDescription>
+                                    <Badge className={cn("mt-2 border-transparent", getStatusBadgeVariant(student.status || 'Actif'))}>{student.status || 'Actif'}</Badge>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm">
+                                <div className="flex items-center">
+                                    <BookUser className="mr-3 h-5 w-5 text-muted-foreground" />
+                                    <span>Classe: <strong>{student.class}</strong> ({student.grade || 'N/A'})</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <User className="mr-3 h-5 w-5 text-muted-foreground" />
+                                    <span>Prof. Principal: <strong>{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}` : 'N/A'}</strong></span>
+                                </div>
+                                <div className="flex items-center">
+                                    <Building className="mr-3 h-5 w-5 text-muted-foreground" />
+                                    <span>Cycle: {studentClass?.cycleId || student.cycle || 'N/A'}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /><span>Contacts des Parents</span></CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3 text-sm">
+                                <div className="font-medium">{student.parent1FirstName} {student.parent1LastName}</div>
+                                <a href={`tel:${student.parent1Contact}`} className="text-muted-foreground hover:text-primary">{student.parent1Contact}</a>
+                                {student.parent2FirstName && student.parent2LastName && (
+                                    <>
+                                        <Separator className="my-3" />
+                                        <div className="font-medium">{student.parent2FirstName} {student.parent2LastName}</div>
+                                        <a href={`tel:${student.parent2Contact}`} className="text-muted-foreground hover:text-primary">{student.parent2Contact}</a>
+                                    </>
+                                )}
+                            </CardContent>
+                            {canManageUsers && (
+                                <CardFooter>
+                                    <ParentAccessGenerator schoolId={schoolId} studentId={eleveId} studentName={studentFullName} />
+                                </CardFooter>
+                            )}
+                        </Card>
+                    </div>
+                    <div className="lg:col-span-3 flex flex-col gap-6">
+                        <Tabs defaultValue={initialTab} className="w-full">
+                            <TabsList className="grid w-full grid-cols-6">
+                                <TabsTrigger value="payments">Paiements</TabsTrigger>
+                                <TabsTrigger value="grades">Résultats</TabsTrigger>
+                                <TabsTrigger value="absences">Absences</TabsTrigger>
+                                <TabsTrigger value="discipline">Discipline</TabsTrigger>
+                                <TabsTrigger value="timetable">Emploi du temps</TabsTrigger>
+                                <TabsTrigger value="info">Informations</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="payments" className="mt-6">
+                                <PaymentsTab student={student} schoolId={schoolId} onPaymentSuccess={() => setRefreshTrigger(prev => prev + 1)} />
+                            </TabsContent>
+                            <TabsContent value="grades" className="mt-6">
+                                <GradesTab schoolId={schoolId} studentId={eleveId} />
+                            </TabsContent>
+                            <TabsContent value="absences" className="mt-6">
+                                <AbsencesTab schoolId={schoolId} studentId={eleveId} />
+                            </TabsContent>
+                            <TabsContent value="discipline" className="mt-6">
+                                <DisciplineTab schoolId={schoolId} student={student} />
+                            </TabsContent>
+                            <TabsContent value="timetable" className="mt-6">
+                                <StudentTimetableTab schoolId={schoolId} student={student} />
+                            </TabsContent>
+                            <TabsContent value="info" className="mt-6">
+                                <InfoTab student={student} />
+                            </TabsContent>
+                        </Tabs>
+                    </div>
+                </div>
+            </div>
+
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                <DialogContent className="max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle>Modifier l&apos;Élève</DialogTitle>
+                        <DialogDescription>
+                            Mettez à jour les informations de <strong>{student?.firstName} {student?.lastName}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {student && canManageUsers && (
+                        <StudentEditForm
+                            student={student}
+                            classes={allSchoolClasses}
+                            fees={allSchoolFees}
+                            niveaux={allNiveaux}
+                            schoolId={schoolId}
+                            onFormSubmit={() => {
+                                setIsEditDialogOpen(false);
+                                setRefreshTrigger(prev => prev + 1);
+                            }}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
+        </>
+    );
+}
+
+function PageContent({ eleveId, schoolId, schoolLoading }: { eleveId: string, schoolId: string | null | undefined, schoolLoading: boolean }) {
+    const searchParams = useSearchParams();
+    const initialTab = searchParams.get('tab') || 'payments';
+
+    if (schoolLoading) {
+        return <StudentProfilePageSkeleton />;
+    }
+
+    if (!schoolId) {
+        return <p>Erreur: Aucune école n&apos;est associée à votre compte.</p>;
+    }
+
+    if (!eleveId) {
+        return <p>Erreur: ID de l&apos;élève manquant.</p>;
+    }
+
+    return (
+        <StudentProfileContent eleveId={eleveId} schoolId={schoolId} initialTab={initialTab} />
+    );
+}
+
+export default function StudentProfileClient() {
+    const searchParams = useSearchParams();
+    const eleveId = searchParams.get('id') as string;
+    const { schoolId, loading: schoolLoading } = useSchoolData();
+
+    return (
+        <Suspense fallback={<StudentProfilePageSkeleton />}>
+            <PageContent eleveId={eleveId} schoolId={schoolId} schoolLoading={schoolLoading} />
+        </Suspense>
+    )
+}

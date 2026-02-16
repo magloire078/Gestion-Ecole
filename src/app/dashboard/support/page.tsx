@@ -5,13 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, Loader2 } from 'lucide-react';
+import { PlusCircle, Loader2, MessageSquare } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SupportTicketForm } from '@/components/support/ticket-form';
 import { SupportTicketList } from '@/components/support/ticket-list';
+import { AdminChatPanel } from '@/components/admin/admin-chat-panel';
 import type { support_ticket as SupportTicket } from '@/lib/data-types';
 
 export default function SupportPage() {
@@ -20,13 +21,14 @@ export default function SupportPage() {
     const firestore = useFirestore();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const isSuperAdmin = user?.profile?.isSuperAdmin;
 
-    const canViewAllTickets = user?.profile?.permissions?.viewSupportTickets || user?.profile?.permissions?.manageSupportTickets;
-    
+    const canViewAllTickets = isSuperAdmin || user?.profile?.permissions?.viewSupportTickets || user?.profile?.permissions?.manageSupportTickets;
+
     // Base query for tickets in the current school
-    const ticketsBaseQuery = useMemo(() => 
-        schoolId ? query(collection(firestore, 'support_tickets'), where('schoolId', '==', schoolId), orderBy('submittedAt', 'desc')) : null, 
-    [firestore, schoolId]);
+    const ticketsBaseQuery = useMemo(() =>
+        schoolId ? query(collection(firestore, 'support_tickets'), where('schoolId', '==', schoolId), orderBy('submittedAt', 'desc')) : null,
+        [firestore, schoolId]);
 
     // If user is not an admin, further filter to only their tickets
     const ticketsQuery = useMemo(() => {
@@ -36,11 +38,11 @@ export default function SupportPage() {
     }, [ticketsBaseQuery, canViewAllTickets, user?.uid]);
 
     const { data: ticketsData, loading: ticketsLoading } = useCollection(ticketsQuery);
-    
-    const tickets = useMemo(() => 
-        ticketsData?.map(d => ({ id: d.id, ...d.data() } as SupportTicket & { id: string })) || [], 
-    [ticketsData]);
-    
+
+    const tickets = useMemo(() =>
+        ticketsData?.map(d => ({ id: d.id, ...d.data() } as SupportTicket & { id: string })) || [],
+        [ticketsData]);
+
     const openTickets = useMemo(() => tickets.filter(t => t.status === 'open' || t.status === 'in_progress'), [tickets]);
     const closedTickets = useMemo(() => tickets.filter(t => t.status === 'closed'), [tickets]);
 
@@ -66,6 +68,12 @@ export default function SupportPage() {
                     <TabsList>
                         <TabsTrigger value="open">Tickets Ouverts ({openTickets.length})</TabsTrigger>
                         <TabsTrigger value="closed">Tickets Fermés ({closedTickets.length})</TabsTrigger>
+                        {isSuperAdmin && (
+                            <TabsTrigger value="live-chat" className="gap-2">
+                                <MessageSquare className="w-3.5 h-3.5" />
+                                Discussions Live
+                            </TabsTrigger>
+                        )}
                     </TabsList>
                     <TabsContent value="open" className="mt-4">
                         <Card>
@@ -75,15 +83,20 @@ export default function SupportPage() {
                         </Card>
                     </TabsContent>
                     <TabsContent value="closed" className="mt-4">
-                         <Card>
+                        <Card>
                             <CardContent className="p-0">
                                 <SupportTicketList tickets={closedTickets} isLoading={isLoading} />
                             </CardContent>
                         </Card>
                     </TabsContent>
+                    {isSuperAdmin && (
+                        <TabsContent value="live-chat" className="mt-4">
+                            <AdminChatPanel />
+                        </TabsContent>
+                    )}
                 </Tabs>
             </div>
-            
+
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>Ouvrir un nouveau ticket</DialogTitle>

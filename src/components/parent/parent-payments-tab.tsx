@@ -35,7 +35,7 @@ export function ParentPaymentsTab({ student }: ParentPaymentsTabProps) {
     }, [firestore, schoolId, student?.id]);
 
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
-    const paymentHistory: (Payment & {id:string})[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as Payment & {id:string})) || [], [paymentHistoryData]);
+    const paymentHistory: (Payment & { id: string })[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as Payment & { id: string })) || [], [paymentHistoryData]);
 
     return (
         <div className="space-y-6">
@@ -47,18 +47,18 @@ export function ParentPaymentsTab({ student }: ParentPaymentsTabProps) {
                     <Separator />
                     <div className="flex justify-between items-center font-bold"><span>Total à payer:</span><span>{formatCurrency((student.tuitionFee || 0) - (student.discountAmount || 0))}</span></div>
                     <Separator />
-                    <div className="flex justify-between items-center"><span className="text-muted-foreground">Statut:</span><TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'}/></div>
+                    <div className="flex justify-between items-center"><span className="text-muted-foreground">Statut:</span><TuitionStatusBadge status={student.tuitionStatus ?? 'Partiel'} /></div>
                     <div className="flex justify-between items-center text-lg"><span className="font-bold">Solde dû:</span><span className="font-bold text-primary">{formatCurrency(student.amountDue)}</span></div>
                 </CardContent>
-                 <CardFooter>
+                <CardFooter>
                     <Button asChild className="w-full" disabled={!student.amountDue || student.amountDue <= 0}>
-                        <Link href={`/dashboard/parent/student/${student.id}/paiement`}>
+                        <Link href={`/dashboard/parent/student/details/paiement?id=${student.id}`}>
                             Payer le solde en ligne
                         </Link>
                     </Button>
                 </CardFooter>
             </Card>
-             <Card>
+            <Card>
                 <CardHeader><CardTitle>Historique des Paiements</CardTitle></CardHeader>
                 <CardContent>
                     <Table>
@@ -69,7 +69,7 @@ export function ParentPaymentsTab({ student }: ParentPaymentsTabProps) {
                             ) : paymentHistory.length > 0 ? (
                                 paymentHistory.map(payment => (
                                     <TableRow key={payment.id}>
-                                        <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', {locale: fr})}</TableCell>
+                                        <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', { locale: fr })}</TableCell>
                                         <TableCell>{payment.description}</TableCell>
                                         <TableCell className="text-right font-mono">{formatCurrency(payment.amount)}</TableCell>
                                     </TableRow>
