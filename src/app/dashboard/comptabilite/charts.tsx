@@ -43,20 +43,24 @@ const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, per
 };
 
 
-export function AccountingCharts({ transactions }: AccountingChartsProps) {
+export function AccountingCharts({ transactions, recoveryRate }: AccountingChartsProps) {
 
     const { monthlyData, categoryData, chartConfig } = useMemo(() => {
         if (!transactions || transactions.length === 0) return { monthlyData: [], categoryData: { revenue: [], expense: [] }, chartConfig: {} };
 
         const groupedByMonth = group(transactions, d => d.date.substring(0, 7)); // 'YYYY-MM'
 
-        let cumulativeBalance = 0;
-        const monthly = Array.from(groupedByMonth, ([month, values]) => {
-            const revenus = sum(values.filter(v => v.type === 'Revenu'), d => d.amount);
-            const depenses = sum(values.filter(v => v.type === 'Dépense'), d => d.amount);
-            cumulativeBalance += (revenus - depenses);
-            return { month, revenus, depenses, tresorerie: cumulativeBalance };
+        const monthlySummaries = Array.from(groupedByMonth, ([month, values]) => {
+            const revenus = sum(values.filter((v: AccountingTransaction) => v.type === 'Revenu'), (d: AccountingTransaction) => d.amount);
+            const depenses = sum(values.filter((v: AccountingTransaction) => v.type === 'Dépense'), (d: AccountingTransaction) => d.amount);
+            return { month, revenus, depenses };
         }).sort((a, b) => a.month.localeCompare(b.month));
+
+        let cumulativeBalance = 0;
+        const monthly = monthlySummaries.map(item => {
+            cumulativeBalance += (item.revenus - item.depenses);
+            return { ...item, tresorerie: cumulativeBalance };
+        });
 
         const revenueByCategory = group(transactions.filter(t => t.type === 'Revenu'), d => d.category);
         const expenseByCategory = group(transactions.filter(t => t.type === 'Dépense'), d => d.category);

@@ -8,6 +8,7 @@ interface WaveCheckoutData {
     currency: 'XOF';
     error_url: string;
     success_url: string;
+    client_reference?: string;
 }
 
 /**

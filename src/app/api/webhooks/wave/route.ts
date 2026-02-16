@@ -1,119 +1,57 @@
 
 import { NextResponse } from 'next/server';
-import { getFirestore, FieldValue, type Firestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { addMonths } from 'date-fns';
-import type { school, student } from '@/lib/data-types';
-
-async function handleSubscriptionPayment(db: Firestore, schoolId: string, durationStr: string, paymentProvider: string) {
-    const durationMonths = parseInt(durationStr.replace('m', ''), 10) || 1;
-    console.log(`Processing ${paymentProvider} subscription for schoolId: ${schoolId}, duration: ${durationMonths} months.`);
-
-    const schoolRef = db.collection('ecoles').doc(schoolId);
-    const schoolSnap = await schoolRef.get();
-
-    if (!schoolSnap.exists) {
-        console.error(`[${paymentProvider}] School with ID ${schoolId} not found.`);
-        throw new Error('School not found');
-    }
-
-    const schoolData = schoolSnap.data() as school;
-    const subEndDate = schoolData.subscription?.endDate ? new Date(schoolData.subscription.endDate) : new Date();
-    const startDate = subEndDate < new Date() ? new Date() : subEndDate;
-    const newEndDate = addMonths(startDate, durationMonths);
-
-    await schoolRef.update({
-        'subscription.status': 'active',
-        'subscription.endDate': newEndDate.toISOString(),
-        'updatedAt': FieldValue.serverTimestamp(),
-    });
-    console.log(`[${paymentProvider}] Successfully updated subscription for school ${schoolId}.`);
-}
-
-
-async function handleTuitionPayment(db: Firestore, schoolId: string, studentId: string, amountPaid: number, paymentProvider: string) {
-    console.log(`Processing ${paymentProvider} tuition payment for schoolId: ${schoolId}, studentId: ${studentId}, amount: ${amountPaid}`);
-
-    const studentRef = db.doc(`ecoles/${schoolId}/eleves/${studentId}`);
-    const studentSnap = await studentRef.get();
-
-    if (!studentSnap.exists) {
-        console.error(`[${paymentProvider}] Student with ID ${studentId} in school ${schoolId} not found.`);
-        throw new Error('Student not found');
-    }
-
-    const studentData = studentSnap.data() as student;
-    const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
-    const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
-
-    const batch = db.batch();
-
-    batch.update(studentRef, { amountDue: newAmountDue, tuitionStatus: newStatus });
-
-    const accountingRef = db.collection(`ecoles/${schoolId}/comptabilite`).doc();
-    batch.set(accountingRef, {
-        schoolId, studentId, date: new Date().toISOString().split('T')[0],
-        description: `Paiement scolarité via ${paymentProvider}`, category: 'Scolarité', type: 'Revenu', amount: amountPaid
-    });
-
-    const paymentRef = db.collection(`ecoles/${schoolId}/eleves/${studentId}/paiements`).doc();
-    batch.set(paymentRef, {
-        schoolId, studentId, date: new Date().toISOString().split('T')[0], amount: amountPaid,
-        description: `Paiement en ligne via ${paymentProvider}`, accountingTransactionId: accountingRef.id,
-        payerFirstName: studentData.parent1FirstName || 'Parent', payerLastName: studentData.parent1LastName || '',
-        method: paymentProvider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile'
-    });
-
-    await batch.commit();
-    console.log(`[${paymentProvider}] Successfully updated tuition for student ${studentId}.`);
-}
-
+import { processSubscriptionPayment, processTuitionPayment } from '@/lib/payment-processing';
 
 export async function POST(request: Request) {
     try {
-        if (getApps().length === 0) {
-            initializeApp();
-        }
-        const db = getFirestore();
         const body = await request.json();
-        console.log("Received Wave Webhook:", body);
+        console.log("[Wave Webhook] Notification reçue:", body);
 
         const { type, data } = body;
 
+        // Wave status check
         if (type !== 'checkout.session.completed' || data?.status !== 'complete') {
-            console.log(`Wave event type is "${type}" with status "${data?.status}". Ignoring.`);
-            return NextResponse.json({ message: "Event ignored" }, { status: 200 });
+            return NextResponse.json({ message: "Événement ignoré" }, { status: 200 });
         }
 
         const clientReference = data?.client_reference;
         if (!clientReference) {
-            console.error("Wave Webhook: Missing client_reference in payload.");
+            console.error("[Wave Webhook] client_reference manquant.");
             return NextResponse.json({ error: "Missing client_reference" }, { status: 400 });
         }
 
-        const parts = clientReference.split('_');
-        const paymentType = parts[0];
-
-        if (paymentType === 'tuition' && parts.length >= 4) {
-            const schoolId = parts[1];
-            const studentId = parts[2];
-            const amountPaid = parseInt(data.amount_with_surplus_in_cents, 10) / 100;
-            await handleTuitionPayment(db, schoolId, studentId, amountPaid, 'Wave');
-        } else if (paymentType === 'subscription' && parts.length >= 4) {
-            const schoolId = parts[1];
-            const durationStr = parts[3]; // E.g. '12m'
-            await handleSubscriptionPayment(db, schoolId, durationStr, 'Wave');
-        } else {
-            console.warn(`Invalid client_reference format: ${clientReference}. Could not determine payment type.`);
+        // Parse reference format: type__schoolId__studentIdOrDuration__amount
+        const parts = clientReference.split('__');
+        if (parts.length < 3) {
+            // Fallback for old format if any (single underscore)
+            const oldParts = clientReference.split('_');
+            if (oldParts.length >= 3) {
+                parts.splice(0, parts.length, ...oldParts);
+            } else {
+                console.warn(`[Wave Webhook] Format de référence invalide: ${clientReference}`);
+                return NextResponse.json({ error: "Invalid reference format" }, { status: 400 });
+            }
         }
 
-        return NextResponse.json({ message: "Webhook processed successfully" }, { status: 200 });
+        const paymentType = parts[0];
+        const schoolId = parts[1];
+        const amountPaid = parseFloat(data.amount) || (parseInt(data.amount_with_surplus_in_cents, 10) / 100);
+
+        if (paymentType === 'tuition') {
+            const studentId = parts[2];
+            await processTuitionPayment(schoolId, studentId, amountPaid, 'Wave');
+            console.log(`[Wave Webhook] Scolarité traitée pour l'élève ${studentId}`);
+        } else if (paymentType === 'subscription') {
+            const durationParts = parts[2].match(/\d+/);
+            const durationMonths = durationParts ? parseInt(durationParts[0], 10) : 1;
+            await processSubscriptionPayment(schoolId, 'Abonnement', durationMonths, 'Wave');
+            console.log(`[Wave Webhook] Abonnement traité pour l'école ${schoolId}`);
+        }
+
+        return NextResponse.json({ message: "Succès" }, { status: 200 });
 
     } catch (error: any) {
-        console.error("Error processing Wave webhook:", error);
-        if (error.message.includes("The default Firebase app does not exist")) {
-            return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
-        }
-        return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
+        console.error("[Wave Webhook] Erreur:", error);
+        return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 });
     }
 }

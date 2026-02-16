@@ -56,7 +56,7 @@ function TuitionPaymentPageContent() {
         }
     }, [student]);
 
-    const handlePayment = async (provider: 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya') => {
+    const handlePayment = async (provider: 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 'genius') => {
         setIsLoadingProvider(provider);
         setError(null);
 
@@ -148,6 +148,20 @@ function TuitionPaymentPageContent() {
                                     <div className="flex items-center justify-center gap-4">
                                         <Smartphone className="h-6 w-6" />
                                         <span>Payer avec Orange Money</span>
+                                    </div>
+                                )}
+                            </Button>
+                        )}
+
+                        {settingsData?.paymentProviders?.genius && (
+                            <Button
+                                className="w-full h-16 text-lg bg-orange-500 hover:bg-orange-600 text-white"
+                                onClick={() => handlePayment('genius')}
+                                disabled={!!isLoadingProvider}
+                            >
+                                {isLoadingProvider === 'genius' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                                    <div className="flex items-center justify-center gap-4">
+                                        <div className="font-bold italic">Genius Pay</div>
                                     </div>
                                 )}
                             </Button>
