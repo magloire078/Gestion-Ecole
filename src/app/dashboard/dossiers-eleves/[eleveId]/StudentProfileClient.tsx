@@ -27,6 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { ParentAccessGenerator } from '@/components/parent-access-generator';
 import { StudentTimetableTab } from '@/components/students/timetable-tab';
 import { StudentPhotoUpload } from '@/components/students/student-photo-upload';
+import { CompetitionsTab } from '@/components/students/competitions-tab';
 
 function StudentProfilePageSkeleton() {
     return (
@@ -185,11 +186,12 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                     </div>
                     <div className="lg:col-span-3 flex flex-col gap-6">
                         <Tabs defaultValue={initialTab} className="w-full">
-                            <TabsList className="grid w-full grid-cols-6">
+                            <TabsList className="grid w-full grid-cols-7">
                                 <TabsTrigger value="payments">Paiements</TabsTrigger>
                                 <TabsTrigger value="grades">Résultats</TabsTrigger>
                                 <TabsTrigger value="absences">Absences</TabsTrigger>
                                 <TabsTrigger value="discipline">Discipline</TabsTrigger>
+                                <TabsTrigger value="competitions">Compétitions</TabsTrigger>
                                 <TabsTrigger value="timetable">Emploi du temps</TabsTrigger>
                                 <TabsTrigger value="info">Informations</TabsTrigger>
                             </TabsList>
@@ -204,6 +206,9 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                             </TabsContent>
                             <TabsContent value="discipline" className="mt-6">
                                 <DisciplineTab schoolId={schoolId} student={student} />
+                            </TabsContent>
+                            <TabsContent value="competitions" className="mt-6">
+                                <CompetitionsTab schoolId={schoolId} studentId={eleveId} />
                             </TabsContent>
                             <TabsContent value="timetable" className="mt-6">
                                 <StudentTimetableTab schoolId={schoolId} student={student} />

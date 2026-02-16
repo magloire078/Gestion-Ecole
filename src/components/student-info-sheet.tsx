@@ -5,7 +5,7 @@
 import React, { useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Printer, User, Cake, MapPin, VenetianMask, School, GraduationCap, Users, Phone, Hash } from 'lucide-react';
+import { Printer, User, Cake, MapPin, VenetianMask, School, GraduationCap, Users, Phone, Hash, Mail } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { format, differenceInYears, addYears, differenceInMonths } from 'date-fns';
@@ -145,11 +145,13 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
                     <p className="font-semibold text-primary">Parent / Tuteur 1</p>
                     <InfoRow icon={User} label="Nom complet" value={`${student.parent1FirstName} ${student.parent1LastName}`} />
                     <InfoRow icon={Phone} label="Contact" value={student.parent1Contact} />
+                    {(student as any).parent1Email && <InfoRow icon={Mail} label="Email" value={(student as any).parent1Email} />}
                   </div>
                   <div className="space-y-2">
                     <p className="font-semibold text-primary">Parent / Tuteur 2</p>
                     <InfoRow icon={User} label="Nom complet" value={student.parent2FirstName ? `${student.parent2FirstName} ${student.parent2LastName}` : 'N/A'} />
                     <InfoRow icon={Phone} label="Contact" value={student.parent2Contact} />
+                    {(student as any).parent2Email && <InfoRow icon={Mail} label="Email" value={(student as any).parent2Email} />}
                   </div>
                 </div>
               </div>

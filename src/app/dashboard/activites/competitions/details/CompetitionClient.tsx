@@ -12,8 +12,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import type { competition as Competition, student as Student, participationCompetition as Participation } from '@/lib/data-types';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, Trophy, Medal, Users, Printer, Star } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface ParticipationWithStudentName extends Participation {
     id: string;
@@ -58,6 +64,99 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
         return students.filter(s => !participantIds.has(s.id));
     }, [students, participants]);
 
+    const stats = useMemo(() => {
+        const total = participants.length;
+        const podium = participants
+            .filter(p => (p.rank || '').toLowerCase().includes('1er') || (p.rank || '').toLowerCase().includes('1ère') || (p.rank || '').toLowerCase().includes('premier'))
+            .length;
+        return { total, podium };
+    }, [participants]);
+
+    const podiumParticipants = useMemo(() => {
+        return participants
+            .filter(p => {
+                const r = (p.rank || '').toLowerCase();
+                return r.includes('1er') || r.includes('2ème') || r.includes('3ème') ||
+                    r.includes('1st') || r.includes('2nd') || r.includes('3rd');
+            })
+            .sort((a, b) => {
+                const getScore = (r: string) => {
+                    const lowR = r.toLowerCase();
+                    if (lowR.includes('1')) return 3;
+                    if (lowR.includes('2')) return 2;
+                    if (lowR.includes('3')) return 1;
+                    return 0;
+                };
+                return getScore(b.rank || '') - getScore(a.rank || '');
+            });
+    }, [participants]);
+
+    const handleSendResultsEmail = async () => {
+        if (!schoolId || !schoolName || !competitionData || participants.length === 0) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Données insuffisantes pour l\'envoi.' });
+            return;
+        }
+
+        if (!confirm(`Voulez-vous envoyer les résultats par email aux parents de ${participants.length} participants ?`)) {
+            return;
+        }
+
+        const { MailService } = await import('@/services/mail-service');
+        const mailService = new MailService(firestore);
+        let sentCount = 0;
+        let errorCount = 0;
+
+        for (const p of participants) {
+            const student = students.find(s => s.id === p.studentId);
+            const parentEmail = (student as any)?.parent1Email || (student as any)?.parent2Email;
+
+            if (parentEmail) {
+                const result = await mailService.sendCompetitionResultEmail(
+                    parentEmail,
+                    p.studentName || 'Élève',
+                    competitionData.name,
+                    p.rank || 'Participant',
+                    schoolName
+                );
+                if (result.success) sentCount++;
+                else errorCount++;
+            } else {
+                errorCount++;
+            }
+        }
+
+        toast({
+            title: "Notification terminée",
+            description: `${sentCount} emails envoyés. ${errorCount} échecs (emails manquants ou erreurs).`
+        });
+    };
+
+    const handlePrintResults = () => {
+        if (!competitionData) return;
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFillColor(12, 54, 90);
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(22);
+        doc.text("RÉSULTATS DE COMPÉTITION", 105, 18, { align: 'center' });
+        doc.setFontSize(12);
+        doc.text(competitionData.name.toUpperCase(), 105, 28, { align: 'center' });
+        doc.text(`Date : ${format(new Date(), 'dd MMMM yyyy', { locale: fr })}`, 105, 35, { align: 'center' });
+
+        // Table
+        autoTable(doc, {
+            startY: 50,
+            head: [['Rang', 'Élève', 'Notes/Observations']],
+            body: participants.map(p => [(p.rank || ''), p.studentName, p.notes || '-']),
+            headStyles: { fillColor: [12, 54, 90], textColor: [255, 255, 255] },
+            alternateRowStyles: { fillColor: [245, 247, 249] },
+        });
+
+        doc.save(`resultats_${competitionData.name.replace(/\s+/g, '_').toLowerCase()}.pdf`);
+    };
+
     const handleAddParticipant = async () => {
         if (!schoolId || !competitionId || !selectedStudent) {
             toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez sélectionner un élève.' });
@@ -73,6 +172,21 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
         try {
             await addDoc(participantsCollectionRef, dataToSave);
             toast({ title: 'Participant ajouté', description: "L'élève a été ajouté à la compétition." });
+
+            // Envoi de l'email de confirmation
+            const student = students.find(s => s.id === selectedStudent);
+            const parentEmail = (student as any)?.parent1Email || (student as any)?.parent2Email;
+            if (parentEmail && schoolName && competitionData) {
+                const { MailService } = await import('@/services/mail-service');
+                const mailService = new MailService(firestore);
+                await mailService.sendCompetitionRegistrationEmail(
+                    parentEmail,
+                    `${student?.firstName} ${student?.lastName}`,
+                    competitionData.name,
+                    schoolName
+                );
+            }
+
             setSelectedStudent('');
             setRank('');
         } catch (error) {
@@ -105,46 +219,182 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
 
     return (
         <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>Gestion des Participants</CardTitle>
-                    <CardDescription>Compétition : <span className="font-semibold">{competitionData.name}</span></CardDescription>
+            {/* Statistiques et Podium */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-950/20 dark:to-slate-900 border-blue-100 dark:border-blue-900/30 shadow-md transform hover:scale-[1.02] transition-all duration-300">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">Participants</p>
+                                <h3 className="text-3xl font-bold mt-1">{stats.total}</h3>
+                            </div>
+                            <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/40 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                <Users size={24} />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-slate-900 border-amber-100 dark:border-amber-900/30 shadow-md transform hover:scale-[1.02] transition-all duration-300">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Podium (1ers)</p>
+                                <h3 className="text-3xl font-bold mt-1">{stats.podium}</h3>
+                            </div>
+                            <div className="h-12 w-12 bg-amber-100 dark:bg-amber-900/40 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                                <Trophy size={24} />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-slate-900 border-emerald-100 dark:border-emerald-900/30 shadow-md flex items-center justify-center cursor-pointer hover:shadow-lg transition-all" onClick={handlePrintResults}>
+                    <CardContent className="pt-6 text-center">
+                        <Printer className="mx-auto h-8 w-8 text-emerald-600 mb-2" />
+                        <p className="font-bold text-emerald-700 dark:text-emerald-400">Imprimer les Résultats</p>
+                    </CardContent>
+                </Card>
+
+                {canManageActivities && participants.length > 0 && (
+                    <Card className="bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-slate-900 border-indigo-100 dark:border-indigo-900/30 shadow-md flex items-center justify-center cursor-pointer hover:shadow-lg transition-all" onClick={handleSendResultsEmail}>
+                        <CardContent className="pt-6 text-center">
+                            <Trophy className="mx-auto h-8 w-8 text-indigo-600 mb-2" />
+                            <p className="font-bold text-indigo-700 dark:text-indigo-400">Notifier les Parents</p>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+
+            {podiumParticipants.length > 0 && (
+                <Card className="border-none shadow-xl bg-slate-900 overflow-hidden relative">
+                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                        <Star className="w-32 h-32 text-amber-400 animate-pulse" />
+                    </div>
+                    <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                            <Medal className="text-amber-400" /> Meilleures Performances
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="flex flex-wrap gap-4 items-end justify-center pb-4">
+                            {podiumParticipants.map((p, i) => (
+                                <div key={p.id} className={cn(
+                                    "flex flex-col items-center p-4 rounded-t-2xl min-w-[120px]",
+                                    (p.rank || '').includes('1') ? "bg-amber-400/20 border-t-4 border-amber-400 h-32" :
+                                        (p.rank || '').includes('2') ? "bg-slate-400/20 border-t-4 border-slate-300 h-28" :
+                                            "bg-orange-400/20 border-t-4 border-orange-400 h-24"
+                                )}>
+                                    <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center mb-2">
+                                        <span className="text-white font-bold">{(p.rank || '').match(/\d+/)?.[0] || '?'}</span>
+                                    </div>
+                                    <p className="text-white text-xs font-bold text-center max-w-[100px] truncate">{p.studentName}</p>
+                                    <p className="text-white/60 text-[10px] uppercase font-bold mt-1">{p.rank}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
+            <Card className="shadow-lg border-none">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+                    <div>
+                        <CardTitle className="text-2xl font-bold">Participants & Classement</CardTitle>
+                        <CardDescription>
+                            Liste complète des élèves inscrits et leurs résultats
+                        </CardDescription>
+                    </div>
+                    {canManageActivities && (
+                        <div className="flex gap-2">
+                            {participants.length > 0 && (
+                                <Button variant="outline" onClick={handleSendResultsEmail} className="gap-2">
+                                    <Trophy size={16} /> Notifier les Parents
+                                </Button>
+                            )}
+                            <Button variant="outline" onClick={handlePrintResults} className="gap-2">
+                                <Printer size={16} /> Rapport PDF
+                            </Button>
+                        </div>
+                    )}
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
                         {canManageActivities && (
-                            <div className="flex flex-col sm:flex-row items-end gap-4 p-4 border rounded-lg bg-muted/50">
-                                <div className="flex-1 w-full">
-                                    <label className="text-sm font-medium">Inscrire un élève</label>
+                            <div className="flex flex-col sm:flex-row items-end gap-4 p-5 border rounded-2xl bg-slate-50 dark:bg-slate-900/50 mb-6">
+                                <div className="flex-1 w-full space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Inscrire un élève</label>
                                     <Select onValueChange={setSelectedStudent} value={selectedStudent}>
-                                        <SelectTrigger><SelectValue placeholder="Choisir un élève..." /></SelectTrigger>
+                                        <SelectTrigger className="h-11 rounded-xl"><SelectValue placeholder="Choisir un élève..." /></SelectTrigger>
                                         <SelectContent>{availableStudents.map(s => <SelectItem key={s.id} value={s.id}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent>
                                     </Select>
                                 </div>
-                                <div className="w-full sm:w-auto">
-                                    <label className="text-sm font-medium">Classement / Résultat</label>
-                                    <Input placeholder="Ex: 3ème place" value={rank} onChange={(e) => setRank(e.target.value)} />
+                                <div className="w-full sm:w-[200px] space-y-1.5">
+                                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Classement</label>
+                                    <Input
+                                        placeholder="Ex: 1er Place, Mention TB"
+                                        value={rank}
+                                        onChange={(e) => setRank(e.target.value)}
+                                        className="h-11 rounded-xl"
+                                    />
                                 </div>
-                                <Button onClick={handleAddParticipant} disabled={!selectedStudent}><PlusCircle className="mr-2 h-4 w-4" />Inscrire</Button>
+                                <Button onClick={handleAddParticipant} disabled={!selectedStudent} className="h-11 px-8 rounded-xl bg-primary hover:bg-primary/90 shadow-md shadow-primary/20"><PlusCircle className="mr-2 h-4 w-4" />Inscrire</Button>
                             </div>
                         )}
                         <Table>
-                            <TableHeader><TableRow><TableHead>Élève</TableHead><TableHead>Classement / Résultat</TableHead>{canManageActivities && <TableHead className="text-right">Actions</TableHead>}</TableRow></TableHeader>
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent border-none">
+                                    <TableHead className="font-bold text-slate-900 dark:text-white">Élève</TableHead>
+                                    <TableHead className="font-bold text-slate-900 dark:text-white">Résultat</TableHead>
+                                    {canManageActivities && <TableHead className="text-right font-bold text-slate-900 dark:text-white">Actions</TableHead>}
+                                </TableRow>
+                            </TableHeader>
                             <TableBody>
                                 {participants.length > 0 ? (
-                                    participants.map(p => (
-                                        <TableRow key={p.id}>
-                                            <TableCell className="font-medium">{p.studentName}</TableCell>
-                                            <TableCell>{p.rank}</TableCell>
-                                            {canManageActivities && (
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="icon" onClick={() => handleDeleteParticipant(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                                    participants.map(p => {
+                                        const rankStr = (p.rank || '');
+                                        const isPodium = rankStr.includes('1') || rankStr.includes('2') || rankStr.includes('3');
+                                        return (
+                                            <TableRow key={p.id} className="group transition-colors border-slate-100 dark:border-slate-800">
+                                                <TableCell className="font-medium py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                                                            {p.studentName?.charAt(0)}
+                                                        </div>
+                                                        {p.studentName}
+                                                    </div>
                                                 </TableCell>
-                                            )}
-                                        </TableRow>
-                                    ))
+                                                <TableCell>
+                                                    {isPodium ? (
+                                                        <Badge className={cn(
+                                                            "gap-1 py-1 px-3",
+                                                            rankStr.includes('1') ? "bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100" :
+                                                                rankStr.includes('2') ? "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-100" :
+                                                                    "bg-orange-100 text-orange-700 border-orange-200 hover:bg-orange-100"
+                                                        )}>
+                                                            <Trophy size={12} /> {p.rank}
+                                                        </Badge>
+                                                    ) : (
+                                                        <span className="text-muted-foreground">{p.rank}</span>
+                                                    )}
+                                                </TableCell>
+                                                {canManageActivities && (
+                                                    <TableCell className="text-right py-4">
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => handleDeleteParticipant(p.id)}
+                                                            className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-600 rounded-full"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TableCell>
+                                                )}
+                                            </TableRow>
+                                        );
+                                    })
                                 ) : (
-                                    <TableRow><TableCell colSpan={canManageActivities ? 3 : 2} className="h-24 text-center">Aucun participant pour le moment.</TableCell></TableRow>
+                                    <TableRow><TableCell colSpan={canManageActivities ? 3 : 2} className="h-32 text-center text-muted-foreground">Aucun participant pour le moment.</TableCell></TableRow>
                                 )}
                             </TableBody>
                         </Table>

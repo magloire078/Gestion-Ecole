@@ -229,4 +229,74 @@ export class MailService {
       }
     });
   }
+
+  /**
+   * Confirmation d'Inscription à une Compétition
+   */
+  async sendCompetitionRegistrationEmail(to: string, studentName: string, competitionName: string, schoolName: string) {
+    return this.sendMail({
+      to,
+      message: {
+        subject: `Inscription confirmée : ${competitionName}`,
+        html: `
+          <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #0C365A; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">Compétition & Activités</h1>
+            </div>
+            <div style="padding: 20px; border: 1px solid #eee;">
+              <p>Bonjour,</p>
+              <p>Nous avons le plaisir de vous confirmer l'inscription de <strong>${studentName}</strong> à la compétition : <strong>${competitionName}</strong>.</p>
+              <div style="background-color: #f0f7ff; border-left: 4px solid #2D9CDB; padding: 15px; margin: 20px 0;">
+                <p style="margin: 0; color: #0C365A;"><strong>Établissement :</strong> ${schoolName}</p>
+                <p style="margin: 5px 0 0 0; color: #0C365A;"><strong>Activité :</strong> ${competitionName}</p>
+              </div>
+              <p>Nous lui souhaitons beaucoup de succès dans cette épreuve !</p>
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="https://gereecole.com/dashboard/activites" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Détails de l'activité</a>
+              </div>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="font-size: 0.8em; color: #777; text-align: center;">Service Pédagogique - ${schoolName}</p>
+            </div>
+          </div>
+        `
+      }
+    });
+  }
+
+  /**
+   * Publication des Résultats de Compétition
+   */
+  async sendCompetitionResultEmail(to: string, studentName: string, competitionName: string, rank: string, schoolName: string) {
+    const isWinner = rank.includes('1') || rank.includes('2') || rank.includes('3');
+    return this.sendMail({
+      to,
+      message: {
+        subject: `Résultats de la compétition : ${competitionName}`,
+        html: `
+          <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: ${isWinner ? '#f59e0b' : '#0C365A'}; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">🏆 Résultats de Compétition</h1>
+            </div>
+            <div style="padding: 20px; border: 1px solid #eee;">
+              <p>Bonjour,</p>
+              <p>Les résultats de la compétition <strong>${competitionName}</strong> ont été publiés.</p>
+              <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin: 20px 0; text-align: center; border: 1px solid #e2e8f0;">
+                <p style="margin: 0; color: #64748b; text-transform: uppercase; font-size: 0.8em; font-weight: bold; letter-spacing: 0.1em;">Élève</p>
+                <p style="margin: 5px 0 15px 0; font-size: 1.2em; font-weight: bold; color: #0C365A;">${studentName}</p>
+                <p style="margin: 0; color: #64748b; text-transform: uppercase; font-size: 0.8em; font-weight: bold; letter-spacing: 0.1em;">Classement / Résultat</p>
+                <p style="margin: 5px 0 0 0; font-size: 2em; font-weight: bold; color: ${isWinner ? '#f59e0b' : '#0C365A'};">${rank}</p>
+              </div>
+              ${isWinner ? '<p style="text-align: center; font-weight: bold; color: #f59e0b;">Félicitations pour cette excellente performance ! 🎊</p>' : ''}
+              <p>L'ensemble de l'équipe pédagogique félicite tous les participants pour leurs efforts.</p>
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="https://gereecole.com/dashboard/activites" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir tous les résultats</a>
+              </div>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="font-size: 0.8em; color: #777; text-align: center;">Direction ${schoolName}</p>
+            </div>
+          </div>
+        `
+      }
+    });
+  }
 }

@@ -38,7 +38,6 @@ export function LiveChat() {
     );
 
     const whatsappNumber = systemSettings?.supportWhatsApp || '+2250102030405';
-    const whatsappUrl = `https://wa.me/${whatsappNumber.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent("Bonjour Gérecole, j'aimerais en savoir plus sur votre plateforme.")}`;
 
     // Synchronisation des messages depuis Firestore
     useEffect(() => {
@@ -100,6 +99,7 @@ export function LiveChat() {
         // Persistance Firestore
         const persistMessage = async () => {
             try {
+                let currentChatId = chatId;
                 if (chatId) {
                     const chatRef = doc(firestore, 'visitor_chats', chatId);
                     await updateDoc(chatRef, {
@@ -118,8 +118,21 @@ export function LiveChat() {
                         createdAt: serverTimestamp(),
                         lastMessageAt: serverTimestamp()
                     });
-                    setChatId(newChatRef.id);
+                    currentChatId = newChatRef.id;
+                    setChatId(currentChatId);
                 }
+
+                // Envoi vers WhatsApp via notre API proxy
+                fetch('/api/support/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: inputValue,
+                        visitorId: visitorId,
+                        chatId: currentChatId
+                    })
+                }).catch(err => console.error("Error sending to WhatsApp:", err));
+
             } catch (err) {
                 console.error("Error persisting chat message:", err);
             }
@@ -127,9 +140,26 @@ export function LiveChat() {
 
         persistMessage();
 
-        // Réponse automatique si aucune réponse admin après 2 secondes (simulé pour l'instant si admin ne répond pas vite)
+        const getBotResponse = (input: string) => {
+            const lowerInput = input.toLowerCase();
+            if (lowerInput.includes('prix') || lowerInput.includes('tarif') || lowerInput.includes('combien')) {
+                return "Nos tarifs commencent à 1 500 CFA par élève et par mois. Vous pouvez consulter notre section 'Tarifs' pour plus de détails sur les options.";
+            }
+            if (lowerInput.includes('démo') || lowerInput.includes('essai') || lowerInput.includes('tester')) {
+                return "Bien sûr ! Vous pouvez demander une démonstration personnalisée en remplissant le formulaire sur notre page Contact.";
+            }
+            if (lowerInput.includes('fonctionnalité') || lowerInput.includes('quoi')) {
+                return "Gérecole permet de gérer les notes, les absences, le transport scolaire, la cantine, et la paie du personnel. C'est une solution tout-en-un.";
+            }
+            if (lowerInput.includes('parler') || lowerInput.includes('direct')) {
+                return "Un de nos conseillers examinera votre demande très rapidement. En attendant, avez-vous d'autres questions ?";
+            }
+            return "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d'autre sur Gérecole ?";
+        };
+
+        // Réponse automatique si aucune réponse admin après 3 secondes (simulé pour l'instant)
         setTimeout(() => {
-            const hasAdminResponded = false; // Idéalement on vérifierait si le dernier message est un bot
+            const hasAdminResponded = false; // Idéalement on vérifierait si le dernier message est un bot/admin
             if (!hasAdminResponded) {
                 const botResponseText = getBotResponse(inputValue);
                 const botResponse = {
@@ -139,7 +169,7 @@ export function LiveChat() {
                 };
 
                 // On n'ajoute la réponse bot que si c'est une question simple connue
-                if (botResponseText !== "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. Pour une réponse immédiate, n'hésitez pas à nous contacter sur WhatsApp. En attendant, que puis-je vous dire d'autre sur Gérecole ?") {
+                if (botResponseText !== "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d'autre sur Gérecole ?") {
                     setMessages(prev => [...prev, botResponse]);
                     if (chatId) {
                         updateDoc(doc(firestore, 'visitor_chats', chatId), {
@@ -151,23 +181,6 @@ export function LiveChat() {
                 setIsTyping(false);
             }
         }, 3000);
-    };
-
-    const getBotResponse = (input: string) => {
-        const lowerInput = input.toLowerCase();
-        if (lowerInput.includes('prix') || lowerInput.includes('tarif') || lowerInput.includes('combien')) {
-            return "Nos tarifs commencent à 1 500 CFA par élève et par mois. Vous pouvez consulter notre section 'Tarifs' pour plus de détails sur les options.";
-        }
-        if (lowerInput.includes('démo') || lowerInput.includes('essai') || lowerInput.includes('tester')) {
-            return "Bien sûr ! Vous pouvez demander une démonstration personnalisée en remplissant le formulaire sur notre page Contact.";
-        }
-        if (lowerInput.includes('fonctionnalité') || lowerInput.includes('quoi')) {
-            return "Gérecole permet de gérer les notes, les absences, le transport scolaire, la cantine, et la paie du personnel. C'est une solution tout-en-un.";
-        }
-        if (lowerInput.includes('whatsapp') || lowerInput.includes('parler') || lowerInput.includes('direct')) {
-            return `Vous pouvez nous contacter directement sur WhatsApp au ${whatsappNumber} pour une réponse immédiate.`;
-        }
-        return "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. Pour une réponse immédiate, n'hésitez pas à nous contacter sur WhatsApp. En attendant, que puis-je vous dire d'autre sur Gérecole ?";
     };
 
     return (
@@ -236,19 +249,6 @@ export function LiveChat() {
                             )}
                         </div>
 
-                        {/* WhatsApp CTA */}
-                        <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/20 border-t border-emerald-100 dark:border-emerald-900/30 flex items-center justify-between">
-                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">Réponse plus rapide ?</span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-[10px] gap-1.5 font-bold"
-                                onClick={() => window.open(whatsappUrl, '_blank')}
-                            >
-                                <MessageSquare size={12} />
-                                Continuer sur WhatsApp
-                            </Button>
-                        </div>
 
                         {/* Input Footer */}
                         <form
