@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useCollection, useFirestore, useUser, useStorage } from "@/firebase";
 import { collection, addDoc, serverTimestamp, writeBatch, doc, increment, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowRight, ArrowLeft, User, Users, GraduationCap, Upload, X, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -171,7 +171,7 @@ export default function RegistrationPage() {
       discountAmount: 0,
       discountReason: '',
       amountDue: tuitionFee,
-      tuitionStatus: tuitionFee > 0 ? 'Partiel' : 'Soldé' as const,
+      tuitionStatus: (tuitionFee > 0 ? 'Partiel' : 'Soldé') as const,
       feedback: '',
       inscriptionYear: currentAcademicYear,
     };
@@ -338,8 +338,18 @@ export default function RegistrationPage() {
                     <span className="flex items-center gap-2">Suivant <ArrowRight className="ml-2 h-4 w-4" /></span>
                   </Button>
                 ) : (
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? 'Inscription en cours...' : 'Soumettre l&apos;Inscription'}
+                  <Button type="submit" disabled={isSubmitting} className="gap-2">
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Inscription en cours...
+                      </>
+                    ) : (
+                      <>
+                        Soumettre l&apos;Inscription
+                        <CheckCircle2 className="ml-2 h-4 w-4" />
+                      </>
+                    )}
                   </Button>
                 )}
               </div>

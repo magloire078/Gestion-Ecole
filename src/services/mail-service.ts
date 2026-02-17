@@ -299,4 +299,107 @@ export class MailService {
       }
     });
   }
+  /**
+   * Confirmation d'Abonnement
+   */
+  async sendSubscriptionConfirmation(to: string, schoolName: string, planName: string, endDate: string) {
+    return this.sendMail({
+      to,
+      message: {
+        subject: `Confirmation d'abonnement - ${planName} - ${schoolName}`,
+        html: `
+          <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #0C365A; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">GéreEcole</h1>
+            </div>
+            <div style="padding: 20px; border: 1px solid #eee;">
+              <h2 style="color: #0C365A;">Abonnement Activé ✅</h2>
+              <p>Félicitations ! Votre abonnement au plan <strong>${planName}</strong> pour l'établissement <strong>${schoolName}</strong> a été activé avec succès.</p>
+              <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 5px 0;"><strong>Plan :</strong> ${planName}</p>
+                <p style="margin: 5px 0;"><strong>Échéance :</strong> ${new Date(endDate).toLocaleDateString('fr-FR')}</p>
+              </div>
+              <p>Vous avez maintenant accès à toutes les fonctionnalités de votre nouveau plan.</p>
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accéder au Dashboard</a>
+              </div>
+              <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+              <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GéreEcole</p>
+            </div>
+          </div>
+        `
+      }
+    });
+  }
+
+  /**
+   * Rapport Financier Mensuel
+   */
+  async sendMonthlyFinanceReport(to: string, schoolName: string, data: any) {
+    const { monthName, year, totalRevenue, totalExpenses, netBalance, revenueByCategory, expenseByCategory, topExpenses, tuitionRecoveryRate } = data;
+
+    const formatPrice = (amount: number) => amount.toLocaleString('fr-FR') + ' CFA';
+
+    return this.sendMail({
+      to,
+      message: {
+        subject: `Rapport Financier Mensuel - ${monthName} ${year} - ${schoolName}`,
+        html: `
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #1a202c; max-width: 700px; margin: 0 auto; background-color: #f7fafc; padding: 20px;">
+            <div style="background-color: #0C365A; padding: 30px; text-align: center; border-radius: 12px 12px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 24px;">Rapport de Trésorerie</h1>
+              <p style="color: #a0aec0; margin: 10px 0 0 0; text-transform: uppercase; letter-spacing: 1px; font-size: 14px;">${monthName} ${year}</p>
+            </div>
+            
+            <div style="background-color: white; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
+              <p>Bonjour,</p>
+              <p>Voici le récapitulatif de la santé financière pour <strong>${schoolName}</strong> pour le mois écoulé.</p>
+              
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin: 30px 0;">
+                <div style="background-color: #f0fff4; border: 1px solid #c6f6d5; padding: 15px; border-radius: 8px; text-align: center;">
+                  <p style="color: #2f855a; font-size: 12px; margin: 0; font-weight: bold; text-transform: uppercase;">Revenus</p>
+                  <p style="color: #276749; font-size: 18px; margin: 5px 0; font-weight: 800;">${formatPrice(totalRevenue)}</p>
+                </div>
+                <div style="background-color: #fff5f5; border: 1px solid #fed7d7; padding: 15px; border-radius: 8px; text-align: center;">
+                  <p style="color: #c53030; font-size: 12px; margin: 0; font-weight: bold; text-transform: uppercase;">Dépenses</p>
+                  <p style="color: #9b2c2c; font-size: 18px; margin: 5px 0; font-weight: 800;">${formatPrice(totalExpenses)}</p>
+                </div>
+                <div style="background-color: #ebf8ff; border: 1px solid #bee3f8; padding: 15px; border-radius: 8px; text-align: center;">
+                  <p style="color: #2b6cb0; font-size: 12px; margin: 0; font-weight: bold; text-transform: uppercase;">Solde Net</p>
+                  <p style="color: #2c5282; font-size: 18px; margin: 5px 0; font-weight: 800;">${formatPrice(netBalance)}</p>
+                </div>
+              </div>
+
+              <div style="margin: 30px 0;">
+                <h3 style="color: #2d3748; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Indicateurs Clés</h3>
+                <p style="margin: 15px 0;"><strong>Taux de recouvrement scolarité :</strong> ${tuitionRecoveryRate.toFixed(1)}%</p>
+                <div style="background-color: #edf2f7; height: 10px; border-radius: 5px; overflow: hidden;">
+                  <div style="background-color: #2d9cdb; width: ${tuitionRecoveryRate}%; height: 100%;"></div>
+                </div>
+              </div>
+
+              <div style="margin: 30px 0;">
+                <h3 style="color: #2d3748; border-bottom: 2px solid #edf2f7; padding-bottom: 10px;">Top Dépenses</h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                  ${topExpenses.map((e: any) => `
+                    <tr>
+                      <td style="padding: 8px 0; border-bottom: 1px solid #f7fafc;">${e.description}</td>
+                      <td style="padding: 8px 0; border-bottom: 1px solid #f7fafc; text-align: right; font-weight: bold; color: #c53030;">${formatPrice(e.amount)}</td>
+                    </tr>
+                  `).join('')}
+                </table>
+              </div>
+
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="https://gereecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gérer la comptabilité complète</a>
+              </div>
+              
+              <hr style="border: none; border-top: 1px solid #edf2f7; margin: 30px 0;" />
+              <p style="font-size: 12px; color: #a0aec0; text-align: center;">Ce rapport a été généré automatiquement par votre plateforme GéreEcole.</p>
+            </div>
+          </div>
+        `
+      }
+    });
+  }
 }

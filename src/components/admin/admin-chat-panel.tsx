@@ -13,6 +13,18 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+interface VisitorChat {
+    id: string;
+    visitorId?: string;
+    status: 'active' | 'closed';
+    messages?: {
+        role: 'user' | 'bot';
+        text: string;
+        time: string;
+    }[];
+    lastMessageAt?: { seconds: number; nanoseconds: number } | any;
+}
+
 export function AdminChatPanel() {
     const firestore = useFirestore();
     const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -23,7 +35,10 @@ export function AdminChatPanel() {
         [firestore]);
 
     const { data: chatsData, loading } = useCollection(chatQuery);
-    const chats = chatsData?.map(d => ({ id: d.id, ...d.data() })) || [];
+    const chats = useMemo(() =>
+        chatsData?.map(d => ({ id: d.id, ...d.data() } as VisitorChat)) || [],
+        [chatsData]
+    );
 
     const selectedChat = chats.find(c => c.id === selectedChatId);
 
@@ -72,7 +87,7 @@ export function AdminChatPanel() {
                                 Aucune discussion active.
                             </div>
                         )}
-                        {chats.map((chat: any) => (
+                        {chats.map((chat: VisitorChat) => (
                             <div
                                 key={chat.id}
                                 onClick={() => setSelectedChatId(chat.id)}

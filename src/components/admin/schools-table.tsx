@@ -32,6 +32,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { SchoolEditForm } from './school-edit-form';
+import { SchoolViewDetails } from './school-view-details';
 
 import type { school as School } from '@/lib/data-types';
 
@@ -50,6 +51,9 @@ export function SchoolsTable() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [schoolToEdit, setSchoolWithIdToEdit] = useState<SchoolWithId | null>(null);
 
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [schoolToView, setSchoolWithIdToView] = useState<SchoolWithId | null>(null);
+
   const schoolsQuery = useMemo(() =>
     user?.profile?.isAdmin
       ? query(collection(firestore, 'ecoles'), orderBy('createdAt', 'desc'))
@@ -63,6 +67,11 @@ export function SchoolsTable() {
   const handleOpenEditDialog = (school: SchoolWithId) => {
     setSchoolWithIdToEdit(school);
     setIsEditDialogOpen(true);
+  };
+
+  const handleOpenViewDialog = (school: SchoolWithId) => {
+    setSchoolWithIdToView(school);
+    setIsViewDialogOpen(true);
   };
 
   const handleOpenDeleteDialog = (school: SchoolWithId) => {
@@ -220,7 +229,7 @@ export function SchoolsTable() {
                         </Button>
                       ) : (
                         <>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 dark:hover:bg-white/10 text-[hsl(var(--admin-primary))] transition-colors">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 dark:hover:bg-white/10 text-[hsl(var(--admin-primary))] transition-colors" onClick={() => handleOpenViewDialog(school)}>
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-blue-50 text-slate-600 transition-colors" onClick={() => handleOpenEditDialog(school)}>
@@ -276,6 +285,23 @@ export function SchoolsTable() {
               school={schoolToEdit}
               onSave={() => setIsEditDialogOpen(false)}
             />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building className="h-5 w-5 text-blue-600" />
+              Détails de l'établissement
+            </DialogTitle>
+            <DialogDescription>
+              Aperçu complet des informations de l'établissement <strong>{schoolToView?.name}</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          {schoolToView && (
+            <SchoolViewDetails school={schoolToView} />
           )}
         </DialogContent>
       </Dialog>

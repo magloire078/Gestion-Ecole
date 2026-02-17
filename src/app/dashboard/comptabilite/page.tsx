@@ -21,7 +21,10 @@ import {
   MoreHorizontal,
   TrendingUp,
   TrendingDown,
-  Scale
+  Scale,
+  Mail,
+  FileText,
+  Loader2
 } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -48,7 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, doc, deleteDoc, query, orderBy, where } from "firebase/firestore";
@@ -64,8 +67,9 @@ import { StatCard } from "@/components/ui/stat-card";
 export default function AccountingPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
   const canManageBilling = !!user?.profile?.permissions?.manageBilling;
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
@@ -110,6 +114,43 @@ export default function AccountingPage() {
       });
   };
 
+  const handleSendMonthlyReport = async () => {
+    if (!schoolId || !schoolName || !user?.email) return;
+
+    setIsGeneratingReport(true);
+    try {
+      const { ReportService } = await import('@/services/reports');
+      const { MailService } = await import('@/services/mail-service');
+
+      const reportService = new ReportService(firestore);
+      const mailService = new MailService(firestore);
+
+      // Get data for last month
+      const lastMonth = subMonths(new Date(), 1);
+      const reportData = await reportService.getMonthlyFinanceData(schoolId, lastMonth);
+
+      const result = await mailService.sendMonthlyFinanceReport(user.email, schoolName, reportData);
+
+      if (result.success) {
+        toast({
+          title: "Rapport envoyé",
+          description: `Le rapport de ${reportData.monthName} ${reportData.year} a été envoyé à ${user.email}.`
+        });
+      } else {
+        throw new Error("Erreur d'envoi");
+      }
+    } catch (error) {
+      console.error("Report generation failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible de générer ou d'envoyer le rapport."
+      });
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   const isLoading = schoolLoading || transactionsLoading || studentsLoading;
@@ -135,11 +176,21 @@ export default function AccountingPage() {
   return (
     <>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-lg font-semibold md:text-2xl">Comptabilité</h1>
-          <p className="text-muted-foreground">
-            Suivez les revenus, les dépenses et la santé financière de votre école.
-          </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-lg font-semibold md:text-2xl">Comptabilité</h1>
+            <p className="text-muted-foreground">
+              Suivez les revenus, les dépenses et la santé financière de votre école.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleSendMonthlyReport}
+            disabled={isLoading || isGeneratingReport}
+          >
+            {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+            Rapport du mois dernier
+          </Button>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">

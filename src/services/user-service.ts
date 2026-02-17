@@ -94,6 +94,7 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
             if (isSuperAdmin) {
                 if (!userProfile) userProfile = {} as UserProfile;
                 userProfile.isAdmin = true;
+                userProfile.isSuperAdmin = true;
             }
 
             return {

@@ -1009,6 +1009,11 @@
                     "type": "string",
                     "description": "Le contact téléphonique du premier parent/tuteur."
                 },
+                "parent1Email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "L'email du premier parent/tuteur."
+                },
                 "parent2FirstName": {
                     "type": "string",
                     "description": "Le prénom du deuxième parent/tuteur (optionnel)."
@@ -1020,6 +1025,11 @@
                 "parent2Contact": {
                     "type": "string",
                     "description": "Le contact téléphonique du deuxième parent/tuteur (optionnel)."
+                },
+                "parent2Email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "L'email du deuxième parent/tuteur (optionnel)."
                 },
                 "parentIds": {
                     "type": "array",

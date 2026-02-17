@@ -241,6 +241,7 @@ export type student = {
     parent1FirstName: string;
     parent1LastName: string;
     parent1Contact: string;
+    parent1Email?: string;
     tuitionFee: number;
     amountDue: number;
     tuitionStatus: "Soldé" | "En retard" | "Partiel";
@@ -253,6 +254,7 @@ export type student = {
     parent2FirstName?: string;
     parent2LastName?: string;
     parent2Contact?: string;
+    parent2Email?: string;
     parentIds?: string[];
     previousSchool?: string;
     discountAmount?: number;
@@ -809,6 +811,7 @@ export type payroll_payslip = {
 export interface UserProfile extends staff {
     permissions?: Partial<admin_role['permissions']>;
     isAdmin?: boolean;
+    isSuperAdmin?: boolean;
 }
 
 export type classe = class_type;

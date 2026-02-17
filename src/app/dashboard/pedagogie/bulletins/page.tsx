@@ -29,10 +29,27 @@ import type { student as Student, class_type as Class } from "@/lib/data-types";
 
 export default function BulletinsPage() {
     const firestore = useFirestore();
-    const { schoolId, schoolName, digitalSignatureUrl } = useSchoolData();
+    const { schoolId, schoolName, schoolData, digitalSignatureUrl } = useSchoolData();
     const { toast } = useToast();
 
+    const [selectedClass, setSelectedClass] = useState<string>('all');
     const [selectedPeriodName, setSelectedPeriodName] = useState<string>('');
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [averages, setAverages] = useState<Record<string, { average: number; totalCoef: number }>>({});
+
+    const studentsQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
+    const classesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
+
+    const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+    const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
+
+    const students: Student[] = useMemo(() => studentsData?.map(d => ({ id: d.id, ...d.data() } as Student)) || [], [studentsData]);
+    const classes: Class[] = useMemo(() => classesData?.map(d => ({ id: d.id, ...d.data() } as Class)) || [], [classesData]);
+
+    const filteredStudents = useMemo(() => {
+        if (selectedClass === 'all') return [];
+        return students.filter(s => s.classId === selectedClass);
+    }, [students, selectedClass]);
 
     const academicPeriods = schoolData?.academicPeriods || [];
     const selectedPeriod = academicPeriods.find((p: any) => p.name === selectedPeriodName);
@@ -77,7 +94,7 @@ export default function BulletinsPage() {
         if (!schoolId || !schoolName || !selectedPeriod) return;
 
         const reportService = new ReportCardService(firestore);
-        const className = classes.find(c => c.id === selectedClass)?.name || "N/A";
+        const className = classes.find((c: Class) => c.id === selectedClass)?.name || "N/A";
 
         try {
             if (!student.id) return;
@@ -131,7 +148,7 @@ export default function BulletinsPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">Choisir une classe...</SelectItem>
-                                {classes.map(cls => (
+                                {classes.map((cls: Class) => (
                                     <SelectItem key={cls.id} value={cls.id!}>{cls.name}</SelectItem>
                                 ))}
                             </SelectContent>
@@ -197,7 +214,7 @@ export default function BulletinsPage() {
                                         </TableRow>
                                     ))
                                 ) : filteredStudents.length > 0 ? (
-                                    filteredStudents.map((student) => (
+                                    filteredStudents.map((student: Student) => (
                                         <TableRow key={student.id}>
                                             <TableCell className="font-medium">
                                                 {student.firstName} {student.lastName}

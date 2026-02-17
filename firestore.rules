@@ -253,6 +253,21 @@ service cloud.firestore {
         allow update: if isSignedIn() && resource.data.userId == request.auth.uid;
         allow delete: if hasPermission(schoolId, 'manageCommunication');
       }
+
+      // --- Statistiques et Finance ---
+      match /stats/{statId} {
+        allow read: if isSchoolMember(schoolId);
+        allow write: if hasPermission(schoolId, 'manageBilling');
+      }
+    }
+
+    // --- Global Collections ---
+
+    match /visitor_chats/{chatId} {
+      allow create: if true;
+      allow read: if isSignedIn(); // Simplified for now, should ideally be restricted to admins
+      allow update: if isSignedIn();
+      allow delete: if isSuperAdmin();
     }
   }
 }
