@@ -1,0 +1,31 @@
+src/app/admin/system/layout.tsx(18,10): error TS2300: Duplicate identifier 'Button'.
+src/app/admin/system/layout.tsx(189,10): error TS2300: Duplicate identifier 'Button'.
+src/app/api/payments/create-link/route.ts(78,62): error TS2339: Property 'payment_url' does not exist on type 'GeniusPaymentResponse'.
+src/app/dashboard/activites/competitions/details/CompetitionClient.tsx(95,27): error TS2304: Cannot find name 'schoolName'.
+src/app/dashboard/activites/competitions/details/CompetitionClient.tsx(119,21): error TS2304: Cannot find name 'schoolName'.
+src/app/dashboard/activites/competitions/details/CompetitionClient.tsx(152,13): error TS2322: Type '(string | undefined)[][]' is not assignable to type 'RowInput[]'.
+  Type '(string | undefined)[]' is not assignable to type 'RowInput'.
+    Type '(string | undefined)[]' is not assignable to type 'CellInput[]'.
+      Type 'string | undefined' is not assignable to type 'CellInput'.
+        Type 'undefined' is not assignable to type 'CellInput'.
+src/app/dashboard/activites/competitions/details/CompetitionClient.tsx(179,32): error TS2304: Cannot find name 'schoolName'.
+src/app/dashboard/activites/competitions/details/CompetitionClient.tsx(186,21): error TS2304: Cannot find name 'schoolName'.
+src/app/dashboard/inscription/page.tsx(174,22): error TS1355: A 'const' assertions can only be applied to references to enum members, or string, number, boolean, array, or object literals.
+src/app/dashboard/inscription/page.tsx(180,73): error TS2345: Argument of type '{ schoolId: string; matricule: string; lastName: string; firstName: string; dateOfBirth: string; placeOfBirth: string; gender: "Masculin" | "F+®minin"; address: string | undefined; previousSchool: string | undefined; ... 19 more ...; inscriptionYear: string; }' is not assignable to parameter of type 'Omit<student, "id">'.
+  Types of property 'inscriptionYear' are incompatible.
+    Type 'string' is not assignable to type 'number'.
+src/app/dashboard/parent/student/details/paiement/TuitionPaymentClient.tsx(60,30): error TS2345: Argument of type '"stripe" | "wave" | "genius" | "paydunya" | "orangemoney" | "mtn"' is not assignable to parameter of type 'SetStateAction<"stripe" | "wave" | "paydunya" | "orangemoney" | "mtn" | null>'.
+  Type '"genius"' is not assignable to type 'SetStateAction<"stripe" | "wave" | "paydunya" | "orangemoney" | "mtn" | null>'.
+src/app/dashboard/parent/student/details/paiement/TuitionPaymentClient.tsx(162,34): error TS2367: This comparison appears to be unintentional because the types '"stripe" | "wave" | "paydunya" | "orangemoney" | "mtn" | null' and '"genius"' have no overlap.
+src/app/dashboard/rh/[staffId]/fiche/StaffSheetClient.tsx(12,11): error TS2430: Interface 'SchoolInfo' incorrectly extends interface 'school'.
+  Types of property 'address' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/app/dashboard/rh/fiche/StaffSheetClient.tsx(12,11): error TS2430: Interface 'SchoolInfo' incorrectly extends interface 'school'.
+  Types of property 'address' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+src/components/theme-provider.tsx(5,41): error TS2307: Cannot find module 'next-themes/dist/types' or its corresponding type declarations.
+src/components/ui/calendar.tsx(57,9): error TS2353: Object literal may only specify known properties, and 'IconLeft' does not exist in type 'Partial<CustomComponents>'.
+src/components/ui/menubar.tsx(5,35): error TS2307: Cannot find module '@radix-ui/react-menubar' or its corresponding type declarations.
+src/hooks/use-user-session.ts(12,63): error TS2339: Property 'setActiveSchool' does not exist on type 'UserContextType'.

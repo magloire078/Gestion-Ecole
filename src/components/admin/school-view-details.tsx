@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Building, User, Mail, Phone, Globe, Calendar, CreditCard, Layout, MapPin, Users, School as SchoolIcon, Loader2, BookUser, Banknote } from 'lucide-react';
+import { Building, User, Mail, Phone, Globe, Calendar, CreditCard, Layout, MapPin, Users, School as SchoolIcon, BookUser, Banknote } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { school as School } from '@/lib/data-types';
@@ -105,7 +106,7 @@ export function SchoolViewDetails({ school }: SchoolViewDetailsProps) {
                         </div>
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 leading-none">{item.label}</p>
                         <p className="text-xl font-black text-slate-700 dark:text-slate-100 truncate">
-                            {stats.loading ? <Loader2 className="h-3 w-3 animate-spin text-slate-300" /> : item.value}
+                            {stats.loading ? <Skeleton className="h-6 w-20" /> : item.value}
                         </p>
                     </div>
                 ))}

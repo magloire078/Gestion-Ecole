@@ -46,7 +46,7 @@ function TuitionPaymentPageContent() {
     const { data: settingsData, loading: settingsLoading } = useDoc(settingsRef);
 
     const [amountToPay, setAmountToPay] = useState<number>(0);
-    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya'>(null);
+    const [isLoadingProvider, setIsLoadingProvider] = useState<null | 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 'genius'>(null);
     const [error, setError] = useState<string | null>(null);
     const [mtnPhoneNumber, setMtnPhoneNumber] = useState('');
 

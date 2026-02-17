@@ -27,7 +27,8 @@ interface ParticipationWithStudentName extends Participation {
 }
 
 function CompetitionContent({ competitionId }: { competitionId: string }) {
-    const { schoolId, loading: schoolLoading } = useSchoolData();
+    const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+    const schoolName = schoolData?.name;
     const firestore = useFirestore();
     const { user } = useUser();
     const { toast } = useToast();
@@ -149,7 +150,7 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
         autoTable(doc, {
             startY: 50,
             head: [['Rang', 'Élève', 'Notes/Observations']],
-            body: participants.map(p => [(p.rank || ''), p.studentName, p.notes || '-']),
+            body: participants.map(p => [(p.rank || ''), p.studentName || '', p.notes || '-']),
             headStyles: { fillColor: [12, 54, 90], textColor: [255, 255, 255] },
             alternateRowStyles: { fillColor: [245, 247, 249] },
         });

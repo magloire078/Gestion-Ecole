@@ -75,7 +75,7 @@ export async function POST(req: Request) {
                         duration: duration || ''
                     }
                 });
-                return NextResponse.json({ url: geniusResult.payment_url });
+                return NextResponse.json({ url: geniusResult.data.payment_url });
 
             case 'paydunya':
                 const paydunyaResult = await createPayDunyaCheckout({

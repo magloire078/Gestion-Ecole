@@ -9,18 +9,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import type { staff as Staff, school as School } from '@/lib/data-types';
 
-interface SchoolInfo extends School {
-    name: string;
-    address?: string;
-    mainLogoUrl?: string;
-    directorFirstName: string;
-    directorLastName: string;
-}
 
 export default function StaffSheetClient() {
     const params = useParams();
     const staffId = params.staffId as string;
-    const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
+    const { schoolId, schoolData, loading: schoolLoading, currentAcademicYear } = useSchoolData();
     const firestore = useFirestore();
 
     const staffRef = useMemo(() =>
@@ -53,7 +46,10 @@ export default function StaffSheetClient() {
             </div>
             <TeacherInfoSheet
                 teacher={staffData as Staff & { id: string }}
-                school={schoolData as SchoolInfo}
+                school={{
+                    ...schoolData,
+                    currentAcademicYear
+                } as any}
             />
         </div>
     );

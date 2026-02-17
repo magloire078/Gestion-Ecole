@@ -6,6 +6,7 @@ import { useFirestore, useAuth } from '@/firebase';
 import { AppUser } from '@/lib/data-types';
 import { fetchUserAppData } from '@/services/user-service';
 import { useRouter } from 'next/navigation';
+import { doc, updateDoc } from 'firebase/firestore';
 
 interface UserContextType {
     user: AppUser | null;
@@ -14,6 +15,7 @@ interface UserContextType {
     schoolId: string | null | undefined;
     isDirector: boolean;
     reloadUser: () => Promise<void>;
+    setActiveSchool: (schoolId: string) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -93,6 +95,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
         };
     }, [auth, firestore]);
 
+    const setActiveSchool = useCallback(async (schoolId: string) => {
+        if (!auth?.currentUser || !firestore) return;
+        try {
+            setLoading(true);
+            const userRef = doc(firestore, `users/${auth.currentUser.uid}`);
+            await updateDoc(userRef, { activeSchoolId: schoolId });
+            await reloadUser();
+        } catch (error) {
+            console.error("Error switching school:", error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    }, [auth, firestore, reloadUser]);
+
     const value = {
         user,
         loading,
@@ -100,6 +117,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         schoolId: user?.schoolId,
         isDirector: user?.profile?.role === 'directeur',
         reloadUser,
+        setActiveSchool,
     };
 
     return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

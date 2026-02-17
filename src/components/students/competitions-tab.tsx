@@ -27,8 +27,17 @@ export function CompetitionsTab({ schoolId, studentId }: CompetitionsTabProps) {
 
     const { data: participationsData, loading } = useCollection(participationsQuery);
 
+    interface CompetitionParticipation {
+        id: string;
+        rank?: string;
+        score?: string;
+        competitionName?: string;
+        studentId?: string;
+        createdAt?: any;
+    }
+
     const participations = useMemo(() =>
-        participationsData?.map(d => ({ id: d.id, ...d.data() })) || [],
+        participationsData?.map(d => ({ id: d.id, ...d.data() } as CompetitionParticipation)) || [],
         [participationsData]);
 
     if (loading) {

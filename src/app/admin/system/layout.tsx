@@ -15,6 +15,7 @@ import {
     LogOut,
     Palette
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -78,7 +79,7 @@ export default function SystemAdminLayout({
                     <div className="flex items-center gap-3 font-black text-xl tracking-tight font-outfit" style={{ color: activeTheme.dark }}>
                         <div
                             className="h-10 w-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-all group-hover:scale-110"
-                            style={{ backgroundColor: activeTheme.dark, shadowColor: `${activeTheme.dark}33` }}
+                            style={{ backgroundColor: activeTheme.dark }}
                         >
                             <ShieldCheck className="h-6 w-6" />
                         </div>
@@ -185,4 +186,4 @@ export default function SystemAdminLayout({
     );
 }
 
-import { Button } from '@/components/ui/button';
+

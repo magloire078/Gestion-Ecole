@@ -15,7 +15,7 @@ interface LogoProps {
 
 export function Logo({ size = 'md', schoolName, logoUrl, disableLink = false, className, compact = false }: LogoProps) {
   const isDefaultLogo = !logoUrl;
-  const finalSchoolName = schoolName || 'Gérecole';
+  const finalSchoolName = (schoolName || 'Gérecole').trim();
 
   const sizes = {
     sm: { icon: 40, text: 'text-sm' },

@@ -171,9 +171,9 @@ export default function RegistrationPage() {
       discountAmount: 0,
       discountReason: '',
       amountDue: tuitionFee,
-      tuitionStatus: (tuitionFee > 0 ? 'Partiel' : 'Soldé') as const,
+      tuitionStatus: (tuitionFee > 0 ? 'Partiel' : 'Soldé') as "Partiel" | "Soldé",
       feedback: '',
-      inscriptionYear: currentAcademicYear,
+      inscriptionYear: parseInt(currentAcademicYear.split('-')[0]),
     };
 
     try {
