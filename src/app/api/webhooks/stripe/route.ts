@@ -4,11 +4,11 @@ import { processSubscriptionPayment, processTuitionPayment } from '@/lib/payment
 import Stripe from 'stripe';
 import { getPlanPrice, PlanName } from '@/lib/subscription-plans';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'dummy_key_for_build', {
   apiVersion: '2024-06-20',
 });
 
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || 'dummy_secret';
 
 export async function POST(request: Request) {
   const body = await request.text();
