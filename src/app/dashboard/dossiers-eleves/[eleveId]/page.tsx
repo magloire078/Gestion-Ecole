@@ -1,8 +1,7 @@
 import StudentProfileClient from './StudentProfileClient';
 
-export const dynamic = 'force-static';
 export function generateStaticParams() {
-  return [{ eleveId: 'default' }];
+  return [];
 }
 
 export default function StudentProfilePage() {

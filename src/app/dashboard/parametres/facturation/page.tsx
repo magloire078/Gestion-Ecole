@@ -119,18 +119,17 @@ export default function BillingDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell>1er Juillet 2024</TableCell>
-                <TableCell>49 900 CFA</TableCell>
-                <TableCell><Badge variant="secondary">Payée</Badge></TableCell>
-                <TableCell className="text-right"><Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Télécharger</Button></TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>1er Juin 2024</TableCell>
-                <TableCell>49 900 CFA</TableCell>
-                <TableCell><Badge variant="secondary">Payée</Badge></TableCell>
-                <TableCell className="text-right"><Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Télécharger</Button></TableCell>
-              </TableRow>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={4}><Skeleton className="h-8 w-full" /></TableCell>
+                </TableRow>
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
+                    Aucun historique de facture disponible.
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

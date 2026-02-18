@@ -98,7 +98,7 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
 
                 <div className="flex items-center gap-4">
                     <Avatar className="h-24 w-24 border">
-                        <AvatarImage src={student.photoUrl || ''} alt={studentFullName} />
+                        <AvatarImage src={student.photoURL || ''} alt={studentFullName} />
                         <AvatarFallback>{fallback}</AvatarFallback>
                     </Avatar>
                     <div>

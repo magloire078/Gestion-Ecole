@@ -33,10 +33,14 @@ export function useStudents(schoolId?: string | null, classId?: string, status?:
     const { data, loading, error } = useCollection(studentsQuery);
 
     const students = useMemo(() => {
-        const allStudents = data?.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Student)) || [];
+        const allStudents = data?.map(doc => {
+            const studentData = doc.data();
+            return {
+                id: doc.id,
+                ...studentData,
+                photoURL: studentData.photoURL || studentData.photoUrl
+            } as Student;
+        }) || [];
 
         // Filter by status if specified
         if (status === 'active') {

@@ -44,8 +44,8 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
     const recentStaffQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/personnel`), orderBy('hireDate', 'desc'), limit(5)) : null, [firestore, schoolId]);
     const recentIncidentsQuery = useMemo(() => schoolId ? query(collectionGroup(firestore, `incidents_disciplinaires`), where('schoolId', '==', schoolId), orderBy('date', 'desc'), limit(5)) : null, [firestore, schoolId]);
 
-    const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery);
-    const { data: paymentsData, loading: paymentsLoading } = useCollection(recentPaymentsQuery);
+    const { data: studentsData, loading: studentsLoading } = useCollection(recentStudentsQuery, { name: 'RecentActivity:students' });
+    const { data: paymentsData, loading: paymentsLoading } = useCollection(recentPaymentsQuery, { name: 'RecentActivity:payments' });
 
     // Optimized: Fetch only the students involved in the recent payments
     const paymentStudentIds = useMemo(() => {
@@ -63,10 +63,10 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
         return query(collection(firestore, `ecoles/${schoolId}/eleves`), where(documentId(), 'in', paymentStudentIds));
     }, [firestore, schoolId, paymentStudentIds]);
 
-    const { data: paymentStudentsData, loading: paymentStudentsLoading } = useCollection(paymentStudentsQuery);
-    const { data: absencesData, loading: absencesLoading } = useCollection(recentAbsencesQuery);
-    const { data: staffData, loading: staffLoading } = useCollection(recentStaffQuery);
-    const { data: incidentsData, loading: incidentsLoading } = useCollection(recentIncidentsQuery);
+    const { data: paymentStudentsData, loading: paymentStudentsLoading } = useCollection(paymentStudentsQuery, { name: 'RecentActivity:paymentStudents' });
+    const { data: absencesData, loading: absencesLoading } = useCollection(recentAbsencesQuery, { name: 'RecentActivity:absences' });
+    const { data: staffData, loading: staffLoading } = useCollection(recentStaffQuery, { name: 'RecentActivity:staff' });
+    const { data: incidentsData, loading: incidentsLoading } = useCollection(recentIncidentsQuery, { name: 'RecentActivity:incidents' });
 
     const studentMap = useMemo(() => {
         const map = new Map<string, string>();

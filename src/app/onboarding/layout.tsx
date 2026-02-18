@@ -2,6 +2,9 @@
 
 import { AuthGuard } from "@/components/auth-guard";
 
+import { Suspense } from "react";
+import { LoadingScreen } from "@/components/ui/loading-screen";
+
 export default function OnboardingLayout({
   children,
 }: {
@@ -9,7 +12,9 @@ export default function OnboardingLayout({
 }) {
   return (
     <AuthGuard>
+      <Suspense fallback={<LoadingScreen />}>
         {children}
+      </Suspense>
     </AuthGuard>
   );
 }

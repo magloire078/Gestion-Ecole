@@ -99,13 +99,13 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
             {/* Student Identity */}
             <div className="flex flex-col sm:flex-row items-center gap-6 mb-8 p-4 border rounded-lg bg-muted/50">
               <div className="h-28 w-28 border-2 border-primary rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
-                {student.photoUrl ? (
+                {student.photoURL ? (
                   <img
-                    src={student.photoUrl}
+                    src={student.photoURL}
                     alt={studentFullName}
                     className="h-full w-full object-cover"
                     onError={(e) => {
-                      console.error("StudentInfoSheet: Failed to load image", student.photoUrl?.substring(0, 50));
+                      console.error("StudentInfoSheet: Failed to load image", student.photoURL?.substring(0, 50));
                       e.currentTarget.style.display = 'none';
                     }}
                   />

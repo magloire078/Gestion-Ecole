@@ -187,9 +187,15 @@ export default function OnboardingPage() {
   const searchParams = useSearchParams();
   const forceMode = searchParams.get('force') === 'true';
 
+  useEffect(() => {
+    if (!loading && user && hasSchool && !forceMode) {
+      router.replace('/dashboard');
+    }
+  }, [user, loading, hasSchool, forceMode, router]);
+
   if (loading) return <LoadingScreen />;
-  if (!user) { router.replace('/auth/login'); return <LoadingScreen />; }
-  if (hasSchool && !forceMode) { router.replace('/dashboard'); return <LoadingScreen />; }
+  if (!user || (hasSchool && !forceMode)) return <LoadingScreen />;
+
   if (user && user.email === DEMO_DIRECTOR_EMAIL && !hasSchool) {
     return <DemoOnboarding onSetupDemo={handleSetupDemo} isProcessing={isProcessing} />;
   }

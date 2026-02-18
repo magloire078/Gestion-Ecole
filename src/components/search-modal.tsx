@@ -131,7 +131,7 @@ export function SearchModal({ isOpen, onClose }: {
               <div className="space-y-1">
                 {studentResults.map(student => (
                   <Link key={student.id} href={`/dashboard/dossiers-eleves/${student.id}`} onClick={handleItemClick} className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors">
-                    <Avatar className="h-8 w-8"><AvatarImage src={student.photoUrl || ''} /><AvatarFallback>{student.firstName?.[0]}{student.lastName?.[0]}</AvatarFallback></Avatar>
+                    <Avatar className="h-8 w-8"><AvatarImage src={student.photoURL || ''} /><AvatarFallback>{student.firstName?.[0]}{student.lastName?.[0]}</AvatarFallback></Avatar>
                     <div>
                       <p className="text-sm font-medium">{student.firstName} {student.lastName}</p>
                       <p className="text-xs text-muted-foreground">{student.class}</p>

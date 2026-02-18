@@ -20,7 +20,7 @@ interface InventoryGridProps {
 }
 
 const getStatusBadgeVariant = (status: string): "default" | "secondary" | "destructive" | "outline" => {
-    switch(status) {
+    switch (status) {
         case 'neuf': return 'default';
         case 'bon': return 'secondary';
         case 'à réparer': return 'outline';
@@ -51,24 +51,24 @@ export const InventoryGrid = ({ items, isLoading, onEdit, onDelete, locationMap 
             {items.map(item => (
                 <Card key={item.id} className="flex flex-col">
                     <CardHeader className="p-0">
-                         <div className="relative h-40 w-full">
+                        <div className="relative h-40 w-full">
                             <SafeImage
-                                src={item.photoUrl || `https://picsum.photos/seed/${item.id}/400/200`}
+                                src={item.photoURL || `https://picsum.photos/seed/${item.id}/400/200`}
                                 alt={item.name}
                                 fill
-                                style={{objectFit: 'cover'}}
+                                style={{ objectFit: 'cover' }}
                                 className="rounded-t-lg"
                                 data-ai-hint="office equipment"
                                 fallback={<div className="h-full w-full bg-muted flex items-center justify-center"><Package className="h-16 w-16 text-muted-foreground" /></div>}
                             />
-                         </div>
+                        </div>
                     </CardHeader>
                     <CardContent className="p-4 flex-1">
                         <CardTitle className="text-base font-bold">{item.name}</CardTitle>
                         <CardDescription>{item.category}</CardDescription>
                         <div className="flex items-center justify-between text-sm mt-2">
-                           <span className="text-muted-foreground">Quantité: {item.quantity}</span>
-                           <Badge variant={getStatusBadgeVariant(item.status)} className="capitalize">{item.status.replace(/_/g, ' ')}</Badge>
+                            <span className="text-muted-foreground">Quantité: {item.quantity}</span>
+                            <Badge variant={getStatusBadgeVariant(item.status)} className="capitalize">{item.status.replace(/_/g, ' ')}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">Lieu: {locationMap.get(item.locationId) || item.locationId}</p>
                     </CardContent>

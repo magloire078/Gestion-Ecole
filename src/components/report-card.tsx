@@ -257,9 +257,9 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                             )}
                         </div>
                         <div className="h-24 w-24 border-2 border-black rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
-                            {student.photoUrl ? (
+                            {student.photoURL ? (
                                 <img
-                                    src={student.photoUrl}
+                                    src={student.photoURL}
                                     alt={student.name}
                                     className="h-full w-full object-cover"
                                 />

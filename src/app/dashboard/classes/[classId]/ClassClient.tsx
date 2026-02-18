@@ -133,7 +133,7 @@ export default function ClassDetailsClient() {
                                     <TableCell>
                                         <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="flex items-center gap-3 hover:underline">
                                             <Avatar className="h-9 w-9">
-                                                <AvatarImage src={student.photoUrl || ''} alt={`${student.firstName} ${student.lastName}`} />
+                                                <AvatarImage src={student.photoURL || ''} alt={`${student.firstName} ${student.lastName}`} />
                                                 <AvatarFallback>{student.firstName?.[0]}{student.lastName?.[0]}</AvatarFallback>
                                             </Avatar>
                                             <span className="font-medium">{student.firstName} {student.lastName}</span>

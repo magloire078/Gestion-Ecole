@@ -26,6 +26,7 @@ export default function SupportPage() {
     const isSuperAdmin = user?.profile?.isSuperAdmin;
 
     const canViewAllTickets = isSuperAdmin || user?.profile?.permissions?.viewSupportTickets || user?.profile?.permissions?.manageSupportTickets;
+    const canAccessLiveChat = isSuperAdmin || user?.profile?.permissions?.manageCommunication;
 
     // Base query for tickets in the current school
     const ticketsBaseQuery = useMemo(() =>
@@ -70,7 +71,7 @@ export default function SupportPage() {
                     <TabsList>
                         <TabsTrigger value="open">Tickets Ouverts ({openTickets.length})</TabsTrigger>
                         <TabsTrigger value="closed">Tickets Fermés ({closedTickets.length})</TabsTrigger>
-                        {isSuperAdmin && (
+                        {canAccessLiveChat && (
                             <TabsTrigger value="live-chat" className="gap-2">
                                 <MessageSquare className="w-3.5 h-3.5" />
                                 Discussions Live
@@ -91,7 +92,7 @@ export default function SupportPage() {
                             </CardContent>
                         </Card>
                     </TabsContent>
-                    {isSuperAdmin && (
+                    {canAccessLiveChat && (
                         <TabsContent value="live-chat" className="mt-4">
                             <AdminChatPanel />
                         </TabsContent>

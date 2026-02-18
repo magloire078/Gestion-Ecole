@@ -56,9 +56,9 @@ export const StudentIdCard: React.FC<StudentIdCardProps> = ({ student, school })
 
                         <div className="flex items-center gap-6">
                             <div className="h-28 w-28 border-4 border-white shadow-md rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
-                                {student.photoUrl ? (
+                                {student.photoURL ? (
                                     <img
-                                        src={student.photoUrl}
+                                        src={student.photoURL}
                                         alt={studentFullName}
                                         className="h-full w-full object-cover"
                                     />

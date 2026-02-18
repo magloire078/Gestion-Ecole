@@ -13,21 +13,34 @@ service cloud.firestore {
 
     function isSchoolMember(schoolId) {
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      return isSignedIn() && exists(userPath) && (
-        get(userPath).data.isSuperAdmin == true ||
-        (
-          'schools' in get(userPath).data &&
-          get(userPath).data.schools != null &&
-          schoolId in get(userPath).data.schools
-        )
+      let schoolPath = /databases/$(database)/documents/ecoles/$(schoolId);
+      
+      let isExplicitDirector = exists(schoolPath) && get(schoolPath).data.directorId == request.auth.uid;
+      
+      return isSignedIn() && (
+        isExplicitDirector ||
+        (exists(userPath) && (
+          get(userPath).data.isSuperAdmin == true ||
+          (
+            'schools' in get(userPath).data &&
+            get(userPath).data.schools != null &&
+            schoolId in get(userPath).data.schools
+          )
+        ))
       );
     }
     
     function isDirector(schoolId) {
       let userPath = /databases/$(database)/documents/users/$(request.auth.uid);
-      // isSchoolMember already checks for existence and isSignedIn
-      return isSchoolMember(schoolId) && 
-             get(userPath).data.schools[schoolId] == 'directeur';
+      let schoolPath = /databases/$(database)/documents/ecoles/$(schoolId);
+      
+      let isExplicitDirector = exists(schoolPath) && get(schoolPath).data.directorId == request.auth.uid;
+      let hasDirectorRole = exists(userPath) && 
+                           'schools' in get(userPath).data && 
+                           schoolId in get(userPath).data.schools && 
+                           get(userPath).data.schools[schoolId] == 'directeur';
+
+      return isSignedIn() && (isExplicitDirector || hasDirectorRole);
     }
     
     function isSuperAdmin() {
@@ -41,6 +54,7 @@ service cloud.firestore {
       let staffPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
       
       let hasExplicitPermission = exists(staffPath) &&
+        'adminRole' in get(staffPath).data &&
         get(staffPath).data.adminRole != null &&
         exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)) &&
         permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions &&
@@ -51,6 +65,7 @@ service cloud.firestore {
 
     function isParentOfStudent(studentDoc) {
       return isSignedIn() &&
+             'parentIds' in studentDoc.data &&
              studentDoc.data.parentIds != null &&
              request.auth.uid in studentDoc.data.parentIds;
     }
@@ -84,7 +99,7 @@ service cloud.firestore {
     }
     
     match /system_settings/{settingId} {
-      allow read: if isSignedIn(); 
+      allow read: if settingId == 'default' || isSignedIn(); 
       allow write: if isSuperAdmin();
     }
     
@@ -100,7 +115,7 @@ service cloud.firestore {
     // =================================
     
     match /users/{userId} {
-      allow read, update: if request.auth.uid == userId;
+      allow read, update: if request.auth.uid == userId || isSuperAdmin();
       allow create: if isSignedIn();
       allow delete: if isSuperAdmin();
     }
@@ -110,7 +125,7 @@ service cloud.firestore {
     // =================================
     
     match /ecoles/{schoolId} {
-      allow read: if isSchoolMember(schoolId);
+      allow read: if isSchoolMember(schoolId) || (isSignedIn() && resource.data.directorId == request.auth.uid);
       allow create: if isSignedIn() && request.resource.data.directorId == request.auth.uid;
       allow update: if hasPermission(schoolId, 'manageSettings');
       allow delete: if isSuperAdmin();
@@ -121,6 +136,13 @@ service cloud.firestore {
         allow create: if hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId);
         allow read: if isSchoolMember(schoolId);
         allow update: if hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId;
+        allow delete: if hasPermission(schoolId, 'manageUsers');
+      }
+
+      match /conges_personnel/{congeId} {
+        allow create: if isSignedIn() && (hasPermission(schoolId, 'manageUsers') || request.resource.data.staffId == request.auth.uid);
+        allow read: if isSchoolMember(schoolId) && (hasPermission(schoolId, 'manageUsers') || resource.data.staffId == request.auth.uid);
+        allow update: if hasPermission(schoolId, 'manageUsers') || (isSignedIn() && resource.data.staffId == request.auth.uid && resource.data.status == 'En attente');
         allow delete: if hasPermission(schoolId, 'manageUsers');
       }
       
@@ -265,9 +287,53 @@ service cloud.firestore {
 
     match /visitor_chats/{chatId} {
       allow create: if true;
-      allow read: if isSignedIn(); // Simplified for now, should ideally be restricted to admins
-      allow update: if isSignedIn();
+      allow read: if true; // Public for visitors
+      allow update: if true; // Public for visitors and webhook
       allow delete: if isSuperAdmin();
+    }
+
+    // =================================
+    //     COLLECTION GROUP RULES
+    // =================================
+    
+    // Necessary for dashboard recent activity and lists across all students
+    
+    match /{path=**}/absences/{absenceId} {
+      allow read: if isSignedIn() && (
+        isSchoolMember(resource.data.schoolId) || 
+        isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)))
+      );
+    }
+
+    match /{path=**}/incidents_disciplinaires/{incidentId} {
+      allow read: if isSignedIn() && (
+        isSchoolMember(resource.data.schoolId) || 
+        isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)))
+      );
+    }
+
+    match /{path=**}/notes/{noteId} {
+      allow read: if isSignedIn() && (
+        isSchoolMember(resource.data.schoolId) || 
+        isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(resource.data.schoolId)/eleves/$(resource.data.studentId)))
+      );
+    }
+
+    match /{path=**}/personnel/{staffId} {
+      // Used by AdminsTable and general personnel lists
+      allow read: if isSignedIn() && (isSuperAdmin() || isSchoolMember(resource.data.schoolId));
+    }
+
+    match /{path=**}/dossier_medical/{dossierId} {
+      allow read: if isSignedIn() && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+    }
+
+    match /{path=**}/consultations/{consultationId} {
+      allow read: if isSignedIn() && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
+    }
+
+    match /{path=**}/vaccins/{vaccinId} {
+      allow read: if isSignedIn() && (hasPermission(resource.data.schoolId, 'manageMedical') || isSchoolMember(resource.data.schoolId));
     }
   }
 }

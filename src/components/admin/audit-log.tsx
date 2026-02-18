@@ -35,17 +35,17 @@ export const AuditLog = ({ limit }: { limit: number }) => {
   const [dataLoading, setDataLoading] = useState(true);
 
   const logsQuery = useMemo(() =>
-    (user?.profile?.isAdmin)
+    (user?.profile?.isSuperAdmin)
       ? query(collection(firestore, 'system_logs'), orderBy('timestamp', 'desc'), firestoreLimit(limit))
       : null,
-    [firestore, limit, user?.profile?.isAdmin]
+    [firestore, limit, user?.profile?.isSuperAdmin]
   );
 
   const { data: logsData, loading: logsLoading } = useCollection(logsQuery);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!firestore) return;
+      if (!firestore || !user?.profile?.isSuperAdmin) return;
       setDataLoading(true);
       const newAdminMap = new Map<string, string>();
       const newSchoolMap = new Map<string, string>();
@@ -58,15 +58,7 @@ export const AuditLog = ({ limit }: { limit: number }) => {
         });
         setSchoolMap(newSchoolMap);
 
-        // 2. Fetch admins from personnel (collectionGroup)
-        const personnelQuery = query(collectionGroup(firestore, 'personnel'));
-        const pSnapshot = await getDocs(personnelQuery);
-        pSnapshot.forEach(doc => {
-          const u = doc.data() as UserProfile;
-          if (u.isAdmin) {
-            newAdminMap.set(u.uid, u.displayName || u.email);
-          }
-        });
+
 
         // 3. Fetch from global users collection (for super-admins)
         const usersSnap = await getDocs(collection(firestore, 'users'));

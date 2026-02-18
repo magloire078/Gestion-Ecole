@@ -28,14 +28,14 @@ export function ActionItems() {
         if (!schoolId || !user?.profile?.permissions?.manageUsers) return null;
         return query(collection(firestore, `ecoles/${schoolId}/conges_personnel`), where('status', '==', 'En attente'));
     }, [schoolId, firestore, user?.profile?.permissions?.manageUsers]);
-    const { data: pendingLeavesData, loading: leavesLoading } = useCollection(pendingLeavesQuery);
+    const { data: pendingLeavesData, loading: leavesLoading } = useCollection(pendingLeavesQuery, { name: 'ActionItems:pendingLeaves' });
 
     // Query for students with overdue fees
     const overdueStudentsQuery = useMemo(() => {
         if (!schoolId || !user?.profile?.permissions?.manageBilling) return null;
         return query(collection(firestore, `ecoles/${schoolId}/eleves`), where('tuitionStatus', '==', 'En retard'));
     }, [schoolId, firestore, user?.profile?.permissions?.manageBilling]);
-    const { data: overdueStudentsData, loading: studentsLoading } = useCollection(overdueStudentsQuery);
+    const { data: overdueStudentsData, loading: studentsLoading } = useCollection(overdueStudentsQuery, { name: 'ActionItems:overdueStudents' });
 
     // Query for overdue books
     const overdueLoansQuery = useMemo(() => {
@@ -43,7 +43,7 @@ export function ActionItems() {
         // The 'overdue' status is set manually or by a function. We can just query for it.
         return query(collection(firestore, `ecoles/${schoolId}/bibliotheque_prets`), where('status', '==', 'overdue'));
     }, [schoolId, firestore, user?.profile?.permissions?.manageLibrary]);
-    const { data: overdueLoansData, loading: loansLoading } = useCollection(overdueLoansQuery);
+    const { data: overdueLoansData, loading: loansLoading } = useCollection(overdueLoansQuery, { name: 'ActionItems:overdueLoans' });
 
     const loading = leavesLoading || studentsLoading || loansLoading;
 

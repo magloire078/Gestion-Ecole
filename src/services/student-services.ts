@@ -145,7 +145,7 @@ export const StudentService = {
 
         try {
             await updateDoc(studentRef, {
-                photoUrl: photoUrl,
+                photoURL: photoUrl,
                 updatedAt: serverTimestamp(),
             });
         } catch (error) {

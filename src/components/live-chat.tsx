@@ -13,7 +13,7 @@ import { MessageSquare } from 'lucide-react';
 
 export function LiveChat() {
     const [isOpen, setIsOpen] = useState(false);
-    const [messages, setMessages] = useState<{ role: 'user' | 'bot', text: string, time: string }[]>([
+    const [messages, setMessages] = useState<{ role: 'user' | 'bot' | 'support', text: string, time: string }[]>([
         { role: 'bot', text: 'Bonjour ! Bienvenue sur Gérecole. Comment puis-je vous aider aujourd\'hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
     ]);
     const [inputValue, setInputValue] = useState('');
@@ -122,7 +122,8 @@ export function LiveChat() {
                     setChatId(currentChatId);
                 }
 
-                // Envoi vers WhatsApp via notre API proxy
+                // Envoi vers WhatsApp via notre API proxy (OPTIONNEL - Si configuré)
+                // On ne bloque pas si ça échoue, et on laisse l'API gérer les configs manquantes
                 fetch('/api/support/chat/send', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -131,7 +132,10 @@ export function LiveChat() {
                         visitorId: visitorId,
                         chatId: currentChatId
                     })
-                }).catch(err => console.error("Error sending to WhatsApp:", err));
+                }).catch(err => {
+                    // Ignorer silencieusement les erreurs d'envoi WhatsApp si on utilise la console admin
+                    // console.error("Error sending to WhatsApp:", err);
+                });
 
             } catch (err) {
                 console.error("Error persisting chat message:", err);

@@ -82,7 +82,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
                         <div className="flex items-center gap-5">
                             <div className="relative">
                                 <Avatar className="h-20 w-20 rounded-2xl border-2 border-white shadow-lg ring-4 ring-blue-50/50">
-                                    <AvatarImage src={student.photoUrl || undefined} alt={studentFullName} className="object-cover" />
+                                    <AvatarImage src={student.photoURL || undefined} alt={studentFullName} className="object-cover" />
                                     <AvatarFallback className="text-2xl font-bold bg-blue-100 text-blue-700">{fallback}</AvatarFallback>
                                 </Avatar>
                                 {generalAverage >= 15 && (

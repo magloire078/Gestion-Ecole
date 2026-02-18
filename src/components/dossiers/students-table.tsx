@@ -111,9 +111,9 @@ export const StudentsTable = ({ students, isLoading, canManageUsers, actionType,
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center print:hidden">
-                                                {student.photoUrl ? (
+                                                {student.photoURL ? (
                                                     <img
-                                                        src={student.photoUrl}
+                                                        src={student.photoURL}
                                                         alt={`${student.firstName} ${student.lastName}`}
                                                         className="h-full w-full object-cover"
                                                     />

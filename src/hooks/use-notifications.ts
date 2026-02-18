@@ -18,8 +18,8 @@ export function useNotifications() {
       orderBy('createdAt', 'desc')
     );
   }, [user?.uid, user?.schoolId, firestore]);
-  
-  const { data: notificationsData, loading } = useCollection(notificationsQuery);
+
+  const { data: notificationsData, loading } = useCollection(notificationsQuery, { name: 'notifications' });
 
   const notifications = useMemo(() => {
     if (!notificationsData) return [];

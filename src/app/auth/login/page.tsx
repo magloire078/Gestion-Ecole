@@ -120,26 +120,42 @@ export default function LoginPage() {
 
     try {
       const provider = new GoogleAuthProvider();
-      // Force account selection to avoid auto-picking wrong one
       provider.setCustomParameters({ prompt: 'select_account' });
 
+      // Check for mobile device
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
       if (isMobile) {
         await signInWithRedirect(auth, provider);
-      } else {
+        return; // Page will redirect
+      }
+
+      // Try popup for desktop
+      try {
         await signInWithPopup(auth, provider);
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue sur votre espace GéreEcole."
+        });
         router.push('/dashboard');
+      } catch (popupError: any) {
+        // If user explicitly closed the popup, stop loading
+        if (popupError.code === 'auth/popup-closed-by-user') {
+          setIsGoogleProcessing(false);
+          return;
+        }
+
+        // For other errors (COOP, blockers, etc.), fallback to redirect
+        console.warn("Popup blocked or failed, falling back to redirect:", popupError);
+        await signInWithRedirect(auth, provider);
       }
     } catch (error) {
+      console.error("Google Sign-in error:", error);
       const authError = error as AuthError;
       if (authError.code !== 'auth/popup-closed-by-user') {
-        setError('Erreur de connexion avec Google.');
+        setError('Erreur de connexion avec Google. Veuillez réessayer.');
       }
-    } finally {
-      if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        setIsGoogleProcessing(false);
-      }
+      setIsGoogleProcessing(false);
     }
   };
 
@@ -204,6 +220,7 @@ export default function LoginPage() {
               alt="GéreEcole Dashboard Preview"
               fill
               className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0C365A]/40 to-transparent" />
           </motion.div>

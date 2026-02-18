@@ -86,7 +86,7 @@ export function LandingPageV2() {
         <div className="container flex h-auto py-4 items-center">
           <div className="mr-4 flex">
             <Link href="/" className="mr-6 flex items-center space-x-2 transition-transform hover:scale-105">
-              <Logo disableLink size="lg" />
+              <Logo disableLink={true} size="lg" />
             </Link>
           </div>
           <div className="flex flex-1 items-center justify-end space-x-2">
@@ -191,17 +191,9 @@ export function LandingPageV2() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 1, duration: 0.8 }}
-                      className="bg-white/10 backdrop-blur-md border border-white/20 p-3 rounded-2xl shadow-2xl flex items-center justify-center h-16 w-16"
+                      className="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-2xl shadow-xl"
                     >
-                      <div className="relative w-12 h-12 bg-white rounded-xl p-1.5 shadow-inner">
-                        <Image
-                          src="/custom-assets/logo.png?v=2"
-                          alt="Logo Gérecole"
-                          width={48}
-                          height={48}
-                          className="object-contain"
-                        />
-                      </div>
+                      <Logo disableLink compact size="sm" className="gap-0" />
                     </motion.div>
                   </div>
                 </motion.div>

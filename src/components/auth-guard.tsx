@@ -12,31 +12,30 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, hasSchool, loading } = useUser();
 
   useEffect(() => {
+    if (loading) return;
+
     const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/parent-access', '/', '/contact', '/survey'];
     const isPublicPath = publicPaths.some(p => pathname === p || pathname.startsWith(p + '/'));
 
-    if (!loading) {
-      if (!user && !isPublicPath) {
-        // Petit délai de grâce pour laisser Firebase stabiliser la session
-        const timer = setTimeout(() => {
-          router.replace('/auth/login');
-        }, 500);
-        return () => clearTimeout(timer);
+    if (!user) {
+      if (!isPublicPath) {
+        router.replace('/auth/login');
       }
-
-      if (user) {
-        if (pathname.startsWith('/auth')) {
-          router.replace('/dashboard');
-          return;
-        }
-
-        if (!user.isParent && !hasSchool && !pathname.startsWith('/onboarding') && !pathname.startsWith('/auth')) {
-          router.replace('/onboarding');
-          return;
-        }
-      }
+      return;
     }
 
+    // User is logged in
+    const isAuthPath = pathname.startsWith('/auth');
+    if (isAuthPath) {
+      router.replace('/dashboard');
+      return;
+    }
+
+    const isOnboardingPath = pathname.startsWith('/onboarding');
+    if (!user.isParent && !hasSchool && !isOnboardingPath) {
+      router.replace('/onboarding');
+      return;
+    }
   }, [user, hasSchool, loading, router, pathname]);
 
   if (loading) {

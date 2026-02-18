@@ -1,14 +1,17 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import Cropper from 'react-easy-crop';
+import dynamic from 'next/dynamic';
+const Cropper = dynamic(() => import('react-easy-crop'), { ssr: false }) as any;
 import { getCroppedImg } from '@/lib/image-utils';
+import { SafeImage } from '@/components/ui/safe-image';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
+    DialogDescription,
     DialogFooter,
 } from '@/components/ui/dialog';
 import { Camera, Upload, Check, X, Loader2, GraduationCap } from 'lucide-react';
@@ -85,7 +88,13 @@ export const StudentPhotoUpload: React.FC<StudentPhotoUploadProps> = ({
         <div className="relative group">
             <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-muted bg-muted flex items-center justify-center relative">
                 {currentPhotoUrl ? (
-                    <img src={currentPhotoUrl} alt="Élève" className="w-full h-full object-cover" />
+                    <SafeImage
+                        src={currentPhotoUrl}
+                        alt="Élève"
+                        fill
+                        className="object-cover"
+                        priority
+                    />
                 ) : (
                     <GraduationCap className="w-16 h-16 text-muted-foreground opacity-20" />
                 )}
@@ -100,6 +109,9 @@ export const StudentPhotoUpload: React.FC<StudentPhotoUploadProps> = ({
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                         <DialogTitle>Recadrer la photo d&apos;identité</DialogTitle>
+                        <DialogDescription>
+                            Ajustez le cadre pour centrer le visage de l'élève.
+                        </DialogDescription>
                     </DialogHeader>
 
                     <div className="relative h-[300px] w-full bg-slate-900 mt-4 rounded-md overflow-hidden">

@@ -72,51 +72,49 @@ export function PlanDistributionChart() {
             <CardContent className="px-8 pb-8">
                 <div className="h-60 w-full">
                     <ChartContainer config={chartConfig} className="h-full w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Tooltip
-                                    content={({ active, payload }) => {
-                                        if (active && payload && payload.length) {
-                                            return (
-                                                <div className="bg-[#0C365A] text-white p-3 rounded-2xl shadow-xl border border-white/10 backdrop-blur-md">
-                                                    <p className="text-xs font-black uppercase tracking-widest text-[#2D9CDB] mb-1">{payload[0].name}</p>
-                                                    <p className="text-sm font-bold">{payload[0].value} Écoles</p>
-                                                </div>
-                                            );
-                                        }
-                                        return null;
-                                    }}
-                                />
-                                <Pie
-                                    data={chartData}
-                                    dataKey="value"
-                                    nameKey="name"
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={80}
-                                    paddingAngle={5}
-                                >
-                                    {chartData.map((entry) => (
-                                        <Cell key={`cell-${entry.name}`} fill={entry.fill} stroke="transparent" />
-                                    ))}
-                                </Pie>
-                                <Legend
-                                    verticalAlign="bottom"
-                                    height={36}
-                                    content={({ payload }) => (
-                                        <div className="flex justify-center gap-4 mt-4">
-                                            {payload?.map((entry: any, index: number) => (
-                                                <div key={index} className="flex items-center gap-2">
-                                                    <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
-                                                    <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">{entry.value}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                />
-                            </PieChart>
-                        </ResponsiveContainer>
+                        <PieChart>
+                            <Tooltip
+                                content={({ active, payload }) => {
+                                    if (active && payload && payload.length) {
+                                        return (
+                                            <div className="bg-[#0C365A] text-white p-3 rounded-2xl shadow-xl border border-white/10 backdrop-blur-md">
+                                                <p className="text-xs font-black uppercase tracking-widest text-[#2D9CDB] mb-1">{payload[0].name}</p>
+                                                <p className="text-sm font-bold">{payload[0].value} Écoles</p>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                }}
+                            />
+                            <Pie
+                                data={chartData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                            >
+                                {chartData.map((entry) => (
+                                    <Cell key={`cell-${entry.name}`} fill={entry.fill} stroke="transparent" />
+                                ))}
+                            </Pie>
+                            <Legend
+                                verticalAlign="bottom"
+                                height={36}
+                                content={({ payload }) => (
+                                    <div className="flex justify-center gap-4 mt-4">
+                                        {payload?.map((entry: any, index: number) => (
+                                            <div key={index} className="flex items-center gap-2">
+                                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+                                                <span className="text-[10px] font-black uppercase tracking-tighter text-slate-400">{entry.value}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            />
+                        </PieChart>
                     </ChartContainer>
                 </div>
             </CardContent>

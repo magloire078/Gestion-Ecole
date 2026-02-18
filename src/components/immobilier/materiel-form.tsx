@@ -29,7 +29,7 @@ const materielSchema = z.object({
     locationId: z.string().min(1, "L'emplacement est requis."),
     acquisitionDate: z.string().optional(),
     value: z.coerce.number().min(0).optional(),
-    photoUrl: z.string().optional(),
+    photoURL: z.string().optional(),
 });
 
 type MaterielFormValues = z.infer<typeof materielSchema>;
@@ -54,7 +54,7 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
         form.reset(
             materiel
                 ? { ...materiel, acquisitionDate: materiel.acquisitionDate ? format(new Date(materiel.acquisitionDate), 'yyyy-MM-dd') : '' }
-                : { category: "Mobilier", status: "bon", quantity: 1, locationId: '', name: '', acquisitionDate: format(new Date(), 'yyyy-MM-dd'), photoUrl: '' }
+                : { category: "Mobilier", status: "bon", quantity: 1, locationId: '', name: '', acquisitionDate: format(new Date(), 'yyyy-MM-dd'), photoURL: '' }
         );
     }, [materiel, form]);
 
@@ -85,7 +85,7 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
                 <div className="max-h-[60vh] overflow-y-auto pr-2 space-y-4 scrollbar-hide">
                     <FormField
                         control={form.control}
-                        name="photoUrl"
+                        name="photoURL"
                         render={({ field }) => (
                             <FormItem className="flex flex-col items-center">
                                 <FormControl>

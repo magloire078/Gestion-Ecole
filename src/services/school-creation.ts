@@ -3,7 +3,7 @@
 'use client';
 import { Firestore } from 'firebase/firestore';
 import type { school as SchoolData, user_root, staff } from '@/lib/data-types';
-import { doc, writeBatch, collection, serverTimestamp, getDocs, query, where, QueryDocumentSnapshot } from 'firebase/firestore';
+import { doc, writeBatch, collection, serverTimestamp, getDocs, getDoc, query, where, QueryDocumentSnapshot } from 'firebase/firestore';
 
 export interface CreateSchoolData {
   name: string;
@@ -30,7 +30,7 @@ export class SchoolCreationService {
 
   async createSchool(data: CreateSchoolData): Promise<CreateSchoolResult> {
     try {
-      // 0. Vérification de la restriction (Abonnement requis pour > 1 école)
+      console.log("SchoolCreation: 0. Checking subscription restrictions...");
       const schoolsSnapshot = await getDocs(
         query(collection(this.firestore, 'ecoles'), where('directorId', '==', data.directorId))
       );
@@ -49,8 +49,7 @@ export class SchoolCreationService {
         }
       }
 
-      // Import dynamique pour éviter les problèmes de SSR
-      const { getStorage, ref, uploadString } = await import('firebase/storage');
+
 
       const batch = writeBatch(this.firestore);
 
@@ -84,14 +83,29 @@ export class SchoolCreationService {
         }
       };
 
+      console.log(`SchoolCreation: 1-2. Creating school document [${schoolId}]...`);
       batch.set(schoolRef, schoolData);
 
-      // 3. Mettre à jour l'utilisateur
+      // 3. Mettre à jour l'utilisateur (on vérifie s'il existe pour éviter l'erreur d'update)
       const userRef = doc(this.firestore, 'users', data.directorId);
-      batch.update(userRef, {
-        [`schools.${schoolId}`]: 'directeur',
-        activeSchoolId: schoolId,
-      });
+      const userSnap = await getDoc(userRef);
+
+      if (!userSnap.exists()) {
+        batch.set(userRef, {
+          uid: data.directorId,
+          email: data.directorEmail,
+          schools: { [schoolId]: 'directeur' },
+          activeSchoolId: schoolId,
+          displayName: `${data.directorFirstName} ${data.directorLastName}`.trim(),
+          createdAt: serverTimestamp(),
+        });
+      } else {
+        batch.update(userRef, {
+          [`schools.${schoolId}`]: 'directeur',
+          activeSchoolId: schoolId,
+          updatedAt: serverTimestamp(),
+        });
+      }
 
       // 4. Créer le profil personnel (staff)
       const personnelRef = doc(this.firestore, 'ecoles', schoolId, 'personnel', data.directorId);
@@ -110,21 +124,15 @@ export class SchoolCreationService {
         photoURL: '',
       };
 
+      console.log("SchoolCreation: 3-4. Preparing user and personnel docs...");
       batch.set(personnelRef, personnelData);
 
+      console.log("SchoolCreation: Committing batch...");
       await batch.commit();
 
-      // 5. Créer un fichier placeholder pour initialiser le dossier de l'école dans Storage
-      const storage = getStorage(this.firestore.app);
-      const placeholderPath = `ecoles/${schoolId}/.placeholder`;
-      const placeholderRef = ref(storage, placeholderPath);
-      await uploadString(placeholderRef, 'Init').catch(err => {
-        // Log l'erreur mais ne pas faire échouer la création de l'école
-        console.warn(`Could not create storage placeholder for school ${schoolId}:`, err);
-      });
-
-      // 6. Envoyer l'email de bienvenue
+      // 5. Envoyer l'email de bienvenue
       try {
+        console.log("SchoolCreation: 5. Sending welcome email...");
         const { MailService } = await import('./mail-service');
         const mailService = new MailService(this.firestore);
         await mailService.sendWelcomeEmail(
@@ -145,6 +153,8 @@ export class SchoolCreationService {
 
     } catch (error: any) {
       console.error("Error creating school: ", error);
+      console.error("Error Code: ", error.code);
+      console.error("Error Message: ", error.message);
       return {
         success: false,
         error: error.message || 'Erreur inconnue lors de la création'

@@ -40,7 +40,13 @@ export function Logo({ size = 'md', schoolName, logoUrl, disableLink = false, cl
             "relative bg-white rounded-full shadow-md border border-border/10 overflow-hidden",
             size === 'sm' ? "h-10 w-10" : size === 'md' ? "h-16 w-16" : "h-24 w-24"
           )}>
-            <SafeImage src={logoUrl} alt={`${finalSchoolName} Logo`} fill className="object-contain" />
+            <SafeImage
+              src={logoUrl}
+              alt={`${finalSchoolName} Logo`}
+              fill
+              className="object-contain"
+              priority={true}
+            />
           </div>
         ) : (
           <div className="relative" style={{ width: currentSize.icon, height: currentSize.icon }}>
@@ -49,6 +55,7 @@ export function Logo({ size = 'md', schoolName, logoUrl, disableLink = false, cl
               alt="GéreEcole Logo"
               fill
               className="object-contain"
+              priority={true}
             />
           </div>
         )}

@@ -35,7 +35,8 @@ export function useDoc<T = DocumentData>(ref: DocumentReference<T> | null, optio
         setLoading(false);
       },
       (err: FirestoreError) => {
-        console.error("useDoc Firestore Error:", err);
+        const docPath = ref ? (ref as any).path : 'unknown';
+        console.error(`useDoc Firestore Error [${docPath}]:`, err.code, err.message);
         setError(err);
         if (options?.onError) {
           options.onError(err);

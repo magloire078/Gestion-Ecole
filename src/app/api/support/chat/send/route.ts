@@ -13,9 +13,14 @@ export async function POST(req: NextRequest) {
         const instance = process.env.WhatsApp_INSTANCE_NAME;
         const groupId = process.env.WhatsApp_GROUP_ID;
 
-        if (!apiUrl || !apiKey || !instance || !groupId) {
-            console.error('WhatsApp configuration missing');
-            return NextResponse.json({ error: 'WhatsApp integration not configured' }, { status: 500 });
+        if (!apiUrl || !apiKey || !instance || !groupId || apiUrl.includes('votre-serveur.com')) {
+            console.warn('WhatsApp integration skipped: invalid or missing configuration');
+            // Return success to client so the UI doesn't show an error
+            return NextResponse.json({
+                success: true,
+                message: 'Message saved but WhatsApp notification skipped (configuration missing)',
+                warning: 'WhatsApp integration not configured'
+            });
         }
 
         // Format du message pour l'admin

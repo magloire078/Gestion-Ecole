@@ -66,7 +66,7 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
             </Button>
             <div className="flex items-center gap-4">
                 <Avatar className="h-24 w-24 border">
-                    <AvatarImage src={student.photoUrl || undefined} alt={studentFullName} />
+                    <AvatarImage src={student.photoURL || undefined} alt={studentFullName} />
                     <AvatarFallback className="text-3xl">{fallback}</AvatarFallback>
                 </Avatar>
                 <div>

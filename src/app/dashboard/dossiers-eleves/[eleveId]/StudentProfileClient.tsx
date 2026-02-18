@@ -138,7 +138,7 @@ function StudentProfileContent({ eleveId, schoolId, initialTab }: StudentProfile
                                 <StudentPhotoUpload
                                     schoolId={schoolId}
                                     studentId={eleveId}
-                                    currentPhotoUrl={student.photoUrl}
+                                    currentPhotoUrl={student.photoURL}
                                     onUploadSuccess={() => setRefreshTrigger(prev => prev + 1)}
                                 />
                                 <div>

@@ -69,9 +69,9 @@ const StudentCard = ({ student, onEdit, onArchive, onRestore, actionType }: Stud
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full border bg-muted flex items-center justify-center">
-                            {student.photoUrl ? (
+                            {student.photoURL ? (
                                 <img
-                                    src={student.photoUrl}
+                                    src={student.photoURL}
                                     alt={studentFullName}
                                     className="h-full w-full object-cover"
                                 />

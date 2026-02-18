@@ -77,7 +77,7 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
                     <div className="relative group">
                         <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full scale-90 group-hover:scale-110 transition-transform duration-500" />
                         <Avatar className="h-40 w-40 md:h-48 md:w-48 border-4 border-white shadow-2xl rounded-[2rem] relative z-10">
-                            <SafeImage src={student.photoUrl} alt={studentFullName} className="object-cover" />
+                            <SafeImage src={student.photoURL} alt={studentFullName} className="object-cover" />
                             <AvatarFallback className="text-5xl font-black bg-blue-100 text-blue-700">{fallback}</AvatarFallback>
                         </Avatar>
                         <Badge className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-blue-500 text-white border-blue-400 shadow-xl rounded-full font-bold">

@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { TeacherInfoSheet } from '@/components/teacher-info-sheet';
 import type { staff as Staff, school as School } from '@/lib/data-types';
 
-interface SchoolInfo extends School {
+interface SchoolInfo extends Omit<School, 'address' | 'mainLogoUrl'> {
     name: string;
     address?: string;
     mainLogoUrl?: string;

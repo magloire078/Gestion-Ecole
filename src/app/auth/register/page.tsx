@@ -210,6 +210,7 @@ export default function RegisterPage() {
               alt="GéreEcole Community"
               fill
               className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-[#0C365A]/10 mix-blend-overlay" />
             <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/80 backdrop-blur-md rounded-2xl border border-white/50">
@@ -238,7 +239,7 @@ export default function RegisterPage() {
             <AnimatedHighlight />
 
             <div className="flex flex-col items-center mb-5">
-              <div className="mb-3 transform scale-[2.2] py-6 transition-transform hover:scale-[2.4]">
+              <div className="mb-4">
                 <Logo size="lg" />
               </div>
               <div className="text-center mt-2">

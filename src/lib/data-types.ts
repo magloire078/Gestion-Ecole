@@ -245,7 +245,7 @@ export type student = {
     tuitionFee: number;
     amountDue: number;
     tuitionStatus: "Soldé" | "En retard" | "Partiel";
-    photoUrl?: string;
+    photoURL?: string;
     classId?: string;
     class?: string;
     cycle?: string;
@@ -686,7 +686,7 @@ export type materiel = {
     locationId: string;
     acquisitionDate?: string;
     value?: number;
-    photoUrl?: string;
+    photoURL?: string;
 };
 
 export type salle = {
