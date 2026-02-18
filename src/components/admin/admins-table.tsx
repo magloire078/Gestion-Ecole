@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, Loader2, UserPlus } from 'lucide-react';
 import { useFirestore, useUser } from '@/firebase';
-import { collectionGroup, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import type { UserProfile } from '@/lib/data-types';
@@ -36,18 +36,17 @@ export function AdminsTable() {
     };
     setLoading(true);
     try {
-      // Find all staff members that are admins
-      const staffQuery = query(collectionGroup(firestore, 'personnel'), where('isAdmin', '==', true));
-      const staffSnapshot = await getDocs(staffQuery);
+      // Query the 'users' collection for super admins
+      const usersRef = collection(firestore, 'users');
+      const q = query(usersRef, where('isSuperAdmin', '==', true));
+      const querySnapshot = await getDocs(q);
 
-      // Use a map to avoid duplicates if a user is admin in multiple schools (though unlikely for super admin)
-      const adminMap = new Map<string, UserProfile>();
-      staffSnapshot.forEach(doc => {
-        const adminProfile = { id: doc.id, ...doc.data() } as unknown as UserProfile;
-        adminMap.set(adminProfile.uid, adminProfile);
+      const superAdmins: UserProfile[] = [];
+      querySnapshot.forEach((doc) => {
+        superAdmins.push({ uid: doc.id, ...doc.data() } as UserProfile);
       });
 
-      setAdmins(Array.from(adminMap.values()));
+      setAdmins(superAdmins);
     } catch (error) {
       console.error("Error fetching admins:", error);
     } finally {
