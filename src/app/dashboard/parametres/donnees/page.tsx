@@ -22,7 +22,7 @@ interface StaffWithId extends Staff { id: string; }
 
 export default function DataIntegrityPage() {
     const firestore = useFirestore();
-    const { schoolId, loading: schoolLoading } = useSchoolData();
+    const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
 
     const studentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`)) : null, [firestore, schoolId]);
     const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
@@ -191,7 +191,7 @@ export default function DataIntegrityPage() {
                 </TabsContent>
 
                 <TabsContent value="import" className="mt-4">
-                    <BulkImport />
+                    <BulkImport existingClasses={classes} existingStudents={students} currentAcademicYear={schoolData?.currentAcademicYear} />
                 </TabsContent>
             </Tabs>
         </div>

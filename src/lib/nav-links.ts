@@ -146,7 +146,7 @@ export const NAV_LINKS: NavGroup[] = [
     icon: Shield,
     adminOnly: true,
     links: [
-      { href: '/dashboard/admin/support', label: 'Support Système', icon: LifeBuoy },
+      { href: '/dashboard/admin/system/support', label: 'Support Système', icon: LifeBuoy },
     ]
   }
 ];

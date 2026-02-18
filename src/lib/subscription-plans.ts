@@ -48,7 +48,7 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
     {
         name: "Pro", // On garde le nom interne 'Pro' pour éviter de casser le typage existant, mais on l'affiche comme 'Standard' si besoin, ou on renomme. Gardons 'Pro' pour l'instant pour la compatibilité.
         price: 0, // Base price is 0, cost is per student
-        priceString: "200 FCFA",
+        priceString: "250 FCFA",
         priceSuffix: "/ élève / mois",
         description: "Pour les écoles en croissance. Payez uniquement pour ce que vous utilisez.",
         features: [
@@ -64,7 +64,7 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
         cta: "Choisir le plan Standard",
         variant: "default",
         recommended: true,
-        pricePerStudent: 200,
+        pricePerStudent: 250,
         storageLimitGB: 10
     },
     {

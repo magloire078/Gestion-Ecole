@@ -107,8 +107,13 @@ export default function LoginPage() {
           });
           router.push('/dashboard');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Redirect Error:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur de connexion",
+          description: error.message || "Une erreur est survenue lors de la connexion avec Google."
+        });
       }
     };
     handleRedirect();
@@ -122,49 +127,23 @@ export default function LoginPage() {
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
 
-      // Check for mobile device
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      // Use redirect directly to avoid COOP/COEP issues with popups
+      await signInWithRedirect(auth, provider);
 
-      if (isMobile) {
-        await signInWithRedirect(auth, provider);
-        return; // Page will redirect
-      }
-
-      // Try popup for desktop
-      try {
-        await signInWithPopup(auth, provider);
-        toast({
-          title: "Connexion réussie",
-          description: "Bienvenue sur votre espace GéreEcole."
-        });
-        router.push('/dashboard');
-      } catch (popupError: any) {
-        // If user explicitly closed the popup, stop loading
-        if (popupError.code === 'auth/popup-closed-by-user') {
-          setIsGoogleProcessing(false);
-          return;
-        }
-
-        // For other errors (COOP, blockers, etc.), fallback to redirect
-        console.warn("Popup blocked or failed, falling back to redirect:", popupError);
-        await signInWithRedirect(auth, provider);
-      }
     } catch (error) {
       console.error("Google Sign-in error:", error);
       const authError = error as AuthError;
-      if (authError.code !== 'auth/popup-closed-by-user') {
-        setError('Erreur de connexion avec Google. Veuillez réessayer.');
-      }
+      setError('Erreur de connexion avec Google. Veuillez réessayer.');
       setIsGoogleProcessing(false);
     }
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#f8faff] p-4 relative overflow-hidden font-sans">
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#f8faff] dark:bg-slate-950 p-4 relative overflow-hidden font-sans">
       {/* Dynamic Background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#2D9CDB]/5 blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#0C365A]/5 blur-[120px]" />
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[#2D9CDB]/5 dark:bg-[#2D9CDB]/10 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[#0C365A]/5 dark:bg-[#0C365A]/20 blur-[120px]" />
       </div>
 
       <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
@@ -177,7 +156,7 @@ export default function LoginPage() {
           className="hidden lg:flex flex-col space-y-5 p-6"
         >
           <div className="space-y-6">
-            <h1 className="text-6xl font-black text-[#0C365A] leading-[1.1] tracking-tighter font-outfit text-balance">
+            <h1 className="text-6xl font-black text-[#0C365A] dark:text-white leading-[1.1] tracking-tighter font-outfit text-balance">
               L'excellence <br />
               <span className="text-[#2D9CDB]">académique</span> <br />
               commence ici.
@@ -189,20 +168,20 @@ export default function LoginPage() {
 
           <div className="grid gap-6">
             <div className="flex items-center gap-4 group">
-              <div className="h-14 w-14 rounded-2xl bg-white shadow-sm border border-blue-50 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
+              <div className="h-14 w-14 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-blue-50 dark:border-slate-800 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
                 <ShieldCheck className="h-7 w-7" />
               </div>
               <div>
-                <h3 className="font-bold text-[#0C365A]">Sécurité Totale</h3>
+                <h3 className="font-bold text-[#0C365A] dark:text-white">Sécurité Totale</h3>
                 <p className="text-sm text-slate-400">Vos données sont protégées et cryptées.</p>
               </div>
             </div>
             <div className="flex items-center gap-4 group">
-              <div className="h-14 w-14 rounded-2xl bg-white shadow-sm border border-blue-50 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
+              <div className="h-14 w-14 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-blue-50 dark:border-slate-800 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
                 <Zap className="h-7 w-7" />
               </div>
               <div>
-                <h3 className="font-bold text-[#0C365A]">Performance Instantanée</h3>
+                <h3 className="font-bold text-[#0C365A] dark:text-white">Performance Instantanée</h3>
                 <p className="text-sm text-slate-400">Accédez à vos rapports en un clin d'œil.</p>
               </div>
             </div>
@@ -237,14 +216,14 @@ export default function LoginPage() {
             initial={{ rotateY: 5 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-6 md:p-8 relative overflow-hidden group"
+            className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] dark:shadow-none border border-blue-50/50 dark:border-slate-800 p-6 md:p-8 relative overflow-hidden group"
           >
             <div className="flex flex-col items-center mb-8">
               <div className="mb-4">
                 <Logo size="lg" />
               </div>
               <div className="text-center">
-                <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Connexion</h2>
+                <h2 className="text-3xl font-black text-[#0C365A] dark:text-white font-outfit tracking-tight">Connexion</h2>
                 <p className="text-slate-400 mt-2 font-medium">Bon retour parmi nous !</p>
               </div>
             </div>
@@ -275,7 +254,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isProcessing || isGoogleProcessing}
-                    className="h-14 pl-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                    className="h-14 pl-12 bg-slate-50 dark:bg-slate-800 dark:text-white border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
                   />
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                 </div>
@@ -296,7 +275,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isProcessing || isGoogleProcessing}
-                    className="h-14 pl-12 pr-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                    className="h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-800 dark:text-white border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
                   />
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                   <button
@@ -332,7 +311,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleProcessing}
-              className="w-full h-14 rounded-2xl border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all font-bold text-slate-600"
+              className="w-full h-14 rounded-2xl border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-200 transition-all font-bold text-slate-600"
             >
               {isGoogleProcessing ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

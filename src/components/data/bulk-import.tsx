@@ -15,7 +15,14 @@ import { Upload, FileDown, CheckCircle, AlertCircle, Loader2 } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import type { class_type, student } from '@/lib/data-types';
+
+interface BulkImportProps {
+    existingClasses?: (class_type & { id: string })[];
+    existingStudents?: (student & { id: string })[];
+    currentAcademicYear?: string;
+}
 
 // Types de données supportés pour l'import
 type ImportType = 'students' | 'teachers' | 'grades';
@@ -26,10 +33,15 @@ const TEMPLATES = {
         { header: 'firstName', required: true, desc: 'Prénom de l\'élève' },
         { header: 'lastName', required: true, desc: 'Nom de l\'élève' },
         { header: 'dateOfBirth', required: true, desc: 'Date de naissance (JJ/MM/AAAA)' },
+        { header: 'placeOfBirth', required: false, desc: 'Lieu de naissance' },
         { header: 'gender', required: true, desc: 'Genre (M/F)' },
-        { header: 'email', required: false, desc: 'Email (optionnel)' },
+        { header: 'className', required: true, desc: 'Classe (ex: 6ème A)' },
         { header: 'matricule', required: false, desc: 'Matricule (optionnel)' },
-        { header: 'parentEmail', required: false, desc: 'Email du parent (pour liaison)' }
+        { header: 'email', required: false, desc: 'Email (optionnel)' },
+        { header: 'parentEmail', required: false, desc: 'Email du parent (pour liaison)' },
+        { header: 'parent1FirstName', required: false, desc: 'Prénom du Père' },
+        { header: 'parent1LastName', required: false, desc: 'Nom du Père' },
+        { header: 'parent1Contact', required: false, desc: 'Contact du Père' },
     ],
     teachers: [
         { header: 'firstName', required: true, desc: 'Prénom' },
@@ -47,7 +59,7 @@ const TEMPLATES = {
     ]
 };
 
-export function BulkImport() {
+export function BulkImport({ existingClasses = [], existingStudents = [], currentAcademicYear }: BulkImportProps) {
     const { toast } = useToast();
     const { schoolId } = useSchoolData();
     const firestore = useFirestore();
@@ -141,20 +153,92 @@ export function BulkImport() {
 
             try {
                 // Nettoyage et formatage basique
-                const cleanRow = { ...row, createdAt: serverTimestamp() };
+                const cleanRow: any = {
+                    ...row,
+                    createdAt: serverTimestamp(),
+                    schoolId
+                };
 
                 // Spécificités par type
                 if (importType === 'students') {
                     if (!cleanRow.firstName || !cleanRow.lastName) throw new Error("Nom/Prénom manquant");
-                    // Conversion date si nécessaire ? XLSX le gère souvent bien ou renvoie un nombre.
-                    // Pour l'instant on insère brut.
+
+                    // Gestion de la date de naissance
+                    if (cleanRow.dateOfBirth) {
+                        if (typeof cleanRow.dateOfBirth === 'number') {
+                            // Format Excel (nombre de jours depuis 1900)
+                            const date = new Date(Math.round((cleanRow.dateOfBirth - 25569) * 86400 * 1000));
+                            cleanRow.dateOfBirth = date.toISOString().split('T')[0];
+                        } else if (typeof cleanRow.dateOfBirth === 'string' && cleanRow.dateOfBirth.includes('/')) {
+                            // Format JJ/MM/AAAA
+                            const parts = cleanRow.dateOfBirth.split('/');
+                            if (parts.length === 3) {
+                                cleanRow.dateOfBirth = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                            }
+                        }
+                    }
+
+                    // Assignation de la classe
+                    if (cleanRow.className) {
+                        const targetClass = existingClasses.find(c =>
+                            c.name.toLowerCase().trim() === cleanRow.className.toString().toLowerCase().trim()
+                        );
+                        if (targetClass) {
+                            cleanRow.classId = targetClass.id;
+                            cleanRow.class = targetClass.name; // Redundant but safe
+                        } else {
+                            throw new Error(`Classe introuvable: ${cleanRow.className}`);
+                        }
+                    }
+
+                    // Année scolaire
+                    if (currentAcademicYear) {
+                        cleanRow.inscriptionYear = currentAcademicYear; // Use academic year string for now or parse year
+                    }
+
+                    // Statut par défaut
+                    cleanRow.status = 'Actif';
+                    cleanRow.tuitionStatus = 'Non payé';
+                    cleanRow.amountDue = 0;
+
+                    await addDoc(collection(firestore, collectionPath), cleanRow);
+                } else if (importType === 'grades') {
+                    if (!cleanRow.studentMatricule) throw new Error("Matricule manquant");
+                    if (!cleanRow.subject || !cleanRow.grade) throw new Error("Matière ou Note manquante");
+
+                    // Find student by matricule
+                    const student = existingStudents.find(s => s.matricule === cleanRow.studentMatricule.toString());
+
+                    if (!student) {
+                        throw new Error(`Élève avec matricule ${cleanRow.studentMatricule} introuvable`);
+                    }
+
+                    // Prepare grade data
+                    const gradeData = {
+                        subject: cleanRow.subject,
+                        grade: Number(cleanRow.grade),
+                        coefficient: Number(cleanRow.coefficient || 1),
+                        type: cleanRow.type || 'Devoir',
+                        date: cleanRow.date || new Date().toISOString().split('T')[0], // Default to today if missing
+                        createdAt: serverTimestamp(),
+                        schoolId
+                    };
+
+                    // Add to subcollection
+                    await addDoc(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/notes`), gradeData);
+                } else {
+                    // Teachers or generic
+                    await addDoc(collection(firestore, collectionPath), cleanRow);
                 }
 
-                await addDoc(collection(firestore, collectionPath), cleanRow);
                 successCount++;
-            } catch (err) {
+            } catch (err: any) {
                 console.error("Import error row:", row, err);
                 errorCount++;
+                // Add explicit error to console specifically for class mismatch
+                if (err.message?.includes("Classe introuvable")) {
+                    console.warn(`Row failed: Class '${row.className}' not found in school ${schoolId}`);
+                }
             }
             setProgress(prev => ({ ...prev, current: prev.current + 1 }));
         }
@@ -187,7 +271,7 @@ export function BulkImport() {
                             <SelectContent>
                                 <SelectItem value="students">Élèves</SelectItem>
                                 <SelectItem value="teachers">Enseignants / Personnel</SelectItem>
-                                <SelectItem value="grades" disabled>Notes (Bientôt)</SelectItem>
+                                <SelectItem value="grades">Notes</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

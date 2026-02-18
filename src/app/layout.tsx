@@ -47,6 +47,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
+  // Root Layout Component
   children: React.ReactNode;
 }) {
   return (
