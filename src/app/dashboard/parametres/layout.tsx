@@ -12,6 +12,14 @@ const sidebarNavItems = [
     href: "/dashboard/parametres",
   },
   {
+    title: "Fiche Établissement",
+    href: "/dashboard/parametres/fiche-etablissement",
+  },
+  {
+    title: "Année Scolaire",
+    href: "/dashboard/parametres/annee-scolaire",
+  },
+  {
     title: "Abonnement",
     href: "/dashboard/parametres/abonnement",
   },
@@ -20,15 +28,23 @@ const sidebarNavItems = [
     href: "/dashboard/parametres/facturation",
   },
   {
-    title: "Année Scolaire",
-    href: "/dashboard/parametres/annee-scolaire",
+    title: "Config. Paiements",
+    href: "/dashboard/parametres/configuration-paiements",
   },
   {
-    title: "Fiche Établissement",
-    href: "/dashboard/parametres/fiche-etablissement",
+    title: "Intégrations",
+    href: "/dashboard/parametres/integrations",
   },
-    {
-    title: "Vérification des Données",
+  {
+    title: "Notifications",
+    href: "/dashboard/parametres/notifications",
+  },
+  {
+    title: "Audit & Sécurité",
+    href: "/dashboard/parametres/audit",
+  },
+  {
+    title: "Maintenance Données",
     href: "/dashboard/parametres/donnees",
   },
 ]
@@ -57,8 +73,8 @@ export default function SettingsLayout({ children }: SettingsLayoutProps) {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                    "inline-flex items-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground px-4 py-2",
-                    pathname === item.href
+                  "inline-flex items-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground px-4 py-2",
+                  pathname === item.href
                     ? "bg-muted"
                     : "hover:bg-transparent hover:underline"
                 )}
