@@ -254,6 +254,11 @@ service cloud.firestore {
       }
 
       match /activites/{activiteId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }
+      match /audit_logs/{logId} {
+        allow create: if isSchoolMember(schoolId);
+        allow read: if hasPermission(schoolId, 'manageSettings') || isDirector(schoolId);
+        allow delete: if isSuperAdmin();
+      }
       match /inscriptions_activites/{inscriptionId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }
       match /competitions/{competitionId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }
       match /participations_competitions/{participationId} { allow read, write: if hasPermission(schoolId, 'manageActivities'); }
