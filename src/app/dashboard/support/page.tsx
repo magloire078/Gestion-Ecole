@@ -1,20 +1,16 @@
 'use client';
 
-// Trigger type check
-
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, Loader2, MessageSquare } from 'lucide-react';
+import { PlusCircle } from 'lucide-react';
 import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { Skeleton } from '@/components/ui/skeleton';
 import { SupportTicketForm } from '@/components/support/ticket-form';
 import { SupportTicketList } from '@/components/support/ticket-list';
-import { AdminChatPanel } from '@/components/admin/admin-chat-panel';
 import type { support_ticket as SupportTicket } from '@/lib/data-types';
 
 export default function SupportPage() {
@@ -23,22 +19,17 @@ export default function SupportPage() {
     const firestore = useFirestore();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const isSuperAdmin = user?.profile?.isSuperAdmin;
 
-    const canViewAllTickets = isSuperAdmin || user?.profile?.permissions?.viewSupportTickets || user?.profile?.permissions?.manageSupportTickets;
-    const canAccessLiveChat = isSuperAdmin || user?.profile?.permissions?.manageCommunication;
-
-    // Base query for tickets in the current school
-    const ticketsBaseQuery = useMemo(() =>
-        schoolId ? query(collection(firestore, 'support_tickets'), where('schoolId', '==', schoolId), orderBy('submittedAt', 'desc')) : null,
-        [firestore, schoolId]);
-
-    // If user is not an admin, further filter to only their tickets
-    const ticketsQuery = useMemo(() => {
-        if (!ticketsBaseQuery) return null;
-        if (canViewAllTickets || !user?.uid) return ticketsBaseQuery;
-        return query(ticketsBaseQuery, where('userId', '==', user.uid));
-    }, [ticketsBaseQuery, canViewAllTickets, user?.uid]);
+    // Query for tickets created BY CURRENT USER only
+    const ticketsQuery = useMemo(() =>
+        user?.uid && schoolId ?
+            query(
+                collection(firestore, 'support_tickets'),
+                where('schoolId', '==', schoolId),
+                where('userId', '==', user.uid),
+                orderBy('submittedAt', 'desc')
+            ) : null,
+        [firestore, schoolId, user?.uid]);
 
     const { data: ticketsData, loading: ticketsLoading } = useCollection(ticketsQuery);
 
@@ -57,7 +48,7 @@ export default function SupportPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold">Support Technique</h1>
-                        <p className="text-muted-foreground">Suivez vos demandes ou gérez celles de votre établissement.</p>
+                        <p className="text-muted-foreground">Suivez vos demandes d'assistance.</p>
                     </div>
                     <DialogTrigger asChild>
                         <Button>
@@ -69,14 +60,8 @@ export default function SupportPage() {
 
                 <Tabs defaultValue="open">
                     <TabsList>
-                        <TabsTrigger value="open">Tickets Ouverts ({openTickets.length})</TabsTrigger>
-                        <TabsTrigger value="closed">Tickets Fermés ({closedTickets.length})</TabsTrigger>
-                        {canAccessLiveChat && (
-                            <TabsTrigger value="live-chat" className="gap-2">
-                                <MessageSquare className="w-3.5 h-3.5" />
-                                Discussions Live
-                            </TabsTrigger>
-                        )}
+                        <TabsTrigger value="open">Mes Tickets Ouverts ({openTickets.length})</TabsTrigger>
+                        <TabsTrigger value="closed">Mes Tickets Fermés ({closedTickets.length})</TabsTrigger>
                     </TabsList>
                     <TabsContent value="open" className="mt-4">
                         <Card>
@@ -92,11 +77,6 @@ export default function SupportPage() {
                             </CardContent>
                         </Card>
                     </TabsContent>
-                    {canAccessLiveChat && (
-                        <TabsContent value="live-chat" className="mt-4">
-                            <AdminChatPanel />
-                        </TabsContent>
-                    )}
                 </Tabs>
             </div>
 
@@ -112,3 +92,4 @@ export default function SupportPage() {
         </Dialog>
     );
 }
+

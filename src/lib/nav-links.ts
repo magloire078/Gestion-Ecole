@@ -140,6 +140,14 @@ export const NAV_LINKS: NavGroup[] = [
       { href: '/dashboard/parametres', label: 'Paramètres', icon: Settings, permission: 'manageSettings' },
       { href: '/dashboard/admin/roles', label: 'Gestion des Rôles', icon: Shield, permission: 'manageSettings' },
     ]
+  },
+  {
+    group: "Administration",
+    icon: Shield,
+    adminOnly: true,
+    links: [
+      { href: '/dashboard/admin/support', label: 'Support Système', icon: LifeBuoy },
+    ]
   }
 ];
 

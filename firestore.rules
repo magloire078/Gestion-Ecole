@@ -105,8 +105,8 @@ service cloud.firestore {
     
     match /support_tickets/{ticketId} {
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || hasPermission(resource.data.schoolId, 'viewSupportTickets') || hasPermission(resource.data.schoolId, 'manageSupportTickets'));
-      allow update: if hasPermission(resource.data.schoolId, 'manageSupportTickets');
+      allow read: if isSignedIn() && (isSuperAdmin() || resource.data.userId == request.auth.uid || hasPermission(resource.data.schoolId, 'viewSupportTickets') || hasPermission(resource.data.schoolId, 'manageSupportTickets'));
+      allow update: if isSuperAdmin() || hasPermission(resource.data.schoolId, 'manageSupportTickets');
       allow delete: if isSuperAdmin();
     }
 
