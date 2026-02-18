@@ -137,17 +137,19 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         setIsUploading(true);
         let successCount = 0;
         let errorCount = 0;
+        const errors: string[] = [];
 
         setProgress({ current: 0, total: fileData.length });
 
-        // Déterminer la collection cible
+        // Déterminer la collection cible (sauf pour les notes qui sont des sous-collections)
         let collectionPath = '';
         if (importType === 'students') collectionPath = `ecoles/${schoolId}/eleves`;
         else if (importType === 'teachers') collectionPath = `ecoles/${schoolId}/personnel`;
-        // Note: Grades import requires finding student ID by matricule first, complex logic simplified here.
-        // For simplicity, we'll implement Students and Teachers direct insert first.
 
-        for (const row of fileData) {
+        for (let i = 0; i < fileData.length; i++) {
+            const row = fileData[i];
+            const rowIndex = i + 2; // +1 pour l'index 0, +1 pour l'en-tête
+
             // Ignorer les lignes vides
             if (!row || Object.keys(row).length === 0) continue;
 
@@ -161,7 +163,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
 
                 // Spécificités par type
                 if (importType === 'students') {
-                    if (!cleanRow.firstName || !cleanRow.lastName) throw new Error("Nom/Prénom manquant");
+                    if (!cleanRow.firstName || !cleanRow.lastName) throw new Error("Nom ou Prénom manquant");
 
                     // Gestion de la date de naissance
                     if (cleanRow.dateOfBirth) {
@@ -185,60 +187,66 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         );
                         if (targetClass) {
                             cleanRow.classId = targetClass.id;
-                            cleanRow.class = targetClass.name; // Redundant but safe
+                            cleanRow.class = targetClass.name;
                         } else {
-                            throw new Error(`Classe introuvable: ${cleanRow.className}`);
+                            throw new Error(`Classe "${cleanRow.className}" introuvable`);
                         }
                     }
 
-                    // Année scolaire
-                    if (currentAcademicYear) {
-                        cleanRow.inscriptionYear = currentAcademicYear; // Use academic year string for now or parse year
-                    }
-
-                    // Statut par défaut
+                    // Année scolaire et valeurs par défaut
+                    if (currentAcademicYear) cleanRow.inscriptionYear = currentAcademicYear;
                     cleanRow.status = 'Actif';
                     cleanRow.tuitionStatus = 'Non payé';
                     cleanRow.amountDue = 0;
 
                     await addDoc(collection(firestore, collectionPath), cleanRow);
+
                 } else if (importType === 'grades') {
+                    // Validation des champs obligatoires pour les notes
                     if (!cleanRow.studentMatricule) throw new Error("Matricule manquant");
-                    if (!cleanRow.subject || !cleanRow.grade) throw new Error("Matière ou Note manquante");
+                    if (!cleanRow.subject) throw new Error("Matière manquante");
+                    if (cleanRow.grade === undefined || cleanRow.grade === null) throw new Error("Note manquante");
 
-                    // Find student by matricule
-                    const student = existingStudents.find(s => s.matricule === cleanRow.studentMatricule.toString());
-
-                    if (!student) {
-                        throw new Error(`Élève avec matricule ${cleanRow.studentMatricule} introuvable`);
+                    const gradeValue = Number(cleanRow.grade);
+                    if (isNaN(gradeValue) || gradeValue < 0 || gradeValue > 20) {
+                        throw new Error(`Note invalide (${cleanRow.grade}). Doit être entre 0 et 20.`);
                     }
 
-                    // Prepare grade data
+                    // Recherche de l'élève par matricule
+                    // On normalise les matricules (trim et lowercase) pour la comparaison
+                    const cleanMatricule = cleanRow.studentMatricule.toString().trim().toLowerCase();
+                    const student = existingStudents.find(s =>
+                        s.matricule && s.matricule.toString().trim().toLowerCase() === cleanMatricule
+                    );
+
+                    if (!student) {
+                        throw new Error(`Élève avec le matricule "${cleanRow.studentMatricule}" introuvable`);
+                    }
+
+                    // Préparation de la note
                     const gradeData = {
+                        schoolId,
                         subject: cleanRow.subject,
-                        grade: Number(cleanRow.grade),
+                        grade: gradeValue,
                         coefficient: Number(cleanRow.coefficient || 1),
                         type: cleanRow.type || 'Devoir',
-                        date: cleanRow.date || new Date().toISOString().split('T')[0], // Default to today if missing
+                        date: cleanRow.date ? new Date(cleanRow.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
                         createdAt: serverTimestamp(),
-                        schoolId
                     };
 
-                    // Add to subcollection
+                    // Ajout dans la sous-collection de l'élève
                     await addDoc(collection(firestore, `ecoles/${schoolId}/eleves/${student.id}/notes`), gradeData);
+
                 } else {
-                    // Teachers or generic
+                    // imports génériques (ex: personnel/enseignants)
                     await addDoc(collection(firestore, collectionPath), cleanRow);
                 }
 
                 successCount++;
             } catch (err: any) {
-                console.error("Import error row:", row, err);
+                console.error("Erreur import ligne:", row, err);
                 errorCount++;
-                // Add explicit error to console specifically for class mismatch
-                if (err.message?.includes("Classe introuvable")) {
-                    console.warn(`Row failed: Class '${row.className}' not found in school ${schoolId}`);
-                }
+                errors.push(`Ligne ${rowIndex}: ${err.message}`);
             }
             setProgress(prev => ({ ...prev, current: prev.current + 1 }));
         }
@@ -247,11 +255,22 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         setFileData([]);
         if (fileInputRef.current) fileInputRef.current.value = '';
 
-        toast({
-            title: "Import terminé",
-            description: `${successCount} succès, ${errorCount} erreurs.`,
-            variant: errorCount > 0 ? "destructive" : "default"
-        });
+        // Rapport final
+        if (errorCount > 0) {
+            toast({
+                variant: "destructive",
+                title: "Import terminé avec des erreurs",
+                description: `${successCount} succès, ${errorCount} échecs. Consultez la console pour les détails.`,
+            });
+            // Afficher les premières erreurs dans une alerte ou un autre toast si besoin, 
+            // ici on se contente de la description globale pour ne pas spammer
+            console.error("Détails des erreurs d'import:", errors);
+        } else {
+            toast({
+                title: "Import terminé avec succès",
+                description: `${successCount} éléments importés.`,
+            });
+        }
     };
 
     return (

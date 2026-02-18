@@ -15,18 +15,19 @@ import { Button } from '@/components/ui/button';
 import { MoreHorizontal } from 'lucide-react';
 
 interface SupportTicketListProps {
-  tickets: (SupportTicket & { id: string })[];
-  isLoading: boolean;
+    tickets: (SupportTicket & { id: string })[];
+    isLoading: boolean;
+    isAdminView?: boolean;
 }
 
-export function SupportTicketList({ tickets, isLoading }: SupportTicketListProps) {
+export function SupportTicketList({ tickets, isLoading, isAdminView = false }: SupportTicketListProps) {
     const { user } = useUser();
     const firestore = useFirestore();
     const { toast } = useToast();
-    const canManageTickets = user?.profile?.permissions?.manageSupportTickets;
+    const canManageTickets = isAdminView || user?.profile?.permissions?.manageSupportTickets;
 
     const getStatusBadgeVariant = (status: 'open' | 'in_progress' | 'closed') => {
-        switch(status) {
+        switch (status) {
             case 'open': return 'default';
             case 'in_progress': return 'secondary';
             case 'closed': return 'outline';
@@ -38,7 +39,7 @@ export function SupportTicketList({ tickets, isLoading }: SupportTicketListProps
         const ticketRef = doc(firestore, 'support_tickets', ticket.id);
         try {
             await updateDoc(ticketRef, { status });
-            
+
             // Create a notification for the user who created the ticket
             const notificationData = {
                 userId: ticket.userId,
@@ -56,56 +57,56 @@ export function SupportTicketList({ tickets, isLoading }: SupportTicketListProps
             toast({ variant: "destructive", title: "Erreur", description: "Impossible de mettre à jour le statut du ticket." });
         }
     };
-    
+
     return (
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Sujet</TableHead>
-              <TableHead>Utilisateur</TableHead>
-              <TableHead>Catégorie</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Statut</TableHead>
-              {canManageTickets && <TableHead className="text-right">Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-                [...Array(5)].map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell colSpan={canManageTickets ? 6 : 5}><Skeleton className="h-5 w-full" /></TableCell>
-                    </TableRow>
-                ))
-            ) : tickets.length > 0 ? (
-                tickets.map(ticket => (
-                    <TableRow key={ticket.id}>
-                        <TableCell className="font-medium">{ticket.subject}</TableCell>
-                        <TableCell>{ticket.userDisplayName}</TableCell>
-                        <TableCell className="capitalize">{ticket.category.replace('_', ' ')}</TableCell>
-                        <TableCell>{ticket.submittedAt ? formatDistanceToNow(new Date((ticket.submittedAt as any).seconds * 1000), { addSuffix: true, locale: fr }) : 'N/A'}</TableCell>
-                        <TableCell><Badge variant={getStatusBadgeVariant(ticket.status)}>{ticket.status.replace('_', ' ')}</Badge></TableCell>
-                        {canManageTickets && (
-                            <TableCell className="text-right">
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'open')}>Marquer comme Ouvert</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'in_progress')}>Marquer comme En cours</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'closed')}>Marquer comme Fermé</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </TableCell>
-                        )}
-                    </TableRow>
-                ))
-            ) : (
+            <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={canManageTickets ? 6 : 5} className="h-24 text-center">Aucun ticket dans cette catégorie.</TableCell>
+                    <TableHead>Sujet</TableHead>
+                    <TableHead>Utilisateur</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Statut</TableHead>
+                    {canManageTickets && <TableHead className="text-right">Actions</TableHead>}
                 </TableRow>
-            )}
-          </TableBody>
+            </TableHeader>
+            <TableBody>
+                {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell colSpan={canManageTickets ? 6 : 5}><Skeleton className="h-5 w-full" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : tickets.length > 0 ? (
+                    tickets.map(ticket => (
+                        <TableRow key={ticket.id}>
+                            <TableCell className="font-medium">{ticket.subject}</TableCell>
+                            <TableCell>{ticket.userDisplayName}</TableCell>
+                            <TableCell className="capitalize">{ticket.category.replace('_', ' ')}</TableCell>
+                            <TableCell>{ticket.submittedAt ? formatDistanceToNow(new Date((ticket.submittedAt as any).seconds * 1000), { addSuffix: true, locale: fr }) : 'N/A'}</TableCell>
+                            <TableCell><Badge variant={getStatusBadgeVariant(ticket.status)}>{ticket.status.replace('_', ' ')}</Badge></TableCell>
+                            {canManageTickets && (
+                                <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'open')}>Marquer comme Ouvert</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'in_progress')}>Marquer comme En cours</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleStatusChange(ticket, 'closed')}>Marquer comme Fermé</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            )}
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={canManageTickets ? 6 : 5} className="h-24 text-center">Aucun ticket dans cette catégorie.</TableCell>
+                    </TableRow>
+                )}
+            </TableBody>
         </Table>
     );
 }

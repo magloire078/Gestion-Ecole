@@ -133,6 +133,19 @@ function AdminLayoutContent({
         }
     }, []);
 
+    // Pour les utilisateurs Google, marquer comme vérifié automatiquement
+    useEffect(() => {
+        if (!isVerified && user?.authUser?.providerData?.[0]?.providerId === 'google.com') {
+            try {
+                sessionStorage.setItem('adminVerificationTimestamp', new Date().getTime().toString());
+                setIsVerified(true);
+            } catch (e) {
+                console.error("Could not access session storage:", e);
+                setIsVerified(true);
+            }
+        }
+    }, [isVerified, user?.authUser]);
+
     const handleVerification = () => {
         try {
             sessionStorage.setItem('adminVerificationTimestamp', new Date().getTime().toString());
@@ -186,7 +199,6 @@ function AdminLayoutContent({
 
     // Pour les utilisateurs Google, marquer comme vérifié automatiquement
     if (!isVerified && authProvider === 'google.com') {
-        handleVerification();
         return (
             <div className="flex h-screen w-full items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin" />
