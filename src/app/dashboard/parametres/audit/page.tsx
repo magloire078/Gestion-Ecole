@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useCollection, useFirestore } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -25,12 +25,13 @@ interface AuditLog {
 }
 
 export default function AuditPage() {
+    const { user, loading: userLoading } = useUser();
     const { schoolId, loading: schoolLoading } = useSchoolData();
     const firestore = useFirestore();
 
     const auditQuery = useMemo(() =>
-        schoolId ? query(collection(firestore, `ecoles/${schoolId}/audit_logs`), orderBy('timestamp', 'desc'), limit(50)) : null,
-        [firestore, schoolId]
+        schoolId && user?.uid ? query(collection(firestore, `ecoles/${schoolId}/audit_logs`), orderBy('timestamp', 'desc'), limit(50)) : null,
+        [firestore, schoolId, user?.uid]
     );
 
     const { data: logsData, loading: logsLoading } = useCollection(auditQuery);
