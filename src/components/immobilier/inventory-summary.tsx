@@ -34,7 +34,7 @@ export function InventorySummary({ schoolId }: { schoolId: string }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>État de l'Inventaire</CardTitle>
+                <CardTitle>État de l&apos;Inventaire</CardTitle>
                 <CardDescription>Répartition du matériel ({stats.total} articles) par statut.</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">

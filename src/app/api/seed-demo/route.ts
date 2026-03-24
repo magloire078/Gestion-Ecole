@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/firebase/admin';
+export const dynamic = 'force-dynamic';
+import { getAdminDb } from '@/firebase/admin';
 import admin from 'firebase-admin';
 
 export async function GET() {
     try {
         console.log('🚀 Début du peuplement via route API...');
-        const batch = adminDb.batch();
+        const batch = getAdminDb().batch();
 
         // 1. Écoles
         const ecoles = [
@@ -59,7 +60,7 @@ export async function GET() {
 
         ecoles.forEach(ecole => {
             const { id, ...data } = ecole;
-            batch.set(adminDb.collection('ecoles').doc(id), data);
+            batch.set(getAdminDb().collection('ecoles').doc(id), data);
         });
 
         // 2. Tickets
@@ -89,11 +90,11 @@ export async function GET() {
 
         tickets.forEach(ticket => {
             const { id, ...data } = ticket;
-            batch.set(adminDb.collection('support_tickets').doc(id), data);
+            batch.set(getAdminDb().collection('support_tickets').doc(id), data);
         });
 
         // 3. Settings
-        batch.set(adminDb.collection('system_settings').doc('default'), {
+        batch.set(getAdminDb().collection('system_settings').doc('default'), {
             maintenanceMode: false,
             registrationEnabled: true,
             globalMessage: 'Démonstration Active',

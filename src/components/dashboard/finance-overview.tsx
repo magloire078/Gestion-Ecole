@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useCollection, useFirestore, useDoc } from '@/firebase';
+import { useFirestore } from '@/firebase';
 import { useUserSession } from '@/hooks/use-user-session';
+import { useStudents } from '@/hooks/use-students';
 import { collection, query, where, doc } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -21,33 +22,20 @@ export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps
     const { schoolId: sessionSchoolId, isLoading: sessionLoading } = useUserSession();
     const schoolId = propSchoolId || sessionSchoolId;
 
-    const statsRef = useMemo(() => {
-        if (!firestore || !schoolId) return null;
-        return doc(firestore, `ecoles/${schoolId}/stats/finance`);
-    }, [firestore, schoolId]);
+    const { students, loading: studentsLoading } = useStudents(schoolId, 'all', 'active');
+    const loading = sessionLoading || studentsLoading;
 
-    const { data: statsData, loading: statsLoading } = useDoc<any>(statsRef);
-    const loading = sessionLoading || statsLoading;
-
-    const [financeStats, setFinanceStats] = useState({
-        totalFees: 0,
-        totalDue: 0,
-        paidPercentage: 0
-    });
-
-    useEffect(() => {
-        if (statsData) {
-            const totalFees = statsData.totalTuitionFees || 0;
-            const totalDue = statsData.totalAmountDue || 0;
-            const paidPercentage = totalFees > 0 ? ((totalFees - totalDue) / totalFees) * 100 : 100;
-
-            setFinanceStats({ totalFees, totalDue, paidPercentage });
-        } else if (!statsLoading && schoolId) {
-            // Document might not exist yet, initialize it
-            const { initializeFinanceStats } = require('@/services/stats-initialization');
-            initializeFinanceStats(schoolId).catch(console.error);
+    const financeStats = useMemo(() => {
+        if (!students || students.length === 0) {
+            return { totalFees: 0, totalDue: 0, paidPercentage: 0 };
         }
-    }, [statsData, statsLoading, schoolId]);
+
+        const totalFees = students.reduce((sum: number, s: any) => sum + (s.tuitionFee || 0), 0);
+        const totalDue = students.reduce((sum: number, s: any) => sum + (s.amountDue || 0), 0);
+        const paidPercentage = totalFees > 0 ? ((totalFees - totalDue) / totalFees) * 100 : 100;
+
+        return { totalFees, totalDue, paidPercentage };
+    }, [students]);
 
     if (loading) {
         return (

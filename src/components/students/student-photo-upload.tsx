@@ -110,7 +110,7 @@ export const StudentPhotoUpload: React.FC<StudentPhotoUploadProps> = ({
                     <DialogHeader>
                         <DialogTitle>Recadrer la photo d&apos;identité</DialogTitle>
                         <DialogDescription>
-                            Ajustez le cadre pour centrer le visage de l'élève.
+                            Ajustez le cadre pour centrer le visage de l&apos;élève.
                         </DialogDescription>
                     </DialogHeader>
 

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -16,25 +16,27 @@ import { useFirestore } from '@/firebase';
 import { SchoolCreationService } from '@/services/school-creation';
 import { ImageUploader } from '@/components/image-uploader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, ArrowLeft, Upload, Building, MapPin, Phone, Mail } from 'lucide-react';
+import { Loader2, ArrowLeft, Upload, Building, MapPin, Phone, Mail, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { DRENA_LIST } from '@/lib/drena-data';
+import { COUNTRIES, getCountryByCode, DEFAULT_COUNTRY, type CountryCode } from '@/lib/countries-data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Logo } from '@/components/logo';
 
-// Schéma de validation amélioré
+// Schéma de validation dynamique
 const createSchoolSchema = z.object({
+  country: z.string().min(1, "Le pays est requis."),
   name: z.string()
     .min(3, "Le nom de l'école doit comporter au moins 3 caractères.")
     .max(100, "Le nom de l'école est trop long."),
-  drena: z.string().min(1, "La DRENA de tutelle est requise."),
+  drena: z.string().optional().or(z.literal('')),
+  region: z.string().optional().or(z.literal('')),
   address: z.string()
     .min(5, "L'adresse doit comporter au moins 5 caractères.")
     .max(200, "L'adresse est trop longue.")
     .optional()
     .or(z.literal('')),
   phone: z.string()
-    .regex(/^(?:\+225|225)?(01|05|07|25|27)[0-9]{8}$/, "Numéro de téléphone ivoirien invalide.")
     .optional()
     .or(z.literal('')),
   email: z.string()
@@ -57,12 +59,17 @@ export default function CreateSchoolPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isFirestoreReady, setIsFirestoreReady] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(DEFAULT_COUNTRY);
+
+  const countryConfig = getCountryByCode(selectedCountry);
 
   const form = useForm<CreateSchoolFormValues>({
     resolver: zodResolver(createSchoolSchema),
     defaultValues: {
+      country: DEFAULT_COUNTRY,
       name: '',
       drena: '',
+      region: '',
       address: '',
       phone: '',
       email: user?.email || '',
@@ -70,7 +77,7 @@ export default function CreateSchoolPage() {
     },
     mode: 'onChange',
   });
-  const { setValue } = form;
+  const { setValue, watch } = form;
 
   // Vérifier que Firestore est prêt
   useEffect(() => {
@@ -90,12 +97,19 @@ export default function CreateSchoolPage() {
   const forceMode = searchParams.get('force') === 'true';
 
   useEffect(() => {
-    // Si `hasSchool` devient vrai après une mise à jour, redirigez, sauf en mode force.
     if (hasSchool && !forceMode) {
       router.replace('/dashboard');
     }
   }, [hasSchool, router, forceMode]);
 
+  const handleCountryChange = (code: string) => {
+    setSelectedCountry(code as CountryCode);
+    setValue('country', code);
+    // Reset country-specific fields
+    setValue('drena', '');
+    setValue('region', '');
+    setValue('phone', '');
+  };
 
   const handleSubmit = async (values: CreateSchoolFormValues) => {
     if (!user || !user.uid) {
@@ -116,6 +130,18 @@ export default function CreateSchoolPage() {
       return;
     }
 
+    // Validate phone if provided
+    if (values.phone && countryConfig?.phoneRegex) {
+      if (!countryConfig.phoneRegex.test(values.phone)) {
+        toast({
+          variant: 'destructive',
+          title: 'Erreur',
+          description: `Numéro de téléphone invalide pour ${countryConfig.name}.`
+        });
+        return;
+      }
+    }
+
     setIsProcessing(true);
     setError(null);
 
@@ -128,6 +154,8 @@ export default function CreateSchoolPage() {
     try {
       const result = await schoolService.createSchool({
         ...values,
+        country: selectedCountry,
+        region: selectedCountry === 'CI' ? values.drena : values.region,
         mainLogoUrl: logoUrl || '',
         directorId: user.uid,
         directorFirstName: firstName,
@@ -142,7 +170,6 @@ export default function CreateSchoolPage() {
           duration: 5000,
         });
 
-        // On redirige vers la page de configuration de la structure
         router.push('/onboarding/setup-structure');
       }
     } catch (error: any) {
@@ -219,7 +246,7 @@ export default function CreateSchoolPage() {
           <CardHeader className="pb-6">
             <CardTitle className="flex items-center gap-2">
               <Building className="h-5 w-5" />
-              Informations de l'établissement
+              Informations de l&apos;établissement
             </CardTitle>
             <CardDescription>
               Ces informations seront visibles par les parents, élèves et collaborateurs.
@@ -236,7 +263,7 @@ export default function CreateSchoolPage() {
               <form id="create-school-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
                 <div className="space-y-4">
                   <div className="text-center">
-                    <FormLabel className="text-base">Logo de l'école</FormLabel>
+                    <FormLabel className="text-base">Logo de l&apos;école</FormLabel>
                     <FormDescription className="text-sm">
                       Optionnel - Taille recommandée : 300×300px
                     </FormDescription>
@@ -252,7 +279,7 @@ export default function CreateSchoolPage() {
                           }}
                           storagePath={`temp-logos/${user.uid}/`}
                           resizeWidth={300}
-                          maxSize={1 * 1024 * 1024} // 1MB
+                          maxSize={1 * 1024 * 1024}
                         >
                           <div className="relative group cursor-pointer">
                             <Avatar className="h-32 w-32 border-4 border-background shadow-lg group-hover:opacity-90 transition-opacity">
@@ -274,37 +301,104 @@ export default function CreateSchoolPage() {
                     </FormItem>
                   )} />
                 </div>
-                <FormField control={form.control} name="drena" render={({ field }) => (
+
+                {/* ─── Sélection du Pays ─── */}
+                <FormField control={form.control} name="country" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      DRENA de tutelle *
+                      <Globe className="h-4 w-4" />
+                      Pays *
                     </FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={(val) => {
+                        field.onChange(val);
+                        handleCountryChange(val);
+                      }}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="h-12">
-                          <SelectValue placeholder="Sélectionnez votre DRENA" />
+                          <SelectValue placeholder="Sélectionnez votre pays" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {DRENA_LIST.map((drena) => (
-                          <SelectItem key={drena.name} value={drena.name}>
-                            {drena.name}
+                        {COUNTRIES.map((c) => (
+                          <SelectItem key={c.code} value={c.code}>
+                            <span className="flex items-center gap-2">
+                              <span>{c.flag}</span>
+                              <span>{c.name}</span>
+                              <span className="text-muted-foreground text-xs">({c.currency})</span>
+                            </span>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Direction Régionale de l'Éducation Nationale de tutelle.
+                      Le système scolaire sera adapté au pays sélectionné.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                {/* ─── DRENA (Côte d'Ivoire uniquement) ─── */}
+                {selectedCountry === 'CI' && (
+                  <FormField control={form.control} name="drena" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Building className="h-4 w-4" />
+                        DRENA de tutelle *
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger className="h-12">
+                            <SelectValue placeholder="Sélectionnez votre DRENA" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {DRENA_LIST.map((drena) => (
+                            <SelectItem key={drena.name} value={drena.name}>
+                              {drena.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Direction Régionale de l&apos;Éducation Nationale de tutelle.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
+
+                {/* ─── Région/Province (autres pays) ─── */}
+                {selectedCountry !== 'CI' && countryConfig && (
+                  <FormField control={form.control} name="region" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Building className="h-4 w-4" />
+                        {countryConfig.educationAuthorityLabel}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder={`Ex: ${countryConfig.educationAuthorityLabel}`}
+                          {...field}
+                          className="h-12"
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Autorité éducative de tutelle de votre établissement.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                )}
+
+                {/* ─── Nom de l'école ─── */}
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
                       <Building className="h-4 w-4" />
-                      Nom de l'école *
+                      Nom de l&apos;école *
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -319,6 +413,8 @@ export default function CreateSchoolPage() {
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                {/* ─── Adresse ─── */}
                 <FormField control={form.control} name="address" render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-2">
@@ -327,17 +423,19 @@ export default function CreateSchoolPage() {
                     </FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="Ex: Cocody Angré, Abidjan, Côte d'Ivoire"
+                        placeholder={selectedCountry === 'CI' ? "Ex: Cocody Angré, Abidjan" : "Adresse de l'établissement"}
                         {...field}
                         className="h-12"
                       />
                     </FormControl>
                     <FormDescription>
-                      Adresse complète de l'établissement
+                      Adresse complète de l&apos;établissement
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )} />
+
+                {/* ─── Téléphone & Email ─── */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField control={form.control} name="phone" render={({ field }) => (
                     <FormItem>
@@ -348,13 +446,13 @@ export default function CreateSchoolPage() {
                       <FormControl>
                         <Input
                           type="tel"
-                          placeholder="Ex: +2250707942880"
+                          placeholder={countryConfig?.phonePlaceholder || "+XXX XX XX XX XX"}
                           {...field}
                           className="h-12"
                         />
                       </FormControl>
                       <FormDescription>
-                        Format: +225 XX XX XX XX XX
+                        Format: {countryConfig?.phonePlaceholder || "international"}
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -386,7 +484,7 @@ export default function CreateSchoolPage() {
             <Alert className="bg-primary/5 border-primary/20">
               <AlertDescription className="text-sm">
                 <strong>Important :</strong> Après la création, vous recevrez un code d&apos;invitation unique
-                que vous pourrez partager avec vos collaborateurs pour les ajouter à l'école.
+                que vous pourrez partager avec vos collaborateurs pour les ajouter à l&apos;école.
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -416,7 +514,7 @@ export default function CreateSchoolPage() {
             >
               <Link href="/onboarding">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour à l'accueil
+                Retour à l&apos;accueil
               </Link>
             </Button>
           </CardFooter>
@@ -440,11 +538,11 @@ export default function CreateSchoolPage() {
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <div className="mx-auto h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Phone className="h-5 w-5 text-primary" />
+                  <Globe className="h-5 w-5 text-primary" />
                 </div>
-                <h3 className="font-semibold">Support inclus</h3>
+                <h3 className="font-semibold">Multi-pays</h3>
                 <p className="text-sm text-muted-foreground">
-                  Assistance technique gratuite pendant 30 jours
+                  Disponible dans 15+ pays francophones
                 </p>
               </div>
             </CardContent>
@@ -468,4 +566,3 @@ export default function CreateSchoolPage() {
     </div>
   );
 }
-

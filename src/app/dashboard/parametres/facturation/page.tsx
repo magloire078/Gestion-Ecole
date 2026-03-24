@@ -4,12 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Banknote, FileText, Download, History, CreditCard } from 'lucide-react';
+import { Banknote, History, CreditCard, ExternalLink, Zap } from 'lucide-react';
 import { applyPricing, calculateMonthlyUsage, TARIFAIRE } from '@/lib/billing-calculator';
 import { useFirestore } from '@/firebase';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Table,
   TableBody,
@@ -23,9 +23,8 @@ import { Badge } from "@/components/ui/badge";
 export default function BillingDashboard() {
   const { schoolId, schoolData, subscription, loading: schoolLoading } = useSchoolData();
   const firestore = useFirestore();
-  const { user } = useUser();
-
-  const [usage, setUsage] = useState<{ studentsCount: number; cyclesCount: number } | null>(null);
+  const router = useRouter();
+  const [usage, setUsage] = useState<{ studentsCount: number; cyclesCount: number; storageUsed: number } | null>(null);
   const [projection, setProjection] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -95,7 +94,35 @@ export default function BillingDashboard() {
                     <p className="font-semibold">{usage?.cyclesCount} / {planDetails?.cyclesInclus === Infinity ? '∞' : planDetails?.cyclesInclus}</p>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full" asChild><a href="mailto:support@gerecole.com"><CreditCard className="mr-2 h-4 w-4" />Gérer mes informations de paiement</a></Button>
+                
+                <div className="pt-2 space-y-3">
+                  <Button 
+                    className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-md"
+                    onClick={() => {
+                      if (!subscription || !projection) return;
+                      const params = new URLSearchParams({
+                        plan: subscription.plan || 'Essentiel',
+                        price: projection.total.toString(),
+                        description: `Renouvellement/Paiement ${subscription.plan} pour ${schoolData?.name || 'votre établissement'}`,
+                      }).toString();
+                      router.push(`/dashboard/parametres/abonnement/paiement?${params}`);
+                    }}
+                    disabled={loading || !projection || projection.total === 0}
+                  >
+                    <Zap className="mr-2 h-4 w-4" />
+                    Payer maintenant ({projection?.total.toLocaleString('fr-FR')} CFA)
+                  </Button>
+
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => router.push('/dashboard/parametres/abonnement')}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Gérer mon abonnement
+                    <ExternalLink className="ml-2 h-3 w-3 opacity-50" />
+                  </Button>
+                </div>
               </div>
             </div>
           ) : (

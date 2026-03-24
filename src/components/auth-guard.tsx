@@ -9,7 +9,7 @@ import { LoadingScreen } from './ui/loading-screen';
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, hasSchool, loading } = useUser();
+  const { user, hasSchool, loading, loadingTimeout, reloadUser } = useUser();
 
   useEffect(() => {
     if (loading) return;
@@ -39,16 +39,34 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   }, [user, hasSchool, loading, router, pathname]);
 
   if (loading) {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen 
+        message="Vérification de l'accès" 
+        showRetry={loadingTimeout} 
+        onRetry={reloadUser} 
+      />
+    );
   }
 
   const publicPaths = ['/auth/login', '/auth/register', '/auth/forgot-password', '/parent-access', '/', '/contact', '/survey'];
   if (!user && !publicPaths.some(p => pathname.startsWith(p))) {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen 
+        message="Redirection vers la connexion" 
+        showRetry={loadingTimeout} 
+        onRetry={reloadUser} 
+      />
+    );
   }
 
   if (user && !user.isParent && !hasSchool && !pathname.startsWith('/onboarding')) {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen 
+        message="Redirection vers l'onboarding" 
+        showRetry={loadingTimeout} 
+        onRetry={reloadUser} 
+      />
+    );
   }
 
   return <>{children}</>;

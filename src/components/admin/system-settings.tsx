@@ -338,7 +338,7 @@ export const SystemSettings = () => {
                         <CardContent className="space-y-4 p-8">
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div>
-                                    <Label className="font-semibold">Logs d'audit détaillés</Label>
+                                    <Label className="font-semibold">Logs d&apos;audit détaillés</Label>
                                     <p className="text-sm text-muted-foreground">
                                         Enregistrer toutes les actions administratives
                                     </p>

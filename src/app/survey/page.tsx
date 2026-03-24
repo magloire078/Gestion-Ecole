@@ -145,17 +145,17 @@ export default function SurveyPage() {
                   {/* Section 1: Profil */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">1. À propos de votre établissement</h3>
-                    <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de l'établissement *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="schoolName" render={({ field }) => (<FormItem><FormLabel>Nom de l&apos;établissement *</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name="schoolType" render={({ field }) => (<FormItem><FormLabel>Type d'établissement *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="prescolaire">Préscolaire</SelectItem><SelectItem value="primaire">Primaire</SelectItem><SelectItem value="secondaire">Secondaire (Collège/Lycée)</SelectItem><SelectItem value="groupe">Groupe Scolaire</SelectItem><SelectItem value="superieur">Supérieur/Professionnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="studentCount" render={({ field }) => (<FormItem><FormLabel>Nombre d'élèves *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="0-100">Moins de 100</SelectItem><SelectItem value="100-500">100 - 500</SelectItem><SelectItem value="500-1000">500 - 1000</SelectItem><SelectItem value="1000+">Plus de 1000</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="schoolType" render={({ field }) => (<FormItem><FormLabel>Type d&apos;établissement *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="prescolaire">Préscolaire</SelectItem><SelectItem value="primaire">Primaire</SelectItem><SelectItem value="secondaire">Secondaire (Collège/Lycée)</SelectItem><SelectItem value="groupe">Groupe Scolaire</SelectItem><SelectItem value="superieur">Supérieur/Professionnel</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="studentCount" render={({ field }) => (<FormItem><FormLabel>Nombre d&apos;élèves *</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger></FormControl><SelectContent><SelectItem value="0-100">Moins de 100</SelectItem><SelectItem value="100-500">100 - 500</SelectItem><SelectItem value="500-1000">500 - 1000</SelectItem><SelectItem value="1000+">Plus de 1000</SelectItem></SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
                   </div>
 
                   {/* Section 2: Besoins */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">2. Vos méthodes et défis actuels</h3>
-                    <FormField control={form.control} name="currentManagement" render={({ field }) => (<FormItem><FormLabel>Comment gérez-vous principalement votre école aujourd'hui ?</FormLabel>
+                    <FormField control={form.control} name="currentManagement" render={({ field }) => (<FormItem><FormLabel>Comment gérez-vous principalement votre école aujourd&apos;hui ?</FormLabel>
                       <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
                         <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="papier-excel" /></FormControl><FormLabel className="font-normal">Papier et/ou tableurs (Excel, Google Sheets)</FormLabel></FormItem>
                         <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="logiciel-specifique" /></FormControl><FormLabel className="font-normal">Un logiciel spécifique (ex: comptabilité, notes)</FormLabel></FormItem>
@@ -185,7 +185,7 @@ export default function SurveyPage() {
                   {/* Section 3: Intérêt */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">3. Importance des fonctionnalités</h3>
-                    <p className="text-sm text-muted-foreground">Évaluez l'importance de chaque module pour votre établissement (1 = Pas important, 5 = Très important).</p>
+                    <p className="text-sm text-muted-foreground">Évaluez l&apos;importance de chaque module pour votre établissement (1 = Pas important, 5 = Très important).</p>
                     {featureConfig.map(feature => (
                       <FormField key={feature.id} control={form.control} name={`featureInterest.${feature.id}`} render={({ field }) => (
                         <FormItem>

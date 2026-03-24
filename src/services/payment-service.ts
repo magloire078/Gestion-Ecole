@@ -3,11 +3,11 @@ import type { User } from 'firebase/auth';
 
 interface PaymentProviderData {
     type: 'subscription' | 'tuition';
-    price: string;
+    amount: string;
     description: string;
     user: any; // Simplified for client usage
     schoolId: string;
-    plan?: string;
+    planName?: string;
     duration?: number;
     studentId?: string;
     phoneNumber?: string;

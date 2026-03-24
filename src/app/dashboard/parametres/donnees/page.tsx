@@ -46,13 +46,13 @@ export default function DataIntegrityPage() {
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold">Maintenance des Données</h1>
-                    <p className="text-muted-foreground">Gérez l'intégrité et l'importation de vos données scolaires.</p>
+                    <p className="text-muted-foreground">Gérez l&apos;intégrité et l&apos;importation de vos données scolaires.</p>
                 </div>
             </div>
 
             <Tabs defaultValue="integrity">
                 <TabsList>
-                    <TabsTrigger value="integrity">Vérification de l'Intégrité</TabsTrigger>
+                    <TabsTrigger value="integrity">Vérification de l&apos;Intégrité</TabsTrigger>
                     <TabsTrigger value="import" className="gap-2">
                         <UploadCloud className="h-4 w-4" />
                         Importation de Masse
@@ -77,7 +77,7 @@ export default function DataIntegrityPage() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow>
-                                                <TableHead>Nom de l'élève</TableHead>
+                                                <TableHead>Nom de l&apos;élève</TableHead>
                                                 <TableHead>ID Élève</TableHead>
                                                 <TableHead>ID Classe assignée</TableHead>
                                                 <TableHead>Statut du lien</TableHead>

@@ -70,14 +70,14 @@ export function SchoolEditForm({ school, onSave }: SchoolEditFormProps) {
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
         <FormField control={form.control} name="name" render={({ field }) => (
           <FormItem>
-            <FormLabel>Nom de l'école</FormLabel>
+            <FormLabel>Nom de l&apos;école</FormLabel>
             <FormControl><Input {...field} /></FormControl>
             <FormMessage />
           </FormItem>
         )} />
         <FormField control={form.control} name="status" render={({ field }) => (
           <FormItem>
-            <FormLabel>Statut de l'école</FormLabel>
+            <FormLabel>Statut de l&apos;école</FormLabel>
             <Select onValueChange={field.onChange} value={field.value}>
               <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
               <SelectContent>
@@ -91,8 +91,8 @@ export function SchoolEditForm({ school, onSave }: SchoolEditFormProps) {
         )} />
         <FormField control={form.control} name="subscription.plan" render={({ field }) => (
           <FormItem>
-            <FormLabel>Plan d'abonnement</FormLabel>
-             <Select onValueChange={field.onChange} value={field.value}>
+            <FormLabel>Plan d&apos;abonnement</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
               <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
               <SelectContent>
                 <SelectItem value="Essentiel">Essentiel</SelectItem>
@@ -103,16 +103,16 @@ export function SchoolEditForm({ school, onSave }: SchoolEditFormProps) {
             <FormMessage />
           </FormItem>
         )} />
-         <FormField control={form.control} name="subscription.status" render={({ field }) => (
+        <FormField control={form.control} name="subscription.status" render={({ field }) => (
           <FormItem>
-            <FormLabel>Statut de l'abonnement</FormLabel>
-             <Select onValueChange={field.onChange} value={field.value}>
+            <FormLabel>Statut de l&apos;abonnement</FormLabel>
+            <Select onValueChange={field.onChange} value={field.value}>
               <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
               <SelectContent>
                 <SelectItem value="active">Actif</SelectItem>
                 <SelectItem value="trialing">En essai</SelectItem>
                 <SelectItem value="past_due">En retard</SelectItem>
-                 <SelectItem value="canceled">Annulé</SelectItem>
+                <SelectItem value="canceled">Annulé</SelectItem>
               </SelectContent>
             </Select>
             <FormMessage />

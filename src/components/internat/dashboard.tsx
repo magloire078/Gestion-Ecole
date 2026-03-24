@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Building, 
-  Bed, 
-  Users, 
+import {
+  Building,
+  Bed,
+  Users,
   UserCheck,
   UserX,
   PlusCircle,
@@ -27,8 +27,8 @@ import { useToast } from '@/hooks/use-toast';
 import { LogForm } from './log-form';
 
 interface LogWithDetails extends log {
-    id: string;
-    studentName?: string;
+  id: string;
+  studentName?: string;
 }
 
 export function InternatDashboard({ schoolId }: { schoolId: string }) {
@@ -36,7 +36,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const { user } = useUser();
   const { toast } = useToast();
   const canManageContent = !!user?.profile?.permissions?.manageInternat;
-  
+
   const [refreshLogs, setRefreshLogs] = useState(0);
 
   // State for date range
@@ -57,13 +57,13 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
 
   const todayLogsQuery = useMemo(() => {
     // Don't run query until date range is set on the client
-    if (!todayStart || !todayEnd) return null; 
+    if (!todayStart || !todayEnd) return null;
     return query(
-        collection(firestore, `ecoles/${schoolId}/internat_entrees_sorties`), 
-        where('timestamp', '>=', todayStart),
-        where('timestamp', '<=', todayEnd),
-        orderBy('timestamp', 'desc'),
-        limit(5)
+      collection(firestore, `ecoles/${schoolId}/internat_entrees_sorties`),
+      where('timestamp', '>=', todayStart),
+      where('timestamp', '<=', todayEnd),
+      orderBy('timestamp', 'desc'),
+      limit(5)
     );
   }, [firestore, schoolId, todayStart, todayEnd, refreshLogs]);
 
@@ -73,33 +73,33 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
   const { data: studentsData } = useCollection(studentsQuery);
   const { data: roomsData } = useCollection(roomsQuery);
   const { data: logsData } = useCollection(todayLogsQuery);
-  
-  const buildings = useMemo(() => buildingsData?.map(doc => ({ id: doc.id, ...doc.data() } as building & {id: string})) || [], [buildingsData]);
-  const students = useMemo(() => studentsData?.map(doc => ({ id: doc.id, ...doc.data() } as Student & {id: string})) || [], [studentsData]);
-  const rooms = useMemo(() => roomsData?.map(doc => ({ id: doc.id, ...doc.data() } as Room & {id: string})) || [], [roomsData]);
+
+  const buildings = useMemo(() => buildingsData?.map(doc => ({ id: doc.id, ...doc.data() } as building & { id: string })) || [], [buildingsData]);
+  const students = useMemo(() => studentsData?.map(doc => ({ id: doc.id, ...doc.data() } as Student & { id: string })) || [], [studentsData]);
+  const rooms = useMemo(() => roomsData?.map(doc => ({ id: doc.id, ...doc.data() } as Room & { id: string })) || [], [roomsData]);
   const studentsMap = useMemo(() => new Map(students.map(s => [s.id, `${s.firstName} ${s.lastName}`])), [students]);
-  
+
   const occupants = useMemo(() => {
     if (!occupantsData || !studentsMap.size || !rooms.length) return [];
     const roomsMap = new Map(rooms.map(r => [r.id, r.number]));
 
     return occupantsData.map(doc => {
-        const occupantData = { id: doc.id, ...doc.data() } as occupant & { id: string };
-        return {
-            ...occupantData,
-            studentName: studentsMap.get(occupantData.studentId) || 'Élève inconnu',
-            roomNumber: roomsMap.get(occupantData.roomId) || 'Chambre inconnue',
-        }
+      const occupantData = { id: doc.id, ...doc.data() } as occupant & { id: string };
+      return {
+        ...occupantData,
+        studentName: studentsMap.get(occupantData.studentId) || 'Élève inconnu',
+        roomNumber: roomsMap.get(occupantData.roomId) || 'Chambre inconnue',
+      }
     })
   }, [occupantsData, studentsMap, rooms]);
 
-  const todayLogs: LogWithDetails[] = useMemo(() => 
+  const todayLogs: LogWithDetails[] = useMemo(() =>
     logsData?.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        studentName: studentsMap.get(doc.data().studentId) || 'Élève inconnu',
+      id: doc.id,
+      ...doc.data(),
+      studentName: studentsMap.get(doc.data().studentId) || 'Élève inconnu',
     } as LogWithDetails)).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) || [],
-  [logsData, studentsMap]);
+    [logsData, studentsMap]);
 
   return (
     <div className="space-y-6">
@@ -108,23 +108,23 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
           <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Bâtiments</CardTitle><Building className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
           <CardContent><div className="text-2xl font-bold">{buildings.length}</div><div className="text-xs text-muted-foreground mt-1">{buildings.filter(b => b.status === 'active').length} actifs</div></CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Chambres occupées</CardTitle><Bed className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{occupants.length}/{rooms.length}</div><div className="text-xs text-muted-foreground mt-1">{rooms.length > 0 ? Math.round((occupants.length / rooms.length) * 100) : 0}% d'occupation</div></CardContent>
+          <CardContent><div className="text-2xl font-bold">{occupants.length}/{rooms.length}</div><div className="text-xs text-muted-foreground mt-1">{rooms.length > 0 ? Math.round((occupants.length / rooms.length) * 100) : 0}% d&apos;occupation</div></CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Internes présents</CardTitle><UserCheck className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
           <CardContent><div className="text-2xl font-bold">{occupants.length - todayLogs.filter(l => l.type === 'sortie' && l.status !== 'returned').length}</div><div className="text-xs text-muted-foreground mt-1">{todayLogs.filter(l => l.type === 'sortie' && l.status !== 'returned').length} absents</div></CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Couvre-feu</CardTitle><Bell className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
           <CardContent><div className="text-2xl font-bold">22:00</div><div className="text-xs text-muted-foreground mt-1">{new Date().getDay() >= 5 ? 'Week-end' : 'Semaine'}</div></CardContent>
         </Card>
       </div>
-      
+
       <Card>
         <CardHeader><CardTitle>Mouvements du jour</CardTitle><CardDescription>{format(new Date(), 'EEEE d MMMM yyyy', { locale: fr })}</CardDescription></CardHeader>
         <CardContent>
@@ -138,7 +138,7 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
                 <div className="text-right"><Badge variant={log.status === 'returned' ? 'secondary' : log.status === 'late' ? 'destructive' : 'outline'}>{log.status === 'returned' ? 'Rentré' : log.status === 'late' ? 'En retard' : 'En cours'}</Badge>{log.status !== 'returned' && <div className="text-xs text-muted-foreground mt-1">Autorisé par: {log.authorizedBy}</div>}</div>
               </div>
             ))}
-            {todayLogs.length === 0 && <p className="text-muted-foreground text-center py-4">Aucun mouvement enregistré aujourd'hui.</p>}
+            {todayLogs.length === 0 && <p className="text-muted-foreground text-center py-4">Aucun mouvement enregistré aujourd&apos;hui.</p>}
           </div>
           {canManageContent && (
             <LogForm schoolId={schoolId} occupants={occupants} onSave={() => setRefreshLogs(prev => prev + 1)} />

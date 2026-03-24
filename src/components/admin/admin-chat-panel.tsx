@@ -44,32 +44,74 @@ export function AdminChatPanel() {
 
     // Initialize audio
     useEffect(() => {
-        audioRef.current = new Audio('/sounds/notification.mp3'); // We'll need to enable this or use a data URI
+        audioRef.current = new Audio('/sounds/notification.mp3');
     }, []);
+
+    const playSound = async () => {
+        // Try playing the mp3 file first
+        let mp3Played = false;
+        if (audioRef.current) {
+            try {
+                audioRef.current.currentTime = 0;
+                await audioRef.current.play();
+                mp3Played = true;
+            } catch (error) {
+                console.log("Audio file playback failed, falling back to beep:", error);
+            }
+        }
+
+        // Fallback to Web Audio API beep if mp3 failed or is missing
+        if (!mp3Played) {
+            try {
+                const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+                if (AudioContext) {
+                    const ctx = new AudioContext();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5 note
+                    
+                    gain.gain.setValueAtTime(0, ctx.currentTime);
+                    gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.01);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start(ctx.currentTime);
+                    osc.stop(ctx.currentTime + 0.5);
+                }
+            } catch (e) {
+                console.error("Web Audio fallback failed:", e);
+            }
+        }
+    };
 
     // Play sound on new message
     useEffect(() => {
-        if (loading) return;
+        if (loading || !chats.length) return;
 
-        // Simple logic: if a chat moves to top or count increases, and it involves a user message
-        // Ideally we compare snapshots, but checking if the top chat has a new user message is a good proxy
+        // Compare current top chat with previous state to detect new messages
         const topChat = chats[0];
-        if (topChat && topChat.messages && topChat.messages.length > 0) {
-            const lastMsg = topChat.messages[topChat.messages.length - 1];
-            // If the last message is from user and very recent (mock check)
-            // A better way is to track "processed" messages or just check if the data changed significantly
-            // ensuring we don't beep on initial load
-            if (chats.length > previousChatCount && previousChatCount !== 0) {
-                // New chat started
-                // playSound();
+        if (topChat && topChat.status === 'active') {
+            const lastMsg = topChat.messages?.[topChat.messages.length - 1];
+            
+            // Check if there's a new user message
+            if (lastMsg?.role === 'user') {
+                // If it's a completely new chat OR the message count increased
+                if (previousChatCount !== 0) {
+                    const prevChat = chatsData?.find(d => d.id === topChat.id);
+                    const prevMessages = prevChat?.data()?.messages || [];
+                    
+                    if (chats.length > previousChatCount || topChat.messages?.length! > prevMessages.length) {
+                        playSound();
+                    }
+                }
             }
         }
         setPreviousChatCount(chats.length);
-
-        // Scan for unread messages (last message is 'user') in open chats?
-        const hasUnread = chats.some(c => c.status === 'active' && c.messages && c.messages[c.messages.length - 1].role === 'user');
-        // if (hasUnread) ...
-    }, [chats, loading, previousChatCount]);
+    }, [chats, loading, previousChatCount, chatsData]);
 
     const selectedChat = chats.find(c => c.id === selectedChatId);
 

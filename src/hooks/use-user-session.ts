@@ -9,7 +9,7 @@ import { signOut } from 'firebase/auth';
 import { useToast } from './use-toast';
 
 export function useUserSession() {
-    const { user, loading: userLoading, schoolId, isDirector, setActiveSchool: setUserActiveSchool } = useUser();
+    const { user, loading: userLoading, schoolId, isDirector, setActiveSchool: setUserActiveSchool, loadingTimeout, reloadUser } = useUser();
     const { schoolData, subscription, loading: schoolLoading, error: schoolError } = useSchoolData();
     const auth = useAuth();
     const router = useRouter();
@@ -104,5 +104,7 @@ export function useUserSession() {
         schoolError,
         logout,
         switchSchool,
+        loadingTimeout,
+        reloadUser,
     };
 }

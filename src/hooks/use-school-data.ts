@@ -38,7 +38,7 @@ interface SchoolData extends DocumentData {
 }
 
 export function useSchoolData() {
-    const { user: authUser, loading: userLoading, schoolId: authSchoolId } = useUser();
+    const { user: authUser, loading: userLoading, schoolId: authSchoolId, loadingTimeout, reloadUser } = useUser();
     const firestore = useFirestore();
     const [schoolData, setSchoolData] = useState<SchoolData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -46,7 +46,6 @@ export function useSchoolData() {
 
     useEffect(() => {
         if (userLoading) {
-            setLoading(true);
             return;
         }
 
@@ -57,7 +56,6 @@ export function useSchoolData() {
             return;
         }
 
-        setLoading(true);
         const schoolDocRef = doc(firestore, 'ecoles', authSchoolId);
         const unsubscribe = onSnapshot(schoolDocRef, (docSnap) => {
             if (docSnap.exists()) {
@@ -111,7 +109,9 @@ export function useSchoolData() {
         digitalSignatureUrl: schoolData?.digitalSignatureUrl,
         currentAcademicYear: schoolData?.currentAcademicYear,
         loading,
+        loadingTimeout,
         error,
-        updateSchoolData
+        updateSchoolData,
+        reloadUser
     };
 }

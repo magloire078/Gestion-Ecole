@@ -115,9 +115,8 @@ service cloud.firestore {
     // =================================
     
     match /users/{userId} {
-      allow read, update: if request.auth.uid == userId || isSuperAdmin();
+      allow read, update, delete: if request.auth.uid == userId || isSuperAdmin();
       allow create: if isSignedIn();
-      allow delete: if isSuperAdmin();
     }
 
     // =================================
@@ -136,7 +135,7 @@ service cloud.firestore {
         allow create: if hasPermission(schoolId, 'manageUsers') || (request.auth.uid == staffId);
         allow read: if isSchoolMember(schoolId);
         allow update: if hasPermission(schoolId, 'manageUsers') || request.auth.uid == staffId;
-        allow delete: if hasPermission(schoolId, 'manageUsers');
+        allow delete: if hasPermission(schoolId, 'manageUsers') || (resource.data.email == request.auth.token.email);
       }
 
       match /conges_personnel/{congeId} {

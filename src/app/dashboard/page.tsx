@@ -100,10 +100,16 @@ const RegularDashboard = () => {
 
 
 function DashboardPageContent() {
-  const { user, isLoading } = useUserSession();
+  const { user, isLoading, loadingTimeout, reloadUser } = useUserSession();
 
   if (isLoading) {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen 
+        message="Chargement de votre tableau de bord" 
+        showRetry={loadingTimeout} 
+        onRetry={reloadUser} 
+      />
+    );
   }
 
   if (user?.isParent) {

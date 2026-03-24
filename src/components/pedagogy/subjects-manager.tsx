@@ -66,7 +66,7 @@ export function SubjectsManager() {
           <div className="flex justify-between items-center">
             <div>
               <CardTitle>Matières Enseignées</CardTitle>
-              <CardDescription>Gérez les matières proposées dans l'établissement.</CardDescription>
+              <CardDescription>Gérez les matières proposées dans l&apos;établissement.</CardDescription>
             </div>
             {isDirectorOrAdmin && <Button size="sm" onClick={() => handleOpenForm(null)}><PlusCircle className="mr-2 h-4 w-4" />Nouvelle Matière</Button>}
           </div>
@@ -131,7 +131,7 @@ export function SubjectsManager() {
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle><AlertDialogDescription>L'élément <strong>"{itemToDelete?.name}"</strong> sera supprimé. Cette action est irréversible.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle><AlertDialogDescription>L&apos;élément <strong>&quot;{itemToDelete?.name}&quot;</strong> sera supprimé. Cette action est irréversible.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

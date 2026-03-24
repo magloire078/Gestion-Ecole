@@ -212,7 +212,7 @@ export function CyclesManager() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-                        <AlertDialogDescription>Le cycle <strong>"{cycleToDelete?.name}"</strong> sera supprimé. Cette action est irréversible.</AlertDialogDescription>
+                        <AlertDialogDescription>Le cycle <strong>&quot;{cycleToDelete?.name}&quot;</strong> sera supprimé. Cette action est irréversible.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDeleteCycle} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction></AlertDialogFooter>
                 </AlertDialogContent>
@@ -222,7 +222,7 @@ export function CyclesManager() {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Êtes-vous sûr(e) ?</AlertDialogTitle>
-                        <AlertDialogDescription>Le niveau <strong>"{niveauToDelete?.name}"</strong> sera supprimé. Cette action est irréversible.</AlertDialogDescription>
+                        <AlertDialogDescription>Le niveau <strong>&quot;{niveauToDelete?.name}&quot;</strong> sera supprimé. Cette action est irréversible.</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDeleteNiveau} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction></AlertDialogFooter>
                 </AlertDialogContent>

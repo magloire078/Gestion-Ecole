@@ -12,10 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Upload, FileDown, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, getDoc, doc } from 'firebase/firestore';
 import type { class_type, student } from '@/lib/data-types';
 
 interface BulkImportProps {
@@ -146,6 +147,44 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         if (importType === 'students') collectionPath = `ecoles/${schoolId}/eleves`;
         else if (importType === 'teachers') collectionPath = `ecoles/${schoolId}/personnel`;
 
+        // Vérification du plafond AVANT l'import d'élèves
+        if (importType === 'students') {
+            try {
+                const [schoolSnap, statsSnap] = await Promise.all([
+                    getDoc(doc(firestore, `ecoles/${schoolId}`)),
+                    getDoc(doc(firestore, `ecoles/${schoolId}/stats/finance`))
+                ]);
+                if (schoolSnap.exists()) {
+                    let maxStudents: number | undefined = schoolSnap.data()?.subscription?.maxStudents;
+                    const plan = schoolSnap.data()?.subscription?.plan || 'Essentiel';
+
+                    // Fallback for Essentiel plan
+                    if (maxStudents === undefined || maxStudents === null) {
+                        if (plan === 'Essentiel') {
+                            maxStudents = 50;
+                        }
+                    }
+
+                    if (maxStudents) {
+                        const currentCount: number = statsSnap.exists() ? (statsSnap.data()?.studentCount ?? 0) : 0;
+                        const rowsToImport = fileData.filter(r => r && Object.keys(r).length > 0).length;
+                        if (currentCount + rowsToImport > maxStudents) {
+                            toast({
+                                variant: 'destructive',
+                                title: "Limite d'élèves atteinte",
+                                description: `Votre plan ${plan} est limité à ${maxStudents} élèves. Vous avez actuellement ${currentCount} élèves et tentez d'en importer ${rowsToImport}. Supprimez des élèves ou mettez à niveau votre abonnement.`,
+                            });
+                            setIsUploading(false);
+                            return;
+                        }
+                    }
+                }
+            } catch (limitErr) {
+                console.error('Erreur vérification limite élèves:', limitErr);
+            }
+        }
+
+
         for (let i = 0; i < fileData.length; i++) {
             const row = fileData[i];
             const rowIndex = i + 2; // +1 pour l'index 0, +1 pour l'en-tête
@@ -260,18 +299,19 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
             toast({
                 variant: "destructive",
                 title: "Import terminé avec des erreurs",
-                description: `${successCount} succès, ${errorCount} échecs. Consultez la console pour les détails.`,
+                description: `${successCount} succès, ${errorCount} échecs.`,
             });
-            // Afficher les premières erreurs dans une alerte ou un autre toast si besoin, 
-            // ici on se contente de la description globale pour ne pas spammer
-            console.error("Détails des erreurs d'import:", errors);
+            setShowResults({ successCount, errorCount, errors });
         } else {
             toast({
                 title: "Import terminé avec succès",
                 description: `${successCount} éléments importés.`,
             });
+            setShowResults({ successCount, errorCount, errors: [] });
         }
     };
+
+    const [showResults, setShowResults] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
 
     return (
         <Card>
@@ -365,6 +405,42 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         </div>
                         <p className="text-xs text-right text-muted-foreground">{progress.current} / {progress.total}</p>
                     </div>
+                )}
+
+                {showResults && (
+                    <Alert variant={showResults.errorCount > 0 ? "destructive" : "default"} className={cn(showResults.errorCount === 0 && "bg-emerald-50 border-emerald-200 text-emerald-800")}>
+                        <div className="flex items-start gap-3">
+                            {showResults.errorCount > 0 ? <AlertCircle className="h-5 w-5 mt-0.5" /> : <CheckCircle className="h-5 w-5 mt-0.5" />}
+                            <div className="flex-1">
+                                <AlertTitle className="font-bold">
+                                    {showResults.errorCount > 0 ? "Rapport d'importation (avec erreurs)" : "Importation réussie"}
+                                </AlertTitle>
+                                <AlertDescription className="mt-2 space-y-3">
+                                    <p className="text-sm">
+                                        Sur un total de <strong>{showResults.successCount + showResults.errorCount}</strong> lignes traitées :
+                                        <br />
+                                        - Succès : <span className="font-bold text-emerald-600">{showResults.successCount}</span>
+                                        <br />
+                                        - Échecs : <span className="font-bold text-destructive">{showResults.errorCount}</span>
+                                    </p>
+
+                                    {showResults.errors.length > 0 && (
+                                        <div className="mt-4 p-3 bg-destructive/10 rounded-lg border border-destructive/20 max-h-40 overflow-y-auto">
+                                            <p className="text-xs font-bold mb-2 uppercase tracking-wider">Détails des erreurs :</p>
+                                            <ul className="list-disc list-inside text-xs space-y-1">
+                                                {showResults.errors.map((err, i) => (
+                                                    <li key={i}>{err}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    <Button variant="outline" size="sm" onClick={() => setShowResults(null)} className="mt-2 h-8 text-xs">
+                                        Fermer le rapport
+                                    </Button>
+                                </AlertDescription>
+                            </div>
+                        </div>
+                    </Alert>
                 )}
             </CardContent>
         </Card>

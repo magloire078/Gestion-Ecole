@@ -257,7 +257,7 @@ export const FullAuditLog = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="px-6 py-12 text-center text-slate-400 font-bold italic">
-                    Aucun journal d'audit disponible.
+                    Aucun journal d&apos;audit disponible.
                   </TableCell>
                 </TableRow>
               )}

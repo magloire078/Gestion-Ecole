@@ -11,7 +11,7 @@ export function useNotifications() {
   const firestore = useFirestore();
 
   const notificationsQuery = useMemo(() => {
-    if (!user?.uid || !user?.schoolId) return null;
+    if (!user?.uid || !user?.schoolId || !firestore) return null;
     return query(
       collection(firestore, `ecoles/${user.schoolId}/notifications`),
       where('userId', '==', user.uid),

@@ -6,9 +6,33 @@ import type { AppUser, UserProfile, user_root, parent as Parent } from '@/lib/da
 import { allPermissions } from '@/lib/permissions';
 
 export async function fetchUserAppData(firestore: Firestore, firebaseUser: FirebaseUser): Promise<AppUser | null> {
+    const projectId = (firestore as any)._databaseId?.projectId || (firestore as any).app?.options?.projectId || 'unknown';
+    console.log(`[UserService] Starting fetchUserAppData for ${firebaseUser.uid} (Project: ${projectId})`);
+
+    const start = performance.now();
     const userRootRef = doc(firestore, 'users', firebaseUser.uid);
     try {
-        const userRootDoc = await getDoc(userRootRef);
+        let userRootDoc: any;
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts) {
+            try {
+                userRootDoc = await getDoc(userRootRef);
+                break; // Success
+            } catch (e: any) {
+                attempts++;
+                const isOfflineError = e.code === 'unavailable' || e.message?.toLowerCase().includes('offline');
+                if (isOfflineError && attempts < maxAttempts) {
+                    console.warn(`[UserService] Offline error (attempt ${attempts}), retrying in 2s...`);
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                } else {
+                    throw e; // Rethrow if not offline error or max attempts reached
+                }
+            }
+        }
+
+        console.log(`[UserService] userRoot doc fetched in ${(performance.now() - start).toFixed(2)}ms`);
 
         if (!userRootDoc.exists()) {
             // Authenticated user but no user_root doc -> needs onboarding
@@ -38,8 +62,10 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
 
         // Parallelize fetching of school names and profile
         const schoolNamesPromise = Promise.all(schoolIds.map(async (id) => {
+            const rowStart = performance.now();
             try {
                 const schoolSnap = await getDoc(doc(firestore, 'ecoles', id));
+                console.log(`[UserService] School ${id} fetched in ${(performance.now() - rowStart).toFixed(2)}ms`);
                 return { id, name: schoolSnap.exists() ? (schoolSnap.data().name || `École ${id.substring(0, 6)}`) : `Inconnue (${id.substring(0, 6)})` };
             } catch (e) {
                 return { id, name: `Erreur (${id.substring(0, 6)})` };
@@ -55,7 +81,9 @@ export async function fetchUserAppData(firestore: Firestore, firebaseUser: Fireb
             }
         }
 
+        const profileStart = performance.now();
         const [schoolNamesList, profileSnap] = await Promise.all([schoolNamesPromise, profilePromise]);
+        console.log(`[UserService] Parallel fetches completed in ${(performance.now() - profileStart).toFixed(2)}ms`);
 
         const schoolNames: { [key: string]: string } = {};
         schoolNamesList.forEach(item => { schoolNames[item.id] = item.name; });

@@ -39,7 +39,7 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   const today = format(new Date(), 'yyyy-MM-dd');
   const nextMonth = format(addMonths(new Date(), 1), 'yyyy-MM-dd');
 
@@ -60,7 +60,7 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
     },
   });
   const { reset } = form;
-  
+
   const availableRooms = useMemo(() => rooms.filter(room => room.status === 'available' || room.id === occupant?.roomId), [rooms, occupant]);
 
   useEffect(() => {
@@ -81,22 +81,22 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
 
   const handleSubmit = async (values: OccupantFormValues) => {
     setIsSubmitting(true);
-    
+
     const dataToSave = { ...values };
 
     const promise = occupant && occupant.id
-        ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants/${occupant.id}`), dataToSave, { merge: true })
-        : addDoc(collection(firestore, `ecoles/${schoolId}/internat_occupants`), dataToSave);
-    
+      ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants/${occupant.id}`), dataToSave, { merge: true })
+      : addDoc(collection(firestore, `ecoles/${schoolId}/internat_occupants`), dataToSave);
+
     try {
-        await promise;
-        toast({ title: 'Occupation enregistrée', description: "L'assignation de la chambre a été enregistrée." });
-        onSave();
-    } catch(e) {
-        console.error("Error saving occupant:", e);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'occupation.' });
+      await promise;
+      toast({ title: 'Occupation enregistrée', description: "L'assignation de la chambre a été enregistrée." });
+      onSave();
+    } catch (e) {
+      console.error("Error saving occupant:", e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'enregistrer l\'occupation.' });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -104,24 +104,24 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-4">
-            <FormField control={form.control} name="studentId" render={({ field }) => (
-                <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!occupant}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id!}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-            )}/>
-            <FormField control={form.control} name="roomId" render={({ field }) => (
-                <FormItem><FormLabel>Chambre</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une chambre disponible" /></SelectTrigger></FormControl><SelectContent>{availableRooms.map(r => <SelectItem key={r.id} value={r.id}>{r.number}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
-            )}/>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem><FormLabel>Date d'entrée</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem><FormLabel>Date de sortie (optionnel)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            </div>
-             <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="pending">En attente</SelectItem><SelectItem value="suspended">Suspendu</SelectItem><SelectItem value="terminated">Terminé</SelectItem></SelectContent></Select></FormItem>)} />
-            <FormField control={form.control} name="nextPaymentDue" render={({ field }) => (<FormItem><FormLabel>Prochain paiement dû</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="studentId" render={({ field }) => (
+            <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!occupant}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id!}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+          )} />
+          <FormField control={form.control} name="roomId" render={({ field }) => (
+            <FormItem><FormLabel>Chambre</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner une chambre disponible" /></SelectTrigger></FormControl><SelectContent>{availableRooms.map(r => <SelectItem key={r.id} value={r.id}>{r.number}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
+          )} />
+          <div className="grid grid-cols-2 gap-4">
+            <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem><FormLabel>Date d&apos;entrée</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem><FormLabel>Date de sortie (optionnel)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          </div>
+          <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="pending">En attente</SelectItem><SelectItem value="suspended">Suspendu</SelectItem><SelectItem value="terminated">Terminé</SelectItem></SelectContent></Select></FormItem>)} />
+          <FormField control={form.control} name="nextPaymentDue" render={({ field }) => (<FormItem><FormLabel>Prochain paiement dû</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         <DialogFooter>
-            <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>
-            <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
-            </Button>
+          <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+          </Button>
         </DialogFooter>
       </form>
     </Form>

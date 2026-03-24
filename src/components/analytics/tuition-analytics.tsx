@@ -9,20 +9,19 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import type { student as Student, class_type as Class } from '@/lib/data-types';
 
 import { StatCard } from '@/components/ui/stat-card';
+import { useStudents } from '@/hooks/use-students';
 import { Wallet, Banknote, TrendingUp } from 'lucide-react';
 
 export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
   const firestore = useFirestore();
-  const studentsQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/eleves`), where('status', '==', 'Actif')), [firestore, schoolId]);
   const classesQuery = useMemo(() => query(collection(firestore, `ecoles/${schoolId}/classes`)), [firestore, schoolId]);
 
-  const { data: studentsData, loading: studentsLoading } = useCollection(studentsQuery);
+  const { students, loading: studentsLoading } = useStudents(schoolId, 'all', 'active');
   const { data: classesData, loading: classesLoading } = useCollection(classesQuery);
 
   const { chartData, globalStats } = useMemo(() => {
-    if (!studentsData || !classesData) return { chartData: [], globalStats: { totalFees: 0, totalDue: 0, totalCollected: 0, recoveryRate: 0 } };
+    if (!students || !classesData) return { chartData: [], globalStats: { totalFees: 0, totalDue: 0, totalCollected: 0, recoveryRate: 0 } };
 
-    const students = studentsData.map(doc => doc.data() as Student);
     const classes = classesData.map(doc => ({ id: doc.id, ...doc.data() } as Class & { id: string }));
     const classMap = new Map(classes.map(c => [c.id, c.name]));
 
@@ -60,7 +59,7 @@ export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
       }
     };
 
-  }, [studentsData, classesData]);
+  }, [students, classesData]);
 
   const loading = studentsLoading || classesLoading;
 

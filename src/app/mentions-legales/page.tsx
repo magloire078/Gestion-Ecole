@@ -85,8 +85,8 @@ export default function MentionsLegalesPage() {
                                 </p>
                                 <ul className="list-disc pl-6 space-y-2">
                                     <li><strong>Finalité :</strong> Les données collectées (noms, prénoms, emails, données scolaires) servent exclusivement à la gestion administrative et pédagogique des établissements utilisateurs.</li>
-                                    <li><strong>Confidentialité :</strong> GéreEcole s'engage à ne jamais vendre ou louer vos données à des tiers.</li>
-                                    <li><strong>Droit d'accès :</strong> Chaque utilisateur dispose d'un droit d'accès, de rectification et d'opposition aux données personnelles le concernant, en écrivant à : <strong>support@gerecole.com</strong>.</li>
+                                    <li><strong>Confidentialité :</strong> GéreEcole s&apos;engage à ne jamais vendre ou louer vos données à des tiers.</li>
+                                    <li><strong>Droit d&apos;accès :</strong> Chaque utilisateur dispose d&apos;un droit d&apos;accès, de rectification et d&apos;opposition aux données personnelles le concernant, en écrivant à : <strong>support@gerecole.com</strong>.</li>
                                 </ul>
                             </div>
                         </section>

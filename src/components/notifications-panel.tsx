@@ -17,14 +17,14 @@ import { useNotifications } from "@/hooks/use-notifications";
 import type { notification as Notification } from '@/lib/data-types';
 import { Badge } from "./ui/badge";
 
-export function NotificationsPanel({ 
-  isOpen, 
-  onClose, 
-}: { 
+export function NotificationsPanel({
+  isOpen,
+  onClose,
+}: {
   isOpen: boolean;
   onClose: () => void;
 }) {
-  
+
   const { user } = useUser();
   const firestore = useFirestore();
   const { notifications, unreadCount, loading } = useNotifications();
@@ -34,7 +34,7 @@ export function NotificationsPanel({
     const notifRef = doc(firestore, `ecoles/${user.schoolId}/notifications`, notificationId);
     await updateDoc(notifRef, { isRead: true });
   };
-  
+
   const handleMarkAllAsRead = async () => {
     if (!user?.schoolId || unreadCount === 0) return;
     const batch = writeBatch(firestore);
@@ -53,7 +53,7 @@ export function NotificationsPanel({
     }
     onClose();
   };
-  
+
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent className="w-full sm:max-w-md p-0 flex flex-col">
@@ -73,36 +73,36 @@ export function NotificationsPanel({
         </SheetHeader>
 
         <ScrollArea className="flex-1">
-            {loading ? (
-                <div className="p-6 space-y-4">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-                </div>
-            ) : notifications.length > 0 ? (
-                <div className="divide-y">
-                    {notifications.map(notification => (
-                        <Link key={notification.id} href={notification.href || '#'} passHref>
-                          <div 
-                              className={cn(
-                                "p-4 hover:bg-muted/50 cursor-pointer", 
-                                !notification.isRead && "bg-blue-50 dark:bg-blue-900/20"
-                              )}
-                              onClick={() => handleNotificationClick(notification)}
-                          >
-                              <p className="font-semibold">{notification.title}</p>
-                              <p className="text-sm text-muted-foreground">{notification.content}</p>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {notification.createdAt ? formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true, locale: fr }) : ''}
-                              </p>
-                          </div>
-                        </Link>
-                    ))}
-                </div>
-            ) : (
-                <div className="p-8 text-center h-full flex flex-col justify-center items-center">
-                    <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <p className="text-muted-foreground">Vous n'avez aucune notification.</p>
-                </div>
-            )}
+          {loading ? (
+            <div className="p-6 space-y-4">
+              {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+            </div>
+          ) : notifications.length > 0 ? (
+            <div className="divide-y">
+              {notifications.map(notification => (
+                <Link key={notification.id} href={notification.href || '#'} passHref>
+                  <div
+                    className={cn(
+                      "p-4 hover:bg-muted/50 cursor-pointer",
+                      !notification.isRead && "bg-blue-50 dark:bg-blue-900/20"
+                    )}
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <p className="font-semibold">{notification.title}</p>
+                    <p className="text-sm text-muted-foreground">{notification.content}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {notification.createdAt ? formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true, locale: fr }) : ''}
+                    </p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="p-8 text-center h-full flex flex-col justify-center items-center">
+              <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-muted-foreground">Vous n&apos;avez aucune notification.</p>
+            </div>
+          )}
         </ScrollArea>
       </SheetContent>
     </Sheet>

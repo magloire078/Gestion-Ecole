@@ -29,7 +29,7 @@ export const seedAdminSystemData = async (
                     status: 'active',
                     startDate: '2025-09-01',
                     endDate: '2026-08-31',
-                    maxStudents: 200,
+                    maxStudents: 50,
                     activeModules: ['sante', 'cantine']
                 }
             },

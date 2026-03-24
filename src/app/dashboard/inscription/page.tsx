@@ -1,4 +1,4 @@
-﻿
+
 
 'use client';
 
@@ -196,13 +196,19 @@ export default function RegistrationPage() {
         title: "Inscription réussie",
         description: `${values.firstName} ${values.lastName} a été inscrit(e) avec succès.`,
       });
-      router.push(`/dashboard/dossiers-eleves`);
-    } catch (serverError) {
+      // Petit délai pour laisser le toast respirer et éviter les port errors
+      setTimeout(() => {
+        router.push(`/dashboard/dossiers-eleves`);
+      }, 500);
+    } catch (serverError: any) {
       console.error("Error creating student:", serverError);
+      const isLimitError = serverError?.message?.startsWith('LIMIT_REACHED');
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible d'enregistrer l'inscription. Vérifiez vos permissions et réessayez.",
+        title: isLimitError ? "Limite d'élèves atteinte" : "Erreur",
+        description: isLimitError
+          ? serverError.message.replace('LIMIT_REACHED: ', '')
+          : "Impossible d'enregistrer l'inscription. Vérifiez vos permissions et réessayez.",
       });
     }
   };

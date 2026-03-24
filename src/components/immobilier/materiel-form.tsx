@@ -108,7 +108,7 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
                             </FormItem>
                         )}
                     />
-                    <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nom de l'équipement</FormLabel><FormControl><Input {...field} className="glass" /></FormControl><FormMessage /></FormItem>} />
+                    <FormField control={form.control} name="name" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Nom de l&apos;équipement</FormLabel><FormControl><Input {...field} className="glass" /></FormControl><FormMessage /></FormItem>} />
                     <FormField control={form.control} name="category" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Catégorie</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="glass"><SelectValue /></SelectTrigger></FormControl><SelectContent className="glass"><SelectItem value="Mobilier">Mobilier</SelectItem><SelectItem value="Informatique">Informatique</SelectItem><SelectItem value="Pédagogique">Pédagogique</SelectItem><SelectItem value="Sportif">Sportif</SelectItem><SelectItem value="Autre">Autre</SelectItem></SelectContent></Select></FormItem>} />
                     <div className="grid grid-cols-2 gap-4">
                         <FormField control={form.control} name="quantity" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Quantité</FormLabel><FormControl><Input type="number" {...field} className="glass" /></FormControl><FormMessage /></FormItem>} />
@@ -139,7 +139,7 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
                             </FormItem>
                         )}
                     />
-                    <FormField control={form.control} name="acquisitionDate" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date d'acquisition</FormLabel><FormControl><Input type="date" {...field} className="glass" /></FormControl></FormItem>} />
+                    <FormField control={form.control} name="acquisitionDate" render={({ field }) => <FormItem><FormLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Date d&apos;acquisition</FormLabel><FormControl><Input type="date" {...field} className="glass" /></FormControl></FormItem>} />
                 </div>
                 <DialogFooter className="pt-6 border-t border-white/5">
                     <Button type="button" variant="ghost" onClick={onSave} className="hover:bg-white/5 font-medium">Annuler</Button>

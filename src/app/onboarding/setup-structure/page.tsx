@@ -9,16 +9,22 @@ import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { applySchoolTemplate } from '@/services/structure-creation';
 import { useFirestore } from '@/firebase';
-import { SCHOOL_TEMPLATES } from '@/lib/templates';
-import { Loader2, ArrowRight, SkipForward, Library, GraduationCap } from 'lucide-react';
+import { getTemplateForCountry, getTemplateDisplayName } from '@/lib/templates';
+import { getCountryByCode, DEFAULT_COUNTRY, type CountryCode } from '@/lib/countries-data';
+import { Loader2, SkipForward, Library, GraduationCap } from 'lucide-react';
 import { LoadingScreen } from '@/components/ui/loading-screen';
 
 export default function SetupStructurePage() {
     const router = useRouter();
-    const { schoolId, loading: schoolLoading } = useSchoolData();
+    const { schoolId, loading: schoolLoading, loadingTimeout, reloadUser, schoolData } = useSchoolData();
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
+
+    const countryCode = (schoolData?.country as CountryCode) || DEFAULT_COUNTRY;
+    const countryConfig = getCountryByCode(countryCode);
+    const template = getTemplateForCountry(countryCode);
+    const templateName = getTemplateDisplayName(countryCode);
 
     const handleApplyTemplate = async () => {
         if (!schoolId || !firestore) {
@@ -27,7 +33,7 @@ export default function SetupStructurePage() {
         }
         setIsProcessing(true);
         try {
-            await applySchoolTemplate(firestore, schoolId, SCHOOL_TEMPLATES.IVORIAN_SYSTEM);
+            await applySchoolTemplate(firestore, schoolId, template);
             toast({ title: 'Structure appliquée !', description: 'Les cycles et niveaux ont été créés.' });
             router.push('/dashboard');
         } catch (e) {
@@ -41,8 +47,17 @@ export default function SetupStructurePage() {
     };
 
     if (schoolLoading) {
-        return <LoadingScreen />;
+        return (
+            <LoadingScreen 
+                message="Chargement de la structure" 
+                showRetry={loadingTimeout} 
+                onRetry={reloadUser} 
+            />
+        );
     }
+
+    // Build a summary of the cycles contained in this template
+    const cyclesSummary = template.cycles.map(c => c.name).join(', ');
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -61,9 +76,12 @@ export default function SetupStructurePage() {
                         <div className="flex items-start gap-4">
                             <GraduationCap className="h-8 w-8 text-primary mt-1" />
                             <div>
-                                <h3 className="font-semibold">Modèle du Système Éducatif Ivoirien</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Crée automatiquement tous les cycles (Maternelle, Primaire, Collège, Lycée...) et les niveaux correspondants (CP1, 6ème, Terminale A...) pour vous.
+                                <h3 className="font-semibold flex items-center gap-2">
+                                    {countryConfig?.flag && <span className="text-xl">{countryConfig.flag}</span>}
+                                    Modèle du {templateName}
+                                </h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    Crée automatiquement les cycles ({cyclesSummary}) et les niveaux correspondants pour vous.
                                 </p>
                             </div>
                         </div>
@@ -89,5 +107,3 @@ export default function SetupStructurePage() {
         </div>
     );
 }
-
-    

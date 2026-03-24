@@ -13,9 +13,8 @@ import { Dialog, DialogFooter, DialogContent, DialogHeader, DialogTitle, DialogD
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect, useMemo } from 'react';
-import { useAuth, useUser } from '@/firebase';
+
 import { StaffService } from '@/services/staff-services';
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings, subject as Subject } from '@/lib/data-types';
 import { format, parseISO, isValid } from 'date-fns';
 import { ImageUploader } from '../image-uploader';
@@ -78,8 +77,7 @@ interface StaffEditFormProps {
 }
 
 export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, subjects, onFormSubmit }: StaffEditFormProps) {
-    const auth = useAuth();
-    const { user: currentUser } = useUser();
+
     const { toast } = useToast();
 
     const [isPayslipOpen, setIsPayslipOpen] = useState(false);
@@ -152,7 +150,11 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                 await StaffService.createStaffMember(schoolId, dataToSave);
                 toast({ title: "Membre du personnel ajouté", description: `${values.firstName} ${values.lastName} a été ajouté(e). L'utilisateur pourra rejoindre l'école en utilisant cette adresse email.` });
             }
-            onFormSubmit();
+            // On attend un petit peu avant de fermer pour laisser le toast s'afficher
+            // et éviter les erreurs de "port déconnecté" avec les extensions (type React DevTools)
+            setTimeout(() => {
+                onFormSubmit();
+            }, 500);
         } catch (error) {
             console.error("Error saving staff:", error);
             toast({

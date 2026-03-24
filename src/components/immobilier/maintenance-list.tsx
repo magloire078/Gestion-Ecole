@@ -62,7 +62,7 @@ export function MaintenanceList({ schoolId, limit: limitCount = 5 }: { schoolId:
                     <Wrench className="w-5 h-5 mr-2 text-orange-500" />
                     Maintenance en cours
                 </CardTitle>
-                <CardDescription>Les dernières demandes d'intervention</CardDescription>
+                <CardDescription>Les dernières demandes d&apos;intervention</CardDescription>
             </CardHeader>
             <CardContent>
                 {tasks.length === 0 ? (

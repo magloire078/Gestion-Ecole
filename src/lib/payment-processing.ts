@@ -1,5 +1,5 @@
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { addMonths } from 'date-fns';
 import type { school as School, student as Student } from './data-types';
@@ -16,7 +16,7 @@ export async function processSubscriptionPayment(
 ) {
     console.log(`[PaymentProcessing] Updating subscription for school: ${schoolId}, plan: ${planName}, duration: ${durationMonths} months`);
 
-    const schoolRef = adminDb.collection('ecoles').doc(schoolId);
+    const schoolRef = getAdminDb().collection('ecoles').doc(schoolId);
     const schoolSnap = await schoolRef.get();
 
     if (!schoolSnap.exists) {
@@ -40,7 +40,7 @@ export async function processSubscriptionPayment(
     // Send confirmation email to director
     if (schoolData.directorEmail) {
         try {
-            await adminDb.collection('mail').add({
+            await getAdminDb().collection('mail').add({
                 to: schoolData.directorEmail,
                 message: {
                     subject: `Confirmation d'abonnement - ${planName} - ${schoolData.name}`,
@@ -91,8 +91,8 @@ export async function processTuitionPayment(
 ) {
     console.log(`[PaymentProcessing] Updating tuition for student: ${studentId} in school: ${schoolId}, amount: ${amountPaid}`);
 
-    const studentRef = adminDb.doc(`ecoles/${schoolId}/eleves/${studentId}`);
-    const schoolSnap = await adminDb.collection('ecoles').doc(schoolId).get();
+    const studentRef = getAdminDb().doc(`ecoles/${schoolId}/eleves/${studentId}`);
+    const schoolSnap = await getAdminDb().collection('ecoles').doc(schoolId).get();
     const studentSnap = await studentRef.get();
 
     if (!studentSnap.exists || !schoolSnap.exists) {
@@ -105,7 +105,7 @@ export async function processTuitionPayment(
     const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
     const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
 
-    const batch = adminDb.batch();
+    const batch = getAdminDb().batch();
     const reference = `PAY-${Date.now().toString().slice(-6)}`;
 
     // 1. Update Student Balance
@@ -116,7 +116,7 @@ export async function processTuitionPayment(
     });
 
     // 2. Create Accounting Record
-    const accountingRef = adminDb.collection(`ecoles/${schoolId}/comptabilite`).doc();
+    const accountingRef = getAdminDb().collection(`ecoles/${schoolId}/comptabilite`).doc();
     batch.set(accountingRef, {
         schoolId,
         studentId,
@@ -130,7 +130,7 @@ export async function processTuitionPayment(
     });
 
     // 3. Create Student Payment Record
-    const paymentRef = adminDb.collection(`ecoles/${schoolId}/eleves/${studentId}/paiements`).doc();
+    const paymentRef = getAdminDb().collection(`ecoles/${schoolId}/eleves/${studentId}/paiements`).doc();
     batch.set(paymentRef, {
         schoolId,
         studentId,
@@ -146,7 +146,7 @@ export async function processTuitionPayment(
     });
 
     // 4. Update Global Financial Stats
-    const statsRef = adminDb.doc(`ecoles/${schoolId}/stats/finance`);
+    const statsRef = getAdminDb().doc(`ecoles/${schoolId}/stats/finance`);
     batch.set(statsRef, {
         totalAmountDue: FieldValue.increment(-amountPaid),
         lastUpdated: FieldValue.serverTimestamp()
@@ -161,11 +161,11 @@ export async function processTuitionPayment(
 
     for (const parentId of parentIds) {
         try {
-            const parentSnap = await adminDb.doc(`ecoles/${schoolId}/parents/${parentId}`).get();
+            const parentSnap = await getAdminDb().doc(`ecoles/${schoolId}/parents/${parentId}`).get();
             if (parentSnap.exists) {
                 const parentData = parentSnap.data();
                 if (parentData?.email) {
-                    await adminDb.collection('mail').add({
+                    await getAdminDb().collection('mail').add({
                         to: parentData.email,
                         message: {
                             subject: `Reçu de paiement - ${studentName}`,

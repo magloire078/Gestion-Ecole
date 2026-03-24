@@ -7,6 +7,8 @@ import { doc, writeBatch, collection, serverTimestamp, getDocs, getDoc, query, w
 
 export interface CreateSchoolData {
   name: string;
+  country?: string;
+  region?: string;
   drena?: string;
   address?: string;
   phone?: string;
@@ -61,6 +63,8 @@ export class SchoolCreationService {
       // 2. Créer le document de l'école
       const schoolData: Omit<SchoolData, 'id'> = {
         name: data.name,
+        country: data.country || 'CI',
+        region: data.region || '',
         drena: data.drena,
         address: data.address || '',
         phone: data.phone || '',
@@ -80,6 +84,8 @@ export class SchoolCreationService {
           status: 'trialing',
           startDate: new Date().toISOString(),
           endDate: new Date(new Date().setDate(new Date().getDate() + 30)).toISOString(),
+          maxStudents: 50,
+          maxCycles: 5,
         }
       };
 

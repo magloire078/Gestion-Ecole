@@ -84,7 +84,7 @@ export function LoanList({ schoolId }: { schoolId: string }) {
             <TableRow>
               <TableHead>Élève</TableHead>
               <TableHead>Livre</TableHead>
-              <TableHead>Date d'emprunt</TableHead>
+              <TableHead>Date d&apos;emprunt</TableHead>
               <TableHead>Date de retour</TableHead>
               <TableHead>Statut</TableHead>
               {canManageLibrary && <TableHead className="text-right">Actions</TableHead>}

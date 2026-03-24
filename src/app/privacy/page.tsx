@@ -34,13 +34,13 @@ export default function PrivacyPage() {
           </p>
 
           <h2>4. Vos Droits</h2>
-           <p>
+          <p>
             Vous disposez d'un droit d'accès, de rectification et de suppression de vos données personnelles.
           </p>
 
           <div className="mt-8 text-center">
             <Button asChild>
-              <Link href="/">Retour à l'accueil</Link>
+              <Link href="/">Retour à l&apos;accueil</Link>
             </Button>
           </div>
         </CardContent>

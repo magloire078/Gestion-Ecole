@@ -11,6 +11,8 @@ export type user_root = {
 
 export type school = {
     name: string;
+    country?: string;
+    region?: string;
     drena?: string;
     status: "active" | "suspended" | "deleted";
     directorId: string;

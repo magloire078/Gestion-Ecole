@@ -1,6 +1,6 @@
 'use client';
 
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Search, User, Briefcase, Loader2 } from "lucide-react";
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -87,6 +87,8 @@ export function SearchModal({ isOpen, onClose }: {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-xl p-0 gap-0 overflow-hidden glass-card">
+        <DialogTitle className="sr-only">Recherche globale</DialogTitle>
+        <DialogDescription className="sr-only">Recherchez des élèves, du personnel ou des pages de navigation.</DialogDescription>
         <div className="flex items-center gap-2 p-4 border-b">
           <Search className="h-5 w-5 text-muted-foreground" />
           <Input

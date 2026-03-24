@@ -135,7 +135,11 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
         title: "Élève modifié",
         description: `Les informations de ${values.firstName} ${values.lastName} ont été mises à jour. ${classHasChanged ? 'Les frais de scolarité ont été recalculés pour la nouvelle classe.' : ''}`
       });
-      onFormSubmit();
+      // On attend un petit peu avant de fermer pour laisser le toast s'afficher
+      // et éviter les erreurs de "port déconnecté" avec les extensions
+      setTimeout(() => {
+        onFormSubmit();
+      }, 500);
     } catch (serverError) {
       console.error("Error updating student:", serverError);
       toast({

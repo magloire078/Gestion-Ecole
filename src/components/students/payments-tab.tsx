@@ -12,7 +12,7 @@ import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCollection, useFirestore, useStorage } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
-import { collection, doc, orderBy, query, writeBatch } from 'firebase/firestore';
+import { collection, doc, orderBy, query, writeBatch, increment } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -230,6 +230,12 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 studentId: student.id,
                 createdAt: new Date().toISOString()
             });
+
+            const statsRef = doc(firestore, `ecoles/${schoolData.id}/stats/finance`);
+            batch.set(statsRef, {
+                totalAmountDue: increment(-amountPaid),
+                lastUpdated: new Date().toISOString()
+            }, { merge: true });
 
             const paymentHistoryRef = doc(collection(firestore, `ecoles/${schoolData.id}/eleves/${student.id}/paiements`));
             batch.set(paymentHistoryRef, {

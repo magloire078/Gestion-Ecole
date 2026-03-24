@@ -175,7 +175,7 @@ export function AdminsTable() {
             <AlertDialogTitle className="text-2xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit">Révoquer les privilèges ?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 font-medium">
               Êtes-vous sûr de vouloir révoquer les droits de super administrateur pour <strong>{adminToRevoke?.displayName}</strong> ?
-              Cette action retirera l'accès complet au système central.
+              Cette action retirera l&apos;accès complet au système central.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 gap-3">

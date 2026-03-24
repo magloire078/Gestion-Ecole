@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -19,6 +19,7 @@ import { LoadingScreen } from '@/components/ui/loading-screen';
 import { DEMO_DIRECTOR_EMAIL, DEMO_SCHOOL_NAME } from '@/lib/demo-data';
 import { SchoolCreationService } from '@/services/school-creation';
 import { seedDemoData } from '@/services/demo-seeding';
+import { getStaffByEmail } from '@/services/staff-services';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
@@ -131,7 +132,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
             {isProcessing ? (
               <><Loader2 className="mr-3 h-6 w-6 animate-spin" />Initialisation...</>
             ) : (
-              <><PlayCircle className="mr-3 h-6 w-6" />Lancer l'expérience de démo</>
+              <><PlayCircle className="mr-3 h-6 w-6" />Lancer l&apos;expérience de démo</>
             )}
           </Button>
         </Card>
@@ -143,7 +144,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { user, loading, hasSchool, reloadUser } = useUser();
+  const { user, loading, hasSchool, reloadUser, loadingTimeout } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
 
@@ -188,13 +189,30 @@ export default function OnboardingPage() {
   const forceMode = searchParams.get('force') === 'true';
 
   useEffect(() => {
+    if (!loading && !user) {
+      router.replace('/auth/login');
+      return;
+    }
     if (!loading && user && hasSchool && !forceMode) {
       router.replace('/dashboard');
     }
   }, [user, loading, hasSchool, forceMode, router]);
 
-  if (loading) return <LoadingScreen />;
-  if (!user || (hasSchool && !forceMode)) return <LoadingScreen />;
+  if (loading) return (
+    <LoadingScreen 
+      message="Initialisation de votre session" 
+      showRetry={loadingTimeout} 
+      onRetry={reloadUser} 
+    />
+  );
+
+  if (!user || (hasSchool && !forceMode)) return (
+    <LoadingScreen 
+      message="Préparation de la redirection" 
+      showRetry={loadingTimeout} 
+      onRetry={reloadUser} 
+    />
+  );
 
   if (user && user.email === DEMO_DIRECTOR_EMAIL && !hasSchool) {
     return <DemoOnboarding onSetupDemo={handleSetupDemo} isProcessing={isProcessing} />;
@@ -221,23 +239,51 @@ export default function OnboardingPage() {
       }
       const schoolDoc = querySnapshot.docs[0];
       const schoolId = schoolDoc.id;
+
+      // --- Reconciliation Logic ---
+      // Check if a profile with this email already exists (random ID profile)
+      const existingStaff = await getStaffByEmail(schoolId, user.email);
+      
       const nameParts = user.displayName.split(' ');
       const firstName = nameParts[0] || '';
       const lastName = nameParts.slice(1).join(' ') || '';
-      const userRootRef = doc(firestore, `users/${user.uid}`);
-      const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
+      
       const batch = writeBatch(firestore);
+      const staffProfileRef = doc(firestore, `ecoles/${schoolId}/personnel/${user.uid}`);
+      
+      // Prepare data, merging from existing profile if found
       const staffProfileData: Omit<Staff, 'id'> = {
-        uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL || '',
-        schoolId: schoolId, role: role as any, firstName: firstName, lastName: lastName,
-        hireDate: new Date().toISOString().split('T')[0], baseSalary: 0, status: 'Actif',
-        isAdmin: user.profile?.isAdmin || false,
+        ...existingStaff, // Spread existing data first
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL || existingStaff?.photoURL || '',
+        schoolId: schoolId,
+        role: (existingStaff?.role || role) as any,
+        firstName: existingStaff?.firstName || firstName,
+        lastName: existingStaff?.lastName || lastName,
+        hireDate: existingStaff?.hireDate || new Date().toISOString().split('T')[0],
+        baseSalary: existingStaff?.baseSalary || 0,
+        status: 'Actif',
+        isAdmin: user.profile?.isAdmin || existingStaff?.isAdmin || false,
       };
+
+      // 1. Create/Update the profile using UID as document ID
       batch.set(staffProfileRef, staffProfileData);
+
+      // 2. If an old document existed (with a different ID), delete it
+      if (existingStaff && existingStaff.id !== user.uid) {
+        const oldStaffRef = doc(firestore, `ecoles/${schoolId}/personnel/${existingStaff.id}`);
+        batch.delete(oldStaffRef);
+      }
+
+      // 3. Update user's root document
+      const userRootRef = doc(firestore, `users/${user.uid}`);
       const userRootSnap = await getDoc(userRootRef);
       const currentSchools = userRootSnap.exists() ? (userRootSnap.data() as user_root).schools || {} : {};
-      const updatedSchools = { ...currentSchools, [schoolId]: role };
+      const updatedSchools = { ...currentSchools, [schoolId]: staffProfileData.role };
       batch.set(userRootRef, { schools: updatedSchools, activeSchoolId: schoolId }, { merge: true });
+
       await batch.commit();
       await reloadUser();
       toast({ title: 'Bienvenue !', description: `Vous avez rejoint ${schoolDoc.data().name}.` });
@@ -409,10 +455,10 @@ export default function OnboardingPage() {
                 <div className="space-y-6">
                   <div className="grid gap-2 text-center mb-4">
                     <h3 className="text-xl font-bold text-[#0C365A]">Espace Parent</h3>
-                    <p className="text-sm text-slate-500 font-medium">Saisissez le code d'accès de votre enfant.</p>
+                    <p className="text-sm text-slate-500 font-medium">Saisissez le code d&apos;accès de votre enfant.</p>
                   </div>
                   <div className="space-y-1.5 max-w-xs mx-auto">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 text-center block w-full">Code d'Accès</Label>
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 text-center block w-full">Code d&apos;Accès</Label>
                     <Input
                       placeholder="Code à 6 chiffres"
                       value={parentAccessCode}

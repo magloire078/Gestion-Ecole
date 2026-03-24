@@ -94,7 +94,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                                     <InfoRow icon={Book} label="Rôle" value={teacher.role?.replace(/_/g, ' ')} />
                                     {teacher.subject && <InfoRow icon={BookUser} label="Matière principale" value={teacher.subject} />}
                                     {teacher.classId && <InfoRow icon={BookUser} label="Classe principale" value={teacher.classId} />}
-                                    <InfoRow icon={Cake} label="Date d'embauche" value={hireDate} />
+                                    <InfoRow icon={Cake} label="Date d&apos;embauche" value={hireDate} />
                                 </div>
                                 <div className="space-y-4">
                                     <h4 className="font-bold text-lg border-b pb-1">Coordonnées</h4>

@@ -91,7 +91,7 @@ export function CantineDashboard({ schoolId }: { schoolId: string }) {
     return (
         <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="bg-slate-100 p-1">
-                <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+                <TabsTrigger value="overview">Vue d&apos;ensemble</TabsTrigger>
                 <TabsTrigger value="inventory">Gestion des Stocks</TabsTrigger>
             </TabsList>
 

@@ -12,7 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { NiveauxService } from '@/services/niveaux-service';
 import type { cycle as Cycle, niveau as Niveau } from '@/lib/data-types';
 import { useState, useEffect, useMemo } from 'react';
-import { SCHOOL_TEMPLATES } from '@/lib/templates';
+import { getTemplateForCountry } from '@/lib/templates';
+import type { CountryCode } from '@/lib/countries-data';
 import { Loader2 } from 'lucide-react';
 
 
@@ -34,9 +35,10 @@ interface NiveauFormProps {
   niveau: (Niveau & { id: string }) | null;
   defaultCycleId?: string;
   onSave: () => void;
+  countryCode?: CountryCode;
 }
 
-export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, onSave }: NiveauFormProps) {
+export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, onSave, countryCode = 'CI' }: NiveauFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,8 +64,9 @@ export function NiveauForm({ schoolId, cycles, niveaux, niveau, defaultCycleId, 
   const niveauxOptions = useMemo(() => {
     const cycle = cycles.find(c => c.id === watchedCycleId);
     if (!cycle) return [];
-    return SCHOOL_TEMPLATES.IVORIAN_SYSTEM.niveaux[cycle.name as keyof typeof SCHOOL_TEMPLATES.IVORIAN_SYSTEM.niveaux] || [];
-  }, [watchedCycleId, cycles]);
+    const template = getTemplateForCountry(countryCode);
+    return template.niveaux[cycle.name] || [];
+  }, [watchedCycleId, cycles, countryCode]);
 
   useEffect(() => {
     const selectedNiveauTemplate = niveauxOptions.find(n => n === watchedNiveauName);

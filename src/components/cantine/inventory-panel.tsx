@@ -134,12 +134,12 @@ export function InventoryPanel({ schoolId }: { schoolId: string }) {
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
-                                <DialogTitle>Ajouter un article à l'inventaire</DialogTitle>
+                                <DialogTitle>Ajouter un article à l&apos;inventaire</DialogTitle>
                                 <DialogDescription>Créez un nouvel article pour le suivi des stocks.</DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
                                 <div className="grid gap-2">
-                                    <Label htmlFor="name">Nom de l'article</Label>
+                                    <Label htmlFor="name">Nom de l&apos;article</Label>
                                     <Input id="name" value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} placeholder="Ex: Riz long grain" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -175,13 +175,13 @@ export function InventoryPanel({ schoolId }: { schoolId: string }) {
                                         <Input id="qty" type="number" value={newItem.quantity} onChange={(e) => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) })} />
                                     </div>
                                     <div className="grid gap-2">
-                                        <Label htmlFor="threshold">Seuil d'alerte</Label>
+                                        <Label htmlFor="threshold">Seuil d&apos;alerte</Label>
                                         <Input id="threshold" type="number" value={newItem.minThreshold} onChange={(e) => setNewItem({ ...newItem, minThreshold: parseFloat(e.target.value) })} />
                                     </div>
                                 </div>
                             </div>
                             <DialogFooter>
-                                <Button onClick={handleAddItem}>Enregistrer l'article</Button>
+                                <Button onClick={handleAddItem}>Enregistrer l&apos;article</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -298,7 +298,7 @@ export function InventoryPanel({ schoolId }: { schoolId: string }) {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsAdjustDialogOpen(false)}>Annuler</Button>
-                        <Button onClick={handleAdjustStock} className="bg-primary hover:bg-primary/90">Appliquer l'ajustement</Button>
+                        <Button onClick={handleAdjustStock} className="bg-primary hover:bg-primary/90">Appliquer l&apos;ajustement</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

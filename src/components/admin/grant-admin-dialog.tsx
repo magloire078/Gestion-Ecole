@@ -13,9 +13,9 @@ import { useToast } from '@/hooks/use-toast';
 import { grantSuperAdmin } from '@/services/admin-services';
 
 interface GrantAdminDialogProps {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  onAdminGranted: () => void;
+    isOpen: boolean;
+    onOpenChange: (open: boolean) => void;
+    onAdminGranted: () => void;
 }
 
 export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: GrantAdminDialogProps) {
@@ -24,9 +24,9 @@ export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: Grant
     const { toast } = useToast();
 
     const [searchQuery, setSearchQuery] = useState('');
-    const [searchResults, setSearchResults] = useState<(staff & {id: string})[]>([]);
+    const [searchResults, setSearchResults] = useState<(staff & { id: string })[]>([]);
     const [isSearching, setIsSearching] = useState(false);
-    const [selectedUser, setSelectedUser] = useState<(staff & {id: string}) | null>(null);
+    const [selectedUser, setSelectedUser] = useState<(staff & { id: string }) | null>(null);
     const [isGranting, setIsGranting] = useState(false);
 
     useEffect(() => {
@@ -49,14 +49,14 @@ export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: Grant
                 // Note: Firestore string queries are case-sensitive. This will only find matches starting with the query.
                 // A more robust search would require a third-party service like Algolia.
                 const q = query(
-                    staffCollection, 
-                    orderBy('displayName'), 
-                    startAt(searchQuery), 
+                    staffCollection,
+                    orderBy('displayName'),
+                    startAt(searchQuery),
                     endAt(searchQuery + '\uf8ff'),
                     limit(10)
                 );
                 const snapshot = await getDocs(q);
-                const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as staff & {id: string}));
+                const results = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as staff & { id: string }));
                 setSearchResults(results);
             } catch (e) {
                 console.error("Failed to search users:", e);
@@ -83,13 +83,13 @@ export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: Grant
             setIsGranting(false);
         }
     };
-    
+
     if (selectedUser) {
         return (
-             <AlertDialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
+            <AlertDialog open={!!selectedUser} onOpenChange={(open) => !open && setSelectedUser(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Confirmer l'octroi des droits</AlertDialogTitle>
+                        <AlertDialogTitle>Confirmer l&apos;octroi des droits</AlertDialogTitle>
                         <AlertDialogDescription>
                             Êtes-vous sûr de vouloir donner les privilèges de super administrateur à <strong>{selectedUser.displayName}</strong> ({selectedUser.email}) ?
                             Cette personne aura un accès complet à toutes les données et fonctionnalités de la plateforme.
@@ -98,7 +98,7 @@ export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: Grant
                     <AlertDialogFooter>
                         <AlertDialogCancel onClick={() => setSelectedUser(null)}>Annuler</AlertDialogCancel>
                         <AlertDialogAction onClick={handleGrant} disabled={isGranting}>
-                            {isGranting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                            {isGranting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirmer et accorder
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -110,9 +110,9 @@ export function GrantAdminDialog({ isOpen, onOpenChange, onAdminGranted }: Grant
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="p-0">
-                 <Command>
-                    <CommandInput 
-                        placeholder="Rechercher un membre du personnel par nom..." 
+                <Command>
+                    <CommandInput
+                        placeholder="Rechercher un membre du personnel par nom..."
                         value={searchQuery}
                         onValueChange={setSearchQuery}
                     />

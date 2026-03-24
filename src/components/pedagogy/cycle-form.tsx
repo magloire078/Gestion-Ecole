@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { CyclesService } from '@/services/cycles-service';
 import type { cycle as Cycle } from '@/lib/data-types';
 import { useState, useEffect } from 'react';
-import { SCHOOL_TEMPLATES } from '@/lib/templates';
+import { getTemplateForCountry } from '@/lib/templates';
+import type { CountryCode } from '@/lib/countries-data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Switch } from '../ui/switch';
 
@@ -29,13 +30,14 @@ interface CycleFormProps {
   cycle: (Cycle & { id: string }) | null;
   cyclesCount: number;
   onSave: () => void;
+  countryCode?: CountryCode;
 }
 
-const ivorianCycles = SCHOOL_TEMPLATES.IVORIAN_SYSTEM.cycles;
-
-export function CycleForm({ schoolId, cycle, cyclesCount, onSave }: CycleFormProps) {
+export function CycleForm({ schoolId, cycle, cyclesCount, onSave, countryCode = 'CI' }: CycleFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const template = getTemplateForCountry(countryCode);
+  const templateCycles = template.cycles;
 
   const form = useForm<CycleFormValues>({
     resolver: zodResolver(cycleSchema),
@@ -49,7 +51,7 @@ export function CycleForm({ schoolId, cycle, cyclesCount, onSave }: CycleFormPro
   const watchedCycleName = useWatch({ control: form.control, name: 'name' });
 
   useEffect(() => {
-    const selectedCycleTemplate = ivorianCycles.find(c => c.name === watchedCycleName);
+    const selectedCycleTemplate = templateCycles.find(c => c.name === watchedCycleName);
     if (selectedCycleTemplate && !cycle) { // Don't auto-fill when editing
       setValue('code', selectedCycleTemplate.code);
       setValue('order', selectedCycleTemplate.order);
@@ -92,7 +94,7 @@ export function CycleForm({ schoolId, cycle, cyclesCount, onSave }: CycleFormPro
     <Form {...form}>
       <form id="cycle-form" onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-4">
         <FormField control={form.control} name="name" render={({ field }) => (
-          <FormItem><FormLabel>Nom du cycle</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un type..." /></SelectTrigger></FormControl><SelectContent>{ivorianCycles.map((cycle) => (<SelectItem key={cycle.name} value={cycle.name}>{cycle.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
+          <FormItem><FormLabel>Nom du cycle</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez un type..." /></SelectTrigger></FormControl><SelectContent>{templateCycles.map((cycle) => (<SelectItem key={cycle.name} value={cycle.name}>{cycle.name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>
         )} />
         <div className="grid grid-cols-2 gap-4">
           <FormField control={form.control} name="code" render={({ field }) => (<FormItem><FormLabel>Code</FormLabel><FormControl><Input {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />

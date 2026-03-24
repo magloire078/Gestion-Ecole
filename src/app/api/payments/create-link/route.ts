@@ -12,19 +12,30 @@ export async function POST(req: Request) {
         const body = await req.json();
         const {
             provider,
-            type, // 'subscription' or 'tuition'
+            type,
             schoolId,
             studentId,
-            amount,
-            duration, // for subscription (e.g. '1', '12')
-            planName, // for subscription
+            amount: rawAmount,
+            duration,
+            planName,
             userEmail,
             userDisplayName,
-            phone, // for mobile payments
+            phone,
         } = body;
 
+        console.log("[CreateLinkAPI] Received body:", { provider, type, schoolId, rawAmount, planName });
+
+        const amount = typeof rawAmount === 'string' ? parseFloat(rawAmount) : rawAmount;
+
         if (!provider || !type || !schoolId || !amount) {
-            return NextResponse.json({ error: "Paramètres manquants." }, { status: 400 });
+            console.error("[CreateLinkAPI] Validation failed. Missing params:", { 
+                hasProvider: !!provider, 
+                hasType: !!type, 
+                hasSchoolId: !!schoolId, 
+                hasAmount: !!amount,
+                amountValue: amount 
+            });
+            return NextResponse.json({ error: "Paramètres manquants ou invalides (le montant doit être supérieur à 0)." }, { status: 400 });
         }
 
         const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';

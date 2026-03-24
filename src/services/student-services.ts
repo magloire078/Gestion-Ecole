@@ -1,13 +1,50 @@
 
 'use client';
 
-import { doc, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc, Firestore } from "firebase/firestore";
+import { doc, getDoc, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc, Firestore } from "firebase/firestore";
 import { firebaseFirestore } from '@/firebase/config';
 
 const db = firebaseFirestore as Firestore;
 import type { student as Student } from '@/lib/data-types';
 
 const COLLECTION_NAME = 'eleves';
+
+/**
+ * Vérifie que l'école n'a pas dépassé la limite d'élèves de son plan d'abonnement.
+ * Lève une erreur si le plafond est atteint.
+ */
+async function checkStudentLimit(schoolId: string): Promise<void> {
+    const schoolRef = doc(db, `ecoles/${schoolId}`);
+    const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+
+    const [schoolSnap, statsSnap] = await Promise.all([getDoc(schoolRef), getDoc(statsRef)]);
+
+    if (!schoolSnap.exists()) return; // Silently pass if school not found
+
+    const schoolData = schoolSnap.data();
+    let maxStudents: number | null | undefined = schoolData?.subscription?.maxStudents;
+    const plan = schoolData?.subscription?.plan || 'Essentiel';
+
+    // Fallback: Si la limite n'est pas dans le document, on utilise les limites par défaut du plan
+    if (maxStudents === undefined || maxStudents === null) {
+        if (plan === 'Essentiel') {
+            maxStudents = 50;
+        } else {
+            // Pour Pro et Premium sans limite explicite, on considère qu'il n'y a pas de plafond
+            return;
+        }
+    }
+
+    const currentCount: number = statsSnap.exists() ? (statsSnap.data()?.studentCount ?? 0) : 0;
+
+    if (currentCount >= maxStudents) {
+        throw new Error(
+            `LIMIT_REACHED: Votre plan actuel (${schoolData?.subscription?.plan || 'Essentiel'}) est limité à ${maxStudents} élèves. ` +
+            `Vous avez atteint cette limite (${currentCount}/${maxStudents}). ` +
+            `Veuillez mettre à niveau votre abonnement pour inscrire de nouveaux élèves.`
+        );
+    }
+}
 
 /**
  * Service for managing students in Firestore
@@ -18,6 +55,9 @@ export const StudentService = {
      */
     createStudent: async (schoolId: string, data: Omit<Student, 'id'>, userId?: string) => {
         try {
+            // Vérification du plafond d'élèves AVANT toute écriture
+            await checkStudentLimit(schoolId);
+
             const batch = writeBatch(db);
             const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
             const newStudentRef = doc(collectionRef);
@@ -177,6 +217,17 @@ export const StudentService = {
             batch.update(classDocRef, { studentCount: increment(-1) });
         }
 
+        // Update Finance Stats (if student was active)
+        if (wasActive) {
+            const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+            batch.set(statsRef, {
+                totalTuitionFees: increment(-(student.tuitionFee || 0)),
+                totalAmountDue: increment(-(student.amountDue || 0)),
+                studentCount: increment(-1),
+                lastUpdated: serverTimestamp()
+            }, { merge: true });
+        }
+
         try {
             await batch.commit();
         } catch (error) {
@@ -205,6 +256,17 @@ export const StudentService = {
         if (wasArchived && student.classId) {
             const classDocRef = doc(db, `ecoles/${schoolId}/classes/${student.classId}`);
             batch.update(classDocRef, { studentCount: increment(1) });
+        }
+
+        // Update Finance Stats (if student was archived)
+        if (wasArchived) {
+            const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+            batch.set(statsRef, {
+                totalTuitionFees: increment(student.tuitionFee || 0),
+                totalAmountDue: increment(student.amountDue || 0),
+                studentCount: increment(1),
+                lastUpdated: serverTimestamp()
+            }, { merge: true });
         }
 
         try {

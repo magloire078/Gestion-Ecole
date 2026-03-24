@@ -5,7 +5,7 @@ export const BillingOverview = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Vue d'ensemble de la Facturation</CardTitle>
+        <CardTitle>Vue d&apos;ensemble de la Facturation</CardTitle>
       </CardHeader>
       <CardContent>
         <p>Le module de facturation pour les super administrateurs sera bientôt disponible ici.</p>
@@ -14,4 +14,3 @@ export const BillingOverview = () => {
   );
 };
 
-    

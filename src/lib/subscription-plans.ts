@@ -22,6 +22,8 @@ export interface PlanData {
     recommended?: boolean;
     pricePerStudent?: number;
     storageLimitGB: number;
+    maxStudents: number;
+    maxCycles: number;
 }
 
 export const SUBSCRIPTION_PLANS: PlanData[] = [
@@ -43,7 +45,9 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
         cta: "Démarrer gratuitement",
         variant: "secondary",
         pricePerStudent: 0,
-        storageLimitGB: 1
+        storageLimitGB: 1,
+        maxStudents: 50,
+        maxCycles: 5
     },
     {
         name: "Pro", // On garde le nom interne 'Pro' pour éviter de casser le typage existant, mais on l'affiche comme 'Standard' si besoin, ou on renomme. Gardons 'Pro' pour l'instant pour la compatibilité.
@@ -65,7 +69,9 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
         variant: "default",
         recommended: true,
         pricePerStudent: 250,
-        storageLimitGB: 10
+        storageLimitGB: 10,
+        maxStudents: Infinity,
+        maxCycles: Infinity
     },
     {
         name: "Premium",
@@ -86,7 +92,9 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
         cta: "Choisir le Premium",
         variant: "secondary",
         pricePerStudent: 500,
-        storageLimitGB: Infinity
+        storageLimitGB: Infinity,
+        maxStudents: Infinity,
+        maxCycles: Infinity
     }
 ];
 

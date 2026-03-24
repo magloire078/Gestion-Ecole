@@ -65,7 +65,7 @@ export function ClassesList({ academicYear }: ClassesListProps) {
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="space-y-1.5">
                             <CardTitle>Liste des Classes</CardTitle>
-                            <CardDescription>Gérez les classes de chaque niveau pour l'année en cours.</CardDescription>
+                            <CardDescription>Gérez les classes de chaque niveau pour l&apos;année en cours.</CardDescription>
                         </div>
                         <div className="flex flex-col sm:flex-row items-center gap-2 w-full md:w-auto">
                             <div className="relative flex-1 w-full">

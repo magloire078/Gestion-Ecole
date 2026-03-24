@@ -86,7 +86,7 @@ export function SchoolsTable() {
       .then(() => {
         toast({
           title: "École mise à la corbeille",
-          description: `L'école "${schoolToDelete.name}" a été marquée comme supprimée.`,
+          description: `L&apos;école "${schoolToDelete.name}" a été marquée comme supprimée.`,
         });
       })
       .catch((error) => {
@@ -111,7 +111,7 @@ export function SchoolsTable() {
       .then(() => {
         toast({
           title: "École restaurée",
-          description: `L'école "${school.name}" est à nouveau active.`,
+          description: `L&apos;école "${school.name}" est à nouveau active.`,
         });
       })
       .catch((error) => {
@@ -260,7 +260,7 @@ export function SchoolsTable() {
           <AlertDialogHeader>
             <AlertDialogTitle>Mettre à la corbeille ?</AlertDialogTitle>
             <AlertDialogDescription>
-              L'école <strong>"{schoolToDelete?.name}"</strong> sera marquée comme supprimée et deviendra inaccessible pour ses utilisateurs. Vous pourrez la restaurer pendant 30 jours.
+              L&apos;école <strong>"{schoolToDelete?.name}"</strong> sera marquée comme supprimée et deviendra inaccessible pour ses utilisateurs. Vous pourrez la restaurer pendant 30 jours.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -275,7 +275,7 @@ export function SchoolsTable() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifier l'école</DialogTitle>
+            <DialogTitle>Modifier l&apos;école</DialogTitle>
             <DialogDescription>
               Modification des informations pour {schoolToEdit?.name}.
             </DialogDescription>
@@ -294,10 +294,10 @@ export function SchoolsTable() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building className="h-5 w-5 text-blue-600" />
-              Détails de l'établissement
+              Détails de l&apos;établissement
             </DialogTitle>
             <DialogDescription>
-              Aperçu complet des informations de l'établissement <strong>{schoolToView?.name}</strong>.
+              Aperçu complet des informations de l&apos;établissement <strong>{schoolToView?.name}</strong>.
             </DialogDescription>
           </DialogHeader>
           {schoolToView && (

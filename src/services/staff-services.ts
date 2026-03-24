@@ -19,6 +19,9 @@ const COLLECTION_NAME = 'personnel';
 
 export const StaffService = {
     createStaffMember: async (schoolId: string, data: Omit<Staff, 'id' | 'schoolId'>) => {
+        if (!schoolId) {
+            throw new Error("L'identifiant de l'école est requis pour créer un membre du personnel.");
+        }
         try {
             const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
             const docRef = await addDoc(collectionRef, {
@@ -109,6 +112,20 @@ export const StaffService = {
             console.error('Error fetching staff members:', error);
             throw error;
         }
+    },
+
+    getStaffByEmail: async (schoolId: string, email: string) => {
+        try {
+            const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
+            const q = query(collectionRef, where('email', '==', email));
+            const snapshot = await getDocs(q);
+            if (snapshot.empty) return null;
+            const doc = snapshot.docs[0];
+            return { id: doc.id, ...doc.data() } as Staff & { id: string };
+        } catch (error) {
+            console.error('Error fetching staff member by email:', error);
+            throw error;
+        }
     }
 };
 
@@ -118,6 +135,7 @@ export const {
     updateStaffMember,
     deleteStaffMember,
     updateStaffPhoto,
-    getStaffMembers
+    getStaffMembers,
+    getStaffByEmail
 } = StaffService;
 

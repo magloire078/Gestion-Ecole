@@ -1,4 +1,4 @@
-﻿
+
 'use client';
 
 import { Suspense, useEffect, useState, useMemo } from 'react';
@@ -9,7 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { createCheckoutLink } from '@/services/payment-service';
-import { Loader2, AlertCircle, CreditCard, Smartphone, CheckCircle } from 'lucide-react';
+import { Loader2, AlertCircle, CreditCard, Smartphone, CheckCircle, Zap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
@@ -87,8 +87,8 @@ function PaymentPageContent() {
 
         const { url, error: serviceError } = await createCheckoutLink(provider, {
             type: 'subscription',
-            plan,
-            price: totalPrice.toString(),
+            planName: plan || undefined,
+            amount: totalPrice.toString(),
             description: `${description} (${selectedDuration} mois)`,
             user: user.authUser,
             schoolId,
@@ -191,18 +191,35 @@ function PaymentPageContent() {
                             </div>
 
                             <div className="space-y-4">
-                                {/* Seul Genius Pay est activé pour le moment */}
+                                {/* PAYDUNYA - OPTION LOCALE ROBUSTE */}
                                 <Button
-                                    className="w-full h-16 text-lg bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white shadow-lg transition-all hover:scale-[1.01]"
-                                    onClick={() => handlePayment('genius')}
+                                    className="w-full h-16 text-lg bg-[#3bbda7] hover:bg-[#32a390] text-white shadow-lg transition-all hover:scale-[1.01]"
+                                    onClick={() => handlePayment('paydunya')}
                                     disabled={!!isLoadingProvider}
                                 >
-                                    {isLoadingProvider === 'genius' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                                    {isLoadingProvider === 'paydunya' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
                                         <div className="flex items-center justify-center gap-4">
-                                            <Image src="/custom-assets/genius-pay-logo.png" alt="Genius Pay" width={30} height={30} className="rounded-sm" />
+                                            <Image src="/custom-assets/paydunya-logo.png" alt="PayDunya" width={32} height={32} className="rounded-sm" />
                                             <div className="text-left">
-                                                <div className="font-bold">Payer avec Genius Pay</div>
-                                                <div className="text-[10px] opacity-80 uppercase tracking-wider font-medium">Recommandé (Wave, Orange, MTN, Visa)</div>
+                                                <div className="font-bold">Payer avec PayDunya</div>
+                                                <div className="text-[10px] opacity-90 uppercase tracking-wider font-medium">Recommandé Afrique (Wave, OM, MTN, Cartes)</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </Button>
+
+                                {/* STRIPE - OPTION PREMIUM INTERNATIONALE */}
+                                <Button
+                                    className="w-full h-16 text-lg bg-[#635bff] hover:bg-[#5851e5] text-white shadow-lg transition-all hover:scale-[1.01]"
+                                    onClick={() => handlePayment('stripe')}
+                                    disabled={!!isLoadingProvider}
+                                >
+                                    {isLoadingProvider === 'stripe' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                                        <div className="flex items-center justify-center gap-4">
+                                            <Image src="/custom-assets/stripe-logo.png" alt="Stripe" width={32} height={32} className="rounded-sm" />
+                                            <div className="text-left">
+                                                <div className="font-bold">Payer avec Stripe</div>
+                                                <div className="text-[10px] opacity-90 uppercase tracking-wider font-medium">Premium (Cartes Bancaires Internationales)</div>
                                             </div>
                                         </div>
                                     )}
@@ -210,16 +227,17 @@ function PaymentPageContent() {
 
                                 <div className="relative my-6">
                                     <Separator />
-                                    <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-white px-2 text-[10px] text-muted-foreground font-semibold uppercase">Autres options bientôt disponibles</span>
+                                    <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-white px-2 text-[10px] text-muted-foreground font-semibold uppercase">Autres options</span>
                                 </div>
 
                                 <Button
                                     variant="outline"
-                                    className="w-full h-14 text-sm opacity-50 grayscale cursor-not-allowed"
-                                    disabled
+                                    className="w-full h-14 text-sm opacity-60 hover:opacity-100"
+                                    onClick={() => handlePayment('genius')}
+                                    disabled={!!isLoadingProvider}
                                 >
-                                    <CreditCard className="mr-2 h-5 w-5" />
-                                    Paiement par Carte Direct (Stripe)
+                                    <Zap className="mr-2 h-4 w-4 text-yellow-500" />
+                                    Payer avec Genius Pay (Alternatif)
                                 </Button>
                             </div>
                         </div>

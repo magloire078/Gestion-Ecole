@@ -14,7 +14,7 @@ import { MessageSquare } from 'lucide-react';
 export function LiveChat() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'bot' | 'support', text: string, time: string }[]>([
-        { role: 'bot', text: 'Bonjour ! Bienvenue sur Gérecole. Comment puis-je vous aider aujourd\'hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        { role: 'bot', text: 'Bonjour ! Bienvenue sur Gérecole. Comment puis-je vous aider aujourd&apos;hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -111,7 +111,7 @@ export function LiveChat() {
                     await setDoc(newChatRef, {
                         visitorId,
                         messages: [
-                            { role: 'bot', text: 'Bonjour ! Bienvenue sur Gérecole. Comment puis-je vous aider aujourd\'hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+                            { role: 'bot', text: 'Bonjour ! Bienvenue sur Gérecole. Comment puis-je vous aider aujourd&apos;hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
                             newUserMessage
                         ],
                         status: 'active',
@@ -156,9 +156,9 @@ export function LiveChat() {
                 return "Gérecole permet de gérer les notes, les absences, le transport scolaire, la cantine, et la paie du personnel. C'est une solution tout-en-un.";
             }
             if (lowerInput.includes('parler') || lowerInput.includes('direct')) {
-                return "Un de nos conseillers examinera votre demande très rapidement. En attendant, avez-vous d'autres questions ?";
+                return "Un de nos conseillers examinera votre demande très rapidement. En attendant, avez-vous d&apos;autres questions ?";
             }
-            return "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d'autre sur Gérecole ?";
+            return "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d&apos;autre sur Gérecole ?";
         };
 
         // Réponse automatique si aucune réponse admin après 3 secondes (simulé pour l'instant)
@@ -173,7 +173,7 @@ export function LiveChat() {
                 };
 
                 // On n'ajoute la réponse bot que si c'est une question simple connue
-                if (botResponseText !== "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d'autre sur Gérecole ?") {
+                if (botResponseText !== "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d&apos;autre sur Gérecole ?") {
                     setMessages(prev => [...prev, botResponse]);
                     if (chatId) {
                         updateDoc(doc(firestore, 'visitor_chats', chatId), {
@@ -248,7 +248,7 @@ export function LiveChat() {
                             {isTyping && (
                                 <div className="flex items-center gap-1 text-muted-foreground animate-pulse text-xs ml-2">
                                     <Loader2 size={12} className="animate-spin" />
-                                    <span>GèreBot est en train d'écrire...</span>
+                                    <span>GèreBot est en train d&apos;écrire...</span>
                                 </div>
                             )}
                         </div>

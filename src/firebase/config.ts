@@ -2,17 +2,26 @@
 
 import { initializeApp, getApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, initializeFirestore, persistentLocalCache, persistentMultipleTabManager, Firestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  memoryLocalCache,
+  enableNetwork,
+  Firestore
+} from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 
 // Configuration Firebase
+// On utilise .trim() et on retire tout espace/retour à la ligne pour éviter les erreurs de copier-coller dans Vercel
+const clean = (val: string | undefined) => val?.trim()?.replace(/[\s\n\r]/g, '') || '';
+
 export const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "greecole.appspot.com",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  apiKey: clean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
+  authDomain: clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
+  projectId: clean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
+  storageBucket: clean(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "greecole.appspot.com"),
+  messagingSenderId: clean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+  appId: clean(process.env.NEXT_PUBLIC_FIREBASE_APP_ID)
 };
 
 // Variables globales pour le client
@@ -34,18 +43,32 @@ storage = getStorage(app, firebaseConfig.storageBucket);
 
 // Initialisation Firestore (Gestion robuste du Singleton et du Cache)
 if (typeof window !== 'undefined') {
-  // Côté Client : On tente de récupérer l'instance existante ou on initialise
+  // Debug des variables d'environnement sur le client
+  console.log("[FirebaseConfig] Initializing Firestore for project:", firebaseConfig.projectId);
+
   try {
-    firestore = getFirestore(app);
-  } catch (e) {
+    // On force le cache en mémoire pour éviter les erreurs "offline" liées à IndexedDB/Tabs
+    // et on force le long-polling pour les réseaux restrictifs (évite QUIC_PROTOCOL_ERROR)
     firestore = initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager() // On garde pour l'instant mais on s'assure qu'une seule init a lieu
-      })
+      localCache: memoryLocalCache(),
+      experimentalForceLongPolling: true,
+      ignoreUndefinedProperties: true,
     });
+    console.log("[FirebaseConfig] Firestore initialized successfully with MemoryCache + LongPolling");
+  } catch (e: any) {
+    if (e.code === 'failed-precondition') {
+      console.warn("[FirebaseConfig] Firestore already initialized, fetching existing instance.");
+      firestore = getFirestore(app);
+    } else {
+      console.error("[FirebaseConfig] Unexpected Firestore init error. Falling back to default settings.", e);
+      firestore = getFirestore(app);
+    }
   }
+
+  // Tentative proactive d'activer le réseau
+  enableNetwork(firestore).catch(err => console.error("[FirebaseConfig] enableNetwork failed:", err));
 } else {
-  // Côté Serveur : Instance simple sans cache
+  // Côté Serveur
   firestore = getFirestore(app);
 }
 

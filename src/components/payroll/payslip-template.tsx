@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { usePrint } from '@/hooks/use-print';
 
 interface PayslipTemplateProps {
-  details: PayslipDetails;
+    details: PayslipDetails;
 }
 
 const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>(({ details }, ref) => {
@@ -38,7 +38,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                 </div>
                 <div className="text-right">
                     {organizationSettings.secondaryLogoUrl && (
-                         <Image src={organizationSettings.secondaryLogoUrl} alt="Emblème National" width={60} height={60} className="object-contain ml-auto" />
+                        <Image src={organizationSettings.secondaryLogoUrl} alt="Emblème National" width={60} height={60} className="object-contain ml-auto" />
                     )}
                     <p className="font-bold mt-2">BULLETIN DE PAIE</p>
                     <p>Période du 01 au {new Date(employeeInfo.paymentDate).toLocaleDateString('fr-FR', { day: '2-digit' })} {new Date(employeeInfo.paymentDate).toLocaleString('fr-FR', { month: 'long', year: 'numeric' })}</p>
@@ -46,7 +46,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
             </header>
 
             <section className="grid grid-cols-2 gap-4 my-4 border-y py-2">
-                 <div>
+                <div>
                     <p>{employeeInfo.lastName} {employeeInfo.firstName}</p>
                     <p>Catégorie: {employeeInfo.categorie}</p>
                     <p>Ancienneté: {employeeInfo.anciennete}</p>
@@ -80,13 +80,13 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                                 <td className="p-1"></td>
                             </tr>
                         ))}
-                         {totals.transportNonImposable.amount > 0 && (
+                        {totals.transportNonImposable.amount > 0 && (
                             <tr>
-                               <td className="p-1">{totals.transportNonImposable.label}</td>
-                               <td className="p-1"></td>
-                               <td className="p-1"></td>
-                               <td className="p-1 text-right font-mono">{formatCurrency(totals.transportNonImposable.amount)}</td>
-                               <td className="p-1"></td>
+                                <td className="p-1">{totals.transportNonImposable.label}</td>
+                                <td className="p-1"></td>
+                                <td className="p-1"></td>
+                                <td className="p-1 text-right font-mono">{formatCurrency(totals.transportNonImposable.amount)}</td>
+                                <td className="p-1"></td>
                             </tr>
                         )}
                         <tr className="border-t">
@@ -99,7 +99,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
 
                         {/* Retenues */}
                         {deductions.map(d => (
-                             <tr key={d.label}>
+                            <tr key={d.label}>
                                 <td className="p-1 pl-4">{d.label}</td>
                                 <td></td>
                                 <td></td>
@@ -115,8 +115,8 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                         </tr>
                     </tfoot>
                 </table>
-                 <p className="text-center text-xs mt-2">Arrêté le présent bulletin de paie à la somme de : <span className="font-bold">{totals.netAPayerInWords}</span></p>
-                 <Separator className="my-4" />
+                <p className="text-center text-xs mt-2">Arrêté le présent bulletin de paie à la somme de : <span className="font-bold">{totals.netAPayerInWords}</span></p>
+                <Separator className="my-4" />
                 <div className="grid grid-cols-2 gap-4 text-xs">
                     <div>
                         <h3 className="font-bold mb-2">Paiement</h3>
@@ -125,15 +125,15 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                         <p>Par: Virement</p>
                         <p>Banque: {employeeInfo.banque} - {employeeInfo.numeroCompteComplet}</p>
                     </div>
-                     <div className="text-right">
-                        <h3 className="font-bold mb-2">Signature de l'employé(e)</h3>
+                    <div className="text-right">
+                        <h3 className="font-bold mb-2">Signature de l&apos;employé(e)</h3>
                         <div className="mt-12 w-48 border-b-2 border-dotted border-gray-400 ml-auto"></div>
                     </div>
                 </div>
-                 <Separator className="my-4" />
+                <Separator className="my-4" />
 
                 {/* Cotisations Patronales */}
-                 <div>
+                <div>
                     <h3 className="font-bold text-center mb-2">COTISATIONS PATRONALES</h3>
                     <table className="w-full text-xs">
                         <thead>
@@ -165,34 +165,34 @@ PayslipTemplate.displayName = "PayslipTemplate";
 
 
 export function PayslipPreview({ details }: { details: PayslipDetails }) {
-  const printRef = React.useRef<HTMLDivElement>(null);
-  const handlePrint = usePrint('Bulletin de Paie');
+    const printRef = React.useRef<HTMLDivElement>(null);
+    const handlePrint = usePrint('Bulletin de Paie');
 
-  const onPrintClick = () => {
-    if (printRef.current) {
-        handlePrint(printRef.current.innerHTML);
-    }
-  };
+    const onPrintClick = () => {
+        if (printRef.current) {
+            handlePrint(printRef.current.innerHTML);
+        }
+    };
 
-  return (
-    <div>
-      <div className="max-h-[60vh] overflow-y-auto bg-gray-200 p-4">
-        <PayslipTemplate ref={printRef} details={details} />
-      </div>
-      <div className="mt-4 flex justify-end no-print">
-        <Button onClick={onPrintClick}>
-          <Printer className="mr-2 h-4 w-4" />
-          Imprimer le bulletin
-        </Button>
-      </div>
-    </div>
-  );
+    return (
+        <div>
+            <div className="max-h-[60vh] overflow-y-auto bg-gray-200 p-4">
+                <PayslipTemplate ref={printRef} details={details} />
+            </div>
+            <div className="mt-4 flex justify-end no-print">
+                <Button onClick={onPrintClick}>
+                    <Printer className="mr-2 h-4 w-4" />
+                    Imprimer le bulletin
+                </Button>
+            </div>
+        </div>
+    );
 }
 
 export function BulkPayslipPreview({ detailsArray }: { detailsArray: PayslipDetails[] }) {
     const printRef = React.useRef<HTMLDivElement>(null);
     const handlePrint = usePrint('Bulletins de Paie');
-    
+
     const onPrintClick = () => {
         if (printRef.current) {
             handlePrint(printRef.current.innerHTML);

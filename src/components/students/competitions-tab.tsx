@@ -96,7 +96,7 @@ export function CompetitionsTab({ schoolId, studentId }: CompetitionsTabProps) {
             <Card>
                 <CardHeader>
                     <CardTitle>Historique des Compétitions</CardTitle>
-                    <CardDescription>Liste des évènements auxquels l'élève a participé.</CardDescription>
+                    <CardDescription>Liste des évènements auxquels l&apos;élève a participé.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>

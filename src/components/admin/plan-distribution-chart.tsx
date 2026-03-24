@@ -54,7 +54,7 @@ export function PlanDistributionChart() {
             <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
                 <CardHeader className="p-8 pb-4">
                     <CardTitle className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Répartition Plans</CardTitle>
-                    <CardDescription className="text-slate-500 font-medium">Distribution par type d'abonnement.</CardDescription>
+                    <CardDescription className="text-slate-500 font-medium">Distribution par type d&apos;abonnement.</CardDescription>
                 </CardHeader>
                 <CardContent className="px-8 pb-8">
                     <Skeleton className="h-60 w-full rounded-3xl" />
@@ -67,7 +67,7 @@ export function PlanDistributionChart() {
         <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
             <CardHeader className="p-8 pb-4">
                 <CardTitle className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Répartition Plans</CardTitle>
-                <CardDescription className="text-slate-500 font-medium">Distribution par type d'abonnement.</CardDescription>
+                <CardDescription className="text-slate-500 font-medium">Distribution par type d&apos;abonnement.</CardDescription>
             </CardHeader>
             <CardContent className="px-8 pb-8">
                 <div className="h-60 w-full">

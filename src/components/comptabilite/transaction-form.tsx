@@ -76,7 +76,7 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
             });
         }
     }, [editingTransaction, form, todayDateString]);
-    
+
     useEffect(() => {
         form.setValue('category', '');
     }, [watchedType, form]);
@@ -107,7 +107,7 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
             toast({
                 variant: "destructive",
                 title: "Erreur",
-                description: "Impossible d'enregistrer la transaction. Veuillez vérifier vos permissions et réessayer.",
+                description: "Impossible d&apos;enregistrer la transaction. Veuillez vérifier vos permissions et réessayer.",
             });
         } finally {
             setIsSubmitting(false);
@@ -129,92 +129,92 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
     return (
         <Form {...form}>
             <form id="transaction-form" onSubmit={form.handleSubmit(handleTransactionSubmit)} className="grid gap-4 py-4">
-                 <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                      <FormLabel className="text-right">Type</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={field.onChange}
-                          value={field.value}
-                          className="col-span-3 flex items-center space-x-4"
-                        >
-                          <FormItem className="flex items-center space-x-2">
+                <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel className="text-right">Type</FormLabel>
                             <FormControl>
-                              <RadioGroupItem value="Revenu" id="r1" />
+                                <RadioGroup
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                    className="col-span-3 flex items-center space-x-4"
+                                >
+                                    <FormItem className="flex items-center space-x-2">
+                                        <FormControl>
+                                            <RadioGroupItem value="Revenu" id="r1" />
+                                        </FormControl>
+                                        <FormLabel htmlFor="r1" className="font-normal">Revenu</FormLabel>
+                                    </FormItem>
+                                    <FormItem className="flex items-center space-x-2">
+                                        <FormControl>
+                                            <RadioGroupItem value="Dépense" id="r2" />
+                                        </FormControl>
+                                        <FormLabel htmlFor="r2" className="font-normal">Dépense</FormLabel>
+                                    </FormItem>
+                                </RadioGroup>
                             </FormControl>
-                            <FormLabel htmlFor="r1" className="font-normal">Revenu</FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2">
-                            <FormControl>
-                              <RadioGroupItem value="Dépense" id="r2" />
-                            </FormControl>
-                            <FormLabel htmlFor="r2" className="font-normal">Dépense</FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                    </FormItem>
-                  )}
+                        </FormItem>
+                    )}
                 />
                 <FormField
                     control={form.control}
                     name="category"
                     render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel className="text-right">Catégorie</FormLabel>
-                        <FormControl className="col-span-3">
-                            <Combobox
-                                placeholder="Sélectionner une catégorie"
-                                searchPlaceholder="Chercher ou créer..."
-                                options={categoryOptions}
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                onCreate={handleCreateCategory}
-                            />
-                        </FormControl>
-                         <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel className="text-right">Catégorie</FormLabel>
+                            <FormControl className="col-span-3">
+                                <Combobox
+                                    placeholder="Sélectionner une catégorie"
+                                    searchPlaceholder="Chercher ou créer..."
+                                    options={categoryOptions}
+                                    value={field.value}
+                                    onValueChange={field.onChange}
+                                    onCreate={handleCreateCategory}
+                                />
+                            </FormControl>
+                            <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
                     )}
                 />
                 <FormField
                     control={form.control}
                     name="description"
                     render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel className="text-right">Description</FormLabel>
-                        <FormControl className="col-span-3">
-                            <Input {...field} />
-                        </FormControl>
-                         <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel className="text-right">Description</FormLabel>
+                            <FormControl className="col-span-3">
+                                <Input {...field} />
+                            </FormControl>
+                            <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
                     )}
                 />
                 <FormField
                     control={form.control}
                     name="amount"
                     render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel className="text-right">Montant (CFA)</FormLabel>
-                         <FormControl className="col-span-3">
-                            <Input type="number" {...field} />
-                        </FormControl>
-                         <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel className="text-right">Montant (CFA)</FormLabel>
+                            <FormControl className="col-span-3">
+                                <Input type="number" {...field} />
+                            </FormControl>
+                            <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
                     )}
                 />
                 <FormField
                     control={form.control}
                     name="date"
                     render={({ field }) => (
-                    <FormItem className="grid grid-cols-4 items-center gap-4">
-                        <FormLabel className="text-right">Date</FormLabel>
-                         <FormControl className="col-span-3">
-                            <Input type="date" {...field} />
-                        </FormControl>
-                         <FormMessage className="col-start-2 col-span-3" />
-                    </FormItem>
+                        <FormItem className="grid grid-cols-4 items-center gap-4">
+                            <FormLabel className="text-right">Date</FormLabel>
+                            <FormControl className="col-span-3">
+                                <Input type="date" {...field} />
+                            </FormControl>
+                            <FormMessage className="col-start-2 col-span-3" />
+                        </FormItem>
                     )}
                 />
                 <DialogFooter>
