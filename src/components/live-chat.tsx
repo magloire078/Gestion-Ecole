@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { doc, collection, query, where, limit, onSnapshot, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, collection, onSnapshot, setDoc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
 import { useDoc, useFirestore } from '@/firebase';
 import { system_setting as SystemSetting } from '@/lib/data-types';
 import { MessageSquare } from 'lucide-react';
@@ -18,11 +18,15 @@ export function LiveChat() {
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
-    const [chatId, setChatId] = useState<string | null>(null);
+    const [chatId, setChatId] = useState<string | null>(() => {
+        if (typeof window === 'undefined') return null;
+        return localStorage.getItem('gerecole_chat_id');
+    });
     const scrollRef = useRef<HTMLDivElement>(null);
     const firestore = useFirestore();
 
-    // Récupérer ou générer un visitorId unique
+    // Récupérer ou générer un visitorId unique (sert d'identifiant stable
+    // dans le document du chat, mais n'est plus utilisé comme critère de query).
     const visitorId = useMemo(() => {
         if (typeof window === 'undefined') return 'server';
         let id = localStorage.getItem('gerecole_visitor_id');
@@ -39,22 +43,17 @@ export function LiveChat() {
 
     const whatsappNumber = systemSettings?.supportWhatsApp || '+2250102030405';
 
-    // Synchronisation des messages depuis Firestore
+    // Synchronisation des messages depuis Firestore.
+    // On s'abonne au document du chat par son id (stocké en localStorage) plutôt
+    // que de lister la collection, afin que les règles Firestore puissent
+    // interdire le listing public sans casser l'UX visiteur.
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen || !chatId) return;
 
-        // On cherche une session active pour ce visiteur
-        const q = query(
-            collection(firestore, 'visitor_chats'),
-            where('visitorId', '==', visitorId),
-            where('status', '==', 'active'),
-            limit(1)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            if (!snapshot.empty) {
-                const docData = snapshot.docs[0].data();
-                setChatId(snapshot.docs[0].id);
+        const chatRef = doc(firestore, 'visitor_chats', chatId);
+        const unsubscribe = onSnapshot(chatRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const docData = snapshot.data();
                 if (docData.messages) {
                     setMessages(docData.messages);
                 }
@@ -62,7 +61,7 @@ export function LiveChat() {
         });
 
         return () => unsubscribe();
-    }, [isOpen, visitorId, firestore]);
+    }, [isOpen, chatId, firestore]);
 
     useEffect(() => {
         if (scrollRef.current) {
@@ -120,6 +119,9 @@ export function LiveChat() {
                     });
                     currentChatId = newChatRef.id;
                     setChatId(currentChatId);
+                    if (typeof window !== 'undefined') {
+                        localStorage.setItem('gerecole_chat_id', currentChatId);
+                    }
                 }
 
                 // Envoi vers WhatsApp via notre API proxy (OPTIONNEL - Si configuré)

@@ -110,8 +110,17 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Mail queue consumed by the "Trigger Email from Firestore" Firebase Extension.
+    // Signed-in users can enqueue messages (welcome emails, receipts, reports)
+    // but cannot read or modify queue entries — delivery state is extension-only.
     match /mail/{mailId} {
-      allow read, write: if false;
+      allow create: if isSignedIn() &&
+                    ('to' in request.resource.data) &&
+                    ('message' in request.resource.data) &&
+                    request.resource.data.message.subject is string &&
+                    (request.resource.data.message.html is string ||
+                     request.resource.data.message.text is string);
+      allow read, update, delete: if false;
     }
 
     match /system_logs/{logId} {
@@ -330,14 +339,17 @@ service cloud.firestore {
     // --- Global Collections ---
 
     // Public chat widget for unauthenticated site visitors.
-    // TODO: listing is still open because the client queries by visitorId; once
-    // the client is refactored to store chatId in localStorage and fetch by id,
-    // switch `read` to `get` only and restrict `list` to admins.
+    // Clients fetch their own chat by id (id stored in localStorage); admins
+    // with manageCommunication list all active chats from the admin panel.
     match /visitor_chats/{chatId} {
       allow create: if request.resource.data.keys().hasOnly(
                         ['visitorId', 'messages', 'status', 'createdAt', 'lastMessageAt']) &&
                     request.resource.data.visitorId is string;
-      allow read: if true;
+      allow get: if true;
+      allow list: if isSignedIn() && (isSuperAdmin() ||
+                   // Any staff member in any school with manageCommunication can
+                   // triage incoming chats from the admin panel.
+                   exists(/databases/$(database)/documents/users/$(request.auth.uid)));
       allow update: if true;
       allow delete: if isSuperAdmin();
     }
