@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "mobile:sync": "npm run build && npx cap sync",
-    "mobile:assets": "npx @capacitor/assets generate --android --ios"
+    "mobile:assets": "npx @capacitor/assets generate --android --ios",
+    "test:rules": "firebase emulators:exec --only firestore 'vitest run tests/firestore-rules'",
+    "test:rules:watch": "vitest tests/firestore-rules"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",
@@ -73,6 +75,7 @@
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
+    "@firebase/rules-unit-testing": "^5.0.0",
     "@genkit-ai/core": "^1.23.0",
     "@genkit-ai/firebase": "^1.23.0",
     "@genkit-ai/google-cloud": "^1.23.0",
@@ -91,6 +94,7 @@
     "genkit-cli": "^1.28.0",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^4.1.5"
   }
 }
