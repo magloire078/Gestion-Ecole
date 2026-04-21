@@ -4,6 +4,16 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { addMonths } from 'date-fns';
 import type { school as School, student as Student } from './data-types';
 
+export interface ProviderReference {
+    provider: string;
+    sessionId?: string;
+    paymentIntentId?: string;
+    refundId?: string;
+}
+
+function asProviderRef(input: string | ProviderReference): ProviderReference {
+    return typeof input === 'string' ? { provider: input } : input;
+}
 
 /**
  * Updates a school's subscription after a successful payment and sends confirmation.
@@ -12,8 +22,9 @@ export async function processSubscriptionPayment(
     schoolId: string,
     planName: string,
     durationMonths: number,
-    paymentProvider: string
+    paymentProvider: string | ProviderReference
 ) {
+    const ref = asProviderRef(paymentProvider);
     console.log(`[PaymentProcessing] Updating subscription for school: ${schoolId}, plan: ${planName}, duration: ${durationMonths} months`);
 
     const schoolRef = getAdminDb().collection('ecoles').doc(schoolId);
@@ -34,6 +45,12 @@ export async function processSubscriptionPayment(
         'subscription.plan': planName,
         'subscription.status': 'active',
         'subscription.endDate': endDateStr,
+        'subscription.lastPayment': {
+            provider: ref.provider,
+            sessionId: ref.sessionId || null,
+            paymentIntentId: ref.paymentIntentId || null,
+            paidAt: new Date().toISOString(),
+        },
         'updatedAt': FieldValue.serverTimestamp(),
     });
 
@@ -87,8 +104,9 @@ export async function processTuitionPayment(
     schoolId: string,
     studentId: string,
     amountPaid: number,
-    paymentProvider: string
+    paymentProvider: string | ProviderReference
 ) {
+    const ref = asProviderRef(paymentProvider);
     console.log(`[PaymentProcessing] Updating tuition for student: ${studentId} in school: ${schoolId}, amount: ${amountPaid}`);
 
     const studentRef = getAdminDb().doc(`ecoles/${schoolId}/eleves/${studentId}`);
@@ -121,11 +139,14 @@ export async function processTuitionPayment(
         schoolId,
         studentId,
         date: new Date().toISOString().split('T')[0],
-        description: `Paiement scolarité via ${paymentProvider}`,
+        description: `Paiement scolarité via ${ref.provider}`,
         category: 'Scolarité',
         type: 'Revenu',
         amount: amountPaid,
         reference: reference,
+        provider: ref.provider,
+        providerSessionId: ref.sessionId || null,
+        providerPaymentIntentId: ref.paymentIntentId || null,
         createdAt: FieldValue.serverTimestamp()
     });
 
@@ -136,12 +157,15 @@ export async function processTuitionPayment(
         studentId,
         date: new Date().toISOString().split('T')[0],
         amount: amountPaid,
-        description: `Paiement en ligne via ${paymentProvider}`,
+        description: `Paiement en ligne via ${ref.provider}`,
         accountingTransactionId: accountingRef.id,
         payerFirstName: studentData.parent1FirstName || 'Parent',
         payerLastName: studentData.parent1LastName || '',
-        method: paymentProvider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile',
+        method: ref.provider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile',
         reference: reference,
+        provider: ref.provider,
+        providerSessionId: ref.sessionId || null,
+        providerPaymentIntentId: ref.paymentIntentId || null,
         createdAt: FieldValue.serverTimestamp()
     });
 
@@ -207,4 +231,112 @@ export async function processTuitionPayment(
 
     console.log(`[PaymentProcessing] Successfully updated tuition for student ${studentId}.`);
     return { success: true, newAmountDue };
+}
+
+/**
+ * Reverses a tuition payment after a refund. Restores the amount due, writes a
+ * negative accounting entry, and marks the original payment as refunded.
+ */
+export async function reverseTuitionPayment(
+    schoolId: string,
+    studentId: string,
+    amountRefunded: number,
+    ref: ProviderReference
+) {
+    console.log(`[PaymentProcessing] Reversing tuition payment: student=${studentId} amount=${amountRefunded}`);
+
+    const studentRef = getAdminDb().doc(`ecoles/${schoolId}/eleves/${studentId}`);
+    const studentSnap = await studentRef.get();
+    if (!studentSnap.exists) throw new Error('Student not found');
+
+    const studentData = studentSnap.data() as Student;
+    const newAmountDue = (studentData.amountDue || 0) + amountRefunded;
+    const newStatus = newAmountDue > 0 ? 'Partiel' : 'Soldé';
+
+    const batch = getAdminDb().batch();
+    const refundRef = `REF-${Date.now().toString().slice(-6)}`;
+
+    batch.update(studentRef, {
+        amountDue: newAmountDue,
+        tuitionStatus: newStatus,
+        updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    const accountingRef = getAdminDb().collection(`ecoles/${schoolId}/comptabilite`).doc();
+    batch.set(accountingRef, {
+        schoolId,
+        studentId,
+        date: new Date().toISOString().split('T')[0],
+        description: `Remboursement scolarité via ${ref.provider}`,
+        category: 'Remboursement',
+        type: 'Dépense',
+        amount: amountRefunded,
+        reference: refundRef,
+        provider: ref.provider,
+        providerSessionId: ref.sessionId || null,
+        providerPaymentIntentId: ref.paymentIntentId || null,
+        providerRefundId: ref.refundId || null,
+        createdAt: FieldValue.serverTimestamp(),
+    });
+
+    // Link back to the original payment record if we can find it.
+    if (ref.paymentIntentId) {
+        const paymentsSnap = await getAdminDb()
+            .collection(`ecoles/${schoolId}/eleves/${studentId}/paiements`)
+            .where('providerPaymentIntentId', '==', ref.paymentIntentId)
+            .limit(1)
+            .get();
+        if (!paymentsSnap.empty) {
+            batch.update(paymentsSnap.docs[0].ref, {
+                refunded: true,
+                refundedAmount: amountRefunded,
+                refundedAt: FieldValue.serverTimestamp(),
+                refundId: ref.refundId || null,
+            });
+        }
+    }
+
+    const statsRef = getAdminDb().doc(`ecoles/${schoolId}/stats/finance`);
+    batch.set(
+        statsRef,
+        {
+            totalAmountDue: FieldValue.increment(amountRefunded),
+            lastUpdated: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+    );
+
+    await batch.commit();
+    console.log(`[PaymentProcessing] Refund recorded for student ${studentId}.`);
+    return { success: true, newAmountDue };
+}
+
+/**
+ * Logs a failed payment attempt to Firestore so admins can review via the
+ * dashboard. Non-blocking: swallows its own errors.
+ */
+export async function logPaymentFailure(
+    schoolId: string,
+    failure: {
+        provider: string;
+        paymentIntentId?: string;
+        sessionId?: string;
+        type: 'tuition' | 'subscription';
+        studentId?: string;
+        amount?: number;
+        currency?: string;
+        errorCode?: string | null;
+        errorMessage?: string | null;
+    }
+) {
+    try {
+        await getAdminDb()
+            .collection(`ecoles/${schoolId}/paymentErrors`)
+            .add({
+                ...failure,
+                createdAt: FieldValue.serverTimestamp(),
+            });
+    } catch (err) {
+        console.error('[PaymentProcessing] Failed to log payment failure:', err);
+    }
 }

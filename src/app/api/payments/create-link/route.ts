@@ -49,11 +49,15 @@ export async function POST(req: Request) {
         switch (provider.toLowerCase()) {
             case 'stripe':
                 const stripeResult = await createStripeCheckoutSession({
-                    priceInCents: amount * 100,
+                    type: type as 'tuition' | 'subscription',
+                    amountXOF: amount,
                     planName: type === 'tuition' ? 'Frais de Scolarité' : planName || 'Abonnement',
                     description: type === 'tuition' ? `Paiement scolarité élève ID: ${studentId}` : `Abonnement école ${schoolId}`,
                     clientReferenceId: referenceValue,
                     customerEmail: userEmail,
+                    schoolId,
+                    studentId,
+                    durationMonths: duration ? parseInt(String(duration).replace('m', ''), 10) : undefined,
                 });
                 if (stripeResult.error) return NextResponse.json({ error: stripeResult.error }, { status: 500 });
                 return NextResponse.json({ url: stripeResult.url });
