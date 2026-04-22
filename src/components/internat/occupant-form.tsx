@@ -8,7 +8,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, addDoc, collection, getDocs, query, where, updateDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { occupant as Occupant, student as Student, room as Room } from '@/lib/data-types';
 import { format, addMonths } from 'date-fns';
@@ -82,14 +82,36 @@ export function OccupantForm({ schoolId, students, rooms, occupant, onSave }: Oc
   const handleSubmit = async (values: OccupantFormValues) => {
     setIsSubmitting(true);
 
-    const dataToSave = { ...values };
-
-    const promise = occupant && occupant.id
-      ? setDoc(doc(firestore, `ecoles/${schoolId}/internat_occupants/${occupant.id}`), dataToSave, { merge: true })
-      : addDoc(collection(firestore, `ecoles/${schoolId}/internat_occupants`), dataToSave);
-
     try {
-      await promise;
+      // 1. Save the occupant
+      const dataToSave = { ...values };
+      const occupantId = occupant?.id;
+      const occupantRef = occupantId 
+        ? doc(firestore, `ecoles/${schoolId}/internat_occupants/${occupantId}`)
+        : doc(collection(firestore, `ecoles/${schoolId}/internat_occupants`));
+      
+      await setDoc(occupantRef, dataToSave, { merge: true });
+
+      // 2. Synchronize Room Status
+      // Fetch all active occupants for this room to determine current occupancy
+      const roomOccupantsQuery = query(
+        collection(firestore, `ecoles/${schoolId}/internat_occupants`),
+        where('roomId', '==', values.roomId),
+        where('status', '==', 'active')
+      );
+      const snapshot = await getDocs(roomOccupantsQuery);
+      const currentOccupantCount = snapshot.size;
+
+      const room = rooms.find(r => r.id === values.roomId);
+      if (room) {
+        const newStatus = currentOccupantCount >= room.capacity ? 'occupied' : 'available';
+        if (room.status !== newStatus) {
+            await updateDoc(doc(firestore, `ecoles/${schoolId}/internat_chambres/${values.roomId}`), {
+                status: newStatus
+            });
+        }
+      }
+
       toast({ title: 'Occupation enregistrée', description: "L'assignation de la chambre a été enregistrée." });
       onSave();
     } catch (e) {

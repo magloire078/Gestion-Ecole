@@ -18,6 +18,7 @@ import { StaffService } from '@/services/staff-services';
 import type { staff as Staff, class_type as Class, admin_role as AdminRole, school as OrganizationSettings, subject as Subject } from '@/lib/data-types';
 import { format, parseISO, isValid } from 'date-fns';
 import { ImageUploader } from '../image-uploader';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { Upload, Loader2, FileText, Shield } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -274,9 +275,9 @@ export function StaffEditForm({ schoolId, editingStaff, classes, adminRoles, sub
                                         </FormItem>
                                     )} />
                                     {form.watch('contractType') === 'Titulaire' ? (
-                                        <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="baseSalary" render={({ field }) => (<FormItem><FormLabel>Salaire de base ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     ) : (
-                                        <FormField control={form.control} name="hourlyRate" render={({ field }) => (<FormItem><FormLabel>Taux horaire (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                        <FormField control={form.control} name="hourlyRate" render={({ field }) => (<FormItem><FormLabel>Taux horaire ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                                     )}
                                 </div>
                                 {form.watch('contractType') === 'Vacataire' && (

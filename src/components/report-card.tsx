@@ -12,6 +12,7 @@ import type { staff as Staff, student as Student, class_type as Class } from '@/
 import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc, type DocumentReference, type DocumentData } from 'firebase/firestore';
 import { generateReportCardComment } from '@/ai/flows/generate-report-card-comment';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 // --- Interfaces ---
@@ -221,152 +222,216 @@ export const ReportCard: React.FC<ReportCardProps> = ({
 
 
     return (
-        <Card className="report-card font-serif">
-            <CardContent className="p-4 sm:p-6">
-                <div ref={printRef} className="print:text-black">
-                    {/* Header */}
-                    <div className="flex justify-between items-start pb-4 border-b-2 border-black mb-6">
-                        <div className="flex items-center gap-4">
-                            {school.mainLogoUrl && (
-                                <img
-                                    src={school.mainLogoUrl}
-                                    alt={school.name}
-                                    className="h-20 w-20 object-contain"
-                                />
-                            )}
-                            <div>
-                                <h2 className="text-2xl font-bold uppercase">{school.name || "Nom de l'école"}</h2>
-                                <p className="text-xs text-muted-foreground">{school.address || "Adresse de l'école"}</p>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <p>Année scolaire: {school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}</p>
-                            <h1 className="text-lg font-bold">BULLETIN DE NOTES</h1>
-                            <p>{periodName.toUpperCase()}</p>
-                        </div>
-                    </div>
-
-                    {/* Student Info */}
-                    <div className="flex justify-between items-center mb-6">
-                        <div className="text-sm space-y-1">
-                            <p><span className="font-semibold">Élève :</span> {student.name}</p>
-                            <p><span className="font-semibold">Classe :</span> {student.class || 'N/A'}</p>
-                            <p><span className="font-semibold">Matricule :</span> {student.matricule || 'N/A'}</p>
-                            {rank && (
-                                <p><span className="font-semibold text-primary">Rang :</span> <span className="font-bold text-lg">{rank}{rank === 1 ? 'er' : 'ème'}</span> {totalStudents ? `sur ${totalStudents}` : ''}</p>
-                            )}
-                        </div>
-                        <div className="h-24 w-24 border-2 border-black rounded-lg overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
-                            {student.photoURL ? (
-                                <img
-                                    src={student.photoURL}
-                                    alt={student.name}
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <div className="text-xs font-bold text-center p-1">PAS DE PHOTO</div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Grades Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead className="border-y-2 border-black">
-                                <tr className="text-left">
-                                    <th className="p-2 font-bold">MATIÈRES</th>
-                                    <th className="p-2 text-center font-bold">COEFF.</th>
-                                    <th className="p-2 text-center font-bold">MOY. ÉLÈVE</th>
-                                    <th className="p-2 text-center font-bold hidden sm:table-cell">MOY. CLASSE</th>
-                                    <th className="p-2 font-bold">APPRÉCIATIONS DES PROFESSEURS</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                                {subjectReports.map((report) => {
-                                    const totalCoeffs = grades.filter(g => g.subject === report.subject).reduce((sum, g) => sum + g.coefficient, 0);
-                                    const isGenerating = subjectAppreciations[report.subject]?.isGenerating;
-                                    return (
-                                        <tr key={report.subject} className="print-break-inside-avoid">
-                                            <TableCell className="p-2">
-                                                <p className="font-semibold">{report.subject}</p>
-                                                <p className="text-xs text-muted-foreground">{report.teacherName}</p>
-                                            </TableCell>
-                                            <td className="p-2 text-center font-mono">{totalCoeffs}</td>
-                                            <td className="p-2 text-center font-mono font-bold text-base">{report.average.toFixed(2)}</td>
-                                            <td className="p-2 text-center font-mono hidden sm:table-cell">{report.classAverage.toFixed(2)}</td>
-                                            <td className="p-2 text-xs italic">
-                                                <div className="flex items-start gap-1">
-                                                    <span className="flex-1">{report.appreciation}</span>
-                                                    {canManageGrades && (
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-5 w-5 no-print"
-                                                            onClick={() => handleGenerateComment(report.subject, report.teacherName, report.average)}
-                                                            disabled={isGenerating}
-                                                        >
-                                                            {isGenerating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Summary */}
-                    <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-3 bg-muted/50 rounded-md space-y-2">
-                            <div className="flex justify-between items-center text-base">
-                                <span className="font-bold">MOYENNE GÉNÉRALE {periodName.toUpperCase()} :</span>
-                                <span className="text-xl font-bold text-primary">{generalAverage.toFixed(2)} / 20</span>
-                            </div>
-                            <div className="flex justify-between items-center text-base">
-                                <span className="font-bold">TOTAL COEFFICIENTS :</span>
-                                <span className="text-xl font-bold">{totalCoefficients}</span>
-                            </div>
-                            <div className="text-center pt-2">
-                                <p className="font-bold text-lg">{getMention(generalAverage)}</p>
-                            </div>
-                        </div>
-                        <div className="p-3 bg-muted/50 rounded-md">
-                            <div className="flex justify-between items-start">
-                                <p className="font-bold mb-1">APPRÉCIATION DU CONSEIL DE CLASSE</p>
-                                {canManageGrades && (
-                                    <Button variant="ghost" size="sm" onClick={() => handleGenerateComment()} disabled={isGeneratingCouncilComment} className="no-print">
-                                        {isGeneratingCouncilComment ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                                        {isGeneratingCouncilComment ? "Génération..." : "Générer"}
-                                    </Button>
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+        >
+            <Card className="report-card font-sans bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border-t-white/80">
+                <CardContent className="p-4 sm:p-10">
+                    <div ref={printRef} className="print:text-black print:font-serif">
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row justify-between items-center sm:items-start pb-8 border-b-2 border-slate-900/10 mb-8 gap-6">
+                            <div className="flex flex-col sm:flex-row items-center gap-6 text-center sm:text-left">
+                                {school.mainLogoUrl && (
+                                    <motion.img
+                                        whileHover={{ scale: 1.05, rotate: 2 }}
+                                        src={school.mainLogoUrl}
+                                        alt={school.name}
+                                        className="h-24 w-24 object-contain drop-shadow-xl"
+                                    />
                                 )}
+                                <div>
+                                    <h2 className="text-3xl font-black uppercase tracking-tighter text-slate-900 leading-tight">{school.name || "Nom de l'école"}</h2>
+                                    <p className="text-sm text-slate-500 font-medium tracking-wide">{school.address || "Adresse de l'école"}</p>
+                                </div>
                             </div>
-                            <p className="italic text-sm">{councilComment}</p>
+                            <div className="text-center sm:text-right space-y-1">
+                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 inline-block mb-2">Session Académique</p>
+                                <p className="text-sm font-bold text-slate-700">{school.currentAcademicYear || `${new Date().getFullYear() - 1}-${new Date().getFullYear()}`}</p>
+                                <h1 className="text-2xl font-black text-slate-900 tracking-tighter">BULLETIN DE NOTES</h1>
+                                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">{periodName.toUpperCase()}</p>
+                            </div>
                         </div>
-                    </div>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest text-center mb-8 opacity-50">Document confidentiel généré par le système GèreEcole</p>
 
-                    {/* Footer with signatures */}
-                    <div className="mt-16 grid grid-cols-2 gap-8 text-center text-sm print-break-inside-avoid">
-                        <div>
-                            <p className="font-bold">Le Professeur Principal</p>
-                            <div className="mt-16 border-t border-black w-48 mx-auto"></div>
-                            <p>{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}` : ''}</p>
+                        {/* Student Info Box */}
+                        <div className="bg-slate-900/5 rounded-[2rem] p-8 mb-10 border border-white/20 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-indigo-500/20 transition-all duration-700" />
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-8 relative z-10">
+                                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-12">
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Élève</p>
+                                        <p className="text-xl font-black text-slate-800 tracking-tight">{student.name}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Classe</p>
+                                        <p className="text-xl font-black text-indigo-600 tracking-tight">{student.class || 'N/A'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Matricule</p>
+                                        <p className="text-sm font-bold text-slate-700 tracking-widest font-mono">{student.matricule || 'N/A'}</p>
+                                    </div>
+                                    {rank && (
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Performance</p>
+                                            <div className="flex items-baseline gap-2">
+                                                <p className="text-2xl font-black text-emerald-600 tracking-tighter">
+                                                    {rank}<span className="text-sm font-bold ml-0.5">{rank === 1 ? 'er' : 'ème'}</span>
+                                                </p>
+                                                <span className="text-sm font-bold text-slate-400">sur {totalStudents || '?'} élèves</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                <motion.div 
+                                    whileHover={{ scale: 1.05 }}
+                                    className="h-32 w-32 border-4 border-white rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/20 bg-white flex items-center justify-center flex-shrink-0"
+                                >
+                                    {student.photoURL ? (
+                                        <img
+                                            src={student.photoURL}
+                                            alt={student.name}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="text-[10px] font-black text-center p-2 text-slate-300">PHOTO NON DISPONIBLE</div>
+                                    )}
+                                </motion.div>
+                            </div>
                         </div>
-                        <div>
-                            <p className="font-bold">Le Directeur</p>
-                            <div className="mt-16 border-t border-black w-48 mx-auto"></div>
-                            <p>{school.directorName}</p>
+
+                        {/* Grades Table */}
+                        <div className="bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/40 overflow-hidden mb-10">
+                            <Table>
+                                <TableHeader className="bg-slate-900/5">
+                                    <TableRow className="hover:bg-transparent border-b border-slate-900/10">
+                                        <TableHead className="p-6 font-black text-slate-500 uppercase text-[10px] tracking-[0.2em]">Matières & Enseignants</TableHead>
+                                        <TableHead className="p-6 text-center font-black text-slate-500 uppercase text-[10px] tracking-[0.2em]">Coeff.</TableHead>
+                                        <TableHead className="p-6 text-center font-black text-slate-500 uppercase text-[10px] tracking-[0.2em]">Moy. Élève</TableHead>
+                                        <TableHead className="p-6 text-center font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] hidden sm:table-cell">Moy. Classe</TableHead>
+                                        <TableHead className="p-6 font-black text-slate-500 uppercase text-[10px] tracking-[0.2em]">Appréciations & Analyse IA</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {subjectReports.map((report, idx) => {
+                                        const totalCoeffs = grades.filter(g => g.subject === report.subject).reduce((sum, g) => sum + g.coefficient, 0);
+                                        const isGenerating = subjectAppreciations[report.subject]?.isGenerating;
+                                        return (
+                                            <TableRow key={report.subject} className="group hover:bg-indigo-50/30 transition-all duration-300 border-b border-slate-900/5 last:border-0">
+                                                <TableCell className="p-6">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="font-black text-slate-800 tracking-tight">{report.subject}</span>
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{report.teacherName}</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="p-6 text-center font-black text-slate-500">{totalCoeffs}</TableCell>
+                                                <TableCell className="p-6 text-center">
+                                                    <Badge className={cn(
+                                                        "text-lg font-black tracking-tighter px-4 py-1 rounded-xl shadow-sm border",
+                                                        report.average >= 15 ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" :
+                                                        report.average >= 10 ? "bg-amber-500/10 text-amber-600 border-amber-500/20" :
+                                                        "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                                                    )}>
+                                                        {report.average.toFixed(2)}
+                                                    </Badge>
+                                                </TableCell>
+                                                <TableCell className="p-6 text-center font-bold text-slate-400 hidden sm:table-cell">{report.classAverage.toFixed(2)}</TableCell>
+                                                <TableCell className="p-6">
+                                                    <div className="flex items-start gap-3">
+                                                        <p className="text-xs font-medium text-slate-600 leading-relaxed italic flex-1">
+                                                            {report.appreciation || <span className="text-slate-300">En attente d&apos;appréciation...</span>}
+                                                        </p>
+                                                        {canManageGrades && (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8 rounded-xl bg-slate-100/50 hover:bg-indigo-600 hover:text-white transition-all duration-300 no-print flex-shrink-0"
+                                                                onClick={() => handleGenerateComment(report.subject, report.teacherName, report.average)}
+                                                                disabled={isGenerating}
+                                                            >
+                                                                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        );
+                                    })}
+                                </TableBody>
+                            </Table>
                         </div>
+
+                        {/* Analysis & Summary */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+                            <div className="md:col-span-1 bg-indigo-600 rounded-[2rem] p-8 text-white shadow-2xl shadow-indigo-200 border-t border-indigo-400/30 flex flex-col justify-center gap-6">
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.2em]">Moyenne Générale</p>
+                                    <div className="flex items-baseline gap-2">
+                                        <h3 className="text-5xl font-black tracking-tighter">{generalAverage.toFixed(2)}</h3>
+                                        <span className="text-xl font-bold opacity-60">/ 20</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.2em]">Appréciation Générale</p>
+                                    <p className="text-2xl font-black tracking-tight">{getMention(generalAverage).toUpperCase()}</p>
+                                </div>
+                            </div>
+
+                            <div className="md:col-span-2 bg-white/60 backdrop-blur-md rounded-[2rem] p-8 border border-white/60 shadow-xl shadow-slate-200/30 flex flex-col gap-4">
+                                <div className="flex justify-between items-start">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Avis Global du Conseil de Classe</p>
+                                    {canManageGrades && (
+                                        <Button 
+                                            variant="ghost" 
+                                            size="sm" 
+                                            onClick={() => handleOpenFormDialog ? undefined : handleGenerateComment()} 
+                                            disabled={isGeneratingCouncilComment} 
+                                            className="no-print h-8 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all font-black text-[10px] px-4"
+                                        >
+                                            {isGeneratingCouncilComment ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Bot className="mr-2 h-3 w-3" />}
+                                            {isGeneratingCouncilComment ? "Génération..." : "Intelligence Artificielle"}
+                                        </Button>
+                                    )}
+                                </div>
+                                <div className="flex-1 flex flex-col justify-center">
+                                    <p className="text-slate-600 italic leading-relaxed font-medium">
+                                        &quot;{councilComment}&quot;
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Signatures */}
+                        <div className="mt-16 grid grid-cols-2 gap-12 text-center print-break-inside-avoid border-t-2 border-slate-900/5 pt-12 pb-12">
+                            <div className="space-y-24">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Visa</p>
+                                    <p className="font-black text-slate-800">Le Professeur Principal</p>
+                                </div>
+                                <p className="font-bold text-sm text-slate-500">{mainTeacher ? `${mainTeacher.firstName} ${mainTeacher.lastName}` : '.........................................'}</p>
+                            </div>
+                            <div className="space-y-24">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Visa & Cachet</p>
+                                    <p className="font-black text-slate-800">Le Directeur de l&apos;École</p>
+                                </div>
+                                <p className="font-bold text-sm text-slate-500">{school.directorName || '.........................................'}</p>
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest text-center mt-12 opacity-30">Document certifié et généré par le système GèreEcole</p>
                     </div>
-                </div>
-                <div className="mt-6 flex justify-end no-print">
-                    <Button onClick={handlePrint}>
-                        <Printer className="mr-2 h-4 w-4" />
-                        Imprimer le Bulletin
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
+                    <div className="mt-10 flex justify-end gap-3 no-print">
+                        <Button 
+                            onClick={handlePrint}
+                            className="bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl h-14 px-8 shadow-2xl shadow-slate-900/20 transition-all duration-300 hover:-translate-y-1"
+                        >
+                            <Printer className="mr-3 h-5 w-5" />
+                            Imprimer le Bulletin
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </motion.div>
     );
 };

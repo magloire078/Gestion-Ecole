@@ -299,6 +299,7 @@ export type cycle = {
     createdAt?: string;
     updatedAt?: string;
     color?: string;
+    id?: string;
 };
 
 export type niveau = {
@@ -485,6 +486,7 @@ export type subject = {
     name: string;
     code?: string;
     color?: string;
+    id?: string;
 };
 
 export type canteenMenu = {
@@ -808,7 +810,6 @@ export type payroll_payslip = {
     staffName: string;
     payslipDetails: any;
 };
-
 
 export interface UserProfile extends staff {
     permissions?: Partial<admin_role['permissions']>;

@@ -19,6 +19,7 @@ import { Slider } from '@/components/ui/slider';
 import { useFirestore } from '@/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 
 const surveySchema = z.object({
   schoolName: z.string().min(1, "Le nom de l'établissement est requis."),
@@ -202,12 +203,12 @@ export default function SurveyPage() {
                   {/* Section 4: Budget et Contact */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">4. Budget et suivi</h3>
-                    <FormField control={form.control} name="budget" render={({ field }) => (<FormItem><FormLabel>Quel budget mensuel (en CFA) seriez-vous prêt à allouer pour une solution de gestion complète ?</FormLabel>
+<FormField control={form.control} name="budget" render={({ field }) => (<FormItem><FormLabel>Quel budget mensuel (en {getCurrencySymbol()}) seriez-vous prêt à allouer pour une solution de gestion complète ?</FormLabel>
                       <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="<50k" /></FormControl><FormLabel className="font-normal">Moins de 50 000 CFA</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="50k-100k" /></FormControl><FormLabel className="font-normal">Entre 50 000 et 100 000 CFA</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="100k-200k" /></FormControl><FormLabel className="font-normal">Entre 100 000 et 200 000 CFA</FormLabel></FormItem>
-                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value=">200k" /></FormControl><FormLabel className="font-normal">Plus de 200 000 CFA</FormLabel></FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="<50k" /></FormControl><FormLabel className="font-normal">Moins de 50 000 {getCurrencySymbol()}</FormLabel></FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="50k-100k" /></FormControl><FormLabel className="font-normal">Entre 50 000 et 100 000 {getCurrencySymbol()}</FormLabel></FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value="100k-200k" /></FormControl><FormLabel className="font-normal">Entre 100 000 et 200 000 {getCurrencySymbol()}</FormLabel></FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0"><FormControl><RadioGroupItem value=">200k" /></FormControl><FormLabel className="font-normal">Plus de 200 000 {getCurrencySymbol()}</FormLabel></FormItem>
                       </RadioGroup>
                     </FormItem>)} />
                     <FormField control={form.control} name="comments" render={({ field }) => (<FormItem><FormLabel>Avez-vous des commentaires ou des besoins spécifiques non mentionnés ?</FormLabel><FormControl><Textarea {...field} /></FormControl></FormItem>)} />

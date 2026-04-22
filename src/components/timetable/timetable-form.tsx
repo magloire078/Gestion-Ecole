@@ -10,7 +10,29 @@ import { DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { TimetableService } from '@/services/timetable-service';
 import type { class_type as Class, staff as Staff, timetableEntry, subject as Subject } from '@/lib/data-types';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { checkTimetableConflicts } from '@/lib/timetable-utils';
+import { useTimetable } from '@/hooks/use-timetable';
+import { Input } from '@/components/ui/input';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+interface SubjectColorCircleProps {
+    color: string;
+    className?: string;
+}
+
+const SubjectColorCircle = ({ color, className }: SubjectColorCircleProps) => {
+    const circleRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (circleRef.current) {
+            circleRef.current.style.backgroundColor = color;
+        }
+    }, [color]);
+
+    return <div ref={circleRef} className={className} />;
+};
 
 const timetableSchema = z.object({
     classId: z.string().min(1, { message: "La classe est requise." }),
@@ -20,6 +42,7 @@ const timetableSchema = z.object({
     startTime: z.string().min(1, { message: "L'heure de début est requise." }),
     endTime: z.string().min(1, { message: "L'heure de fin est requise." }),
     color: z.string().optional(),
+    classroom: z.string().optional(),
 });
 
 type TimetableFormValues = z.infer<typeof timetableSchema>;
@@ -60,9 +83,32 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
             startTime: "08:00",
             endTime: "09:00",
             color: '#3b82f6',
+            classroom: "",
             ...defaultValues
         },
     });
+
+    // Fetch all entries for conflict checking (even if we only see one class in the main view)
+    const { timetable: allEntries } = useTimetable(schoolId, 'all');
+    const [conflicts, setConflicts] = useState<string[]>([]);
+
+    const watchFields = form.watch(['day', 'startTime', 'endTime', 'teacherId', 'classroom', 'classId']);
+
+    useEffect(() => {
+        const potentialConflicts = checkTimetableConflicts(
+            {
+                day: watchFields[0] as any,
+                startTime: watchFields[1],
+                endTime: watchFields[2],
+                teacherId: watchFields[3],
+                classroom: watchFields[4],
+                classId: watchFields[5],
+            },
+            allEntries,
+            entry?.id
+        );
+        setConflicts(potentialConflicts);
+    }, [watchFields, allEntries, entry?.id]);
 
     useEffect(() => {
         if (entry) {
@@ -100,7 +146,20 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                 startTime: values.startTime || '',
                 endTime: values.endTime || '',
                 color: values.color,
+                classroom: values.classroom,
             };
+
+            // Final safety check for conflicts
+            const finalConflicts = checkTimetableConflicts(completeData, allEntries, entry?.id);
+            if (finalConflicts.length > 0) {
+                toast({ 
+                    variant: "destructive", 
+                    title: "Conflit détecté", 
+                    description: finalConflicts[0] 
+                });
+                setIsSubmitting(false);
+                return;
+            }
 
             if (entry) {
                 await TimetableService.updateEntry(schoolId, entry.id!, completeData);
@@ -119,176 +178,217 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
 
     return (
         <Form {...form}>
-            <form id="timetable-form" onSubmit={form.handleSubmit(handleSubmit)} className="grid gap-4 py-4">
-                <FormField
-                    control={form.control}
-                    name="classId"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4">
-                            <FormLabel className="text-right">Classe</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl className="col-span-3">
-                                    <SelectTrigger><SelectValue placeholder="Sélectionner une classe" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {classes.map((cls) => (<SelectItem key={cls.id} value={cls.id}>{cls.name}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage className="col-start-2 col-span-3" />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="teacherId"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4">
-                            <FormLabel className="text-right">Enseignant</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl className="col-span-3">
-                                    <SelectTrigger><SelectValue placeholder="Sélectionner un enseignant" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {teachers.map((teacher) => (<SelectItem key={teacher.id} value={teacher.id}>{`${teacher.firstName} ${teacher.lastName}`}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage className="col-start-2 col-span-3" />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="subject"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4">
-                            <FormLabel className="text-right">Matière</FormLabel>
-                            <Select
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    // Auto-update color when subject is selected
-                                    const selectedSubject = subjects.find(s => s.name === value);
-                                    if (selectedSubject?.color) {
-                                        form.setValue('color', selectedSubject.color);
-                                    }
-                                }}
-                                value={field.value}
-                            >
-                                <FormControl className="col-span-3">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Sélectionner une matière">
-                                            {field.value && (
+            <form id="timetable-form" onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="classId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Classe</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold">
+                                            <SelectValue placeholder="Choisir une classe" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="rounded-2xl border-slate-100">
+                                        {classes.map((cls) => (<SelectItem key={cls.id} value={cls.id} className="font-medium">{cls.name}</SelectItem>))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage className="text-[10px] font-bold" />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="teacherId"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Enseignant</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold">
+                                            <SelectValue placeholder="Choisir un enseignant" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="rounded-2xl border-slate-100">
+                                        {teachers.map((teacher) => (<SelectItem key={teacher.id} value={teacher.id} className="font-medium">{`${teacher.firstName} ${teacher.lastName}`}</SelectItem>))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage className="text-[10px] font-bold" />
+                            </FormItem>
+                        )}
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                        control={form.control}
+                        name="subject"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Matière</FormLabel>
+                                <Select
+                                    onValueChange={(value) => {
+                                        field.onChange(value);
+                                        const selectedSubject = subjects.find(s => s.name === value);
+                                        if (selectedSubject?.color) {
+                                            form.setValue('color', selectedSubject.color);
+                                        }
+                                    }}
+                                    value={field.value}
+                                >
+                                    <FormControl>
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold">
+                                            <SelectValue placeholder="Choisir une matière">
+                                                {field.value && (
+                                                    <div className="flex items-center gap-2">
+                                                        <SubjectColorCircle 
+                                                            color={form.watch('color') || '#3b82f6'} 
+                                                            className="w-3 h-3 rounded-full shadow-sm" 
+                                                        />
+                                                        <span>{field.value}</span>
+                                                    </div>
+                                                )}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="rounded-2xl border-slate-100">
+                                        {subjects.map((subject) => (
+                                            <SelectItem key={subject.name} value={subject.name}>
                                                 <div className="flex items-center gap-2">
-                                                    <div
-                                                        className="w-3 h-3 rounded-full"
-                                                        style={{ backgroundColor: form.watch('color') || '#3b82f6' }}
+                                                    <SubjectColorCircle 
+                                                        color={subject.color || '#3b82f6'} 
+                                                        className="w-3 h-3 rounded-full" 
                                                     />
-                                                    <span>{field.value}</span>
+                                                    <span className="font-medium">{subject.name}</span>
                                                 </div>
-                                            )}
-                                        </SelectValue>
-                                    </SelectTrigger>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage className="text-[10px] font-bold" />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="classroom"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Salle / Local</FormLabel>
+                                <FormControl>
+                                    <Input {...field} className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold px-4" placeholder="Ex: Salle 101" />
                                 </FormControl>
-                                <SelectContent>
-                                    {subjects.map((subject) => (
-                                        <SelectItem key={subject.name} value={subject.name}>
-                                            <div className="flex items-center gap-2">
-                                                <div
-                                                    className="w-3 h-3 rounded-full"
-                                                    style={{ backgroundColor: subject.color || '#3b82f6' }}
-                                                />
-                                                <span>{subject.name}</span>
-                                            </div>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage className="col-start-2 col-span-3" />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="day"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4">
-                            <FormLabel className="text-right">Jour</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl className="col-span-3">
-                                    <SelectTrigger><SelectValue placeholder="Sélectionner un jour" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {daysOfWeek.map(day => (<SelectItem key={day} value={day}>{day}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage className="col-start-2 col-span-3" />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="startTime"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4">
-                            <FormLabel className="text-right">Début</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl className="col-span-3">
-                                    <SelectTrigger><SelectValue placeholder="Heure de début" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {timeSlots.map(time => (<SelectItem key={time} value={time}>{time}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage className="col-start-2 col-span-3" />
-                        </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="endTime"
-                    render={({ field }) => (
-                        <FormItem className="grid grid-cols-4 items-center gap-4">
-                            <FormLabel className="text-right">Fin</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl className="col-span-3">
-                                    <SelectTrigger><SelectValue placeholder="Heure de fin" /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                    {timeSlots.map(time => (<SelectItem key={time} value={time}>{time}</SelectItem>))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage className="col-start-2 col-span-3" />
-                        </FormItem>
-                    )}
-                />
+                                <FormMessage className="text-[10px] font-bold" />
+                            </FormItem>
+                        )}
+                    />
+                </div>
 
-                {/* Duration helper */}
-                {form.watch('startTime') && form.watch('endTime') && (() => {
-                    const start = form.watch('startTime').split(':').map(Number);
-                    const end = form.watch('endTime').split(':').map(Number);
-                    const startMinutes = start[0] * 60 + start[1];
-                    const endMinutes = end[0] * 60 + end[1];
-                    const durationMinutes = endMinutes - startMinutes;
-                    const hours = Math.floor(durationMinutes / 60);
-                    const minutes = durationMinutes % 60;
+                <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-6">
+                    <FormField
+                        control={form.control}
+                        name="day"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Jour de la semaine</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-12 bg-white border-slate-100 rounded-2xl font-bold shadow-sm">
+                                            <SelectValue placeholder="Choisir un jour" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="rounded-2xl border-slate-100">
+                                        {daysOfWeek.map(day => (<SelectItem key={day} value={day} className="font-medium">{day}</SelectItem>))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage className="text-[10px] font-bold" />
+                            </FormItem>
+                        )}
+                    />
 
-                    if (durationMinutes > 0) {
-                        return (
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <div className="col-start-2 col-span-3">
-                                    <p className="text-sm text-muted-foreground">
-                                        Durée : {hours > 0 && `${hours}h`}{minutes > 0 && `${minutes}min`}
+                    <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                            control={form.control}
+                            name="startTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Début</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className="h-12 bg-white border-slate-100 rounded-2xl font-bold shadow-sm">
+                                                <SelectValue placeholder="00:00" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent className="rounded-2xl border-slate-100">
+                                            {timeSlots.map(time => (<SelectItem key={time} value={time} className="font-mono">{time}</SelectItem>))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="endTime"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Fin</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className="h-12 bg-white border-slate-100 rounded-2xl font-bold shadow-sm">
+                                                <SelectValue placeholder="00:00" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent className="rounded-2xl border-slate-100">
+                                            {timeSlots.map(time => (<SelectItem key={time} value={time} className="font-mono">{time}</SelectItem>))}
+                                        </SelectContent>
+                                    </Select>
+                                </FormItem>
+                            )}
+                        />
+                    </div>
+
+                    {form.watch('startTime') && form.watch('endTime') && (() => {
+                        const start = form.watch('startTime').split(':').map(Number);
+                        const end = form.watch('endTime').split(':').map(Number);
+                        const startMinutes = start[0] * 60 + start[1];
+                        const endMinutes = end[0] * 60 + end[1];
+                        const durationMinutes = endMinutes - startMinutes;
+                        const hours = Math.floor(durationMinutes / 60);
+                        const minutes = durationMinutes % 60;
+
+                        if (durationMinutes > 0) {
+                            return (
+                                <div className="mt-2 flex items-center gap-2 text-indigo-600 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100 animate-in fade-in zoom-in-95 duration-300">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-pulse" />
+                                    <p className="text-xs font-black uppercase tracking-tighter">
+                                        Durée totale : {hours > 0 && `${hours} heure${hours > 1 ? 's' : ''} `}{minutes > 0 && `${minutes} minute${minutes > 1 ? 's' : ''}`}
                                     </p>
                                 </div>
-                            </div>
-                        );
-                    }
-                    return null;
-                })()}
+                            );
+                        }
+                        return null;
+                    })()}
+                </div>
 
-                <DialogFooter className="mt-4">
-                    <Button type="button" variant="outline" onClick={onCancel}>Annuler</Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting ? 'Enregistrement...' : 'Enregistrer'}
+                {conflicts.length > 0 && (
+                    <Alert variant="destructive" className="bg-rose-50 border-rose-100 rounded-3xl p-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                        <AlertCircle className="h-5 w-5 text-rose-600" />
+                        <div className="space-y-1">
+                            <AlertTitle className="text-sm font-black text-rose-900 uppercase tracking-tight">Conflit de planification</AlertTitle>
+                            <AlertDescription className="text-xs text-rose-700 font-medium leading-relaxed">
+                                {conflicts[0]}
+                            </AlertDescription>
+                        </div>
+                    </Alert>
+                )}
+
+                <DialogFooter className="pt-6 border-t border-slate-100 gap-3">
+                    <Button type="button" variant="ghost" onClick={onCancel} className="h-12 px-6 rounded-2xl font-bold text-slate-500 hover:bg-slate-50">Annuler</Button>
+                    <Button type="submit" disabled={isSubmitting} className="h-12 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg shadow-indigo-100 transition-all hover:scale-105 active:scale-95">
+                        {isSubmitting ? 'Enregistrement...' : entry ? 'Mettre à jour' : 'Confirmer la création'}
                     </Button>
                 </DialogFooter>
             </form>

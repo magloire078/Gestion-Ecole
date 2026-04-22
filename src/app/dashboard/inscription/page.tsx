@@ -28,6 +28,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { getTuitionInfoForClass } from '@/lib/school-utils';
 import { StudentService } from '@/services/student-services';
+import { formatCurrency } from '@/lib/currency-utils';
 
 
 const registrationSchema = z.object({
@@ -238,13 +239,13 @@ export default function RegistrationPage() {
           <CardTitle>Formulaire d&apos;Inscription</CardTitle>
           <CardDescription>
             Étape {step} sur 3 - Frais de scolarité pour la classe sélectionnée :
-            <span className="font-bold text-primary"> {tuitionFeeForSelectedClass.toLocaleString('fr-FR')} CFA</span>
+            <span className="font-bold text-primary"> {formatCurrency(tuitionFeeForSelectedClass)}</span>
           </CardDescription>
           {tuitionFeeForSelectedClass === 0 && watchedClassId && (
             <Alert variant="destructive" className="mt-2">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Aucun frais de scolarité n&apos;a été défini pour ce niveau. L&apos;élève sera inscrit avec un solde de 0 CFA.
+                Aucun frais de scolarité n&apos;a été défini pour ce niveau. L&apos;élève sera inscrit avec un solde de {formatCurrency(0)}.
                 <Button variant="link" asChild className="p-0 h-auto ml-1"><Link href="/dashboard/frais-scolarite">Définir les frais maintenant.</Link></Button>
               </AlertDescription>
             </Alert>

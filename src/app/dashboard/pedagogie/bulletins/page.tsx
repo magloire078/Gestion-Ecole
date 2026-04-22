@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import {
     Table,
     TableBody,
@@ -36,6 +37,10 @@ export default function BulletinsPage() {
     const [selectedPeriodName, setSelectedPeriodName] = useState<string>('');
     const [isCalculating, setIsCalculating] = useState(false);
     const [averages, setAverages] = useState<Record<string, { average: number; totalCoef: number }>>({});
+    const [classStats, setClassStats] = useState<any>(null);
+    const [studentRanks, setStudentRanks] = useState<Record<string, { rank: number, average: number }>>({});
+    const [totalStudentsInClass, setTotalStudentsInClass] = useState(0);
+    const [teacherComments, setTeacherComments] = useState<string>("");
 
     const studentsQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/eleves`) : null, [firestore, schoolId]);
     const classesQuery = useMemo(() => schoolId ? collection(firestore, `ecoles/${schoolId}/classes`) : null, [firestore, schoolId]);
@@ -69,19 +74,30 @@ export default function BulletinsPage() {
         const newAverages: Record<string, { average: number; totalCoef: number }> = {};
 
         try {
-            for (const student of filteredStudents) {
-                if (!student.id) continue;
-                const subjectAvgs = await reportService.calculateStudentAverages(
-                    schoolId,
-                    student.id,
-                    selectedPeriod.startDate,
-                    selectedPeriod.endDate
-                );
-                const stats = reportService.calculateGeneralAverage(subjectAvgs);
-                newAverages[student.id] = stats;
+            // 1. Calculate class statistics (includes all student averages and ranks)
+            const statsData = await reportService.getClassStatistics(
+                schoolId,
+                selectedClass,
+                selectedPeriod.startDate,
+                selectedPeriod.endDate
+            );
+
+            setClassStats(statsData.classStats);
+            setStudentRanks(statsData.studentRanks);
+            setTotalStudentsInClass(statsData.totalStudents);
+
+            // 2. Map averages to state for UI display
+            for (const studentId in statsData.studentRanks) {
+                // To get totalCoef, we still need to calculate it or we could have updated getClassStatistics to return it
+                // For performance, let's just use the general average for now in the list
+                newAverages[studentId] = { 
+                    average: statsData.studentRanks[studentId].average,
+                    totalCoef: 0 // Will be populated individually on PDF generation or we can optimize later
+                };
             }
+            
             setAverages(newAverages);
-            toast({ title: "Calcul terminé", description: `Les moyennes pour ${selectedPeriodName} ont été calculées.` });
+            toast({ title: "Calcul terminé", description: `Les moyennes et statistiques pour ${selectedPeriodName} ont été calculées.` });
         } catch (error) {
             console.error("Calculation failed:", error);
             toast({ variant: 'destructive', title: "Erreur", description: "Échec du calcul des moyennes." });
@@ -106,6 +122,14 @@ export default function BulletinsPage() {
             );
             const stats = reportService.calculateGeneralAverage(subjectAvgs);
 
+            // Fetch absences
+            const absences = await reportService.countStudentAbsences(
+                schoolId,
+                student.id,
+                selectedPeriod.startDate,
+                selectedPeriod.endDate
+            );
+
             const reportData: ReportCardData = {
                 studentId: student.id,
                 studentName: `${student.firstName} ${student.lastName}`,
@@ -114,10 +138,25 @@ export default function BulletinsPage() {
                 term: selectedPeriodName,
                 subjectAverages: subjectAvgs,
                 generalAverage: stats.average,
-                totalCoefficients: stats.totalCoef
+                totalCoefficients: stats.totalCoef,
+                absencesCount: absences.total,
+                justifiedAbsencesCount: absences.justified,
+                comments: teacherComments
             };
 
-            reportService.generatePDF(reportData, schoolName, digitalSignatureUrl);
+            reportService.generatePDF(
+                {
+                    ...reportData,
+                    rank: studentRanks[student.id]?.rank,
+                    totalStudents: totalStudentsInClass,
+                    classStats: classStats
+                }, 
+                schoolName, 
+                schoolData?.mainLogoUrl || null,
+                digitalSignatureUrl,
+                schoolData?.country,
+                schoolData?.region
+            );
             toast({ title: "Bulletin généré", description: `Le bulletin de ${student.firstName} (${selectedPeriodName}) est prêt.` });
         } catch (error) {
             console.error("PDF generation failed:", error);
@@ -181,6 +220,17 @@ export default function BulletinsPage() {
                             {isCalculating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Calculator className="mr-2 h-4 w-4" />}
                             Calculer les moyennes
                         </Button>
+                    </div>
+                </CardContent>
+                <CardContent className="pt-0">
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium">Appréciations générales du professeur (pour tous les bulletins générés)</label>
+                        <Textarea 
+                            placeholder="Entrez vos observations ou commentaires ici..." 
+                            value={teacherComments}
+                            onChange={(e) => setTeacherComments(e.target.value)}
+                            className="min-h-[100px]"
+                        />
                     </div>
                 </CardContent>
             </Card>

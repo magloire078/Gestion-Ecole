@@ -16,6 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { RoomForm } from './room-form';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
+import { formatCurrency } from '@/lib/currency-utils';
 
 export function RoomManagement({ schoolId }: { schoolId: string }) {
     const firestore = useFirestore();
@@ -97,10 +98,6 @@ export function RoomManagement({ schoolId }: { schoolId: string }) {
         }
     }
 
-    const formatCurrency = (value?: number) => {
-        if (typeof value !== 'number') return 'N/A';
-        return `${value.toLocaleString('fr-FR')} CFA`;
-    }
 
     return (
         <>

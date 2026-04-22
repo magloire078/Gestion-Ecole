@@ -94,6 +94,26 @@ export function useUserSession() {
         schoolId,
         schoolData,
         subscription,
+        isSubscriptionActive: useMemo(() => {
+            if (isSuperAdmin) return true;
+            if (!subscription?.endDate) return false;
+            return (subscription.status === 'active' || subscription.status === 'trialing') && new Date(subscription.endDate) > new Date();
+        }, [isSuperAdmin, subscription]),
+        subscriptionStatus: useMemo(() => {
+            if (isSuperAdmin) return 'active';
+            if (!subscription?.endDate) return 'none';
+            const isExpired = new Date(subscription.endDate) < new Date();
+            if (isExpired) return 'expired';
+            const diff = new Date(subscription.endDate).getTime() - new Date().getTime();
+            const daysLeft = Math.ceil(diff / (1000 * 60 * 60 * 24));
+            if (daysLeft <= 7) return 'warning';
+            return 'active';
+        }, [isSuperAdmin, subscription]),
+        daysRemaining: useMemo(() => {
+            if (!subscription?.endDate) return 0;
+            const diff = new Date(subscription.endDate).getTime() - new Date().getTime();
+            return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+        }, [subscription]),
         isLoading,
         isDirector,
         isSuperAdmin,

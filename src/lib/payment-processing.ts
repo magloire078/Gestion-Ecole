@@ -3,6 +3,7 @@ import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { addMonths } from 'date-fns';
 import type { school as School, student as Student } from './data-types';
+import { formatCurrency } from './currency-utils';
 
 
 /**
@@ -47,7 +48,7 @@ export async function processSubscriptionPayment(
                     html: `
                         <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
                             <div style="background-color: #0C365A; padding: 20px; text-align: center;">
-                                <h1 style="color: white; margin: 0;">GéreEcole</h1>
+                                <h1 style="color: white; margin: 0;">GèreEcole</h1>
                             </div>
                             <div style="padding: 20px; border: 1px solid #eee;">
                                 <h2 style="color: #0C365A;">Abonnement Activé ✅</h2>
@@ -61,7 +62,7 @@ export async function processSubscriptionPayment(
                                     <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accéder au Dashboard</a>
                                 </div>
                                 <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-                                <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GéreEcole</p>
+                                <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GèreEcole</p>
                             </div>
                         </div>
                     `
@@ -74,6 +75,34 @@ export async function processSubscriptionPayment(
         } catch (mailError) {
             console.error(`[PaymentProcessing] Error sending subscription email:`, mailError);
         }
+    }
+
+    // Send notification to director/admin
+    try {
+        const adminNotification = {
+            title: "Abonnement Activé",
+            content: `Votre abonnement au plan ${planName} pour ${schoolData.name} est maintenant actif.`,
+            href: "/dashboard/settings",
+            isRead: false,
+            createdAt: FieldValue.serverTimestamp(),
+            // We can leave userId empty or find director ID if needed, 
+            // but the NotificationsPanel usually filters by userId.
+            // Let's assume we want to notify whoever is the director.
+        };
+        
+        // Find director's UID
+        const directorsSnap = await getAdminDb().collection('users')
+            .where(`schools.${schoolId}`, 'in', ['directeur', 'admin'])
+            .get();
+            
+        for (const doc of directorsSnap.docs) {
+            await getAdminDb().collection(`ecoles/${schoolId}/notifications`).add({
+                ...adminNotification,
+                userId: doc.id
+            });
+        }
+    } catch (notifyError) {
+        console.error(`[PaymentProcessing] Error sending subscription notification:`, notifyError);
     }
 
     console.log(`[PaymentProcessing] Successfully updated subscription for school ${schoolId}.`);
@@ -179,7 +208,7 @@ export async function processTuitionPayment(
                                         <p>Nous confirmons la réception de votre paiement concernant les frais de scolarité de <strong>${studentName}</strong>.</p>
                                         <div style="border: 1px solid #eee; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                             <p style="margin: 5px 0;"><strong>Référence :</strong> ${reference}</p>
-                                            <p style="margin: 5px 0;"><strong>Montant :</strong> ${amountPaid.toLocaleString()} CFA</p>
+                                            <p style="margin: 5px 0;"><strong>Montant :</strong> ${formatCurrency(amountPaid)}</p>
                                             <p style="margin: 5px 0;"><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
                                             <p style="margin: 5px 0;"><strong>Établissement :</strong> ${schoolData.name}</p>
                                         </div>
@@ -188,7 +217,7 @@ export async function processTuitionPayment(
                                             <a href="https://gereecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir mon historique</a>
                                         </div>
                                         <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-                                        <p style="font-size: 0.8em; color: #777; text-align: center;">Service Comptabilité - GéreEcole</p>
+                                        <p style="font-size: 0.8em; color: #777; text-align: center;">Service Comptabilité - GèreEcole</p>
                                     </div>
                                 </div>
                             `
@@ -199,9 +228,19 @@ export async function processTuitionPayment(
                         }
                     });
                 }
+
+                // Add Real-time Notification
+                await getAdminDb().collection(`ecoles/${schoolId}/notifications`).add({
+                    userId: parentId,
+                    title: "Paiement Reçu",
+                    content: `Le paiement de ${formatCurrency(amountPaid)} pour ${studentName} a été confirmé.`,
+                    href: `/dashboard/parent/student/${studentId}?tab=paiements`,
+                    isRead: false,
+                    createdAt: FieldValue.serverTimestamp()
+                });
             }
-        } catch (mailError) {
-            console.error(`[PaymentProcessing] Error sending tuition receipt:`, mailError);
+        } catch (error) {
+            console.error(`[PaymentProcessing] Error sending tuition notification to ${parentId}:`, error);
         }
     }
 

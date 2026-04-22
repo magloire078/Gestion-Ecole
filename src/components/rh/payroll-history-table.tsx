@@ -8,6 +8,7 @@ import { Files } from "lucide-react";
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { payrollRun as PayrollRun } from '@/lib/data-types';
+import { formatCurrency } from '@/lib/currency-utils';
 
 interface PayrollRunWithId extends PayrollRun {
     id: string;
@@ -20,7 +21,6 @@ interface PayrollHistoryTableProps {
 }
 
 export function PayrollHistoryTable({ payrollHistory, isLoading, onViewPayslips }: PayrollHistoryTableProps) {
-    const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
     return (
         <Table>

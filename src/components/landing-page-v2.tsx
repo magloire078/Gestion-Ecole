@@ -14,6 +14,8 @@ import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AnimatedHighlight } from '@/components/ui/animated-highlight';
 import { LiveChat } from './live-chat';
+import { COUNTRIES, DEFAULT_COUNTRY, type CountryCode, getCountryByCode } from '@/lib/countries-data';
+import { formatCurrency } from '@/lib/currency-utils';
 
 const featureCategories = [
   {
@@ -63,6 +65,8 @@ const heroSlides = [
 export function LandingPageV2() {
   const router = useRouter();
   const [currentHero, setCurrentHero] = useState(0);
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(DEFAULT_COUNTRY || 'CI');
+
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -267,6 +271,61 @@ export function LandingPageV2() {
           </div>
         </section>
 
+        {/* Countries Section */}
+        <section id="countries" className="py-20 bg-background relative overflow-hidden">
+          <div className="container relative z-10">
+            <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center mb-16">
+              <h2 className="text-4xl font-black tracking-tight sm:text-5xl text-[#0C365A] dark:text-white">
+                Une solution adaptée aux réalités locales
+              </h2>
+              <div className="w-20 h-1.5 bg-primary rounded-full" />
+              <p className="max-w-[85%] leading-normal text-muted-foreground text-lg sm:leading-7 mt-4">
+                GèreEcole s&apos;adapte aux spécificités de chaque pays pour une gestion précise et conforme aux systèmes éducatifs régionaux.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-8 gap-4 px-4 overflow-visible max-w-6xl mx-auto">
+              {COUNTRIES.map((country, index) => (
+                <motion.div
+                  key={country.code}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.05 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.03, type: 'spring', stiffness: 300, damping: 20 }}
+                  className="flex"
+                >
+                  <button
+                    onClick={() => setSelectedCountry(country.code)}
+                    className="flex w-full text-left outline-none focus:ring-2 focus:ring-primary/50 rounded-xl"
+                  >
+                    <Card className={cn(
+                      "w-full glass-card border-white/20 hover:border-primary/50 transition-all duration-300 group flex flex-col items-center justify-center p-3",
+                      selectedCountry === country.code && "border-primary/60 bg-primary/10 shadow-[0_0_15px_rgba(45,156,219,0.3)] ring-1 ring-primary/30"
+                    )}>
+                      <div className="relative w-10 h-7 rounded overflow-hidden shadow-sm group-hover:shadow-md transition-shadow mb-2 border border-white/10">
+                        <img 
+                          src={`https://flagcdn.com/w80/${country.code.toLowerCase()}.png`}
+                          alt={country.name}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <p className={cn(
+                        "font-bold text-[10px] leading-tight text-center truncate w-full px-1 transition-colors",
+                        selectedCountry === country.code ? "text-primary" : "text-[#0C365A] dark:text-white"
+                      )}>{country.name}</p>
+                      <div className="mt-1 opacity-60 text-[9px] font-medium tracking-tighter uppercase">
+                        {country.currencyCode}
+                      </div>
+                    </Card>
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* Pricing Section */}
         <section id="pricing" className="py-12 relative overflow-hidden">
           <div className="container relative z-10">
@@ -306,7 +365,9 @@ export function LandingPageV2() {
                     </CardHeader>
                     <CardContent className="flex-1 space-y-8 pb-8">
                       <div className="flex items-baseline text-4xl font-black text-[#0C365A] dark:text-white">
-                        {plan.priceString}
+                        {plan.pricePerStudent !== undefined 
+                          ? formatCurrency(plan.pricePerStudent, selectedCountry, true)
+                          : plan.priceString}
                         {plan.priceSuffix && <span className="text-lg font-medium text-muted-foreground ml-1">{plan.priceSuffix}</span>}
                       </div>
                       <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
@@ -351,7 +412,7 @@ export function LandingPageV2() {
           <div className="absolute bottom-0 left-0 w-96 h-96 bg-primary/10 rounded-full blur-[120px] translate-y-1/2 -translate-x-1/2" />
           <div className="container text-center relative z-10">
             <h2 className="text-4xl md:text-6xl font-black mb-8">Prêt à moderniser <br />votre établissement ?</h2>
-            <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-12">Rejoignez les dizaines d&apos;écoles qui font confiance à GéreEcole pour leur transformation digitale.</p>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-12">Rejoignez les dizaines d&apos;écoles qui font confiance à GèreEcole pour leur transformation digitale.</p>
             <Button size="lg" asChild className="bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white px-12 h-16 text-lg font-bold rounded-2xl shadow-2xl shadow-blue-500/40">
               <Link href="/onboarding">
                 Commencer maintenant
@@ -369,7 +430,7 @@ export function LandingPageV2() {
             <p className="text-sm text-muted-foreground text-center md:text-left max-w-xs">
               La plateforme de gestion scolaire nouvelle génération, conçue pour l&apos;excellence académique et administrative.
             </p>
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">© {new Date().getFullYear()} GéreEcole.</span>
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">© {new Date().getFullYear()} GèreEcole.</span>
           </div>
           <nav className="flex flex-col sm:flex-row gap-8 items-center">
             <Link href="/contact" className="text-sm font-bold text-muted-foreground hover:text-primary transition-colors">Support & Contact</Link>

@@ -18,9 +18,12 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState, useMemo, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink } from 'lucide-react';
+import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink, Download } from 'lucide-react';
 import type { student as Student, payment as Payment } from '@/lib/data-types';
 import { PaymentForm, type PaymentFormValues } from './payment-form';
+import { formatCurrency } from '@/lib/currency-utils';
+import { BillingService } from '@/services/billing-service';
+
 
 interface PaymentHistoryEntry extends Payment {
     id: string;
@@ -32,11 +35,6 @@ interface PaymentsTabProps {
     schoolId: string;
     onPaymentSuccess: () => void;
 }
-
-const formatCurrency = (value: number | undefined) => {
-    if (value === undefined) return 'N/A';
-    return `${value.toLocaleString('fr-FR')} CFA`;
-};
 
 export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTabProps) {
     const firestore = useFirestore();
@@ -125,18 +123,30 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
                                         <TableCell>{format(new Date(payment.date), 'd MMMM yyyy', { locale: fr })}</TableCell>
                                         <TableCell>{payment.description}</TableCell>
                                         <TableCell>{payment.method}</TableCell>
-                                        <TableCell className="text-right font-mono">{payment.amount.toLocaleString('fr-FR')} CFA</TableCell>
+                                        <TableCell className="text-right font-mono">{formatCurrency(payment.amount)}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
                                                 {payment.proofUrl && (
                                                     <Button variant="ghost" size="sm" asChild title="Voir le justificatif">
-                                                        <a href={payment.proofUrl} target="_blank" rel="noopener noreferrer">
+                                                        <a 
+                                                            href={payment.proofUrl} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            aria-label="Voir le justificatif"
+                                                        >
                                                             <Paperclip className="h-4 w-4" />
                                                         </a>
                                                     </Button>
                                                 )}
                                                 <Button variant="outline" size="sm" onClick={() => handleViewReceipt(payment)}>
-                                                    <Receipt className="mr-2 h-3 w-3" /> Reçu
+                                                    <Receipt className="mr-2 h-3 w-3" /> Aperçu
+                                                </Button>
+                                                <Button 
+                                                    variant="secondary" 
+                                                    size="sm" 
+                                                    onClick={() => BillingService.generateReceiptPDF(schoolData as any, student, payment, schoolData?.mainLogoUrl)}
+                                                >
+                                                    <Download className="mr-2 h-3 w-3" /> PDF
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -265,6 +275,22 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 payerContact: values.payerContact, paymentMethod: values.paymentMethod,
             });
             setShowReceipt(true);
+            
+            // Auto-generate PDF as well for convenience
+            BillingService.generateReceiptPDF(schoolData as any, student, {
+                ...values,
+                date: values.paymentDate,
+                amount: amountPaid,
+                method: values.paymentMethod as any,
+                payerFirstName: values.payerFirstName,
+                payerLastName: values.payerLastName,
+                payerContact: values.payerContact,
+                description: values.paymentDescription,
+                accountingTransactionId: newTransactionRef.id,
+                schoolId: schoolData.id,
+                studentId: student.id
+            }, schoolData?.mainLogoUrl);
+
         } catch (serverError) {
             console.error("Error saving payment:", serverError);
             toast({

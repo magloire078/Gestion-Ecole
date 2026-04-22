@@ -6,7 +6,7 @@ import { UserNav } from '@/components/user-nav';
 import { Logo } from '@/components/logo';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Bell, Menu, Search, PanelLeftClose, PanelRightClose } from 'lucide-react';
+import { Bell, Menu, Search, PanelLeftClose, PanelRightClose, AlertCircle, Zap } from 'lucide-react';
 import { MobileNav as MobileSidebar } from '@/components/mobile-nav';
 import { MobileNav as MobileNavTabs } from '@/components/layout/mobile-nav';
 import { cn } from '@/lib/utils';
@@ -114,7 +114,10 @@ export default function DashboardLayoutContent({ children }: { children: React.R
     subscription,
     isLoading,
     isDirector,
-    isSuperAdmin
+    isSuperAdmin,
+    isSubscriptionActive,
+    subscriptionStatus,
+    daysRemaining
   } = useUserSession();
   const { unreadCount } = useNotifications();
 
@@ -139,6 +142,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
     isDirector,
     userPermissions: user?.profile?.permissions || {},
     subscription,
+    isSubscriptionActive,
     collapsed: isNavCollapsed,
   };
 
@@ -320,6 +324,38 @@ export default function DashboardLayoutContent({ children }: { children: React.R
               <UserNav collapsed={isNavCollapsed} />
             </div>
           </header>
+
+          {/* Subscription Banner */}
+          {!isLoading && subscriptionStatus !== 'active' && subscriptionStatus !== 'none' && (
+            <div className={cn(
+              "px-4 py-3 flex items-center justify-between gap-4 border-b animate-in fade-in slide-in-from-top-4 duration-500",
+              subscriptionStatus === 'expired' 
+                ? "bg-destructive/15 border-destructive/20 text-destructive" 
+                : "bg-amber-500/15 border-amber-500/20 text-amber-600 dark:text-amber-500"
+            )}>
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <div className="text-sm font-medium">
+                  {subscriptionStatus === 'expired' ? (
+                    <span>Votre abonnement a expiré. L'accès aux fonctionnalités est restreint.</span>
+                  ) : (
+                    <span>Votre abonnement expire dans {daysRemaining} jours. Pensez à le renouveler pour éviter toute interruption.</span>
+                  )}
+                </div>
+              </div>
+              <Button 
+                size="sm" 
+                variant={subscriptionStatus === 'expired' ? "destructive" : "outline"}
+                className={cn("h-8 gap-2", subscriptionStatus === 'warning' && "border-amber-500/50 hover:bg-amber-500/10")}
+                asChild
+              >
+                <Link href="/dashboard/parametres/abonnement">
+                  <Zap className="h-3.5 w-3.5" />
+                  Renouveler
+                </Link>
+              </Button>
+            </div>
+          )}
 
           <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-24 lg:pb-6 print:p-0 overflow-auto mesh-gradient relative">
             <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />

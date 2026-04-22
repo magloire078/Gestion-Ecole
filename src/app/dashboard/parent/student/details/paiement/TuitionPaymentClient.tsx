@@ -12,8 +12,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { doc, type DocumentReference, type DocumentData } from 'firebase/firestore';
 import type { student as Student } from '@/lib/data-types';
+import { formatCurrency, getCurrencySymbol } from '@/lib/currency-utils';
+import { cn } from '@/lib/utils';
+import { AnimatedHighlight } from '@/components/ui/animated-highlight';
+import { CheckCircle2, QrCode } from 'lucide-react';
 import { createCheckoutLink } from '@/services/payment-service';
-import { Separator } from '@/components/ui/separator';
 
 function PaymentPageSkeleton() {
     return (
@@ -68,7 +71,7 @@ function TuitionPaymentPageContent() {
 
         const { url, error: serviceError } = await createCheckoutLink(provider, {
             type: 'tuition',
-            price: amountToPay.toString(),
+            amount: amountToPay.toString(),
             description: `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
             user: user.authUser!,
             schoolId,
@@ -102,131 +105,134 @@ function TuitionPaymentPageContent() {
     }
 
     return (
-        <div className="flex items-center justify-center h-full pt-10">
-            <Card className="w-full max-w-lg">
-                <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">Payer la Scolarité</CardTitle>
-                    <CardDescription>Pour <strong>{student.firstName} {student.lastName}</strong></CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="p-4 border rounded-lg text-center space-y-4">
-                        <div>
-                            <Label htmlFor="amount-to-pay">Montant à Payer (CFA)</Label>
-                            <Input id="amount-to-pay" type="number" value={amountToPay} onChange={(e) => setAmountToPay(Number(e.target.value))} max={student.amountDue} className="text-2xl font-bold h-14 text-center mt-2" />
-                            <p className="text-xs text-muted-foreground mt-1">Solde total dû: {student.amountDue?.toLocaleString('fr-FR')} CFA</p>
+        <div className="min-h-screen bg-slate-50/50 flex items-center justify-center p-4">
+            <Card className="w-full max-w-2xl overflow-hidden border-none shadow-2xl relative bg-white/80 backdrop-blur-xl">
+                <AnimatedHighlight className="h-1.5 opacity-60" />
+                <CardHeader className="text-center pb-2 pt-8">
+                    <div className="flex justify-center mb-4">
+                        <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                            <CreditCard className="h-8 w-8" />
                         </div>
                     </div>
+                    <CardTitle className="text-3xl font-black tracking-tight text-slate-900">Paiement de Scolarité</CardTitle>
+                    <CardDescription className="text-base">
+                        Réglement pour <span className="font-bold text-slate-900">{student.firstName} {student.lastName}</span>
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8 pt-6">
+                    <div className="relative group">
+                        <div className="absolute inset-0 bg-blue-600/5 blur-xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="relative p-6 bg-slate-50 border border-slate-100 rounded-[2rem] text-center space-y-2">
+                            <Label htmlFor="amount-to-pay" className="text-xs uppercase font-black tracking-widest text-muted-foreground">Montant à régler ({getCurrencySymbol()})</Label>
+                            <Input 
+                                id="amount-to-pay" 
+                                type="number" 
+                                value={amountToPay} 
+                                onChange={(e) => setAmountToPay(Number(e.target.value))} 
+                                max={student.amountDue} 
+                                className="text-4xl font-black h-16 border-none bg-transparent text-center focus-visible:ring-0" 
+                            />
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="h-1 w-1 rounded-full bg-slate-300" />
+                                <p className="text-sm font-medium text-muted-foreground italic">Solde total dû: {formatCurrency(student.amountDue)}</p>
+                            </div>
+                        </div>
+                    </div>
+
                     {error && (
-                        <Alert variant="destructive">
+                        <Alert variant="destructive" className="rounded-2xl border-rose-100 bg-rose-50 text-rose-900">
                             <AlertCircle className="h-4 w-4" />
-                            <AlertTitle>Erreur de paiement</AlertTitle>
+                            <AlertTitle className="font-bold">Un problème est survenu</AlertTitle>
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     )}
+
                     <div className="space-y-4">
-                        {settingsData?.paymentProviders?.wave && (
-                            <Button
-                                className="w-full h-16 text-lg bg-[#01a79e] hover:bg-[#01a79e]/90 text-white"
-                                onClick={() => handlePayment('wave')}
-                                disabled={!!isLoadingProvider}
-                            >
-                                {isLoadingProvider === 'wave' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
-                                    <div className="flex items-center justify-center gap-4">
-                                        <svg className="h-8" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19.14 11.258c-.377-.384-.814-.58-1.306-.583-.493 0-.93.199-1.306.583-.377.384-.57.828-.57 1.32v.568c0 .49.193.935.57 1.319.375.384.813.583 1.306.583.492 0 .929-.199 1.306-.583.376-.384.57-.828.57-1.32v-.568c0-.49-.194-.935-.57-1.319zm-3.411 0c-.377-.384-.814-.58-1.306-.583-.493 0-.93.199-1.306.583-.377.384-.57.828-.57 1.32v.568c0 .49.193.935.57 1.319.375.384.813.583 1.306.583.492 0 .929-.199 1.306-.583.376-.384.57-.828.57-1.32v-.568c0-.49-.194-.935-.57-1.319z" fill="#fff"></path><path d="M23.36 12c0 2.235-.503 4.288-1.503 6.135-1.002 1.848-2.45 3.39-4.28 4.545-1.833 1.154-3.95 1.74-6.264 1.74-2.235 0-4.288-.503-6.135-1.503-1.848-1.002-3.39-2.45-4.545-4.28-1.154-1.833-1.74-3.95-1.74-6.264C.64 6.63 4.27 1.487 9.873.742A12.011 12.011 0 0112 .64c2.235 0 4.288.503 6.135 1.503 1.848 1.002 3.39 2.45 4.545 4.28 1.154 1.833 1.74 3.95 1.74 6.264l-.06.675zm-6.25 1.888v-.568c0-1.12-.45-2.096-1.22-2.825-.768-.73-1.768-1.117-2.834-1.117-1.066 0-2.066.387-2.834 1.117-.77.73-1.22 1.706-1.22 2.825v.568c0 1.12.45 2.096 1.22 2.825.768.73 1.768 1.117 2.834 1.117s2.066-.387 2.834-1.117c.77-.73 1.22-1.706 1.22-2.825zm-6.821 0v-.568c0-1.12-.45-2.096-1.22-2.825-.768-.73-1.768-1.117-2.834-1.117S4.85 9.44 4.08 10.17c-.77.73-1.22 1.706-1.22 2.825v.568c0 1.12.45 2.096 1.22 2.825.768.73 1.768 1.117 2.834 1.117s2.066-.387 2.834-1.117c.77-.73 1.22-1.706 1.22-2.825z" fill="#fff"></path></svg>
-                                        <span>Payer avec Wave</span>
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-center text-muted-foreground mb-6">Moyens de paiement disponibles</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {[
+                                { id: 'wave' as const, name: 'Wave', color: 'bg-[#01a79e]/5 border-[#01a79e]/20 hover:bg-[#01a79e]/10', icon: '🌊', enabled: settingsData?.paymentProviders?.wave },
+                                { id: 'orangemoney' as const, name: 'Orange Money', color: 'bg-orange-50 border-orange-200 hover:bg-orange-100', icon: '📱', enabled: settingsData?.paymentProviders?.orangeMoney },
+                                { id: 'genius' as const, name: 'Genius Pay', color: 'bg-amber-50 border-amber-200 hover:bg-amber-100', icon: '✨', enabled: settingsData?.paymentProviders?.genius },
+                                { id: 'paydunya' as const, name: 'PayDunya', color: 'bg-blue-50 border-blue-200 hover:bg-blue-100', icon: '🌍', enabled: settingsData?.paymentProviders?.paydunya },
+                            ].filter(p => p.enabled).map((provider) => (
+                                <button
+                                    key={provider.id}
+                                    onClick={() => handlePayment(provider.id)}
+                                    disabled={!!isLoadingProvider}
+                                    className={cn(
+                                        "flex items-center gap-4 p-5 rounded-[1.5rem] border text-left transition-all duration-300 transform active:scale-95",
+                                        provider.color,
+                                        isLoadingProvider === provider.id ? "opacity-50" : "opacity-100"
+                                    )}
+                                >
+                                    <div className="h-12 w-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-2xl">
+                                        {provider.icon}
                                     </div>
-                                )}
-                            </Button>
-                        )}
-                        {settingsData?.paymentProviders?.orangeMoney && (
-                            <Button
-                                className="w-full h-16 text-lg"
-                                onClick={() => handlePayment('orangemoney')}
-                                disabled={!!isLoadingProvider}
-                            >
-                                {isLoadingProvider === 'orangemoney' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
-                                    <div className="flex items-center justify-center gap-4">
-                                        <Smartphone className="h-6 w-6" />
-                                        <span>Payer avec Orange Money</span>
+                                    <div className="flex-1">
+                                        <div className="text-base font-black text-slate-900">{provider.name}</div>
+                                        <div className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Mobile Money</div>
                                     </div>
-                                )}
-                            </Button>
-                        )}
-
-                        {settingsData?.paymentProviders?.genius && (
-                            <Button
-                                className="w-full h-16 text-lg bg-orange-500 hover:bg-orange-600 text-white"
-                                onClick={() => handlePayment('genius')}
-                                disabled={!!isLoadingProvider}
-                            >
-                                {isLoadingProvider === 'genius' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
-                                    <div className="flex items-center justify-center gap-4">
-                                        <div className="font-bold italic">Genius Pay</div>
-                                    </div>
-                                )}
-                            </Button>
-                        )}
-
-                        {settingsData?.paymentProviders?.paydunya && (
-                            <Button
-                                className="w-full h-16 text-lg bg-blue-600 hover:bg-blue-700 text-white"
-                                onClick={() => handlePayment('paydunya')}
-                                disabled={!!isLoadingProvider}
-                            >
-                                {isLoadingProvider === 'paydunya' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
-                                    <div className="flex items-center justify-center gap-2">
-                                        <svg className="h-6" viewBox="0 0 114 29" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.44 28.52V0h6.64c2.28 0 4.16.293 5.64 1.04 1.48.627 2.627 1.6 3.44 2.92.813 1.32.96 2.853.96 4.6 0 1.28-.213 2.494-.64 3.64-.427 1.027-.973 1.947-1.64 2.76-1.147 1.28-2.653 2.227-4.52 2.84l5.92 10.72h-7.88L16.2 18.28h-3.76v10.24h-6.4zm6.16-16.12c1.333 0 2.373-.427 3.12-1.28.747-.853 1.12-2.027 1.12-3.52 0-1.6-.373-2.813-1.12-3.64-.747-.827-1.787-1.24-3.12-1.24h-2.4v9.68h2.4zM32.89 28.52V0h6.4v28.52h-6.4zM53.13 28.52V0h6.4v22.28h9.8v6.24h-16.2zM75.69 13.12c0-2.347.52-4.307 1.56-5.88.919-1.573 2.2-2.787 3.84-3.64 1.64-.853 3.48-1.28 5.52-1.28 2.04 0 3.867.427 5.48 1.28 1.613.853 2.893 2.067 3.84 3.64s1.42 3.533 1.42 5.88c0 2.347-.473 4.307-1.42 5.88-.947 1.573-2.227 2.787-3.84 3.64-1.613.853-3.44 1.28-5.48 1.28-2.04 0-3.88-.427-5.52-1.28-1.64-.853-2.92-2.067-3.84-3.64-1.04-1.573-1.56-3.533-1.56-5.88zm6.24 0c0 1.6.36 2.867 1.08 3.8-1.094 1.28-2.507 1.947-4.24 2-1.733.053-3.253-.4-4.56-1.36-1.307-.96-2.227-2.28-2.76-3.96-.533-1.68-.8-3.573-.8-5.68 0-2.107.267-3.987.8-5.64s1.453-2.987 2.76-3.92c1.307-.933 2.827-1.4 4.56-1.4 1.733 0 3.147.667 4.24 2 .72.933 1.08 2.2 1.08 3.8zm11.72 15.4V0h16.2v6.24h-9.8v3.6h9.08v6.24h-9.08v6.2h9.8v6.24h-16.2z" fill="#fff"></path></svg>
-                                        <span>Payer avec PayDunya</span>
-                                    </div>
-                                )}
-                            </Button>
-                        )}
-
-                        <div className="relative my-4">
-                            <Separator />
-                            <span className="absolute left-1/2 -translate-x-1/2 -top-3 bg-card px-2 text-xs text-muted-foreground">OU</span>
+                                    {isLoadingProvider === provider.id ? (
+                                        <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+                                    ) : (
+                                        <CheckCircle2 className="h-5 w-5 text-slate-300" />
+                                    )}
+                                </button>
+                            ))}
                         </div>
 
                         {settingsData?.paymentProviders?.mtn && (
-                            <div className="space-y-2 pt-2">
-                                <Label htmlFor="mtn-phone">Numéro de téléphone MTN</Label>
-                                <div className="flex gap-2">
-                                    <Input id="mtn-phone" placeholder="05xxxxxxxx" value={mtnPhoneNumber} onChange={(e) => setMtnPhoneNumber(e.target.value)} />
+                            <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                                    <Label htmlFor="mtn-phone" className="text-xs font-black uppercase tracking-widest text-muted-foreground">MTN MoMo</Label>
+                                </div>
+                                <div className="flex gap-3">
+                                    <Input 
+                                        id="mtn-phone" 
+                                        placeholder="05xxxxxxxx" 
+                                        value={mtnPhoneNumber} 
+                                        onChange={(e) => setMtnPhoneNumber(e.target.value)}
+                                        className="h-14 rounded-2xl bg-white border-slate-200 text-lg font-bold"
+                                    />
                                     <Button
-                                        className="bg-amber-400 hover:bg-amber-500 text-black"
+                                        className="h-14 px-8 rounded-2xl bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black font-black"
                                         onClick={() => handlePayment('mtn')}
                                         disabled={!!isLoadingProvider || !mtnPhoneNumber}
                                     >
-                                        {isLoadingProvider === 'mtn' ? <Loader2 className="h-5 w-5 animate-spin" /> : "Payer via MTN"}
+                                        {isLoadingProvider === 'mtn' ? <Loader2 className="h-6 w-6 animate-spin" /> : "Payer"}
                                     </Button>
                                 </div>
                             </div>
                         )}
 
                         {settingsData?.paymentProviders?.stripe && (
-                            <>
-                                <div className="relative my-4">
-                                    <Separator />
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    className="w-full h-16 text-lg"
-                                    onClick={() => handlePayment('stripe')}
-                                    disabled={!!isLoadingProvider}
-                                >
-                                    {isLoadingProvider === 'stripe' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
-                                        <div className="flex items-center justify-center gap-2">
-                                            <CreditCard className="h-6 w-6" />
-                                            <span>Payer par Carte Bancaire</span>
-                                        </div>
-                                    )}
-                                </Button>
-                            </>
+                            <Button
+                                variant="outline"
+                                className="w-full h-16 rounded-[1.5rem] border-slate-200 hover:bg-slate-50 group transition-all"
+                                onClick={() => handlePayment('stripe')}
+                                disabled={!!isLoadingProvider}
+                            >
+                                {isLoadingProvider === 'stripe' ? <Loader2 className="h-6 w-6 animate-spin" /> : (
+                                    <div className="flex items-center justify-center gap-3">
+                                        <div className="h-8 w-12 bg-slate-900 rounded-lg flex items-center justify-center text-white text-[8px] font-black group-hover:scale-110 transition-transform">CARD</div>
+                                        <span className="font-bold text-slate-700">Payer par Carte Bancaire</span>
+                                    </div>
+                                )}
+                            </Button>
                         )}
                     </div>
                 </CardContent>
-                <CardFooter>
-                    <Button onClick={() => router.back()} className="w-full" variant="outline">Retour</Button>
+                <CardFooter className="bg-slate-50/50 p-8 border-t border-slate-100 group">
+                    <Button 
+                        onClick={() => router.back()} 
+                        className="w-full h-14 rounded-2xl border-none bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold transition-all" 
+                        variant="ghost"
+                    >
+                        Annuler et retourner au profil
+                    </Button>
                 </CardFooter>
             </Card>
         </div>

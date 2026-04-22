@@ -1,5 +1,6 @@
 
 import { Users, Building, HeartPulse, Utensils, Bus, Bed, Briefcase, LandPlot, Trophy, LucideIcon } from 'lucide-react';
+import { getCurrencySymbol } from './currency-utils';
 
 export type PlanName = 'Essentiel' | 'Pro' | 'Premium';
 export type ModuleName = 'sante' | 'cantine' | 'transport' | 'internat' | 'immobilier' | 'activites' | 'rh';
@@ -52,7 +53,7 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
     {
         name: "Pro", // On garde le nom interne 'Pro' pour éviter de casser le typage existant, mais on l'affiche comme 'Standard' si besoin, ou on renomme. Gardons 'Pro' pour l'instant pour la compatibilité.
         price: 0, // Base price is 0, cost is per student
-        priceString: "250 FCFA",
+        priceString: `250 ${getCurrencySymbol()}`,
         priceSuffix: "/ élève / mois",
         description: "Pour les écoles en croissance. Payez uniquement pour ce que vous utilisez.",
         features: [
@@ -76,7 +77,7 @@ export const SUBSCRIPTION_PLANS: PlanData[] = [
     {
         name: "Premium",
         price: 0, // Base price 0
-        priceString: "500 FCFA",
+        priceString: `500 ${getCurrencySymbol()}`,
         priceSuffix: "/ élève / mois",
         description: "La solution complète tout inclus pour une tranquillité d'esprit.",
         features: [

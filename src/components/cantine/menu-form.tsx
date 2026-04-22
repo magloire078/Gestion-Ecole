@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { DialogFooter } from '../ui/dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 
 const menuItemSchema = z.object({
   name: z.string().min(1, 'Le nom est requis'),
@@ -231,7 +232,7 @@ function InnerFormItems({ control, categoryIndex }: { control: any, categoryInde
               name={`categories.${categoryIndex}.items.${itemIndex}.priceStudent`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Prix Élève (CFA)</FormLabel>
+<FormLabel>Prix Élève ({getCurrencySymbol()})</FormLabel>
                   <FormControl><Input type="number" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -242,7 +243,7 @@ function InnerFormItems({ control, categoryIndex }: { control: any, categoryInde
               name={`categories.${categoryIndex}.items.${itemIndex}.priceStaff`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Prix Personnel (CFA)</FormLabel>
+<FormLabel>Prix Personnel ({getCurrencySymbol()})</FormLabel>
                   <FormControl><Input type="number" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>

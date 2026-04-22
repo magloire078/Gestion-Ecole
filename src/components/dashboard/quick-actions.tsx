@@ -28,19 +28,41 @@ export function QuickActions() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
+            className="h-full"
         >
-            <Card className="glass-card">
+            <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl shadow-2xl relative overflow-hidden h-full">
+                {/* Secondary Background Glow */}
+                <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-primary/5 rounded-full blur-3xl opacity-50" />
+                
                 <CardHeader>
-                    <CardTitle>Actions Rapides</CardTitle>
+                    <CardTitle className="text-xl font-black tracking-tight">Accès Rapides</CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-col space-y-2">
-                    {actions.map((action) => (
-                        <Button key={action.href} variant="outline" className="justify-start hover:bg-primary/10 transition-colors" asChild>
-                            <Link href={action.href}>
-                                <action.icon className="mr-2 h-4 w-4 text-primary" />
-                                {action.label}
-                            </Link>
-                        </Button>
+                <CardContent className="flex flex-col space-y-3">
+                    {actions.map((action, index) => (
+                        <motion.div
+                            key={action.href}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.4 + index * 0.1 }}
+                        >
+                            <Button 
+                                variant="outline" 
+                                className="w-full justify-between h-12 border-white/10 bg-white/5 hover:bg-primary/10 hover:border-primary/30 transition-all duration-300 group rounded-xl px-4" 
+                                asChild
+                            >
+                                <Link href={action.href}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                                            <action.icon className="h-4 w-4" />
+                                        </div>
+                                        <span className="font-bold text-[13px]">{action.label}</span>
+                                    </div>
+                                    <div className="w-6 h-6 rounded-full border border-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all">
+                                        <Send className="w-3 h-3 rotate-45" />
+                                    </div>
+                                </Link>
+                            </Button>
+                        </motion.div>
                     ))}
                 </CardContent>
             </Card>

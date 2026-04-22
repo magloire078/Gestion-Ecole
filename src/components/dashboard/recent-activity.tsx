@@ -1,8 +1,6 @@
-
-'use client';
-
 import { useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
+import { useUserSession } from '@/hooks/use-user-session';
 import { collection, query, orderBy, limit, collectionGroup, where, documentId } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { motion } from 'framer-motion';
@@ -12,6 +10,7 @@ import { fr } from 'date-fns/locale';
 import { User, CreditCard, UserX, UserPlus, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { student, staff, absence, accountingTransaction, discipline_incident as DisciplineIncident } from '@/lib/data-types';
+import { formatCurrency } from '@/lib/currency-utils';
 
 interface RecentActivityProps {
     schoolId: string;
@@ -26,8 +25,11 @@ type ActivityItem = {
     icon: React.ElementType;
 };
 
-export function RecentActivity({ schoolId }: RecentActivityProps) {
+export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) {
     const firestore = useFirestore();
+    const { schoolId: sessionSchoolId, schoolData } = useUserSession();
+    const schoolId = propSchoolId || sessionSchoolId;
+    const country = schoolData?.country;
 
     const recentStudentsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/eleves`), orderBy('createdAt', 'desc'), limit(5)) : null, [firestore, schoolId]);
 
@@ -118,7 +120,7 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                             id: doc.id,
                             type: 'payment',
                             timestamp: timestamp,
-                            content: `Paiement de ${data.amount.toLocaleString('fr-FR')} CFA reçu de ${studentName}`,
+                            content: `Paiement de ${formatCurrency(data.amount, country)} reçu de ${studentName}`,
                             icon: CreditCard
                         });
                     }
@@ -218,7 +220,8 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                         ) : recentItems.length > 0 ? (
                             <div className="relative">
                                 {/* Vertical line for timeline */}
-                                <div className="absolute left-[1.25rem] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary/20 via-primary/10 to-transparent" />
+                                {/* Vertical line for timeline with glow */}
+                                <div className="absolute left-[1.25rem] top-2 bottom-2 w-0.5 bg-gradient-to-b from-primary/40 via-primary/10 to-transparent shadow-[0_0_15px_rgba(var(--primary),0.3)]" />
 
                                 <div className="space-y-6">
                                     {recentItems.map((item, index) => (
@@ -226,26 +229,36 @@ export function RecentActivity({ schoolId }: RecentActivityProps) {
                                             key={item.id + item.type}
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
-                                            transition={{ duration: 0.3, delay: index * 0.05 }}
-                                            className="flex items-center gap-4 group"
+                                            transition={{ duration: 0.4, delay: index * 0.08 }}
+                                            className="flex items-center gap-4 group relative"
                                         >
+                                            {/* Item Connection Point */}
+                                            <div className="absolute left-[1.1rem] top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary/40 border border-white/20 z-20 group-hover:scale-150 group-hover:bg-primary transition-all duration-300 shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
+
                                             <div className={cn(
-                                                "p-2.5 rounded-full relative z-10 transition-transform duration-300 group-hover:scale-110",
-                                                item.type === 'payment' ? "bg-emerald-100/50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400" :
-                                                    item.type === 'absence' ? "bg-orange-100/50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400" :
+                                                "p-3 rounded-2xl relative z-10 transition-all duration-500 shadow-sm border border-white/5",
+                                                "group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-xl group-hover:border-white/20",
+                                                item.type === 'payment' ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
+                                                    item.type === 'absence' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400" :
                                                         item.type === 'incident' ? "bg-destructive/10 text-destructive" :
-                                                            item.type === 'staff' ? "bg-cyan-100/50 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400" :
-                                                                "bg-blue-100/50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                                            item.type === 'staff' ? "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400" :
+                                                                "bg-blue-500/10 text-blue-600 dark:text-blue-400"
                                             )}>
                                                 <item.icon className="h-5 w-5" />
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-bold truncate group-hover:text-primary transition-colors">
+                                            <div className="flex-1 min-w-0 bg-white/5 p-3 rounded-2xl border border-transparent group-hover:border-white/10 group-hover:bg-white/10 transition-all duration-500 backdrop-blur-sm">
+                                                <p className="text-sm font-black truncate group-hover:text-primary transition-colors leading-tight">
                                                     {item.content}
                                                 </p>
-                                                <p className="text-[10px] uppercase tracking-wider font-medium text-muted-foreground/60">
-                                                    {item.timestamp ? formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: fr }) : ''}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className={cn(
+                                                        "w-1 h-1 rounded-full",
+                                                        item.type === 'payment' ? "bg-emerald-500" : "bg-primary"
+                                                    )} />
+                                                    <p className="text-[10px] uppercase tracking-[0.2em] font-black text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
+                                                        {item.timestamp ? formatDistanceToNow(new Date(item.timestamp), { addSuffix: true, locale: fr }) : ''}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </motion.div>
                                     ))}

@@ -2,6 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes shine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+.glass-card {
+  @apply bg-white/70 dark:bg-slate-900/70 border border-white/20 dark:border-slate-800/20 backdrop-blur-xl shadow-xl transition-all duration-300;
+}
+
+.glass-card:hover {
+  @apply bg-white/80 dark:bg-slate-900/80 border-white/30 dark:border-slate-800/30 shadow-2xl;
+}
+
 @layer base {
   :root {
     --background: 220 70% 98%;
@@ -114,8 +154,8 @@
 @layer utilities {
   .glass {
     background-color: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
   }
@@ -190,10 +230,12 @@
   .mobile-native-touch {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
+    -webkit-user-select: none;
     user-select: none;
   }
 
   .allow-select {
+    -webkit-user-select: text !important;
     user-select: text !important;
   }
 
@@ -213,6 +255,10 @@
   .mb-safe {
     margin-bottom: var(--safe-area-inset-bottom, 0px);
   }
+
+  .page-break {
+    @apply mb-10 last:mb-0;
+  }
 }
 
 @layer base {
@@ -230,7 +276,12 @@
 
   img {
     -webkit-touch-callout: none;
-    -webkit-user-drag: none;
+  }
+
+  @supports (-webkit-user-drag: none) {
+    img {
+      -webkit-user-drag: none;
+    }
   }
 
   h1,
@@ -258,6 +309,11 @@
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;
+  }
+
+  .page-break {
+    page-break-after: always !important;
+    break-after: page !important;
   }
 
   @page {

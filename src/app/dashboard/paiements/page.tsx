@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 // Force TS check
 
 import {
@@ -29,6 +29,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSchoolData } from "@/hooks/use-school-data";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { formatCurrency } from "@/lib/currency-utils";
+import { motion, AnimatePresence } from "framer-motion";
 export default function PaymentsPage() {
     const firestore = useFirestore();
     const { schoolId, schoolName, loading: schoolDataLoading } = useSchoolData();
@@ -66,11 +68,6 @@ export default function PaymentsPage() {
 
     const isLoading = schoolDataLoading || studentsLoading || classesLoading;
 
-    const formatCurrency = (value: number | string) => {
-        const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9]/g, '')) : value;
-        if (isNaN(num)) return value.toString();
-        return `${num.toLocaleString('fr-FR')} CFA`;
-    };
 
     const handleExportCSV = () => {
         if (filteredStudents.length === 0) return;
@@ -202,65 +199,94 @@ export default function PaymentsPage() {
 
 
     return (
-        <>
-            <div className="space-y-8">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <h1 className="text-lg font-semibold md:text-2xl">Suivi des Paiements</h1>
-                        <p className="text-muted-foreground">Consultez et gérez le statut des paiements de scolarité des élèves.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button variant="outline" onClick={handleExportCSV} disabled={isLoading || filteredStudents.length === 0}>
-                            <Download className="mr-2 h-4 w-4" /> Exporter
-                        </Button>
-                        {selectedClass !== 'all' && filteredStudents.some(s => s.amountDue && s.amountDue > 0) && (
-                            <Button variant="secondary" onClick={handleMassReminder} disabled={isGeneratingReminder}>
-                                {isGeneratingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-                                Relancer la classe
-                            </Button>
-                        )}
-                    </div>
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-8"
+        >
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div className="space-y-1">
+                    <h1 className="text-4xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 bg-clip-text text-transparent">Suivi des Paiements</h1>
+                    <p className="text-slate-500 max-w-2xl text-sm font-medium">Gestion centralisée et analytique des flux de scolarité.</p>
                 </div>
+                <div className="flex gap-3">
+                    <Button 
+                        variant="outline" 
+                        onClick={handleExportCSV} 
+                        disabled={isLoading || filteredStudents.length === 0}
+                        className="rounded-xl border-white/60 bg-white/40 backdrop-blur-md hover:bg-white/60 shadow-sm font-bold h-11"
+                    >
+                        <Download className="mr-2 h-4 w-4" /> Exporter CSV
+                    </Button>
+                    {selectedClass !== 'all' && filteredStudents.some(s => s.amountDue && s.amountDue > 0) && (
+                        <Button 
+                            variant="secondary" 
+                            onClick={handleMassReminder} 
+                            disabled={isGeneratingReminder}
+                            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 font-bold h-11"
+                        >
+                            {isGeneratingReminder ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
+                            Relancer la classe
+                        </Button>
+                    )}
+                </div>
+            </div>
 
-                <div className="space-y-4">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Total dû (filtré)</CardTitle>
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="md:col-span-1 bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl shadow-slate-200/40 rounded-[2rem] overflow-hidden border-t-white/80 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-100/50 group">
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Total dû (filtré)</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-3xl font-bold text-destructive">
-                                {isLoading ? <Skeleton className="h-8 w-48" /> : formatCurrency(totalDue)}
+                            <div className="flex flex-col">
+                                <div className="text-3xl font-black text-rose-600 tracking-tighter">
+                                    {isLoading ? <Skeleton className="h-10 w-48 rounded-lg" /> : formatCurrency(totalDue)}
+                                </div>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <div className="h-1.5 flex-1 bg-slate-100 rounded-full overflow-hidden">
+                                        <motion.div 
+                                            initial={{ width: 0 }}
+                                            animate={{ width: "100%" }}
+                                            transition={{ duration: 1.5, ease: "easeOut" }}
+                                            className="h-full bg-rose-500/30"
+                                        />
+                                    </div>
+                                    <span className="text-[10px] font-bold text-rose-500">ATTENTION</span>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="relative w-full sm:max-w-xs">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+
+                    <div className="md:col-span-3 bg-white/30 backdrop-blur-lg border border-white/40 p-6 rounded-[2rem] shadow-xl shadow-slate-200/30 flex flex-col md:flex-row items-center gap-4">
+                        <div className="relative w-full">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
                                 type="search"
                                 placeholder="Chercher par nom ou matricule..."
-                                className="pl-8 w-full"
+                                className="pl-11 w-full bg-white/50 border-white/60 rounded-2xl h-12 focus:ring-indigo-500 font-medium"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
-                        <div className="flex gap-2 w-full sm:w-auto">
+                        <div className="flex gap-3 w-full md:w-auto">
                             <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isLoading}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-2xl h-12 font-bold text-slate-700">
                                     <SelectValue placeholder="Toutes les classes" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="rounded-2xl border-white/40">
                                     <SelectItem value="all">Toutes les classes</SelectItem>
                                     {classes.map(cls => (
-                                        <SelectItem key={cls.id} value={cls.id!}>{cls.name}</SelectItem>
+                                        <SelectItem key={cls.id} value={cls.id!} className="font-medium">{cls.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                             <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoading}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-2xl h-12 font-bold text-slate-700">
                                     <SelectValue placeholder="Tous les statuts" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="rounded-2xl border-white/40">
                                     <SelectItem value="all">Tous les statuts</SelectItem>
                                     <SelectItem value="Soldé">Soldé</SelectItem>
                                     <SelectItem value="En retard">En retard</SelectItem>
@@ -269,83 +295,112 @@ export default function PaymentsPage() {
                             </Select>
                         </div>
                     </div>
+                </div>
 
-                    <Card>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Nom de l&apos;Élève</TableHead>
-                                        <TableHead>Classe</TableHead>
-                                        <TableHead className="text-center">Statut du Paiement</TableHead>
-                                        <TableHead className="text-right">Montant Payé</TableHead>
-                                        <TableHead className="text-right">Solde Dû</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? (
-                                        [...Array(5)].map((_, i) => (
-                                            <TableRow key={i}>
-                                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                                <TableCell className="text-center"><Skeleton className="h-6 w-24 mx-auto" /></TableCell>
-                                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                                <TableCell className="text-right"><Skeleton className="h-5 w-20 ml-auto" /></TableCell>
-                                                <TableCell className="text-right"><Skeleton className="h-9 w-24 ml-auto" /></TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : filteredStudents.length > 0 ? (
-                                        filteredStudents.map((student) => (
-                                            <TableRow key={student.id}>
-                                                <TableCell className="font-medium">
-                                                    <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="hover:underline text-primary">
+                <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border-t-white/80">
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader className="bg-slate-50/40">
+                                <TableRow className="border-b-slate-100/50 hover:bg-transparent">
+                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] pl-10 h-16">Nom de l&apos;Élève</TableHead>
+                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] h-16">Classe</TableHead>
+                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-center h-16">Statut du Paiement</TableHead>
+                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-right h-16">Montant Payé</TableHead>
+                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-right h-16">Solde Dû</TableHead>
+                                    <TableHead className="font-black text-slate-500 uppercase text-[10px] tracking-[0.2em] text-right pr-10 h-16">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    [...Array(5)].map((_, i) => (
+                                        <TableRow key={i} className="h-20">
+                                            <TableCell className="pl-10"><Skeleton className="h-6 w-32 rounded-lg" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-20 rounded-lg" /></TableCell>
+                                            <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto rounded-full" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-6 w-24 ml-auto rounded-lg" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-6 w-24 ml-auto rounded-lg" /></TableCell>
+                                            <TableCell className="pr-10 text-right"><Skeleton className="h-10 w-24 ml-auto rounded-xl" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : filteredStudents.length > 0 ? (
+                                    <AnimatePresence mode="popLayout">
+                                        {filteredStudents.map((student, idx) => (
+                                            <motion.tr 
+                                                key={student.id}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                exit={{ opacity: 0, scale: 0.95 }}
+                                                transition={{ duration: 0.3, delay: idx * 0.05 }}
+                                                className="group hover:bg-indigo-50/30 transition-all duration-300 border-b border-slate-50/50 last:border-0 h-20"
+                                            >
+                                                <TableCell className="pl-10">
+                                                    <Link href={`/dashboard/dossiers-eleves/${student.id}`} className="font-black text-slate-800 hover:text-indigo-600 transition-colors tracking-tight">
                                                         {student.firstName} {student.lastName}
                                                     </Link>
+                                                    <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-wider">{student.matricule || 'Sans matricule'}</p>
                                                 </TableCell>
-                                                <TableCell>{student.class}</TableCell>
+                                                <TableCell className="font-bold text-slate-600">{student.class}</TableCell>
                                                 <TableCell className="text-center">
                                                     <TuitionStatusBadge
                                                         status={student.tuitionStatus || 'Partiel'}
                                                     />
                                                 </TableCell>
-                                                <TableCell className="text-right font-mono text-emerald-600">
+                                                <TableCell className="text-right font-black text-emerald-600 tracking-tighter">
                                                     {formatCurrency((student.tuitionFee || 0) - (student.amountDue || 0))}
                                                 </TableCell>
-                                                <TableCell className="text-right font-mono text-destructive">
+                                                <TableCell className="text-right font-black text-rose-600 tracking-tighter">
                                                     {formatCurrency(student.amountDue || 0)}
                                                 </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex justify-end gap-2">
+                                                <TableCell className="pr-10 text-right">
+                                                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
                                                         {student.amountDue && student.amountDue > 0 && (
-                                                            <Button variant="outline" size="sm" onClick={() => handleSendReminder(student)} disabled={isGeneratingReminder}>
-                                                                <MessageSquare className="mr-1 h-3.5 w-3.5" />
+                                                            <Button 
+                                                                variant="ghost" 
+                                                                size="sm" 
+                                                                onClick={() => handleSendReminder(student)} 
+                                                                disabled={isGeneratingReminder}
+                                                                className="h-9 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all font-bold"
+                                                            >
+                                                                <MessageSquare className="mr-2 h-4 w-4" />
                                                                 Relancer
                                                             </Button>
                                                         )}
-                                                        <Button variant="outline" size="sm" asChild>
+                                                        <Button 
+                                                            variant="ghost" 
+                                                            size="sm" 
+                                                            asChild
+                                                            className="h-9 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-900 hover:text-white transition-all font-bold"
+                                                        >
                                                             <Link href={`/dashboard/dossiers-eleves/${student.id}?tab=payments`}>
                                                                 Gérer
                                                             </Link>
                                                         </Button>
                                                     </div>
                                                 </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="text-center h-24 text-muted-foreground">
-                                                Aucun élève ne correspond aux filtres sélectionnés.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
-                </div>
+                                            </motion.tr>
+                                        ))}
+                                    </AnimatePresence>
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-64">
+                                            <div className="flex flex-col items-center justify-center text-center">
+                                                <div className="p-6 bg-slate-50 rounded-[2rem] mb-4">
+                                                    <Search className="h-12 w-12 text-slate-300" />
+                                                </div>
+                                                <h4 className="text-xl font-black text-slate-900 tracking-tight">Aucun résultat</h4>
+                                                <p className="text-slate-500 max-w-[280px] mt-2 font-medium">
+                                                    Nous n&apos;avons trouvé aucun élève correspondant à vos critères de recherche.
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
             </div>
-        </>
+        </motion.div>
     );
 }
 

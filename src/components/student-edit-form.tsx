@@ -18,6 +18,7 @@ import type { student as Student, class_type as Class, fee as Fee, niveau as Niv
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DialogFooter } from './ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 import { getTuitionInfoForClass } from '@/lib/school-utils';
 
 
@@ -210,8 +211,8 @@ export function StudentEditForm({ student, classes, fees, niveaux, schoolId, onF
                   </AlertDescription>
                 </Alert>
               )}
-              <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité (CFA)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="tuitionFee" render={({ field }) => (<FormItem><FormLabel>Frais de scolarité ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="discountAmount" render={({ field }) => (<FormItem><FormLabel>Remise ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="discountReason" render={({ field }) => (<FormItem><FormLabel>Motif de la remise</FormLabel><FormControl><Input placeholder="Ex: Bourse d'excellence" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="amountDue" render={({ field }) => (<FormItem><FormLabel>Solde dû (calculé)</FormLabel><FormControl><Input type="number" {...field} readOnly className="bg-muted" /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="tuitionStatus" render={({ field }) => (<FormItem><FormLabel>Statut Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="Soldé">Soldé</SelectItem><SelectItem value="En retard">En retard</SelectItem><SelectItem value="Partiel">Partiel</SelectItem></SelectContent></Select></FormItem>)} />

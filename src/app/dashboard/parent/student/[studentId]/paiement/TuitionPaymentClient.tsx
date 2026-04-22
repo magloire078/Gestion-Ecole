@@ -14,6 +14,7 @@ import { doc, type DocumentReference, type DocumentData } from 'firebase/firesto
 import type { student as Student } from '@/lib/data-types';
 import { createCheckoutLink } from '@/services/payment-service';
 import { Separator } from '@/components/ui/separator';
+import { formatCurrency, getCurrencySymbol } from '@/lib/currency-utils';
 
 function PaymentPageSkeleton() {
     return (
@@ -68,7 +69,7 @@ function TuitionPaymentPageContent() {
 
         const { url, error: serviceError } = await createCheckoutLink(provider, {
             type: 'tuition',
-            price: amountToPay.toString(),
+            amount: amountToPay.toString(),
             description: `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
             user: user.authUser!,
             schoolId,
@@ -111,9 +112,9 @@ function TuitionPaymentPageContent() {
                 <CardContent className="space-y-6">
                     <div className="p-4 border rounded-lg text-center space-y-4">
                         <div>
-                            <Label htmlFor="amount-to-pay">Montant à Payer (CFA)</Label>
+                            <Label htmlFor="amount-to-pay">Montant à Payer ({getCurrencySymbol()})</Label>
                             <Input id="amount-to-pay" type="number" value={amountToPay} onChange={(e) => setAmountToPay(Number(e.target.value))} max={student.amountDue} className="text-2xl font-bold h-14 text-center mt-2" />
-                            <p className="text-xs text-muted-foreground mt-1">Solde total dû: {student.amountDue?.toLocaleString('fr-FR')} CFA</p>
+                            <p className="text-xs text-muted-foreground mt-1">Solde total dû: {formatCurrency(student.amountDue)}</p>
                         </div>
                     </div>
                     {error && (

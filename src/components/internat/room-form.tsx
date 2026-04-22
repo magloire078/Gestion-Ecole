@@ -12,6 +12,7 @@ import { doc, setDoc, addDoc, collection } from 'firebase/firestore';
 import { useFirestore } from '@/firebase';
 import type { room as Room, building as Building } from '@/lib/data-types';
 import { useToast } from '@/hooks/use-toast';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 import { useState, useEffect } from 'react';
 import { DialogFooter } from '../ui/dialog';
 
@@ -87,7 +88,7 @@ export function RoomForm({ schoolId, buildings, room, onSave, defaultBuildingId 
               <FormField control={form.control} name="capacity" render={({ field }) => (<FormItem><FormLabel>Capacité</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
               <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="available">Disponible</SelectItem><SelectItem value="occupied">Occupée</SelectItem><SelectItem value="maintenance">En maintenance</SelectItem></SelectContent></Select></FormItem>)} />
             </div>
-            <FormField control={form.control} name="monthlyRate" render={({ field }) => (<FormItem><FormLabel>Tarif Mensuel (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="monthlyRate" render={({ field }) => (<FormItem><FormLabel>Tarif Mensuel ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
         </div>
         <DialogFooter>
             <Button type="button" variant="outline" onClick={onSave}>Annuler</Button>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -207,7 +207,7 @@ export default function RegisterPage() {
           >
             <Image
               src="/custom-assets/home-hero.jpg"
-              alt="GéreEcole Community"
+              alt="GèreEcole Community"
               fill
               className="object-cover"
               priority
@@ -217,7 +217,7 @@ export default function RegisterPage() {
               <div className="flex gap-1 mb-2">
                 {[1, 2, 3, 4, 5].map(s => <Star key={s} className="h-4 w-4 fill-[#2D9CDB] text-[#2D9CDB]" />)}
               </div>
-              <p className="text-sm font-bold text-[#0C365A]">"GéreEcole a réduit notre temps administratif de 40% en un seul trimestre."</p>
+              <p className="text-sm font-bold text-[#0C365A]">"GèreEcole a réduit notre temps administratif de 40% en un seul trimestre."</p>
               <p className="text-xs text-slate-500 mt-1">— Directrice d'établissement, Lyon</p>
             </div>
           </motion.div>

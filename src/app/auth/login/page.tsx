@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -79,7 +79,7 @@ export default function LoginPage() {
       await signInWithEmailAndPassword(auth, email, password);
       toast({
         title: "Connexion réussie",
-        description: "Bienvenue sur votre espace GéreEcole."
+        description: "Bienvenue sur votre espace GèreEcole."
       });
       router.push('/dashboard');
     } catch (error) {
@@ -103,7 +103,7 @@ export default function LoginPage() {
         if (result) {
           toast({
             title: "Connexion réussie",
-            description: "Bienvenue sur votre espace GéreEcole."
+            description: "Bienvenue sur votre espace GèreEcole."
           });
           router.push('/dashboard');
         }
@@ -196,7 +196,7 @@ export default function LoginPage() {
           >
             <Image
               src="/custom-assets/home-hero.jpg"
-              alt="GéreEcole Dashboard Preview"
+              alt="GèreEcole Dashboard Preview"
               fill
               className="object-cover"
               priority

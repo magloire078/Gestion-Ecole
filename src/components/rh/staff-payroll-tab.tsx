@@ -4,15 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Banknote, Car, Hand, Home, Landmark, Phone, Presentation } from 'lucide-react';
 import type { staff as Staff } from '@/lib/data-types';
+import { formatCurrency } from '@/lib/currency-utils';
 
 interface StaffPayrollTabProps {
     staff: Staff;
 }
-
-const formatCurrency = (value: number | undefined) => {
-    if (typeof value !== 'number') return '0 CFA';
-    return `${value.toLocaleString('fr-FR')} CFA`;
-};
 
 const InfoRow = ({ label, value, icon: Icon }: { label: string, value?: string | number | null, icon?: React.ElementType }) => (
     <div className="flex justify-between items-center text-sm py-2">

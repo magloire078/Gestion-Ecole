@@ -10,6 +10,7 @@ import type { school as School } from '@/lib/data-types';
 import { TARIFAIRE } from '@/lib/billing-calculator';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { formatCurrency } from '@/lib/currency-utils';
 
 export function SystemStats() {
   const firestore = useFirestore();
@@ -69,7 +70,6 @@ export function SystemStats() {
     fetchStats();
   }, [firestore, user?.profile?.isAdmin]);
 
-  const formatCurrency = (num: number) => `${num.toLocaleString('fr-FR')} CFA`;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

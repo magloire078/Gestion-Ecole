@@ -19,6 +19,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from '@/lib/currency-utils';
+
 
 export default function BillingDashboard() {
   const { schoolId, schoolData, subscription, loading: schoolLoading } = useSchoolData();
@@ -71,15 +73,15 @@ export default function BillingDashboard() {
                 <h3 className="font-semibold text-lg">Prochaine Facture (Estimation)</h3>
                 <div className="p-4 border rounded-lg">
                   <p className="text-sm text-muted-foreground">Total estimé pour ce mois</p>
-                  <p className="text-4xl font-bold">{projection.total.toLocaleString('fr-FR')} CFA</p>
+                  <p className="text-4xl font-bold">{formatCurrency(projection.total)}</p>
                 </div>
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Abonnement de base ({subscription?.plan})</span><span>{projection.base.toLocaleString('fr-FR')} CFA</span></div>
-                  {projection.supplements.modules > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Modules complémentaires</span><span>{projection.supplements.modules.toLocaleString('fr-FR')} CFA</span></div>}
-                  {projection.supplements.students > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément élèves</span><span>{projection.supplements.students.toLocaleString('fr-FR')} CFA</span></div>}
-                  {projection.supplements.cycles > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément cycles</span><span>{projection.supplements.cycles.toLocaleString('fr-FR')} CFA</span></div>}
+                  <div className="flex justify-between"><span className="text-muted-foreground">Abonnement de base ({subscription?.plan})</span><span>{formatCurrency(projection.base)}</span></div>
+                  {projection.supplements.modules > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Modules complémentaires</span><span>{formatCurrency(projection.supplements.modules)}</span></div>}
+                  {projection.supplements.students > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément élèves</span><span>{formatCurrency(projection.supplements.students)}</span></div>}
+                  {projection.supplements.cycles > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Supplément cycles</span><span>{formatCurrency(projection.supplements.cycles)}</span></div>}
                   <Separator />
-                  <div className="flex justify-between font-semibold"><span>Total</span><span>{projection.total.toLocaleString('fr-FR')} CFA</span></div>
+                  <div className="flex justify-between font-semibold"><span>Total</span><span>{formatCurrency(projection.total)}</span></div>
                 </div>
               </div>
               <div className="space-y-4">
@@ -110,7 +112,7 @@ export default function BillingDashboard() {
                     disabled={loading || !projection || projection.total === 0}
                   >
                     <Zap className="mr-2 h-4 w-4" />
-                    Payer maintenant ({projection?.total.toLocaleString('fr-FR')} CFA)
+                    Payer maintenant ({formatCurrency(projection?.total)})
                   </Button>
 
                   <Button 

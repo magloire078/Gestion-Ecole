@@ -101,7 +101,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
             </Badge>
             <h1 className="text-4xl font-black text-[#0C365A] font-outfit tracking-tight mb-4">Bienvenue sur la Démo</h1>
             <p className="text-slate-500 max-w-md font-medium text-lg">
-              Prêt à explorer GéreEcole ? Cliquez ci-dessous pour initialiser un environnement complet.
+              Prêt à explorer GèreEcole ? Cliquez ci-dessous pour initialiser un environnement complet.
             </p>
           </div>
 
@@ -361,7 +361,7 @@ export default function OnboardingPage() {
               Démarrage du compte
             </h1>
             <p className="text-slate-400 max-w-md font-medium text-lg leading-relaxed">
-              Pour commencer, dites-nous comment vous souhaitez utiliser GéreEcole aujourd'hui.
+              Pour commencer, dites-nous comment vous souhaitez utiliser GèreEcole aujourd'hui.
             </p>
           </div>
 

@@ -158,7 +158,7 @@ export const StudentInfoSheet: React.FC<StudentInfoSheetProps> = ({ student, sch
             </div>
             <div className="flex justify-between items-end mt-12 text-sm">
               <div className="flex flex-col items-start italic text-muted-foreground">
-                Note: Cette fiche est générée numériquement par Gérecole.
+                Note: Cette fiche est générée numériquement par GèreEcole.
               </div>
               <div className="flex flex-col items-center gap-2">
                 <div>Fait à {school.address?.split(',')[0] || '...'}, le {format(new Date(), 'd MMMM yyyy', { locale: fr })}</div>

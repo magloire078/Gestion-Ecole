@@ -110,13 +110,27 @@ export function InternatDashboard({ schoolId }: { schoolId: string }) {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Chambres occupées</CardTitle><Bed className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{occupants.length}/{rooms.length}</div><div className="text-xs text-muted-foreground mt-1">{rooms.length > 0 ? Math.round((occupants.length / rooms.length) * 100) : 0}% d&apos;occupation</div></CardContent>
+          <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Occupation des Lits</CardTitle><Bed className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{occupants.length} / {rooms.reduce((acc, r) => acc + r.capacity, 0)}</div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {rooms.reduce((acc, r) => acc + r.capacity, 0) > 0 
+                ? Math.round((occupants.length / rooms.reduce((acc, r) => acc + r.capacity, 0)) * 100) 
+                : 0}% de lits occupés
+            </div>
+          </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Internes présents</CardTitle><UserCheck className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
-          <CardContent><div className="text-2xl font-bold">{occupants.length - todayLogs.filter(l => l.type === 'sortie' && l.status !== 'returned').length}</div><div className="text-xs text-muted-foreground mt-1">{todayLogs.filter(l => l.type === 'sortie' && l.status !== 'returned').length} absents</div></CardContent>
+          <CardHeader className="pb-2"><div className="flex items-center justify-between"><CardTitle className="text-sm font-medium">Internes Présents</CardTitle><UserCheck className="h-4 w-4 text-muted-foreground" /></div></CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {occupants.length - todayLogs.filter(l => l.type === 'sortie' && l.status !== 'returned').length} / {occupants.length}
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              {todayLogs.filter(l => l.type === 'sortie' && l.status !== 'returned').length} sorties en cours
+            </div>
+          </CardContent>
         </Card>
 
         <Card>

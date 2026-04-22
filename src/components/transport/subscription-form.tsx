@@ -14,6 +14,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DialogFooter } from '../ui/dialog';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 
 const subscriptionFormSchema = z.object({
   studentId: z.string().min(1, 'Veuillez sélectionner un élève.'),
@@ -101,7 +102,7 @@ export function SubscriptionForm({ schoolId, students, routes, subscription, onS
                 <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem><FormLabel>Date de début</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem><FormLabel>Date de fin</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </div>
-            <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Prix (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Prix ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
              <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="paymentStatus" render={({ field }) => (<FormItem><FormLabel>Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="paid">Payé</SelectItem><SelectItem value="unpaid">Impayé</SelectItem></SelectContent></Select></FormItem>)} />
                 <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut Abonnement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="inactive">Inactif</SelectItem></SelectContent></Select></FormItem>)} />

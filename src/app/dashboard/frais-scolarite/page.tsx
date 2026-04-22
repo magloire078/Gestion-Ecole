@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   Card,
@@ -28,7 +28,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, PlusCircle, MoreHorizontal, CalendarDays, RefreshCcw, Loader2 } from "lucide-react";
+import { PlusCircle, Search, Edit2, Trash2, DollarSign, BookOpen, Layers, Settings2, MoreHorizontal, RefreshCcw, CalendarDays, FileText, Loader2 } from "lucide-react";
+import { formatCurrency, getCurrencySymbol } from "@/lib/currency-utils";
 import { useCollection, useFirestore, useUser } from "@/firebase";
 import { collection, query, where, getDocs, writeBatch, doc } from "firebase/firestore";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -254,11 +255,6 @@ export default function FeesPage() {
     return uniqueGradeNames.map(name => ({ value: name, label: name }));
   }, [niveaux]);
 
-  const formatCurrency = (value: number | string) => {
-    const num = typeof value === 'string' ? parseFloat(value.replace(/[^0-9]/g, '')) : value;
-    if (isNaN(num)) return value.toString();
-    return `${num.toLocaleString('fr-FR')} CFA`;
-  };
 
   return (
     <>
@@ -315,7 +311,7 @@ export default function FeesPage() {
                     <div>
                       <CardTitle className="text-xl">{fee.grade}</CardTitle>
                       <div className="flex items-baseline gap-2 mt-2">
-                        <p className="text-3xl font-bold text-primary">{formatCurrency(fee.amount)}</p>
+                        <p className="text-3xl font-bold text-primary">{formatCurrency(Number(fee.amount))}</p>
                         <p className="text-sm text-muted-foreground">/ an</p>
                       </div>
                     </div>
@@ -378,7 +374,7 @@ export default function FeesPage() {
                 name="amount"
                 render={({ field }) => (
                   <FormItem className="grid grid-cols-4 items-center gap-4">
-                    <FormLabel className="text-right">Montant (CFA)</FormLabel>
+                    <FormLabel className="text-right">Montant ({getCurrencySymbol()})</FormLabel>
                     <FormControl className="col-span-3">
                       <Input placeholder="Ex: 980000" {...field} />
                     </FormControl>
@@ -429,7 +425,7 @@ export default function FeesPage() {
             <AlertDialogTitle>Mettre à jour tous les élèves ?</AlertDialogTitle>
             <AlertDialogDescription>
               Cette action va mettre à jour les frais de scolarité de **tous les élèves actifs** du niveau **{feeToSync?.grade}**.
-              Les montants dus seront recalculés en fonction du nouveau tarif ({formatCurrency(feeToSync?.amount || 0)}).
+              Les montants dus seront recalculés en fonction du nouveau tarif ({formatCurrency(Number(feeToSync?.amount || 0))}).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

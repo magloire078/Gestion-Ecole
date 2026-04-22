@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatCard } from '@/components/ui/stat-card';
+import { formatCurrency } from '@/lib/currency-utils';
 
 export default function RHDashboardPage() {
     const { schoolId, loading: schoolLoading } = useSchoolData();
@@ -52,7 +53,7 @@ export default function RHDashboardPage() {
                 <StatCard title="Total du Personnel" value={stats.totalStaff} icon={Users} loading={loading} />
                 <StatCard title="Enseignants" value={stats.teachers} icon={BookUser} loading={loading} />
                 <StatCard title="Personnel Administratif" value={stats.adminStaff} icon={Briefcase} loading={loading} />
-                <StatCard title="Masse Salariale Mensuelle" value={stats.totalSalaryMass.toLocaleString('fr-FR') + ' CFA'} icon={DollarSign} loading={loading} />
+                <StatCard title="Masse Salariale Mensuelle" value={formatCurrency(stats.totalSalaryMass)} icon={DollarSign} loading={loading} />
             </div>
 
             <Card>

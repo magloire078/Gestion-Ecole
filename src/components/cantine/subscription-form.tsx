@@ -16,6 +16,7 @@ import { format, addMonths, addYears, startOfYear, endOfYear, isValid } from 'da
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DialogFooter } from '../ui/dialog';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 
 const subscriptionFormSchema = z.object({
   studentId: z.string().min(1, 'Veuillez sélectionner un élève.'),
@@ -123,7 +124,7 @@ export function SubscriptionForm({ schoolId, students, subscription, onSave }: S
             <FormField control={form.control} name="startDate" render={({ field }) => (<FormItem><FormLabel>Date de début</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <FormField control={form.control} name="endDate" render={({ field }) => (<FormItem><FormLabel>Date de fin</FormLabel><FormControl><Input type="date" {...field} readOnly /></FormControl><FormMessage /></FormItem>)} />
           </div>
-          <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Prix (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+          <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Prix ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
           <FormField control={form.control} name="status" render={({ field }) => (
             <FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent><SelectItem value="active">Actif</SelectItem><SelectItem value="inactive">Inactif</SelectItem><SelectItem value="expired">Expiré</SelectItem></SelectContent></Select><FormMessage /></FormItem>
           )} />

@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { DialogFooter } from '../ui/dialog';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 
 const reservationFormSchema = z.object({
   studentId: z.string().min(1, 'Veuillez sélectionner un élève.'),
@@ -94,7 +95,7 @@ export function ReservationForm({ schoolId, students, reservation, onSave }: Res
                 <FormItem><FormLabel>Élève</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!!reservation}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionner un élève" /></SelectTrigger></FormControl><SelectContent>{students.map(s => <SelectItem key={s.id} value={s.id!}>{s.firstName} {s.lastName}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>
             )}/>
             <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
-            <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Prix (CFA)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+            <FormField control={form.control} name="price" render={({ field }) => (<FormItem><FormLabel>Prix ({getCurrencySymbol()})</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>)} />
             <div className="grid grid-cols-2 gap-4">
               <FormField control={form.control} name="status" render={({ field }) => (<FormItem><FormLabel>Statut</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="pending">En attente</SelectItem><SelectItem value="confirmed">Confirmé</SelectItem><SelectItem value="attended">Présent</SelectItem><SelectItem value="cancelled">Annulé</SelectItem></SelectContent></Select></FormItem>)} />
               <FormField control={form.control} name="paymentStatus" render={({ field }) => (<FormItem><FormLabel>Paiement</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue/></SelectTrigger></FormControl><SelectContent><SelectItem value="unpaid">Impayé</SelectItem><SelectItem value="paid">Payé</SelectItem><SelectItem value="partially_paid">Partiel</SelectItem></SelectContent></Select></FormItem>)} />

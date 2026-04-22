@@ -81,19 +81,28 @@ export function NotificationsPanel({
             <div className="divide-y">
               {notifications.map(notification => (
                 <Link key={notification.id} href={notification.href || '#'} passHref>
-                  <div
-                    className={cn(
-                      "p-4 hover:bg-muted/50 cursor-pointer",
-                      !notification.isRead && "bg-blue-50 dark:bg-blue-900/20"
-                    )}
-                    onClick={() => handleNotificationClick(notification)}
-                  >
-                    <p className="font-semibold">{notification.title}</p>
-                    <p className="text-sm text-muted-foreground">{notification.content}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {notification.createdAt ? formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true, locale: fr }) : ''}
-                    </p>
-                  </div>
+                    <div
+                      className={cn(
+                        "p-4 transition-all duration-200 cursor-pointer border-l-4",
+                        notification.isRead 
+                          ? "border-transparent hover:bg-muted/50" 
+                          : "border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-50/80 dark:hover:bg-blue-900/20"
+                      )}
+                      onClick={() => handleNotificationClick(notification)}
+                    >
+                      <div className="flex justify-between items-start mb-1">
+                        <p className={cn("font-semibold text-sm", !notification.isRead && "text-blue-700 dark:text-blue-400")}>
+                          {notification.title}
+                        </p>
+                        {!notification.isRead && (
+                          <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{notification.content}</p>
+                      <p className="text-[10px] text-muted-foreground mt-2 font-medium uppercase tracking-wider">
+                        {notification.createdAt ? formatDistanceToNow(new Date((notification.createdAt as any).seconds * 1000), { addSuffix: true, locale: fr }) : ''}
+                      </p>
+                    </div>
                 </Link>
               ))}
             </div>

@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale';
 import { Printer } from 'lucide-react';
 import { Logo } from './logo';
 import { usePrint } from '@/hooks/use-print';
+import { formatCurrency } from '@/lib/currency-utils';
 
 export interface ReceiptData {
   schoolName: string;
@@ -37,8 +38,6 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
           handlePrint(receiptRef.current.innerHTML);
       }
   };
-
-  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   return (
     <div>
@@ -103,6 +102,7 @@ export const TuitionReceipt: React.FC<TuitionReceiptProps> = ({ receiptData }) =
              <div className="mt-8 text-center text-xs text-muted-foreground">
                 <p>Merci pour votre paiement.</p>
                 <p>{receiptData.schoolName}</p>
+                <p className="text-[10px] text-slate-400 font-medium italic mt-4">Document confidentiel généré par le système de gestion scolaire de GèreEcole</p>
             </div>
         </div>
         <div className="mt-6 flex justify-end no-print">

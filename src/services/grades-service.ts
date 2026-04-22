@@ -1,7 +1,9 @@
 'use client';
 
-import { doc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, getDoc } from "firebase/firestore";
 import { firebaseFirestore as db } from '@/firebase/config';
+import { NotificationService } from "@/services/notification-service";
+import { student as Student } from "@/lib/data-types";
 
 interface GradeData {
     schoolId: string;
@@ -36,6 +38,26 @@ export const GradesService = {
                 schoolId,
             };
             const docRef = await addDoc(gradesCollectionRef, gradeData);
+
+            // Notify parents
+            try {
+                const studentDoc = await getDoc(doc(db, `ecoles/${schoolId}/eleves/${studentId}`));
+                if (studentDoc.exists()) {
+                    const student = studentDoc.data() as Student;
+                    if (student.parentIds && student.parentIds.length > 0) {
+                        for (const parentId of student.parentIds) {
+                            await NotificationService.sendNotification(db, schoolId, parentId, {
+                                title: "Nouvelle Note Disponbile",
+                                content: `Une nouvelle note (${data.grade}/20) a été enregistrée pour ${student.firstName} en ${data.subject}.`,
+                                href: `/dashboard/parent/student/${studentId}?tab=notes`,
+                            });
+                        }
+                    }
+                }
+            } catch (notifyError) {
+                console.error('Error sending grade notification:', notifyError);
+            }
+
             return docRef.id;
         } catch (error) {
             console.error('Error creating grade:', error);

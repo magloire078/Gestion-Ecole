@@ -9,6 +9,7 @@ import { fr } from 'date-fns/locale';
 import { school as School } from '@/lib/data-types';
 import { useFirestore } from '@/firebase';
 import { collection, query, getCountFromServer, where, doc, getDoc } from 'firebase/firestore';
+import { formatCurrency } from '@/lib/currency-utils';
 
 interface SchoolViewDetailsProps {
     school: School & { id: string };
@@ -62,9 +63,7 @@ export function SchoolViewDetails({ school }: SchoolViewDetailsProps) {
         return format(date, 'PPP', { locale: fr });
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(amount);
-    };
+
 
     const InfoSection = ({ title, icon: Icon, children }: { title: string, icon: any, children: React.ReactNode }) => (
         <div className="space-y-3">

@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { formatCurrency } from "@/lib/currency-utils";
 
 type TuitionStatus = 'Soldé' | 'En retard' | 'Partiel';
 
@@ -16,10 +17,6 @@ export const TuitionStatusBadge = ({ status, amount }: TuitionStatusBadgeProps) 
     'Partiel': "border-transparent bg-amber-100 text-amber-800 hover:bg-amber-100/80 dark:bg-amber-900/50 dark:text-amber-300",
   }
   const statusClasses = statusConfig[status] || "secondary";
-
-  const formatCurrency = (value: number) => {
-    return `${value.toLocaleString('fr-FR')} CFA`;
-  }
 
   return (
     <Badge className={statusClasses}>

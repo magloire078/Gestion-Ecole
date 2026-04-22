@@ -15,6 +15,8 @@ interface CheckoutSessionData {
     description: string;
     clientReferenceId: string; // To link the session to your internal user/school ID
     customerEmail?: string;
+    successUrl?: string;
+    cancelUrl?: string;
 }
 
 export async function createStripeCheckoutSession(data: CheckoutSessionData) {
@@ -39,8 +41,8 @@ export async function createStripeCheckoutSession(data: CheckoutSessionData) {
             ],
             customer_email: data.customerEmail,
             client_reference_id: data.clientReferenceId,
-            success_url: `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=success&session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${BASE_APP_URL}/dashboard/parametres/abonnement?payment_status=canceled`,
+            success_url: data.successUrl || `${BASE_APP_URL}/payment/success?type=subscription&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: data.cancelUrl || `${BASE_APP_URL}/payment/error?type=subscription`,
         });
         return { url: session.url };
     } catch (error) {

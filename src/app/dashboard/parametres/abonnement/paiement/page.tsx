@@ -11,6 +11,7 @@ import { useSchoolData } from '@/hooks/use-school-data';
 import { createCheckoutLink } from '@/services/payment-service';
 import { Loader2, AlertCircle, CreditCard, Smartphone, CheckCircle, Zap } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { formatCurrency } from '@/lib/currency-utils';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
@@ -162,7 +163,7 @@ function PaymentPageContent() {
                         </div>
                         <div>
                             <p className="text-sm text-muted-foreground">Montant Total à Payer</p>
-                            <p className="text-3xl font-bold">{totalPrice.toLocaleString('fr-FR')} CFA</p>
+<p className="text-3xl font-bold">{formatCurrency(totalPrice)}</p>
                         </div>
                     </div>
 
@@ -186,7 +187,7 @@ function PaymentPageContent() {
                                 <p className="text-xs text-muted-foreground leading-relaxed">
                                     En cliquant sur le bouton de paiement, vous serez redirigé vers l&apos;interface sécurisée de <strong>Genius Pay</strong>.
                                     C&apos;est sur leur plateforme que vous saisirez vos informations de paiement (Orange Money, Wave, MTN ou Carte Bancaire) en toute sécurité.
-                                    GéreEcole ne stocke aucune de vos coordonnées bancaires.
+                                    GèreEcole ne stocke aucune de vos coordonnées bancaires.
                                 </p>
                             </div>
 

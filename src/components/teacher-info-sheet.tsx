@@ -134,6 +134,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                                 <span>{directorFullName}</span>
                             </div>
                         </footer>
+                        <p className="text-[10px] text-slate-400 font-medium italic mt-8 text-center">Document confidentiel généré par le système de gestion scolaire de GèreEcole</p>
                     </div>
 
                     <div className="mt-6 flex justify-end no-print">

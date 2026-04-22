@@ -12,6 +12,7 @@ import { useMemo } from 'react';
 import { useCollection } from '@/firebase';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/currency-utils';
 
 interface ParentStudentCardProps {
     schoolId: string;
@@ -127,7 +128,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
                             <Badge variant="outline" className={`py-1.5 px-3 rounded-xl border-dashed flex items-center gap-2 font-bold ${isPaymentUpToDate ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'
                                 }`}>
                                 {isPaymentUpToDate ? <CheckCircle2 className="h-4 w-4" /> : <Wallet className="h-4 w-4" />}
-                                {isPaymentUpToDate ? 'Scolarité Payée' : `Solde: ${(student.amountDue || 0).toLocaleString('fr-FR')} FCFA`}
+                                {isPaymentUpToDate ? 'Scolarité Payée' : `Solde: ${formatCurrency(student.amountDue || 0)}`}
                             </Badge>
 
                             <Badge variant="outline" className={`py-1.5 px-3 rounded-xl border-dashed flex items-center gap-2 font-bold ${studentAbsences > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-400 border-slate-200'

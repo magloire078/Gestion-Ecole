@@ -26,7 +26,6 @@ export class ReportService {
         const transactionsRef = collection(this.firestore, `ecoles/${schoolId}/comptabilite`);
         const q = query(
             transactionsRef,
-            where('schoolId', '==', schoolId),
             where('date', '>=', format(start, 'yyyy-MM-dd')),
             where('date', '<=', format(end, 'yyyy-MM-dd'))
         );

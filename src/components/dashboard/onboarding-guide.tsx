@@ -139,7 +139,7 @@ export function OnboardingGuide() {
                                 </CardTitle>
                             </div>
                             <p className="text-slate-500 font-medium text-sm">
-                                Finissez la configuration pour débloquer toute la puissance de GéreEcole.
+                                Finissez la configuration pour débloquer toute la puissance de GèreEcole.
                             </p>
                         </div>
                         <div className="flex flex-col items-end gap-1.5 min-w-[200px]">

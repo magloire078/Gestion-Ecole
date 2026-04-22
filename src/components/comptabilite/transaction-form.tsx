@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import type { accountingTransaction as AccountingTransaction } from '@/lib/data-types';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 
 const transactionSchema = z.object({
     description: z.string().min(1, { message: "La description est requise." }),
@@ -196,7 +197,7 @@ export function TransactionForm({ schoolId, transaction: editingTransaction, onS
                     name="amount"
                     render={({ field }) => (
                         <FormItem className="grid grid-cols-4 items-center gap-4">
-                            <FormLabel className="text-right">Montant (CFA)</FormLabel>
+                             <FormLabel className="text-right">Montant ({getCurrencySymbol()})</FormLabel>
                             <FormControl className="col-span-3">
                                 <Input type="number" {...field} />
                             </FormControl>

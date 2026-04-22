@@ -6,6 +6,7 @@ import { numberToWords } from "french-numbers-to-words";
 import placeholderImages from '@/lib/placeholder-images.json';
 import type { staff as Employe, school as OrganizationSettings } from '@/lib/data-types';
 import { TRANCHES_IGR } from './payroll-config';
+import { getCurrencyName } from "./currency-utils";
 
 // ====================================================================================
 // 1. DATA TYPES 
@@ -218,7 +219,7 @@ export async function getPayslipDetails(
     const totalDeductions = deductions.reduce((sum, item) => sum + item.amount, 0);
 
     const netAPayer = brutImposable + transportNonImposable - totalDeductions;
-    const netAPayerInWords = toWords(Math.floor(netAPayer)) + " FRANCS CFA";
+    const netAPayerInWords = toWords(Math.floor(netAPayer)) + " " + getCurrencyName();
 
     const employerContributions: PayslipEmployerContribution[] = [
         { label: 'ITS PART PATRONALE', base: Math.round(brutImposable), rate: '1,2%', amount: employee.CNPS ? Math.round(brutImposable * 0.012) : 0 },

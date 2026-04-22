@@ -10,11 +10,12 @@ import { doc, collection, query, where, limit, onSnapshot, setDoc, updateDoc, ar
 import { useDoc, useFirestore } from '@/firebase';
 import { system_setting as SystemSetting } from '@/lib/data-types';
 import { MessageSquare } from 'lucide-react';
+import { getCurrencySymbol } from '@/lib/currency-utils';
 
 export function LiveChat() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState<{ role: 'user' | 'bot' | 'support', text: string, time: string }[]>([
-        { role: 'bot', text: 'Bonjour ! Bienvenue sur Gérecole. Comment puis-je vous aider aujourd&apos;hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
+        { role: 'bot', text: 'Bonjour ! Bienvenue sur GèreEcole. Comment puis-je vous aider aujourd&apos;hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }
     ]);
     const [inputValue, setInputValue] = useState('');
     const [isTyping, setIsTyping] = useState(false);
@@ -25,10 +26,10 @@ export function LiveChat() {
     // Récupérer ou générer un visitorId unique
     const visitorId = useMemo(() => {
         if (typeof window === 'undefined') return 'server';
-        let id = localStorage.getItem('gerecole_visitor_id');
+        let id = localStorage.getItem('gere_ecole_visitor_id');
         if (!id) {
             id = Math.random().toString(36).substring(2, 15);
-            localStorage.setItem('gerecole_visitor_id', id);
+            localStorage.setItem('gere_ecole_visitor_id', id);
         }
         return id;
     }, []);
@@ -111,7 +112,7 @@ export function LiveChat() {
                     await setDoc(newChatRef, {
                         visitorId,
                         messages: [
-                            { role: 'bot', text: 'Bonjour ! Bienvenue sur Gérecole. Comment puis-je vous aider aujourd&apos;hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
+                            { role: 'bot', text: 'Bonjour ! Bienvenue sur GèreEcole. Comment puis-je vous aider aujourd&apos;hui ?', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) },
                             newUserMessage
                         ],
                         status: 'active',
@@ -147,18 +148,18 @@ export function LiveChat() {
         const getBotResponse = (input: string) => {
             const lowerInput = input.toLowerCase();
             if (lowerInput.includes('prix') || lowerInput.includes('tarif') || lowerInput.includes('combien')) {
-                return "Nos tarifs commencent à 1 500 CFA par élève et par mois. Vous pouvez consulter notre section 'Tarifs' pour plus de détails sur les options.";
+                return `Nos tarifs commencent à 1 500 ${getCurrencySymbol()} par élève et par mois. Vous pouvez consulter notre section 'Tarifs' pour plus de détails sur les options.`;
             }
             if (lowerInput.includes('démo') || lowerInput.includes('essai') || lowerInput.includes('tester')) {
                 return "Bien sûr ! Vous pouvez demander une démonstration personnalisée en remplissant le formulaire sur notre page Contact.";
             }
             if (lowerInput.includes('fonctionnalité') || lowerInput.includes('quoi')) {
-                return "Gérecole permet de gérer les notes, les absences, le transport scolaire, la cantine, et la paie du personnel. C'est une solution tout-en-un.";
+                return "GèreEcole permet de gérer les notes, les absences, le transport scolaire, la cantine, et la paie du personnel. C'est une solution tout-en-un.";
             }
             if (lowerInput.includes('parler') || lowerInput.includes('direct')) {
                 return "Un de nos conseillers examinera votre demande très rapidement. En attendant, avez-vous d&apos;autres questions ?";
             }
-            return "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d&apos;autre sur Gérecole ?";
+            return "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d&apos;autre sur GèreEcole ?";
         };
 
         // Réponse automatique si aucune réponse admin après 3 secondes (simulé pour l'instant)
@@ -173,7 +174,7 @@ export function LiveChat() {
                 };
 
                 // On n'ajoute la réponse bot que si c'est une question simple connue
-                if (botResponseText !== "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d&apos;autre sur Gérecole ?") {
+                if (botResponseText !== "Merci pour votre message. Un de nos conseillers examinera votre demande très rapidement. En attendant, que puis-je vous dire d&apos;autre sur GèreEcole ?") {
                     setMessages(prev => [...prev, botResponse]);
                     if (chatId) {
                         updateDoc(doc(firestore, 'visitor_chats', chatId), {
@@ -207,13 +208,15 @@ export function LiveChat() {
                                     <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0C365A]" />
                                 </div>
                                 <div>
-                                    <h4 className="text-white font-bold text-sm">Support Gérecole</h4>
+                                    <h4 className="text-white font-bold text-sm">Support GèreEcole</h4>
                                     <p className="text-white/60 text-[10px] uppercase tracking-widest font-bold">En ligne</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setIsOpen(false)}
                                 className="text-white/70 hover:text-white transition-colors p-1"
+                                title="Fermer le chat"
+                                aria-label="Fermer le chat"
                             >
                                 <X size={20} />
                             </button>
@@ -283,6 +286,8 @@ export function LiveChat() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
+                title={isOpen ? "Fermer le chat" : "Ouvrir le chat"}
+                aria-label={isOpen ? "Fermer le chat" : "Ouvrir le chat"}
                 className={cn(
                     "h-16 w-16 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(45,156,219,0.4)] transition-all duration-500",
                     isOpen ? "bg-red-500 rotate-90" : "bg-[#2D9CDB]"

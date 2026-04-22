@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import type { student as Student, class_type as Class } from '@/lib/data-types';
+import { formatCurrency } from '@/lib/currency-utils';
 
 import { StatCard } from '@/components/ui/stat-card';
 import { useStudents } from '@/hooks/use-students';
@@ -63,9 +64,7 @@ export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
 
   const loading = studentsLoading || classesLoading;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XOF', maximumFractionDigits: 0 }).format(value).replace('XOF', 'CFA');
-  };
+
 
   if (loading) {
     return (
@@ -122,7 +121,7 @@ export function TuitionAnalytics({ schoolId }: { schoolId: string }) {
                 <XAxis type="number" tickFormatter={(value) => new Intl.NumberFormat('fr-FR', { notation: 'compact', compactDisplay: 'short' }).format(value)} />
                 <YAxis type="category" dataKey="name" width={100} tick={{ fontSize: 12 }} />
                 <Tooltip
-                  formatter={(value: number) => `${value.toLocaleString('fr-FR')} CFA`}
+                  formatter={(value: number) => formatCurrency(value)}
                   contentStyle={{ backgroundColor: 'hsl(var(--background))', border: '1px solid hsl(var(--border))' }}
                 />
                 <Legend />

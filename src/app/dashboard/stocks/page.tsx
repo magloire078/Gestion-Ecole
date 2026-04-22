@@ -15,7 +15,9 @@ import {
     History,
     MoreHorizontal,
     Edit,
-    Trash
+    Trash,
+    User,
+    HandHelping
 } from 'lucide-react';
 import {
     Card,
@@ -58,6 +60,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useStaff } from '@/hooks/use-staff';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -66,10 +69,13 @@ export default function StockPage() {
     const { schoolId, loading: schoolLoading, error } = useSchoolData();
     const { user } = useUser();
     const { toast } = useToast();
+    const { staff, loading: staffLoading } = useStaff(schoolId);
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
     const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+    const [isDistributeDialogOpen, setIsDistributeDialogOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState<StockItem | null>(null);
+    const [selectedRecipientId, setSelectedRecipientId] = useState<string>('');
 
     // Form states
     const [newItem, setNewItem] = useState<Partial<StockItem>>({
@@ -131,6 +137,34 @@ export default function StockPage() {
         }
     };
 
+    const handleDistribution = async () => {
+        if (!schoolId || !selectedItem || !selectedItem.id || !selectedRecipientId) {
+            toast({ variant: "destructive", title: "Sélection incomplète", description: "Veuillez choisir un destinataire." });
+            return;
+        }
+        
+        const recipient = staff.find(s => s.id === selectedRecipientId);
+        if (!recipient) return;
+
+        try {
+            await StockService.logMovement(schoolId, selectedItem.id, {
+                type: 'out',
+                quantity: movement.quantity,
+                reason: 'distribution',
+                staffId: user?.uid || 'unknown',
+                recipientId: recipient.id,
+                recipientName: `${recipient.firstName} ${recipient.lastName}`,
+                notes: movement.notes
+            });
+            toast({ title: "Distribution réussie", description: `${movement.quantity} ${selectedItem.unit} donnés à ${recipient.firstName} ${recipient.lastName}.` });
+            setIsDistributeDialogOpen(false);
+            setMovement({ type: 'in', quantity: 0, reason: 'achat', notes: '' });
+            setSelectedRecipientId('');
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Erreur", description: error.message || "Impossible d'enregistrer la distribution." });
+        }
+    };
+
     if (schoolLoading) return <div className="p-8"><Skeleton className="h-12 w-48 mb-6" /><Skeleton className="h-96 w-full" /></div>;
 
     if (error || stocksError) {
@@ -185,6 +219,7 @@ export default function StockPage() {
                                     <select
                                         className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
                                         value={newItem.category}
+                                        title="Sélectionner une catégorie"
                                         onChange={e => setNewItem({ ...newItem, category: e.target.value as any })}
                                     >
                                         <option value="ingredient">Ingrédient</option>
@@ -198,6 +233,7 @@ export default function StockPage() {
                                     <select
                                         className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
                                         value={newItem.unit}
+                                        title="Sélectionner une unité"
                                         onChange={e => setNewItem({ ...newItem, unit: e.target.value as any })}
                                     >
                                         <option value="kg">Kilogramme (kg)</option>
@@ -356,6 +392,19 @@ export default function StockPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 className="h-8 w-8 p-0"
+                                                title="Distribuer"
+                                                onClick={() => {
+                                                    setSelectedItem(item);
+                                                    setMovement({ ...movement, type: 'out', reason: 'distribution' as any });
+                                                    setIsDistributeDialogOpen(true);
+                                                }}
+                                            >
+                                                <HandHelping className="h-4 w-4 text-primary" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 w-8 p-0"
                                                 onClick={() => {
                                                     setSelectedItem(item);
                                                     setMovement({ ...movement, type: 'out' });
@@ -425,6 +474,7 @@ export default function StockPage() {
                             <select
                                 className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
                                 value={movement.reason}
+                                title="Sélectionner un motif"
                                 onChange={e => setMovement({ ...movement, reason: e.target.value as any })}
                             >
                                 {movement.type === 'in' ? (
@@ -450,6 +500,65 @@ export default function StockPage() {
                             className="w-full"
                         >
                             Confirmer le mouvement
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            {/* Dialog Distribution Stock */}
+            <Dialog open={isDistributeDialogOpen} onOpenChange={setIsDistributeDialogOpen}>
+                <DialogContent className="glass-card border-white/10 sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <HandHelping className="text-primary" />
+                            Distribuer un article
+                        </DialogTitle>
+                        <DialogDescription>
+                            {selectedItem?.name} - Stock disponible : {selectedItem?.quantity} {selectedItem?.unit}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Destinataire (Personnel)</label>
+                            <select
+                                className="flex h-10 w-full rounded-md border border-white/10 bg-white/5 backdrop-blur-sm px-3 py-2 text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                value={selectedRecipientId}
+                                title="Sélectionner un destinataire"
+                                onChange={e => setSelectedRecipientId(e.target.value)}
+                            >
+                                <option value="">Sélectionner un membre...</option>
+                                {staff.map(s => (
+                                    <option key={s.id} value={s.id}>{s.lastName} {s.firstName} ({s.role})</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="grid gap-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Quantité à donner</label>
+                            <div className="flex items-center gap-3">
+                                <Input
+                                    type="number"
+                                    value={movement.quantity}
+                                    onChange={e => setMovement({ ...movement, quantity: parseFloat(e.target.value) })}
+                                    className="text-lg font-bold"
+                                />
+                                <span className="text-sm font-bold text-muted-foreground whitespace-nowrap">{selectedItem?.unit}</span>
+                            </div>
+                        </div>
+                        <div className="grid gap-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Notes / Justification</label>
+                            <Input
+                                value={movement.notes}
+                                onChange={e => setMovement({ ...movement, notes: e.target.value })}
+                                placeholder="ex: Pour la classe de CM2"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            variant="premium"
+                            onClick={handleDistribution}
+                            className="w-full"
+                        >
+                            Valider la distribution
                         </Button>
                     </DialogFooter>
                 </DialogContent>

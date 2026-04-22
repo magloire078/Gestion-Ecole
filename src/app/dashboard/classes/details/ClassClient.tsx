@@ -14,6 +14,7 @@ import { ArrowLeft, User, Users } from 'lucide-react';
 import Link from 'next/link';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import type { class_type as Class, student as Student } from '@/lib/data-types';
+import { formatCurrency } from '@/lib/currency-utils';
 
 function ClassDetailsSkeleton() {
     return (
@@ -64,10 +65,6 @@ function ClassDetailsContent({ classId }: { classId: string }) {
         notFound();
     }
 
-    const formatCurrency = (value: number | undefined) => {
-        if (value === undefined) return 'N/A';
-        return `${value.toLocaleString('fr-FR')} CFA`;
-    };
 
     return (
         <div className="space-y-6">

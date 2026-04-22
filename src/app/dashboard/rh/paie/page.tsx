@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import { StatCard } from '@/components/ui/stat-card';
 import { PayrollHistoryTable } from '@/components/rh/payroll-history-table';
 import { StaffPayrollList } from '@/components/rh/staff-payroll-list';
 import { runPayrollForMonth } from '@/services/payroll-services';
+import { formatCurrency, getCurrencySymbol } from '@/lib/currency-utils';
 
 interface PayrollRunWithId extends PayrollRun {
   id: string;
@@ -208,64 +209,106 @@ export default function PaiePage() {
   };
 
 
-  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   return (
     <>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold">Gestion de la Paie</h2>
-            <p className="text-muted-foreground">Lancez et suivez la paie mensuelle de votre personnel.</p>
+      <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
+              Gestion de la Paie
+            </h1>
+            <p className="text-slate-500 max-w-2xl text-sm font-medium">
+              Pilotez la rémunération de votre personnel, générez les bulletins et suivez la masse salariale.
+            </p>
           </div>
           {canManageBilling && (
-            <Button size="lg" onClick={handleRunPayroll} disabled={isProcessingPayroll}>
+            <Button 
+              size="lg" 
+              onClick={handleRunPayroll} 
+              disabled={isProcessingPayroll}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-1 rounded-2xl px-6"
+            >
               {isProcessingPayroll ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Banknote className="mr-2 h-5 w-5" />}
-              {isProcessingPayroll ? 'Lancement en cours...' : 'Lancer la Paie du Mois'}
+              {isProcessingPayroll ? 'Calcul en cours...' : 'Lancer la Paie Mensuelle'}
             </Button>
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
-          <StatCard title="Masse Salariale Mensuelle" value={formatCurrency(totalSalaryMass)} icon={DollarSign} loading={isLoading} />
-          <StatCard title="Employés sur la Paie" value={staffWithSalary.length} icon={Users} loading={isLoading} />
-          <StatCard title="Salaire Moyen" value={formatCurrency(averageSalary)} icon={DollarSign} loading={isLoading} />
+        <div className="grid gap-6 md:grid-cols-3">
+          <StatCard 
+            title="Masse Salariale" 
+            value={formatCurrency(totalSalaryMass)} 
+            icon={DollarSign} 
+            loading={isLoading} 
+            colorClass="bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white"
+          />
+          <StatCard 
+            title="Effectif Payé" 
+            value={staffWithSalary.length} 
+            icon={Users} 
+            loading={isLoading} 
+            colorClass="bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white"
+          />
+          <StatCard 
+            title="Salaire Moyen" 
+            value={formatCurrency(averageSalary)} 
+            icon={DollarSign} 
+            loading={isLoading} 
+            colorClass="bg-amber-50 text-amber-600 group-hover:bg-amber-600 group-hover:text-white"
+          />
         </div>
 
-        <PayrollChart staff={staffWithSalary} />
+        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-6 rounded-[2.5rem] shadow-sm">
+          <PayrollChart staff={staffWithSalary} />
+        </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><History className="h-5 w-5" />Historique des Paies</CardTitle>
-            <CardDescription>Consultez les lots de paie des mois précédents.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PayrollHistoryTable
-              payrollHistory={payrollHistory}
-              isLoading={isLoading}
-              onViewPayslips={handleViewPayslips}
-            />
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden">
+            <CardHeader className="pb-4 border-b border-slate-100/50 dark:border-slate-800/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+                  <History className="h-5 w-5 text-indigo-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold text-slate-800 dark:text-slate-200">Historique des Paies</CardTitle>
+                  <CardDescription>Archive des exécutions mensuelles</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <PayrollHistoryTable
+                payrollHistory={payrollHistory}
+                isLoading={isLoading}
+                onViewPayslips={handleViewPayslips}
+              />
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Users />Personnel sur la Paie</CardTitle>
-            <CardDescription>
-              Liste des employés avec un salaire de base défini.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StaffPayrollList
-              staffWithSalary={staffWithSalary}
-              isLoading={isLoading}
-              canManageBilling={!!canManageBilling}
-              onGeneratePayslip={handleGeneratePayslip}
-              onGenerateAllPayslips={handleGenerateAllPayslips}
-              isBulkGenerating={isBulkGenerating}
-            />
-          </CardContent>
-        </Card>
+          <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden">
+            <CardHeader className="pb-4 border-b border-slate-100/50 dark:border-slate-800/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">
+                  <Users className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-bold text-slate-800 dark:text-slate-200">Personnel & Bulletins</CardTitle>
+                  <CardDescription>Édition individuelle ou groupée</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <StaffPayrollList
+                staffWithSalary={staffWithSalary}
+                isLoading={isLoading}
+                canManageBilling={!!canManageBilling}
+                onGeneratePayslip={handleGeneratePayslip}
+                onGenerateAllPayslips={handleGenerateAllPayslips}
+                isBulkGenerating={isBulkGenerating}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Dialog open={isPayslipOpen} onOpenChange={setIsPayslipOpen}>

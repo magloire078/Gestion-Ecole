@@ -49,11 +49,13 @@ export async function POST(req: Request) {
         switch (provider.toLowerCase()) {
             case 'stripe':
                 const stripeResult = await createStripeCheckoutSession({
-                    priceInCents: amount * 100,
+                    priceInCents: Math.round(amount * 100),
                     planName: type === 'tuition' ? 'Frais de Scolarité' : planName || 'Abonnement',
                     description: type === 'tuition' ? `Paiement scolarité élève ID: ${studentId}` : `Abonnement école ${schoolId}`,
                     clientReferenceId: referenceValue,
                     customerEmail: userEmail,
+                    successUrl: `${BASE_URL}/payment/success?type=${type}&session_id={CHECKOUT_SESSION_ID}`,
+                    cancelUrl: `${BASE_URL}/payment/error?type=${type}`,
                 });
                 if (stripeResult.error) return NextResponse.json({ error: stripeResult.error }, { status: 500 });
                 return NextResponse.json({ url: stripeResult.url });
@@ -62,8 +64,8 @@ export async function POST(req: Request) {
                 const waveUrl = await createWaveCheckoutSession({
                     amount: amount.toString(),
                     currency: 'XOF',
-                    error_url: `${BASE_URL}/payment/error`,
-                    success_url: `${BASE_URL}/payment/success`,
+                    error_url: `${BASE_URL}/payment/error?type=${type}`,
+                    success_url: `${BASE_URL}/payment/success?type=${type}`,
                     client_reference: referenceValue,
                 });
                 return NextResponse.json({ url: waveUrl });
@@ -77,8 +79,8 @@ export async function POST(req: Request) {
                     payerName: userDisplayName || 'Client GèreEcole',
                     payerEmail: userEmail,
                     payerPhone: phone,
-                    successUrl: `${BASE_URL}/payment/success`,
-                    errorUrl: `${BASE_URL}/payment/error`,
+                    successUrl: `${BASE_URL}/payment/success?type=${type}`,
+                    errorUrl: `${BASE_URL}/payment/error?type=${type}`,
                     metadata: {
                         type,
                         schoolId,
@@ -93,8 +95,8 @@ export async function POST(req: Request) {
                     total_amount: amount,
                     description: type === 'tuition' ? `Scolarité ${studentId}` : `Abonnement ${duration} mois`,
                     custom_data: { reference: referenceValue },
-                    return_url: `${BASE_URL}/payment/success`,
-                    cancel_url: `${BASE_URL}/payment/error`,
+                    return_url: `${BASE_URL}/payment/success?type=${type}`,
+                    cancel_url: `${BASE_URL}/payment/error?type=${type}`,
                     callback_url: `${BASE_URL}/api/webhooks/paydunya`,
                 });
                 return NextResponse.json({ url: paydunyaResult.url, error: paydunyaResult.error });
@@ -106,8 +108,8 @@ export async function POST(req: Request) {
                     currency: 'XOF',
                     order_id: `OM_${Date.now()}`,
                     amount: amount,
-                    return_url: `${BASE_URL}/payment/success`,
-                    cancel_url: `${BASE_URL}/payment/error`,
+                    return_url: `${BASE_URL}/payment/success?type=${type}`,
+                    cancel_url: `${BASE_URL}/payment/error?type=${type}`,
                     notif_url: `${BASE_URL}/api/webhooks/orange`,
                     lang: 'fr',
                     reference: referenceValue,
@@ -130,7 +132,7 @@ export async function POST(req: Request) {
                 return NextResponse.json({
                     success: mtnResult.success,
                     message: mtnResult.message,
-                    url: mtnResult.success ? `${BASE_URL}/payment/pending` : null
+                    url: mtnResult.success ? `${BASE_URL}/payment/pending?type=${type}` : null
                 });
 
             default:

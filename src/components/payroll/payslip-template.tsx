@@ -9,6 +9,7 @@ import { Printer } from 'lucide-react';
 import Image from 'next/image';
 import { Separator } from '@/components/ui/separator';
 import { usePrint } from '@/hooks/use-print';
+import { formatCurrency } from '@/lib/currency-utils';
 
 interface PayslipTemplateProps {
     details: PayslipDetails;
@@ -17,7 +18,8 @@ interface PayslipTemplateProps {
 const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>(({ details }, ref) => {
     const { employeeInfo, earnings, deductions, totals, employerContributions, organizationSettings } = details;
 
-    const formatCurrency = (value?: number) => {
+    // Local helper for table cells where we don't want the currency symbol to avoid clutter
+    const formatAmount = (value?: number) => {
         if (typeof value !== 'number') return '0';
         return value.toLocaleString('fr-FR');
     };
@@ -74,9 +76,9 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                         {earnings.map(e => (
                             <tr key={e.label}>
                                 <td className="p-1">{e.label}</td>
-                                <td className="p-1 text-right">{formatCurrency(e.amount)}</td>
+                                <td className="p-1 text-right">{formatAmount(e.amount)}</td>
                                 <td className="p-1 text-right"></td>
-                                <td className="p-1 text-right font-mono">{formatCurrency(e.amount)}</td>
+                                <td className="p-1 text-right font-mono">{formatAmount(e.amount)}</td>
                                 <td className="p-1"></td>
                             </tr>
                         ))}
@@ -85,7 +87,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                                 <td className="p-1">{totals.transportNonImposable.label}</td>
                                 <td className="p-1"></td>
                                 <td className="p-1"></td>
-                                <td className="p-1 text-right font-mono">{formatCurrency(totals.transportNonImposable.amount)}</td>
+                                <td className="p-1 text-right font-mono">{formatAmount(totals.transportNonImposable.amount)}</td>
                                 <td className="p-1"></td>
                             </tr>
                         )}
@@ -93,7 +95,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                             <td className="p-1 font-bold">BRUT IMPOSABLE</td>
                             <td></td>
                             <td></td>
-                            <td className="p-1 text-right font-bold font-mono">{formatCurrency(totals.brutImposable)}</td>
+                            <td className="p-1 text-right font-bold font-mono">{formatAmount(totals.brutImposable)}</td>
                             <td></td>
                         </tr>
 
@@ -104,7 +106,7 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                                 <td></td>
                                 <td></td>
                                 <td></td>
-                                <td className="p-1 text-right font-mono">{formatCurrency(d.amount)}</td>
+                                <td className="p-1 text-right font-mono">{formatAmount(d.amount)}</td>
                             </tr>
                         ))}
                     </tbody>
@@ -148,9 +150,9 @@ const PayslipTemplate = React.forwardRef<HTMLDivElement, PayslipTemplateProps>((
                             {employerContributions.map(c => c.amount > 0 && (
                                 <tr key={c.label}>
                                     <td className="p-1">{c.label}</td>
-                                    <td className="p-1 text-right font-mono">{formatCurrency(c.base)}</td>
+                                    <td className="p-1 text-right font-mono">{formatAmount(c.base)}</td>
                                     <td className="p-1 text-right font-mono">{c.rate}</td>
-                                    <td className="p-1 text-right font-mono">{formatCurrency(c.amount)}</td>
+                                    <td className="p-1 text-right font-mono">{formatAmount(c.amount)}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -203,7 +205,7 @@ export function BulkPayslipPreview({ detailsArray }: { detailsArray: PayslipDeta
         <div>
             <div className="max-h-[70vh] overflow-y-auto bg-gray-200 p-4" ref={printRef}>
                 {detailsArray.map((details, index) => (
-                    <div key={index} className="page-break" style={{ pageBreakAfter: 'always' }}>
+                    <div key={index} className="page-break">
                         <PayslipTemplate details={details} />
                     </div>
                 ))}

@@ -6,6 +6,7 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContaine
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { group, sum } from 'd3-array';
 import type { staff as Staff } from '@/lib/data-types';
+import { formatCurrency, getCurrencySymbol } from '@/lib/currency-utils';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { ChartConfig } from '@/components/ui/chart';
 
@@ -33,7 +34,7 @@ export function PayrollChart({ staff }: PayrollChartProps) {
     }
   };
 
-  const formatCurrency = (value: number) => {
+  const formatAxisCurrency = (value: number) => {
     if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `${(value / 1000).toFixed(0)}K`;
     return `${value}`;
@@ -43,7 +44,7 @@ export function PayrollChart({ staff }: PayrollChartProps) {
     <Card>
       <CardHeader>
         <CardTitle>Répartition de la Masse Salariale</CardTitle>
-        <CardDescription>Visualisation de la masse salariale par rôle (en CFA).</CardDescription>
+        <CardDescription>Visualisation de la masse salariale par rôle (en {getCurrencySymbol()}).</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[350px]">
@@ -51,8 +52,8 @@ export function PayrollChart({ staff }: PayrollChartProps) {
             <BarChart data={dataByRole} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="role" angle={-45} textAnchor="end" height={80} interval={0} tick={{ fontSize: 12 }} />
-              <YAxis tickFormatter={formatCurrency} />
-              <ChartTooltipContent formatter={(value: any) => `${Number(value).toLocaleString('fr-FR')} CFA`} />
+              <YAxis tickFormatter={formatAxisCurrency} />
+              <ChartTooltipContent formatter={(value: any) => formatCurrency(Number(value))} />
               <Bar dataKey="masseSalariale" fill="var(--color-masseSalariale)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ChartContainer>

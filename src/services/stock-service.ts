@@ -68,6 +68,8 @@ export const StockService = {
             quantity: number,
             reason: string,
             staffId: string,
+            recipientId?: string,
+            recipientName?: string,
             notes?: string
         }
     ) => {

@@ -1,6 +1,7 @@
 
 'use client';
 import { Firestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { formatCurrency } from '@/lib/currency-utils';
 
 export interface MailOptions {
   to: string | string[];
@@ -13,6 +14,7 @@ export interface MailOptions {
     name: string;
     data: any;
   };
+  schoolId?: string;
 }
 
 export class MailService {
@@ -46,18 +48,18 @@ export class MailService {
     return this.sendMail({
       to,
       message: {
-        subject: `Bienvenue sur GéreEcole - ${schoolName}`,
+        subject: `Bienvenue sur GèreEcole - ${schoolName}`,
         html: `
           <div style="font-family: sans-serif; line-height: 1.6; color: #333;">
             <h1 style="color: #0C365A;">Bienvenue, ${userName} !</h1>
-            <p>Nous sommes ravis de vous compter parmi nous. Votre école <strong>${schoolName}</strong> a été créée avec succès sur GéreEcole.</p>
+            <p>Nous sommes ravis de vous compter parmi nous. Votre école <strong>${schoolName}</strong> a été créée avec succès sur GèreEcole.</p>
             <p>Vous pouvez dès maintenant commencer à configurer vos classes, ajouter votre personnel et inscrire vos premiers élèves.</p>
             <div style="margin: 20px 0;">
               <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 10px 20px; text-decoration: none; rounded: 5px; font-weight: bold;">Accéder à mon tableau de bord</a>
             </div>
             <p>Si vous avez besoin d'aide, n'hésitez pas à consulter notre centre d'aide ou à contacter notre support.</p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-            <p style="font-size: 0.8em; color: #777;">L'équipe GéreEcole</p>
+            <p style="font-size: 0.8em; color: #777;">L'équipe GèreEcole</p>
           </div>
         `
       }
@@ -71,11 +73,11 @@ export class MailService {
     return this.sendMail({
       to,
       message: {
-        subject: `Terminez l'installation de votre école sur GéreEcole`,
+        subject: `Terminez l'installation de votre école sur GèreEcole`,
         html: `
           <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
             <div style="background-color: #0C365A; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">GéreEcole</h1>
+              <h1 style="color: white; margin: 0;">GèreEcole</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #eee;">
               <h2 style="color: #0C365A;">Besoin d'un coup de main, ${userName} ?</h2>
@@ -86,7 +88,7 @@ export class MailService {
               </div>
               <p>C'est gratuit et cela ne prend que quelques minutes.</p>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-              <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GéreEcole</p>
+              <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GèreEcole</p>
             </div>
           </div>
         `
@@ -120,7 +122,7 @@ export class MailService {
                 <a href="https://gereecole.com/dashboard/stocks" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Gérer l'inventaire</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-              <p style="font-size: 0.8em; color: #777; text-align: center;">Système automatique GéreEcole</p>
+              <p style="font-size: 0.8em; color: #777; text-align: center;">Système automatique GèreEcole</p>
             </div>
           </div>
         `
@@ -179,7 +181,7 @@ export class MailService {
               <p>Bonjour ${parentName},</p>
               <p>Sauf erreur de notre part, nous n'avons pas encore reçu la régularisation totale des frais de scolarité de <strong>${studentName}</strong> à <strong>${schoolName}</strong>.</p>
               <div style="background-color: #fff7ed; border-left: 4px solid #f97316; padding: 15px; margin: 20px 0;">
-                <p style="margin: 5px 0; color: #9a3412;"><strong>Solde restant dû :</strong> <span style="font-size: 1.2em; font-weight: bold;">${amountDue.toLocaleString()} CFA</span></p>
+                <p style="margin: 5px 0; color: #9a3412;"><strong>Solde restant dû :</strong> <span style="font-size: 1.2em; font-weight: bold;">${formatCurrency(amountDue)}</span></p>
               </div>
               <p>Nous vous prions de bien vouloir procéder au règlement dans les meilleurs délais afin de garantir la continuité du suivi pédagogique de votre enfant.</p>
               <div style="margin: 30px 0; text-align: center;">
@@ -213,7 +215,7 @@ export class MailService {
               <p>Nous confirmons la réception de votre paiement concernant les frais de scolarité de <strong>${studentName}</strong>.</p>
               <div style="border: 1px solid #eee; padding: 20px; border-radius: 8px; margin: 20px 0;">
                 <p style="margin: 5px 0;"><strong>Référence :</strong> ${reference}</p>
-                <p style="margin: 5px 0;"><strong>Montant :</strong> ${amount.toLocaleString()} CFA</p>
+                <p style="margin: 5px 0;"><strong>Montant :</strong> ${formatCurrency(amount)}</p>
                 <p style="margin: 5px 0;"><strong>Date :</strong> ${new Date().toLocaleDateString()}</p>
                 <p style="margin: 5px 0;"><strong>Établissement :</strong> ${schoolName}</p>
               </div>
@@ -222,7 +224,7 @@ export class MailService {
                 <a href="https://gereecole.com/dashboard/comptabilite" style="background-color: #0C365A; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Voir mon historique</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-              <p style="font-size: 0.8em; color: #777; text-align: center;">Service Comptabilité - GéreEcole</p>
+              <p style="font-size: 0.8em; color: #777; text-align: center;">Service Comptabilité - GèreEcole</p>
             </div>
           </div>
         `
@@ -310,7 +312,7 @@ export class MailService {
         html: `
           <div style="font-family: sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto;">
             <div style="background-color: #0C365A; padding: 20px; text-align: center;">
-              <h1 style="color: white; margin: 0;">GéreEcole</h1>
+              <h1 style="color: white; margin: 0;">GèreEcole</h1>
             </div>
             <div style="padding: 20px; border: 1px solid #eee;">
               <h2 style="color: #0C365A;">Abonnement Activé ✅</h2>
@@ -324,7 +326,7 @@ export class MailService {
                 <a href="https://gereecole.com/dashboard" style="background-color: #2D9CDB; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">Accéder au Dashboard</a>
               </div>
               <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-              <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GéreEcole</p>
+              <p style="font-size: 0.8em; color: #777; text-align: center;">L'équipe GèreEcole</p>
             </div>
           </div>
         `
@@ -335,13 +337,14 @@ export class MailService {
   /**
    * Rapport Financier Mensuel
    */
-  async sendMonthlyFinanceReport(to: string, schoolName: string, data: any) {
+  async sendMonthlyFinanceReport(to: string, schoolName: string, data: any, schoolId?: string) {
     const { monthName, year, totalRevenue, totalExpenses, netBalance, revenueByCategory, expenseByCategory, topExpenses, tuitionRecoveryRate } = data;
 
-    const formatPrice = (amount: number) => amount.toLocaleString('fr-FR') + ' CFA';
+    const formatPrice = (amount: number) => formatCurrency(amount);
 
     return this.sendMail({
       to,
+      schoolId,
       message: {
         subject: `Rapport Financier Mensuel - ${monthName} ${year} - ${schoolName}`,
         html: `
@@ -395,7 +398,7 @@ export class MailService {
               </div>
               
               <hr style="border: none; border-top: 1px solid #edf2f7; margin: 30px 0;" />
-              <p style="font-size: 12px; color: #a0aec0; text-align: center;">Ce rapport a été généré automatiquement par votre plateforme GéreEcole.</p>
+              <p style="font-size: 12px; color: #a0aec0; text-align: center;">Ce rapport a été généré automatiquement par votre plateforme GèreEcole.</p>
             </div>
           </div>
         `

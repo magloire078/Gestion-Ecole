@@ -10,8 +10,10 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { motion } from 'framer-motion';
-import { Wallet } from 'lucide-react';
+import { Wallet, PieChart as PieChartIcon, TrendingUp, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { formatCurrency } from '@/lib/currency-utils';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 
 interface FinanceOverviewProps {
     schoolId: string;
@@ -19,8 +21,9 @@ interface FinanceOverviewProps {
 
 export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps) {
     const firestore = useFirestore();
-    const { schoolId: sessionSchoolId, isLoading: sessionLoading } = useUserSession();
+    const { schoolId: sessionSchoolId, schoolData, isLoading: sessionLoading } = useUserSession();
     const schoolId = propSchoolId || sessionSchoolId;
+    const country = schoolData?.country;
 
     const { students, loading: studentsLoading } = useStudents(schoolId, 'all', 'active');
     const loading = sessionLoading || studentsLoading;
@@ -37,16 +40,20 @@ export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps
         return { totalFees, totalDue, paidPercentage };
     }, [students]);
 
+    const chartData = useMemo(() => [
+        { name: 'Encaissé', value: financeStats.totalFees - financeStats.totalDue, color: 'hsl(var(--primary))' },
+        { name: 'Solde Dû', value: financeStats.totalDue, color: 'rgba(239, 68, 68, 0.4)' },
+    ], [financeStats]);
+
     if (loading) {
         return (
-            <Card>
+            <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl shadow-2xl">
                 <CardHeader>
                     <Skeleton className="h-6 w-2/3" />
                     <Skeleton className="h-4 w-1/2" />
                 </CardHeader>
-                <CardContent className="space-y-4">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
+                <CardContent className="space-y-6">
+                    <Skeleton className="h-40 w-full" />
                     <Skeleton className="h-10 w-full" />
                 </CardContent>
             </Card>
@@ -57,47 +64,101 @@ export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps
         <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="h-full"
         >
-            <Card className="glass-card overflow-hidden relative">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 blur-3xl" />
-                <CardHeader>
+            <Card className="glass-card border-white/10 bg-card/40 backdrop-blur-2xl h-full overflow-hidden relative shadow-2xl group flex flex-col">
+                {/* 3D Light Source Effect */}
+                <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/10 rounded-full blur-[80px] opacity-50 group-hover:opacity-100 transition-opacity duration-1000" />
+                
+                <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-xl font-bold">Aperçu Financier</CardTitle>
+                        <div className="space-y-1">
+                            <CardTitle className="text-xl font-black tracking-tight flex items-center gap-2">
+                                <PieChartIcon className="w-5 h-5 text-primary" />
+                                Finances
+                            </CardTitle>
+                            <CardDescription className="text-[11px] font-medium text-muted-foreground/60 uppercase tracking-widest">
+                                État des scolarités
+                            </CardDescription>
+                        </div>
+                        <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
+                            <TrendingUp className="w-4 h-4 text-primary" />
+                        </div>
                     </div>
-                    <CardDescription>État des paiements de scolarité.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <div>
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-semibold">Taux de recouvrement</span>
-                            <span className="text-sm font-black text-primary">{financeStats.paidPercentage.toFixed(0)}%</span>
-                        </div>
-                        <div className="h-3 w-full bg-muted rounded-full overflow-hidden border border-border/50">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: `${financeStats.paidPercentage}%` }}
-                                transition={{ duration: 1, ease: "easeOut" }}
-                                className="h-full bg-gradient-to-r from-primary to-cyan-500"
-                            />
+
+                <CardContent className="space-y-6 flex-1 pt-4">
+                    <div className="h-44 w-full relative">
+                        {/* Custom SVG Shadows for PieChart */}
+                        <svg className="h-0 w-0 absolute pointer-events-none" aria-hidden="true">
+                            <defs>
+                                <filter id="pie-glow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="4" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
+                            </defs>
+                        </svg>
+
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={chartData}
+                                    innerRadius={55}
+                                    outerRadius={75}
+                                    paddingAngle={8}
+                                    dataKey="value"
+                                    stroke="none"
+                                >
+                                    {chartData.map((entry, index) => (
+                                        <Cell 
+                                            key={`cell-${index}`} 
+                                            fill={entry.color}
+                                            style={{ filter: 'url(#pie-glow)' }}
+                                            className="transition-all duration-300 hover:opacity-80"
+                                        />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip 
+                                    contentStyle={{ 
+                                        backgroundColor: 'rgba(255,255,255,0.8)', 
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255,255,255,0.3)',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: 'bold',
+                                        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.1)'
+                                    }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+
+                        {/* Center Content */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span className="text-2xl font-black tracking-tighter">{financeStats.paidPercentage.toFixed(0)}%</span>
+                            <span className="text-[9px] uppercase font-black text-muted-foreground/60 leading-none">Collecté</span>
                         </div>
                     </div>
+
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                            <span className="text-[10px] uppercase font-bold text-emerald-600 block mb-1">Total Encaissé</span>
-                            <span className="text-sm font-bold text-emerald-700">{(financeStats.totalFees - financeStats.totalDue).toLocaleString('fr-FR')} CFA</span>
+                        <div className="space-y-1 p-3 rounded-2xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                            <span className="text-[10px] uppercase font-black text-muted-foreground/40 leading-none block">Recettes</span>
+                            <span className="text-sm font-black text-foreground drop-shadow-sm">{formatCurrency(financeStats.totalFees - financeStats.totalDue, country)}</span>
                         </div>
-                        <div className="p-3 rounded-xl bg-destructive/5 border border-destructive/10">
-                            <span className="text-[10px] uppercase font-bold text-destructive block mb-1">Solde Dû</span>
-                            <span className="text-sm font-bold text-destructive">{(financeStats.totalDue).toLocaleString('fr-FR')} CFA</span>
+                        <div className="space-y-1 p-3 rounded-2xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                            <span className="text-[10px] uppercase font-black text-muted-foreground/40 leading-none block">Restant</span>
+                            <span className="text-sm font-black text-destructive drop-shadow-sm">{formatCurrency(financeStats.totalDue, country)}</span>
                         </div>
                     </div>
                 </CardContent>
-                <CardFooter>
-                    <Button className="w-full shadow-glow font-bold" asChild>
+
+                <CardFooter className="pt-2">
+                    <Button className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl shadow-lg shadow-primary/20 font-black uppercase text-[11px] tracking-[0.2em] group/btn overflow-hidden relative" asChild>
                         <Link href="/dashboard/paiements">
-                            <Wallet className="mr-2 h-4 w-4" />
-                            Gérer les Paiements
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:animate-[shine_1s_ease-in-out_infinite]" />
+                            <Wallet className="mr-2 h-4 w-4 transition-transform group-hover/btn:-translate-y-0.5 group-hover/btn:translate-x-0.5" />
+                            Accéder à la caisse
+                            <ArrowUpRight className="ml-2 h-3 w-3 opacity-0 group-hover/btn:opacity-100 transition-all duration-300 group-hover/btn:translate-x-1 group-hover/btn:-translate-y-1" />
                         </Link>
                     </Button>
                 </CardFooter>

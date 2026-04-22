@@ -38,7 +38,7 @@ export default function MentionsLegalesPage() {
                                 Éditeur du Site
                             </h2>
                             <p className="leading-relaxed">
-                                Le site <strong>GéreEcole</strong> est édité par :<br />
+                                Le site <strong>GèreEcole</strong> est édité par :<br />
                                 <span className="block mt-2 font-semibold">Magloire KOUADIO</span>
                                 <span className="block text-sm text-slate-500">Auto-entrepreneur</span>
                                 <span className="block text-sm text-slate-500">[Adresse, Ville, Pays]</span>
@@ -85,7 +85,7 @@ export default function MentionsLegalesPage() {
                                 </p>
                                 <ul className="list-disc pl-6 space-y-2">
                                     <li><strong>Finalité :</strong> Les données collectées (noms, prénoms, emails, données scolaires) servent exclusivement à la gestion administrative et pédagogique des établissements utilisateurs.</li>
-                                    <li><strong>Confidentialité :</strong> GéreEcole s&apos;engage à ne jamais vendre ou louer vos données à des tiers.</li>
+                                    <li><strong>Confidentialité :</strong> GèreEcole s&apos;engage à ne jamais vendre ou louer vos données à des tiers.</li>
                                     <li><strong>Droit d&apos;accès :</strong> Chaque utilisateur dispose d&apos;un droit d&apos;accès, de rectification et d&apos;opposition aux données personnelles le concernant, en écrivant à : <strong>support@gerecole.com</strong>.</li>
                                 </ul>
                             </div>
@@ -115,7 +115,7 @@ export default function MentionsLegalesPage() {
             </main>
 
             <footer className="mt-20 py-10 border-t border-blue-50 text-center text-sm text-slate-400">
-                <p>© {new Date().getFullYear()} GéreEcole. Tous droits réservés.</p>
+                <p>© {new Date().getFullYear()} GèreEcole. Tous droits réservés.</p>
             </footer>
         </div>
     );

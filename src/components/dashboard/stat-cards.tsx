@@ -127,15 +127,22 @@ export function StatCards({ schoolId }: { schoolId: string }) {
                 stat.gradient
               )} />
 
-              <Card className="glass-card relative border-white/5 bg-card/40 backdrop-blur-xl h-full overflow-hidden flex flex-col justify-between">
+              <Card className="glass-card relative border-white/10 bg-card/40 backdrop-blur-2xl h-full overflow-hidden flex flex-col justify-between shadow-2xl transition-all duration-500 group-hover:bg-card/50">
+                {/* Animated Shine Effect */}
+                <div className="absolute inset-0 z-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shine_1.5s_ease-in-out_infinite]" />
+                </div>
+
                 {/* Secondary Background Glow */}
                 <div className={cn(
-                  "absolute -right-4 -top-4 w-24 h-24 blur-3xl rounded-full opacity-20 transition-opacity duration-500 group-hover:opacity-40",
+                  "absolute -right-8 -top-8 w-32 h-32 blur-[60px] rounded-full opacity-10 transition-opacity duration-700 group-hover:opacity-30",
                   stat.bgColor
                 )} />
 
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-                  <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">{stat.title}</CardTitle>
+                  <CardTitle className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/60 transition-colors group-hover:text-foreground/80 leading-none">
+                    {stat.title}
+                  </CardTitle>
                   <div className={cn(
                     "p-2.5 rounded-xl transition-all duration-500 shadow-sm",
                     stat.bgColor,
@@ -146,21 +153,21 @@ export function StatCards({ schoolId }: { schoolId: string }) {
                   </div>
                 </CardHeader>
 
-                <CardContent className="relative z-10 pt-4">
+                <CardContent className="relative z-10 pt-6">
                   <div className="flex items-baseline gap-1">
-                    <div className="text-4xl font-black tracking-tighter">
-                      {loading ? <Skeleton className="h-10 w-20" /> : (
-                        <span className="bg-clip-text text-transparent bg-gradient-to-br from-foreground via-foreground/90 to-foreground/40 drop-shadow-sm">
+                    <div className="text-5xl font-black tracking-tighter transition-transform duration-500 group-hover:scale-105">
+                      {loading ? <Skeleton className="h-12 w-24" /> : (
+                        <span className="bg-clip-text text-transparent bg-gradient-to-br from-foreground via-foreground/90 to-foreground/50 drop-shadow-xl">
                           {stat.value}
                         </span>
                       )}
                     </div>
                   </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <p className="text-[10px] text-muted-foreground/60 font-bold uppercase tracking-widest group-hover:text-foreground/80 transition-colors">
-                      Détails
+                  <div className="mt-6 flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.3em] group-hover:text-foreground/70 transition-colors">
+                      Visionner
                     </p>
-                    <div className="h-[2px] w-0 bg-foreground/20 group-hover:w-12 transition-all duration-500 ease-out rounded-full" />
+                    <div className="h-[3px] w-0 bg-gradient-to-r from-blue-500 to-indigo-500 group-hover:w-16 transition-all duration-700 ease-[cubic-bezier(0.23,1,0.32,1)] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
                   </div>
                 </CardContent>
 

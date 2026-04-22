@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Edit } from 'lucide-react';
 import { MenuForm } from './menu-form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '../ui/dialog';
+import { formatCurrency } from '@/lib/currency-utils';
 
 export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, date?: Date }) {
   const firestore = useFirestore();
@@ -116,13 +117,13 @@ export function DailyMenu({ schoolId, date: initialDate }: { schoolId: string, d
                                       <div className="text-right shrink-0 ml-2">
                                           {item.priceStudent != null && (
                                             <div>
-                                              <div className="font-bold">{item.priceStudent?.toLocaleString('fr-FR')} CFA</div>
+                                              <div className="font-bold">{formatCurrency(item.priceStudent)}</div>
                                               <div className="text-xs text-muted-foreground">élève</div>
                                             </div>
                                           )}
                                            {item.priceStaff != null && item.priceStaff > 0 && (
                                             <div className="mt-1">
-                                              <div className="font-bold">{item.priceStaff?.toLocaleString('fr-FR')} CFA</div>
+                                              <div className="font-bold">{formatCurrency(item.priceStaff)}</div>
                                               <div className="text-xs text-muted-foreground">personnel</div>
                                             </div>
                                           )}

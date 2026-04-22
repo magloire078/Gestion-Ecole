@@ -15,12 +15,12 @@ interface LogoProps {
 
 export function Logo({ size = 'md', schoolName, logoUrl, disableLink = false, className, compact = false }: LogoProps) {
   const isDefaultLogo = !logoUrl;
-  const finalSchoolName = (schoolName || 'Gérecole').trim();
+  const finalSchoolName = (schoolName || 'GèreEcole').trim();
 
   const sizes = {
-    sm: { icon: 40, text: 'text-sm' },
-    md: { icon: 70, text: 'text-base' },
-    lg: { icon: 120, text: 'text-lg' }
+    sm: { icon: "w-10 h-10", text: 'text-sm' },
+    md: { icon: "w-[70px] h-[70px]", text: 'text-base' },
+    lg: { icon: "w-[120px] h-[120px]", text: 'text-lg' }
   };
 
   const currentSize = sizes[size];
@@ -49,10 +49,10 @@ export function Logo({ size = 'md', schoolName, logoUrl, disableLink = false, cl
             />
           </div>
         ) : (
-          <div className="relative" style={{ width: currentSize.icon, height: currentSize.icon }}>
+          <div className={cn("relative", currentSize.icon)}>
             <SafeImage
               src="/custom-assets/logo.png?v=2"
-              alt="GéreEcole Logo"
+              alt="GèreEcole Logo"
               fill
               className="object-contain"
               priority={true}

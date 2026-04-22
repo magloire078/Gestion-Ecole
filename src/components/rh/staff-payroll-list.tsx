@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FileText, Loader2, Files } from "lucide-react";
 import type { staff as Staff } from '@/lib/data-types';
+import { formatCurrency } from '@/lib/currency-utils';
 
 interface StaffPayrollListProps {
     staffWithSalary: (Staff & { id: string })[];
@@ -17,7 +18,6 @@ interface StaffPayrollListProps {
 }
 
 export function StaffPayrollList({ staffWithSalary, isLoading, canManageBilling, onGeneratePayslip, onGenerateAllPayslips, isBulkGenerating }: StaffPayrollListProps) {
-    const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
     return (
         <>

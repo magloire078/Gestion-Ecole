@@ -21,7 +21,8 @@ interface NavProps {
     isDirector: boolean;
     userPermissions: Partial<Record<PermissionKey, boolean>>;
     subscription?: Subscription | null;
-    collapsed?: boolean;
+    isSubscriptionActive?: boolean;
+    isNavCollapsed?: boolean;
 }
 
 const NavLink = ({ href, icon: Icon, label, collapsed, pathname, hasUnreadMessages }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean, pathname: string, hasUnreadMessages?: boolean }) => {
@@ -34,13 +35,14 @@ const NavLink = ({ href, icon: Icon, label, collapsed, pathname, hasUnreadMessag
                     <Link
                         href={href}
                         className={cn(
-                            "flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                            isActive && "bg-accent text-accent-foreground"
+                            "relative flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-all duration-300 hover:bg-accent hover:text-accent-foreground",
+                            isActive && "bg-primary/10 text-primary shadow-sm"
                         )}
                     >
-                        <Icon className="h-5 w-5" />
+                        <Icon className={cn("h-5 w-5 transition-transform", isActive && "scale-110")} />
+                        {isActive && <div className="absolute left-0 h-5 w-1 rounded-r-full bg-primary" />}
                         <span className="sr-only">{label}</span>
-                        {hasUnreadMessages && <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-600 border border-background" />}
+                        {hasUnreadMessages && <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-destructive border-2 border-background" />}
                     </Link>
                 </TooltipTrigger>
                 <TooltipContent side="right">{label}</TooltipContent>
@@ -52,20 +54,26 @@ const NavLink = ({ href, icon: Icon, label, collapsed, pathname, hasUnreadMessag
         <Link
             href={href}
             className={cn(
-                "group flex items-center gap-x-3 rounded-lg p-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                isActive && "bg-accent text-accent-foreground"
+                "group relative flex items-center gap-x-3 rounded-xl p-2.5 text-sm font-medium transition-all duration-300",
+                isActive 
+                    ? "bg-gradient-to-r from-primary/15 to-transparent text-primary" 
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
             )}
         >
-            <div className="flex h-6 w-6 items-center justify-center">
+            {isActive && <div className="absolute left-0 h-6 w-1 rounded-r-full bg-primary" />}
+            <div className={cn(
+                "flex h-6 w-6 items-center justify-center transition-transform duration-300 group-hover:scale-110",
+                isActive && "text-primary"
+            )}>
                 <Icon className={cn("h-5 w-5")} />
             </div>
-            <span>{label}</span>
-            {hasUnreadMessages && <span className="ml-auto h-2 w-2 rounded-full bg-red-600" />}
+            <span className={cn("transition-colors", isActive && "font-semibold")}>{label}</span>
+            {hasUnreadMessages && <span className="ml-auto h-2 w-2 rounded-full bg-destructive animate-pulse" />}
         </Link>
     );
 };
 
-export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscription, collapsed = false }: NavProps) {
+export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscription, isSubscriptionActive = true, collapsed = false }: NavProps) {
     const pathname = usePathname();
     const firestore = useFirestore();
     const [hasUnreadChats, setHasUnreadChats] = useState(false);
@@ -110,6 +118,12 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
             return true;
         }
 
+        // If subscription is expired, only allow access to Dashboard and Subscription
+        if (!isSubscriptionActive) {
+            const allowedHrefs = ['/dashboard', '/dashboard/parametres/abonnement'];
+            return false; // We will handle this in the filtering logic below
+        }
+
         // A user must have the base permission AND the module activated (if applicable)
         const permissionGranted = permission ? !!userPermissions[permission] : true;
         if (!permissionGranted) {
@@ -134,6 +148,21 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
         return true;
     };
 
+    const isLinkVisible = (link: any) => {
+        if (isSuperAdmin) return true;
+        
+        // Base access (permissions + modules)
+        if (!hasAccess(link.permission, link.module)) return false;
+
+        // Subscription validity guard
+        if (!isSubscriptionActive) {
+            const allowedHrefs = ['/dashboard', '/dashboard/parametres/abonnement'];
+            return allowedHrefs.includes(link.href);
+        }
+
+        return true;
+    };
+
     if (collapsed) {
         return (
             <nav className="flex flex-col items-center gap-2 px-2 py-4">
@@ -147,9 +176,9 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
         );
     }
 
-    const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => hasAccess(link.permission, link.module) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
-    const mainLinks = NAV_LINKS.find(g => g.group === "Principal")?.links.filter(link => hasAccess(link.permission, link.module)) || [];
-    const configLinks = NAV_LINKS.find(g => g.group === "Configuration")?.links.filter(link => hasAccess(link.permission, link.module)) || [];
+    const defaultActiveGroup = NAV_LINKS.find(group => group.links.some(link => isLinkVisible(link) && pathname.startsWith(link.href) && link.href !== '/dashboard'))?.group;
+    const mainLinks = NAV_LINKS.find(g => g.group === "Principal")?.links.filter(link => isLinkVisible(link)) || [];
+    const configLinks = NAV_LINKS.find(g => g.group === "Configuration")?.links.filter(link => isLinkVisible(link)) || [];
     const accordionGroups = NAV_LINKS.filter(g => g.group !== "Principal" && g.group !== "Configuration");
 
 
@@ -164,7 +193,7 @@ export function MainNav({ isSuperAdmin, isDirector, userPermissions, subscriptio
                 {accordionGroups.map((group) => {
                     if (group.adminOnly && !isSuperAdmin) return null;
 
-                    const visibleLinks = group.links.filter(link => hasAccess(link.permission, link.module));
+                    const visibleLinks = group.links.filter(link => isLinkVisible(link));
                     if (visibleLinks.length === 0) return null;
 
                     return (

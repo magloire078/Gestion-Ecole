@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Format du message pour l'admin
-        const message = `*Nouveau message de Gérecole*\n\n*Visiteur:* ${visitorId}\n*Session:* ${chatId || 'New'}\n\n*Message:* ${text}`;
+        const message = `*Nouveau message de GèreEcole*\n\n*Visiteur:* ${visitorId}\n*Session:* ${chatId || 'New'}\n\n*Message:* ${text}`;
 
         const response = await fetch(`${apiUrl}/message/sendText/${instance}`, {
             method: 'POST',

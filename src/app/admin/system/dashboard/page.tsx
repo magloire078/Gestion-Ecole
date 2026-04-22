@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,7 +72,7 @@ export default function SystemAdminDashboard() {
                         Système Console
                     </h1>
                     <p className="text-slate-500 font-medium mt-1">
-                        Surveillance globale et contrôle de l'infrastructure GéreEcole.
+                        Surveillance globale et contrôle de l'infrastructure GèreEcole.
                     </p>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-2xl border border-green-100/50">

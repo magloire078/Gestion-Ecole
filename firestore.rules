@@ -90,6 +90,11 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
+    match /mail/{mailId} {
+      allow create: if isSignedIn();
+      allow read, update, delete: if isSuperAdmin();
+    }
+
     // =================================
     //     ADMIN-ONLY COLLECTIONS
     // =================================

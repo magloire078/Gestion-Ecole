@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,11 +20,12 @@ import { fr } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 
 import { SUBSCRIPTION_PLANS, MODULES_CONFIG, PlanName, ModuleName } from "@/lib/subscription-plans";
+import { formatCurrency } from "@/lib/currency-utils";
 
 export default function SubscriptionPage() {
     const router = useRouter();
     const { schoolName, loading: schoolLoading, schoolData } = useSchoolData();
-    const { subscription, updateSubscription, loading: subscriptionLoading } = useSubscription();
+    const { subscription, updateSubscription, loading: subscriptionLoading, isExpired, daysLeft } = useSubscription();
     const { toast } = useToast();
     const isLoading = schoolLoading || subscriptionLoading;
     const [error, setError] = useState<string | null>(null);
@@ -160,7 +161,11 @@ export default function SubscriptionPage() {
                                 <CardContent className="space-y-6 flex-1 flex flex-col justify-between">
                                     <div>
                                         <div className="text-center mb-6">
-                                            <span className="text-4xl font-bold">{plan.priceString}</span>
+                                            <span className="text-4xl font-bold">
+                                                {plan.pricePerStudent !== undefined 
+                                                    ? formatCurrency(plan.pricePerStudent, schoolData?.country, true)
+                                                    : plan.priceString}
+                                            </span>
                                             <span className="text-muted-foreground">{plan.priceSuffix}</span>
                                         </div>
                                         <ul className="space-y-3 text-sm">
@@ -186,7 +191,14 @@ export default function SubscriptionPage() {
                                 </CardContent>
                                 <CardFooter>
                                     {current ? (
-                                        <Button className="w-full" disabled>Votre Plan Actuel</Button>
+                                        <Button 
+                                            className="w-full" 
+                                            variant={isExpired ? "destructive" : daysLeft < 30 ? "default" : "secondary"}
+                                            disabled={!isExpired && daysLeft >= 30}
+                                            onClick={() => handleChoosePlan(plan.name, plan.price)}
+                                        >
+                                            {isExpired ? "Réactiver ce Plan" : daysLeft < 30 ? "Renouveler ce Plan" : "Votre Plan Actuel"}
+                                        </Button>
                                     ) : (
                                         <Button
                                             className="w-full"
@@ -237,7 +249,7 @@ export default function SubscriptionPage() {
                                             {module.name}
                                         </Label>
                                         <div className="text-xs text-muted-foreground">{module.desc}</div>
-                                        <div className="text-sm font-semibold">{module.price.toLocaleString('fr-FR')} CFA/mois</div>
+<div className="text-sm font-semibold">{formatCurrency(module.price, schoolData?.country, true)}/mois</div>
                                     </div>
                                     <Switch
                                         id={module.id}

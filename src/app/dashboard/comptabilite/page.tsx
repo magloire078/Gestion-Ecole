@@ -62,14 +62,19 @@ import { AccountingCharts } from './charts';
 import { cn } from "@/lib/utils";
 import { TransactionForm } from "@/components/comptabilite/transaction-form";
 import { StatCard } from "@/components/ui/stat-card";
+import { AccountingReportsService } from "@/services/accounting-reports-service";
+import { formatCurrency } from "@/lib/currency-utils";
+
 
 
 export default function AccountingPage() {
   const firestore = useFirestore();
   const { user } = useUser();
-  const { schoolId, schoolName, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolName, schoolData, loading: schoolLoading } = useSchoolData();
   const canManageBilling = !!user?.profile?.permissions?.manageBilling;
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isGeneratingGrandLivre, setIsGeneratingGrandLivre] = useState(false);
+  const [isGeneratingBilan, setIsGeneratingBilan] = useState(false);
 
   const transactionsQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/comptabilite`), where('schoolId', '==', schoolId)) : null, [firestore, schoolId]);
   const { data: transactionsData, loading: transactionsLoading } = useCollection(transactionsQuery);
@@ -115,7 +120,14 @@ export default function AccountingPage() {
   };
 
   const handleSendMonthlyReport = async () => {
-    if (!schoolId || !schoolName || !user?.email) return;
+    if (!schoolId || !schoolName || !user?.email) {
+      toast({
+        variant: "destructive",
+        title: "Configuration incomplète",
+        description: "Impossible d'envoyer le rapport : matricule d'école ou email manquant."
+      });
+      return;
+    }
 
     setIsGeneratingReport(true);
     try {
@@ -129,7 +141,7 @@ export default function AccountingPage() {
       const lastMonth = subMonths(new Date(), 1);
       const reportData = await reportService.getMonthlyFinanceData(schoolId, lastMonth);
 
-      const result = await mailService.sendMonthlyFinanceReport(user.email, schoolName, reportData);
+      const result = await mailService.sendMonthlyFinanceReport(user.email, schoolName, reportData, schoolId);
 
       if (result.success) {
         toast({
@@ -137,21 +149,20 @@ export default function AccountingPage() {
           description: `Le rapport de ${reportData.monthName} ${reportData.year} a été envoyé à ${user.email}.`
         });
       } else {
-        throw new Error("Erreur d'envoi");
+        throw new Error(result.error ? String(result.error) : "Erreur d'envoi inconnue");
       }
     } catch (error) {
-      console.error("Report generation failed:", error);
+      console.error("Report generation/sending failed:", error);
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: "Impossible de générer ou d'envoyer le rapport."
+        title: "Échec de l'envoi",
+        description: error instanceof Error ? error.message : "Impossible de générer ou d'envoyer le rapport."
       });
     } finally {
       setIsGeneratingReport(false);
     }
   };
 
-  const formatCurrency = (value: number) => `${value.toLocaleString('fr-FR')} CFA`;
 
   const isLoading = schoolLoading || transactionsLoading || studentsLoading;
 
@@ -183,14 +194,53 @@ export default function AccountingPage() {
               Suivez les revenus, les dépenses et la santé financière de votre école.
             </p>
           </div>
-          <Button
-            variant="outline"
-            onClick={handleSendMonthlyReport}
-            disabled={isLoading || isGeneratingReport}
-          >
-            {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
-            Rapport du mois dernier
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setIsGeneratingGrandLivre(true);
+                // Petit délai pour laisser le rendu du bouton se mettre à jour
+                setTimeout(() => {
+                  AccountingReportsService.generateGrandLivrePDF(schoolData as any, transactions, "Toutes les transactions");
+                  setIsGeneratingGrandLivre(false);
+                }, 100);
+              }}
+              disabled={isLoading || transactions.length === 0 || isGeneratingGrandLivre}
+            >
+              {isGeneratingGrandLivre ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileText className="mr-2 h-4 w-4" />
+              )}
+              {isGeneratingGrandLivre ? "Génération..." : "Grand Livre"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setIsGeneratingBilan(true);
+                setTimeout(() => {
+                  AccountingReportsService.generateBilanPDF(schoolData as any, transactions, "Toutes les transactions");
+                  setIsGeneratingBilan(false);
+                }, 100);
+              }}
+              disabled={isLoading || transactions.length === 0 || isGeneratingBilan}
+            >
+              {isGeneratingBilan ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Scale className="mr-2 h-4 w-4" />
+              )}
+              {isGeneratingBilan ? "Génération..." : "Bilan (PDF)"}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleSendMonthlyReport}
+              disabled={isLoading || isGeneratingReport}
+            >
+              {isGeneratingReport ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+              Email
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
