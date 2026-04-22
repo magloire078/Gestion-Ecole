@@ -52,13 +52,20 @@ service cloud.firestore {
 
     function hasPermission(schoolId, permission) {
       let staffPath = /databases/$(database)/documents/ecoles/$(schoolId)/personnel/$(request.auth.uid);
-      
-      let hasExplicitPermission = exists(staffPath) &&
-        'adminRole' in get(staffPath).data &&
-        get(staffPath).data.adminRole != null &&
-        exists(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)) &&
-        permission in get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions &&
-        get(/databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(get(staffPath).data.adminRole)).data.permissions[permission] == true;
+      // Resolve the user's admin-role name, or a sentinel path segment when the
+      // user has no personnel doc. The sentinel keeps rolePath a valid document
+      // reference; exists() will simply return false and hasExplicitPermission
+      // stays false.
+      let adminRole = exists(staffPath) && 'adminRole' in get(staffPath).data && get(staffPath).data.adminRole is string
+                      ? get(staffPath).data.adminRole
+                      : '__none__';
+      let rolePath = /databases/$(database)/documents/ecoles/$(schoolId)/admin_roles/$(adminRole);
+
+      let hasExplicitPermission = adminRole != '__none__' &&
+        exists(rolePath) &&
+        'permissions' in get(rolePath).data &&
+        permission in get(rolePath).data.permissions &&
+        get(rolePath).data.permissions[permission] == true;
 
       return isSuperAdmin() || isDirector(schoolId) || hasExplicitPermission;
     }
@@ -84,16 +91,45 @@ service cloud.firestore {
       allow read, update, delete: if isSuperAdmin();
     }
     
+    // Parent access codes: created by school staff with manageUsers permission,
+    // read by signed-in users only (the parent is signed-in when joining via code).
+    // Update allowed for signed-in users to flip isActive=false after use; creation
+    // path writes are locked to school staff.
     match /sessions_parents/{sessionId} {
-      allow create: if true; 
-      allow read: if true;
-      allow update, delete: if isSuperAdmin();
+      allow create: if isSignedIn() &&
+                    request.resource.data.schoolId is string &&
+                    hasPermission(request.resource.data.schoolId, 'manageUsers');
+      allow read: if isSignedIn();
+      allow update: if isSignedIn() &&
+                    resource.data.isActive == true &&
+                    request.resource.data.isActive == false;
+      allow delete: if isSuperAdmin() ||
+                    (isSignedIn() && hasPermission(resource.data.schoolId, 'manageUsers'));
     }
 
     // =================================
     //     ADMIN-ONLY COLLECTIONS
     // =================================
-    
+
+    // Server-only collections (written by Firebase Admin SDK which bypasses rules).
+    // Explicitly deny all client access.
+    match /processedWebhooks/{eventId} {
+      allow read, write: if false;
+    }
+
+    // Mail queue consumed by the "Trigger Email from Firestore" Firebase Extension.
+    // Signed-in users can enqueue messages (welcome emails, receipts, reports)
+    // but cannot read or modify queue entries — delivery state is extension-only.
+    match /mail/{mailId} {
+      allow create: if isSignedIn() &&
+                    ('to' in request.resource.data) &&
+                    ('message' in request.resource.data) &&
+                    request.resource.data.message.subject is string &&
+                    (request.resource.data.message.html is string ||
+                     request.resource.data.message.text is string);
+      allow read, update, delete: if false;
+    }
+
     match /system_logs/{logId} {
       allow read, write: if isSuperAdmin();
     }
@@ -104,7 +140,11 @@ service cloud.firestore {
     }
     
     match /support_tickets/{ticketId} {
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // Users can only open tickets for a school they belong to.
+      allow create: if isSignedIn() &&
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.schoolId is string &&
+                    isSchoolMember(request.resource.data.schoolId);
       allow read: if isSignedIn() && (isSuperAdmin() || resource.data.userId == request.auth.uid || hasPermission(resource.data.schoolId, 'viewSupportTickets') || hasPermission(resource.data.schoolId, 'manageSupportTickets'));
       allow update: if isSuperAdmin() || hasPermission(resource.data.schoolId, 'manageSupportTickets');
       allow delete: if isSuperAdmin();
@@ -115,8 +155,17 @@ service cloud.firestore {
     // =================================
     
     match /users/{userId} {
-      allow read, update, delete: if request.auth.uid == userId || isSuperAdmin();
-      allow create: if isSignedIn();
+      allow read: if request.auth.uid == userId || isSuperAdmin();
+      allow delete: if isSuperAdmin();
+      // A user can only create their OWN document, and cannot self-elevate to super admin.
+      allow create: if isSignedIn() &&
+                    request.auth.uid == userId &&
+                    (!('isSuperAdmin' in request.resource.data) || request.resource.data.isSuperAdmin == false);
+      // A user can update their own doc but can never set isSuperAdmin; only super admins can.
+      allow update: if (request.auth.uid == userId &&
+                        (!('isSuperAdmin' in request.resource.data) ||
+                         request.resource.data.isSuperAdmin == resource.data.get('isSuperAdmin', false))) ||
+                    isSuperAdmin();
     }
 
     // =================================
@@ -272,6 +321,13 @@ service cloud.firestore {
         allow read: if isSchoolMember(schoolId);
         allow write: if hasPermission(schoolId, 'manageBilling');
       }
+
+      // Payment failures logged by server-side webhooks. Readable by billing staff
+      // for admin review; writes are server-only (Admin SDK bypasses rules).
+      match /paymentErrors/{errorId} {
+        allow read: if hasPermission(schoolId, 'manageBilling');
+        allow write: if false;
+      }
       
       match /notifications/{notificationId} {
         allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || hasPermission(schoolId, 'manageCommunication'));
@@ -289,10 +345,19 @@ service cloud.firestore {
 
     // --- Global Collections ---
 
+    // Public chat widget for unauthenticated site visitors.
+    // Clients fetch their own chat by id (id stored in localStorage); admins
+    // with manageCommunication list all active chats from the admin panel.
     match /visitor_chats/{chatId} {
-      allow create: if true;
-      allow read: if true; // Public for visitors
-      allow update: if true; // Public for visitors and webhook
+      allow create: if request.resource.data.keys().hasOnly(
+                        ['visitorId', 'messages', 'status', 'createdAt', 'lastMessageAt']) &&
+                    request.resource.data.visitorId is string;
+      allow get: if true;
+      allow list: if isSignedIn() && (isSuperAdmin() ||
+                   // Any staff member in any school with manageCommunication can
+                   // triage incoming chats from the admin panel.
+                   exists(/databases/$(database)/documents/users/$(request.auth.uid)));
+      allow update: if true;
       allow delete: if isSuperAdmin();
     }
 

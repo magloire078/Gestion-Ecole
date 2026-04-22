@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "mobile:sync": "npm run build && npx cap sync",
-    "mobile:assets": "npx @capacitor/assets generate --android --ios"
+    "mobile:assets": "npx @capacitor/assets generate --android --ios",
+    "test:rules": "firebase emulators:exec --only firestore 'vitest run tests/firestore-rules'",
+    "test:rules:watch": "vitest tests/firestore-rules"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.2",
@@ -41,12 +43,14 @@
     "@vercel/analytics": "^1.6.1",
     "@vercel/speed-insights": "^1.3.1",
     "class-variance-authority": "^0.7.0",
+    "cloudinary": "^2.9.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "d3-array": "^3.2.4",
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.1.7",
     "events": "^3.3.0",
+    "exceljs": "^4.4.0",
     "firebase": "^11.5.0",
     "firebase-admin": "^12.0.0",
     "framer-motion": "^11.2.12",
@@ -68,11 +72,11 @@
     "tailwind-merge": "^2.4.0",
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^10.0.0",
-    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
+    "@firebase/rules-unit-testing": "^5.0.0",
     "@genkit-ai/core": "^1.23.0",
     "@genkit-ai/firebase": "^1.23.0",
     "@genkit-ai/google-cloud": "^1.23.0",
@@ -91,6 +95,7 @@
     "genkit-cli": "^1.28.0",
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vitest": "^4.1.5"
   }
 }

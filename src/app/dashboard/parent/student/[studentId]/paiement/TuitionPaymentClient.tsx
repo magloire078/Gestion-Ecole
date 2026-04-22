@@ -68,7 +68,7 @@ function TuitionPaymentPageContent() {
 
         const { url, error: serviceError } = await createCheckoutLink(provider, {
             type: 'tuition',
-            price: amountToPay.toString(),
+            amount: amountToPay.toString(),
             description: `Paiement scolarité pour ${student.firstName} ${student.lastName}`,
             user: user.authUser!,
             schoolId,

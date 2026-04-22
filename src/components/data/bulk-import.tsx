@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import * as XLSX from 'xlsx';
-import Papa from 'papaparse';
+import ExcelJS from 'exceljs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -73,43 +72,108 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Générer et télécharger le modèle
-    const downloadTemplate = () => {
+    const downloadTemplate = async () => {
         const template = TEMPLATES[importType];
-        const ws = XLSX.utils.json_to_sheet([
-            template.reduce((acc, col) => ({ ...acc, [col.header]: col.desc }), {})
-        ]);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Template");
-        XLSX.writeFile(wb, `modele_import_${importType}.xlsx`);
+        const wb = new ExcelJS.Workbook();
+        const ws = wb.addWorksheet('Template');
+        ws.columns = template.map(col => ({ header: col.header, key: col.header, width: 24 }));
+        ws.addRow(template.reduce((acc, col) => ({ ...acc, [col.header]: col.desc }), {}));
+        const buffer = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `modele_import_${importType}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     };
 
     // Gérer l'upload du fichier
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const bstr = evt.target?.result;
-            const wb = XLSX.read(bstr, { type: 'binary' });
-            const wsname = wb.SheetNames[0];
-            const ws = wb.Sheets[wsname];
-            const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        try {
+            const buffer = await file.arrayBuffer();
+            const wb = new ExcelJS.Workbook();
 
-            if (data.length > 0) {
-                setHeaders(data[0] as string[]);
-                // Convertir les lignes en objets
-                const rows = data.slice(1).map((row: any) => {
+            const isCsv = file.name.toLowerCase().endsWith('.csv');
+            if (isCsv) {
+                const text = new TextDecoder().decode(buffer);
+                const lines = text.split(/\r?\n/).filter(l => l.length > 0);
+                if (lines.length === 0) return;
+                const parseCsvLine = (line: string): string[] => {
+                    const out: string[] = [];
+                    let cur = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const ch = line[i];
+                        if (ch === '"') {
+                            if (inQuotes && line[i + 1] === '"') { cur += '"'; i++; }
+                            else inQuotes = !inQuotes;
+                        } else if (ch === ',' && !inQuotes) {
+                            out.push(cur);
+                            cur = '';
+                        } else {
+                            cur += ch;
+                        }
+                    }
+                    out.push(cur);
+                    return out;
+                };
+                const headerRow = parseCsvLine(lines[0]).map(h => h.trim());
+                setHeaders(headerRow);
+                const rows = lines.slice(1).map(line => {
+                    const cells = parseCsvLine(line);
                     const obj: any = {};
-                    (data[0] as string[]).forEach((key, index) => {
-                        obj[key.trim()] = row[index]; // Trim keys to avoid issues
-                    });
+                    headerRow.forEach((key, idx) => { obj[key] = cells[idx]; });
                     return obj;
                 });
                 setFileData(rows);
+                return;
             }
-        };
-        reader.readAsBinaryString(file);
+
+            await wb.xlsx.load(buffer);
+            const ws = wb.worksheets[0];
+            if (!ws) return;
+
+            const headerRow = ws.getRow(1);
+            const headerValues: string[] = [];
+            headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
+                headerValues[colNumber - 1] = String(cell.value ?? '').trim();
+            });
+            setHeaders(headerValues);
+
+            const rows: any[] = [];
+            ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+                if (rowNumber === 1) return;
+                const obj: any = {};
+                headerValues.forEach((key, idx) => {
+                    if (!key) return;
+                    const cell = row.getCell(idx + 1);
+                    let value: any = cell.value;
+                    if (value && typeof value === 'object') {
+                        if (value instanceof Date) {
+                            value = value.toISOString().split('T')[0];
+                        } else if ('text' in value) {
+                            value = (value as any).text;
+                        } else if ('result' in value) {
+                            value = (value as any).result;
+                        } else if ('richText' in value) {
+                            value = (value as any).richText.map((r: any) => r.text).join('');
+                        }
+                    }
+                    obj[key] = value;
+                });
+                rows.push(obj);
+            });
+            setFileData(rows);
+        } catch (err: any) {
+            console.error('Erreur lecture fichier:', err);
+            toast({ variant: 'destructive', title: 'Fichier illisible', description: err.message });
+        }
     };
 
     // Valider les données avant import

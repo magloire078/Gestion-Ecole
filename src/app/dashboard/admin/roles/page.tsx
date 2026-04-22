@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { useStaff } from '@/hooks/use-staff';
 import { allPermissionsList, permissionCategories } from '@/lib/permissions';
 import { StatCard } from '@/components/ui/stat-card';
+import { Separator } from '@/components/ui/separator';
 
 export default function RolesPage() {
     const { schoolId, loading: schoolLoading } = useSchoolData();
