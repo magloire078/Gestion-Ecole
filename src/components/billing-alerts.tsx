@@ -4,14 +4,53 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, where, getCountFromServer } from 'firebase/firestore';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, ArrowRight } from 'lucide-react';
+import { AlertOctagon, AlertTriangle, Info, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useSubscription } from '@/hooks/use-subscription';
 import { TARIFAIRE } from '@/lib/billing-calculator';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
+
+type AlertKind = 'warning' | 'error' | 'info';
+
+const ALERT_STYLES: Record<AlertKind, {
+    container: string;
+    icon: React.ElementType;
+    iconWrap: string;
+    title: string;
+    description: string;
+    button: string;
+    label: string;
+}> = {
+    error: {
+        container: 'border-red-300/70 bg-gradient-to-r from-red-50 to-red-100/40 dark:from-red-950/40 dark:to-red-900/20 dark:border-red-800/60',
+        icon: AlertOctagon,
+        iconWrap: 'bg-red-500 text-white shadow-md shadow-red-500/30',
+        title: 'text-red-900 dark:text-red-100',
+        description: 'text-red-800/90 dark:text-red-200/90',
+        button: 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-500/30',
+        label: 'Limite dépassée',
+    },
+    warning: {
+        container: 'border-amber-300/70 bg-gradient-to-r from-amber-50 to-amber-100/40 dark:from-amber-950/40 dark:to-amber-900/20 dark:border-amber-800/60',
+        icon: AlertTriangle,
+        iconWrap: 'bg-amber-500 text-white shadow-md shadow-amber-500/30',
+        title: 'text-amber-900 dark:text-amber-100',
+        description: 'text-amber-800/90 dark:text-amber-200/90',
+        button: 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/30',
+        label: 'Avertissement',
+    },
+    info: {
+        container: 'border-blue-300/70 bg-gradient-to-r from-blue-50 to-blue-100/40 dark:from-blue-950/40 dark:to-blue-900/20 dark:border-blue-800/60',
+        icon: Info,
+        iconWrap: 'bg-blue-600 text-white shadow-md shadow-blue-500/30',
+        title: 'text-blue-900 dark:text-blue-100',
+        description: 'text-blue-800/90 dark:text-blue-200/90',
+        button: 'bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/30',
+        label: 'Information',
+    },
+};
 
 interface BillingAlertsProps {
     schoolId: string;
@@ -43,28 +82,28 @@ export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAle
         ? TARIFAIRE[subscription.plan]
         : null;
 
-    const alerts: { type: 'warning' | 'error' | 'info', message: string, href?: string }[] = [];
+    const alerts: { type: AlertKind, message: string, href?: string, cta?: string }[] = [];
 
     if (planDetails) {
         if (studentCount > planDetails.elevesInclus) {
-            alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.elevesInclus} élèves.`, href: '/dashboard/parametres/abonnement' });
+            alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.elevesInclus} élèves.`, href: '/dashboard/parametres/abonnement', cta: 'Mettre à niveau' });
         } else if (studentCount / planDetails.elevesInclus > 0.9) {
-            alerts.push({ type: 'warning', message: `Vous approchez la limite d&apos;élèves (${studentCount}/${planDetails.elevesInclus}).`, href: '/dashboard/parametres/abonnement' });
+            alerts.push({ type: 'warning', message: `Vous approchez la limite d'élèves (${studentCount}/${planDetails.elevesInclus}).`, href: '/dashboard/parametres/abonnement', cta: 'Mettre à niveau' });
         }
 
         if (cycleCount > planDetails.cyclesInclus) {
-            alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.cyclesInclus} cycles.`, href: '/dashboard/parametres/abonnement' });
+            alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.cyclesInclus} cycles.`, href: '/dashboard/parametres/abonnement', cta: 'Mettre à niveau' });
         }
     }
 
     if (dueStudentsCount > 0) {
-        alerts.push({ type: 'info', message: `${dueStudentsCount} élève(s) ont des frais de scolarité impayés.`, href: '/dashboard/paiements' });
+        alerts.push({ type: 'info', message: `${dueStudentsCount} élève(s) ont des frais de scolarité impayés.`, href: '/dashboard/paiements', cta: 'Voir la liste' });
     }
 
     if (loading) {
         return (
             <div className="space-y-2">
-                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-16 w-full rounded-xl" />
             </div>
         );
     }
@@ -74,29 +113,41 @@ export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAle
     }
 
     return (
-        <div className="space-y-2">
-            {alerts.map((alert, index) => (
-                <Alert key={index} variant={alert.type === 'error' ? 'destructive' : 'default'} className={cn(
-                    alert.type === 'warning' && 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300 [&>svg]:text-amber-500',
-                    alert.type === 'info' && 'bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300 [&>svg]:text-blue-500'
-                )}>
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle className="font-semibold">
-                        {alert.type === 'error' ? 'Limite dépassée' : alert.type === 'warning' ? 'Avertissement' : 'Information'}
-                    </AlertTitle>
-                    <AlertDescription className="flex justify-between items-center">
-                        {alert.message}
+        <div className="space-y-3">
+            {alerts.map((alert, index) => {
+                const styles = ALERT_STYLES[alert.type];
+                const Icon = styles.icon;
+                return (
+                    <div
+                        key={index}
+                        role="alert"
+                        className={cn(
+                            'flex items-center gap-4 rounded-xl border p-4 shadow-sm transition-shadow hover:shadow-md',
+                            styles.container,
+                        )}
+                    >
+                        <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl', styles.iconWrap)}>
+                            <Icon className="h-5 w-5" aria-hidden />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className={cn('text-sm font-semibold leading-tight', styles.title)}>
+                                {styles.label}
+                            </p>
+                            <p className={cn('text-sm font-medium leading-snug mt-0.5', styles.description)}>
+                                {alert.message}
+                            </p>
+                        </div>
                         {alert.href && (
-                            <Button asChild size="sm" variant="link" className="text-current">
+                            <Button asChild size="sm" className={cn('shrink-0 font-semibold', styles.button)}>
                                 <Link href={alert.href}>
-                                    {alert.type === 'info' ? 'Voir la liste' : 'Mettre à niveau'}
-                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                    {alert.cta ?? 'Voir'}
+                                    <ArrowRight className="ml-1.5 h-4 w-4" />
                                 </Link>
                             </Button>
                         )}
-                    </AlertDescription>
-                </Alert>
-            ))}
+                    </div>
+                );
+            })}
         </div>
     );
 }

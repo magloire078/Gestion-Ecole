@@ -61,22 +61,46 @@ const RegularDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="relative w-full h-40 md:h-52 overflow-hidden rounded-2xl shadow-lg group">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/80 to-indigo-900/40 z-10" />
-        <SafeImage
-          src="/custom-assets/banner.png"
-          alt="Tableau de bord"
-          fill
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          priority={true}
-        />
-        <div className="absolute inset-0 z-20 flex flex-col justify-center px-6 md:px-10">
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-2 drop-shadow-md">
-            Tableau de Bord
-          </h1>
-          <p className="text-blue-100 text-lg font-medium max-w-xl drop-shadow-sm">
-            {schoolData?.name || 'Gérez votre établissement avec excellence.'}
-          </p>
+      <div className="relative w-full overflow-hidden rounded-2xl shadow-xl group">
+        {/* Background image (subtle, overlaid) */}
+        <div className="absolute inset-0">
+          <SafeImage
+            src="/custom-assets/banner.png"
+            alt=""
+            fill
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            priority={true}
+          />
+        </div>
+        {/* Strong gradient overlay for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/95 to-slate-900/40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-950/30" />
+
+        {/* Content */}
+        <div className="relative z-10 flex items-center justify-between gap-6 px-6 md:px-10 py-10 md:py-14">
+          <div className="flex-1 min-w-0">
+            <span className="inline-flex items-center gap-2 rounded-full bg-blue-500/15 border border-blue-400/30 backdrop-blur px-3 py-1 text-[10px] font-bold tracking-[0.15em] text-blue-200 uppercase">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-400" />
+              </span>
+              Système connecté
+            </span>
+            <h1 className="mt-4 text-4xl md:text-5xl font-black tracking-tight text-white drop-shadow-lg">
+              Tableau de <span className="text-blue-400">Bord</span>
+            </h1>
+            <p className="mt-2 text-base md:text-lg font-medium text-slate-300 drop-shadow">
+              {schoolData?.name || 'Gérez votre établissement avec excellence.'}
+            </p>
+          </div>
+
+          {schoolData?.logoUrl && (
+            <div className="hidden md:block shrink-0">
+              <div className="relative h-24 w-24 lg:h-28 lg:w-28 rounded-2xl overflow-hidden ring-2 ring-white/20 shadow-2xl bg-white/5 backdrop-blur">
+                <SafeImage src={schoolData.logoUrl} alt={schoolData.name || ''} fill className="object-cover" />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
