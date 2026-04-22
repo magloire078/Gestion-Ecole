@@ -7,7 +7,7 @@
 #   1. Runs the Firestore rules test suite against the emulator (blocks on failure)
 #   2. Shows a diff between local firestore.rules and currently-deployed rules
 #   3. Prompts for confirmation
-#   4. Deploys firestore:rules, firestore:indexes, storage:rules
+#   4. Deploys firestore:rules, firestore:indexes
 #
 # Usage:
 #   PROJECT=<firebase-project-id> ./scripts/deploy-rules.sh
@@ -15,7 +15,7 @@
 # Options:
 #   SKIP_TESTS=1             # skip rules test suite (not recommended)
 #   TARGETS=firestore:rules  # comma-separated subset to deploy
-#                            # (default: firestore:rules,firestore:indexes,storage:rules)
+#                            # (default: firestore:rules,firestore:indexes)
 
 set -euo pipefail
 
@@ -24,7 +24,7 @@ if [[ -z "${PROJECT:-}" ]]; then
   exit 1
 fi
 
-TARGETS="${TARGETS:-firestore:rules,firestore:indexes,storage:rules}"
+TARGETS="${TARGETS:-firestore:rules,firestore:indexes}"
 
 cd "$(dirname "$0")/.."
 

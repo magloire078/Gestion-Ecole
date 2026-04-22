@@ -10,10 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { TuitionStatusBadge } from '@/components/tuition-status-badge';
 import { TuitionReceipt, type ReceiptData } from '@/components/tuition-receipt';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useCollection, useFirestore, useStorage } from '@/firebase';
+import { useCollection, useFirestore } from '@/firebase';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { collection, doc, orderBy, query, writeBatch, increment } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { uploadToCloudinary } from '@/lib/cloudinary-client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useState, useMemo, useEffect } from 'react';
@@ -169,7 +169,6 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
 function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpen: boolean, onClose: () => void, onSave: () => void, student: Student & { id: string }, schoolData: any }) {
     const { toast } = useToast();
     const firestore = useFirestore();
-    const storage = useStorage();
     const [isSaving, setIsSaving] = useState(false);
     const [receiptData, setReceiptData] = useState<ReceiptData | null>(null);
     const [showReceipt, setShowReceipt] = useState(false);
@@ -200,9 +199,11 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
 
         try {
             if (file) {
-                const storageRef = ref(storage, `ecoles/${schoolData.id}/eleves/${student.id}/paiements/${Date.now()}_${file.name}`);
-                const snapshot = await uploadBytes(storageRef, file);
-                proofUrl = await getDownloadURL(snapshot.ref);
+                const uploaded = await uploadToCloudinary(file, {
+                    folder: `ecoles/${schoolData.id}/eleves/${student.id}/paiements`,
+                    resourceType: file.type.startsWith('image/') ? 'image' : 'raw',
+                });
+                proofUrl = uploaded.secureUrl;
             }
 
             const amountPaid = values.paymentAmount;

@@ -1,36 +1,29 @@
-
-
 'use client';
 
 import { createContext, useContext, ReactNode } from 'react';
 import { FirebaseApp } from 'firebase/app';
 import { Auth } from 'firebase/auth';
 import { Firestore } from 'firebase/firestore';
-import { FirebaseStorage } from 'firebase/storage';
-import { firebaseApp, firebaseAuth, firebaseFirestore, firebaseStorage } from './config';
+import { firebaseApp, firebaseAuth, firebaseFirestore } from './config';
 import { ThemeProvider } from '@/components/theme-provider';
 
 export interface FirebaseContextValue {
   firebaseApp: FirebaseApp | null | undefined;
   auth: Auth | null | undefined;
   firestore: Firestore | null | undefined;
-  storage: FirebaseStorage | null | undefined;
 }
 
 const FirebaseContext = createContext<FirebaseContextValue>({
   firebaseApp: undefined,
   auth: undefined,
   firestore: undefined,
-  storage: undefined,
 });
 
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  // On récupère les instances qui sont maintenant garanties d'être initialisées côté client
   const contextValue: FirebaseContextValue = {
     firebaseApp,
     auth: firebaseAuth,
     firestore: firebaseFirestore,
-    storage: firebaseStorage,
   };
 
   return (
@@ -47,10 +40,8 @@ export const useFirebase = (): FirebaseContextValue => {
   if (context === undefined) {
     throw new Error('useFirebase must be used within a FirebaseClientProvider');
   }
-  // On s'assure que les services sont disponibles avant de les retourner
-  if (!context.auth || !context.firestore || !context.storage) {
+  if (!context.auth || !context.firestore) {
     if (typeof window !== 'undefined') {
-      // This case should ideally not happen if provider logic is correct
       console.warn("Firebase services are not yet available.");
     }
   }
@@ -60,4 +51,3 @@ export const useFirebase = (): FirebaseContextValue => {
 export const useFirebaseApp = () => useFirebase().firebaseApp!;
 export const useAuth = () => useFirebase().auth!;
 export const useFirestore = () => useFirebase().firestore!;
-export const useStorage = () => useFirebase().storage!;

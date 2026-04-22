@@ -15,7 +15,6 @@ export {
   useFirebase,
   useAuth,
   useFirestore,
-  useStorage,
   useFirebaseApp,
 } from './client-provider';
 
