@@ -36,7 +36,11 @@ export async function POST(req: NextRequest) {
             console.error('[Genius Webhook] Payload sans identifiant exploitable — refusé.');
             return NextResponse.json({ error: 'Missing event identifier' }, { status: 400 });
         }
-        const isNew = await claimWebhookEvent('genius', idempotenceKey);
+        const isNew = await claimWebhookEvent('genius', idempotenceKey, {
+            rawBody,
+            status: normalizedStatus,
+            eventType: event,
+        });
         if (!isNew) {
             return NextResponse.json({ received: true, duplicate: true });
         }
