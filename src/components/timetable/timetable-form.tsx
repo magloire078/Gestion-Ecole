@@ -188,11 +188,11 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                                 <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Classe</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold">
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-xl font-bold">
                                             <SelectValue placeholder="Choisir une classe" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent className="rounded-2xl border-slate-100">
+                                    <SelectContent className="rounded-xl border-slate-100">
                                         {classes.map((cls) => (<SelectItem key={cls.id} value={cls.id} className="font-medium">{cls.name}</SelectItem>))}
                                     </SelectContent>
                                 </Select>
@@ -208,11 +208,11 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                                 <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Enseignant</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold">
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-xl font-bold">
                                             <SelectValue placeholder="Choisir un enseignant" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent className="rounded-2xl border-slate-100">
+                                    <SelectContent className="rounded-xl border-slate-100">
                                         {teachers.map((teacher) => (<SelectItem key={teacher.id} value={teacher.id} className="font-medium">{`${teacher.firstName} ${teacher.lastName}`}</SelectItem>))}
                                     </SelectContent>
                                 </Select>
@@ -240,7 +240,7 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                                     value={field.value}
                                 >
                                     <FormControl>
-                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold">
+                                        <SelectTrigger className="h-12 bg-slate-50/50 border-slate-100 rounded-xl font-bold">
                                             <SelectValue placeholder="Choisir une matière">
                                                 {field.value && (
                                                     <div className="flex items-center gap-2">
@@ -254,7 +254,7 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                                             </SelectValue>
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent className="rounded-2xl border-slate-100">
+                                    <SelectContent className="rounded-xl border-slate-100">
                                         {subjects.map((subject) => (
                                             <SelectItem key={subject.name} value={subject.name}>
                                                 <div className="flex items-center gap-2">
@@ -279,7 +279,7 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                             <FormItem>
                                 <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Salle / Local</FormLabel>
                                 <FormControl>
-                                    <Input {...field} className="h-12 bg-slate-50/50 border-slate-100 rounded-2xl font-bold px-4" placeholder="Ex: Salle 101" />
+                                    <Input {...field} className="h-12 bg-slate-50/50 border-slate-100 rounded-xl font-bold px-4" placeholder="Ex: Salle 101" />
                                 </FormControl>
                                 <FormMessage className="text-[10px] font-bold" />
                             </FormItem>
@@ -287,7 +287,7 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                     />
                 </div>
 
-                <div className="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 space-y-6">
+                <div className="p-6 bg-slate-50/50 rounded-xl border border-slate-100 space-y-6">
                     <FormField
                         control={form.control}
                         name="day"
@@ -296,11 +296,11 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                                 <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Jour de la semaine</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger className="h-12 bg-white border-slate-100 rounded-2xl font-bold shadow-sm">
+                                        <SelectTrigger className="h-12 bg-white border-slate-100 rounded-xl font-bold shadow-sm">
                                             <SelectValue placeholder="Choisir un jour" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent className="rounded-2xl border-slate-100">
+                                    <SelectContent className="rounded-xl border-slate-100">
                                         {daysOfWeek.map(day => (<SelectItem key={day} value={day} className="font-medium">{day}</SelectItem>))}
                                     </SelectContent>
                                 </Select>
@@ -318,11 +318,11 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                                     <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Début</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
-                                            <SelectTrigger className="h-12 bg-white border-slate-100 rounded-2xl font-bold shadow-sm">
+                                            <SelectTrigger className="h-12 bg-white border-slate-100 rounded-xl font-bold shadow-sm">
                                                 <SelectValue placeholder="00:00" />
                                             </SelectTrigger>
                                         </FormControl>
-                                        <SelectContent className="rounded-2xl border-slate-100">
+                                        <SelectContent className="rounded-xl border-slate-100">
                                             {timeSlots.map(time => (<SelectItem key={time} value={time} className="font-mono">{time}</SelectItem>))}
                                         </SelectContent>
                                     </Select>
@@ -337,11 +337,11 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                                     <FormLabel className="text-xs font-black uppercase tracking-widest text-slate-400">Fin</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
-                                            <SelectTrigger className="h-12 bg-white border-slate-100 rounded-2xl font-bold shadow-sm">
+                                            <SelectTrigger className="h-12 bg-white border-slate-100 rounded-xl font-bold shadow-sm">
                                                 <SelectValue placeholder="00:00" />
                                             </SelectTrigger>
                                         </FormControl>
-                                        <SelectContent className="rounded-2xl border-slate-100">
+                                        <SelectContent className="rounded-xl border-slate-100">
                                             {timeSlots.map(time => (<SelectItem key={time} value={time} className="font-mono">{time}</SelectItem>))}
                                         </SelectContent>
                                     </Select>
@@ -374,7 +374,7 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                 </div>
 
                 {conflicts.length > 0 && (
-                    <Alert variant="destructive" className="bg-rose-50 border-rose-100 rounded-3xl p-6 animate-in fade-in slide-in-from-top-2 duration-500">
+                    <Alert variant="destructive" className="bg-rose-50 border-rose-100 rounded-xl p-6 animate-in fade-in slide-in-from-top-2 duration-500">
                         <AlertCircle className="h-5 w-5 text-rose-600" />
                         <div className="space-y-1">
                             <AlertTitle className="text-sm font-black text-rose-900 uppercase tracking-tight">Conflit de planification</AlertTitle>
@@ -386,8 +386,8 @@ export function TimetableForm({ schoolId, entry, classes, teachers, subjects, on
                 )}
 
                 <DialogFooter className="pt-6 border-t border-slate-100 gap-3">
-                    <Button type="button" variant="ghost" onClick={onCancel} className="h-12 px-6 rounded-2xl font-bold text-slate-500 hover:bg-slate-50">Annuler</Button>
-                    <Button type="submit" disabled={isSubmitting} className="h-12 px-8 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg shadow-indigo-100 transition-all hover:scale-105 active:scale-95">
+                    <Button type="button" variant="ghost" onClick={onCancel} className="h-12 px-6 rounded-xl font-bold text-slate-500 hover:bg-slate-50">Annuler</Button>
+                    <Button type="submit" disabled={isSubmitting} className="h-12 px-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg shadow-indigo-100 transition-all hover:scale-105 active:scale-95">
                         {isSubmitting ? 'Enregistrement...' : entry ? 'Mettre à jour' : 'Confirmer la création'}
                     </Button>
                 </DialogFooter>

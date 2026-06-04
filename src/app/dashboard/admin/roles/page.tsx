@@ -265,7 +265,7 @@ export default function RolesPage() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-20 bg-muted/30 rounded-2xl border-2 border-dashed">
+                            <div className="flex flex-col items-center justify-center py-20 bg-muted/30 rounded-xl border-2 border-dashed">
                                 <Shield className="h-12 w-12 text-muted-foreground/30 mb-4" />
                                 <h3 className="text-xl font-semibold text-muted-foreground text-center">
                                     {searchTerm ? "Aucun rôle ne correspond à votre recherche." : "Aucun rôle configuré."}

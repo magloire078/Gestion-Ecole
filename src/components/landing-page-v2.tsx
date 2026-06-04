@@ -153,7 +153,7 @@ export function LandingPageV2() {
               initial={{ opacity: 0, rotateX: 10, y: 40 }}
               animate={{ opacity: 1, rotateX: 0, y: 0 }}
               transition={{ delay: 0.4, duration: 1 }}
-              className="relative rounded-3xl overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.2)] bg-card floating aspect-[16/9] md:aspect-[21/9]"
+              className="relative rounded-xl overflow-hidden shadow-[0_40px_100px_rgba(0,0,0,0.2)] bg-card floating aspect-[16/9] md:aspect-[21/9]"
             >
               <AnimatePresence>
                 <motion.div
@@ -162,18 +162,18 @@ export function LandingPageV2() {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 2, ease: "easeInOut" }}
-                  className="absolute inset-0 z-10 rounded-3xl overflow-hidden"
+                  className="absolute inset-0 z-10 rounded-xl overflow-hidden"
                 >
                   <Image
                     src={heroSlides[currentHero].image}
                     alt={heroSlides[currentHero].title}
                     fill
-                    className="object-cover transition-transform duration-[12s] scale-105 hover:scale-110 rounded-3xl"
+                    className="object-cover transition-transform duration-[12s] scale-105 hover:scale-110 rounded-xl"
                     priority
                   />
 
                   {/* Text Overlay for Features */}
-                  <div className="absolute inset-0 flex flex-col justify-end p-8 md:p-16 text-left bg-gradient-to-t from-[#0C365A]/90 via-[#0C365A]/20 to-transparent">
+                  <div className="absolute inset-0 flex flex-col justify-end p-4 md:p-6 md:p-16 text-left bg-gradient-to-t from-[#0C365A]/90 via-[#0C365A]/20 to-transparent">
                     <motion.div
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -195,7 +195,7 @@ export function LandingPageV2() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 1, duration: 0.8 }}
-                      className="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-2xl shadow-xl"
+                      className="bg-white/10 backdrop-blur-md border border-white/20 p-2 rounded-xl shadow-xl"
                     >
                       <Logo disableLink compact size="sm" className="gap-0" />
                     </motion.div>
@@ -246,7 +246,7 @@ export function LandingPageV2() {
                 >
                   <Card className="flex flex-col h-full glass-card group hover:scale-[1.02] transition-all duration-500 overflow-hidden relative border-white/20">
                     <CardHeader className="flex-row items-center gap-4 relative z-10">
-                      <div className={cn("p-4 rounded-2xl shadow-inner transition-transform group-hover:rotate-12 duration-300", category.color)}>
+                      <div className={cn("p-4 rounded-xl shadow-inner transition-transform group-hover:rotate-12 duration-300", category.color)}>
                         <category.icon className="h-7 w-7" />
                       </div>
                       <CardTitle className="text-xl font-bold text-[#0C365A] dark:text-white group-hover:text-primary transition-colors">
@@ -363,7 +363,7 @@ export function LandingPageV2() {
                       <CardTitle className="text-2xl font-black text-[#0C365A] dark:text-white uppercase tracking-tight">{plan.name}</CardTitle>
                       <CardDescription className="text-base min-h-[3rem]">{plan.description}</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex-1 space-y-8 pb-8">
+                    <CardContent className="flex-1 space-y-4 pb-8">
                       <div className="flex items-baseline text-4xl font-black text-[#0C365A] dark:text-white">
                         {plan.pricePerStudent !== undefined 
                           ? formatCurrency(plan.pricePerStudent, selectedCountry, true)
@@ -413,7 +413,7 @@ export function LandingPageV2() {
           <div className="container text-center relative z-10">
             <h2 className="text-4xl md:text-6xl font-black mb-8">Prêt à moderniser <br />votre établissement ?</h2>
             <p className="text-xl text-blue-100 max-w-2xl mx-auto mb-12">Rejoignez les dizaines d&apos;écoles qui font confiance à GèreEcole pour leur transformation digitale.</p>
-            <Button size="lg" asChild className="bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white px-12 h-16 text-lg font-bold rounded-2xl shadow-2xl shadow-blue-500/40">
+            <Button size="lg" asChild className="bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white px-12 h-16 text-lg font-bold rounded-xl shadow-2xl shadow-blue-500/40">
               <Link href="/onboarding">
                 Commencer maintenant
               </Link>

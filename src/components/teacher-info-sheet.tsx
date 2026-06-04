@@ -76,7 +76,7 @@ export const TeacherInfoSheet: React.FC<TeacherInfoSheetProps> = ({ teacher, sch
                             </div>
                         </header>
 
-                        <main className="space-y-8">
+                        <main className="space-y-4">
                             <div className="flex flex-col sm:flex-row items-center gap-6 p-4 border rounded-lg bg-muted/50">
                                 <Avatar className="h-24 w-24">
                                     <AvatarImage src={teacher.photoURL || undefined} alt={teacherFullName} data-ai-hint="person face" />

@@ -68,7 +68,7 @@ export default function RHLayout({
 
   if (!hasAccess) {
     return (
-        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
+        <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-4 md:p-6">
             <Card className="max-w-lg">
                 <CardHeader>
                     <CardTitle className="flex items-center justify-center gap-2">

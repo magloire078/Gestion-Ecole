@@ -212,7 +212,7 @@ export default function PaiePage() {
 
   return (
     <>
-      <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="p-4 md:p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
             <h1 className="text-3xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent">
@@ -227,7 +227,7 @@ export default function PaiePage() {
               size="lg" 
               onClick={handleRunPayroll} 
               disabled={isProcessingPayroll}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-1 rounded-2xl px-6"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-200 transition-all duration-300 hover:-translate-y-1 rounded-xl px-6"
             >
               {isProcessingPayroll ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Banknote className="mr-2 h-5 w-5" />}
               {isProcessingPayroll ? 'Calcul en cours...' : 'Lancer la Paie Mensuelle'}
@@ -259,12 +259,12 @@ export default function PaiePage() {
           />
         </div>
 
-        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-6 rounded-[2.5rem] shadow-sm">
+        <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-6 rounded-xl shadow-sm">
           <PayrollChart staff={staffWithSalary} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden">
+          <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-xl overflow-hidden">
             <CardHeader className="pb-4 border-b border-slate-100/50 dark:border-slate-800/50">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
@@ -285,7 +285,7 @@ export default function PaiePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden">
+          <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-xl overflow-hidden">
             <CardHeader className="pb-4 border-b border-slate-100/50 dark:border-slate-800/50">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-emerald-50 dark:bg-emerald-900/30 rounded-xl">

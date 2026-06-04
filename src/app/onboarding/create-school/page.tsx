@@ -230,7 +230,7 @@ export default function CreateSchoolPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20 p-4 md:p-6">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 text-center">
           <div className="mb-4 flex justify-center">
@@ -253,7 +253,7 @@ export default function CreateSchoolPage() {
             </CardDescription>
           </CardHeader>
 
-          <CardContent className="space-y-8">
+          <CardContent className="space-y-4">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>

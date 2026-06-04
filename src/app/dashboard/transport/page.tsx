@@ -1,5 +1,14 @@
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function TransportPage() {
-    redirect('/dashboard/transport/dashboard');
+    const router = useRouter();
+    
+    useEffect(() => {
+        router.replace('/dashboard/transport/dashboard');
+    }, [router]);
+    
+    return null;
 }

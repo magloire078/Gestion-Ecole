@@ -84,10 +84,10 @@ export function SystemStats() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.1 }}
-          className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] p-6 border border-blue-50/50 dark:border-white/10 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all group"
+          className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl p-6 border border-blue-50/50 dark:border-white/10 shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all group"
         >
           <div className="flex justify-between items-start mb-4">
-            <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm", stat.bg, stat.color)}>
+            <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-sm", stat.bg, stat.color)}>
               <stat.icon className="h-6 w-6" />
             </div>
           </div>

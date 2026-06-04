@@ -149,7 +149,7 @@ export const FullAuditLog = () => {
 
   return (
     <div className="pt-0 flex flex-col gap-6">
-      <div className="bg-white rounded-[32px] border border-blue-50/50 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-blue-50/50 shadow-sm overflow-hidden">
         <Table>
           <TableHeader className="bg-slate-50/50">
             <TableRow className="hover:bg-transparent border-none">

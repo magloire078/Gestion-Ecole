@@ -95,9 +95,9 @@ export function MaterielForm({ schoolId, materiel, locationOptions, onSave }: Ma
                                         currentImageUrl={field.value}
                                         resizeWidth={400}
                                     >
-                                        <Avatar className="h-28 w-28 cursor-pointer hover:opacity-80 transition-all rounded-2xl border-2 border-white/10 glass shadow-xl">
-                                            <AvatarImage src={field.value || undefined} alt="Photo" className="rounded-2xl object-cover" />
-                                            <AvatarFallback className="rounded-2xl flex flex-col items-center justify-center space-y-1 bg-white/5">
+                                        <Avatar className="h-28 w-28 cursor-pointer hover:opacity-80 transition-all rounded-xl border-2 border-white/10 glass shadow-xl">
+                                            <AvatarImage src={field.value || undefined} alt="Photo" className="rounded-xl object-cover" />
+                                            <AvatarFallback className="rounded-xl flex flex-col items-center justify-center space-y-1 bg-white/5">
                                                 <Package className="h-10 w-10 text-muted-foreground/50" />
                                                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Photo</span>
                                             </AvatarFallback>

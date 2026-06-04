@@ -203,7 +203,7 @@ export default function RegisterPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.6, duration: 1 }}
-            className="relative w-full aspect-[4/3] rounded-[40px] overflow-hidden shadow-2xl shadow-blue-900/10 border-4 border-white"
+            className="relative w-full aspect-[4/3] rounded-xl overflow-hidden shadow-2xl shadow-blue-900/10 border-4 border-white"
           >
             <Image
               src="/custom-assets/home-hero.jpg"
@@ -213,7 +213,7 @@ export default function RegisterPage() {
               priority
             />
             <div className="absolute inset-0 bg-[#0C365A]/10 mix-blend-overlay" />
-            <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/80 backdrop-blur-md rounded-2xl border border-white/50">
+            <div className="absolute bottom-6 left-6 right-6 p-6 bg-white/80 backdrop-blur-md rounded-xl border border-white/50">
               <div className="flex gap-1 mb-2">
                 {[1, 2, 3, 4, 5].map(s => <Star key={s} className="h-4 w-4 fill-[#2D9CDB] text-[#2D9CDB]" />)}
               </div>
@@ -234,7 +234,7 @@ export default function RegisterPage() {
             initial={{ rotateY: -5 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-lg mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-6 md:p-8 relative overflow-hidden group"
+            className="w-full max-w-lg mx-auto bg-white rounded-xl shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-4 md:p-6 relative overflow-hidden group"
           >
             <AnimatedHighlight />
 
@@ -259,7 +259,7 @@ export default function RegisterPage() {
                   exit={{ opacity: 0, y: -10 }}
                   className="mb-6"
                 >
-                  <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-2xl">
+                  <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-xl">
                     <AlertDescription className="font-medium">{error}</AlertDescription>
                   </Alert>
                 </motion.div>
@@ -337,7 +337,7 @@ export default function RegisterPage() {
 
               <Button
                 type="submit"
-                className="w-full h-14 rounded-2xl text-lg font-bold bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white shadow-xl shadow-blue-400/20 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-14 rounded-xl text-lg font-bold bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white shadow-xl shadow-blue-400/20 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isProcessing || isGoogleProcessing || !termsAccepted}
               >
                 {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : "Créer mon compte"}
@@ -358,7 +358,7 @@ export default function RegisterPage() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleProcessing}
-              className="w-full h-14 rounded-2xl border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all font-bold text-slate-600"
+              className="w-full h-14 rounded-xl border-slate-100 hover:bg-slate-50 hover:border-slate-200 transition-all font-bold text-slate-600"
             >
               <GoogleIcon className="mr-3" /> S'inscrire rapidement
             </Button>

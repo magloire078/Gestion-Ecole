@@ -97,7 +97,7 @@ export default function SystemAdminLayout({
                                 key={link.href}
                                 href={link.href}
                                 className={cn(
-                                    "group flex items-center gap-x-3 rounded-2xl p-3 text-sm font-bold transition-all duration-300",
+                                    "group flex items-center gap-x-3 rounded-xl p-3 text-sm font-bold transition-all duration-300",
                                     isActive
                                         ? "text-white shadow-xl"
                                         : "text-slate-400 hover:bg-blue-50/50 hover:text-[hsl(var(--admin-primary))] dark:hover:bg-white/5"
@@ -127,7 +127,7 @@ export default function SystemAdminLayout({
                     <div className="relative">
                         <Button
                             variant="ghost"
-                            className="w-full flex items-center justify-start gap-3 h-12 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5"
+                            className="w-full flex items-center justify-start gap-3 h-12 rounded-xl font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-white/5"
                             onClick={() => setShowThemePicker(!showThemePicker)}
                         >
                             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 dark:bg-white/5">
@@ -142,7 +142,7 @@ export default function SystemAdminLayout({
                                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute bottom-full left-0 w-full mb-2 p-2 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-blue-50/50 dark:border-white/10 z-50 overflow-hidden"
+                                    className="absolute bottom-full left-0 w-full mb-2 p-2 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-blue-50/50 dark:border-white/10 z-50 overflow-hidden"
                                 >
                                     <div className="grid grid-cols-4 gap-2">
                                         {themes.map(t => (
@@ -169,7 +169,7 @@ export default function SystemAdminLayout({
 
                     <Link
                         href="/dashboard"
-                        className="group flex items-center gap-x-3 rounded-2xl p-3 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-[hsl(var(--admin-primary-dark))] transition-all dark:hover:bg-white/5"
+                        className="group flex items-center gap-x-3 rounded-xl p-3 text-sm font-bold text-slate-500 hover:bg-slate-50 hover:text-[hsl(var(--admin-primary-dark))] transition-all dark:hover:bg-white/5"
                     >
                         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 dark:bg-white/5 group-hover:bg-slate-100 dark:group-hover:bg-white/10">
                             <Home className="h-5 w-5" />
@@ -180,7 +180,7 @@ export default function SystemAdminLayout({
             </aside>
 
             <main className="sm:pl-64 relative z-10 transition-colors duration-500">
-                <div className="p-6 sm:p-8 lg:p-10 min-h-screen">
+                <div className="p-6 sm:p-4 md:p-6 lg:p-10 min-h-screen">
                     {children}
                 </div>
             </main>

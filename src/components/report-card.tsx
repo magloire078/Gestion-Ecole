@@ -227,7 +227,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
         >
-            <Card className="report-card font-sans bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border-t-white/80">
+            <Card className="report-card font-sans bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-xl overflow-hidden border-t-white/80">
                 <CardContent className="p-4 sm:p-10">
                     <div ref={printRef} className="print:text-black print:font-serif">
                         {/* Header */}
@@ -256,7 +256,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                         <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest text-center mb-8 opacity-50">Document confidentiel généré par le système GèreEcole</p>
 
                         {/* Student Info Box */}
-                        <div className="bg-slate-900/5 rounded-[2rem] p-8 mb-10 border border-white/20 relative overflow-hidden group">
+                        <div className="bg-slate-900/5 rounded-xl p-4 md:p-6 mb-10 border border-white/20 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -mr-20 -mt-20 group-hover:bg-indigo-500/20 transition-all duration-700" />
                             <div className="flex flex-col sm:flex-row justify-between items-center gap-8 relative z-10">
                                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-12">
@@ -286,7 +286,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                                 </div>
                                 <motion.div 
                                     whileHover={{ scale: 1.05 }}
-                                    className="h-32 w-32 border-4 border-white rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/20 bg-white flex items-center justify-center flex-shrink-0"
+                                    className="h-32 w-32 border-4 border-white rounded-xl overflow-hidden shadow-2xl shadow-slate-900/20 bg-white flex items-center justify-center flex-shrink-0"
                                 >
                                     {student.photoURL ? (
                                         <img
@@ -302,7 +302,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                         </div>
 
                         {/* Grades Table */}
-                        <div className="bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-white/60 shadow-xl shadow-slate-200/40 overflow-hidden mb-10">
+                        <div className="bg-white/50 backdrop-blur-md rounded-xl border border-white/60 shadow-xl shadow-slate-200/40 overflow-hidden mb-10">
                             <Table>
                                 <TableHeader className="bg-slate-900/5">
                                     <TableRow className="hover:bg-transparent border-b border-slate-900/10">
@@ -364,7 +364,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
 
                         {/* Analysis & Summary */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                            <div className="md:col-span-1 bg-indigo-600 rounded-[2rem] p-8 text-white shadow-2xl shadow-indigo-200 border-t border-indigo-400/30 flex flex-col justify-center gap-6">
+                            <div className="md:col-span-1 bg-indigo-600 rounded-xl p-4 md:p-6 text-white shadow-2xl shadow-indigo-200 border-t border-indigo-400/30 flex flex-col justify-center gap-6">
                                 <div className="space-y-1">
                                     <p className="text-[10px] font-black text-indigo-200 uppercase tracking-[0.2em]">Moyenne Générale</p>
                                     <div className="flex items-baseline gap-2">
@@ -378,7 +378,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                                 </div>
                             </div>
 
-                            <div className="md:col-span-2 bg-white/60 backdrop-blur-md rounded-[2rem] p-8 border border-white/60 shadow-xl shadow-slate-200/30 flex flex-col gap-4">
+                            <div className="md:col-span-2 bg-white/60 backdrop-blur-md rounded-xl p-4 md:p-6 border border-white/60 shadow-xl shadow-slate-200/30 flex flex-col gap-4">
                                 <div className="flex justify-between items-start">
                                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Avis Global du Conseil de Classe</p>
                                     {canManageGrades && (
@@ -424,7 +424,7 @@ export const ReportCard: React.FC<ReportCardProps> = ({
                     <div className="mt-10 flex justify-end gap-3 no-print">
                         <Button 
                             onClick={handlePrint}
-                            className="bg-slate-900 hover:bg-slate-800 text-white font-black rounded-2xl h-14 px-8 shadow-2xl shadow-slate-900/20 transition-all duration-300 hover:-translate-y-1"
+                            className="bg-slate-900 hover:bg-slate-800 text-white font-black rounded-xl h-14 px-8 shadow-2xl shadow-slate-900/20 transition-all duration-300 hover:-translate-y-1"
                         >
                             <Printer className="mr-3 h-5 w-5" />
                             Imprimer le Bulletin

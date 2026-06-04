@@ -163,8 +163,8 @@ export function SchoolsTable() {
 
   return (
     <>
-      <div className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[40px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
-        <div className="p-8 border-b border-blue-50/50 dark:border-white/10 flex justify-between items-center bg-slate-50/30 dark:bg-white/5">
+      <div className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+        <div className="p-4 md:p-6 border-b border-blue-50/50 dark:border-white/10 flex justify-between items-center bg-slate-50/30 dark:bg-white/5">
           <div>
             <h3 className="text-xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit tracking-tight">Liste des Établissements</h3>
             <p className="text-sm text-slate-400 font-medium">Gestion et surveillance des accès scolaires.</p>

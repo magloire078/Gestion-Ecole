@@ -48,7 +48,7 @@ export default function AdminSupportPage() {
     const isLoading = userLoading || ticketsLoading;
 
     if (!isSuperAdmin) {
-        return <div className="p-8 text-center text-red-500">Accès refusé. Réservé aux administrateurs système.</div>;
+        return <div className="p-4 md:p-6 text-center text-red-500">Accès refusé. Réservé aux administrateurs système.</div>;
     }
 
     return (

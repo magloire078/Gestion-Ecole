@@ -203,7 +203,7 @@ export default function PaymentsPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="space-y-8"
+            className="space-y-4"
         >
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div className="space-y-1">
@@ -235,7 +235,7 @@ export default function PaymentsPage() {
 
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="md:col-span-1 bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl shadow-slate-200/40 rounded-[2rem] overflow-hidden border-t-white/80 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-100/50 group">
+                    <Card className="md:col-span-1 bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl shadow-slate-200/40 rounded-xl overflow-hidden border-t-white/80 transition-all duration-500 hover:shadow-2xl hover:shadow-rose-100/50 group">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Total dû (filtré)</CardTitle>
                         </CardHeader>
@@ -259,23 +259,23 @@ export default function PaymentsPage() {
                         </CardContent>
                     </Card>
 
-                    <div className="md:col-span-3 bg-white/30 backdrop-blur-lg border border-white/40 p-6 rounded-[2rem] shadow-xl shadow-slate-200/30 flex flex-col md:flex-row items-center gap-4">
+                    <div className="md:col-span-3 bg-white/30 backdrop-blur-lg border border-white/40 p-6 rounded-xl shadow-xl shadow-slate-200/30 flex flex-col md:flex-row items-center gap-4">
                         <div className="relative w-full">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                             <Input
                                 type="search"
                                 placeholder="Chercher par nom ou matricule..."
-                                className="pl-11 w-full bg-white/50 border-white/60 rounded-2xl h-12 focus:ring-indigo-500 font-medium"
+                                className="pl-11 w-full bg-white/50 border-white/60 rounded-xl h-12 focus:ring-indigo-500 font-medium"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                         <div className="flex gap-3 w-full md:w-auto">
                             <Select value={selectedClass} onValueChange={setSelectedClass} disabled={isLoading}>
-                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-2xl h-12 font-bold text-slate-700">
+                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-xl h-12 font-bold text-slate-700">
                                     <SelectValue placeholder="Toutes les classes" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-white/40">
+                                <SelectContent className="rounded-xl border-white/40">
                                     <SelectItem value="all">Toutes les classes</SelectItem>
                                     {classes.map(cls => (
                                         <SelectItem key={cls.id} value={cls.id!} className="font-medium">{cls.name}</SelectItem>
@@ -283,10 +283,10 @@ export default function PaymentsPage() {
                                 </SelectContent>
                             </Select>
                             <Select value={selectedStatus} onValueChange={setSelectedStatus} disabled={isLoading}>
-                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-2xl h-12 font-bold text-slate-700">
+                                <SelectTrigger className="w-full md:w-[200px] bg-white/50 border-white/60 rounded-xl h-12 font-bold text-slate-700">
                                     <SelectValue placeholder="Tous les statuts" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-white/40">
+                                <SelectContent className="rounded-xl border-white/40">
                                     <SelectItem value="all">Tous les statuts</SelectItem>
                                     <SelectItem value="Soldé">Soldé</SelectItem>
                                     <SelectItem value="En retard">En retard</SelectItem>
@@ -297,7 +297,7 @@ export default function PaymentsPage() {
                     </div>
                 </div>
 
-                <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border-t-white/80">
+                <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-xl overflow-hidden border-t-white/80">
                     <CardContent className="p-0">
                         <Table>
                             <TableHeader className="bg-slate-50/40">
@@ -384,7 +384,7 @@ export default function PaymentsPage() {
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-64">
                                             <div className="flex flex-col items-center justify-center text-center">
-                                                <div className="p-6 bg-slate-50 rounded-[2rem] mb-4">
+                                                <div className="p-6 bg-slate-50 rounded-xl mb-4">
                                                     <Search className="h-12 w-12 text-slate-300" />
                                                 </div>
                                                 <h4 className="text-xl font-black text-slate-900 tracking-tight">Aucun résultat</h4>

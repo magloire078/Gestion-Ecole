@@ -21,29 +21,29 @@ import { SafeImage } from '@/components/ui/safe-image';
 
 
 const DashboardSkeleton = () => (
-  <div className="space-y-8 animate-pulse">
+  <div className="space-y-4 animate-pulse">
     {/* Banner Skeleton */}
-    <div className="relative w-full h-44 md:h-60 rounded-[2.5rem] bg-white/5 border border-white/10 overflow-hidden">
+    <div className="relative w-full h-44 md:h-60 rounded-xl bg-slate-200/50 border border-slate-300/50 overflow-hidden">
       <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 gap-4">
-        <div className="h-4 w-32 bg-white/10 rounded-full" />
-        <div className="h-12 md:h-16 w-1/2 bg-white/10 rounded-2xl" />
-        <div className="h-6 w-1/3 bg-white/5 rounded-xl" />
+        <div className="h-4 w-32 bg-slate-300/50 rounded-full" />
+        <div className="h-12 md:h-16 w-1/2 bg-slate-300/80 rounded-xl" />
+        <div className="h-6 w-1/3 bg-slate-300/50 rounded-xl" />
       </div>
     </div>
 
     {/* Stat Cards Skeleton */}
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {[1, 2, 3, 4].map((i) => (
-        <div key={i} className="h-32 rounded-3xl bg-white/5 border border-white/10" />
+        <div key={i} className="h-32 rounded-xl bg-slate-200/50 border border-slate-300/50" />
       ))}
     </div>
 
     {/* Main Grid Skeleton */}
     <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
-      <div className="lg:col-span-2 h-96 rounded-3xl bg-white/5 border border-white/10" />
+      <div className="lg:col-span-2 h-96 rounded-xl bg-slate-200/50 border border-slate-300/50" />
       <div className="lg:col-span-1 space-y-6">
-        <div className="h-48 rounded-3xl bg-white/5 border border-white/10" />
-        <div className="h-64 rounded-3xl bg-white/5 border border-white/10" />
+        <div className="h-48 rounded-xl bg-slate-200/50 border border-slate-300/50" />
+        <div className="h-64 rounded-xl bg-slate-200/50 border border-slate-300/50" />
       </div>
     </div>
   </div>
@@ -74,9 +74,9 @@ const RegularDashboard = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Premium Banner with Mesh Gradient and Glassmorphism */}
-      <div className="relative w-full h-44 md:h-60 overflow-hidden rounded-[2.5rem] shadow-2xl border border-white/10 group">
+      <div className="relative w-full h-44 md:h-60 overflow-hidden rounded-xl shadow-2xl border border-white/10 group">
         {/* Animated Mesh Gradient Background */}
         <div className="absolute inset-0 bg-[#0a0a0b]" />
         <div className="absolute top-0 -left-20 w-96 h-96 bg-blue-600 rounded-full mix-blend-screen filter blur-[100px] opacity-30 animate-blob" />
@@ -106,14 +106,13 @@ const RegularDashboard = () => {
           </motion.div>
         </div>
 
-        {/* Decorative Elements */}
-        <div className="absolute top-0 right-0 p-8 z-20 hidden md:block opacity-20 group-hover:opacity-40 transition-opacity">
+        <div className="absolute top-0 right-0 p-4 md:p-6 z-20 hidden md:block transition-opacity duration-300 hover:scale-105">
           <SafeImage
             src={schoolData?.mainLogoUrl || "/custom-assets/banner.png"}
             alt="School Logo"
             width={120}
             height={120}
-            className="rounded-2xl filter grayscale invert brightness-200"
+            className="rounded-xl shadow-xl object-cover"
           />
         </div>
       </div>

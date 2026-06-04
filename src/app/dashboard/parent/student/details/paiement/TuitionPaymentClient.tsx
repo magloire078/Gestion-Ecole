@@ -110,7 +110,7 @@ function TuitionPaymentPageContent() {
                 <AnimatedHighlight className="h-1.5 opacity-60" />
                 <CardHeader className="text-center pb-2 pt-8">
                     <div className="flex justify-center mb-4">
-                        <div className="p-3 bg-blue-50 rounded-2xl text-blue-600">
+                        <div className="p-3 bg-blue-50 rounded-xl text-blue-600">
                             <CreditCard className="h-8 w-8" />
                         </div>
                     </div>
@@ -119,10 +119,10 @@ function TuitionPaymentPageContent() {
                         Réglement pour <span className="font-bold text-slate-900">{student.firstName} {student.lastName}</span>
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-8 pt-6">
+                <CardContent className="space-y-4 pt-6">
                     <div className="relative group">
-                        <div className="absolute inset-0 bg-blue-600/5 blur-xl rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="relative p-6 bg-slate-50 border border-slate-100 rounded-[2rem] text-center space-y-2">
+                        <div className="absolute inset-0 bg-blue-600/5 blur-xl rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                        <div className="relative p-6 bg-slate-50 border border-slate-100 rounded-xl text-center space-y-2">
                             <Label htmlFor="amount-to-pay" className="text-xs uppercase font-black tracking-widest text-muted-foreground">Montant à régler ({getCurrencySymbol()})</Label>
                             <Input 
                                 id="amount-to-pay" 
@@ -140,7 +140,7 @@ function TuitionPaymentPageContent() {
                     </div>
 
                     {error && (
-                        <Alert variant="destructive" className="rounded-2xl border-rose-100 bg-rose-50 text-rose-900">
+                        <Alert variant="destructive" className="rounded-xl border-rose-100 bg-rose-50 text-rose-900">
                             <AlertCircle className="h-4 w-4" />
                             <AlertTitle className="font-bold">Un problème est survenu</AlertTitle>
                             <AlertDescription>{error}</AlertDescription>
@@ -162,12 +162,12 @@ function TuitionPaymentPageContent() {
                                     onClick={() => handlePayment(provider.id)}
                                     disabled={!!isLoadingProvider}
                                     className={cn(
-                                        "flex items-center gap-4 p-5 rounded-[1.5rem] border text-left transition-all duration-300 transform active:scale-95",
+                                        "flex items-center gap-4 p-5 rounded-xl border text-left transition-all duration-300 transform active:scale-95",
                                         provider.color,
                                         isLoadingProvider === provider.id ? "opacity-50" : "opacity-100"
                                     )}
                                 >
-                                    <div className="h-12 w-12 flex items-center justify-center bg-white rounded-2xl shadow-sm text-2xl">
+                                    <div className="h-12 w-12 flex items-center justify-center bg-white rounded-xl shadow-sm text-2xl">
                                         {provider.icon}
                                     </div>
                                     <div className="flex-1">
@@ -184,7 +184,7 @@ function TuitionPaymentPageContent() {
                         </div>
 
                         {settingsData?.paymentProviders?.mtn && (
-                            <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
+                            <div className="p-6 bg-slate-50 rounded-xl border border-slate-100 space-y-4">
                                 <div className="flex items-center gap-3 mb-2">
                                     <div className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                                     <Label htmlFor="mtn-phone" className="text-xs font-black uppercase tracking-widest text-muted-foreground">MTN MoMo</Label>
@@ -195,10 +195,10 @@ function TuitionPaymentPageContent() {
                                         placeholder="05xxxxxxxx" 
                                         value={mtnPhoneNumber} 
                                         onChange={(e) => setMtnPhoneNumber(e.target.value)}
-                                        className="h-14 rounded-2xl bg-white border-slate-200 text-lg font-bold"
+                                        className="h-14 rounded-xl bg-white border-slate-200 text-lg font-bold"
                                     />
                                     <Button
-                                        className="h-14 px-8 rounded-2xl bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black font-black"
+                                        className="h-14 px-8 rounded-xl bg-[#FFCC00] hover:bg-[#FFCC00]/90 text-black font-black"
                                         onClick={() => handlePayment('mtn')}
                                         disabled={!!isLoadingProvider || !mtnPhoneNumber}
                                     >
@@ -211,7 +211,7 @@ function TuitionPaymentPageContent() {
                         {settingsData?.paymentProviders?.stripe && (
                             <Button
                                 variant="outline"
-                                className="w-full h-16 rounded-[1.5rem] border-slate-200 hover:bg-slate-50 group transition-all"
+                                className="w-full h-16 rounded-xl border-slate-200 hover:bg-slate-50 group transition-all"
                                 onClick={() => handlePayment('stripe')}
                                 disabled={!!isLoadingProvider}
                             >
@@ -225,10 +225,10 @@ function TuitionPaymentPageContent() {
                         )}
                     </div>
                 </CardContent>
-                <CardFooter className="bg-slate-50/50 p-8 border-t border-slate-100 group">
+                <CardFooter className="bg-slate-50/50 p-4 md:p-6 border-t border-slate-100 group">
                     <Button 
                         onClick={() => router.back()} 
-                        className="w-full h-14 rounded-2xl border-none bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold transition-all" 
+                        className="w-full h-14 rounded-xl border-none bg-slate-200 text-slate-700 hover:bg-slate-300 font-bold transition-all" 
                         variant="ghost"
                     >
                         Annuler et retourner au profil

@@ -74,7 +74,7 @@ export function ParentPaymentsTab({ student }: ParentPaymentsTabProps) {
                                     {formatCurrency(student.amountDue)}
                                 </p>
                             </div>
-                            <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-100 font-black px-8 rounded-2xl shadow-2xl shadow-blue-500/20" disabled={!student.amountDue || student.amountDue <= 0}>
+                            <Button asChild size="lg" className="bg-white text-slate-900 hover:bg-slate-100 font-black px-8 rounded-xl shadow-2xl shadow-blue-500/20" disabled={!student.amountDue || student.amountDue <= 0}>
                                 <Link href={`/dashboard/parent/student/details/paiement?id=${student.id}`}>
                                     <CreditCard className="mr-2 h-5 w-5" />
                                     Payer en ligne

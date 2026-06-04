@@ -43,9 +43,9 @@ export const ParentDashboard = ({ user }: ParentDashboardProps) => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       {/* Premium Header Banner */}
-      <div className="relative w-full h-48 md:h-60 overflow-hidden rounded-3xl shadow-2xl group border border-white/10">
+      <div className="relative w-full h-48 md:h-60 overflow-hidden rounded-xl shadow-2xl group border border-white/10">
         <AnimatedHighlight />
         <div className="absolute inset-0 bg-gradient-to-br from-[#0C365A] via-[#0C365A]/90 to-blue-900/40 z-10" />
         <div className="absolute inset-0 bg-[url('/custom-assets/parent-hero.png')] bg-cover bg-center mix-blend-overlay opacity-30 transition-transform duration-1000 group-hover:scale-110" />
@@ -67,21 +67,21 @@ export const ParentDashboard = ({ user }: ParentDashboardProps) => {
 
       {/* Quick Access Mobile Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-2xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md" asChild>
+        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md" asChild>
           <Link href="/dashboard/parent/cantine">
             <Utensils className="h-6 w-6 text-orange-500" />
             <span className="text-xs font-bold uppercase tracking-wider">Cantine</span>
           </Link>
         </Button>
-        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-2xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md">
+        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md">
           <Calendar className="h-6 w-6 text-blue-500" />
           <span className="text-xs font-bold uppercase tracking-wider">Agenda</span>
         </Button>
-        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-2xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md">
+        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md">
           <CreditCard className="h-6 w-6 text-emerald-500" />
           <span className="text-xs font-bold uppercase tracking-wider">Paiements</span>
         </Button>
-        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-2xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md">
+        <Button variant="outline" className="h-auto py-4 flex flex-col gap-2 rounded-xl border-primary/10 hover:border-primary/30 transition-all hover:shadow-md">
           <ShieldCheck className="h-6 w-6 text-purple-500" />
           <span className="text-xs font-bold uppercase tracking-wider">Sécurité</span>
         </Button>

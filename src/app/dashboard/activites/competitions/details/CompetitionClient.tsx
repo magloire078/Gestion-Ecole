@@ -229,7 +229,7 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
                                 <p className="text-sm font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">Participants</p>
                                 <h3 className="text-3xl font-bold mt-1">{stats.total}</h3>
                             </div>
-                            <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/40 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                            <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                                 <Users size={24} />
                             </div>
                         </div>
@@ -243,7 +243,7 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
                                 <p className="text-sm font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Podium (1ers)</p>
                                 <h3 className="text-3xl font-bold mt-1">{stats.podium}</h3>
                             </div>
-                            <div className="h-12 w-12 bg-amber-100 dark:bg-amber-900/40 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                            <div className="h-12 w-12 bg-amber-100 dark:bg-amber-900/40 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400">
                                 <Trophy size={24} />
                             </div>
                         </div>
@@ -269,7 +269,7 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
 
             {podiumParticipants.length > 0 && (
                 <Card className="border-none shadow-xl bg-slate-900 overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-8 opacity-10">
+                    <div className="absolute top-0 right-0 p-4 md:p-6 opacity-10">
                         <Star className="w-32 h-32 text-amber-400 animate-pulse" />
                     </div>
                     <CardHeader>
@@ -322,7 +322,7 @@ function CompetitionContent({ competitionId }: { competitionId: string }) {
                 <CardContent>
                     <div className="space-y-4">
                         {canManageActivities && (
-                            <div className="flex flex-col sm:flex-row items-end gap-4 p-5 border rounded-2xl bg-slate-50 dark:bg-slate-900/50 mb-6">
+                            <div className="flex flex-col sm:flex-row items-end gap-4 p-5 border rounded-xl bg-slate-50 dark:bg-slate-900/50 mb-6">
                                 <div className="flex-1 w-full space-y-1.5">
                                     <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground ml-1">Inscrire un élève</label>
                                     <Select onValueChange={setSelectedStudent} value={selectedStudent}>

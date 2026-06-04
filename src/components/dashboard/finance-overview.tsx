@@ -141,11 +141,11 @@ export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1 p-3 rounded-2xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                        <div className="space-y-1 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
                             <span className="text-[10px] uppercase font-black text-muted-foreground/40 leading-none block">Recettes</span>
                             <span className="text-sm font-black text-foreground drop-shadow-sm">{formatCurrency(financeStats.totalFees - financeStats.totalDue, country)}</span>
                         </div>
-                        <div className="space-y-1 p-3 rounded-2xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
+                        <div className="space-y-1 p-3 rounded-xl bg-white/5 border border-white/5 transition-colors hover:bg-white/10">
                             <span className="text-[10px] uppercase font-black text-muted-foreground/40 leading-none block">Restant</span>
                             <span className="text-sm font-black text-destructive drop-shadow-sm">{formatCurrency(financeStats.totalDue, country)}</span>
                         </div>

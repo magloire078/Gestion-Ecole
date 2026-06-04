@@ -32,7 +32,7 @@ export default function MentionsLegalesPage() {
                     </h1>
 
                     <div className="prose prose-blue max-w-none space-y-12 text-[#1e293b]">
-                        <section className="bg-white p-8 rounded-3xl shadow-sm border border-blue-50/50">
+                        <section className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-blue-50/50">
                             <h2 className="text-2xl font-bold text-[#2D9CDB] mb-6 flex items-center gap-3">
                                 <span className="w-8 h-8 rounded-lg bg-[#2D9CDB]/10 flex items-center justify-center text-sm">1</span>
                                 Éditeur du Site
@@ -49,7 +49,7 @@ export default function MentionsLegalesPage() {
                             </p>
                         </section>
 
-                        <section className="bg-white p-8 rounded-3xl shadow-sm border border-blue-50/50">
+                        <section className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-blue-50/50">
                             <h2 className="text-2xl font-bold text-[#2D9CDB] mb-6 flex items-center gap-3">
                                 <span className="w-8 h-8 rounded-lg bg-[#2D9CDB]/10 flex items-center justify-center text-sm">2</span>
                                 Hébergement
@@ -64,7 +64,7 @@ export default function MentionsLegalesPage() {
                             </p>
                         </section>
 
-                        <section className="bg-white p-8 rounded-3xl shadow-sm border border-blue-50/50">
+                        <section className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-blue-50/50">
                             <h2 className="text-2xl font-bold text-[#2D9CDB] mb-6 flex items-center gap-3">
                                 <span className="w-8 h-8 rounded-lg bg-[#2D9CDB]/10 flex items-center justify-center text-sm">3</span>
                                 Propriété Intellectuelle
@@ -74,7 +74,7 @@ export default function MentionsLegalesPage() {
                             </p>
                         </section>
 
-                        <section className="bg-white p-8 rounded-3xl shadow-sm border border-blue-50/50">
+                        <section className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-blue-50/50">
                             <h2 className="text-2xl font-bold text-[#2D9CDB] mb-6 flex items-center gap-3">
                                 <span className="w-8 h-8 rounded-lg bg-[#2D9CDB]/10 flex items-center justify-center text-sm">4</span>
                                 Protection des Données Personnelles
@@ -91,7 +91,7 @@ export default function MentionsLegalesPage() {
                             </div>
                         </section>
 
-                        <section className="bg-white p-8 rounded-3xl shadow-sm border border-blue-50/50">
+                        <section className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-blue-50/50">
                             <h2 className="text-2xl font-bold text-[#2D9CDB] mb-6 flex items-center gap-3">
                                 <span className="w-8 h-8 rounded-lg bg-[#2D9CDB]/10 flex items-center justify-center text-sm">5</span>
                                 Cookies et Traceurs
@@ -101,7 +101,7 @@ export default function MentionsLegalesPage() {
                             </p>
                         </section>
 
-                        <section className="bg-white p-8 rounded-3xl shadow-sm border border-blue-50/50">
+                        <section className="bg-white p-4 md:p-6 rounded-xl shadow-sm border border-blue-50/50">
                             <h2 className="text-2xl font-bold text-[#2D9CDB] mb-6 flex items-center gap-3">
                                 <span className="w-8 h-8 rounded-lg bg-[#2D9CDB]/10 flex items-center justify-center text-sm">6</span>
                                 Limitation de Responsabilité

@@ -51,21 +51,21 @@ export function PlanDistributionChart() {
 
     if (loading) {
         return (
-            <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
-                <CardHeader className="p-8 pb-4">
+            <Card className="rounded-xl border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+                <CardHeader className="p-4 md:p-6 pb-4">
                     <CardTitle className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Répartition Plans</CardTitle>
                     <CardDescription className="text-slate-500 font-medium">Distribution par type d&apos;abonnement.</CardDescription>
                 </CardHeader>
                 <CardContent className="px-8 pb-8">
-                    <Skeleton className="h-60 w-full rounded-3xl" />
+                    <Skeleton className="h-60 w-full rounded-xl" />
                 </CardContent>
             </Card>
         )
     }
 
     return (
-        <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
-            <CardHeader className="p-8 pb-4">
+        <Card className="rounded-xl border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+            <CardHeader className="p-4 md:p-6 pb-4">
                 <CardTitle className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Répartition Plans</CardTitle>
                 <CardDescription className="text-slate-500 font-medium">Distribution par type d&apos;abonnement.</CardDescription>
             </CardHeader>
@@ -77,7 +77,7 @@ export function PlanDistributionChart() {
                                 content={({ active, payload }) => {
                                     if (active && payload && payload.length) {
                                         return (
-                                            <div className="bg-[#0C365A] text-white p-3 rounded-2xl shadow-xl border border-white/10 backdrop-blur-md">
+                                            <div className="bg-[#0C365A] text-white p-3 rounded-xl shadow-xl border border-white/10 backdrop-blur-md">
                                                 <p className="text-xs font-black uppercase tracking-widest text-[#2D9CDB] mb-1">{payload[0].name}</p>
                                                 <p className="text-sm font-bold">{payload[0].value} Écoles</p>
                                             </div>

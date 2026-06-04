@@ -1,7 +1,12 @@
-
 'use client';
-import { redirect } from 'next/navigation';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function RHPage() {
-    redirect('/dashboard/rh/dashboard');
+    const router = useRouter();
+    useEffect(() => {
+        router.replace('/dashboard/rh/dashboard');
+    }, [router]);
+    return null;
 }

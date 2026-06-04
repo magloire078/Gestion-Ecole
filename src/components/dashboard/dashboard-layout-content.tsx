@@ -288,9 +288,9 @@ export default function DashboardLayoutContent({ children }: { children: React.R
               </Breadcrumb>
 
               {schoolData?.name && (
-                <div className="hidden lg:flex items-center ml-4 px-4 py-1.5 rounded-2xl bg-primary/10 border border-primary/20 shadow-sm backdrop-blur-md transition-all hover:bg-primary/15 group">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#2D9CDB] leading-none mb-1 group-hover:text-[#0C365A] dark:group-hover:text-primary transition-colors">Établissement Actif</span>
+                <div className="hidden lg:flex items-center ml-4 px-4 py-1.5 rounded-xl bg-primary/10 border border-primary/20 shadow-sm backdrop-blur-md transition-all hover:bg-primary/15 group">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-[#2D9CDB] leading-none group-hover:text-[#0C365A] dark:group-hover:text-primary transition-colors">Établissement Actif :</span>
                     <span className="text-sm font-black text-[#0C365A] dark:text-white leading-none tracking-tight truncate max-w-[200px]">{schoolData.name}</span>
                   </div>
                 </div>

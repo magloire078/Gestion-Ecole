@@ -258,7 +258,7 @@ export default function FeesPage() {
 
   return (
     <>
-      <div className="space-y-8">
+      <div className="space-y-4">
         <div>
           <h1 className="text-lg font-semibold md:text-2xl">Frais de Scolarité</h1>
           <p className="text-muted-foreground">Consultez et gérez les grilles tarifaires de votre établissement.</p>

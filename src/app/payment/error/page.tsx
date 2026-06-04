@@ -26,7 +26,7 @@ function ErrorPageContent() {
             transition={{ duration: 0.5 }}
             className="w-full max-w-lg z-10"
         >
-            <Card className="glass-card overflow-hidden border-none shadow-2xl rounded-[32px]">
+            <Card className="glass-card overflow-hidden border-none shadow-2xl rounded-xl">
                 <div className="h-2 bg-gradient-to-r from-red-400 to-orange-500" />
                 <CardHeader className="text-center pt-10">
                     <motion.div
@@ -44,8 +44,8 @@ function ErrorPageContent() {
                         Désolé, nous n&apos;avons pas pu traiter votre paiement pour le moment.
                     </p>
                 </CardHeader>
-                <CardContent className="space-y-8 pb-10 px-8">
-                    <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-6 border border-red-100 dark:border-red-800/20 text-center">
+                <CardContent className="space-y-4 pb-10 px-8">
+                    <div className="bg-red-50 dark:bg-red-900/10 rounded-xl p-6 border border-red-100 dark:border-red-800/20 text-center">
                         <p className="text-sm text-red-800 dark:text-red-400 font-medium">
                             Aucun montant n&apos;a été débité de votre compte. Cela peut être dû à une annulation, un solde insuffisant ou un problème technique avec le fournisseur.
                         </p>

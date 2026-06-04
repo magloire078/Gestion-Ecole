@@ -38,13 +38,13 @@ export default function BillingPage() {
     }, [user]);
 
     if (loading) {
-        return <div className="p-8 text-center">Chargement des informations de facturation...</div>;
+        return <div className="p-4 md:p-6 text-center">Chargement des informations de facturation...</div>;
     }
 
     const currentPlanDetails = SUBSCRIPTION_PLANS.find(p => p.name === currentPlan);
 
     return (
-        <div className="space-y-8 p-8">
+        <div className="space-y-4 p-4 md:p-6">
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Abonnement & Facturation</h2>

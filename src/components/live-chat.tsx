@@ -196,7 +196,7 @@ export function LiveChat() {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        className="mb-4 w-[350px] sm:w-[380px] bg-white dark:bg-slate-900 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden border border-border/40 flex flex-col h-[500px]"
+                        className="mb-4 w-[350px] sm:w-[380px] bg-white dark:bg-slate-900 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden border border-border/40 flex flex-col h-[500px]"
                     >
                         {/* Header du Chat */}
                         <div className="bg-[#0C365A] p-5 flex items-center justify-between">
@@ -238,7 +238,7 @@ export function LiveChat() {
                                     )}
                                 >
                                     <div className={cn(
-                                        "px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm",
+                                        "px-4 py-3 rounded-xl text-sm leading-relaxed shadow-sm",
                                         msg.role === 'user'
                                             ? "bg-[#2D9CDB] text-white rounded-tr-none"
                                             : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none"

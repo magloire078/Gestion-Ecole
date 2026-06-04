@@ -159,7 +159,7 @@ export function OnboardingGuide() {
                                 <motion.div
                                     whileHover={{ scale: 1.02 }}
                                     className={cn(
-                                        "relative group flex flex-col p-4 rounded-2xl border transition-all duration-300 h-full",
+                                        "relative group flex flex-col p-4 rounded-xl border transition-all duration-300 h-full",
                                         step.completed
                                             ? "bg-emerald-50/50 border-emerald-100"
                                             : "bg-white border-slate-100 hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/5"

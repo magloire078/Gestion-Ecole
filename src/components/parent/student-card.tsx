@@ -52,7 +52,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
         return (
             <Card className="overflow-hidden border-primary/5">
                 <div className="p-6 flex flex-row items-center gap-6">
-                    <Skeleton className="h-20 w-20 rounded-2xl" />
+                    <Skeleton className="h-20 w-20 rounded-xl" />
                     <div className="flex-1 space-y-3">
                         <Skeleton className="h-6 w-48" />
                         <Skeleton className="h-4 w-32" />
@@ -74,7 +74,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
 
     return (
         <Link href={`/dashboard/parent/student/details?id=${studentId}`}>
-            <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-primary/5 hover:border-primary/20 rounded-3xl">
+            <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1 border-primary/5 hover:border-primary/20 rounded-xl">
                 {/* Visual Accent */}
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
 
@@ -82,7 +82,7 @@ export function ParentStudentCard({ schoolId, studentId }: ParentStudentCardProp
                     <div className="flex flex-row items-start justify-between gap-4 mb-6">
                         <div className="flex items-center gap-5">
                             <div className="relative">
-                                <Avatar className="h-20 w-20 rounded-2xl border-2 border-white shadow-lg ring-4 ring-blue-50/50">
+                                <Avatar className="h-20 w-20 rounded-xl border-2 border-white shadow-lg ring-4 ring-blue-50/50">
                                     <AvatarImage src={student.photoURL || undefined} alt={studentFullName} className="object-cover" />
                                     <AvatarFallback className="text-2xl font-bold bg-blue-100 text-blue-700">{fallback}</AvatarFallback>
                                 </Avatar>

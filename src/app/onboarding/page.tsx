@@ -47,14 +47,14 @@ function RoleCard({
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
       className={cn(
-        "relative flex flex-col items-center p-6 rounded-3xl border-2 transition-all cursor-pointer text-center h-full",
+        "relative flex flex-col items-center p-6 rounded-xl border-2 transition-all cursor-pointer text-center h-full",
         selected
           ? "bg-white border-[#2D9CDB] shadow-[0_20px_40px_rgba(45,156,219,0.15)] ring-4 ring-[#2D9CDB]/5"
           : "bg-white/50 border-slate-100 hover:border-[#2D9CDB]/40 hover:bg-white shadow-sm"
       )}
     >
       <div className={cn(
-        "h-16 w-16 rounded-2xl flex items-center justify-center mb-4 transition-colors",
+        "h-16 w-16 rounded-xl flex items-center justify-center mb-4 transition-colors",
         selected ? "bg-[#2D9CDB] text-white" : "bg-slate-100 text-slate-400"
       )}>
         <Icon className="h-8 w-8" />
@@ -90,7 +90,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl relative z-10"
       >
-        <Card className="rounded-[40px] border-none shadow-[0_40px_100px_rgba(12,54,90,0.08)] bg-white p-8 md:p-12 overflow-hidden">
+        <Card className="rounded-xl border-none shadow-[0_40px_100px_rgba(12,54,90,0.08)] bg-white p-4 md:p-6 md:p-12 overflow-hidden">
           <AnimatedHighlight />
           <div className="flex flex-col items-center mb-8 relative z-10 text-center">
             <div className="mb-8 transform scale-[2.2] py-6">
@@ -106,7 +106,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 relative z-10">
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex gap-4">
+            <div className="p-5 rounded-xl bg-slate-50 border border-slate-100 flex gap-4">
               <div className="h-10 w-10 shrink-0 bg-blue-100 text-[#2D9CDB] rounded-xl flex items-center justify-center">
                 <Sparkles className="h-5 w-5" />
               </div>
@@ -114,7 +114,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
                 Création automatique du <strong>Groupe Scolaire Les Lauréats</strong>.
               </p>
             </div>
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex gap-4">
+            <div className="p-5 rounded-xl bg-slate-50 border border-slate-100 flex gap-4">
               <div className="h-10 w-10 shrink-0 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center">
                 <Users className="h-5 w-5" />
               </div>
@@ -125,7 +125,7 @@ function DemoOnboarding({ onSetupDemo, isProcessing }: { onSetupDemo: () => void
           </div>
 
           <Button
-            className="w-full h-16 rounded-2xl text-xl font-black bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-2xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] relative z-10"
+            className="w-full h-16 rounded-xl text-xl font-black bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-2xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] relative z-10"
             onClick={onSetupDemo}
             disabled={isProcessing}
           >
@@ -350,7 +350,7 @@ export default function OnboardingPage() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-5xl relative z-10"
       >
-        <Card className="rounded-[40px] border-none shadow-[0_40px_100px_rgba(12,54,90,0.08)] bg-white p-6 md:p-14 overflow-hidden">
+        <Card className="rounded-xl border-none shadow-[0_40px_100px_rgba(12,54,90,0.08)] bg-white p-6 md:p-14 overflow-hidden">
           <AnimatedHighlight />
 
           <div className="flex flex-col items-center mb-12 relative z-10 text-center">
@@ -399,11 +399,11 @@ export default function OnboardingPage() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.02 }}
               transition={{ duration: 0.3 }}
-              className="max-w-xl mx-auto w-full bg-slate-50/50 border border-slate-100/50 p-8 rounded-[32px] relative z-10"
+              className="max-w-xl mx-auto w-full bg-slate-50/50 border border-slate-100/50 p-4 md:p-6 rounded-xl relative z-10"
             >
               {mode === 'create' && (
                 <div className="text-center space-y-6">
-                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0C365A] text-white shadow-xl shadow-blue-900/10">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#0C365A] text-white shadow-xl shadow-blue-900/10">
                     <Rocket className="h-6 w-6" />
                   </div>
                   <div className="space-y-2">
@@ -465,7 +465,7 @@ export default function OnboardingPage() {
                       onChange={(e) => setParentAccessCode(e.target.value)}
                       disabled={isProcessing}
                       maxLength={6}
-                      className="h-14 rounded-2xl bg-white border-transparent focus:border-[#2D9CDB] shadow-sm transition-all text-center font-black tracking-[0.2em] text-2xl text-[#2D9CDB]"
+                      className="h-14 rounded-xl bg-white border-transparent focus:border-[#2D9CDB] shadow-sm transition-all text-center font-black tracking-[0.2em] text-2xl text-[#2D9CDB]"
                     />
                   </div>
                 </div>
@@ -474,7 +474,7 @@ export default function OnboardingPage() {
               <div className="pt-8">
                 <Button
                   className={cn(
-                    "w-full h-14 rounded-2xl text-lg font-bold shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]",
+                    "w-full h-14 rounded-xl text-lg font-bold shadow-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]",
                     mode === 'create' ? "bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-blue-900/10" : "bg-[#2D9CDB] hover:bg-[#2D9CDB]/90 text-white shadow-blue-400/20"
                   )}
                   onClick={mode === 'create' ? () => router.push('/onboarding/create-school') : mode === 'join' ? handleJoinSchool : handleParentJoin}

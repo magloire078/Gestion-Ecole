@@ -59,7 +59,7 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
     const fallback = studentFullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (
-        <div className="space-y-8 pb-10">
+        <div className="space-y-4 pb-10">
             <div className="flex items-center gap-4">
                 <Button variant="ghost" size="sm" onClick={() => router.back()} className="rounded-full hover:bg-slate-100">
                     <ArrowLeft className="mr-2 h-4 w-4" />
@@ -67,16 +67,16 @@ function ParentStudentProfileContent({ studentId, schoolId, initialTab }: { stud
                 </Button>
             </div>
 
-            <div className="relative w-full overflow-hidden rounded-[2.5rem] shadow-2xl border border-white/20 bg-slate-900">
+            <div className="relative w-full overflow-hidden rounded-xl shadow-2xl border border-white/20 bg-slate-900">
                 <AnimatedHighlight className="h-2 opacity-50" />
                 <div className="absolute inset-0 bg-gradient-to-br from-[#0C365A] via-blue-900/40 to-indigo-900/20 z-10" />
                 <div className="absolute -right-20 -top-20 w-80 h-80 bg-blue-500/20 rounded-full blur-[100px] z-0" />
                 <div className="absolute -left-20 -bottom-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-[100px] z-0" />
 
-                <div className="relative z-20 p-8 md:p-12 flex flex-col md:flex-row items-center md:items-end gap-8">
+                <div className="relative z-20 p-4 md:p-6 md:p-12 flex flex-col md:flex-row items-center md:items-end gap-8">
                     <div className="relative group">
                         <div className="absolute inset-0 bg-white/20 blur-2xl rounded-full scale-90 group-hover:scale-110 transition-transform duration-500" />
-                        <Avatar className="h-40 w-40 md:h-48 md:w-48 border-4 border-white shadow-2xl rounded-[2rem] relative z-10">
+                        <Avatar className="h-40 w-40 md:h-48 md:w-48 border-4 border-white shadow-2xl rounded-xl relative z-10">
                             <SafeImage src={student.photoURL} alt={studentFullName} className="object-cover" />
                             <AvatarFallback className="text-5xl font-black bg-blue-100 text-blue-700">{fallback}</AvatarFallback>
                         </Avatar>

@@ -1,4 +1,4 @@
-﻿
+
 
 'use client';
 
@@ -33,7 +33,7 @@ export default function CantineLayout({
                 </p>
             </div>
             <Tabs value={pathname} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
                     {cantineSubLinks.map(link => (
                         <Link href={link.href} key={link.href} passHref legacyBehavior>
                             <TabsTrigger value={link.href}>
@@ -66,7 +66,7 @@ export default function CantineLayout({
 
     if (!hasAccess) {
         return (
-            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-8">
+            <div className="flex flex-col items-center justify-center h-[calc(100vh-200px)] text-center p-4 md:p-6">
                 <Card className="max-w-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center justify-center gap-2">

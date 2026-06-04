@@ -253,7 +253,7 @@ export default function RegistrationPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {step === 1 && (
                 <div className="space-y-4 animate-in fade-in-50">
                   <div className="flex items-center gap-2 text-lg font-semibold text-primary"><User className="h-5 w-5" />Informations de l&apos;Élève</div>

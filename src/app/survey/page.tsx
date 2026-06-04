@@ -141,7 +141,7 @@ export default function SurveyPage() {
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-8">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
 
                   {/* Section 1: Profil */}
                   <div className="space-y-4">

@@ -14,7 +14,7 @@ interface StatCardProps {
 }
 
 export const StatCard = ({ title, value, icon: Icon, description, loading, colorClass }: StatCardProps) => (
-    <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/40 dark:border-slate-800/40 shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-500 group rounded-3xl overflow-hidden border-t-white/80 dark:border-t-slate-700/50">
+    <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border border-white/40 dark:border-slate-800/40 shadow-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-500 group rounded-xl overflow-hidden border-t-white/80 dark:border-t-slate-700/50">
         <CardContent className="p-6">
             <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -28,7 +28,7 @@ export const StatCard = ({ title, value, icon: Icon, description, loading, color
                     )}
                 </div>
                 <div className={cn(
-                    "p-3 rounded-2xl transition-all duration-500 shadow-sm group-hover:scale-110 group-hover:rotate-3",
+                    "p-3 rounded-xl transition-all duration-500 shadow-sm group-hover:scale-110 group-hover:rotate-3",
                     colorClass || "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white"
                 )}>
                     <Icon className="h-5 w-5" />

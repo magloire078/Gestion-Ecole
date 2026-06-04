@@ -66,7 +66,7 @@ export default function AuditPage() {
                 <Card>
                     <CardContent className="p-0">
                         {logs.length === 0 ? (
-                            <div className="p-8 text-center text-muted-foreground">
+                            <div className="p-4 md:p-6 text-center text-muted-foreground">
                                 Aucune activité enregistrée récemment.
                             </div>
                         ) : (

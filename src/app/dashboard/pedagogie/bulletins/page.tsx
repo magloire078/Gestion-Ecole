@@ -165,7 +165,7 @@ export default function BulletinsPage() {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4">
             <div className="flex justify-between items-start">
                 <div>
                     <h1 className="text-lg font-semibold md:text-2xl">Gestion des Bulletins</h1>

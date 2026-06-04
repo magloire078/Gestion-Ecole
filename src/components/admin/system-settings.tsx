@@ -98,7 +98,7 @@ export const SystemSettings = () => {
     return (
         <div className="space-y-6">
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-4 h-14 bg-slate-50 dark:bg-white/5 p-1.5 rounded-2xl border border-blue-50/50 dark:border-white/10 transition-colors duration-500">
+                <TabsList className="grid w-full grid-cols-4 h-14 bg-slate-50 dark:bg-white/5 p-1.5 rounded-xl border border-blue-50/50 dark:border-white/10 transition-colors duration-500">
                     <TabsTrigger value="general" className="rounded-xl data-[state=active]:bg-white dark:data-[state=active]:bg-white/10 data-[state=active]:text-[hsl(var(--admin-primary-dark))] dark:data-[state=active]:text-white data-[state=active]:shadow-sm font-bold transition-all">
                         <Wrench className="h-4 w-4 mr-2" />
                         Général
@@ -118,12 +118,12 @@ export const SystemSettings = () => {
                 </TabsList>
 
                 <TabsContent value="general" className="space-y-4 mt-6">
-                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
                         <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
                             <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Configuration Globale</CardTitle>
                             <CardDescription className="font-medium">Paramètres généraux de la plateforme</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4 p-8">
+                        <CardContent className="space-y-4 p-4 md:p-6">
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div>
                                     <Label htmlFor="maintenance-mode" className="font-semibold">Mode Maintenance</Label>
@@ -155,12 +155,12 @@ export const SystemSettings = () => {
                 </TabsContent>
 
                 <TabsContent value="payments" className="space-y-4 mt-6">
-                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
                         <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
                             <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Moyens de Paiement</CardTitle>
                             <CardDescription className="font-medium">Activez ou désactivez les fournisseurs de paiement pour les abonnements.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4 p-8">
+                        <CardContent className="space-y-4 p-4 md:p-6">
                             {/* Genius Pay */}
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div className="flex-1">
@@ -273,14 +273,14 @@ export const SystemSettings = () => {
                 </TabsContent>
 
                 <TabsContent value="api-keys" className="space-y-4 mt-6">
-                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
                         <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
                             <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Clés API Configurées</CardTitle>
                             <CardDescription className="font-medium">
                                 Les clés sensibles sont stockées dans les variables d&apos;environnement pour des raisons de sécurité.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4 p-8">
+                        <CardContent className="space-y-4 p-4 md:p-6">
                             {/* Genius Pay */}
                             <div className="p-4 border rounded-lg">
                                 <div className="flex items-center justify-between mb-3">
@@ -330,12 +330,12 @@ export const SystemSettings = () => {
                 </TabsContent>
 
                 <TabsContent value="security" className="space-y-4 mt-6">
-                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[32px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+                    <Card className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
                         <CardHeader className="border-b border-blue-50/50 dark:border-white/10 bg-slate-50/50 dark:bg-white/5 px-8 py-6">
                             <CardTitle className="text-lg font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit uppercase tracking-wider">Paramètres de Sécurité</CardTitle>
                             <CardDescription className="font-medium">Configuration des options de sécurité de la plateforme</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4 p-8">
+                        <CardContent className="space-y-4 p-4 md:p-6">
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div>
                                     <Label className="font-semibold">Logs d&apos;audit détaillés</Label>
@@ -370,7 +370,7 @@ export const SystemSettings = () => {
                 <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="h-14 px-8 rounded-2xl text-lg font-bold bg-[hsl(var(--admin-primary-dark))] hover:opacity-90 text-white shadow-xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                    className="h-14 px-8 rounded-xl text-lg font-bold bg-[hsl(var(--admin-primary-dark))] hover:opacity-90 text-white shadow-xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                 >
                     {isSaving ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : null}
                     Enregistrer les modifications

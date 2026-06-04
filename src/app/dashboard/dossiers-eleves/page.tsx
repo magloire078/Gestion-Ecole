@@ -204,7 +204,7 @@ export default function StudentsPage() {
   const loading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading || userLoading || cyclesLoading;
 
   return (
-    <div className="p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="p-4 md:p-6 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2 mb-1">
@@ -242,7 +242,7 @@ export default function StudentsPage() {
 
       <StudentsStatsCards stats={stats} isLoading={loading} />
 
-      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-6 rounded-[2rem] shadow-sm flex flex-col md:flex-row gap-4 items-end">
+      <div className="bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/40 dark:border-slate-800/40 p-4 rounded-xl shadow-sm flex flex-col md:flex-row gap-4 items-end">
         <div className="flex-1 w-full space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Recherche rapide</label>
           <div className="relative group">
@@ -251,17 +251,17 @@ export default function StudentsPage() {
               placeholder="Nom, matricule ou classe..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-11 h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-2xl focus:ring-indigo-500 transition-all"
+              className="pl-11 h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 transition-all"
             />
           </div>
         </div>
         <div className="w-full md:w-[200px] space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Filtrer par Cycle</label>
           <Select value={selectedCycle} onValueChange={setSelectedCycle}>
-            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-2xl focus:ring-indigo-500">
+            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
               <SelectValue placeholder="Tous les cycles" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-white/40">
+            <SelectContent className="rounded-xl border-white/40">
               <SelectItem value="all">Tous les cycles</SelectItem>
               {cycles.map(cycle => (
                 <SelectItem key={cycle.id!} value={cycle.id!}>{cycle.name}</SelectItem>
@@ -272,16 +272,16 @@ export default function StudentsPage() {
         <div className="w-full md:w-[200px] space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Filtrer par Classe</label>
           <Select value={selectedClass} onValueChange={setSelectedClass}>
-            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-2xl focus:ring-indigo-500">
+            <SelectTrigger className="h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500">
               <SelectValue placeholder="Toutes les classes" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border-white/40">
+            <SelectContent className="rounded-xl border-white/40">
               <SelectItem value="all">Toutes les classes</SelectItem>
               {classes.map(c => <SelectItem key={c.id!} value={c.id!}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl border border-slate-200 dark:border-slate-700 h-12">
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 h-12">
           <Button
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
             size="icon"
@@ -301,10 +301,10 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden">
+      <Card className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 shadow-xl shadow-slate-200/50 rounded-xl overflow-hidden">
         <CardContent className="p-0">
           <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="w-full">
-            <div className="px-8 pt-6">
+            <div className="px-6 pt-4">
               <TabsList className="bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl h-auto w-auto">
                 <TabsTrigger value="active" className="rounded-lg px-6 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold">Actifs ({filteredActiveStudents.length})</TabsTrigger>
                 <TabsTrigger value="archived" className="rounded-lg px-6 py-2 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-700 data-[state=active]:shadow-sm font-bold">Archives ({archivedStudents.length})</TabsTrigger>
@@ -323,7 +323,7 @@ export default function StudentsPage() {
                   onRestore={handleOpenRestoreDialog}
                 />
               ) : (
-                <div className="p-8">
+                <div className="p-4 md:p-6">
                   <StudentsGrid
                     students={studentsToShow}
                     isLoading={loading}
@@ -348,7 +348,7 @@ export default function StudentsPage() {
                   onRestore={handleOpenRestoreDialog}
                 />
               ) : (
-                <div className="p-8">
+                <div className="p-4 md:p-6">
                   <StudentsGrid
                     students={studentsToShow}
                     isLoading={loading}
@@ -369,7 +369,7 @@ export default function StudentsPage() {
         if (!isOpen) setEditingStudent(null);
         setIsEditDialogOpen(isOpen);
       }}>
-        <DialogContent className="max-w-2xl bg-white/90 backdrop-blur-2xl rounded-[2rem] border-white/40 shadow-2xl">
+        <DialogContent className="max-w-2xl bg-white/90 backdrop-blur-2xl rounded-xl border-white/40 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-black text-slate-800">Modifier l&apos;Élève</DialogTitle>
             <DialogDescription className="font-medium">
@@ -391,7 +391,7 @@ export default function StudentsPage() {
 
       {/* Archive Confirmation Dialog */}
       <AlertDialog open={isArchiveDialogOpen} onOpenChange={setIsArchiveDialogOpen}>
-        <AlertDialogContent className="rounded-[2rem] border-white/40 bg-white/90 backdrop-blur-2xl">
+        <AlertDialogContent className="rounded-xl border-white/40 bg-white/90 backdrop-blur-2xl">
           <DialogHeader>
             <AlertDialogTitle className="text-xl font-bold">Radier l&apos;élève ?</AlertDialogTitle>
             <AlertDialogDescription className="font-medium text-slate-600">
@@ -407,7 +407,7 @@ export default function StudentsPage() {
 
       {/* Restore Confirmation Dialog */}
       <AlertDialog open={isRestoreDialogOpen} onOpenChange={setIsRestoreDialogOpen}>
-        <AlertDialogContent className="rounded-[2rem] border-white/40 bg-white/90 backdrop-blur-2xl">
+        <AlertDialogContent className="rounded-xl border-white/40 bg-white/90 backdrop-blur-2xl">
           <DialogHeader>
             <AlertDialogTitle className="text-xl font-bold">Restaurer l&apos;élève ?</AlertDialogTitle>
             <AlertDialogDescription className="font-medium text-slate-600">

@@ -107,7 +107,7 @@ export function NotificationsPanel({
               ))}
             </div>
           ) : (
-            <div className="p-8 text-center h-full flex flex-col justify-center items-center">
+            <div className="p-4 md:p-6 text-center h-full flex flex-col justify-center items-center">
               <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
               <p className="text-muted-foreground">Vous n&apos;avez aucune notification.</p>
             </div>

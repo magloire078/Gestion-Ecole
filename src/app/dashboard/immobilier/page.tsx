@@ -1,8 +1,12 @@
-
 'use client';
 
-import { redirect } from 'next/navigation';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function ImmobilierPage() {
-    redirect('/dashboard/immobilier/dashboard');
+    const router = useRouter();
+    useEffect(() => {
+        router.replace('/dashboard/immobilier/dashboard');
+    }, [router]);
+    return null;
 }

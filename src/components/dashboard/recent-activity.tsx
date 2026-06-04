@@ -236,7 +236,7 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
                                             <div className="absolute left-[1.1rem] top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary/40 border border-white/20 z-20 group-hover:scale-150 group-hover:bg-primary transition-all duration-300 shadow-[0_0_10px_rgba(var(--primary),0.5)]" />
 
                                             <div className={cn(
-                                                "p-3 rounded-2xl relative z-10 transition-all duration-500 shadow-sm border border-white/5",
+                                                "p-3 rounded-xl relative z-10 transition-all duration-500 shadow-sm border border-white/5",
                                                 "group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-xl group-hover:border-white/20",
                                                 item.type === 'payment' ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" :
                                                     item.type === 'absence' ? "bg-orange-500/10 text-orange-600 dark:text-orange-400" :
@@ -246,7 +246,7 @@ export function RecentActivity({ schoolId: propSchoolId }: RecentActivityProps) 
                                             )}>
                                                 <item.icon className="h-5 w-5" />
                                             </div>
-                                            <div className="flex-1 min-w-0 bg-white/5 p-3 rounded-2xl border border-transparent group-hover:border-white/10 group-hover:bg-white/10 transition-all duration-500 backdrop-blur-sm">
+                                            <div className="flex-1 min-w-0 bg-white/5 p-3 rounded-xl border border-transparent group-hover:border-white/10 group-hover:bg-white/10 transition-all duration-500 backdrop-blur-sm">
                                                 <p className="text-sm font-black truncate group-hover:text-primary transition-colors leading-tight">
                                                     {item.content}
                                                 </p>

@@ -58,6 +58,7 @@ export async function POST(req: Request) {
                     cancelUrl: `${BASE_URL}/payment/error?type=${type}`,
                 });
                 if (stripeResult.error) return NextResponse.json({ error: stripeResult.error }, { status: 500 });
+                if (!stripeResult.url) return NextResponse.json({ error: "L'URL de paiement Stripe n'a pas été générée." }, { status: 500 });
                 return NextResponse.json({ url: stripeResult.url });
 
             case 'wave':
@@ -68,6 +69,7 @@ export async function POST(req: Request) {
                     success_url: `${BASE_URL}/payment/success?type=${type}`,
                     client_reference: referenceValue,
                 });
+                if (!waveUrl) return NextResponse.json({ error: "L'URL de paiement Wave n'a pas été générée." }, { status: 500 });
                 return NextResponse.json({ url: waveUrl });
 
             case 'genius':
@@ -88,7 +90,9 @@ export async function POST(req: Request) {
                         duration: duration || ''
                     }
                 });
-                return NextResponse.json({ url: geniusResult.data.payment_url });
+                const finalGeniusUrl = geniusResult.data?.payment_url || geniusResult.data?.checkout_url;
+                if (!finalGeniusUrl) return NextResponse.json({ error: "L'URL de paiement Genius n'a pas été générée par l'API." }, { status: 500 });
+                return NextResponse.json({ url: finalGeniusUrl });
 
             case 'paydunya':
                 const paydunyaResult = await createPayDunyaCheckout({
@@ -114,6 +118,7 @@ export async function POST(req: Request) {
                     lang: 'fr',
                     reference: referenceValue,
                 });
+                if (!orangeUrl) return NextResponse.json({ error: "L'URL de paiement Orange n'a pas été générée." }, { status: 500 });
                 return NextResponse.json({ url: orangeUrl });
 
             case 'mtn':

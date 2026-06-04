@@ -40,11 +40,11 @@ export function AnnouncementBanner() {
 
   if (isLoading) {
     return (
-      <div className="w-full h-[88px] rounded-2xl overflow-hidden glass-card p-4 flex items-center gap-4">
-        <Skeleton className="h-12 w-12 rounded-xl bg-white/5" />
+      <div className="w-full h-[88px] rounded-xl overflow-hidden glass-card p-4 flex items-center gap-4">
+        <Skeleton className="h-12 w-12 rounded-xl bg-slate-200/50" />
         <div className="flex-1 space-y-2">
-          <Skeleton className="h-5 w-1/3 bg-white/10" />
-          <Skeleton className="h-4 w-1/2 bg-white/5" />
+          <Skeleton className="h-5 w-1/3 bg-slate-200/80" />
+          <Skeleton className="h-4 w-1/2 bg-slate-200/50" />
         </div>
       </div>
     )
@@ -55,31 +55,31 @@ export function AnnouncementBanner() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="relative group mb-6"
+      className="relative group"
     >
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200 animate-pulse" />
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-400 to-blue-400 rounded-xl blur opacity-15 group-hover:opacity-30 transition duration-1000 group-hover:duration-200" />
       
-      <div className="relative overflow-hidden rounded-2xl glass-card border-blue-500/20 bg-blue-500/5 backdrop-blur-xl transition-all duration-500">
+      <div className="relative overflow-hidden rounded-xl bg-white/40 backdrop-blur-xl border border-white/60 shadow-xl transition-all duration-500 hover:shadow-2xl">
         {/* Animated Background Mesh */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-          <div className="absolute top-0 -right-4 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+        <div className="absolute inset-0 opacity-10 pointer-events-none">
+          <div className="absolute top-0 -left-4 w-72 h-72 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
+          <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
         </div>
 
-        <div className="relative z-10 p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-between">
-          <div className="flex items-center gap-4 md:gap-6">
+        <div className="relative z-10 p-5 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-between">
+          <div className="flex items-center gap-4 md:gap-5">
             <div className="relative shrink-0">
-              <div className="absolute -inset-1 bg-blue-500/20 rounded-xl blur-sm" />
-              <div className="relative p-3.5 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-xl shadow-blue-500/20 border border-blue-400/30">
+              <div className="absolute -inset-1 bg-indigo-400/20 rounded-xl blur-sm" />
+              <div className="relative p-3.5 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-lg shadow-indigo-200 border border-indigo-400/30">
                 <Megaphone className="h-6 w-6" />
               </div>
             </div>
             
             <div className="space-y-1">
-              <h3 className="text-lg md:text-xl font-black text-white tracking-tight leading-none">
+              <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight leading-none">
                 {announcement.title}
               </h3>
-              <p className="text-blue-100/70 text-sm md:text-base font-medium line-clamp-1">
+              <p className="text-slate-500 text-sm md:text-base font-medium line-clamp-1">
                 {announcement.content}
               </p>
             </div>
@@ -87,7 +87,7 @@ export function AnnouncementBanner() {
 
           <Button 
             asChild 
-            className="rounded-xl font-bold px-6 py-5 bg-white/10 hover:bg-white/20 text-white border border-white/10 backdrop-blur-md transition-all duration-300 group/btn shrink-0"
+            className="rounded-xl font-black px-6 h-12 bg-indigo-600 hover:bg-indigo-700 text-white border-none shadow-lg shadow-indigo-200 transition-all duration-300 hover:scale-105 active:scale-95 group/btn shrink-0"
           >
             <Link href="/dashboard/messagerie">
               Voir les messages

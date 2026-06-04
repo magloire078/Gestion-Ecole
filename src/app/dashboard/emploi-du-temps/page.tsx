@@ -306,7 +306,7 @@ export default function TimetablePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="space-y-8 max-w-[1600px] mx-auto p-4 md:p-8"
+        className="space-y-4 max-w-[1600px] mx-auto p-4 md:p-6"
       >
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
@@ -316,7 +316,7 @@ export default function TimetablePage() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <div className="flex items-center gap-1 bg-white/40 backdrop-blur-md p-1 rounded-2xl border border-white/60 shadow-sm">
+            <div className="flex items-center gap-1 bg-white/40 backdrop-blur-md p-1 rounded-xl border border-white/60 shadow-sm">
                <Button 
                 variant={viewMode === 'grid' ? 'secondary' : 'ghost'} 
                 size="sm" 
@@ -336,10 +336,10 @@ export default function TimetablePage() {
             </div>
 
             <Select value={selectedClassId} onValueChange={setSelectedClassId}>
-              <SelectTrigger className="w-full sm:w-[220px] bg-white/50 border-white/60 rounded-2xl h-12 font-bold text-slate-700 backdrop-blur-md">
+              <SelectTrigger className="w-full sm:w-[220px] bg-white/50 border-white/60 rounded-xl h-12 font-bold text-slate-700 backdrop-blur-md">
                 <SelectValue placeholder="Filtrer par classe" />
               </SelectTrigger>
-              <SelectContent className="rounded-2xl border-white/40">
+              <SelectContent className="rounded-xl border-white/40">
                 <SelectItem value="all" className="font-medium">Toutes les classes</SelectItem>
                 {classes.map(c => <SelectItem key={c.id} value={c.id} className="font-medium">{c.name}</SelectItem>)}
               </SelectContent>
@@ -348,16 +348,16 @@ export default function TimetablePage() {
             {canManageClasses && (
               <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full sm:w-auto h-12 px-6 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 font-black transition-all hover:scale-105 active:scale-95" onClick={() => handleOpenFormDialog(null)}>
+                  <Button className="w-full sm:w-auto h-12 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg shadow-indigo-100 font-black transition-all hover:scale-105 active:scale-95" onClick={() => handleOpenFormDialog(null)}>
                     <PlusCircle className="mr-2 h-5 w-5" /> Ajouter un cours
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-[2.5rem]">
-                   <div className="bg-indigo-600 p-8 text-white">
+                <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none shadow-2xl rounded-xl">
+                   <div className="bg-indigo-600 p-4 md:p-6 text-white">
                     <DialogTitle className="text-3xl font-black tracking-tight">Planifier un cours</DialogTitle>
                     <DialogDescription className="text-indigo-100 font-medium mt-2">Configurez les détails du cours et gérez l&apos;allocation horaire.</DialogDescription>
                   </div>
-                  <div className="p-8 bg-white">
+                  <div className="p-4 md:p-6 bg-white">
                     <TimetableForm
                       schoolId={schoolId!}
                       entry={editingEntry}
@@ -377,14 +377,14 @@ export default function TimetablePage() {
 
         {/* Legend / Feedback */}
         {selectedClassId === 'all' && canManageClasses && (
-          <div className="flex items-center gap-3 text-sm text-amber-700 bg-amber-50/50 backdrop-blur-sm p-4 rounded-[1.5rem] border border-amber-200/50 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
+          <div className="flex items-center gap-3 text-sm text-amber-700 bg-amber-50/50 backdrop-blur-sm p-4 rounded-xl border border-amber-200/50 shadow-sm animate-in fade-in slide-in-from-top-2 duration-700">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
             <span className="font-medium">Vous visualisez l&apos;emploi du temps global. Utilisez le **glisser-déposer** pour réorganiser les cours instantanément.</span>
           </div>
         )}
 
         {/* Content Section */}
-        <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border-t-white/80">
+        <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-xl overflow-hidden border-t-white/80">
           <CardContent className="p-0">
             {viewMode === 'grid' ? (
               <div className="overflow-x-auto custom-scrollbar">
@@ -402,7 +402,7 @@ export default function TimetablePage() {
                       <TableRow key={i}>
                         <TableCell className="border-r border-slate-50 p-6 text-center"><Skeleton className="h-10 w-20 mx-auto rounded-xl" /></TableCell>
                         {daysOfWeek.map(day => (
-                          <TableCell key={day} className="border-r border-slate-50 last:border-r-0 p-3"><Skeleton className="h-28 w-full rounded-2xl" /></TableCell>
+                          <TableCell key={day} className="border-r border-slate-50 last:border-r-0 p-3"><Skeleton className="h-28 w-full rounded-xl" /></TableCell>
                         ))}
                       </TableRow>
                     )) : allTimeSlots.map(time => (
@@ -449,7 +449,7 @@ export default function TimetablePage() {
                 </Table>
               </div>
             ) : (
-              <div className="p-6 space-y-8">
+              <div className="p-6 space-y-4">
                 {daysOfWeek.map(day => {
                   const dayEntries = filteredTimetable.filter(e => e.day === day).sort((a,b) => a.startTime.localeCompare(b.startTime));
                   if (dayEntries.length === 0) return null;
@@ -466,7 +466,7 @@ export default function TimetablePage() {
                           const classInfo = classes.find(c => c.id === entry.classId);
                           const color = entry.color || subjectInfo?.color || '#3b82f6';
                           return (
-                            <div key={entry.id} className="group relative bg-white/50 backdrop-blur-sm p-6 rounded-3xl border border-white/60 hover:border-indigo-600/30 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-100 hover:-translate-y-1">
+                            <div key={entry.id} className="group relative bg-white/50 backdrop-blur-sm p-6 rounded-xl border border-white/60 hover:border-indigo-600/30 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-100 hover:-translate-y-1">
                               <div className="flex justify-between items-start mb-4">
                                 <div className="flex items-center gap-4">
                                   <SubjectColorIndicator color={color} className="h-12 w-1.5" />
@@ -545,16 +545,16 @@ export default function TimetablePage() {
 
         {/* Delete Confirmation Dialog */}
         <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <AlertDialogContent className="rounded-[2.5rem] border-none shadow-2xl p-0 overflow-hidden">
-            <div className="bg-rose-600 p-8 text-white">
+          <AlertDialogContent className="rounded-xl border-none shadow-2xl p-0 overflow-hidden">
+            <div className="bg-rose-600 p-4 md:p-6 text-white">
                 <AlertDialogTitle className="text-3xl font-black tracking-tight">Supprimer ce cours ?</AlertDialogTitle>
                 <AlertDialogDescription className="text-rose-100 font-medium mt-2">
                     Cette action est irréversible. Le cours de <span className="font-black text-white">{entryToDelete?.subject}</span> sera définitivement retiré de l&apos;emploi du temps.
                 </AlertDialogDescription>
             </div>
-            <div className="p-8 bg-white flex justify-end gap-3">
-              <AlertDialogCancel className="rounded-2xl border-slate-200 font-bold h-12 px-6">Annuler</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDeleteEntry} className="bg-rose-600 hover:bg-rose-700 text-white rounded-2xl h-12 px-8 font-black shadow-lg shadow-rose-100">Supprimer</AlertDialogAction>
+            <div className="p-4 md:p-6 bg-white flex justify-end gap-3">
+              <AlertDialogCancel className="rounded-xl border-slate-200 font-bold h-12 px-6">Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteEntry} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl h-12 px-8 font-black shadow-lg shadow-rose-100">Supprimer</AlertDialogAction>
             </div>
           </AlertDialogContent>
         </AlertDialog>

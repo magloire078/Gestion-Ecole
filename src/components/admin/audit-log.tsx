@@ -102,7 +102,7 @@ export const AuditLog = ({ limit }: { limit: number }) => {
   const loading = logsLoading || dataLoading;
 
   return (
-    <div className="bg-white rounded-[32px] border border-blue-50/50 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-blue-50/50 shadow-sm overflow-hidden">
       <Table>
         <TableHeader className="bg-slate-50/50">
           <TableRow className="hover:bg-transparent border-none">

@@ -20,7 +20,10 @@ type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 
  * This replaces the previous Server Action to support static export.
  */
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
-    const API_URL = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+    // Use relative path in browser to avoid cross-port issues in dev, fallback to env var for server-side
+    const API_URL = typeof window !== 'undefined' 
+        ? '' 
+        : (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000');
 
     try {
         const response = await fetch(`${API_URL}/api/payments/create-link`, {
@@ -44,7 +47,12 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
         if (response.ok && result.url) {
             return { url: result.url, error: null };
         } else {
-            return { url: null, error: result.error || "Erreur lors de la création du lien de paiement." };
+            console.error("[PaymentService] API Error Response:", result);
+            let errorMessage = result.error || result.message;
+            if (!errorMessage) {
+                errorMessage = `Erreur inattendue. Réponse serveur: ${JSON.stringify(result)}`;
+            }
+            return { url: null, error: errorMessage };
         }
     } catch (e: any) {
         console.error("[PaymentService] Fetch error:", e);

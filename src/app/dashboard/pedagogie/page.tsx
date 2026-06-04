@@ -1,7 +1,12 @@
 'use client';
 
-import { redirect } from 'next/navigation';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function PedagogiePage() {
-    redirect('/dashboard/pedagogie/structure');
+    const router = useRouter();
+    useEffect(() => {
+        router.replace('/dashboard/pedagogie/structure');
+    }, [router]);
+    return null;
 }

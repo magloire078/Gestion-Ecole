@@ -165,11 +165,11 @@ export default function StockPage() {
         }
     };
 
-    if (schoolLoading) return <div className="p-8"><Skeleton className="h-12 w-48 mb-6" /><Skeleton className="h-96 w-full" /></div>;
+    if (schoolLoading) return <div className="p-4 md:p-6"><Skeleton className="h-12 w-48 mb-6" /><Skeleton className="h-96 w-full" /></div>;
 
     if (error || stocksError) {
         return (
-            <div className="p-8">
+            <div className="p-4 md:p-6">
                 <Card className="border-destructive/50 bg-destructive/10">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2 text-destructive">
@@ -190,7 +190,7 @@ export default function StockPage() {
     }
 
     return (
-        <div className="space-y-8 pb-10">
+        <div className="space-y-4 pb-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/60">Gestion des Stocks</h1>

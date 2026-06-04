@@ -1,6 +1,13 @@
 
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function InternatPage() {
-    redirect('/dashboard/internat/dashboard');
+    const router = useRouter();
+    useEffect(() => {
+        router.replace('/dashboard/internat/dashboard');
+    }, [router]);
+    return null;
 }

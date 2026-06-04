@@ -158,14 +158,14 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
     const sortedSubjects = useMemo(() => Object.keys(subjectAverages).sort((a, b) => subjectAverages[b].average - subjectAverages[a].average), [subjectAverages]);
 
     return (
-        <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border-t-white/80 animate-in fade-in duration-700">
+        <Card className="bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl shadow-slate-200/50 rounded-xl overflow-hidden border-t-white/80 animate-in fade-in duration-700">
             <CardHeader className="pb-6 border-b border-white/40">
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
                         <CardTitle className="text-2xl font-black text-slate-800 tracking-tight">Résultats Scolaires</CardTitle>
                         <CardDescription className="text-slate-500 font-medium">Analyse détaillée des performances académiques.</CardDescription>
                     </div>
-                    <div className="text-right bg-white/50 backdrop-blur-md p-4 rounded-3xl border border-white/60 shadow-sm">
+                    <div className="text-right bg-white/50 backdrop-blur-md p-4 rounded-xl border border-white/60 shadow-sm">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Moyenne Générale</p>
                         <div className="flex items-center gap-3">
                             <p className={cn("text-4xl font-black tracking-tighter", getGradeColor(generalAverage))}>
@@ -192,7 +192,7 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
                             const subjectGrades = grades.filter(g => g.subject === subject);
                             return (
                                 <AccordionItem value={subject} key={subject} className="border-b border-white/20 last:border-0">
-                                    <AccordionTrigger className="hover:no-underline py-6 px-4 rounded-2xl hover:bg-white/30 transition-all duration-300">
+                                    <AccordionTrigger className="hover:no-underline py-6 px-4 rounded-xl hover:bg-white/30 transition-all duration-300">
                                         <div className="grid grid-cols-1 md:grid-cols-2 w-full items-center gap-4 pr-4">
                                             <div className="flex flex-col items-start gap-2">
                                                 <span className="font-black text-lg text-slate-700 tracking-tight">{subject}</span>
@@ -211,7 +211,7 @@ export function GradesTab({ schoolId, studentId }: GradesTabProps) {
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="px-4 pb-4">
-                                        <div className="bg-white/20 rounded-2xl border border-white/30 overflow-hidden">
+                                        <div className="bg-white/20 rounded-xl border border-white/30 overflow-hidden">
                                             <Table>
                                                 <TableHeader className="bg-white/30">
                                                     <TableRow className="hover:bg-transparent border-b border-white/20">

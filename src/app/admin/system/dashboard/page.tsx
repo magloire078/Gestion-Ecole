@@ -75,7 +75,7 @@ export default function SystemAdminDashboard() {
                         Surveillance globale et contrôle de l'infrastructure GèreEcole.
                     </p>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-2xl border border-green-100/50">
+                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-xl border border-green-100/50">
                     <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
                     <span className="text-sm font-bold text-green-700 uppercase tracking-widest">
                         Infrastructure Live
@@ -98,10 +98,10 @@ export default function SystemAdminDashboard() {
                         <Link key={idx} href={action.link}>
                             <motion.div
                                 whileHover={{ y: -5 }}
-                                className="h-full bg-white rounded-[32px] border border-blue-50/50 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all group relative overflow-hidden"
+                                className="h-full bg-white rounded-xl border border-blue-50/50 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:shadow-blue-900/5 transition-all group relative overflow-hidden"
                             >
                                 <AnimatedHighlight delay={idx * 0.5} />
-                                <div className={cn("h-12 w-12 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", action.bg, action.color)}>
+                                <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110", action.bg, action.color)}>
                                     <action.icon className="h-6 w-6" />
                                 </div>
                                 <div>
@@ -117,17 +117,17 @@ export default function SystemAdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-8">
+                <div className="lg:col-span-2 space-y-4">
                     <RecentSchoolsList />
 
-                    <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
-                        <CardHeader className="p-8 pb-4">
+                    <Card className="rounded-xl border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm">
+                        <CardHeader className="p-4 md:p-6 pb-4">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <CardTitle className="text-2xl font-black text-[#0C365A] font-outfit tracking-tight">Activité Critique</CardTitle>
                                     <CardDescription className="text-slate-500 font-medium">Dernières actions sur le noyau système.</CardDescription>
                                 </div>
-                                <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400">
+                                <div className="h-12 w-12 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400">
                                     <Scroll className="h-6 w-6" />
                                 </div>
                             </div>
@@ -135,8 +135,8 @@ export default function SystemAdminDashboard() {
                         <CardContent className="px-8 pb-0">
                             <AuditLog limit={8} />
                         </CardContent>
-                        <CardFooter className="p-8">
-                            <Button asChild variant="outline" className="w-full h-12 rounded-2xl border-blue-100 text-[#0C365A] font-bold hover:bg-blue-50 transition-all">
+                        <CardFooter className="p-4 md:p-6">
+                            <Button asChild variant="outline" className="w-full h-12 rounded-xl border-blue-100 text-[#0C365A] font-bold hover:bg-blue-50 transition-all">
                                 <Link href="/admin/system/audit-log" className="flex items-center justify-center gap-2">
                                     Consulter l'historique complet
                                     <ArrowRight className="h-4 w-4" />
@@ -146,12 +146,12 @@ export default function SystemAdminDashboard() {
                     </Card>
                 </div>
 
-                <div className="lg:col-span-1 space-y-8">
+                <div className="lg:col-span-1 space-y-4">
                     <PlanDistributionChart />
 
-                    <Card className="rounded-[40px] border-blue-50/50 shadow-xl shadow-blue-900/5 overflow-hidden bg-[#0C365A] text-white">
-                        <CardHeader className="p-8">
-                            <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center text-[#2D9CDB] mb-4">
+                    <Card className="rounded-xl border-blue-50/50 shadow-xl shadow-blue-900/5 overflow-hidden bg-[#0C365A] text-white">
+                        <CardHeader className="p-4 md:p-6">
+                            <div className="h-12 w-12 rounded-xl bg-white/10 flex items-center justify-center text-[#2D9CDB] mb-4">
                                 <RefreshCw className="h-6 w-6" />
                             </div>
                             <CardTitle className="text-2xl font-black font-outfit tracking-tight">Maintenance Démo</CardTitle>
@@ -161,7 +161,7 @@ export default function SystemAdminDashboard() {
                             <Button
                                 onClick={handleResetDemo}
                                 disabled={isResetting || isSeeding}
-                                className="w-full h-14 bg-white text-[#0C365A] hover:bg-blue-50 border-none rounded-2xl font-black transition-all active:scale-95"
+                                className="w-full h-14 bg-white text-[#0C365A] hover:bg-blue-50 border-none rounded-xl font-black transition-all active:scale-95"
                             >
                                 {isResetting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-5 w-5" />}
                                 {isResetting ? "Restauration..." : "Réinitialiser la Démo"}
@@ -171,7 +171,7 @@ export default function SystemAdminDashboard() {
                                 onClick={handleSeedSystem}
                                 disabled={isResetting || isSeeding}
                                 variant="outline"
-                                className="w-full h-12 bg-transparent text-white hover:bg-white/10 border-white/20 rounded-2xl font-bold transition-all"
+                                className="w-full h-12 bg-transparent text-white hover:bg-white/10 border-white/20 rounded-xl font-bold transition-all"
                             >
                                 {isSeeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Rocket className="mr-2 h-4 w-4" />}
                                 {isSeeding ? "Peuplement..." : "Peupler les données Système"}
@@ -180,9 +180,9 @@ export default function SystemAdminDashboard() {
                     </Card>
 
                     {/* Infrastructure Card */}
-                    <Card className="rounded-[40px] border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm p-8">
+                    <Card className="rounded-xl border-blue-50/50 shadow-sm overflow-hidden bg-white/50 backdrop-blur-sm p-4 md:p-6">
                         <div className="flex items-center gap-4 mb-6">
-                            <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[#2D9CDB]">
+                            <div className="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center text-[#2D9CDB]">
                                 <Globe className="h-6 w-6" />
                             </div>
                             <div>

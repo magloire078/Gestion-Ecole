@@ -159,7 +159,7 @@ export function AdminChatPanel() {
                             </div>
                         )}
                         {!loading && chats.length === 0 && (
-                            <div className="p-8 text-center text-xs text-muted-foreground italic">
+                            <div className="p-4 md:p-6 text-center text-xs text-muted-foreground italic">
                                 Aucune discussion trouvée.
                             </div>
                         )}
@@ -258,7 +258,7 @@ export function AdminChatPanel() {
                                                     </div>
                                                 )}
                                                 <div className={cn(
-                                                    "px-4 py-2.5 rounded-2xl text-xs leading-relaxed shadow-sm",
+                                                    "px-4 py-2.5 rounded-xl text-xs leading-relaxed shadow-sm",
                                                     isSupport
                                                         ? "bg-[#0C365A] text-white rounded-tr-none"
                                                         : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none"

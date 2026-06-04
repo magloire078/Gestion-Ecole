@@ -47,7 +47,7 @@ function SuccessPageContent() {
             transition={{ duration: 0.5 }}
             className="w-full max-w-lg z-10"
         >
-            <Card className="glass-card overflow-hidden border-none shadow-2xl rounded-[32px]">
+            <Card className="glass-card overflow-hidden border-none shadow-2xl rounded-xl">
                 <div className="h-2 bg-gradient-to-r from-emerald-400 to-teal-500" />
                 <CardHeader className="text-center pt-10">
                     <motion.div
@@ -65,8 +65,8 @@ function SuccessPageContent() {
                         Merci pour votre confiance. Votre opération a été traitée avec succès.
                     </p>
                 </CardHeader>
-                <CardContent className="space-y-8 pb-10 px-8">
-                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-700/50 text-center">
+                <CardContent className="space-y-4 pb-10 px-8">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 border border-slate-100 dark:border-slate-700/50 text-center">
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-widest font-bold">Statut de la transaction</p>
                         <div className="flex items-center justify-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-lg">
                             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />

@@ -89,15 +89,15 @@ export function AdminsTable() {
 
   return (
     <>
-      <div className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-[40px] border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
-        <div className="p-8 border-b border-blue-50/50 dark:border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30 dark:bg-white/5">
+      <div className="bg-white dark:bg-[hsl(var(--admin-card))] rounded-xl border border-blue-50/50 dark:border-white/10 shadow-sm overflow-hidden transition-colors duration-500">
+        <div className="p-4 md:p-6 border-b border-blue-50/50 dark:border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-50/30 dark:bg-white/5">
           <div>
             <h3 className="text-xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit tracking-tight">Administrateurs Plateforme</h3>
             <p className="text-sm text-slate-400 font-medium">Gestion des accès super-utilisateur du système.</p>
           </div>
           <Button
             onClick={() => setIsGrantDialogOpen(true)}
-            className="rounded-2xl bg-[hsl(var(--admin-primary-dark))] hover:opacity-90 text-white font-bold h-11 px-6 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+            className="rounded-xl bg-[hsl(var(--admin-primary-dark))] hover:opacity-90 text-white font-bold h-11 px-6 shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
           >
             <UserPlus className="h-5 w-5 mr-2" />
             Accorder des droits
@@ -170,7 +170,7 @@ export function AdminsTable() {
       </div>
 
       <AlertDialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
-        <AlertDialogContent className="rounded-[32px] border-none shadow-2xl p-8 dark:bg-slate-900">
+        <AlertDialogContent className="rounded-xl border-none shadow-2xl p-4 md:p-6 dark:bg-slate-900">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl font-black text-[hsl(var(--admin-primary-dark))] dark:text-white font-outfit">Révoquer les privilèges ?</AlertDialogTitle>
             <AlertDialogDescription className="text-slate-500 font-medium">
@@ -179,10 +179,10 @@ export function AdminsTable() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 gap-3">
-            <AlertDialogCancel className="h-12 rounded-2xl border-blue-100 font-bold text-slate-600">Annuler</AlertDialogCancel>
+            <AlertDialogCancel className="h-12 rounded-xl border-blue-100 font-bold text-slate-600">Annuler</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRevoke}
-              className="h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 border-none font-bold shadow-lg shadow-rose-900/20"
+              className="h-12 rounded-xl bg-rose-500 hover:bg-rose-600 border-none font-bold shadow-lg shadow-rose-900/20"
               disabled={isRevoking}
             >
               {isRevoking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

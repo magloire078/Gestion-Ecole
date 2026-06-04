@@ -168,7 +168,7 @@ export default function LoginPage() {
 
           <div className="grid gap-6">
             <div className="flex items-center gap-4 group">
-              <div className="h-14 w-14 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-blue-50 dark:border-slate-800 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
+              <div className="h-14 w-14 rounded-xl bg-white dark:bg-slate-900 shadow-sm border border-blue-50 dark:border-slate-800 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
                 <ShieldCheck className="h-7 w-7" />
               </div>
               <div>
@@ -177,7 +177,7 @@ export default function LoginPage() {
               </div>
             </div>
             <div className="flex items-center gap-4 group">
-              <div className="h-14 w-14 rounded-2xl bg-white dark:bg-slate-900 shadow-sm border border-blue-50 dark:border-slate-800 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
+              <div className="h-14 w-14 rounded-xl bg-white dark:bg-slate-900 shadow-sm border border-blue-50 dark:border-slate-800 flex items-center justify-center text-[#2D9CDB] group-hover:scale-110 transition-transform">
                 <Zap className="h-7 w-7" />
               </div>
               <div>
@@ -192,7 +192,7 @@ export default function LoginPage() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4, duration: 1 }}
-            className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-white/50"
+            className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-white/50"
           >
             <Image
               src="/custom-assets/home-hero.jpg"
@@ -216,7 +216,7 @@ export default function LoginPage() {
             initial={{ rotateY: 5 }}
             animate={{ rotateY: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] dark:shadow-none border border-blue-50/50 dark:border-slate-800 p-6 md:p-8 relative overflow-hidden group"
+            className="w-full max-w-md mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-[0_40px_100px_rgba(12,54,90,0.1)] dark:shadow-none border border-blue-50/50 dark:border-slate-800 p-4 md:p-6 relative overflow-hidden group"
           >
             <div className="flex flex-col items-center mb-8">
               <div className="mb-4">
@@ -236,7 +236,7 @@ export default function LoginPage() {
                   exit={{ opacity: 0, y: -10 }}
                   className="mb-6"
                 >
-                  <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-2xl">
+                  <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-xl">
                     <AlertDescription className="font-medium">{error}</AlertDescription>
                   </Alert>
                 </motion.div>
@@ -254,7 +254,7 @@ export default function LoginPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isProcessing || isGoogleProcessing}
-                    className="h-14 pl-12 bg-slate-50 dark:bg-slate-800 dark:text-white border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                    className="h-14 pl-12 bg-slate-50 dark:bg-slate-800 dark:text-white border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-[#2D9CDB] transition-all rounded-xl font-medium"
                   />
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                 </div>
@@ -275,7 +275,7 @@ export default function LoginPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isProcessing || isGoogleProcessing}
-                    className="h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-800 dark:text-white border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                    className="h-14 pl-12 pr-12 bg-slate-50 dark:bg-slate-800 dark:text-white border-transparent focus:bg-white dark:focus:bg-slate-950 focus:border-[#2D9CDB] transition-all rounded-xl font-medium"
                   />
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                   <button
@@ -290,7 +290,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-14 rounded-2xl text-lg font-bold bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full h-14 rounded-xl text-lg font-bold bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                 disabled={isProcessing || isGoogleProcessing}
               >
                 {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : "Se connecter"}
@@ -311,7 +311,7 @@ export default function LoginPage() {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isGoogleProcessing}
-              className="w-full h-14 rounded-2xl border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-200 transition-all font-bold text-slate-600"
+              className="w-full h-14 rounded-xl border-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-slate-200 transition-all font-bold text-slate-600"
             >
               {isGoogleProcessing ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

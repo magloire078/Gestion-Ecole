@@ -343,11 +343,11 @@ export default function GradeEntryPage() {
   const isLoading = schoolLoading || classesLoading || subjectsLoading;
   const isDataLoading = studentsLoading || isGradesLoading;
 
-  if (!schoolId) return <div className="p-8">Configuration de l&apos;école manquante...</div>;
+  if (!schoolId) return <div className="p-4 md:p-6">Configuration de l&apos;école manquante...</div>;
 
   return (
     <>
-      <div className="p-4 md:p-8 space-y-8 animate-in fade-in duration-700">
+      <div className="p-4 md:p-6 space-y-4 animate-in fade-in duration-700">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
             <h1 className="text-4xl font-black tracking-tight text-slate-900 bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-600 bg-clip-text text-transparent">Saisie des Notes</h1>
@@ -365,7 +365,7 @@ export default function GradeEntryPage() {
             </Button>
           )}
         </div>
-        <div className="bg-white/40 backdrop-blur-xl border border-white/40 p-8 rounded-[2rem] shadow-xl shadow-slate-200/40 space-y-4 animate-in slide-in-from-top-4 duration-1000 delay-150">
+        <div className="bg-white/40 backdrop-blur-xl border border-white/40 p-4 md:p-6 rounded-xl shadow-xl shadow-slate-200/40 space-y-4 animate-in slide-in-from-top-4 duration-1000 delay-150">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="w-full md:w-[250px]">
               <label className="text-xs font-semibold uppercase text-slate-500 mb-1.5 block px-1">Classe</label>
@@ -398,7 +398,7 @@ export default function GradeEntryPage() {
 
         {selectedClassId && selectedSubject && stats && (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 group rounded-[2rem] overflow-hidden border-t-white/80 shrink-0">
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 group rounded-xl overflow-hidden border-t-white/80 shrink-0">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -408,7 +408,7 @@ export default function GradeEntryPage() {
                       <span className="text-sm font-bold text-slate-400">/20</span>
                     </div>
                   </div>
-                  <div className="p-3.5 bg-indigo-50 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm shadow-indigo-100 group-hover:rotate-6">
+                  <div className="p-3.5 bg-indigo-50 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm shadow-indigo-100 group-hover:rotate-6">
                     <TrendingUp className="h-6 w-6" />
                   </div>
                 </div>
@@ -421,7 +421,7 @@ export default function GradeEntryPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500 group rounded-[2rem] overflow-hidden border-t-white/80">
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-emerald-100/50 transition-all duration-500 group rounded-xl overflow-hidden border-t-white/80">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -430,7 +430,7 @@ export default function GradeEntryPage() {
                       <h3 className="text-3xl font-black text-emerald-600 tracking-tight">{stats.successRate}%</h3>
                     </div>
                   </div>
-                  <div className="p-3.5 bg-emerald-50 rounded-2xl group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-sm shadow-emerald-100 group-hover:-rotate-6">
+                  <div className="p-3.5 bg-emerald-50 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-sm shadow-emerald-100 group-hover:-rotate-6">
                     <CheckCircle2 className="h-6 w-6" />
                   </div>
                 </div>
@@ -443,7 +443,7 @@ export default function GradeEntryPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-amber-100/50 transition-all duration-500 group rounded-[2rem] overflow-hidden border-t-white/80">
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-amber-100/50 transition-all duration-500 group rounded-xl overflow-hidden border-t-white/80">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -453,7 +453,7 @@ export default function GradeEntryPage() {
                       <span className="text-sm font-bold text-slate-400">/20</span>
                     </div>
                   </div>
-                  <div className="p-3.5 bg-amber-50 rounded-2xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-500 shadow-sm shadow-amber-100 group-hover:scale-110">
+                  <div className="p-3.5 bg-amber-50 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-500 shadow-sm shadow-amber-100 group-hover:scale-110">
                     <BarChart2 className="h-6 w-6" />
                   </div>
                 </div>
@@ -468,7 +468,7 @@ export default function GradeEntryPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-rose-100/50 transition-all duration-500 group rounded-[2rem] overflow-hidden border-t-white/80">
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-rose-100/50 transition-all duration-500 group rounded-xl overflow-hidden border-t-white/80">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -478,7 +478,7 @@ export default function GradeEntryPage() {
                       <span className="text-sm font-bold text-slate-400">/20</span>
                     </div>
                   </div>
-                  <div className="p-3.5 bg-rose-50 rounded-2xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-500 shadow-sm shadow-rose-100 group-hover:animate-pulse">
+                  <div className="p-3.5 bg-rose-50 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-500 shadow-sm shadow-rose-100 group-hover:animate-pulse">
                     <AlertTriangle className="h-6 w-6" />
                   </div>
                 </div>
@@ -492,7 +492,7 @@ export default function GradeEntryPage() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 group rounded-[2rem] overflow-hidden border-t-white/80">
+            <Card className="bg-white/60 backdrop-blur-xl border border-white/40 shadow-sm hover:shadow-2xl hover:shadow-indigo-100/50 transition-all duration-500 group rounded-xl overflow-hidden border-t-white/80">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -502,7 +502,7 @@ export default function GradeEntryPage() {
                       <span className="text-sm font-bold text-slate-400">Total</span>
                     </div>
                   </div>
-                  <div className="p-3.5 bg-indigo-50 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm shadow-indigo-100">
+                  <div className="p-3.5 bg-indigo-50 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-sm shadow-indigo-100">
                     <Layers className="h-6 w-6" />
                   </div>
                 </div>
@@ -520,7 +520,7 @@ export default function GradeEntryPage() {
         )}
 
         {selectedClassId && selectedSubject ? (
-          <Card className="bg-white/40 backdrop-blur-xl border border-white/40 shadow-2xl shadow-slate-200/50 rounded-[2.5rem] overflow-hidden border-t-white/60 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
+          <Card className="bg-white/40 backdrop-blur-xl border border-white/40 shadow-2xl shadow-slate-200/50 rounded-xl overflow-hidden border-t-white/60 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-500">
             <CardHeader className="pb-4 border-b border-slate-100/50">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -636,8 +636,8 @@ export default function GradeEntryPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="flex flex-col items-center justify-center h-96 bg-white/30 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-3xl animate-in zoom-in-95 duration-500">
-            <div className="p-4 bg-indigo-50 rounded-3xl mb-4">
+          <div className="flex flex-col items-center justify-center h-96 bg-white/30 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-xl animate-in zoom-in-95 duration-500">
+            <div className="p-4 bg-indigo-50 rounded-xl mb-4">
               <BarChart2 className="h-12 w-12 text-indigo-400" />
             </div>
             <h3 className="text-xl font-bold text-slate-900">Analyse de Classe</h3>
@@ -650,9 +650,9 @@ export default function GradeEntryPage() {
 
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden border-none bg-transparent shadow-2xl">
-          <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-[32px] overflow-hidden">
-            <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-8 text-white relative">
-              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+          <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-xl overflow-hidden">
+            <div className="bg-gradient-to-br from-indigo-600 to-violet-700 p-4 md:p-6 text-white relative">
+              <div className="absolute top-0 right-0 p-4 md:p-6 opacity-10 pointer-events-none">
                 <PlusCircle className="h-24 w-24" />
               </div>
               <DialogHeader>
@@ -663,7 +663,7 @@ export default function GradeEntryPage() {
               </DialogHeader>
             </div>
 
-            <div className="p-8">
+            <div className="p-4 md:p-6">
               <Form {...form}>
                 <form id="grade-form" onSubmit={form.handleSubmit(handleSubmitGrade)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -778,7 +778,7 @@ export default function GradeEntryPage() {
                 <Button 
                   variant="ghost" 
                   onClick={() => setIsFormOpen(false)}
-                  className="flex-1 h-12 rounded-2xl font-bold text-slate-500"
+                  className="flex-1 h-12 rounded-xl font-bold text-slate-500"
                 >
                   Annuler
                 </Button>
@@ -786,7 +786,7 @@ export default function GradeEntryPage() {
                   type="submit" 
                   form="grade-form" 
                   disabled={form.formState.isSubmitting}
-                  className="flex-[2] h-12 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg shadow-indigo-200"
+                  className="flex-[2] h-12 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black shadow-lg shadow-indigo-200"
                 >
                   <span className="flex items-center gap-2">
                     {form.formState.isSubmitting ? (
@@ -810,8 +810,8 @@ export default function GradeEntryPage() {
 
       <AlertDialog open={isDeleting} onOpenChange={setIsDeleting}>
         <AlertDialogContent className="sm:max-w-[400px] p-0 overflow-hidden border-none bg-transparent shadow-2xl">
-          <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-[32px] overflow-hidden p-8">
-            <div className="h-16 w-16 bg-rose-50 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+          <div className="bg-white/90 backdrop-blur-xl border border-white/80 rounded-xl overflow-hidden p-4 md:p-6">
+            <div className="h-16 w-16 bg-rose-50 rounded-xl flex items-center justify-center mb-6 mx-auto">
               <Trash2 className="h-8 w-8 text-rose-500" />
             </div>
             
@@ -825,12 +825,12 @@ export default function GradeEntryPage() {
             </div>
 
             <div className="mt-8 flex gap-3">
-              <AlertDialogCancel className="flex-1 h-12 rounded-2xl bg-slate-50 border-slate-100 font-bold text-slate-500 hover:bg-slate-100">
+              <AlertDialogCancel className="flex-1 h-12 rounded-xl bg-slate-50 border-slate-100 font-bold text-slate-500 hover:bg-slate-100">
                 Annuler
               </AlertDialogCancel>
               <AlertDialogAction 
                 onClick={handleDeleteGrade} 
-                className="flex-1 h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white font-black shadow-lg shadow-rose-100"
+                className="flex-1 h-12 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-black shadow-lg shadow-rose-100"
               >
                 Supprimer
               </AlertDialogAction>

@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4, duration: 1 }}
-            className="relative w-full aspect-video rounded-3xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-white/50"
+            className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl shadow-blue-900/10 border border-white/50"
           >
             <Image
               src="/custom-assets/home-hero.jpg"
@@ -86,7 +86,7 @@ export default function ForgotPasswordPage() {
               fill
               className="object-cover opacity-80"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0C365A]/60 to-transparent flex items-center p-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0C365A]/60 to-transparent flex items-center p-4 md:p-6">
               <div className="max-w-xs">
                 <Shield className="h-12 w-12 text-white mb-4" />
                 <h2 className="text-2xl font-bold text-white">Protection des données</h2>
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
             initial={{ rotateX: 5 }}
             animate={{ rotateX: 0 }}
             transition={{ duration: 2, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
-            className="w-full max-w-md mx-auto bg-white rounded-[40px] shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-6 md:p-8 relative overflow-hidden group"
+            className="w-full max-w-md mx-auto bg-white rounded-xl shadow-[0_40px_100px_rgba(12,54,90,0.1)] border border-blue-50/50 p-4 md:p-6 relative overflow-hidden group"
           >
             <AnimatedHighlight />
 
@@ -116,7 +116,7 @@ export default function ForgotPasswordPage() {
                 <Logo compact />
               </div>
               <div className="text-center mt-2">
-                <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-blue-50 mb-4 text-[#2D9CDB]">
+                <div className="inline-flex items-center justify-center p-3 rounded-xl bg-blue-50 mb-4 text-[#2D9CDB]">
                   <HelpCircle className="h-8 w-8" />
                 </div>
                 <h2 className="text-3xl font-black text-[#0C365A] font-outfit tracking-tight">Accès oublié ?</h2>
@@ -127,7 +127,7 @@ export default function ForgotPasswordPage() {
             <AnimatePresence>
               {error && (
                 <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="mb-6">
-                  <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-2xl">
+                  <Alert variant="destructive" className="bg-red-50 border-red-100 text-red-600 rounded-xl">
                     <AlertDescription className="font-medium">{error}</AlertDescription>
                   </Alert>
                 </motion.div>
@@ -138,7 +138,7 @@ export default function ForgotPasswordPage() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="text-center p-8 bg-blue-50 rounded-[30px] border border-blue-100/50 relative z-10"
+                className="text-center p-4 md:p-6 bg-blue-50 rounded-xl border border-blue-100/50 relative z-10"
               >
                 <div className="h-16 w-16 bg-white rounded-full flex items-center justify-center text-[#2D9CDB] mx-auto mb-4 shadow-sm">
                   <Mail className="h-8 w-8" />
@@ -159,7 +159,7 @@ export default function ForgotPasswordPage() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       disabled={isProcessing}
-                      className="h-14 pl-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-2xl font-medium"
+                      className="h-14 pl-12 bg-slate-50 border-transparent focus:bg-white focus:border-[#2D9CDB] transition-all rounded-xl font-medium"
                     />
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300 group-focus-within:text-[#2D9CDB] transition-colors" />
                   </div>
@@ -167,7 +167,7 @@ export default function ForgotPasswordPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-14 rounded-2xl text-lg font-bold bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full h-14 rounded-xl text-lg font-bold bg-[#0C365A] hover:bg-[#0C365A]/90 text-white shadow-xl shadow-blue-900/10 transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
                   disabled={isProcessing || !email}
                 >
                   {isProcessing ? <Loader2 className="h-6 w-6 animate-spin" /> : "Envoyer le lien"}

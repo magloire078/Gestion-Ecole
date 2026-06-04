@@ -240,7 +240,7 @@ export default function MaintenanceKanbanPage() {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.1 }}
-                        className="bg-muted/30 rounded-2xl border border-white/5 backdrop-blur-sm overflow-hidden"
+                        className="bg-muted/30 rounded-xl border border-white/5 backdrop-blur-sm overflow-hidden"
                     >
                         <div className="p-4 border-b border-white/5 bg-white/5 flex items-center justify-between">
                             <div className="flex items-center gap-2">

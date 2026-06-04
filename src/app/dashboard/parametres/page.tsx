@@ -149,7 +149,7 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="space-y-6"><Skeleton className="h-[500px] w-full rounded-3xl" /></div>;
+    return <div className="space-y-6"><Skeleton className="h-[500px] w-full rounded-xl" /></div>;
   }
 
   const containerVariants = {
@@ -163,9 +163,9 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8 min-h-[600px]">
+    <div className="space-y-4 min-h-[600px]">
       {error && (
-        <Alert variant="destructive" className="rounded-2xl border-destructive/20 bg-destructive/5 animate-in fade-in slide-in-from-top-4">
+        <Alert variant="destructive" className="rounded-xl border-destructive/20 bg-destructive/5 animate-in fade-in slide-in-from-top-4">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Erreur</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
@@ -177,12 +177,12 @@ export default function SettingsPage() {
         initial="hidden"
         animate="visible"
         variants={containerVariants}
-        className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary/5 via-primary/10 to-transparent p-8 md:p-12 border shadow-inner"
+        className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/5 via-primary/10 to-transparent p-4 md:p-6 md:p-12 border shadow-inner"
       >
         <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
           <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary to-primary/60 rounded-3xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative h-32 w-32 md:h-40 md:w-40 rounded-3xl border-2 border-white bg-white/80 backdrop-blur-md shadow-2xl flex items-center justify-center p-2 overflow-hidden overflow-hidden">
+            <div className="absolute -inset-1 bg-gradient-to-r from-primary to-primary/60 rounded-xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+            <div className="relative h-32 w-32 md:h-40 md:w-40 rounded-xl border-2 border-white bg-white/80 backdrop-blur-md shadow-2xl flex items-center justify-center p-2 overflow-hidden overflow-hidden">
               <SafeImage src={form.watch('mainLogoUrl')} alt="Logo" width={120} height={120} className="object-contain" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                 <ImageUploader
@@ -225,7 +225,7 @@ export default function SettingsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         <div className="lg:col-span-1 space-y-6">
-          <Card className="rounded-3xl border-none shadow-xl bg-gradient-to-b from-white to-neutral-50/50 backdrop-blur-md">
+          <Card className="rounded-xl border-none shadow-xl bg-gradient-to-b from-white to-neutral-50/50 backdrop-blur-md">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -234,7 +234,7 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {schoolData?.schoolCode && (
-                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10 space-y-2">
+                <div className="p-4 rounded-xl bg-primary/5 border border-primary/10 space-y-2">
                   <p className="text-xs font-medium text-primary/70">Code d'invitation</p>
                   <div className="flex items-center justify-between">
                     <code className="text-xl font-black tracking-widest text-primary">{schoolData.schoolCode}</code>
@@ -250,7 +250,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-3xl border-none shadow-xl bg-gradient-to-br from-red-50/50 to-white/50 backdrop-blur-md border border-red-100/50 overflow-hidden">
+          <Card className="rounded-xl border-none shadow-xl bg-gradient-to-br from-red-50/50 to-white/50 backdrop-blur-md border border-red-100/50 overflow-hidden">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold uppercase tracking-wider text-red-600 flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
@@ -269,7 +269,7 @@ export default function SettingsPage() {
 
         <div className="lg:col-span-3">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSaveChanges)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(handleSaveChanges)} className="space-y-4">
               <Tabs defaultValue="general" className="w-full" onValueChange={setActiveTab}>
                 <TabsList className="w-full justify-start gap-4 h-14 bg-transparent border-b rounded-none mb-8 px-0">
                   <TabsTrigger value="general" className="relative h-14 rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none px-6 font-semibold transition-all group">
@@ -308,19 +308,19 @@ export default function SettingsPage() {
                   >
                     <TabsContent value="general" className="relative space-y-6 mt-0">
                       <div className="absolute top-0 right-0 -translate-y-8 translate-x-8 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
-                      <Card className="rounded-[2rem] border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-6 md:p-8 overflow-hidden relative">
+                      <Card className="rounded-xl border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-4 md:p-6 overflow-hidden relative">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                           <FormField control={form.control} name="name" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="flex items-center gap-2 font-bold"><School className="h-4 w-4 text-primary" />Nom de l&apos;Établissement</FormLabel>
-                              <FormControl><Input className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="currentAcademicYear" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="flex items-center gap-2 font-bold"><Calendar className="h-4 w-4 text-primary" />Année Académique</FormLabel>
-                              <FormControl><Input placeholder="Ex: 2024-2025" className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input placeholder="Ex: 2024-2025" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
@@ -328,7 +328,7 @@ export default function SettingsPage() {
                             <FormField control={form.control} name="address" render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="flex items-center gap-2 font-bold"><Building className="h-4 w-4 text-primary" />Adresse Physique</FormLabel>
-                                <FormControl><Input placeholder="Quartier, Rue, Ville..." className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                                <FormControl><Input placeholder="Quartier, Rue, Ville..." className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )} />
@@ -338,19 +338,19 @@ export default function SettingsPage() {
                     </TabsContent>
 
                     <TabsContent value="admin" className="space-y-6 mt-0">
-                      <Card className="rounded-[2rem] border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-6 md:p-8">
+                      <Card className="rounded-xl border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-4 md:p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <FormField control={form.control} name="matricule" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="flex items-center gap-2 font-bold"><FileSignature className="h-4 w-4 text-primary" />Matricule Officiel</FormLabel>
-                              <FormControl><Input placeholder="Ex: 0123/ETAB/2024" className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input placeholder="Ex: 0123/ETAB/2024" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="cnpsEmployeur" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="flex items-center gap-2 font-bold"><Briefcase className="h-4 w-4 text-primary" />N° CNPS Employeur</FormLabel>
-                              <FormControl><Input placeholder="Numéro d'immatriculation" className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input placeholder="Numéro d'immatriculation" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
@@ -359,19 +359,19 @@ export default function SettingsPage() {
                     </TabsContent>
 
                     <TabsContent value="contact" className="space-y-6 mt-0">
-                      <Card className="rounded-[2rem] border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-6 md:p-8">
+                      <Card className="rounded-xl border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-4 md:p-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                           <FormField control={form.control} name="phone" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="flex items-center gap-2 font-bold"><Phone className="h-4 w-4 text-primary" />Téléphone</FormLabel>
-                              <FormControl><Input type="tel" className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input type="tel" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="email" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="flex items-center gap-2 font-bold"><Mail className="h-4 w-4 text-primary" />Email de Contact</FormLabel>
-                              <FormControl><Input type="email" placeholder="contact@ecole.com" className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input type="email" placeholder="contact@ecole.com" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
@@ -379,7 +379,7 @@ export default function SettingsPage() {
                             <FormField control={form.control} name="website" render={({ field }) => (
                               <FormItem>
                                 <FormLabel className="flex items-center gap-2 font-bold"><Globe className="h-4 w-4 text-primary" />Site Internet</FormLabel>
-                                <FormControl><Input type="url" placeholder="https://www.votre-école.com" className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                                <FormControl><Input type="url" placeholder="https://www.votre-école.com" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                                 <FormMessage />
                               </FormItem>
                             )} />
@@ -389,26 +389,26 @@ export default function SettingsPage() {
                     </TabsContent>
 
                     <TabsContent value="director" className="space-y-6 mt-0">
-                      <Card className="rounded-[2rem] border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-6 md:p-8 space-y-8">
+                      <Card className="rounded-xl border-none shadow-2xl shadow-primary/5 bg-white/80 backdrop-blur-xl border border-white/20 p-4 md:p-6 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                           <FormField control={form.control} name="directorFirstName" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="font-bold">Prénom</FormLabel>
-                              <FormControl><Input className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="directorLastName" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="font-bold">Nom</FormLabel>
-                              <FormControl><Input className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
                           <FormField control={form.control} name="directorPhone" render={({ field }) => (
                             <FormItem>
                               <FormLabel className="font-bold">Téléphone</FormLabel>
-                              <FormControl><Input type="tel" className="rounded-2xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
+                              <FormControl><Input type="tel" className="rounded-xl h-14 bg-neutral-100/50 border-transparent focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium text-lg" {...field} /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )} />
@@ -433,7 +433,7 @@ export default function SettingsPage() {
                                 storagePath={`ecoles/${schoolId}/signatures/`}
                                 resizeWidth={600}
                               >
-                                <Button type="button" variant="outline" className="rounded-2xl h-14 px-8 font-bold shadow-sm border-primary/20 hover:bg-primary/5 hover:text-primary transition-all active:scale-95">
+                                <Button type="button" variant="outline" className="rounded-xl h-14 px-8 font-bold shadow-sm border-primary/20 hover:bg-primary/5 hover:text-primary transition-all active:scale-95">
                                   <Upload className="h-5 w-5 mr-3" />
                                   Mettre à jour
                                 </Button>
@@ -444,8 +444,8 @@ export default function SettingsPage() {
                               whileHover={{ scale: 1.01 }}
                               className="relative group max-w-sm mx-auto md:mx-0 overflow-hidden"
                             >
-                              <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/5 rounded-[2rem] blur opacity-25 group-hover:opacity-100 transition duration-1000"></div>
-                              <div className="relative h-40 w-full rounded-[2rem] border-2 border-dashed border-primary/20 bg-primary/5 backdrop-blur-sm flex items-center justify-center overflow-hidden p-6">
+                              <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/5 rounded-xl blur opacity-25 group-hover:opacity-100 transition duration-1000"></div>
+                              <div className="relative h-40 w-full rounded-xl border-2 border-dashed border-primary/20 bg-primary/5 backdrop-blur-sm flex items-center justify-center overflow-hidden p-6">
                                 {field.value ? (
                                   <img
                                     src={field.value}
@@ -471,7 +471,7 @@ export default function SettingsPage() {
                 </AnimatePresence>
               </Tabs>
 
-              <div className="flex items-center justify-between pt-6 border-t sticky bottom-6 bg-white/80 backdrop-blur-xl p-6 rounded-[2.5rem] z-20 shadow-2xl border-white/50 ring-1 ring-black/5">
+              <div className="flex items-center justify-between pt-6 border-t sticky bottom-6 bg-white/80 backdrop-blur-xl p-6 rounded-xl z-20 shadow-2xl border-white/50 ring-1 ring-black/5">
                 <div className="hidden md:block">
                   <p className="text-sm text-muted-foreground font-semibold flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -483,7 +483,7 @@ export default function SettingsPage() {
                 <Button
                   type="submit"
                   disabled={isSaving || !form.formState.isDirty}
-                  className="rounded-2xl h-16 px-12 text-lg font-black shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 bg-primary hover:bg-primary/90 text-white gap-3"
+                  className="rounded-xl h-16 px-12 text-lg font-black shadow-2xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 bg-primary hover:bg-primary/90 text-white gap-3"
                 >
                   {isSaving ? (
                     <><Loader2 className="h-6 w-6 animate-spin" /> Enregistrement...</>
@@ -498,7 +498,7 @@ export default function SettingsPage() {
       </div>
 
       <AlertDialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
-        <AlertDialogContent className="rounded-[2.5rem] p-10 border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)]">
+        <AlertDialogContent className="rounded-xl p-10 border-none shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)]">
           <AlertDialogHeader className="space-y-4">
             <div className="h-16 w-16 rounded-full bg-red-100 flex items-center justify-center mx-auto md:mx-0">
               <AlertCircle className="h-8 w-8 text-red-600" />
@@ -509,8 +509,8 @@ export default function SettingsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="pt-8 gap-4 sm:gap-0">
-            <AlertDialogCancel className="rounded-2xl h-14 px-8 font-bold bg-neutral-100 border-none hover:bg-neutral-200 transition-all">Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleResetAccount} className="rounded-2xl h-14 px-8 font-bold bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-200 transition-all">
+            <AlertDialogCancel className="rounded-xl h-14 px-8 font-bold bg-neutral-100 border-none hover:bg-neutral-200 transition-all">Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetAccount} className="rounded-xl h-14 px-8 font-bold bg-red-600 hover:bg-red-700 text-white shadow-xl shadow-red-200 transition-all">
               Oui, quitter l&apos;école
             </AlertDialogAction>
           </AlertDialogFooter>

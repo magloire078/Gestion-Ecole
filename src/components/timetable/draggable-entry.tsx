@@ -98,7 +98,7 @@ export function DraggableTimetableEntry({
       {...listeners}
       {...attributes}
       className={cn(
-        "p-3 rounded-2xl text-[11px] mb-2 relative border-l-4 transition-all cursor-grab active:cursor-grabbing overflow-hidden",
+        "p-3 rounded-xl text-[11px] mb-2 relative border-l-4 transition-all cursor-grab active:cursor-grabbing overflow-hidden",
         isDragging ? "opacity-30 z-50 scale-105 shadow-2xl rotate-2" : "group bg-white/40 backdrop-blur-md border-white/60 shadow-sm hover:shadow-md hover:bg-white/60 hover:-translate-y-0.5",
         className
       )}

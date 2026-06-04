@@ -26,7 +26,7 @@ function PendingPageContent() {
             transition={{ duration: 0.5 }}
             className="w-full max-w-lg z-10"
         >
-            <Card className="glass-card overflow-hidden border-none shadow-2xl rounded-[32px]">
+            <Card className="glass-card overflow-hidden border-none shadow-2xl rounded-xl">
                 <div className="h-2 bg-gradient-to-r from-blue-400 to-indigo-500" />
                 <CardHeader className="text-center pt-10">
                     <motion.div
@@ -44,9 +44,9 @@ function PendingPageContent() {
                         Nous attendons la confirmation de votre paiement.
                     </p>
                 </CardHeader>
-                <CardContent className="space-y-8 pb-10 px-8">
+                <CardContent className="space-y-4 pb-10 px-8">
                     <div className="space-y-4">
-                        <div className="flex items-start gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/20">
+                        <div className="flex items-start gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-100 dark:border-blue-800/20">
                             <Smartphone className="h-6 w-6 text-blue-500 shrink-0 mt-1" />
                             <div className="text-sm">
                                 <p className="font-bold text-blue-900 dark:text-blue-200">Vérifiez votre téléphone</p>
@@ -54,7 +54,7 @@ function PendingPageContent() {
                             </div>
                         </div>
 
-                        <div className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                        <div className="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700/50">
                             <Info className="h-6 w-6 text-slate-500 shrink-0 mt-1" />
                             <div className="text-sm">
                                 <p className="font-bold text-slate-700 dark:text-slate-200">Que se passe-t-il ensuite ?</p>
