@@ -32,7 +32,7 @@ export async function POST(request: Request) {
         if (parsed.type === 'tuition') {
             await processTuitionPayment(parsed.schoolId, parsed.studentId, amountPaid, 'PayDunya');
         } else {
-            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'PayDunya');
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'PayDunya', amountPaid, 'XOF');
         }
 
         return new Response(null, { status: 200 });

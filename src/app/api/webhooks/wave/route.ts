@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         if (parsed.type === 'tuition') {
             await processTuitionPayment(parsed.schoolId, parsed.studentId, amountPaid, 'Wave');
         } else {
-            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Wave');
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Wave', amountPaid, 'XOF');
         }
 
         return NextResponse.json({ message: "Succès" }, { status: 200 });

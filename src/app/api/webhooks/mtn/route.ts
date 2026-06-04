@@ -41,7 +41,7 @@ export async function POST(request: Request) {
         if (parsed.type === 'tuition') {
             await processTuitionPayment(parsed.schoolId, parsed.studentId, amountPaid, 'MTN MoMo');
         } else {
-            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'MTN MoMo');
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'MTN MoMo', amountPaid, 'XOF');
         }
 
         return new Response(null, { status: 200 });

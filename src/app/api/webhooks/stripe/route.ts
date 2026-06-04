@@ -55,7 +55,7 @@ export async function POST(request: Request) {
       } catch (valErr) {
         console.warn("[Stripe Webhook] Validation prix ignorée:", valErr);
       }
-      await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Stripe');
+      await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Stripe', actualAmount, 'EUR');
     }
   } catch (dbError: any) {
     console.error("[Stripe Webhook] Erreur Firestore:", dbError);

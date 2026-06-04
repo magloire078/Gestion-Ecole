@@ -76,6 +76,9 @@ export async function POST(req: Request) {
                 amount,
             });
 
+        const successUrl = `${BASE_URL}/payment/success?type=${type}`;
+        const errorUrl = (psp: string) => `${BASE_URL}/payment/error?type=${type}&provider=${psp}${planName ? `&plan=${encodeURIComponent(planName)}` : ''}`;
+
         switch (provider.toLowerCase()) {
             case 'stripe':
                 const stripeResult = await createStripeCheckoutSession({
@@ -84,8 +87,8 @@ export async function POST(req: Request) {
                     description: type === 'tuition' ? `Paiement scolarité élève ID: ${studentId}` : `Abonnement école ${schoolId}`,
                     clientReferenceId: referenceValue,
                     customerEmail: userEmail,
-                    successUrl: `${BASE_URL}/payment/success?type=${type}&session_id={CHECKOUT_SESSION_ID}`,
-                    cancelUrl: `${BASE_URL}/payment/error?type=${type}`,
+                    successUrl: `${successUrl}&session_id={CHECKOUT_SESSION_ID}`,
+                    cancelUrl: errorUrl('stripe'),
                 });
                 if (stripeResult.error) return NextResponse.json({ error: stripeResult.error }, { status: 500 });
                 return NextResponse.json({ url: stripeResult.url });
@@ -94,8 +97,8 @@ export async function POST(req: Request) {
                 const waveUrl = await createWaveCheckoutSession({
                     amount: amount.toString(),
                     currency: 'XOF',
-                    error_url: `${BASE_URL}/payment/error?type=${type}`,
-                    success_url: `${BASE_URL}/payment/success?type=${type}`,
+                    error_url: errorUrl('wave'),
+                    success_url: successUrl,
                     client_reference: referenceValue,
                 });
                 return NextResponse.json({ url: waveUrl });
@@ -109,8 +112,8 @@ export async function POST(req: Request) {
                     payerName: userDisplayName || 'Client GèreEcole',
                     payerEmail: userEmail,
                     payerPhone: phone,
-                    successUrl: `${BASE_URL}/payment/success?type=${type}`,
-                    errorUrl: `${BASE_URL}/payment/error?type=${type}`,
+                    successUrl,
+                    errorUrl: errorUrl('genius'),
                     metadata: {
                         type,
                         schoolId,
@@ -125,8 +128,8 @@ export async function POST(req: Request) {
                     total_amount: amount,
                     description: type === 'tuition' ? `Scolarité ${studentId}` : `Abonnement ${duration} mois`,
                     custom_data: { reference: referenceValue },
-                    return_url: `${BASE_URL}/payment/success?type=${type}`,
-                    cancel_url: `${BASE_URL}/payment/error?type=${type}`,
+                    return_url: successUrl,
+                    cancel_url: errorUrl('paydunya'),
                     callback_url: `${BASE_URL}/api/webhooks/paydunya`,
                 });
                 return NextResponse.json({ url: paydunyaResult.url, error: paydunyaResult.error });
@@ -138,8 +141,8 @@ export async function POST(req: Request) {
                     currency: 'XOF',
                     order_id: `OM_${Date.now()}`,
                     amount: amount,
-                    return_url: `${BASE_URL}/payment/success?type=${type}`,
-                    cancel_url: `${BASE_URL}/payment/error?type=${type}`,
+                    return_url: successUrl,
+                    cancel_url: errorUrl('orangemoney'),
                     notif_url: `${BASE_URL}/api/webhooks/orangemoney`,
                     lang: 'fr',
                     reference: referenceValue,

@@ -4,18 +4,53 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { addMonths } from 'date-fns';
 import type { school as School, student as Student } from './data-types';
 import { formatCurrency } from './currency-utils';
+import { getPlanLimits, type ModuleName } from './subscription-plans';
 
 
 /**
  * Updates a school's subscription after a successful payment and sends confirmation.
+ *
+ * Optional `amountPaid`/`currency` enable anti-fraud validation:
+ * - Essentiel: any amount > 0 is rejected (plan is free).
+ * - Paid plans: amount must be at least 50 % of the floor price
+ *   (pricePerStudent × 1 student × durationMonths) to guard against a
+ *   forged webhook claiming the plan is paid for a token amount.
+ *
+ * Stripe converts XOF → EUR at ~655.957; pass `currency='EUR'` and the
+ * minimum will be converted accordingly.
  */
 export async function processSubscriptionPayment(
     schoolId: string,
     planName: string,
     durationMonths: number,
-    paymentProvider: string
+    paymentProvider: string,
+    amountPaid?: number,
+    currency: 'XOF' | 'EUR' = 'XOF',
 ) {
-    console.log(`[PaymentProcessing] Updating subscription for school: ${schoolId}, plan: ${planName}, duration: ${durationMonths} months`);
+    console.log(`[PaymentProcessing] Updating subscription for school: ${schoolId}, plan: ${planName}, duration: ${durationMonths} months, amount: ${amountPaid ?? 'n/a'} ${currency}`);
+
+    const planLimits = getPlanLimits(planName);
+    if (!planLimits) {
+        throw new Error(`[PaymentProcessing] Plan inconnu: ${planName}`);
+    }
+
+    if (typeof amountPaid === 'number') {
+        if (!Number.isFinite(amountPaid) || amountPaid < 0) {
+            throw new Error(`[PaymentProcessing] Montant invalide: ${amountPaid}`);
+        }
+        if (planLimits.pricePerStudent === 0 && amountPaid > 0) {
+            throw new Error(`[PaymentProcessing] Le plan ${planName} est gratuit, montant inattendu: ${amountPaid}`);
+        }
+        if (planLimits.pricePerStudent > 0) {
+            const XOF_TO_EUR_RATE = 655.957;
+            const floorXof = planLimits.pricePerStudent * Math.max(1, durationMonths);
+            const floorInPaidCurrency = currency === 'EUR' ? floorXof / XOF_TO_EUR_RATE : floorXof;
+            const tolerance = 0.5;
+            if (amountPaid < floorInPaidCurrency * tolerance) {
+                throw new Error(`[PaymentProcessing] Montant payé (${amountPaid} ${currency}) trop bas pour le plan ${planName} sur ${durationMonths} mois (plancher attendu: ${floorInPaidCurrency.toFixed(2)} ${currency}).`);
+            }
+        }
+    }
 
     const schoolRef = getAdminDb().collection('ecoles').doc(schoolId);
     const schoolSnap = await schoolRef.get();

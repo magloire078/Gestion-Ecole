@@ -41,7 +41,7 @@ export async function POST(request: Request) {
         if (parsed.type === 'tuition') {
             await processTuitionPayment(parsed.schoolId, parsed.studentId, amountPaid, 'Orange Money');
         } else {
-            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Orange Money');
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Orange Money', amountPaid, 'XOF');
         }
 
         return NextResponse.json({}, { status: 200 });

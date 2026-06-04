@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         }
 
         if (parsed.type === 'subscription') {
-            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Genius Pay');
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Genius Pay', parsed.amount, 'XOF');
         } else {
             await processTuitionPayment(parsed.schoolId, parsed.studentId, parsed.amount, 'Genius Pay');
         }
