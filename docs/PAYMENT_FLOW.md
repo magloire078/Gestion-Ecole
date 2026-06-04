@@ -253,7 +253,30 @@ Le parsing est centralisé dans `src/lib/payment-reference.ts`
   correspond au prix attendu (avec marge de 50 centimes pour les
   conversions XOF/EUR).
 
-## 8. Limitations actuelles
+## 8. Cycle de vie des abonnements (Cloud Function planifiée)
+
+Implémenté dans `functions/src/index.ts` (export `subscriptionLifecycle`) :
+- **Planning** : tous les jours à 06h00 (`Africa/Abidjan`).
+- **Scan** de la collection `ecoles`.
+- Pour chaque école dont `subscription.endDate` est définie :
+  - **J-7** : envoi email + notification au directeur (« renouvellement dans 7 jours »).
+  - **J-3** : rappel insistant.
+  - **Jour J et au-delà** : email d'expiration + bascule `subscription.status = 'expired'`.
+- **Anti-doublon** : `subscription.remindersSent.{d7|d3|expired}` stocke la date
+  d'envoi ; un même rappel ne part qu'une fois par jour.
+
+Déploiement :
+```bash
+cd functions && npm install
+firebase deploy --only functions:subscriptionLifecycle
+```
+
+Test local :
+```bash
+firebase emulators:start --only functions,firestore
+```
+
+## 9. Limitations actuelles
 
 - Les paiements MTN MoMo restent en **mode sandbox** par défaut tant que
   `MTN_API_BASE_URL` et `MTN_TARGET_ENVIRONMENT` ne sont pas overridés.
