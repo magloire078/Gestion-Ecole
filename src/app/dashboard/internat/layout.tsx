@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from '@/firebase';
-import { usePathname } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ModuleSubNav } from '@/components/layout/module-sub-nav';
 import { internatSubLinks } from '@/lib/nav-links';
 
 export default function InternatLayout({
@@ -18,7 +17,6 @@ export default function InternatLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
@@ -32,18 +30,7 @@ export default function InternatLayout({
                     Gérez les dortoirs, les chambres et les occupants.
                 </p>
             </div>
-            <Tabs value={pathname} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                    {internatSubLinks.map(link => (
-                        <Link href={link.href} key={link.href} passHref legacyBehavior>
-                            <TabsTrigger value={link.href}>
-                                <link.icon className="mr-2 h-4 w-4" />
-                                {link.label}
-                            </TabsTrigger>
-                        </Link>
-                    ))}
-                </TabsList>
-            </Tabs>
+            <ModuleSubNav links={internatSubLinks} />
             <div className="mt-6">{children}</div>
         </div>
     );

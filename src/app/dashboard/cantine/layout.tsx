@@ -9,8 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from '@/firebase';
-import { usePathname } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ModuleSubNav } from '@/components/layout/module-sub-nav';
 import { cantineSubLinks } from '@/lib/nav-links';
 
 export default function CantineLayout({
@@ -18,7 +17,6 @@ export default function CantineLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
@@ -32,18 +30,7 @@ export default function CantineLayout({
                     Gérez les menus, les réservations et les abonnements.
                 </p>
             </div>
-            <Tabs value={pathname} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                    {cantineSubLinks.map(link => (
-                        <Link href={link.href} key={link.href} passHref legacyBehavior>
-                            <TabsTrigger value={link.href}>
-                                <link.icon className="mr-2 h-4 w-4" />
-                                {link.label}
-                            </TabsTrigger>
-                        </Link>
-                    ))}
-                </TabsList>
-            </Tabs>
+            <ModuleSubNav links={cantineSubLinks} />
             <div className="mt-6">{children}</div>
         </div>
     );

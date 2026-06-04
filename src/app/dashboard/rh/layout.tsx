@@ -6,11 +6,10 @@ import Link from "next/link";
 import { useSubscription } from '@/hooks/use-subscription';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Lock, Users, Banknote } from "lucide-react";
+import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@/firebase";
-import { usePathname } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ModuleSubNav } from '@/components/layout/module-sub-nav';
 import { rhSubLinks } from "@/lib/nav-links";
 
 export default function RHLayout({
@@ -18,12 +17,11 @@ export default function RHLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const { user, loading: userLoading } = useUser();
 
   const isLoading = subscriptionLoading || userLoading;
-  
+
   const layoutContent = (
       <div className="space-y-6">
         <div>
@@ -32,20 +30,7 @@ export default function RHLayout({
                 Gérez votre personnel, les salaires et les bulletins de paie.
             </p>
         </div>
-        <Tabs value={pathname} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-                {rhSubLinks.map(link => (
-                    <Link href={link.href} key={link.href} passHref legacyBehavior>
-                        <TabsTrigger value={link.href}>
-                           <div className="flex items-center justify-center">
-                                <link.icon className="mr-2 h-4 w-4" />
-                                {link.label}
-                           </div>
-                        </TabsTrigger>
-                    </Link>
-                ))}
-            </TabsList>
-        </Tabs>
+        <ModuleSubNav links={rhSubLinks} />
         <div className="mt-6">{children}</div>
     </div>
   );

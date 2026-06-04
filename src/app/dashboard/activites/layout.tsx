@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from '@/firebase';
-import { usePathname } from 'next/navigation';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ModuleSubNav } from '@/components/layout/module-sub-nav';
 import { activitesSubLinks } from '@/lib/nav-links';
 
 export default function ActivitesLayout({
@@ -17,7 +16,6 @@ export default function ActivitesLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
@@ -29,18 +27,7 @@ export default function ActivitesLayout({
                 <h1 className="text-lg font-semibold md:text-2xl">Activités Parascolaires</h1>
                 <p className="text-muted-foreground">Gérez les activités, les inscriptions des élèves et les compétitions.</p>
             </div>
-            <Tabs value={pathname} className="w-full">
-                <TabsList className="grid w-full grid-cols-4">
-                    {activitesSubLinks.map(link => (
-                        <Link href={link.href} key={link.href} passHref legacyBehavior>
-                            <TabsTrigger value={link.href}>
-                                <link.icon className="mr-2 h-4 w-4" />
-                                {link.label}
-                            </TabsTrigger>
-                        </Link>
-                    ))}
-                </TabsList>
-            </Tabs>
+            <ModuleSubNav links={activitesSubLinks} />
             <div className="mt-6">{children}</div>
         </div>
     );

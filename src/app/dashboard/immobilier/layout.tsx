@@ -3,14 +3,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useSubscription } from '@/hooks/use-subscription';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from '@/firebase';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ModuleSubNav } from '@/components/layout/module-sub-nav';
 import { immobilierSubLinks } from '@/lib/nav-links';
 
 export default function ImmobilierLayout({
@@ -18,7 +17,6 @@ export default function ImmobilierLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const pathname = usePathname();
     const { subscription, loading: subscriptionLoading } = useSubscription();
     const { user, loading: userLoading } = useUser();
 
@@ -32,18 +30,7 @@ export default function ImmobilierLayout({
                     Gérez les biens, les locaux et la maintenance de votre établissement.
                 </p>
             </div>
-            <Tabs value={pathname} className="w-full">
-                <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-6">
-                    {immobilierSubLinks.map(link => (
-                        <Link href={link.href} key={link.href} passHref legacyBehavior>
-                            <TabsTrigger value={link.href}>
-                                <link.icon className="mr-2 h-4 w-4" />
-                                {link.label}
-                            </TabsTrigger>
-                        </Link>
-                    ))}
-                </TabsList>
-            </Tabs>
+            <ModuleSubNav links={immobilierSubLinks} />
             <div className="mt-6">{children}</div>
         </div>
     );
