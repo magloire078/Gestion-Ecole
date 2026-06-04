@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react';
 import { collection, query } from 'firebase/firestore';
 import { useCollection, useFirestore, useUser } from '@/firebase';
+import { useAuth } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
 import { differenceInCalendarDays, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
-    AlertTriangle, CalendarClock, CheckCircle2, Clock, Search, XCircle, BellRing,
+    AlertTriangle, CalendarClock, CheckCircle2, Clock, Search, XCircle, BellRing, Send, Loader2,
 } from 'lucide-react';
 import type { school as School } from '@/lib/data-types';
 import { cn } from '@/lib/utils';
@@ -27,7 +29,7 @@ interface Row {
     endDate: Date;
     daysLeft: number;
     bucket: Bucket;
-    remindersSent?: Partial<Record<'d7' | 'd3' | 'expired', string>>;
+    remindersSent?: Partial<Record<'d7' | 'd3' | 'd1' | 'expired' | 'manual', string>>;
 }
 
 function bucketize(daysLeft: number): Bucket {
@@ -71,9 +73,48 @@ function BucketBadge({ bucket }: { bucket: Bucket }) {
 
 export function SubscriptionsWatch() {
     const firestore = useFirestore();
+    const auth = useAuth();
     const { user } = useUser();
+    const { toast } = useToast();
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState<Bucket | 'all'>('all');
+    const [sendingFor, setSendingFor] = useState<string | null>(null);
+
+    const sendManualReminder = async (schoolId: string) => {
+        if (sendingFor) return;
+        const current = auth.currentUser;
+        if (!current) {
+            toast({ variant: 'destructive', title: 'Non authentifié' });
+            return;
+        }
+        setSendingFor(schoolId);
+        try {
+            const token = await current.getIdToken();
+            const res = await fetch(`/api/admin/subscriptions/${schoolId}/remind`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                toast({
+                    variant: 'destructive',
+                    title: 'Rappel non envoyé',
+                    description: body.error || `HTTP ${res.status}`,
+                });
+                return;
+            }
+            toast({
+                title: 'Rappel envoyé',
+                description: body.sentTo
+                    ? `Email à ${body.sentTo} + ${body.directorsNotified} notification(s).`
+                    : `${body.directorsNotified} notification(s) envoyée(s) (aucun email directeur configuré).`,
+            });
+        } catch (err: any) {
+            toast({ variant: 'destructive', title: 'Erreur réseau', description: err?.message });
+        } finally {
+            setSendingFor(null);
+        }
+    };
 
     const schoolsQuery = useMemo(
         () => (user?.profile?.isAdmin ? query(collection(firestore, 'ecoles')) : null),
@@ -185,12 +226,13 @@ export function SubscriptionsWatch() {
                                     <TableHead className="text-right">Jours restants</TableHead>
                                     <TableHead>Niveau</TableHead>
                                     <TableHead>Derniers rappels</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {filtered.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                                        <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
                                             Aucune école dans cette catégorie.
                                         </TableCell>
                                     </TableRow>
@@ -228,13 +270,39 @@ export function SubscriptionsWatch() {
                                                             <BellRing className="h-3 w-3" /> J-3 · {row.remindersSent.d3}
                                                         </span>
                                                     )}
+                                                    {row.remindersSent?.d1 && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-orange-700">
+                                                            <BellRing className="h-3 w-3" /> J-1 · {row.remindersSent.d1}
+                                                        </span>
+                                                    )}
                                                     {row.remindersSent?.expired && (
                                                         <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-red-700">
                                                             <BellRing className="h-3 w-3" /> Exp · {row.remindersSent.expired}
                                                         </span>
                                                     )}
+                                                    {row.remindersSent?.manual && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-violet-700">
+                                                            <BellRing className="h-3 w-3" /> Manuel · {row.remindersSent.manual}
+                                                        </span>
+                                                    )}
                                                     {!row.remindersSent && '—'}
                                                 </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={() => sendManualReminder(row.id)}
+                                                    disabled={sendingFor === row.id || row.remindersSent?.manual === format(new Date(), 'yyyy-MM-dd')}
+                                                    title={row.remindersSent?.manual === format(new Date(), 'yyyy-MM-dd') ? 'Déjà envoyé aujourd\'hui' : 'Envoyer un rappel maintenant'}
+                                                >
+                                                    {sendingFor === row.id ? (
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Send className="h-3.5 w-3.5" />
+                                                    )}
+                                                    <span className="ml-1.5">Rappel</span>
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))

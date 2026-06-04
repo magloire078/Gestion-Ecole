@@ -21,7 +21,7 @@ if (getApps().length === 0) {
 
 const db = getFirestore();
 
-type ReminderKey = 'd7' | 'd3' | 'expired';
+type ReminderKey = 'd7' | 'd3' | 'd1' | 'expired';
 
 interface SubscriptionShape {
     plan?: string;
@@ -42,6 +42,7 @@ function todayKey(): string {
 
 function pickReminderBucket(daysLeft: number): ReminderKey | null {
     if (daysLeft < 0) return 'expired';
+    if (daysLeft === 1) return 'd1';
     if (daysLeft === 3) return 'd3';
     if (daysLeft === 7) return 'd7';
     return null;

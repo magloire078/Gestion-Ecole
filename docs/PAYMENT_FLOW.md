@@ -259,22 +259,49 @@ Implémenté dans `functions/src/index.ts` (export `subscriptionLifecycle`) :
 - **Planning** : tous les jours à 06h00 (`Africa/Abidjan`).
 - **Scan** de la collection `ecoles`.
 - Pour chaque école dont `subscription.endDate` est définie :
-  - **J-7** : envoi email + notification au directeur (« renouvellement dans 7 jours »).
+  - **J-7** : email + notification au directeur.
   - **J-3** : rappel insistant.
+  - **J-1** : dernière relance avant expiration.
   - **Jour J et au-delà** : email d'expiration + bascule `subscription.status = 'expired'`.
-- **Anti-doublon** : `subscription.remindersSent.{d7|d3|expired}` stocke la date
-  d'envoi ; un même rappel ne part qu'une fois par jour.
+- **Anti-doublon** : `subscription.remindersSent.{d7|d3|d1|expired|manual}`
+  stocke la date d'envoi ; un même rappel ne part qu'une fois par jour.
 
-Déploiement :
+### Rappel manuel (super-admin)
+Endpoint : `POST /api/admin/subscriptions/{schoolId}/remind`.
+- Vérifie le `Authorization: Bearer <ID token Firebase>` et que
+  `users/{uid}.profile.isAdmin === true`.
+- Rate-limit applicatif : un seul rappel manuel par école par jour
+  (`subscription.remindersSent.manual === today`).
+- Réutilise le template partagé `src/lib/subscription-reminder-template.ts`
+  (calcule l'horizon depuis `endDate` et écrit dans la collection `mail`
+  + envoie une notification à chaque directeur/admin).
+
+Le bouton **Rappel** sur `/admin/system/subscriptions` consomme cet
+endpoint et désactive l'envoi tant que la date du jour figure dans
+`remindersSent.manual`.
+
+### Déploiement
 ```bash
 cd functions && npm install
 firebase deploy --only functions:subscriptionLifecycle
 ```
 
-Test local :
+### Test local
 ```bash
 firebase emulators:start --only functions,firestore
 ```
+
+### Seed de test
+Le script crée 4 écoles fictives (`J-10`, `J-5`, `J-2`, expirée J+3) :
+```bash
+cd functions
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+npm run seed:subs -- --project=<ton-projet-firebase>
+# Pour nettoyer :
+npm run seed:subs:clean -- --project=<ton-projet-firebase>
+```
+Ouvre ensuite `/admin/system/subscriptions` pour les visualiser dans
+chaque bucket (À venir / Critique / Expirés).
 
 ## 9. Limitations actuelles
 
