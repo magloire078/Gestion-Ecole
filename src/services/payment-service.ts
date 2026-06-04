@@ -1,4 +1,3 @@
-
 import type { User } from 'firebase/auth';
 
 interface PaymentProviderData {
@@ -15,15 +14,31 @@ interface PaymentProviderData {
 
 type PaymentProvider = 'orangemoney' | 'stripe' | 'wave' | 'mtn' | 'paydunya' | 'genius';
 
+function resolveApiEndpoint(path: string): string {
+    if (typeof window === 'undefined') return path;
+    const isNative = !!(window as any).Capacitor ||
+        /^(capacitor|file|ionic):/i.test(window.location.protocol);
+    if (isNative) {
+        const base = process.env.NEXT_PUBLIC_BASE_URL;
+        if (!base) {
+            console.warn('[PaymentService] NEXT_PUBLIC_BASE_URL requis en contexte natif/Capacitor.');
+            return path;
+        }
+        return `${base.replace(/\/$/, '')}${path}`;
+    }
+    return path;
+}
+
 /**
  * Creates a checkout link by calling the backend API.
- * This replaces the previous Server Action to support static export.
+ * Uses a relative URL on the web (works on any host) and falls back to
+ * NEXT_PUBLIC_BASE_URL when running inside Capacitor.
  */
 export async function createCheckoutLink(provider: PaymentProvider, data: PaymentProviderData) {
-    const API_URL = process.env.NEXT_PUBLIC_BASE_URL || window.location.origin;
+    const endpoint = resolveApiEndpoint('/api/payments/create-link');
 
     try {
-        const response = await fetch(`${API_URL}/api/payments/create-link`, {
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -31,21 +46,21 @@ export async function createCheckoutLink(provider: PaymentProvider, data: Paymen
             body: JSON.stringify({
                 provider,
                 ...data,
-                // We don't send the full user object to avoid serialization issues, 
-                // just what's needed for the backend to verify/identify.
                 userId: data.user?.uid,
                 userEmail: data.user?.email,
                 userDisplayName: data.user?.displayName,
             }),
         });
 
-        const result = await response.json();
+        const result = await response.json().catch(() => ({}));
 
         if (response.ok && result.url) {
             return { url: result.url, error: null };
-        } else {
-            return { url: null, error: result.error || "Erreur lors de la création du lien de paiement." };
         }
+        return {
+            url: null,
+            error: result.error || `Erreur ${response.status} lors de la création du lien de paiement.`,
+        };
     } catch (e: any) {
         console.error("[PaymentService] Fetch error:", e);
         return { url: null, error: "Impossible de contacter le service de paiement." };
