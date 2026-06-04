@@ -14,7 +14,8 @@ import {
     Scroll,
     LogOut,
     Palette,
-    LifeBuoy
+    LifeBuoy,
+    CalendarClock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/logo';
@@ -25,6 +26,7 @@ import { useState, useEffect } from 'react';
 const adminNavLinks = [
     { href: '/admin/system/dashboard', label: 'Vue d\'ensemble', icon: BarChart3 },
     { href: '/admin/system/schools', label: 'Écoles', icon: Building },
+    { href: '/admin/system/subscriptions', label: 'Abonnements', icon: CalendarClock },
     { href: '/admin/system/admins', label: 'Administrateurs', icon: Users },
     { href: '/admin/system/audit-log', label: 'Journaux d\'Audit', icon: Scroll },
     { href: '/admin/system/support', label: 'Support Système', icon: LifeBuoy },
