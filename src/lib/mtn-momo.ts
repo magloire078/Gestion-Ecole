@@ -5,14 +5,13 @@ const MTN_PRIMARY_KEY = process.env.MTN_PRIMARY_KEY;
 const MTN_API_USER_ID = process.env.MTN_API_USER_ID;
 const MTN_API_KEY = process.env.MTN_API_KEY;
 
-// Use sandbox URLs for development
-const MTN_API_BASE_URL = "https://sandbox.momodeveloper.mtn.com";
-const MTN_TARGET_ENVIRONMENT = "sandbox";
-
+const MTN_API_BASE_URL = process.env.MTN_API_BASE_URL || "https://sandbox.momodeveloper.mtn.com";
+const MTN_TARGET_ENVIRONMENT = process.env.MTN_TARGET_ENVIRONMENT || "sandbox";
+export const MTN_CURRENCY = process.env.MTN_CURRENCY || "EUR";
 
 interface MtnMomoPaymentData {
     amount: string;
-    currency: 'EUR'; // Sandbox often uses EUR, switch to XOF for production
+    currency: string;
     externalId: string;
     payer: {
         partyIdType: 'MSISDN';

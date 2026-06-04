@@ -4,8 +4,10 @@ import { createStripeCheckoutSession } from '@/lib/stripe';
 import { createWaveCheckoutSession } from '@/lib/wave';
 import { createPayDunyaCheckout } from '@/lib/paydunya';
 import { getOrangeMoneyPaymentLink } from '@/lib/orange-money';
-import { requestMtnMomoPayment } from '@/lib/mtn-momo';
+import { requestMtnMomoPayment, MTN_CURRENCY } from '@/lib/mtn-momo';
 import { createGeniusPayment } from '@/lib/genius-pay';
+import { buildPaymentReference } from '@/lib/payment-reference';
+import type { PlanName } from '@/lib/subscription-plans';
 
 export async function POST(req: Request) {
     try {
@@ -40,11 +42,22 @@ export async function POST(req: Request) {
 
         const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
 
-        // Construct reference for webhooks
-        // Format: type__schoolId__studentIdOrDuration__amount
+        if (type === 'subscription' && !planName) {
+            return NextResponse.json({ error: "Nom de plan requis pour un abonnement." }, { status: 400 });
+        }
+        if (type === 'tuition' && !studentId) {
+            return NextResponse.json({ error: "studentId requis pour une scolarité." }, { status: 400 });
+        }
+
         const referenceValue = type === 'tuition'
-            ? `tuition__${schoolId}__${studentId}__${amount}`
-            : `subscription__${schoolId}__${duration}__${amount}`;
+            ? buildPaymentReference({ type: 'tuition', schoolId, studentId, amount })
+            : buildPaymentReference({
+                type: 'subscription',
+                schoolId,
+                planName: planName as PlanName,
+                durationMonths: parseInt(String(duration || '1').replace('m', ''), 10) || 1,
+                amount,
+            });
 
         switch (provider.toLowerCase()) {
             case 'stripe':
@@ -110,7 +123,7 @@ export async function POST(req: Request) {
                     amount: amount,
                     return_url: `${BASE_URL}/payment/success?type=${type}`,
                     cancel_url: `${BASE_URL}/payment/error?type=${type}`,
-                    notif_url: `${BASE_URL}/api/webhooks/orange`,
+                    notif_url: `${BASE_URL}/api/webhooks/orangemoney`,
                     lang: 'fr',
                     reference: referenceValue,
                 });
@@ -119,7 +132,7 @@ export async function POST(req: Request) {
             case 'mtn':
                 const mtnResult = await requestMtnMomoPayment({
                     amount: amount.toString(),
-                    currency: 'EUR', // Per sandbox config in mtn-momo.ts
+                    currency: MTN_CURRENCY,
                     externalId: referenceValue,
                     payer: {
                         partyIdType: 'MSISDN',

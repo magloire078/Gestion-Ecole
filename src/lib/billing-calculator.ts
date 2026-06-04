@@ -6,13 +6,9 @@ import { SUBSCRIPTION_PLANS } from '@/lib/subscription-plans';
 
 // ====================================================================================
 // CONFIGURATIONS DE FACTURATION CENTRALISÉES
+// Source unique : SUBSCRIPTION_PLANS dans subscription-plans.ts.
+// Utilisez getPlanLimits() pour les limites par plan.
 // ====================================================================================
-
-export const TARIFAIRE = {
-    Essentiel: { prixMensuel: 0, cyclesInclus: 5, elevesInclus: 50, stockageInclus: 1 },
-    Pro: { prixMensuel: 49900, cyclesInclus: 5, elevesInclus: 250, stockageInclus: 10 },
-    Premium: { prixMensuel: 99900, cyclesInclus: Infinity, elevesInclus: Infinity, stockageInclus: Infinity },
-};
 
 export const SUPPLEMENTS = {
     parCycle: 5000,

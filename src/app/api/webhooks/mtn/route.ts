@@ -1,118 +1,52 @@
-
 import { NextResponse } from 'next/server';
-import { getFirestore, FieldValue, type Firestore } from 'firebase-admin/firestore';
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { addMonths } from 'date-fns';
-import type { school, student } from '@/lib/data-types';
-
-
-async function handleSubscriptionPayment(db: Firestore, schoolId: string, durationStr: string, paymentProvider: string) {
-    const durationMonths = parseInt(durationStr.replace('m', ''), 10) || 1;
-    console.log(`Processing ${paymentProvider} subscription for schoolId: ${schoolId}, duration: ${durationMonths} months.`);
-
-    const schoolRef = db.collection('ecoles').doc(schoolId);
-    const schoolSnap = await schoolRef.get();
-
-    if (!schoolSnap.exists) {
-        console.error(`[${paymentProvider}] School with ID ${schoolId} not found.`);
-        throw new Error('School not found');
-    }
-
-    const schoolData = schoolSnap.data() as school;
-    const subEndDate = schoolData.subscription?.endDate ? new Date(schoolData.subscription.endDate) : new Date();
-    const startDate = subEndDate < new Date() ? new Date() : subEndDate;
-    const newEndDate = addMonths(startDate, durationMonths);
-
-    await schoolRef.update({
-        'subscription.status': 'active',
-        'subscription.endDate': newEndDate.toISOString(),
-        'updatedAt': FieldValue.serverTimestamp(),
-    });
-    console.log(`[${paymentProvider}] Successfully updated subscription for school ${schoolId}.`);
-}
-
-
-async function handleTuitionPayment(db: Firestore, schoolId: string, studentId: string, amountPaid: number, paymentProvider: string) {
-    console.log(`Processing ${paymentProvider} tuition payment for schoolId: ${schoolId}, studentId: ${studentId}, amount: ${amountPaid}`);
-
-    const studentRef = db.doc(`ecoles/${schoolId}/eleves/${studentId}`);
-    const studentSnap = await studentRef.get();
-
-    if (!studentSnap.exists) {
-        console.error(`[${paymentProvider}] Student with ID ${studentId} in school ${schoolId} not found.`);
-        throw new Error('Student not found');
-    }
-
-    const studentData = studentSnap.data() as student;
-    const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
-    const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
-
-    const batch = db.batch();
-
-    batch.update(studentRef, { amountDue: newAmountDue, tuitionStatus: newStatus });
-
-    const accountingRef = db.collection(`ecoles/${schoolId}/comptabilite`).doc();
-    batch.set(accountingRef, {
-        schoolId, studentId, date: new Date().toISOString().split('T')[0],
-        description: `Paiement scolarité via ${paymentProvider}`, category: 'Scolarité', type: 'Revenu', amount: amountPaid
-    });
-
-    const paymentRef = db.collection(`ecoles/${schoolId}/eleves/${studentId}/paiements`).doc();
-    batch.set(paymentRef, {
-        schoolId, studentId, date: new Date().toISOString().split('T')[0], amount: amountPaid,
-        description: `Paiement en ligne via ${paymentProvider}`, accountingTransactionId: accountingRef.id,
-        payerFirstName: studentData.parent1FirstName || 'Parent', payerLastName: studentData.parent1LastName || '',
-        method: paymentProvider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile'
-    });
-
-    await batch.commit();
-    console.log(`[${paymentProvider}] Successfully updated tuition for student ${studentId}.`);
-}
-
+import { processSubscriptionPayment, processTuitionPayment } from '@/lib/payment-processing';
+import { parsePaymentReference } from '@/lib/payment-reference';
+import { verifyHmacSignature } from '@/lib/webhook-verify';
 
 export async function POST(request: Request) {
     try {
-        if (getApps().length === 0) {
-            initializeApp();
+        const rawBody = await request.text();
+        const sig = verifyHmacSignature(
+            rawBody,
+            request.headers.get('x-callback-signature'),
+            process.env.MTN_WEBHOOK_SECRET,
+            { algorithm: 'sha256', encoding: 'hex' }
+        );
+        if (!sig.valid) {
+            console.error(`[MTN MoMo Webhook] Signature invalide: ${sig.reason}`);
+            return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
         }
-        const db = getFirestore();
-        const body = await request.json();
-        console.log("Received MTN MoMo IPN:", JSON.stringify(body, null, 2));
+        const body = JSON.parse(rawBody);
+        console.log("[MTN MoMo Webhook] IPN reçu:", JSON.stringify(body, null, 2));
 
         const { status, externalId, amount } = body;
         if (!status || !externalId) {
-            console.error("MTN MoMo IPN: Missing required fields (status, externalId).");
+            console.error("[MTN MoMo Webhook] Champs requis manquants (status, externalId).");
             return new Response('Missing required fields', { status: 400 });
         }
 
         if (status !== 'SUCCESSFUL') {
-            console.log(`MTN MoMo payment status is ${status}. Ignoring.`);
+            console.log(`[MTN MoMo Webhook] Statut ${status}. Ignoré.`);
             return new Response(null, { status: 200 });
         }
 
-        const parts = externalId.split('_');
-        const paymentType = parts[0];
+        const parsed = parsePaymentReference(externalId);
+        if (!parsed) {
+            console.warn(`[MTN MoMo Webhook] externalId invalide: ${externalId}`);
+            return new Response('Invalid externalId format', { status: 400 });
+        }
 
-        if (paymentType === 'tuition' && parts.length >= 4) {
-            const schoolId = parts[1];
-            const studentId = parts[2];
-            const amountPaid = parseInt(amount, 10);
-            await handleTuitionPayment(db, schoolId, studentId, amountPaid, 'MTN MoMo');
-        } else if (paymentType === 'subscription' && parts.length >= 4) {
-            const schoolId = parts[1];
-            const durationStr = parts[3];
-            await handleSubscriptionPayment(db, schoolId, durationStr, 'MTN MoMo');
+        const amountPaid = typeof amount === 'number' ? amount : parseFloat(amount);
+
+        if (parsed.type === 'tuition') {
+            await processTuitionPayment(parsed.schoolId, parsed.studentId, amountPaid, 'MTN MoMo');
         } else {
-            console.warn(`Invalid externalId format: ${externalId}. Could not determine payment type.`);
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'MTN MoMo');
         }
 
         return new Response(null, { status: 200 });
-
     } catch (error: any) {
-        console.error("Error processing MTN MoMo IPN:", error);
-        if (error.message.includes("The default Firebase app does not exist")) {
-            return NextResponse.json({ error: "Server configuration error. Firebase Admin not initialized." }, { status: 500 });
-        }
+        console.error("[MTN MoMo Webhook] Erreur:", error);
         return NextResponse.json({ error: "Internal Server Error", details: error.message }, { status: 500 });
     }
 }

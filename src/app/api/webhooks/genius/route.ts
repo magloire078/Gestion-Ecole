@@ -1,34 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processSubscriptionPayment, processTuitionPayment } from '@/lib/payment-processing';
+import { parsePaymentReference } from '@/lib/payment-reference';
+import { verifyHmacSignature } from '@/lib/webhook-verify';
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
+        const rawBody = await req.text();
+        const sig = verifyHmacSignature(
+            rawBody,
+            req.headers.get('x-genius-signature'),
+            process.env.GENIUS_WEBHOOK_SECRET,
+            { algorithm: 'sha256', encoding: 'hex' }
+        );
+        if (!sig.valid) {
+            console.error(`[Genius Webhook] Signature invalide: ${sig.reason}`);
+            return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+        }
+        const body = JSON.parse(rawBody);
         const { transaction_id, order_id, status } = body;
 
-        console.log(`[Genius Webhook] Notification reçue pour Transaction: ${transaction_id}, Order: ${order_id}, Status: ${status}`);
+        console.log(`[Genius Webhook] Transaction: ${transaction_id}, Order: ${order_id}, Status: ${status}`);
 
-        if (status === 'SUCCESS' || status === 'COMPLETED') {
-            // format: type__schoolId__studentIdOrDuration__amount
-            const parts = order_id.split('__');
-            const type = parts[0];
+        if (status !== 'SUCCESS' && status !== 'COMPLETED') {
+            return NextResponse.json({ received: true });
+        }
 
-            if (type === 'subscription') {
-                const schoolId = parts[1];
-                const duration = parseInt(parts[2], 10) || 1;
-                const amount = parts[3];
+        const parsed = parsePaymentReference(order_id);
+        if (!parsed) {
+            console.warn(`[Genius Webhook] order_id invalide: ${order_id}`);
+            return NextResponse.json({ error: "Invalid order_id format" }, { status: 400 });
+        }
 
-                await processSubscriptionPayment(schoolId, 'Abonnement', duration, 'Genius Pay');
-                console.log(`[Genius Webhook] Abonnement traité pour l'école ${schoolId}`);
-
-            } else if (type === 'tuition') {
-                const schoolId = parts[1];
-                const studentId = parts[2];
-                const amount = parseFloat(parts[3]);
-
-                await processTuitionPayment(schoolId, studentId, amount, 'Genius Pay');
-                console.log(`[Genius Webhook] Scolarité traitée pour l'élève ${studentId}`);
-            }
+        if (parsed.type === 'subscription') {
+            await processSubscriptionPayment(parsed.schoolId, parsed.planName, parsed.durationMonths, 'Genius Pay');
+        } else {
+            await processTuitionPayment(parsed.schoolId, parsed.studentId, parsed.amount, 'Genius Pay');
         }
 
         return NextResponse.json({ received: true });

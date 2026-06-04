@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { AlertCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useSubscription } from '@/hooks/use-subscription';
-import { TARIFAIRE } from '@/lib/billing-calculator';
+import { getPlanLimits } from '@/lib/subscription-plans';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -40,21 +40,22 @@ export function BillingAlerts({ schoolId, studentCount, cycleCount }: BillingAle
         }
     }, [subscriptionLoading, studentsLoading, dueStudentsData]);
 
-    const planDetails = (subscription && subscription.plan && TARIFAIRE[subscription.plan])
-        ? TARIFAIRE[subscription.plan]
-        : null;
+    const planDetails = getPlanLimits(subscription?.plan);
 
     const alerts: { type: 'warning' | 'error' | 'info', message: string, href?: string }[] = [];
 
     if (planDetails) {
-        if (studentCount > planDetails.elevesInclus) {
-            alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.elevesInclus} élèves.`, href: '/dashboard/parametres/abonnement' });
-        } else if (studentCount / planDetails.elevesInclus > 0.9) {
-            alerts.push({ type: 'warning', message: `Vous approchez la limite d&apos;élèves (${studentCount}/${planDetails.elevesInclus}).`, href: '/dashboard/parametres/abonnement' });
+        const { maxStudents, maxCycles } = planDetails;
+        if (Number.isFinite(maxStudents)) {
+            if (studentCount > maxStudents) {
+                alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${maxStudents} élèves.`, href: '/dashboard/parametres/abonnement' });
+            } else if (studentCount / maxStudents > 0.9) {
+                alerts.push({ type: 'warning', message: `Vous approchez la limite d&apos;élèves (${studentCount}/${maxStudents}).`, href: '/dashboard/parametres/abonnement' });
+            }
         }
 
-        if (cycleCount > planDetails.cyclesInclus) {
-            alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${planDetails.cyclesInclus} cycles.`, href: '/dashboard/parametres/abonnement' });
+        if (Number.isFinite(maxCycles) && cycleCount > maxCycles) {
+            alerts.push({ type: 'error', message: `Vous avez dépassé la limite de ${maxCycles} cycles.`, href: '/dashboard/parametres/abonnement' });
         }
     }
 

@@ -131,7 +131,20 @@ export async function processTuitionPayment(
 
     const studentData = studentSnap.data() as Student;
     const schoolData = schoolSnap.data() as School;
-    const newAmountDue = Math.max(0, (studentData.amountDue || 0) - amountPaid);
+
+    if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
+        throw new Error(`[PaymentProcessing] Montant invalide: ${amountPaid}`);
+    }
+    const amountDueBefore = studentData.amountDue || 0;
+    if (amountDueBefore <= 0) {
+        console.warn(`[PaymentProcessing] Tentative de paiement pour un solde déjà à 0 (élève ${studentId}). Ignoré.`);
+        return { success: false, reason: 'no_balance_due' };
+    }
+    const cappedAmount = Math.min(amountPaid, amountDueBefore);
+    if (cappedAmount < amountPaid) {
+        console.warn(`[PaymentProcessing] Montant payé (${amountPaid}) > dû (${amountDueBefore}). Plafonné à ${cappedAmount}.`);
+    }
+    const newAmountDue = amountDueBefore - cappedAmount;
     const newStatus = newAmountDue <= 0 ? 'Soldé' : 'Partiel';
 
     const batch = getAdminDb().batch();
@@ -153,7 +166,7 @@ export async function processTuitionPayment(
         description: `Paiement scolarité via ${paymentProvider}`,
         category: 'Scolarité',
         type: 'Revenu',
-        amount: amountPaid,
+        amount: cappedAmount,
         reference: reference,
         createdAt: FieldValue.serverTimestamp()
     });
@@ -164,7 +177,7 @@ export async function processTuitionPayment(
         schoolId,
         studentId,
         date: new Date().toISOString().split('T')[0],
-        amount: amountPaid,
+        amount: cappedAmount,
         description: `Paiement en ligne via ${paymentProvider}`,
         accountingTransactionId: accountingRef.id,
         payerFirstName: studentData.parent1FirstName || 'Parent',
@@ -177,7 +190,7 @@ export async function processTuitionPayment(
     // 4. Update Global Financial Stats
     const statsRef = getAdminDb().doc(`ecoles/${schoolId}/stats/finance`);
     batch.set(statsRef, {
-        totalAmountDue: FieldValue.increment(-amountPaid),
+        totalAmountDue: FieldValue.increment(-cappedAmount),
         lastUpdated: FieldValue.serverTimestamp()
     }, { merge: true });
 
@@ -208,7 +221,7 @@ export async function processTuitionPayment(
                                         <p>Nous confirmons la réception de votre paiement concernant les frais de scolarité de <strong>${studentName}</strong>.</p>
                                         <div style="border: 1px solid #eee; padding: 20px; border-radius: 8px; margin: 20px 0;">
                                             <p style="margin: 5px 0;"><strong>Référence :</strong> ${reference}</p>
-                                            <p style="margin: 5px 0;"><strong>Montant :</strong> ${formatCurrency(amountPaid)}</p>
+                                            <p style="margin: 5px 0;"><strong>Montant :</strong> ${formatCurrency(cappedAmount)}</p>
                                             <p style="margin: 5px 0;"><strong>Date :</strong> ${new Date().toLocaleDateString('fr-FR')}</p>
                                             <p style="margin: 5px 0;"><strong>Établissement :</strong> ${schoolData.name}</p>
                                         </div>
@@ -233,7 +246,7 @@ export async function processTuitionPayment(
                 await getAdminDb().collection(`ecoles/${schoolId}/notifications`).add({
                     userId: parentId,
                     title: "Paiement Reçu",
-                    content: `Le paiement de ${formatCurrency(amountPaid)} pour ${studentName} a été confirmé.`,
+                    content: `Le paiement de ${formatCurrency(cappedAmount)} pour ${studentName} a été confirmé.`,
                     href: `/dashboard/parent/student/${studentId}?tab=paiements`,
                     isRead: false,
                     createdAt: FieldValue.serverTimestamp()
