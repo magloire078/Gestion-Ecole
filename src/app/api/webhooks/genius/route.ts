@@ -1,25 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { processSubscriptionPayment, processTuitionPayment } from '@/lib/payment-processing';
 import { parsePaymentReference } from '@/lib/payment-reference';
-import { verifyHmacSignature } from '@/lib/webhook-verify';
+import { verifyTimestampedHmac } from '@/lib/webhook-verify';
+import { claimWebhookEvent } from '@/lib/webhook-idempotence';
 
 export async function POST(req: NextRequest) {
     try {
         const rawBody = await req.text();
-        const sig = verifyHmacSignature(
+        const signature = req.headers.get('x-webhook-signature');
+        const timestamp = req.headers.get('x-webhook-timestamp');
+        const event = req.headers.get('x-webhook-event');
+
+        const sig = verifyTimestampedHmac(
             rawBody,
-            req.headers.get('x-genius-signature'),
+            signature,
+            timestamp,
             process.env.GENIUS_WEBHOOK_SECRET,
-            { algorithm: 'sha256', encoding: 'hex' }
         );
         if (!sig.valid) {
             console.error(`[Genius Webhook] Signature invalide: ${sig.reason}`);
             return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
         }
-        const body = JSON.parse(rawBody);
-        const { transaction_id, order_id, status } = body;
 
-        console.log(`[Genius Webhook] Transaction: ${transaction_id}, Order: ${order_id}, Status: ${status}`);
+        const body = JSON.parse(rawBody);
+        const { id: eventId, transaction_id, order_id, status } = body;
+        console.log(`[Genius Webhook] event=${event} id=${eventId} txn=${transaction_id} order=${order_id} status=${status}`);
+
+        const isNew = await claimWebhookEvent('genius', String(eventId ?? transaction_id ?? ''));
+        if (!isNew) {
+            return NextResponse.json({ received: true, duplicate: true });
+        }
 
         if (status !== 'SUCCESS' && status !== 'COMPLETED') {
             return NextResponse.json({ received: true });
