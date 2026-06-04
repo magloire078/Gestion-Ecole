@@ -9,6 +9,23 @@ import { createGeniusPayment } from '@/lib/genius-pay';
 import { buildPaymentReference } from '@/lib/payment-reference';
 import type { PlanName } from '@/lib/subscription-plans';
 
+function resolveBaseUrl(req: Request): string {
+    const env = process.env.NEXT_PUBLIC_BASE_URL?.trim();
+    if (env) return env.replace(/\/$/, '');
+    const forwardedHost = req.headers.get('x-forwarded-host');
+    const forwardedProto = req.headers.get('x-forwarded-proto');
+    const host = forwardedHost || req.headers.get('host');
+    if (host) {
+        const proto = forwardedProto || (host.startsWith('localhost') ? 'http' : 'https');
+        return `${proto}://${host}`;
+    }
+    try {
+        return new URL(req.url).origin;
+    } catch {
+        return 'http://localhost:3000';
+    }
+}
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
@@ -40,7 +57,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Paramètres manquants ou invalides (le montant doit être supérieur à 0)." }, { status: 400 });
         }
 
-        const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const BASE_URL = resolveBaseUrl(req);
 
         if (type === 'subscription' && !planName) {
             return NextResponse.json({ error: "Nom de plan requis pour un abonnement." }, { status: 400 });
