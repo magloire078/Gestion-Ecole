@@ -22,6 +22,7 @@ import {
     AccordionTrigger,
 } from "@/components/ui/accordion";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Separator } from '@/components/ui/separator';
 import { MoreHorizontal } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useStaff } from '@/hooks/use-staff';

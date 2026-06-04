@@ -13,6 +13,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { PlusCircle, MoreHorizontal, LayoutGrid, List, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   Dialog,

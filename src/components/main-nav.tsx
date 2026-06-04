@@ -22,7 +22,7 @@ interface NavProps {
     userPermissions: Partial<Record<PermissionKey, boolean>>;
     subscription?: Subscription | null;
     isSubscriptionActive?: boolean;
-    isNavCollapsed?: boolean;
+    collapsed?: boolean;
 }
 
 const NavLink = ({ href, icon: Icon, label, collapsed, pathname, hasUnreadMessages }: { href: string; icon: React.ElementType; label: string, collapsed?: boolean, pathname: string, hasUnreadMessages?: boolean }) => {
