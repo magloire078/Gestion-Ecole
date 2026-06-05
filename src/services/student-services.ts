@@ -1,8 +1,10 @@
 
 'use client';
 
-import { doc, getDoc, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc, Firestore } from "firebase/firestore";
+import { doc, getDoc, getCountFromServer, query, where, updateDoc, writeBatch, increment, serverTimestamp, addDoc, collection, deleteDoc, Firestore } from "firebase/firestore";
 import { firebaseFirestore } from '@/firebase/config';
+import { getPlanLimits } from '@/lib/subscription-plans';
+import { buildLimitReachedMessage } from '@/lib/subscription-guards';
 
 const db = firebaseFirestore as Firestore;
 import type { student as Student } from '@/lib/data-types';
@@ -11,38 +13,27 @@ const COLLECTION_NAME = 'eleves';
 
 /**
  * Vérifie que l'école n'a pas dépassé la limite d'élèves de son plan d'abonnement.
- * Lève une erreur si le plafond est atteint.
+ * Lève une erreur si le plafond est atteint. La limite est dérivée du plan
+ * (SUBSCRIPTION_PLANS), pas d'un champ stocké qui peut dériver.
  */
 async function checkStudentLimit(schoolId: string): Promise<void> {
-    const schoolRef = doc(db, `ecoles/${schoolId}`);
-    const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
+    const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+    if (!schoolSnap.exists()) return;
 
-    const [schoolSnap, statsSnap] = await Promise.all([getDoc(schoolRef), getDoc(statsRef)]);
+    const planName = schoolSnap.data()?.subscription?.plan || 'Essentiel';
+    const limits = getPlanLimits(planName);
+    if (!limits || !Number.isFinite(limits.maxStudents)) return;
 
-    if (!schoolSnap.exists()) return; // Silently pass if school not found
+    // Count des élèves actifs depuis Firestore (source de vérité plus fiable que stats/finance).
+    const activeStudentsQuery = query(
+        collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`),
+        where('status', '==', 'Actif'),
+    );
+    const countSnap = await getCountFromServer(activeStudentsQuery);
+    const currentCount = countSnap.data().count;
 
-    const schoolData = schoolSnap.data();
-    let maxStudents: number | null | undefined = schoolData?.subscription?.maxStudents;
-    const plan = schoolData?.subscription?.plan || 'Essentiel';
-
-    // Fallback: Si la limite n'est pas dans le document, on utilise les limites par défaut du plan
-    if (maxStudents === undefined || maxStudents === null) {
-        if (plan === 'Essentiel') {
-            maxStudents = 50;
-        } else {
-            // Pour Pro et Premium sans limite explicite, on considère qu'il n'y a pas de plafond
-            return;
-        }
-    }
-
-    const currentCount: number = statsSnap.exists() ? (statsSnap.data()?.studentCount ?? 0) : 0;
-
-    if (currentCount >= maxStudents) {
-        throw new Error(
-            `LIMIT_REACHED: Votre plan actuel (${schoolData?.subscription?.plan || 'Essentiel'}) est limité à ${maxStudents} élèves. ` +
-            `Vous avez atteint cette limite (${currentCount}/${maxStudents}). ` +
-            `Veuillez mettre à niveau votre abonnement pour inscrire de nouveaux élèves.`
-        );
+    if (currentCount >= limits.maxStudents) {
+        throw new Error(buildLimitReachedMessage('students', planName, limits.maxStudents));
     }
 }
 

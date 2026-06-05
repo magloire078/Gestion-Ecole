@@ -5,7 +5,9 @@ import {
     addDoc,
     updateDoc,
     deleteDoc,
+    getDoc,
     getDocs,
+    getCountFromServer,
     query,
     where,
     orderBy,
@@ -14,15 +16,37 @@ import {
 } from 'firebase/firestore';
 import { firebaseFirestore as db } from '@/firebase/config';
 import { cycle as Cycle } from '@/lib/data-types';
+import { getPlanLimits } from '@/lib/subscription-plans';
+import { buildLimitReachedMessage } from '@/lib/subscription-guards';
 
 const COLLECTION_NAME = 'cycles';
 
+async function checkCycleLimit(schoolId: string): Promise<void> {
+    const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+    if (!schoolSnap.exists()) return;
+
+    const planName = schoolSnap.data()?.subscription?.plan || 'Essentiel';
+    const limits = getPlanLimits(planName);
+    if (!limits || !Number.isFinite(limits.maxCycles)) return;
+
+    const countSnap = await getCountFromServer(
+        collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`),
+    );
+    const currentCount = countSnap.data().count;
+
+    if (currentCount >= limits.maxCycles) {
+        throw new Error(buildLimitReachedMessage('cycles', planName, limits.maxCycles));
+    }
+}
+
 export const CyclesService = {
     /**
-     * Creates a new cycle for a school
+     * Creates a new cycle for a school (avec contrôle du plafond du plan).
      */
     createCycle: async (schoolId: string, data: Omit<Cycle, 'id' | 'schoolId' | 'createdAt' | 'updatedAt'>) => {
         try {
+            await checkCycleLimit(schoolId);
+
             const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
             const docRef = await addDoc(collectionRef, {
                 ...data,

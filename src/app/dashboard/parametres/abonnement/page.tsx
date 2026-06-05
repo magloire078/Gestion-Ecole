@@ -226,13 +226,14 @@ export default function SubscriptionPage() {
                 </Alert>
             )}
 
-            {subscription?.plan === 'Pro' && (
+            {(subscription?.plan === 'Pro' || subscription?.plan === 'Essentiel') && (
                 <Card>
                     <CardHeader>
                         <CardTitle>Modules Complémentaires</CardTitle>
                         <CardDescription>
-                            Activez des fonctionnalités additionnelles pour votre établissement.
-                            La facturation sera ajustée en conséquence.
+                            {subscription?.plan === 'Essentiel'
+                                ? "Activez à la carte les modules complémentaires (facturés en plus du plan gratuit)."
+                                : 'Activez des fonctionnalités additionnelles pour votre établissement. La facturation sera ajustée en conséquence.'}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
