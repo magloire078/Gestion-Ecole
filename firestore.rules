@@ -69,6 +69,52 @@ service cloud.firestore {
              studentDoc.data.parentIds != null &&
              request.auth.uid in studentDoc.data.parentIds;
     }
+
+    // =================================
+    //   PLAN QUOTAS (defense in depth)
+    // =================================
+    //
+    // Limites par plan (gardées identiques à src/lib/subscription-plans.ts) :
+    // - Essentiel : 50 élèves, 5 cycles
+    // - Pro & Premium : illimité
+    //
+    // Les compteurs sont maintenus côté client par StudentService /
+    // CyclesService (stats/finance.studentCount, stats/structure.cyclesCount).
+    // Un client qui ne les met pas à jour ne peut pas dépasser le plafond,
+    // car la règle bloque dès que le compteur atteint la limite.
+
+    function planMaxStudents(plan) {
+      return plan == 'Essentiel' ? 50 : 999999;
+    }
+
+    function planMaxCycles(plan) {
+      return plan == 'Essentiel' ? 5 : 999999;
+    }
+
+    function schoolPlan(schoolId) {
+      let schoolPath = /databases/$(database)/documents/ecoles/$(schoolId);
+      return exists(schoolPath)
+        ? get(schoolPath).data.get(['subscription', 'plan'], 'Essentiel')
+        : 'Essentiel';
+    }
+
+    function currentStudentCount(schoolId) {
+      let statsPath = /databases/$(database)/documents/ecoles/$(schoolId)/stats/finance;
+      return exists(statsPath) ? get(statsPath).data.get('studentCount', 0) : 0;
+    }
+
+    function currentCycleCount(schoolId) {
+      let statsPath = /databases/$(database)/documents/ecoles/$(schoolId)/stats/structure;
+      return exists(statsPath) ? get(statsPath).data.get('cyclesCount', 0) : 0;
+    }
+
+    function passesStudentQuota(schoolId) {
+      return isSuperAdmin() || currentStudentCount(schoolId) < planMaxStudents(schoolPlan(schoolId));
+    }
+
+    function passesCycleQuota(schoolId) {
+      return isSuperAdmin() || currentCycleCount(schoolId) < planMaxCycles(schoolPlan(schoolId));
+    }
     
     // =================================
     //         PUBLIC COLLECTIONS
@@ -164,7 +210,8 @@ service cloud.firestore {
       
       match /eleves/{studentId} {
         allow read: if isSchoolMember(schoolId) || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
-        allow write: if hasPermission(schoolId, 'manageUsers');
+        allow create: if hasPermission(schoolId, 'manageUsers') && passesStudentQuota(schoolId);
+        allow update, delete: if hasPermission(schoolId, 'manageUsers');
 
         match /notes/{gradeId} {
           allow read: if hasPermission(schoolId, 'viewGrades') || isParentOfStudent(get(/databases/$(database)/documents/ecoles/$(schoolId)/eleves/$(studentId)));
@@ -201,7 +248,11 @@ service cloud.firestore {
       
       // --- Collections globales de l'école ---
       
-      match /cycles/{cycleId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }
+      match /cycles/{cycleId} {
+        allow read: if hasPermission(schoolId, 'manageClasses');
+        allow create: if hasPermission(schoolId, 'manageClasses') && passesCycleQuota(schoolId);
+        allow update, delete: if hasPermission(schoolId, 'manageClasses');
+      }
       match /niveaux/{niveauId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }
       match /classes/{classId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }
       match /matieres/{subjectId} { allow read, write: if hasPermission(schoolId, 'manageClasses'); }

@@ -8,10 +8,13 @@ import {
     getDoc,
     getDocs,
     getCountFromServer,
+    increment,
     query,
+    setDoc,
     where,
     orderBy,
     serverTimestamp,
+    writeBatch,
     Firestore
 } from 'firebase/firestore';
 import { firebaseFirestore as db } from '@/firebase/config';
@@ -47,14 +50,18 @@ export const CyclesService = {
         try {
             await checkCycleLimit(schoolId);
 
-            const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
-            const docRef = await addDoc(collectionRef, {
+            const batch = writeBatch(db);
+            const cycleRef = doc(collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`));
+            batch.set(cycleRef, {
                 ...data,
                 schoolId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             });
-            return docRef.id;
+            const statsRef = doc(db, `ecoles/${schoolId}/stats/structure`);
+            batch.set(statsRef, { cyclesCount: increment(1), lastUpdated: serverTimestamp() }, { merge: true });
+            await batch.commit();
+            return cycleRef.id;
         } catch (error) {
             console.error('Error creating cycle:', error);
             throw error;
@@ -78,12 +85,18 @@ export const CyclesService = {
     },
 
     /**
-     * Deletes a cycle
+     * Deletes a cycle (et décrémente le compteur).
      */
     deleteCycle: async (schoolId: string, cycleId: string) => {
         try {
-            const docRef = doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}`, cycleId);
-            await deleteDoc(docRef);
+            const batch = writeBatch(db);
+            batch.delete(doc(db, `ecoles/${schoolId}/${COLLECTION_NAME}/${cycleId}`));
+            batch.set(
+                doc(db, `ecoles/${schoolId}/stats/structure`),
+                { cyclesCount: increment(-1), lastUpdated: serverTimestamp() },
+                { merge: true },
+            );
+            await batch.commit();
         } catch (error) {
             console.error('Error deleting cycle:', error);
             throw error;
