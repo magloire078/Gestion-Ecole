@@ -1,4 +1,4 @@
-﻿
+
 
 'use client';
 
@@ -64,7 +64,7 @@ export default function RHLayout({
     );
   }
 
-  const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('rh');
+  const hasAccess = subscription?.plan === 'Premium' || subscription?.activeModules?.includes('rh');
 
   if (!hasAccess) {
     return (

@@ -1,4 +1,4 @@
-﻿
+
 
 'use client';
 
@@ -62,7 +62,7 @@ export default function InternatLayout({
         );
     }
 
-    const hasAccess = subscription?.plan === 'Essentiel' || subscription?.plan === 'Premium' || subscription?.activeModules?.includes('internat');
+    const hasAccess = subscription?.plan === 'Premium' || subscription?.activeModules?.includes('internat');
 
     if (!hasAccess) {
         return (
