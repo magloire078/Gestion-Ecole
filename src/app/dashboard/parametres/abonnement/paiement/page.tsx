@@ -204,7 +204,7 @@ function PaymentPageContent() {
     const { updateSubscription } = useSubscription();
 
     const settingsRef = useMemo(() => doc(firestore, 'system_settings/default'), [firestore]);
-    const { loading: settingsLoading } = useDoc(settingsRef);
+    const { data: settingsData, loading: settingsLoading } = useDoc(settingsRef);
 
     const [isLoadingProvider, setIsLoadingProvider] = useState<null | Provider | 'free'>(null);
     const [error, setError] = useState<string | null>(null);
@@ -320,9 +320,18 @@ function PaymentPageContent() {
         );
     }
 
-    const aggregators = PROVIDERS.filter(p => p.category === 'aggregator');
-    const cards = PROVIDERS.filter(p => p.category === 'card');
-    const mobiles = PROVIDERS.filter(p => p.category === 'mobile');
+    const availableProviders = useMemo(() => {
+        if (!settingsData || !settingsData.paymentProviders) return PROVIDERS;
+        return PROVIDERS.filter(p => {
+            // 'orangemoney' is stored as 'orangeMoney' in settings
+            const key = p.id === 'orangemoney' ? 'orangeMoney' : p.id;
+            return settingsData.paymentProviders[key] !== false;
+        });
+    }, [settingsData]);
+
+    const aggregators = availableProviders.filter(p => p.category === 'aggregator');
+    const cards = availableProviders.filter(p => p.category === 'card');
+    const mobiles = availableProviders.filter(p => p.category === 'mobile');
 
     return (
         <div className="mx-auto max-w-4xl space-y-6 pb-12 pt-6">
@@ -360,61 +369,67 @@ function PaymentPageContent() {
                             </Button>
                         ) : (
                             <>
-                                <section className="space-y-3">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Agrégateurs (recommandé)</h3>
-                                    {aggregators.map(opt => (
-                                        <ProviderButton
-                                            key={opt.id}
-                                            option={opt}
-                                            isLoading={isLoadingProvider === opt.id}
-                                            disabled={!!isLoadingProvider}
-                                            onClick={() => handlePayment(opt.id)}
-                                        />
-                                    ))}
-                                </section>
-
-                                <section className="space-y-3">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Mobile Money (direct)</h3>
-                                    {mobiles.map(opt => (
-                                        <div key={opt.id} className="space-y-2">
+                                {aggregators.length > 0 && (
+                                    <section className="space-y-3">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Agrégateurs (recommandé)</h3>
+                                        {aggregators.map(opt => (
                                             <ProviderButton
+                                                key={opt.id}
                                                 option={opt}
                                                 isLoading={isLoadingProvider === opt.id}
                                                 disabled={!!isLoadingProvider}
                                                 onClick={() => handlePayment(opt.id)}
                                             />
-                                            {opt.id === 'mtn' && (
-                                                <div className="pl-16 pr-2 space-y-1">
-                                                    <Label htmlFor="mtn-phone" className="text-xs text-muted-foreground">
-                                                        Numéro MTN MoMo (sans indicatif)
-                                                    </Label>
-                                                    <Input
-                                                        id="mtn-phone"
-                                                        value={mtnPhoneNumber}
-                                                        onChange={e => setMtnPhoneNumber(e.target.value.replace(/[^\d]/g, ''))}
-                                                        placeholder="Ex: 67123456"
-                                                        inputMode="numeric"
-                                                        maxLength={15}
-                                                        className="h-9"
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </section>
+                                        ))}
+                                    </section>
+                                )}
 
-                                <section className="space-y-3">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Carte bancaire</h3>
-                                    {cards.map(opt => (
-                                        <ProviderButton
-                                            key={opt.id}
-                                            option={opt}
-                                            isLoading={isLoadingProvider === opt.id}
-                                            disabled={!!isLoadingProvider}
-                                            onClick={() => handlePayment(opt.id)}
-                                        />
-                                    ))}
-                                </section>
+                                {mobiles.length > 0 && (
+                                    <section className="space-y-3">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Mobile Money (direct)</h3>
+                                        {mobiles.map(opt => (
+                                            <div key={opt.id} className="space-y-2">
+                                                <ProviderButton
+                                                    option={opt}
+                                                    isLoading={isLoadingProvider === opt.id}
+                                                    disabled={!!isLoadingProvider}
+                                                    onClick={() => handlePayment(opt.id)}
+                                                />
+                                                {opt.id === 'mtn' && (
+                                                    <div className="pl-16 pr-2 space-y-1">
+                                                        <Label htmlFor="mtn-phone" className="text-xs text-muted-foreground">
+                                                            Numéro MTN MoMo (sans indicatif)
+                                                        </Label>
+                                                        <Input
+                                                            id="mtn-phone"
+                                                            value={mtnPhoneNumber}
+                                                            onChange={e => setMtnPhoneNumber(e.target.value.replace(/[^\d]/g, ''))}
+                                                            placeholder="Ex: 67123456"
+                                                            inputMode="numeric"
+                                                            maxLength={15}
+                                                            className="h-9"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </section>
+                                )}
+
+                                {cards.length > 0 && (
+                                    <section className="space-y-3">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Carte bancaire</h3>
+                                        {cards.map(opt => (
+                                            <ProviderButton
+                                                key={opt.id}
+                                                option={opt}
+                                                isLoading={isLoadingProvider === opt.id}
+                                                disabled={!!isLoadingProvider}
+                                                onClick={() => handlePayment(opt.id)}
+                                            />
+                                        ))}
+                                    </section>
+                                )}
                             </>
                         )}
 
