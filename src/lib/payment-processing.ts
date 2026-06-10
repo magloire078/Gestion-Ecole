@@ -192,17 +192,25 @@ export async function processTuitionPayment(
         updatedAt: FieldValue.serverTimestamp()
     });
 
+    const todayStr = new Date().toISOString().split('T')[0];
+    const academicYear = (schoolData as any)?.currentAcademicYear
+        || (() => {
+            const d = new Date();
+            return d.getMonth() >= 8 ? `${d.getFullYear()}-${d.getFullYear() + 1}` : `${d.getFullYear() - 1}-${d.getFullYear()}`;
+        })();
+
     // 2. Create Accounting Record
     const accountingRef = getAdminDb().collection(`ecoles/${schoolId}/comptabilite`).doc();
     batch.set(accountingRef, {
         schoolId,
         studentId,
-        date: new Date().toISOString().split('T')[0],
+        date: todayStr,
         description: `Paiement scolarité via ${paymentProvider}`,
         category: 'Scolarité',
         type: 'Revenu',
         amount: cappedAmount,
         reference: reference,
+        academicYear,
         createdAt: FieldValue.serverTimestamp()
     });
 
@@ -211,7 +219,7 @@ export async function processTuitionPayment(
     batch.set(paymentRef, {
         schoolId,
         studentId,
-        date: new Date().toISOString().split('T')[0],
+        date: todayStr,
         amount: cappedAmount,
         description: `Paiement en ligne via ${paymentProvider}`,
         accountingTransactionId: accountingRef.id,
@@ -219,6 +227,7 @@ export async function processTuitionPayment(
         payerLastName: studentData.parent1LastName || '',
         method: paymentProvider === 'Stripe' ? 'Carte Bancaire' : 'Paiement Mobile',
         reference: reference,
+        academicYear,
         createdAt: FieldValue.serverTimestamp()
     });
 

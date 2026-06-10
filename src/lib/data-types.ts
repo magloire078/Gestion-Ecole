@@ -422,6 +422,7 @@ export type accountingTransaction = {
     type: "Revenu" | "Dépense";
     amount: number;
     studentId?: string;
+    academicYear?: string;
 };
 
 export type payment = {
@@ -435,6 +436,7 @@ export type payment = {
     payerLastName: string;
     method: "Espèces" | "Chèque" | "Virement Bancaire" | "Paiement Mobile";
     payerContact?: string;
+    academicYear?: string;
     id?: string;
 };
 
@@ -502,6 +504,7 @@ export type fee = {
     amount: string;
     installments: string;
     details?: string;
+    academicYear?: string;
     id?: string;
 };
 

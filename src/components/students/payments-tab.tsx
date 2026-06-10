@@ -22,6 +22,8 @@ import { Wallet, Sparkles, Tag, Receipt, Loader2, Paperclip, ExternalLink, Downl
 import type { student as Student, payment as Payment } from '@/lib/data-types';
 import { PaymentForm, type PaymentFormValues } from './payment-form';
 import { formatCurrency } from '@/lib/currency-utils';
+import { resolveAcademicYearForWrite, filterByAcademicYear } from '@/lib/academic-year-utils';
+import { useAcademicYear } from '@/providers/academic-year-provider';
 import { BillingService } from '@/services/billing-service';
 
 
@@ -39,6 +41,7 @@ interface PaymentsTabProps {
 export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTabProps) {
     const firestore = useFirestore();
     const { schoolData } = useSchoolData();
+    const { selectedYear, currentYear } = useAcademicYear();
 
     const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
     const [receiptToView, setReceiptToView] = useState<ReceiptData | null>(null);
@@ -51,7 +54,10 @@ export function PaymentsTab({ student, schoolId, onPaymentSuccess }: PaymentsTab
 
     const { data: paymentHistoryData, loading: paymentsLoading } = useCollection(paymentsQuery);
 
-    const paymentHistory: PaymentHistoryEntry[] = useMemo(() => paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [], [paymentHistoryData]);
+    const paymentHistory: PaymentHistoryEntry[] = useMemo(() => {
+        const all = paymentHistoryData?.map(d => ({ id: d.id, ...d.data() } as PaymentHistoryEntry)) || [];
+        return filterByAcademicYear(all, selectedYear, currentYear);
+    }, [paymentHistoryData, selectedYear, currentYear]);
 
     const handleViewReceipt = (payment: PaymentHistoryEntry) => {
         if (!student) return;
@@ -228,6 +234,11 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 updatedAt: new Date().toISOString()
             });
 
+            const academicYearForPayment = resolveAcademicYearForWrite({
+                schoolCurrentYear: (schoolData as any)?.currentAcademicYear,
+                docDate: values.paymentDate,
+            });
+
             const accountingColRef = collection(firestore, `ecoles/${schoolData.id}/comptabilite`);
             const newTransactionRef = doc(accountingColRef);
             batch.set(newTransactionRef, {
@@ -238,6 +249,7 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 type: 'Revenu',
                 amount: amountPaid,
                 studentId: student.id,
+                academicYear: academicYearForPayment,
                 createdAt: new Date().toISOString()
             });
 
@@ -260,6 +272,7 @@ function PaymentDialog({ isOpen, onClose, onSave, student, schoolData }: { isOpe
                 payerContact: values.payerContact,
                 method: values.paymentMethod,
                 proofUrl: proofUrl || null,
+                academicYear: academicYearForPayment,
                 createdAt: new Date().toISOString()
             });
 

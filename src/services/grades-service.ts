@@ -4,6 +4,7 @@ import { doc, addDoc, updateDoc, deleteDoc, collection, query, where, getDocs, g
 import { firebaseFirestore as db } from '@/firebase/config';
 import { NotificationService } from "@/services/notification-service";
 import { student as Student } from "@/lib/data-types";
+import { resolveAcademicYearForWrite } from "@/lib/academic-year-utils";
 
 interface GradeData {
     schoolId: string;
@@ -12,6 +13,7 @@ interface GradeData {
     date: string;
     grade: number;
     coefficient: number;
+    academicYear?: string;
 }
 
 interface GradeEntry extends GradeData {
@@ -32,10 +34,16 @@ export const GradesService = {
     createGrade: async (schoolId: string, studentId: string, data: Omit<GradeData, 'schoolId'>) => {
         try {
             if (!db) throw new Error("Firestore not initialized");
+            const schoolSnap = await getDoc(doc(db, `ecoles/${schoolId}`));
+            const academicYear = data.academicYear ?? resolveAcademicYearForWrite({
+                schoolCurrentYear: schoolSnap.data()?.currentAcademicYear,
+                docDate: data.date,
+            });
             const gradesCollectionRef = collection(db, `ecoles/${schoolId}/eleves/${studentId}/notes`);
             const gradeData: GradeData = {
                 ...data,
                 schoolId,
+                academicYear,
             };
             const docRef = await addDoc(gradesCollectionRef, gradeData);
 

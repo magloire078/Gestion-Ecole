@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { GradesService, type GradeEntry } from '@/services/grades-service';
+import { useAcademicYear } from '@/providers/academic-year-provider';
+import { filterByAcademicYear } from '@/lib/academic-year-utils';
 
 interface Student {
     id: string;
@@ -19,6 +21,7 @@ export function useGrades(schoolId?: string | null, students?: Student[], subjec
     const [grades, setGrades] = useState<GradeEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<Error | null>(null);
+    const { selectedYear, currentYear } = useAcademicYear();
 
     useEffect(() => {
         if (!schoolId || !students || students.length === 0 || !subject) {
@@ -34,9 +37,9 @@ export function useGrades(schoolId?: string | null, students?: Student[], subjec
             try {
                 const studentIds = students.map(s => s.id);
                 const fetchedGrades = await GradesService.getGradesBySubject(schoolId, studentIds, subject);
+                const filtered = filterByAcademicYear(fetchedGrades, selectedYear, currentYear);
 
-                // Enrich grades with student names
-                const enrichedGrades = fetchedGrades.map(grade => {
+                const enrichedGrades = filtered.map(grade => {
                     const student = students.find(s => s.id === grade.studentId);
                     return {
                         ...grade,
@@ -54,7 +57,7 @@ export function useGrades(schoolId?: string | null, students?: Student[], subjec
         };
 
         fetchGrades();
-    }, [schoolId, students, subject]);
+    }, [schoolId, students, subject, selectedYear, currentYear]);
 
     return { grades, loading, error };
 }
