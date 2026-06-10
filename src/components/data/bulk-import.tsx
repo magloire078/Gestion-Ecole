@@ -21,6 +21,7 @@ import type { class_type, student } from '@/lib/data-types';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 import { ENTITY_DESCRIPTORS, getDescriptor, type ImportContext } from './import-entities';
+import { validateRow } from './import-schemas';
 import { parseSqlInserts, type SqlInsertBatch } from './sql-parser';
 import {
     Dialog,
@@ -239,6 +240,8 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         ? row.academicYear.trim()
                         : (targetYear || currentAcademicYear),
                 });
+                const validated = validateRow(descriptor.id, row);
+                if (!validated.ok) throw new Error(validated.error);
                 const ctx: ImportContext = {
                     firestore,
                     schoolId,
@@ -246,7 +249,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                     existingClasses,
                     existingStudents,
                 };
-                await descriptor.importRow(row, ctx);
+                await descriptor.importRow(validated.data, ctx);
                 successCount += 1;
             } catch (err: any) {
                 console.error('[BulkImport] row error', row, err);
@@ -299,7 +302,9 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                             ? row.academicYear.trim()
                             : (targetYear || currentAcademicYear),
                     });
-                    await desc.importRow(row, {
+                    const validated = validateRow(desc.id, row);
+                    if (!validated.ok) throw new Error(validated.error);
+                    await desc.importRow(validated.data, {
                         firestore,
                         schoolId,
                         rowYear,

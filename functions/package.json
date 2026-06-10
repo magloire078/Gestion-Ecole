@@ -13,7 +13,9 @@
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "seed:subs": "ts-node scripts/seed-test-subscriptions.ts",
-    "seed:subs:clean": "ts-node scripts/seed-test-subscriptions.ts --cleanup"
+    "seed:subs:clean": "ts-node scripts/seed-test-subscriptions.ts --cleanup",
+    "backfill:year": "ts-node scripts/backfill-academic-year.ts",
+    "backfill:year:dry": "ts-node scripts/backfill-academic-year.ts --dry-run"
   },
   "dependencies": {
     "date-fns": "^3.6.0",
