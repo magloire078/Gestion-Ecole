@@ -267,6 +267,21 @@ export type student = {
     createdBy?: string;
     updatedBy?: string;
     inscriptionYear?: number;
+    enrollments?: student_enrollment[];
+    id?: string;
+};
+
+export type student_enrollment = {
+    schoolId: string;
+    studentId: string;
+    academicYear: string;
+    classId: string;
+    status: "Nouveau" | "Promu" | "Redoublant" | "Radié" | "Transféré";
+    tuitionFee: number;
+    amountDue: number;
+    tuitionStatus: "Soldé" | "En retard" | "Partiel" | "Non payé";
+    createdAt?: string;
+    createdBy?: string;
     id?: string;
 };
 

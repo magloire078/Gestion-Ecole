@@ -15,9 +15,9 @@ import type { libraryBook as LibraryBook } from '@/lib/data-types';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from 'framer-motion';
+import { useStudents } from '@/hooks/use-students';
 
-
-export function StatCards({ schoolId }: { schoolId: string }) {
+export function StatCards({ schoolId, academicYear }: { schoolId: string, academicYear?: string }) {
   const firestore = useFirestore();
   const [stats, setStats] = useState({
     students: 0,
@@ -27,35 +27,35 @@ export function StatCards({ schoolId }: { schoolId: string }) {
   });
   const [loading, setLoading] = useState(true);
 
+  // Use the useStudents hook to accurately count students for the given academic year
+  const { students, loading: studentsLoading } = useStudents(schoolId, 'all', 'active', academicYear);
+
   useEffect(() => {
     if (!schoolId || !firestore) return;
 
     const fetchStats = async () => {
       setLoading(true);
       try {
-        const studentsQuery = query(collection(firestore, `ecoles/${schoolId}/eleves`));
         const teachersQuery = query(collection(firestore, `ecoles/${schoolId}/personnel`), where('role', '==', 'enseignant'));
         const classesQuery = query(collection(firestore, `ecoles/${schoolId}/classes`));
         const booksQuery = query(collection(firestore, `ecoles/${schoolId}/bibliotheque`));
 
         const [
-          studentsSnapshot,
           teachersSnapshot,
           classesSnapshot,
           booksSnapshot,
         ] = await Promise.all([
-          getCountFromServer(studentsQuery),
           getCountFromServer(teachersQuery),
           getCountFromServer(classesQuery),
           getCountFromServer(booksQuery),
         ]);
 
-        setStats({
-          students: studentsSnapshot.data().count,
+        setStats(prev => ({
+          ...prev,
           teachers: teachersSnapshot.data().count,
           classes: classesSnapshot.data().count,
           books: booksSnapshot.data().count, // On compte le nombre de titres, pas la quantité totale
-        });
+        }));
 
       } catch (error) {
         console.error("Error fetching dashboard stats:", error);
@@ -66,6 +66,12 @@ export function StatCards({ schoolId }: { schoolId: string }) {
 
     fetchStats();
   }, [schoolId, firestore]);
+
+  useEffect(() => {
+    if (!studentsLoading) {
+      setStats(prev => ({ ...prev, students: students.length }));
+    }
+  }, [students, studentsLoading]);
 
   const statsCards = [
     {
@@ -156,7 +162,7 @@ export function StatCards({ schoolId }: { schoolId: string }) {
                 <CardContent className="relative z-10 pt-6">
                   <div className="flex items-baseline gap-1">
                     <div className="text-5xl font-black tracking-tighter transition-transform duration-500 group-hover:scale-105">
-                      {loading ? <Skeleton className="h-12 w-24" /> : (
+                      {loading || studentsLoading ? <Skeleton className="h-12 w-24" /> : (
                         <span className="bg-clip-text text-transparent bg-gradient-to-br from-foreground via-foreground/90 to-foreground/50 drop-shadow-xl">
                           {stat.value}
                         </span>

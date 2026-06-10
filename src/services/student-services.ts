@@ -13,13 +13,13 @@ const COLLECTION_NAME = 'eleves';
  * Vérifie que l'école n'a pas dépassé la limite d'élèves de son plan d'abonnement.
  * Lève une erreur si le plafond est atteint.
  */
-async function checkStudentLimit(schoolId: string): Promise<void> {
+async function checkStudentLimit(schoolId: string): Promise<string> {
     const schoolRef = doc(db, `ecoles/${schoolId}`);
     const statsRef = doc(db, `ecoles/${schoolId}/stats/finance`);
 
     const [schoolSnap, statsSnap] = await Promise.all([getDoc(schoolRef), getDoc(statsRef)]);
 
-    if (!schoolSnap.exists()) return; // Silently pass if school not found
+    if (!schoolSnap.exists()) return "2024-2025"; // Silently pass if school not found
 
     const schoolData = schoolSnap.data();
     let maxStudents: number | null | undefined = schoolData?.subscription?.maxStudents;
@@ -31,7 +31,7 @@ async function checkStudentLimit(schoolId: string): Promise<void> {
             maxStudents = 50;
         } else {
             // Pour Pro et Premium sans limite explicite, on considère qu'il n'y a pas de plafond
-            return;
+            return schoolData?.currentAcademicYear || "2024-2025";
         }
     }
 
@@ -44,6 +44,7 @@ async function checkStudentLimit(schoolId: string): Promise<void> {
             `Veuillez mettre à niveau votre abonnement pour inscrire de nouveaux élèves.`
         );
     }
+    return schoolData?.currentAcademicYear || "2024-2025";
 }
 
 /**
@@ -56,13 +57,13 @@ export const StudentService = {
     createStudent: async (schoolId: string, data: Omit<Student, 'id'>, userId?: string) => {
         try {
             // Vérification du plafond d'élèves AVANT toute écriture
-            await checkStudentLimit(schoolId);
+            const currentAcademicYear = await checkStudentLimit(schoolId);
 
             const batch = writeBatch(db);
             const collectionRef = collection(db, `ecoles/${schoolId}/${COLLECTION_NAME}`);
             const newStudentRef = doc(collectionRef);
 
-            const studentData = {
+            const studentData: any = {
                 ...data,
                 id: newStudentRef.id,
                 schoolId,
@@ -70,6 +71,18 @@ export const StudentService = {
                 updatedAt: serverTimestamp(),
                 createdBy: userId || 'system',
             };
+
+            // Initialize enrollments array with the first enrollment
+            studentData.enrollments = [{
+                academicYear: currentAcademicYear,
+                classId: data.classId || "",
+                status: data.status || "Nouveau",
+                tuitionFee: data.tuitionFee || 0,
+                amountDue: data.amountDue || 0,
+                tuitionStatus: data.tuitionStatus || "Non payé",
+                createdAt: new Date().toISOString(),
+                createdBy: userId || 'system'
+            }];
 
             batch.set(newStudentRef, studentData);
 

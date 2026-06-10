@@ -87,6 +87,7 @@ export const NAV_LINKS: NavGroup[] = [
     icon: GraduationCap,
     links: [
       { href: '/dashboard/pedagogie/structure', label: 'Structure Scolaire', icon: School, permission: 'manageClasses' },
+      { href: '/dashboard/pedagogie/transition', label: 'Passage de Classe', icon: UserPlus, permission: 'manageClasses' },
       { href: '/dashboard/emploi-du-temps', label: 'Emploi du temps', icon: CalendarClock, permission: 'manageSchedule' },
       { href: '/dashboard/notes', label: 'Saisie des Notes', icon: FileText, permission: 'manageGrades' },
       { href: '/dashboard/absences', label: 'Gestion des Absences', icon: UserX, permission: 'manageAttendance' },

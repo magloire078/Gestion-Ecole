@@ -4,6 +4,7 @@ import { Inter, Outfit } from 'next/font/google';
 import './globals.css';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { UserProvider } from '@/providers/user-provider';
+import { SchoolProvider } from '@/providers/school-provider';
 import { MobileBridge } from '@/components/mobile-bridge';
 import { Toaster } from '@/components/ui/toaster';
 import { Analytics } from "@vercel/analytics/next"
@@ -55,11 +56,13 @@ export default function RootLayout({
       <body className={`${inter.variable} ${outfit.variable} font-sans`}>
         <FirebaseClientProvider>
           <UserProvider>
-            <MobileBridge />
-            {children}
-            <Toaster />
-            <Analytics />
-            <SpeedInsights />
+            <SchoolProvider>
+              <MobileBridge />
+              {children}
+              <Toaster />
+              <Analytics />
+              <SpeedInsights />
+            </SchoolProvider>
           </UserProvider>
         </FirebaseClientProvider>
       </body>

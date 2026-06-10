@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List } from "lucide-react";
-import { useState, useMemo } from "react";
+import { PlusCircle, Upload, Download, Printer, Search, Users, School, GraduationCap, LayoutGrid, List, Calendar } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { StudentReportsService } from '@/services/student-reports-service';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -68,13 +69,26 @@ export default function StudentsPage() {
   const router = useRouter();
   const firestore = useFirestore();
   const { user, loading: userLoading } = useUser();
-  const { schoolId, loading: schoolLoading } = useSchoolData();
+  const { schoolId, schoolData, loading: schoolLoading } = useSchoolData();
   const { toast } = useToast();
 
   const canManageUsers = !!user?.profile?.permissions?.manageUsers;
 
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string | undefined>(undefined);
+  const effectiveAcademicYear = selectedAcademicYear || schoolData?.currentAcademicYear || "2024-2025";
+
+  const availableYears = useMemo(() => {
+    const baseYear = parseInt(effectiveAcademicYear.split('-')[0], 10) || 2024;
+    return [
+      `${baseYear - 2}-${baseYear - 1}`,
+      `${baseYear - 1}-${baseYear}`,
+      `${baseYear}-${baseYear + 1}`,
+      `${baseYear + 1}-${baseYear + 2}`
+    ];
+  }, [effectiveAcademicYear]);
+
   // Use new hooks for data fetching
-  const { students: allStudents, loading: studentsLoading } = useStudents(schoolId);
+  const { students: allStudents, loading: studentsLoading } = useStudents(schoolId, undefined, undefined, effectiveAcademicYear);
 
   const classesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/classes`)) : null, [firestore, schoolId]);
   const feesQuery = useMemo(() => schoolId ? query(collection(firestore, `ecoles/${schoolId}/frais_scolarite`)) : null, [firestore, schoolId]);
@@ -201,6 +215,23 @@ export default function StudentsPage() {
     window.print();
   };
 
+  const handleExportPDF = async () => {
+    try {
+      const selectedClassName = selectedClass !== 'all' ? classes.find(c => c.id === selectedClass)?.name : undefined;
+      await StudentReportsService.generateStudentListPdf(
+        filteredByClass,
+        schoolData?.name || 'Notre École',
+        effectiveAcademicYear,
+        schoolData?.mainLogoUrl,
+        selectedClassName
+      );
+      toast({ title: 'Succès', description: 'Le PDF a été généré.' });
+    } catch (e) {
+      console.error(e);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Erreur lors de la génération du PDF.' });
+    }
+  };
+
   const loading = schoolLoading || studentsLoading || classesLoading || feesLoading || niveauxLoading || userLoading || cyclesLoading;
 
   return (
@@ -228,6 +259,14 @@ export default function StudentsPage() {
             <Printer className="mr-2 h-4 w-4" />
             Imprimer Liste
           </Button>
+          <Button 
+            variant="outline" 
+            onClick={handleExportPDF}
+            className="rounded-xl border-slate-200 hover:bg-slate-50 transition-all font-semibold"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exporter PDF
+          </Button>
           {canManageUsers && (
             <Button 
               onClick={() => router.push('/dashboard/inscription')}
@@ -254,6 +293,20 @@ export default function StudentsPage() {
               className="pl-11 h-12 bg-white/50 dark:bg-slate-800/50 border-white/60 dark:border-slate-700/60 rounded-xl focus:ring-indigo-500 transition-all"
             />
           </div>
+        </div>
+        <div className="w-full md:w-[150px] space-y-2">
+          <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Année Scolaire</label>
+          <Select value={effectiveAcademicYear} onValueChange={setSelectedAcademicYear}>
+            <SelectTrigger className="h-12 bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/50 rounded-xl focus:ring-indigo-500 text-indigo-700 dark:text-indigo-300 font-bold">
+              <Calendar className="mr-2 h-4 w-4 text-indigo-500" />
+              <SelectValue placeholder="Année" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-indigo-200 dark:border-indigo-800">
+              {availableYears.map(year => (
+                <SelectItem key={year} value={year}>{year}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="w-full md:w-[200px] space-y-2">
           <label className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-1">Filtrer par Cycle</label>

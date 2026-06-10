@@ -181,6 +181,7 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Mettre à jour le dossier médical</DialogTitle>
+                        <DialogDescription className="sr-only">Formulaire pour mettre à jour le dossier médical de l'élève</DialogDescription>
                     </DialogHeader>
                     <DossierMedicalForm schoolId={schoolId} studentId={eleveId} dossier={dossier} onSave={handleSave} />
                 </DialogContent>
@@ -190,6 +191,7 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Ajouter un vaccin</DialogTitle>
+                        <DialogDescription className="sr-only">Formulaire pour ajouter un vaccin au dossier de l'élève</DialogDescription>
                     </DialogHeader>
                     < VaccinationForm schoolId={schoolId} studentId={eleveId} onSave={handleSave} />
                 </DialogContent>
@@ -199,6 +201,7 @@ function HealthRecordContent({ eleveId, schoolId }: { eleveId: string, schoolId:
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Ajouter une consultation</DialogTitle>
+                        <DialogDescription className="sr-only">Formulaire pour ajouter une consultation médicale</DialogDescription>
                     </DialogHeader>
                     <ConsultationForm schoolId={schoolId} studentId={eleveId} onSave={handleSave} />
                 </DialogContent>

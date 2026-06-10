@@ -17,15 +17,16 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } 
 
 interface FinanceOverviewProps {
     schoolId: string;
+    academicYear?: string;
 }
 
-export function FinanceOverview({ schoolId: propSchoolId }: FinanceOverviewProps) {
+export function FinanceOverview({ schoolId: propSchoolId, academicYear }: FinanceOverviewProps) {
     const firestore = useFirestore();
     const { schoolId: sessionSchoolId, schoolData, isLoading: sessionLoading } = useUserSession();
     const schoolId = propSchoolId || sessionSchoolId;
     const country = schoolData?.country;
 
-    const { students, loading: studentsLoading } = useStudents(schoolId, 'all', 'active');
+    const { students, loading: studentsLoading } = useStudents(schoolId, 'all', 'active', academicYear);
     const loading = sessionLoading || studentsLoading;
 
     const financeStats = useMemo(() => {
