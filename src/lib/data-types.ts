@@ -32,6 +32,9 @@ export type school = {
     mainLogoUrl: string;
     digitalSignatureUrl?: string;
     email: string;
+    currentAcademicYear?: string;
+    academicPeriods?: academicPeriod[];
+    archivedYears?: string[];
     isSetupComplete?: boolean;
     subscription?: {
         plan?: "Essentiel" | "Pro" | "Premium";
@@ -43,6 +46,27 @@ export type school = {
         activeModules?: ("sante" | "cantine" | "transport" | "internat" | "immobilier" | "activites" | "rh")[];
     };
     id?: string;
+};
+
+export type academicPeriod = {
+    name: string;
+    startDate: string;
+    endDate: string;
+    type?: "trimestre" | "semestre" | "quadrimestre" | "autre";
+    order?: number;
+};
+
+export type academicYearTransition = {
+    schoolId: string;
+    fromYear: string;
+    toYear: string;
+    status: "in_progress" | "completed" | "failed";
+    classesCloned: number;
+    studentsPromoted: number;
+    startedAt: string;
+    completedAt?: string;
+    startedBy: string;
+    notes?: string;
 };
 
 export type parent_profile = {

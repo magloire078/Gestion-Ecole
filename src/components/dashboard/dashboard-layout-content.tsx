@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Bell, Menu, Search, PanelLeftClose, PanelRightClose, AlertCircle, Zap } from 'lucide-react';
 import { MobileNav as MobileSidebar } from '@/components/mobile-nav';
 import { MobileNav as MobileNavTabs } from '@/components/layout/mobile-nav';
+import { AcademicYearPicker } from '@/components/layout/academic-year-picker';
+import { ArchiveYearBanner } from '@/components/layout/archive-year-banner';
+import { AcademicYearProvider } from '@/providers/academic-year-provider';
 import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -182,6 +185,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
 
 
   return (
+    <AcademicYearProvider>
     <TooltipProvider>
       <NotificationListener />
       <div className={cn("min-h-screen w-full bg-background/95 print:bg-white")}>
@@ -298,6 +302,7 @@ export default function DashboardLayoutContent({ children }: { children: React.R
             </div>
 
             <div className="flex items-center gap-2">
+              <AcademicYearPicker className="hidden md:flex" />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -359,6 +364,9 @@ export default function DashboardLayoutContent({ children }: { children: React.R
 
           <main className="flex-1 px-4 pt-4 sm:px-6 sm:pt-6 pb-24 lg:pb-6 print:p-0 overflow-auto mesh-gradient relative">
             <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:32px_32px] pointer-events-none" />
+            <div className="mb-4 print:hidden">
+              <ArchiveYearBanner />
+            </div>
             <AnimatePresence mode="wait">
               <motion.div
                 key={pathname}
@@ -388,5 +396,6 @@ export default function DashboardLayoutContent({ children }: { children: React.R
 
       </div >
     </TooltipProvider >
+    </AcademicYearProvider>
   )
 }

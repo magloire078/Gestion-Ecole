@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, Edit, Trash2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Sparkles } from 'lucide-react';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useUser } from '@/firebase';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,12 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AcademicPeriodForm } from '@/components/settings/academic-period-form';
-
-type AcademicPeriod = {
-    name: string;
-    startDate: string;
-    endDate: string;
-};
+import { NewYearWizard } from '@/components/settings/new-year-wizard';
+import type { academicPeriod as AcademicPeriod } from '@/lib/data-types';
 
 export default function AcademicYearPage() {
   const { schoolData, loading: schoolLoading, updateSchoolData } = useSchoolData();
@@ -30,6 +26,7 @@ export default function AcademicYearPage() {
   const [editingPeriod, setEditingPeriod] = useState<AcademicPeriod | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [periodToDelete, setPeriodToDelete] = useState<AcademicPeriod | null>(null);
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
   
   const academicPeriods = schoolData?.academicPeriods || [];
 
@@ -67,6 +64,26 @@ export default function AcademicYearPage() {
   return (
     <>
       <div className="space-y-6">
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        Bascule d&apos;année scolaire
+                    </CardTitle>
+                    <CardDescription>
+                        Clone les classes actives, archive l&apos;ancienne année et passe l&apos;école sur la nouvelle.
+                        L&apos;historique reste consultable via le sélecteur d&apos;année dans l&apos;en-tête.
+                    </CardDescription>
+                </div>
+                {canManageSettings && (
+                    <Button onClick={() => setIsWizardOpen(true)}>
+                        Démarrer une nouvelle année
+                    </Button>
+                )}
+            </CardHeader>
+        </Card>
+
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-center">
@@ -133,6 +150,8 @@ export default function AcademicYearPage() {
             </DialogContent>
         </Dialog>
         
+        <NewYearWizard open={isWizardOpen} onOpenChange={setIsWizardOpen} />
+
          <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
             <AlertDialogContent>
                 <AlertDialogHeader>
