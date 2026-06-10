@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
@@ -16,72 +16,16 @@ import { useToast } from '@/hooks/use-toast';
 import { useSchoolData } from '@/hooks/use-school-data';
 import { useFirestore } from '@/firebase';
 import { useAcademicYear } from '@/providers/academic-year-provider';
-import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import type { class_type, student } from '@/lib/data-types';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
+import { ENTITY_DESCRIPTORS, getDescriptor, type ImportContext } from './import-entities';
 
 interface BulkImportProps {
     existingClasses?: (class_type & { id: string })[];
     existingStudents?: (student & { id: string })[];
     currentAcademicYear?: string;
-}
-
-type ImportType = 'students' | 'teachers' | 'grades';
-
-// Modèles de colonnes attendues. `academicYear` est ajouté en colonne
-// optionnelle pour chaque entité — vide = "année cible" sélectionnée.
-const TEMPLATES: Record<ImportType, { header: string; required: boolean; desc: string }[]> = {
-    students: [
-        { header: 'firstName', required: true, desc: 'Prénom de l\'élève' },
-        { header: 'lastName', required: true, desc: 'Nom de l\'élève' },
-        { header: 'dateOfBirth', required: true, desc: 'Date de naissance (JJ/MM/AAAA)' },
-        { header: 'placeOfBirth', required: false, desc: 'Lieu de naissance' },
-        { header: 'gender', required: true, desc: 'Genre (M/F)' },
-        { header: 'className', required: true, desc: 'Classe (ex: 6ème A)' },
-        { header: 'matricule', required: false, desc: 'Matricule (optionnel)' },
-        { header: 'email', required: false, desc: 'Email (optionnel)' },
-        { header: 'parentEmail', required: false, desc: 'Email du parent (pour liaison)' },
-        { header: 'parent1FirstName', required: false, desc: 'Prénom du Père' },
-        { header: 'parent1LastName', required: false, desc: 'Nom du Père' },
-        { header: 'parent1Contact', required: false, desc: 'Contact du Père' },
-        { header: 'academicYear', required: false, desc: 'Année scolaire (ex: 2024-2025). Vide = année cible.' },
-    ],
-    teachers: [
-        { header: 'firstName', required: true, desc: 'Prénom' },
-        { header: 'lastName', required: true, desc: 'Nom' },
-        { header: 'email', required: true, desc: 'Email professionnel' },
-        { header: 'subject', required: false, desc: 'Matière enseignée' },
-        { header: 'phone', required: false, desc: 'Téléphone' },
-        { header: 'academicYear', required: false, desc: 'Année d\'arrivée (optionnel)' },
-    ],
-    grades: [
-        { header: 'studentMatricule', required: true, desc: 'Matricule de l\'élève' },
-        { header: 'subject', required: true, desc: 'Matière' },
-        { header: 'grade', required: true, desc: 'Note (0-20)' },
-        { header: 'coefficient', required: true, desc: 'Coefficient' },
-        { header: 'type', required: true, desc: 'Type (DEVOIR, COMPO, ORAL)' },
-        { header: 'date', required: false, desc: 'Date (JJ/MM/AAAA, optionnel)' },
-        { header: 'academicYear', required: false, desc: 'Année scolaire (ex: 2023-2024)' },
-    ],
-};
-
-function parseDateOfBirth(raw: any): string | null {
-    if (raw == null || raw === '') return null;
-    if (typeof raw === 'number') {
-        // Excel serial date
-        const date = new Date(Math.round((raw - 25569) * 86400 * 1000));
-        return date.toISOString().split('T')[0];
-    }
-    if (typeof raw === 'string') {
-        if (raw.includes('/')) {
-            const parts = raw.split('/');
-            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
-        }
-        const d = new Date(raw);
-        if (!Number.isNaN(d.getTime())) return d.toISOString().split('T')[0];
-    }
-    return null;
 }
 
 export function BulkImport({ existingClasses = [], existingStudents = [], currentAcademicYear }: BulkImportProps) {
@@ -90,7 +34,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
     const firestore = useFirestore();
     const { availableYears, currentYear } = useAcademicYear();
 
-    const [importType, setImportType] = useState<ImportType>('students');
+    const [entityId, setEntityId] = useState<string>('students');
     const [fileData, setFileData] = useState<any[]>([]);
     const [headers, setHeaders] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -99,24 +43,28 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
     const [showResults, setShowResults] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Construit l'ensemble des années disponibles : courantes + années importées.
-    const yearOptions = Array.from(new Set([
+    const descriptor = useMemo(() => getDescriptor(entityId), [entityId]);
+
+    const yearOptions = useMemo(() => Array.from(new Set([
         currentAcademicYear,
         currentYear,
         targetYear,
         ...availableYears,
-    ].filter(Boolean) as string[])).sort((a, b) => b.localeCompare(a));
+    ].filter(Boolean) as string[])).sort((a, b) => b.localeCompare(a)),
+    [currentAcademicYear, currentYear, targetYear, availableYears]);
 
-    // -------- Téléchargement modèle (XLSX + JSON) --------
     const downloadTemplate = (format: 'xlsx' | 'json' = 'xlsx') => {
-        const template = TEMPLATES[importType];
-        const sampleRow = template.reduce((acc, col) => ({ ...acc, [col.header]: col.desc }), {} as Record<string, string>);
+        if (!descriptor) return;
+        const sampleRow = descriptor.columns.reduce(
+            (acc, col) => ({ ...acc, [col.header]: col.desc }),
+            {} as Record<string, string>,
+        );
         if (format === 'json') {
             const blob = new Blob([JSON.stringify([sampleRow], null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `modele_import_${importType}.json`;
+            a.download = `modele_import_${entityId}.json`;
             a.click();
             URL.revokeObjectURL(url);
             return;
@@ -124,22 +72,18 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         const ws = XLSX.utils.json_to_sheet([sampleRow]);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Template');
-        XLSX.writeFile(wb, `modele_import_${importType}.xlsx`);
+        XLSX.writeFile(wb, `modele_import_${entityId}.xlsx`);
     };
 
-    // -------- Upload : Excel / CSV / JSON --------
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-
         const ext = file.name.toLowerCase().split('.').pop() ?? '';
         try {
             if (ext === 'json') {
                 const text = await file.text();
                 const parsed = JSON.parse(text);
-                if (!Array.isArray(parsed)) {
-                    throw new Error('Le fichier JSON doit contenir un tableau d\'objets.');
-                }
+                if (!Array.isArray(parsed)) throw new Error('Le JSON doit contenir un tableau d\'objets.');
                 const rows = parsed.filter(r => r && typeof r === 'object');
                 const keys = Array.from(new Set(rows.flatMap(r => Object.keys(r))));
                 setHeaders(keys);
@@ -154,7 +98,6 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                 setFileData(rows);
                 return;
             }
-            // xlsx / xls
             const buffer = await file.arrayBuffer();
             const wb = XLSX.read(buffer, { type: 'array' });
             const ws = wb.Sheets[wb.SheetNames[0]];
@@ -180,19 +123,20 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         }
     };
 
-    const validateData = () => {
-        const template = TEMPLATES[importType];
-        const missingColumns = template
-            .filter(t => t.required && !headers.includes(t.header))
-            .map(t => t.header);
-        if (missingColumns.length > 0) {
-            return { valid: false, error: `Colonnes manquantes: ${missingColumns.join(', ')}` };
+    const validate = () => {
+        if (!descriptor) return { valid: false, error: 'Aucune entité sélectionnée.' };
+        const missing = descriptor.columns
+            .filter(c => c.required && !headers.includes(c.header))
+            .map(c => c.header);
+        if (missing.length > 0) {
+            return { valid: false, error: `Colonnes obligatoires manquantes : ${missing.join(', ')}` };
         }
         return { valid: true };
     };
 
     const executeImport = async () => {
-        const validation = validateData();
+        if (!descriptor) return;
+        const validation = validate();
         if (!validation.valid) {
             toast({ variant: 'destructive', title: 'Erreur de format', description: validation.error });
             return;
@@ -207,12 +151,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         const nonEmptyRows = fileData.filter(r => r && Object.keys(r).length > 0);
         setProgress({ current: 0, total: nonEmptyRows.length });
 
-        let collectionPath = '';
-        if (importType === 'students') collectionPath = `ecoles/${schoolId}/eleves`;
-        else if (importType === 'teachers') collectionPath = `ecoles/${schoolId}/personnel`;
-
-        // Plafond élèves (Essentiel = 50)
-        if (importType === 'students') {
+        if (descriptor.id === 'students') {
             try {
                 const [schoolSnap, statsSnap] = await Promise.all([
                     getDoc(doc(firestore, `ecoles/${schoolId}`)),
@@ -227,7 +166,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                             toast({
                                 variant: 'destructive',
                                 title: 'Limite d\'élèves atteinte',
-                                description: `Plan ${planName} : ${currentCount + nonEmptyRows.length} > ${limits.maxStudents}. Mettez à niveau l'abonnement ou réduisez l'import.`,
+                                description: `Plan ${planName} : ${currentCount + nonEmptyRows.length} > ${limits.maxStudents}.`,
                             });
                             setIsUploading(false);
                             return;
@@ -250,68 +189,14 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         ? row.academicYear.trim()
                         : (targetYear || currentAcademicYear),
                 });
-
-                const cleanRow: any = {
-                    ...row,
-                    academicYear: rowYear,
-                    createdAt: serverTimestamp(),
+                const ctx: ImportContext = {
+                    firestore,
                     schoolId,
+                    rowYear,
+                    existingClasses,
+                    existingStudents,
                 };
-
-                if (importType === 'students') {
-                    if (!cleanRow.firstName || !cleanRow.lastName) throw new Error('Nom ou Prénom manquant');
-                    const dob = parseDateOfBirth(cleanRow.dateOfBirth);
-                    if (dob) cleanRow.dateOfBirth = dob;
-
-                    if (cleanRow.className) {
-                        const targetClass = existingClasses.find(c =>
-                            c.name.toLowerCase().trim() === String(cleanRow.className).toLowerCase().trim()
-                            && (!c.academicYear || c.academicYear === rowYear),
-                        );
-                        if (targetClass) {
-                            cleanRow.classId = targetClass.id;
-                            cleanRow.class = targetClass.name;
-                        } else {
-                            throw new Error(`Classe "${cleanRow.className}" introuvable pour ${rowYear}`);
-                        }
-                    }
-                    cleanRow.inscriptionYear = rowYear;
-                    cleanRow.status = cleanRow.status || 'Actif';
-                    cleanRow.tuitionStatus = cleanRow.tuitionStatus || 'Non payé';
-                    cleanRow.amountDue = Number(cleanRow.amountDue) || 0;
-                    await addDoc(collection(firestore, collectionPath), cleanRow);
-                } else if (importType === 'grades') {
-                    if (!cleanRow.studentMatricule) throw new Error('Matricule manquant');
-                    if (!cleanRow.subject) throw new Error('Matière manquante');
-                    if (cleanRow.grade === undefined || cleanRow.grade === null || cleanRow.grade === '') {
-                        throw new Error('Note manquante');
-                    }
-                    const gradeValue = Number(cleanRow.grade);
-                    if (Number.isNaN(gradeValue) || gradeValue < 0 || gradeValue > 20) {
-                        throw new Error(`Note invalide (${cleanRow.grade}). Doit être entre 0 et 20.`);
-                    }
-                    const cleanMatricule = String(cleanRow.studentMatricule).trim().toLowerCase();
-                    const studentDoc = existingStudents.find(s =>
-                        s.matricule && String(s.matricule).trim().toLowerCase() === cleanMatricule,
-                    );
-                    if (!studentDoc) {
-                        throw new Error(`Élève matricule "${cleanRow.studentMatricule}" introuvable`);
-                    }
-                    const date = cleanRow.date ? new Date(cleanRow.date) : new Date();
-                    await addDoc(collection(firestore, `ecoles/${schoolId}/eleves/${studentDoc.id}/notes`), {
-                        schoolId,
-                        subject: cleanRow.subject,
-                        grade: gradeValue,
-                        coefficient: Number(cleanRow.coefficient || 1),
-                        type: cleanRow.type || 'Devoir',
-                        date: Number.isNaN(date.getTime()) ? new Date().toISOString().split('T')[0] : date.toISOString().split('T')[0],
-                        academicYear: rowYear,
-                        createdAt: serverTimestamp(),
-                    });
-                } else {
-                    await addDoc(collection(firestore, collectionPath), cleanRow);
-                }
-
+                await descriptor.importRow(row, ctx);
                 successCount += 1;
             } catch (err: any) {
                 console.error('[BulkImport] row error', row, err);
@@ -327,16 +212,9 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         if (fileInputRef.current) fileInputRef.current.value = '';
 
         if (errorCount > 0) {
-            toast({
-                variant: 'destructive',
-                title: 'Import terminé avec des erreurs',
-                description: `${successCount} succès, ${errorCount} échecs.`,
-            });
+            toast({ variant: 'destructive', title: 'Import terminé avec des erreurs', description: `${successCount} succès, ${errorCount} échecs.` });
         } else {
-            toast({
-                title: 'Import terminé avec succès',
-                description: `${successCount} éléments importés sur ${targetYear}.`,
-            });
+            toast({ title: 'Import terminé', description: `${successCount} éléments importés sur ${targetYear}.` });
         }
         setShowResults({ successCount, errorCount, errors });
     };
@@ -348,21 +226,21 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
             <CardHeader>
                 <CardTitle>Importation de masse</CardTitle>
                 <CardDescription>
-                    Importez vos élèves, enseignants ou notes depuis Excel (.xlsx, .xls), CSV ou JSON.
-                    Les lignes sans colonne <code className="text-xs px-1 mx-0.5 rounded bg-muted">academicYear</code> sont
-                    rattachées à l&apos;<strong>année cible</strong> ci-dessous.
+                    Importez vos données scolaires depuis Excel (.xlsx, .xls), CSV ou JSON. Le format SQL
+                    arrive en Phase 3. Les lignes sans colonne <code className="px-1 mx-0.5 rounded bg-muted text-xs">academicYear</code> sont
+                    rattachées à l&apos;<strong>année cible</strong>.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-3">
                     <div className="space-y-2">
                         <Label>Type de données</Label>
-                        <Select value={importType} onValueChange={(v: ImportType) => { setImportType(v); setFileData([]); setHeaders([]); }}>
+                        <Select value={entityId} onValueChange={v => { setEntityId(v); setFileData([]); setHeaders([]); }}>
                             <SelectTrigger><SelectValue /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="students">Élèves</SelectItem>
-                                <SelectItem value="teachers">Enseignants / Personnel</SelectItem>
-                                <SelectItem value="grades">Notes</SelectItem>
+                                {ENTITY_DESCRIPTORS.map(e => (
+                                    <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -392,16 +270,36 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         <Label>Modèle vide</Label>
                         <div className="flex gap-2">
                             <Button variant="outline" className="flex-1" onClick={() => downloadTemplate('xlsx')}>
-                                <FileDown className="mr-2 h-4 w-4" />
-                                Excel
+                                <FileDown className="mr-2 h-4 w-4" /> Excel
                             </Button>
                             <Button variant="outline" className="flex-1" onClick={() => downloadTemplate('json')}>
-                                <FileDown className="mr-2 h-4 w-4" />
-                                JSON
+                                <FileDown className="mr-2 h-4 w-4" /> JSON
                             </Button>
                         </div>
                     </div>
                 </div>
+
+                {descriptor && (
+                    <Alert>
+                        <AlertTitle className="text-sm">Colonnes attendues — {descriptor.label}</AlertTitle>
+                        <AlertDescription>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                                {descriptor.columns.map(c => (
+                                    <span
+                                        key={c.header}
+                                        className={cn(
+                                            'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-mono',
+                                            c.required ? 'border-primary/30 bg-primary/5 text-primary' : 'border-muted-foreground/20 text-muted-foreground',
+                                        )}
+                                        title={c.desc}
+                                    >
+                                        {c.header}{c.required && <span>*</span>}
+                                    </span>
+                                ))}
+                            </div>
+                        </AlertDescription>
+                    </Alert>
+                )}
 
                 <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center space-y-2 bg-muted/20">
                     <Upload className="h-8 w-8 text-muted-foreground" />
@@ -417,7 +315,7 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         onChange={handleFileUpload}
                     />
                     <p className="text-xs text-muted-foreground text-center max-w-sm">
-                        Les colonnes correspondent au modèle. Une colonne <code className="px-1 rounded bg-muted">academicYear</code> dans le fichier surclasse l&apos;année cible.
+                        Une colonne <code className="px-1 rounded bg-muted">academicYear</code> dans le fichier surclasse l&apos;année cible.
                     </p>
                 </div>
 
