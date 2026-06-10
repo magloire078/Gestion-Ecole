@@ -15,6 +15,7 @@ import { fr } from 'date-fns/locale';
 import { AcademicPeriodForm } from '@/components/settings/academic-period-form';
 import { NewYearWizard } from '@/components/settings/new-year-wizard';
 import type { academicPeriod as AcademicPeriod } from '@/lib/data-types';
+import Link from 'next/link';
 
 export default function AcademicYearPage() {
   const { schoolData, loading: schoolLoading, updateSchoolData } = useSchoolData();
@@ -65,21 +66,28 @@ export default function AcademicYearPage() {
     <>
       <div className="space-y-6">
         <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <CardHeader className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
                     <CardTitle className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-primary" />
                         Bascule d&apos;année scolaire
                     </CardTitle>
                     <CardDescription>
-                        Clone les classes actives, archive l&apos;ancienne année et passe l&apos;école sur la nouvelle.
-                        L&apos;historique reste consultable via le sélecteur d&apos;année dans l&apos;en-tête.
+                        Étape 1 : cloner les classes actives, archiver l&apos;ancienne année et passer l&apos;école sur la nouvelle.
+                        Étape 2 : promouvoir les élèves vers leurs nouvelles classes.
                     </CardDescription>
                 </div>
                 {canManageSettings && (
-                    <Button onClick={() => setIsWizardOpen(true)}>
-                        Démarrer une nouvelle année
-                    </Button>
+                    <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                        <Button onClick={() => setIsWizardOpen(true)}>
+                            Démarrer une nouvelle année
+                        </Button>
+                        <Button variant="outline" asChild>
+                            <Link href="/dashboard/parametres/annee-scolaire/promotion">
+                                Promouvoir les élèves
+                            </Link>
+                        </Button>
+                    </div>
                 )}
             </CardHeader>
         </Card>
