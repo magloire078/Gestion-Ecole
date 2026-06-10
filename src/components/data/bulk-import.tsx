@@ -21,11 +21,39 @@ import type { class_type, student } from '@/lib/data-types';
 import { getPlanLimits } from '@/lib/subscription-plans';
 import { resolveAcademicYearForWrite } from '@/lib/academic-year-utils';
 import { ENTITY_DESCRIPTORS, getDescriptor, type ImportContext } from './import-entities';
+import { parseSqlInserts, type SqlInsertBatch } from './sql-parser';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
 
 interface BulkImportProps {
     existingClasses?: (class_type & { id: string })[];
     existingStudents?: (student & { id: string })[];
     currentAcademicYear?: string;
+}
+
+/**
+ * Devine l'entité GèreEcole à partir d'un nom de table SQL. Heuristiques
+ * permissives basées sur les noms les plus courants (FR + EN).
+ */
+function guessEntityFromTable(table: string): string | undefined {
+    const t = table.toLowerCase();
+    if (/(eleve|student|inscrit)/.test(t)) return 'students';
+    if (/(prof|teacher|enseignant|staff|personnel)/.test(t)) return 'teachers';
+    if (/(note|grade|mark|bulletin)/.test(t)) return 'grades';
+    if (/(class)/.test(t)) return 'classes';
+    if (/(cycle)/.test(t)) return 'cycles';
+    if (/(niveau|level)/.test(t)) return 'niveaux';
+    if (/(frais|fee|tuition)/.test(t)) return 'fees';
+    if (/(paiement|payment|encaiss)/.test(t)) return 'payments';
+    if (/(compta|account|transaction|ledger)/.test(t)) return 'transactions';
+    return undefined;
 }
 
 export function BulkImport({ existingClasses = [], existingStudents = [], currentAcademicYear }: BulkImportProps) {
@@ -42,6 +70,11 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
     const [targetYear, setTargetYear] = useState<string>(currentAcademicYear || currentYear || '');
     const [showResults, setShowResults] = useState<{ successCount: number; errorCount: number; errors: string[] } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // SQL dump support
+    const [sqlBatches, setSqlBatches] = useState<SqlInsertBatch[]>([]);
+    const [sqlMapping, setSqlMapping] = useState<Record<string, string>>({}); // tableName -> entityId
+    const [showSqlPicker, setShowSqlPicker] = useState(false);
 
     const descriptor = useMemo(() => getDescriptor(entityId), [entityId]);
 
@@ -80,6 +113,23 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
         if (!file) return;
         const ext = file.name.toLowerCase().split('.').pop() ?? '';
         try {
+            if (ext === 'sql') {
+                const text = await file.text();
+                const batches = parseSqlInserts(text);
+                if (batches.length === 0) {
+                    toast({ variant: 'destructive', title: 'Dump SQL vide', description: 'Aucune instruction INSERT INTO trouvée.' });
+                    return;
+                }
+                const mapping: Record<string, string> = {};
+                for (const b of batches) {
+                    const guess = guessEntityFromTable(b.table);
+                    if (guess) mapping[b.table] = guess;
+                }
+                setSqlBatches(batches);
+                setSqlMapping(mapping);
+                setShowSqlPicker(true);
+                return;
+            }
             if (ext === 'json') {
                 const text = await file.text();
                 const parsed = JSON.parse(text);
@@ -221,13 +271,71 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
 
     const isImportingArchive = !!targetYear && targetYear !== currentYear;
 
+    const runSqlImport = async () => {
+        if (!schoolId) return;
+        const eligible = sqlBatches.filter(b => sqlMapping[b.table]);
+        if (eligible.length === 0) {
+            toast({ variant: 'destructive', title: 'Aucune table mappée', description: 'Choisis l\'entité GèreEcole pour au moins une table.' });
+            return;
+        }
+        setIsUploading(true);
+        const totalRows = eligible.reduce((acc, b) => acc + b.rows.length, 0);
+        setProgress({ current: 0, total: totalRows });
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+        let cursor = 0;
+
+        for (const batch of eligible) {
+            const targetId = sqlMapping[batch.table];
+            const desc = getDescriptor(targetId);
+            if (!desc) continue;
+            for (const row of batch.rows) {
+                cursor += 1;
+                try {
+                    const rowYear = resolveAcademicYearForWrite({
+                        schoolCurrentYear: typeof row.academicYear === 'string' && row.academicYear.trim()
+                            ? row.academicYear.trim()
+                            : (targetYear || currentAcademicYear),
+                    });
+                    await desc.importRow(row, {
+                        firestore,
+                        schoolId,
+                        rowYear,
+                        existingClasses,
+                        existingStudents,
+                    });
+                    successCount += 1;
+                } catch (err: any) {
+                    errorCount += 1;
+                    errors.push(`${batch.table} ligne ${cursor}: ${err.message}`);
+                }
+                setProgress({ current: cursor, total: totalRows });
+            }
+        }
+
+        setIsUploading(false);
+        setSqlBatches([]);
+        setSqlMapping({});
+        setShowSqlPicker(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+
+        if (errorCount > 0) {
+            toast({ variant: 'destructive', title: 'Import SQL terminé avec erreurs', description: `${successCount} succès, ${errorCount} échecs.` });
+        } else {
+            toast({ title: 'Import SQL terminé', description: `${successCount} éléments importés sur ${targetYear}.` });
+        }
+        setShowResults({ successCount, errorCount, errors });
+    };
+
     return (
         <Card>
             <CardHeader>
                 <CardTitle>Importation de masse</CardTitle>
                 <CardDescription>
-                    Importez vos données scolaires depuis Excel (.xlsx, .xls), CSV ou JSON. Le format SQL
-                    arrive en Phase 3. Les lignes sans colonne <code className="px-1 mx-0.5 rounded bg-muted text-xs">academicYear</code> sont
+                    Importez vos données scolaires depuis Excel (.xlsx, .xls), CSV, JSON ou un dump SQL
+                    (.sql). Les lignes sans colonne <code className="px-1 mx-0.5 rounded bg-muted text-xs">academicYear</code> sont
                     rattachées à l&apos;<strong>année cible</strong>.
                 </CardDescription>
             </CardHeader>
@@ -304,18 +412,18 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                 <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center space-y-2 bg-muted/20">
                     <Upload className="h-8 w-8 text-muted-foreground" />
                     <Label htmlFor="file-upload" className="cursor-pointer text-primary hover:underline">
-                        Cliquez pour uploader un fichier (.xlsx, .csv, .json)
+                        Cliquez pour uploader un fichier (.xlsx, .csv, .json, .sql)
                     </Label>
                     <Input
                         id="file-upload"
                         type="file"
-                        accept=".xlsx,.xls,.csv,.json"
+                        accept=".xlsx,.xls,.csv,.json,.sql"
                         className="hidden"
                         ref={fileInputRef}
                         onChange={handleFileUpload}
                     />
                     <p className="text-xs text-muted-foreground text-center max-w-sm">
-                        Une colonne <code className="px-1 rounded bg-muted">academicYear</code> dans le fichier surclasse l&apos;année cible.
+                        Une colonne <code className="px-1 rounded bg-muted">academicYear</code> dans le fichier surclasse l&apos;année cible. Le SQL accepte les dumps phpMyAdmin / pg_dump.
                     </p>
                 </div>
 
@@ -371,6 +479,59 @@ export function BulkImport({ existingClasses = [], existingStudents = [], curren
                         <p className="text-xs text-right text-muted-foreground">{progress.current} / {progress.total}</p>
                     </div>
                 )}
+
+                <Dialog open={showSqlPicker} onOpenChange={setShowSqlPicker}>
+                    <DialogContent className="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Mappage du dump SQL</DialogTitle>
+                            <DialogDescription>
+                                {sqlBatches.length} table{sqlBatches.length > 1 ? 's' : ''} trouvée{sqlBatches.length > 1 ? 's' : ''}.
+                                Associez chaque table à une entité GèreEcole, ou laissez vide pour l&apos;ignorer.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="max-h-[400px] overflow-y-auto space-y-2 pr-2">
+                            {sqlBatches.map(batch => (
+                                <div key={batch.table} className="flex items-center justify-between gap-3 rounded-xl border p-3">
+                                    <div className="min-w-0 flex-1">
+                                        <p className="font-mono text-sm font-semibold truncate">{batch.table}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {batch.rows.length} ligne{batch.rows.length > 1 ? 's' : ''} · {batch.columns.length} colonne{batch.columns.length > 1 ? 's' : ''}
+                                        </p>
+                                        <div className="mt-1 flex flex-wrap gap-1">
+                                            {batch.columns.slice(0, 6).map(col => (
+                                                <Badge key={col} variant="outline" className="text-[10px] font-mono">{col}</Badge>
+                                            ))}
+                                            {batch.columns.length > 6 && (
+                                                <Badge variant="outline" className="text-[10px]">+{batch.columns.length - 6}</Badge>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <Select
+                                        value={sqlMapping[batch.table] ?? ''}
+                                        onValueChange={v => setSqlMapping(prev => ({ ...prev, [batch.table]: v === '__none__' ? '' : v }))}
+                                    >
+                                        <SelectTrigger className="w-[200px] shrink-0">
+                                            <SelectValue placeholder="Ignorer" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="__none__">Ignorer</SelectItem>
+                                            {ENTITY_DESCRIPTORS.map(e => (
+                                                <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ))}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setShowSqlPicker(false)}>Annuler</Button>
+                            <Button onClick={runSqlImport} disabled={isUploading || Object.values(sqlMapping).filter(Boolean).length === 0}>
+                                {isUploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Importer
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 {showResults && (
                     <Alert variant={showResults.errorCount > 0 ? 'destructive' : 'default'} className={cn(showResults.errorCount === 0 && 'bg-emerald-50 border-emerald-200 text-emerald-800')}>
